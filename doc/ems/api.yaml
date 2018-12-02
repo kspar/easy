@@ -139,10 +139,14 @@ definitions:
 
   StudentCourse:
     properties:
+      id:
+        type: string
       ...
 
   StudentExercise:
     properties:
+      id:
+        type: string
       ...
 
   StudentExerciseDetails:
@@ -155,6 +159,8 @@ definitions:
 
   SubmissionSummary:
     properties:
+      id:
+        type: string
       ...
 
   Assessment:
