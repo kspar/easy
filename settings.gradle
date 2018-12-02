@@ -1,3 +1,4 @@
 rootProject.name = 'easy'
 
-include 'wui'
+include 'wui',
+        'ems'
