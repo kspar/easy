@@ -1,0 +1,37 @@
+EASY
+--------------------------------------------------
+Üldine:
+Font igal pool Segoe UI.
+Vaated eeldavad ekraanisuurust 1920 x 1080.
+
+
+---Peamenüü---
+Taustavärv: #4DAB54
+Tekst: #000000, 24 pt
+
+---Ülesanne---
+Ülesanne (aktiivne) tab: #4DAB54, 20 pt, semibold
+Taustavärv: #FFFFFF
+Tähtaeg, Hindamine, Lävend: #4DAB54, #FFFFFF, 16 pt
+Ülesande pealkiri: #000000, 20 pt
+Ülesande sisu: #000000, 16 pt
+
+---Esitamine---
+Esitamine (aktiivne) tab: #4DAB54, 20 pt, semibold
+Taustavärv: #FFFFFF
+Tagasiside pealkiri: #000000, 20 pt
+Tagasiside sisu: #000000, 16 pt
+
+---Minu esitused---
+Minu esitused (aktiivne) tab: #4DAB54, 20 pt, semibold
+Taustavärv: #FFFFFF
+Kogu tekst: #000000, 20 pt
+
+---Muu oluline info---
+"Minu esitused (avatus esitus)" on listis olevate esituste vaade keritav kui kõik info ei mahu ekraanile ära.
+Peamenüüs on tegelikult ainult "Kursused" link, "Ülesanded" ja "Juhendid" ei ole.
+
+
+
+
+
