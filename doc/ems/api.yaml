@@ -17,10 +17,8 @@ tags:
 
 paths:
 
-  /students/{userId}/courses:
+  /student/courses:
     get:
-      parameters:
-      - $ref: '#/parameters/UserId'
       responses:
         200:
           description: Courses to which the student has access.
@@ -29,10 +27,9 @@ paths:
             items:
               $ref: '#/definitions/StudentCourse'
 
-  /students/{userId}/courses/{courseId}/exercises:
+  /student/courses/{courseId}/exercises:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       responses:
         200:
@@ -42,10 +39,9 @@ paths:
             items:
               $ref: '#/definitions/StudentExercise'
 
-  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}:
+  /student/courses/{courseId}/exercises/{courseExerciseId}:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       responses:
@@ -54,10 +50,9 @@ paths:
           schema:
             $ref: '#/definitions/StudentExerciseDetails'
 
-  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       responses:
@@ -66,10 +61,9 @@ paths:
           schema:
             $ref: '#/definitions/Submission'
 
-  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       responses:
@@ -82,7 +76,6 @@ paths:
 
     post:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       - name: submission
@@ -97,10 +90,9 @@ paths:
             Location:
               description: TODO
 
-  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       - $ref: '#/parameters/SubmissionId'
@@ -110,10 +102,9 @@ paths:
           schema:
             $ref: '#/definitions/Submission'
 
-  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments/latest:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments/latest:
     get:
       parameters:
-      - $ref: '#/parameters/UserId'
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
       - $ref: '#/parameters/SubmissionId'
@@ -127,11 +118,6 @@ paths:
 
 
 parameters:
-
-  UserId:
-    name: userId
-    in: path
-    required: true
 
   CourseId:
     name: courseId
