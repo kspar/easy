@@ -1,0 +1,77 @@
+= Notes on Architecture
+
+This document will always be up-to-date with latest developments and the current state of easy:ems.
+
+Currently this document describes *easy:ems 1*.
+
+
+== Concepts and Terms
+
+[[concept-exercise]]
+*Exercise* +
+is something that has a unique exercise ID. Exercises have versions (<<concept-exercise-version,ExerciseVersion>>) that own all the fields that can be changed. Each exercise can have 1..n versions but exactly 1 valid version. Other entities can use exercises via the exercise ID without worrying about exercise versions.
+
+[[concept-exercise-version]]
+*ExerciseVersion* +
+owns all exercise fields that can be changed without creating a new exercise. Persisting all versions of an exercise facilitates keeping history and tracking changes. Each time an exercise is changed, a new version is created, marked valid, linked with the previous version and the previous version is marked invalid. A version's fields are never actually mutated (except for validity fields).
+
+[[concept-course]]
+*Course* +
+represents a named collection of exercises. Exercises are linked with courses through <<concept-course-exercise,CourseExercise>>. Course effectively has a 0..n--0..m relation with exercise.
+
+[[concept-course-exercise]]
+*CourseExercise* +
+links exercises with courses. Course exercise also holds course-specific data for exercises such as the grade threshold. This way, this data can be different for different courses.
+
+[[concept-submission]]
+*Submission* +
+represents a solution submission to an exercise on a course (<<concept-course-exercise,CourseExercise>>). A submission is made by a student and contains the solution. Each course exercise can have 0..n submissions.
+
+[[concept-assessment]]
+*Assessment* +
+is made by a teacher on a submission. Each submission may have 0..n assessments.
+
+[[concept-teacher]]
+*Teacher* +
+can author exercise versions and assessments.
+
+[[concept-student]]
+*Student* +
+can author submissions.
+
+[[concept-grader-type]]
+*GraderType: TEACHER, AUTO* +
+is an enum that specifies how an exercise should be graded: either manually by a teacher or automatically.
+
+== Features
+
+Most features and use cases are intuitive and do not require explicit explanation. This section is dedicated to business logic of features that might not be intuitive. This logic is described from the point of view of the data model.
+
+==== Binary vs Non-binary Grading
+
+Exercises' grades can be binary ("pass"-"fail") or non-binary (0-100). Real non-binary grade scales are not considered (A-F, 0-5 etc) because they don't seem necessary since 0-100 can be easily converted to the desired grade scale by a teacher if needed.
+
+The binary vs non-binary distinction is not explicitly made in the data model but rather implicitly by CourseExercise.grade_threshold. This specifies the threshold above which an exercise is considered completed.
+
+This notion of an exercise considered completed is the only reason to include the threshold at the moment. In the future if potential grading policies are implemented then a more complex system might be needed.
+
+== Future Features
+
+This section describes features that are not implemented in this version but are considered for future versions.
+
+==== Anonymous Submissions
+
+A possible implementation requires an analogous entity to CourseExercise -- AnonymousExercise. An exercise could have 0..n AnonymousExercises, exactly as with CourseExercises. An anonymous exercise could have 0..n AnonymousSubmissions that capture submission-related info such as the answer, grade, feedback (this assumes that an anonymous submission can only have one grade and feedback which seems true), potentially some identifying info about the submitter (IP address?), time.
+
+[[futurefeature-nontextsolutions]]
+==== Non-text Solutions
+
+Solutions must be text now (Submission.solution). They should be any kind of data such as pictures or compiled programs. A potential implementation requires diving solutions into text or binary data.
+
+==== Multiple Solution Files
+
+There should be a possibility to submit more than one file (piece of data). Could be implemented together with <<futurefeature-nontextsolutions,Non-Text Solutions>>.
+
+==== Access Control for Teachers
+
+Exercises and Courses should have access control.

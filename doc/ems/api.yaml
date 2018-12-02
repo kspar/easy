@@ -1,0 +1,32 @@
+swagger: 2.0
+info:
+  description: This specification documents the public API of easy:ems. Note that details about authentication/authorization are documented in a separate authentication document.
+  version: 1.0
+  title: Easy:ems Public API
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /v1
+
+tags:
+- name: placeholder
+
+
+paths:
+
+
+# list all courses
+# create new course (without exercises)
+#
+
+# list all exercises (consider last version, return simple identifying info)
+# get details of one exercise by id
+
+
+# list all solutions to an exercise
+
+
+# list all assessments to a solution
