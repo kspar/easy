@@ -4,11 +4,11 @@ info:
   version: 1.0
   title: Easy:ems Public API
 schemes:
-  - http
+- http
 consumes:
-  - application/json
+- application/json
 produces:
-  - application/json
+- application/json
 basePath: /v1
 
 tags:
@@ -17,16 +17,162 @@ tags:
 
 paths:
 
+  /students/{userId}/courses:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      responses:
+        200:
+          description: Courses to which the student has access.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/StudentCourse'
 
-# list all courses
-# create new course (without exercises)
-#
+  /students/{userId}/courses/{courseId}/exercises:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      responses:
+        200:
+          description: Exercises to which the student has access.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/StudentExercise'
 
-# list all exercises (consider last version, return simple identifying info)
-# get details of one exercise by id
+  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      responses:
+        200:
+          description: Exercise details.
+          schema:
+            $ref: '#/definitions/StudentExerciseDetails'
+
+  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      responses:
+        200:
+          description: Latest submission to this exercise.
+          schema:
+            $ref: '#/definitions/Submission'
+
+  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      responses:
+        200:
+          description: All submissions to this exercise.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/SubmissionSummary'
+
+    post:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - name: submission
+        in: body
+        schema:
+          properties:
+              TODO
+      responses:
+        201:
+          description: TODO
+          headers:
+            Location:
+              description: TODO
+
+  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/SubmissionId'
+      responses:
+        200:
+          description: Submission.
+          schema:
+            $ref: '#/definitions/Submission'
+
+  /students/{userId}/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments/latest:
+    get:
+      parameters:
+      - $ref: '#/parameters/UserId'
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/SubmissionId'
+      responses:
+        200:
+          description: Latest assessment for this submission.
+          schema:
+            $ref: '#/definitions/Assessment'
 
 
-# list all solutions to an exercise
 
 
-# list all assessments to a solution
+parameters:
+
+  UserId:
+    name: userId
+    in: path
+    required: true
+
+  CourseId:
+    name: courseId
+    in: path
+    required: true
+
+  CourseExerciseId:
+    name: courseExerciseId
+    in: path
+    required: true
+
+  SubmissionId:
+    name: submissionId
+    in: path
+    required: true
+
+
+definitions:
+
+  StudentCourse:
+    properties:
+      ...
+
+  StudentExercise:
+    properties:
+      ...
+
+  StudentExerciseDetails:
+    properties:
+      ...
+
+  Submission:
+    properties:
+      ...
+
+  SubmissionSummary:
+    properties:
+      ...
+
+  Assessment:
+    properties:
+      ...
+
+
