@@ -1,4 +1,5 @@
 rootProject.name = 'easy'
 
 include 'wui',
-        'ems'
+        'ems',
+        'aas'
