@@ -220,4 +220,23 @@
 
     </changeSet>
 
+    <changeSet id="071218-2" author="kspar">
+
+        <createTable tableName="student_course">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="student_id" type="bigint">
+                <constraints references="student(id)" foreignKeyName="fk_student_course_student"
+                             nullable="false"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints references="course(id)" foreignKeyName="fk_student_course_course"
+                             nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="student_course_id_seq" startValue="1" incrementBy="1"/>
+
+    </changeSet>
+
 </databaseChangeLog>
