@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+
+    <changeSet id="071218-1" author="kspar">
+
+        <createTable tableName="exercise">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="exercise_id_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="teacher">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="exercise_version">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_exercise_version_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="author_id" type="bigint">
+                <constraints references="teacher(id)" foreignKeyName="fk_exercise_version_teacher"
+                             nullable="false"/>
+            </column>
+            <column name="previous_id" type="bigint">
+                <constraints references="exercise_version(id)" foreignKeyName="fk_exercise_version_exercise_version"
+                             nullable="true"/>
+            </column>
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valid_to" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="grader_type" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aas_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="title" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="text_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="exercise_version_id_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="course">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="course_id_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="teacher_course">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="teacher_id" type="bigint">
+                <constraints references="teacher(id)" foreignKeyName="fk_teacher_course_teacher"
+                             nullable="false"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints references="course(id)" foreignKeyName="fk_teacher_course_course"
+                             nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="teacher_course_id_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="course_exercise">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints references="course(id)" foreignKeyName="fk_course_exercise_course"
+                             nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_course_exercise_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="grade_threshold" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="soft_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hard_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ordering_index" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="student_visible" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assessmentsStudentVisible" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="course_exercise_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="student">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="student_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="submission">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="course_exercise_id" type="bigint">
+                <constraints references="course_exercise(id)" foreignKeyName="fk_submission_course_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="student_id" type="bigint">
+                <constraints references="student(id)" foreignKeyName="fk_submission_student"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="submission_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="teacher_assessment">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="submission_id" type="bigint">
+                <constraints references="submission(id)" foreignKeyName="fk_teacher_assessment_submission"
+                             nullable="false"/>
+            </column>
+            <column name="teacher_id" type="bigint">
+                <constraints references="teacher(id)" foreignKeyName="fk_teacher_assessment_teacher"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="grade" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="feedback" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="teacher_assessment_seq" startValue="1" incrementBy="1"/>
+
+        <createTable tableName="automatic_assessment">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="submission_id" type="bigint">
+                <constraints references="submission(id)" foreignKeyName="fk_automatic_assessment_submission"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="grade" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="feedback" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="automatic_assessment_seq" startValue="1" incrementBy="1"/>
+
+    </changeSet>
+
+</databaseChangeLog>
