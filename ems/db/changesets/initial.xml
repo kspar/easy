@@ -270,5 +270,20 @@
     <changeSet id="101218-3" author="kspar">
         <createSequence sequenceName="teacher_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
+    
+    
+    <changeSet id="101218-4" author="kspar">
+        <sql>ALTER SEQUENCE automatic_assessment_seq RENAME TO seq_automatic_assessment_id;</sql>
+        <sql>ALTER SEQUENCE course_exercise_seq RENAME TO seq_course_exercise_id;</sql>
+        <sql>ALTER SEQUENCE course_id_seq RENAME TO seq_course_id;</sql>
+        <sql>ALTER SEQUENCE exercise_id_seq RENAME TO seq_exercise_id;</sql>
+        <sql>ALTER SEQUENCE exercise_version_id_seq RENAME TO seq_exercise_version_id;</sql>
+        <sql>ALTER SEQUENCE student_course_id_seq RENAME TO seq_student_course_access_id;</sql>
+        <sql>ALTER SEQUENCE student_seq RENAME TO seq_student_id;</sql>
+        <sql>ALTER SEQUENCE submission_seq RENAME TO seq_submission_id;</sql>
+        <sql>ALTER SEQUENCE teacher_assessment_seq RENAME TO seq_teacher_assessment_id;</sql>
+        <sql>ALTER SEQUENCE teacher_course_id_seq RENAME TO seq_teacher_course_access_id;</sql>
+        <sql>ALTER SEQUENCE teacher_id_seq RENAME TO seq_teacher_id;</sql>
+    </changeSet>
 
 </databaseChangeLog>
