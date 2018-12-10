@@ -1,0 +1,34 @@
+* {
+    font-family: "Segoe UI";
+}
+
+html {
+    background: url('../img/taust.svg') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+
+/* change the background color */
+.navbar-green {
+    background-color: #4DAB54;
+}
+/* change the brand, link and text color */
+.navbar-green .navbar-brand,
+.navbar-green .navbar-text,
+ .navbar-green .navbar-nav .nav-link {
+    font-weight: 600;
+    color: #000000;
+}
+
+/* change the color of active or hovered links */
+.navbar-green .nav-item.active .nav-link,
+.navbar-green .nav-item:focus .nav-link,
+.navbar-green .nav-item:hover .nav-link {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+nav {
+    font-size: 24pt !important;
+}
