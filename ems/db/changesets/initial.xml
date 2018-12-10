@@ -249,4 +249,22 @@
     </changeSet>
 
 
+    <changeSet id="101218-2" author="kspar">
+
+        <addColumn tableName="exercise">
+            <column name="owner" type="bigint">
+                <constraints references="teacher(id)" foreignKeyName="fk_exercise_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="exercise">
+            <column name="public" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+    </changeSet>
+
+
 </databaseChangeLog>
