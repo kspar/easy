@@ -220,6 +220,7 @@
 
     </changeSet>
 
+
     <changeSet id="071218-2" author="kspar">
 
         <createTable tableName="student_course">
@@ -238,5 +239,14 @@
         <createSequence sequenceName="student_course_id_seq" startValue="1" incrementBy="1"/>
 
     </changeSet>
+
+
+    <changeSet id="101218-1" author="kspar">
+
+        <renameTable oldTableName="teacher_course" newTableName="teacher_course_access"/>
+        <renameTable oldTableName="student_course" newTableName="student_course_access"/>
+
+    </changeSet>
+
 
 </databaseChangeLog>
