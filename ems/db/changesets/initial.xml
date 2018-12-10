@@ -267,4 +267,8 @@
     </changeSet>
 
 
+    <changeSet id="101218-3" author="kspar">
+        <createSequence sequenceName="teacher_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
 </databaseChangeLog>
