@@ -2,12 +2,20 @@
     font-family: "Segoe UI";
 }
 
-html {
+body {
     background: url('../img/taust.svg') no-repeat center center fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
+}
+
+a {
+    color: gray;
+}
+
+a:hover {
+    color: #4DAB54;
 }
 
 /* change the background color */
@@ -29,6 +37,62 @@ html {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
-nav {
+.navbar {
     font-size: 24pt !important;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    margin-bottom: 0;
+}
+
+.breadcrumb-item.active {
+    color: #000000;
+}
+.breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+}
+
+.nav-tabs {
+    font-size: 20pt !important;
+    font-weight: 600;
+    border-width: 2px;
+}
+
+.nav-tabs .nav-item {
+    margin-bottom: -2px;
+}
+
+.nav-tabs .nav-link.active, .nav-tabs .nav-link:hover, .nav-tabs .nav-link:focus {
+    color: #4DAB54;
+    border-color: #4DAB54;
+    border-width: 0 0 2px;
+}
+
+.card {
+    font-size: 16pt;
+}
+
+.subheading {
+    color: #4DAB54;
+}
+
+.answer textarea {
+    font-size: 16pt;
+    font-family: 'Segoe UI';
+}
+
+h2 {
+    font-size: 20pt;
+    font-weight: 600;
+}
+
+.btn-success {
+    background-color: #4DAB54;
+    border-color: #4DAB54;
+}
+
+.card-header {
+    background-color: #ffffff;
+    cursor: pointer;
 }
