@@ -286,4 +286,10 @@
         <sql>ALTER SEQUENCE teacher_id_seq RENAME TO seq_teacher_id;</sql>
     </changeSet>
 
+
+    <changeSet id="141218-1" author="kspar">
+        <renameColumn tableName="course_exercise" oldColumnName="assessmentsStudentVisible"
+                      newColumnName="assessments_student_visible"/>
+    </changeSet>
+
 </databaseChangeLog>
