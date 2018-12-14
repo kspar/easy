@@ -8,3 +8,4 @@ out/
 build/
 
 database.properties
+application.yaml
