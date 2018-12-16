@@ -72,7 +72,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/SubmissionSummary'
+              $ref: '#/definitions/Submission'
 
     post:
       parameters:
@@ -90,31 +90,6 @@ paths:
             Location:
               description: TODO
 
-  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}:
-    get:
-      parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/SubmissionId'
-      responses:
-        200:
-          description: Submission.
-          schema:
-            $ref: '#/definitions/Submission'
-
-  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments/latest:
-    get:
-      parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/SubmissionId'
-      responses:
-        200:
-          description: Latest assessment for this submission.
-          schema:
-            $ref: '#/definitions/Assessment'
-
-
 
 
 parameters:
@@ -123,16 +98,19 @@ parameters:
     name: courseId
     in: path
     required: true
+    type: string
 
   CourseExerciseId:
     name: courseExerciseId
     in: path
     required: true
+    type: string
 
   SubmissionId:
     name: submissionId
     in: path
     required: true
+    type: string
 
 
 definitions:
@@ -141,30 +119,72 @@ definitions:
     properties:
       id:
         type: string
-      ...
+      title:
+        type: string
+      next_deadline:
+        type: string
+        format: date-time
+      progress:
+        description: TODO
+        type: integer
 
   StudentExercise:
     properties:
       id:
         type: string
-      ...
+      title:
+        type: string
+      deadline:
+        type: string
+        format: date-time
+      status:
+        $ref: '#/definitions/ExerciseStatus'
+      grade:
+        description: TODO
+        type: integer
 
   StudentExerciseDetails:
     properties:
-      ...
+      title:
+        type: string
+      text_html:
+        type: string
+      deadline:
+        type: string
+        format: date-time
+      grader_type:
+        $ref: '#/definitions/GraderType'
+      threshold:
+        type: integer
 
   Submission:
     properties:
-      ...
-
-  SubmissionSummary:
-    properties:
-      id:
+      serial:
+        type: integer
+      solution:
         type: string
-      ...
+      grade:
+        type: integer
+      feedback:
+        type: string
+      time:
+        type: string
+        format: date-time
 
-  Assessment:
-    properties:
-      ...
 
 
+  # Enums
+  ExerciseStatus:
+    type: string
+    description: TODO
+    enum:
+      - UNSTARTED
+      - STARTED
+      - COMPLETED
+
+  GraderType:
+    type: string
+    description: TODO
+    enum:
+      - AUTO
+      - TEACHER
