@@ -270,8 +270,8 @@
     <changeSet id="101218-3" author="kspar">
         <createSequence sequenceName="teacher_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
-    
-    
+
+
     <changeSet id="101218-4" author="kspar">
         <sql>ALTER SEQUENCE automatic_assessment_seq RENAME TO seq_automatic_assessment_id;</sql>
         <sql>ALTER SEQUENCE course_exercise_seq RENAME TO seq_course_exercise_id;</sql>
@@ -291,7 +291,8 @@
         <renameColumn tableName="course_exercise" oldColumnName="assessmentsStudentVisible"
                       newColumnName="assessments_student_visible"/>
     </changeSet>
-    
+
+
     <changeSet id="171218-1" author="kspar">
         <addDefaultValue tableName="automatic_assessment" columnName="id"
                          defaultValueSequenceNext="seq_automatic_assessment_id"/>
@@ -326,6 +327,11 @@
         <sql>ALTER SEQUENCE seq_teacher_id OWNED BY teacher.id;</sql>
         <sql>ALTER SEQUENCE seq_teacher_assessment_id OWNED BY teacher_assessment.id;</sql>
         <sql>ALTER SEQUENCE seq_teacher_course_access_id OWNED BY teacher_course_access.id;</sql>
+    </changeSet>
+
+
+    <changeSet id="171218-2" author="kspar">
+        <renameColumn tableName="exercise" oldColumnName="owner" newColumnName="owned_by"/>
     </changeSet>
 
 </databaseChangeLog>

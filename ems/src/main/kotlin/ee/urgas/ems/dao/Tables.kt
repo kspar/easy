@@ -12,7 +12,7 @@ object Teacher : LongIdTable() {
 }
 
 object Exercise : LongIdTable() {
-    val owner = reference("owner", Teacher)
+    val owner = reference("owned_by", Teacher)
     val createdAt = datetime("created_at")
     val public = bool("public")
 }
