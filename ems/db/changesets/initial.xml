@@ -334,4 +334,71 @@
         <renameColumn tableName="exercise" oldColumnName="owner" newColumnName="owned_by"/>
     </changeSet>
 
+
+    <changeSet id="171218-3" author="kspar">
+        <addUniqueConstraint tableName="teacher" columnNames="email" constraintName="uniq_teacher_email"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_access" constraintName="fk_teacher_course_teacher"/>
+        <dropColumn tableName="teacher_course_access" columnName="teacher_id"/>
+        <addColumn tableName="teacher_course_access">
+            <column name="teacher_email" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_teacher_course_access_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
+        <dropColumn tableName="exercise_version" columnName="author_id"/>
+        <addColumn tableName="exercise_version">
+            <column name="author" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_exercise_version_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
+        <dropColumn tableName="exercise" columnName="owned_by"/>
+        <addColumn tableName="exercise">
+            <column name="owned_by" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_exercise_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
+        <dropColumn tableName="teacher_assessment" columnName="teacher_id"/>
+        <addColumn tableName="teacher_assessment">
+            <column name="teacher_email" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_teacher_assessment_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="teacher" columnName="id"/>
+        <addPrimaryKey tableName="teacher" columnNames="email"/>
+
+        <addUniqueConstraint tableName="student" columnNames="email" constraintName="uniq_student_email"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_student"/>
+        <dropColumn tableName="student_course_access" columnName="student_id"/>
+        <addColumn tableName="student_course_access">
+            <column name="student_email" type="text">
+                <constraints references="student(email)" foreignKeyName="fk_student_course_access_student"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <dropColumn tableName="submission" columnName="student_id"/>
+        <addColumn tableName="submission">
+            <column name="student_email" type="text">
+                <constraints references="student(email)" foreignKeyName="fk_submission_student"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="student" columnName="id"/>
+        <addPrimaryKey tableName="student" columnNames="email"/>
+    </changeSet>
+
 </databaseChangeLog>
