@@ -291,5 +291,41 @@
         <renameColumn tableName="course_exercise" oldColumnName="assessmentsStudentVisible"
                       newColumnName="assessments_student_visible"/>
     </changeSet>
+    
+    <changeSet id="171218-1" author="kspar">
+        <addDefaultValue tableName="automatic_assessment" columnName="id"
+                         defaultValueSequenceNext="seq_automatic_assessment_id"/>
+        <addDefaultValue tableName="course" columnName="id"
+                         defaultValueSequenceNext="seq_course_id"/>
+        <addDefaultValue tableName="course_exercise" columnName="id"
+                         defaultValueSequenceNext="seq_course_exercise_id"/>
+        <addDefaultValue tableName="exercise" columnName="id"
+                         defaultValueSequenceNext="seq_exercise_id"/>
+        <addDefaultValue tableName="exercise_version" columnName="id"
+                         defaultValueSequenceNext="seq_exercise_version_id"/>
+        <addDefaultValue tableName="student" columnName="id"
+                         defaultValueSequenceNext="seq_student_id"/>
+        <addDefaultValue tableName="student_course_access" columnName="id"
+                         defaultValueSequenceNext="seq_student_course_access_id"/>
+        <addDefaultValue tableName="submission" columnName="id"
+                         defaultValueSequenceNext="seq_submission_id"/>
+        <addDefaultValue tableName="teacher" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_id"/>
+        <addDefaultValue tableName="teacher_assessment" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_assessment_id"/>
+        <addDefaultValue tableName="teacher_course_access" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_course_access_id"/>
+        <sql>ALTER SEQUENCE seq_automatic_assessment_id OWNED BY automatic_assessment.id;</sql>
+        <sql>ALTER SEQUENCE seq_course_id OWNED BY course.id;</sql>
+        <sql>ALTER SEQUENCE seq_course_exercise_id OWNED BY course_exercise.id;</sql>
+        <sql>ALTER SEQUENCE seq_exercise_id OWNED BY exercise.id;</sql>
+        <sql>ALTER SEQUENCE seq_exercise_version_id OWNED BY exercise_version.id;</sql>
+        <sql>ALTER SEQUENCE seq_student_id OWNED BY student.id;</sql>
+        <sql>ALTER SEQUENCE seq_student_course_access_id OWNED BY student_course_access.id;</sql>
+        <sql>ALTER SEQUENCE seq_submission_id OWNED BY submission.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_id OWNED BY teacher.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_assessment_id OWNED BY teacher_assessment.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_course_access_id OWNED BY teacher_course_access.id;</sql>
+    </changeSet>
 
 </databaseChangeLog>
