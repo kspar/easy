@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.Table
 
 
 object Teacher : Table() {
-    val email = text("email").primaryKey().entityId()
+    val email = text("email").primaryKey()
     val createdAt = datetime("created_at")
     val givenName = text("given_name")
     val familyName = text("family_name")
@@ -52,7 +52,7 @@ object TeacherCourseAccess : LongIdTable() {
 }
 
 object Student : Table() {
-    val email = text("email").primaryKey().entityId()
+    val email = text("email").primaryKey()
     val createdAt = datetime("created_at")
     val givenName = text("given_name")
     val familyName = text("family_name")
