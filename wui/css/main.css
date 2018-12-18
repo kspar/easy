@@ -101,3 +101,18 @@ h2 {
 .collapsible-header {
     margin-bottom: 0;
 }
+
+#logo {
+    margin-right: 100px;
+}
+
+#account {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    font-size: 1.7rem;
+}
+
+#account-logo {
+    font-size: 37px;
+}
