@@ -270,8 +270,8 @@
     <changeSet id="101218-3" author="kspar">
         <createSequence sequenceName="teacher_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
-    
-    
+
+
     <changeSet id="101218-4" author="kspar">
         <sql>ALTER SEQUENCE automatic_assessment_seq RENAME TO seq_automatic_assessment_id;</sql>
         <sql>ALTER SEQUENCE course_exercise_seq RENAME TO seq_course_exercise_id;</sql>
@@ -290,6 +290,115 @@
     <changeSet id="141218-1" author="kspar">
         <renameColumn tableName="course_exercise" oldColumnName="assessmentsStudentVisible"
                       newColumnName="assessments_student_visible"/>
+    </changeSet>
+
+
+    <changeSet id="171218-1" author="kspar">
+        <addDefaultValue tableName="automatic_assessment" columnName="id"
+                         defaultValueSequenceNext="seq_automatic_assessment_id"/>
+        <addDefaultValue tableName="course" columnName="id"
+                         defaultValueSequenceNext="seq_course_id"/>
+        <addDefaultValue tableName="course_exercise" columnName="id"
+                         defaultValueSequenceNext="seq_course_exercise_id"/>
+        <addDefaultValue tableName="exercise" columnName="id"
+                         defaultValueSequenceNext="seq_exercise_id"/>
+        <addDefaultValue tableName="exercise_version" columnName="id"
+                         defaultValueSequenceNext="seq_exercise_version_id"/>
+        <addDefaultValue tableName="student" columnName="id"
+                         defaultValueSequenceNext="seq_student_id"/>
+        <addDefaultValue tableName="student_course_access" columnName="id"
+                         defaultValueSequenceNext="seq_student_course_access_id"/>
+        <addDefaultValue tableName="submission" columnName="id"
+                         defaultValueSequenceNext="seq_submission_id"/>
+        <addDefaultValue tableName="teacher" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_id"/>
+        <addDefaultValue tableName="teacher_assessment" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_assessment_id"/>
+        <addDefaultValue tableName="teacher_course_access" columnName="id"
+                         defaultValueSequenceNext="seq_teacher_course_access_id"/>
+        <sql>ALTER SEQUENCE seq_automatic_assessment_id OWNED BY automatic_assessment.id;</sql>
+        <sql>ALTER SEQUENCE seq_course_id OWNED BY course.id;</sql>
+        <sql>ALTER SEQUENCE seq_course_exercise_id OWNED BY course_exercise.id;</sql>
+        <sql>ALTER SEQUENCE seq_exercise_id OWNED BY exercise.id;</sql>
+        <sql>ALTER SEQUENCE seq_exercise_version_id OWNED BY exercise_version.id;</sql>
+        <sql>ALTER SEQUENCE seq_student_id OWNED BY student.id;</sql>
+        <sql>ALTER SEQUENCE seq_student_course_access_id OWNED BY student_course_access.id;</sql>
+        <sql>ALTER SEQUENCE seq_submission_id OWNED BY submission.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_id OWNED BY teacher.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_assessment_id OWNED BY teacher_assessment.id;</sql>
+        <sql>ALTER SEQUENCE seq_teacher_course_access_id OWNED BY teacher_course_access.id;</sql>
+    </changeSet>
+
+
+    <changeSet id="171218-2" author="kspar">
+        <renameColumn tableName="exercise" oldColumnName="owner" newColumnName="owned_by"/>
+    </changeSet>
+
+
+    <changeSet id="171218-3" author="kspar">
+        <addUniqueConstraint tableName="teacher" columnNames="email" constraintName="uniq_teacher_email"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_access" constraintName="fk_teacher_course_teacher"/>
+        <dropColumn tableName="teacher_course_access" columnName="teacher_id"/>
+        <addColumn tableName="teacher_course_access">
+            <column name="teacher_email" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_teacher_course_access_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
+        <dropColumn tableName="exercise_version" columnName="author_id"/>
+        <addColumn tableName="exercise_version">
+            <column name="author" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_exercise_version_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
+        <dropColumn tableName="exercise" columnName="owned_by"/>
+        <addColumn tableName="exercise">
+            <column name="owned_by" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_exercise_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
+        <dropColumn tableName="teacher_assessment" columnName="teacher_id"/>
+        <addColumn tableName="teacher_assessment">
+            <column name="teacher_email" type="text">
+                <constraints references="teacher(email)" foreignKeyName="fk_teacher_assessment_teacher"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="teacher" columnName="id"/>
+        <addPrimaryKey tableName="teacher" columnNames="email"/>
+
+        <addUniqueConstraint tableName="student" columnNames="email" constraintName="uniq_student_email"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_student"/>
+        <dropColumn tableName="student_course_access" columnName="student_id"/>
+        <addColumn tableName="student_course_access">
+            <column name="student_email" type="text">
+                <constraints references="student(email)" foreignKeyName="fk_student_course_access_student"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <dropColumn tableName="submission" columnName="student_id"/>
+        <addColumn tableName="submission">
+            <column name="student_email" type="text">
+                <constraints references="student(email)" foreignKeyName="fk_submission_student"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="student" columnName="id"/>
+        <addPrimaryKey tableName="student" columnNames="email"/>
     </changeSet>
 
 </databaseChangeLog>
