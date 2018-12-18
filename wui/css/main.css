@@ -1,3 +1,8 @@
+html {
+    font-family: 'Roboto', sans-serif;
+    font-size: 62.5%;
+}
+
 body {
     background: url('../img/taust.svg') no-repeat center center fixed;
     -webkit-background-size: cover;
@@ -8,7 +13,6 @@ body {
 
 nav {
     background-color: #4DAB54;
-    font-family: "Segoe UI";
 }
 
 nav.nav-center ul {
@@ -49,7 +53,6 @@ nav.clean .breadcrumb:before {
 }
 
 .tabs .tab a {
-    font-family: "Segoe UI";
     font-size: 20pt;
     font-weight: 600;
     color: gray;
@@ -74,7 +77,6 @@ nav.clean .breadcrumb:before {
 }
 
 .card {
-    font-family: "Segoe UI";
     font-size: 16pt;
 }
 
