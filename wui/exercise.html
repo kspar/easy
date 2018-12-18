@@ -1,147 +1,185 @@
 <!DOCTYPE html>
 <html>
 <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <title>Ülesanne</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css" />
-        <link rel="stylesheet" href="css/main.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Ülesanne</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
 </head>
 
 <body>
-    <nav class="nav-center" role="navigation">
-        <div class="container">
-            <div class="nav-wrapper">
-                <a href="#" class="brand-logo left">Logo</a>
-                <ul id="nav-mobile" class="center hide-on-med-and-down">
-                    <li><a class="nav-link" href="courses.html">KURSUSED</a></li>
-                </ul>
+<nav class="nav-center" role="navigation">
+    <div class="container">
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo left">Logo</a>
+            <ul id="nav-mobile" class="center hide-on-med-and-down">
+                <li><a class="nav-link" href="courses.html">KURSUSED</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <nav class="clean">
+        <div class="nav-wrapper">
+            <div class="col s12">
+                <a href="#!" class="breadcrumb">Kursused</a>
+                <a href="#!" class="breadcrumb">Programmeerimine</a>
+                <a href="#!" class="breadcrumb">Ülesanded</a>
+                <a href="#!" class="breadcrumb">Ülesanne 1</a>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <nav class="clean">
-            <div class="nav-wrapper">
-                <div class="col s12">
-                    <a href="#!" class="breadcrumb">Kursused</a>
-                    <a href="#!" class="breadcrumb">Programmeerimine</a>
-                    <a href="#!" class="breadcrumb">Ülesanded</a>
-                    <a href="#!" class="breadcrumb">Ülesanne 1</a>
+    <div class="card">
+        <div class="card-tabs">
+            <ul id="tabs" class="tabs tabs-fixed-width">
+                <li class="tab"><a href="#exercise">Ülesanne 1</a></li>
+                <li class="tab active"><a href="#answer">Esitamine</a></li>
+                <li class="tab"><a href="#answers">Minu esitused</a></li>
+            </ul>
+        </div>
+        <div class="card-content bt">
+            <div id="exercise">
+                <div class="exercise-info">
+                    <b class="subheading">Tähtaeg:</b> dd.mm.yyyy hh:mm</br>
+                    <b class="subheading">Hindamine:</b> automaatne</br>
+                    <b class="subheading">Lävend:</b> 50%
+                </div>
+                <div class="exercise">
+                    <h2>Ülesanne 1. Lorem ipsum</h2>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper
+                        placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum
+                        tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales,
+                        lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien.
+                        Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut,
+                        molestie dictum enim.</p>
+                    <p>Morbi et leo eu eros lobortis vulputate et at neque. Aenean rutrum vulputate scelerisque.
+                        Vestibulum interdum ipsum vel diam pharetra tristique. Vivamus tempor laoreet pellentesque. Cras
+                        dapibus libero tortor, sit amet luctus elit tempus nec. Fusce et elit volutpat eros bibendum
+                        feugiat. In vitae congue elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+                        posuere cubilia Curae; Praesent vestibulum leo nec ligula venenatis laoreet. Aenean ut risus nec
+                        est pellentesque aliquam. Pellentesque pharetra pretium est, quis maximus odio varius ut. In hac
+                        habitasse platea dictumst. Sed dictum dignissim lacinia. Duis in pulvinar risus, id sollicitudin
+                        quam. Cras in eros nulla.</p>
                 </div>
             </div>
-        </nav>
-
-        <div class="card">
-            <div class="card-tabs">
-                <ul id="tabs" class="tabs tabs-fixed-width">
-                    <li class="tab"><a href="#exercise">Ülesanne 1</a></li>
-                    <li class="tab active"><a href="#answer">Esitamine</a></li>
-                    <li class="tab"><a href="#answers">Minu esitused</a></li>
-                </ul>
-            </div>
-            <div class="card-content bt">
-                <div id="exercise">
-                    <div class="exercise-info">
-                        <b class="subheading">Tähtaeg:</b> dd.mm.yyyy hh:mm</br>
-                        <b class="subheading">Hindamine:</b> automaatne</br>
-                        <b class="subheading">Lävend:</b> 50%
-                    </div>
-                    <div class="exercise">
-                        <h2>Ülesanne 1. Lorem ipsum</h2>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum enim.</p>
-                        <p>Morbi et leo eu eros lobortis vulputate et at neque. Aenean rutrum vulputate scelerisque. Vestibulum interdum ipsum vel diam pharetra tristique. Vivamus tempor laoreet pellentesque. Cras dapibus libero tortor, sit amet luctus elit tempus nec. Fusce et elit volutpat eros bibendum feugiat. In vitae congue elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Praesent vestibulum leo nec ligula venenatis laoreet. Aenean ut risus nec est pellentesque aliquam. Pellentesque pharetra pretium est, quis maximus odio varius ut. In hac habitasse platea dictumst. Sed dictum dignissim lacinia. Duis in pulvinar risus, id sollicitudin quam. Cras in eros nulla.</p>
+            <div id="answer">
+                <div class="answer-feedback">
+                    <h2>Tagasiside</h2>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper
+                        placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum
+                        tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales,
+                        lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien.
+                        Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut,
+                        molestie dictum enim.</p>
+                    <div class="answer-grade">
+                        Hinne: 90/100
                     </div>
                 </div>
-                <div id="answer">
-                    <div class="answer-feedback">
-                        <h2>Tagasiside</h2>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum enim.</p>
-                        <div class="answer-grade">
-                            Hinne: 90/100
+                <div class="answer container">
+                    <form>
+                        <label for="answerform"><a href="#"><i
+                                class="material-icons medium black-text">file_download</i></a><a href="#"><i
+                                class="material-icons medium black-text">file_upload</i></a></label>
+                        <textarea id="answerform" name="answerform" class="">function myScript(){return 100;}</textarea>
+                        <div class="center">
+                            <button type="submit" class="waves-effect waves-light btn">Esita</button>
                         </div>
-                    </div>
-                    <div class="answer container">
-                        <form>
-                            <label for="answerform"><a href="#"><i class="material-icons medium black-text">file_download</i></a><a href="#"><i class="material-icons medium black-text">file_upload</i></a></label>
-                            <textarea id="answerform" name="answerform" class="">function myScript(){return 100;}</textarea>
-                            <div class="center">
-                                <button type="submit" class="waves-effect waves-light btn">Esita</button>
-                            </div>
-                        </form>
-                    </div>
+                    </form>
                 </div>
-                <div id="answers">
-                    <ul class="collapsible expandable">
-                        <li>
-                            <div class="collapsible-header row">
-                                <div class="col s12 m4 l2 left-align">#1</div>
-                                <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                                <div class="col s12 m4 l2 right-align">90/100</div>
-                            </div>
-                            <div class="collapsible-body">
-                                <div class="answer-feedback">
-                                    <h2>Tagasiside</h2>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum enim.</p>
-                                    <div class="answer-grade">
-                                        Hinne: 90/100
-                                    </div>
-                                </div>
-                                <div class="answer container">
-                                    <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                    <textarea id="answer_1" name="answer_1" class="answer-item">function myScript(){return 200;}</textarea>
-                                </div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="collapsible-header row">
-                                <div class="col s12 m4 l2 left-align">#2</div>
-                                <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                                <div class="col s12 m4 l2 right-align">90/100</div>
-                            </div>
-                            <div class="collapsible-body">
-                                <div class="answer-feedback">
-                                    <h2>Tagasiside</h2>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum enim.</p>
-                                    <div class="answer-grade">
-                                        Hinne: 90/100
-                                    </div>
-                                </div>
-                                <div class="answer container">
-                                    <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                    <textarea id="answer_2" name="answer_2" class="answer-item">function myScript(){return 200;}</textarea>
+            </div>
+            <div id="answers">
+                <ul class="collapsible expandable">
+                    <li>
+                        <div class="collapsible-header row">
+                            <div class="col s12 m4 l2 left-align">#1</div>
+                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
+                            <div class="col s12 m4 l2 right-align">90/100</div>
+                        </div>
+                        <div class="collapsible-body">
+                            <div class="answer-feedback">
+                                <h2>Tagasiside</h2>
+                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
+                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
+                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
+                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
+                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
+                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
+                                    enim.</p>
+                                <div class="answer-grade">
+                                    Hinne: 90/100
                                 </div>
                             </div>
-                        </li>
-                        <li>
-                            <div class="collapsible-header row">
-                                <div class="col s12 m4 l2 left-align">#3</div>
-                                <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                                <div class="col s12 m4 l2 right-align">90/100</div>
+                            <div class="answer container">
+                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
+                                <textarea id="answer_1" name="answer_1" class="answer-item">function myScript(){return 200;}</textarea>
                             </div>
-                            <div class="collapsible-body">
-                                <div class="answer-feedback">
-                                    <h2>Tagasiside</h2>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum enim.</p>
-                                    <div class="answer-grade">
-                                        Hinne: 90/100
-                                    </div>
-                                </div>
-                                <div class="answer container">
-                                    <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                    <textarea id="answer_3" name="answer_3" class="answer-item">function myScript(){return 200;}</textarea>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="collapsible-header row">
+                            <div class="col s12 m4 l2 left-align">#2</div>
+                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
+                            <div class="col s12 m4 l2 right-align">90/100</div>
+                        </div>
+                        <div class="collapsible-body">
+                            <div class="answer-feedback">
+                                <h2>Tagasiside</h2>
+                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
+                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
+                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
+                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
+                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
+                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
+                                    enim.</p>
+                                <div class="answer-grade">
+                                    Hinne: 90/100
                                 </div>
                             </div>
-                        </li>
-                    </ul>
-                </div>
+                            <div class="answer container">
+                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
+                                <textarea id="answer_2" name="answer_2" class="answer-item">function myScript(){return 200;}</textarea>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="collapsible-header row">
+                            <div class="col s12 m4 l2 left-align">#3</div>
+                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
+                            <div class="col s12 m4 l2 right-align">90/100</div>
+                        </div>
+                        <div class="collapsible-body">
+                            <div class="answer-feedback">
+                                <h2>Tagasiside</h2>
+                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
+                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
+                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
+                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
+                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
+                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
+                                    enim.</p>
+                                <div class="answer-grade">
+                                    Hinne: 90/100
+                                </div>
+                            </div>
+                            <div class="answer container">
+                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
+                                <textarea id="answer_3" name="answer_3" class="answer-item">function myScript(){return 200;}</textarea>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+</div>
 
-<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/javascript/javascript.min.js"></script>

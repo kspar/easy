@@ -1,9 +1,9 @@
-$(document).ready(function() {
+$(document).ready(function () {
 
     $("#tabs").tabs();
 
     var answer_editor = CodeMirror.fromTextArea(answerform, {
-		mode:  "javascript",
+        mode: "javascript",
         lineNumbers: true,
         autoRefresh: true
     });

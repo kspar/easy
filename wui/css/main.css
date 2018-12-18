@@ -14,27 +14,32 @@ nav {
 nav.nav-center ul {
     text-align: center;
 }
+
 nav.nav-center ul li {
     display: inline-block;
     float: none;
 }
+
 nav.nav-center ul li a {
     font-weight: 600;
     font-size: 24pt !important;
     color: #000000;
-/*    display: inline-block;*/
+    /*    display: inline-block;*/
 }
 
 nav.clean {
     background: none;
     box-shadow: none;
 }
+
 nav.clean .breadcrumb {
     color: rgb(128, 128, 128);
 }
+
 nav.clean .breadcrumb:last-child {
     color: rgb(0, 0, 0);
 }
+
 nav.clean .breadcrumb:before {
     color: rgba(128, 128, 128, 0.7);
 }
@@ -42,26 +47,30 @@ nav.clean .breadcrumb:before {
 .tabs .tab {
     text-transform: none;
 }
+
 .tabs .tab a {
     font-family: "Segoe UI";
     font-size: 20pt;
     font-weight: 600;
     color: gray;
 }
+
 .tabs .tab a:hover, .tabs .tab a.active {
     background-color: transparent;
     color: #4DAB54;
 }
+
 .tabs .tab a:focus, .tabs .tab a:focus.active {
-    background-color: rgba(77,171,84,0.2);
+    background-color: rgba(77, 171, 84, 0.2);
     outline: none;
 }
+
 .tabs .indicator {
-	background-color: #4DAB54;
+    background-color: #4DAB54;
 }
 
 .bt {
-	border-top: 1px solid rgba(160,160,160,0.2);
+    border-top: 1px solid rgba(160, 160, 160, 0.2);
 }
 
 .card {
@@ -81,6 +90,7 @@ h2 {
 .btn {
     background-color: #4DAB54;
 }
+
 .btn:hover {
     background-color: #4DAB54;
 }
