@@ -25,9 +25,10 @@ nav.nav-center ul li {
 }
 
 nav.nav-center ul li a {
-    font-weight: 600;
-    font-size: 24pt !important;
-    color: #000000;
+    font-weight: 500;
+    font-size: 3rem;
+    color: #fff;
+    padding: 0 32px;
     /*    display: inline-block;*/
 }
 
@@ -38,6 +39,7 @@ nav.clean {
 
 nav.clean .breadcrumb {
     color: rgb(128, 128, 128);
+    font-size: 1.5rem;
 }
 
 nav.clean .breadcrumb:last-child {
@@ -53,8 +55,7 @@ nav.clean .breadcrumb:before {
 }
 
 .tabs .tab a {
-    font-size: 20pt;
-    font-weight: 600;
+    font-size: 2.1rem;
     color: gray;
 }
 
@@ -77,16 +78,16 @@ nav.clean .breadcrumb:before {
 }
 
 .card {
-    font-size: 16pt;
+    font-size: 1.7rem;
 }
 
 .subheading {
     color: #4DAB54;
+    font-weight: 500;
 }
 
 h2 {
-    font-size: 20pt;
-    font-weight: 600;
+    font-size: 2.3rem;
 }
 
 .btn {
