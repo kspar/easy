@@ -19,9 +19,10 @@ paths:
 
   /student/courses:
     get:
+      summary: Get summaries of courses the authenticated student has access to.
       responses:
         200:
-          description: Courses to which the student has access.
+          description: Course summaries.
           schema:
             type: array
             items:
@@ -29,11 +30,12 @@ paths:
 
   /student/courses/{courseId}/exercises:
     get:
+      summary: Get summaries of exercises in the specified course (that the authenticated user has access to).
       parameters:
         - $ref: '#/parameters/CourseId'
       responses:
         200:
-          description: Exercises to which the student has access.
+          description: Exercise summaries.
           schema:
             type: array
             items:
@@ -41,6 +43,7 @@ paths:
 
   /student/courses/{courseId}/exercises/{courseExerciseId}:
     get:
+      summary: Get the specified course exercise details.
       parameters:
         - $ref: '#/parameters/CourseId'
         - $ref: '#/parameters/CourseExerciseId'
@@ -52,6 +55,7 @@ paths:
 
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
     get:
+      summary: Get the latest submission's details to the specified course exercise.
       parameters:
         - $ref: '#/parameters/CourseId'
         - $ref: '#/parameters/CourseExerciseId'
@@ -63,6 +67,7 @@ paths:
 
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions:
     get:
+      summary: Get all submissions to the specified course exercise.
       parameters:
         - $ref: '#/parameters/CourseId'
         - $ref: '#/parameters/CourseExerciseId'
@@ -75,6 +80,7 @@ paths:
               $ref: '#/definitions/Submission'
 
     post:
+      summary: Add a new submission to the specified course exercise.
       parameters:
         - $ref: '#/parameters/CourseId'
         - $ref: '#/parameters/CourseExerciseId'
@@ -86,11 +92,11 @@ paths:
                 type: string
       responses:
         201:
-          description: TODO
+          description: Submission added.
           headers:
             Location:
               type: string
-              description: TODO
+              description: URL for getting this submission's details.
 
 
 
@@ -104,12 +110,6 @@ parameters:
 
   CourseExerciseId:
     name: courseExerciseId
-    in: path
-    required: true
-    type: string
-
-  SubmissionId:
-    name: submissionId
     in: path
     required: true
     type: string
@@ -178,7 +178,7 @@ definitions:
   # Enums
   ExerciseStatus:
     type: string
-    description: TODO
+    description: Student-specific status of a course exercise. The student either has not made any submissions to it (UNSTARTED), has made submissions but the last submission did not meet the threshold (STARTED) or the last submission did meet the threshold (COMPLETED).
     enum:
       - UNSTARTED
       - STARTED
@@ -186,7 +186,7 @@ definitions:
 
   GraderType:
     type: string
-    description: TODO
+    description: Type of grading used for an exercise. The exercise is either graded automatically (AUTO) or manually by a teacher (TEACHER). Note that automatically graded exercises can have teacher assessments as well.
     enum:
       - AUTO
       - TEACHER
