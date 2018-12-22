@@ -99,6 +99,250 @@ paths:
               description: URL for getting this submission's details.
 
 
+  /teacher/courses:
+    get:
+      summary: Get summaries of courses the authenticated teacher has access to.
+      responses:
+        200:
+          description: Course summaries.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TeacherCourse'
+
+
+
+  /teacher/courses/{courseId}/exercises:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+
+    get:
+      summary: Get this course's exercises.
+      responses:
+        200:
+          description: Exercises.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TeacherCourseExercise'
+
+
+    post:
+      summary: Add exercise to this course.
+      parameters:
+        - name: exercise
+          in: body
+          schema:
+            properties:
+              exercise_id:
+                type: string
+              threshold:
+                type: integer
+              soft_deadline:
+                type: string
+                format: date-time
+              hard_deadline:
+                type: string
+                format: date-time
+              student_visible:
+                type: boolean
+              assessments_student_visible:
+                type: boolean
+            required:
+              - exercise_id
+              - threshold
+              - student_visible
+              - assessments_student_visible
+      responses:
+        200:
+          description: Exercise added.
+
+
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+    get:
+      summary: Get exercise details.
+      responses:
+        200:
+          description: Exercise details.
+          schema:
+            $ref: '#/definitions/TeacherCourseExerciseDetails'
+
+
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+    get:
+      summary: Get latest submission summaries for this exercise of all students in this course.
+      responses:
+        200:
+          description: Latest submission summaries.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TeacherSubmissionSummary'
+
+
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentEmail}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/StudentEmail'
+    get:
+      summary: Get this student's latest submission for this exercise.
+      responses:
+        300:
+          description: Submission.
+          schema:
+            $ref: '#/definitions/TeacherSubmission'
+
+
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentEmail}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/StudentEmail'
+    get:
+      summary: Get this student's all submissions for this exercise.
+      responses:
+        300:
+          description: Submissions.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TeacherSubmission'
+
+
+  /teacher/courses/{courseId}/students:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+
+    get:
+      summary: Get all students who are registered to this course.
+      responses:
+        200:
+          description: Students in this course.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Student'
+
+    post:
+      summary: Add the given students to this course
+      parameters:
+        - name: students
+          in: body
+          schema:
+            description: Student emails.
+            type: array
+            items:
+              properties:
+                email:
+                  type: string
+      responses:
+        200:
+          description: Students added.
+
+
+  /teacher/courses/{courseId}/students/{studentEmail}:
+    delete:
+      summary: Remove this student from this course.
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/StudentEmail'
+      responses:
+        200:
+          description: Student removed.
+
+
+  /teacher/students/{studentEmail}:
+    get:
+      summary: Check if student with this email exists and get their name.
+      parameters:
+        - $ref: '#/parameters/StudentEmail'
+      responses:
+        200:
+          description: Student's name (student exists).
+          schema:
+            $ref: '#/definitions/StudentName'
+        404:
+          description: Student does not exist.
+
+
+  /teacher/exercises:
+    get:
+      summary: Get all summaries of exercises (that the authenticated teacher has access to).
+      responses:
+        200:
+          description: Exercise summaries.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TeacherExercise'
+
+    post:
+      summary: Create a new exercise.
+      parameters:
+        - name: exercise
+          in: body
+          schema:
+            properties:
+              title:
+                type: string
+              text_html:
+                type: string
+              public:
+                type: boolean
+              grader_type:
+                $ref: '#/definitions/GraderType'
+              aas_id:
+                type: string
+            required:
+              - title
+              - text_html
+              - public
+              - grader_type
+      responses:
+        201:
+          description: Exercise created.
+          headers:
+            Location:
+              description: URL of this exercise's details.
+              type: string
+
+
+  /teacher/exercises/{exerciseId}:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+
+    get:
+      summary: Get exercise details.
+      responses:
+        200:
+          description: Exercise details.
+          schema:
+            $ref: '#/definitions/TeacherExerciseDetails'
+
+    put:
+      summary: Modify exercise.
+      parameters:
+        - name: exercise
+          in: body
+          schema:
+            properties:
+              title:
+                type: string
+              text_html:
+                type: string
+              public:
+                type: boolean
+      responses:
+        200:
+          description: Modified.
+
 
 parameters:
 
@@ -110,6 +354,18 @@ parameters:
 
   CourseExerciseId:
     name: courseExerciseId
+    in: path
+    required: true
+    type: string
+
+  StudentEmail:
+    name: studentEmail
+    in: path
+    required: true
+    type: string
+
+  ExerciseId:
+    name: exerciseId
     in: path
     required: true
     type: string
@@ -173,6 +429,154 @@ definitions:
         type: string
         format: date-time
 
+  TeacherCourse:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      student_count:
+        type: integer
+
+  TeacherCourseExercise:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      soft_deadline:
+        type: string
+      grader_type:
+        $ref: '#/definitions/GraderType'
+      graded_count:
+        description: Property exists if grader_type == TEACHER.
+        type: integer
+      ungraded_count:
+        description: Property exists if grader_type == TEACHER.
+        type: integer
+      unstarted_count:
+        description: Property exists if grader_type == AUTO.
+        type: integer
+      started_count:
+        description: Property exists if grader_type == AUTO.
+        type: integer
+      completed_count:
+        description: Property exists if grader_type == AUTO.
+        type: integer
+
+  TeacherCourseExerciseDetails:
+    properties:
+      title:
+        type: string
+      text_html:
+        type: string
+      soft_deadline:
+        type: string
+        format: date-time
+      hard_deadline:
+        type: string
+        format: date-time
+      grader_type:
+        $ref: '#/definitions/GraderType'
+      threshold:
+        type: integer
+      last_modified:
+        type: string
+        format: date-time
+      student_visible:
+        type: boolean
+      assessments_student_visible:
+        type: boolean
+
+  TeacherSubmissionSummary:
+    properties:
+      given_name:
+        type: string
+      family_name:
+        type: string
+      grade:
+        type: integer
+      created_at:
+        type: string
+        format: date-time
+      graded:
+        type: boolean
+
+  TeacherSubmission:
+    properties:
+      solution:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+      grade_auto:
+        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        type: integer
+      feedback_auto:
+        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        type: string
+      grade_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: integer
+      feedback_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: string
+
+  Student:
+    properties:
+      email:
+        type: string
+      given_name:
+        type: string
+      family_name:
+        type: string
+
+  StudentName:
+    properties:
+      given_name:
+        type: string
+      family_name:
+        type: string
+
+  TeacherExercise:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      grader_type:
+        $ref: '#/definitions/GraderType'
+      owner:
+        description: TODO
+        type: string
+
+  TeacherExerciseDetails:
+    properties:
+      title:
+        type: string
+      grader_type:
+        $ref: '#/definitions/GraderType'
+      owner:
+        description: Email of teacher who owns this exercise.
+        type: string
+      text_html:
+        type: string
+      public:
+        type: boolean
+      courses:
+        type: array
+        items:
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+      created_at:
+        type: string
+        format: date-time
+      last_modified:
+        type: string
+        format: date-time
 
 
   # Enums
