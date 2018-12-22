@@ -32,6 +32,19 @@ nav.nav-center ul li a {
     /*    display: inline-block;*/
 }
 
+@media only screen and (min-width: 601px){
+nav, nav .nav-wrapper i, nav a.sidenav-trigger, nav a.sidenav-trigger i {
+    height: 58px;
+    line-height: 58px;
+}
+}
+
+@media only screen and (min-width: 993px){
+.container {
+    width: 62%;
+}
+}
+
 nav.clean {
     background: none;
     box-shadow: none;
