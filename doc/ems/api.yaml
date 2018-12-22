@@ -1,18 +1,18 @@
-swagger: 2.0
+swagger: "2.0"
 info:
   description: This specification documents the public API of easy:ems. Note that details about authentication/authorization are documented in a separate authentication document.
-  version: 1.0
+  version: "1.0"
   title: Easy:ems Public API
 schemes:
-- http
+  - http
 consumes:
-- application/json
+  - application/json
 produces:
-- application/json
+  - application/json
 basePath: /v1
 
 tags:
-- name: placeholder
+  - name: placeholder
 
 
 paths:
@@ -30,7 +30,7 @@ paths:
   /student/courses/{courseId}/exercises:
     get:
       parameters:
-      - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/CourseId'
       responses:
         200:
           description: Exercises to which the student has access.
@@ -42,8 +42,8 @@ paths:
   /student/courses/{courseId}/exercises/{courseExerciseId}:
     get:
       parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/CourseExerciseId'
       responses:
         200:
           description: Exercise details.
@@ -53,8 +53,8 @@ paths:
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
     get:
       parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/CourseExerciseId'
       responses:
         200:
           description: Latest submission to this exercise.
@@ -64,8 +64,8 @@ paths:
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions:
     get:
       parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/CourseExerciseId'
       responses:
         200:
           description: All submissions to this exercise.
@@ -76,18 +76,20 @@ paths:
 
     post:
       parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-      - name: submission
-        in: body
-        schema:
-          properties:
-              TODO
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/CourseExerciseId'
+        - name: submission
+          in: body
+          schema:
+            properties:
+              solution:
+                type: string
       responses:
         201:
           description: TODO
           headers:
             Location:
+              type: string
               description: TODO
 
 
