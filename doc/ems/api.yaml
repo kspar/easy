@@ -1,10 +1,10 @@
 swagger: "2.0"
 info:
-  description: This specification documents the public API of easy:ems. Note that details about authentication/authorization are documented in a separate authentication document.
+  description: "This specification documents the public API of easy:ems. Services with the 'student' tag require a token containing claim 'easy_role: student' and 'teacher' services analogously require 'easy_role: teacher'."
   version: "1.0"
   title: Easy:ems Public API
 schemes:
-  - http
+  - https
 consumes:
   - application/json
 produces:
@@ -12,7 +12,8 @@ produces:
 basePath: /v1
 
 tags:
-  - name: placeholder
+  - name: student
+  - name: teacher
 
 
 paths:
@@ -20,6 +21,8 @@ paths:
   /student/courses:
     get:
       summary: Get summaries of courses the authenticated student has access to.
+      tags:
+        - student
       responses:
         200:
           description: Course summaries.
@@ -28,11 +31,14 @@ paths:
             items:
               $ref: '#/definitions/StudentCourse'
 
+
   /student/courses/{courseId}/exercises:
+    parameters:
+      - $ref: '#/parameters/CourseId'
     get:
       summary: Get summaries of exercises in the specified course (that the authenticated user has access to).
-      parameters:
-        - $ref: '#/parameters/CourseId'
+      tags:
+        - student
       responses:
         200:
           description: Exercise summaries.
@@ -41,36 +47,46 @@ paths:
             items:
               $ref: '#/definitions/StudentExercise'
 
+
   /student/courses/{courseId}/exercises/{courseExerciseId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
     get:
       summary: Get the specified course exercise details.
-      parameters:
-        - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/CourseExerciseId'
+      tags:
+        - student
       responses:
         200:
           description: Exercise details.
           schema:
             $ref: '#/definitions/StudentExerciseDetails'
 
+
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
     get:
       summary: Get the latest submission's details to the specified course exercise.
-      parameters:
-        - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/CourseExerciseId'
+      tags:
+        - student
       responses:
         200:
           description: Latest submission to this exercise.
           schema:
             $ref: '#/definitions/Submission'
 
+
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+
     get:
       summary: Get all submissions to the specified course exercise.
-      parameters:
-        - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/CourseExerciseId'
+      tags:
+        - student
       responses:
         200:
           description: All submissions to this exercise.
@@ -81,9 +97,9 @@ paths:
 
     post:
       summary: Add a new submission to the specified course exercise.
+      tags:
+        - student
       parameters:
-        - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/CourseExerciseId'
         - name: submission
           in: body
           schema:
@@ -102,6 +118,8 @@ paths:
   /teacher/courses:
     get:
       summary: Get summaries of courses the authenticated teacher has access to.
+      tags:
+        - teacher
       responses:
         200:
           description: Course summaries.
@@ -118,6 +136,8 @@ paths:
 
     get:
       summary: Get this course's exercises.
+      tags:
+        - teacher
       responses:
         200:
           description: Exercises.
@@ -129,6 +149,8 @@ paths:
 
     post:
       summary: Add exercise to this course.
+      tags:
+        - teacher
       parameters:
         - name: exercise
           in: body
@@ -164,6 +186,8 @@ paths:
       - $ref: '#/parameters/CourseExerciseId'
     get:
       summary: Get exercise details.
+      tags:
+        - teacher
       responses:
         200:
           description: Exercise details.
@@ -177,6 +201,8 @@ paths:
       - $ref: '#/parameters/CourseExerciseId'
     get:
       summary: Get latest submission summaries for this exercise of all students in this course.
+      tags:
+        - teacher
       responses:
         200:
           description: Latest submission summaries.
@@ -193,6 +219,8 @@ paths:
       - $ref: '#/parameters/StudentEmail'
     get:
       summary: Get this student's latest submission for this exercise.
+      tags:
+        - teacher
       responses:
         300:
           description: Submission.
@@ -207,6 +235,8 @@ paths:
       - $ref: '#/parameters/StudentEmail'
     get:
       summary: Get this student's all submissions for this exercise.
+      tags:
+        - teacher
       responses:
         300:
           description: Submissions.
@@ -222,6 +252,8 @@ paths:
 
     get:
       summary: Get all students who are registered to this course.
+      tags:
+        - teacher
       responses:
         200:
           description: Students in this course.
@@ -232,6 +264,8 @@ paths:
 
     post:
       summary: Add the given students to this course
+      tags:
+        - teacher
       parameters:
         - name: students
           in: body
@@ -250,6 +284,8 @@ paths:
   /teacher/courses/{courseId}/students/{studentEmail}:
     delete:
       summary: Remove this student from this course.
+      tags:
+        - teacher
       parameters:
         - $ref: '#/parameters/CourseId'
         - $ref: '#/parameters/StudentEmail'
@@ -261,6 +297,8 @@ paths:
   /teacher/students/{studentEmail}:
     get:
       summary: Check if student with this email exists and get their name.
+      tags:
+        - teacher
       parameters:
         - $ref: '#/parameters/StudentEmail'
       responses:
@@ -275,6 +313,8 @@ paths:
   /teacher/exercises:
     get:
       summary: Get all summaries of exercises (that the authenticated teacher has access to).
+      tags:
+        - teacher
       responses:
         200:
           description: Exercise summaries.
@@ -285,6 +325,8 @@ paths:
 
     post:
       summary: Create a new exercise.
+      tags:
+        - teacher
       parameters:
         - name: exercise
           in: body
@@ -320,6 +362,8 @@ paths:
 
     get:
       summary: Get exercise details.
+      tags:
+        - teacher
       responses:
         200:
           description: Exercise details.
@@ -328,6 +372,8 @@ paths:
 
     put:
       summary: Modify exercise.
+      tags:
+        - teacher
       parameters:
         - name: exercise
           in: body
