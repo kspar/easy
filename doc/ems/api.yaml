@@ -184,6 +184,7 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
+
     get:
       summary: Get exercise details.
       tags:
@@ -193,6 +194,14 @@ paths:
           description: Exercise details.
           schema:
             $ref: '#/definitions/TeacherCourseExerciseDetails'
+
+    delete:
+      summary: Remove this exercise from this course.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Removed.
 
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students:
@@ -226,6 +235,29 @@ paths:
           description: Submission.
           schema:
             $ref: '#/definitions/TeacherSubmission'
+
+
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/SubmissionId'
+    post:
+      summary: Create a new assessment for this submission.
+      tags:
+        - teacher
+      parameters:
+        - name: assessment
+          in: body
+          schema:
+            properties:
+              grade:
+                type: integer
+              feedback:
+                type: string
+      responses:
+        200:
+          description: Created.
 
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentEmail}:
@@ -412,6 +444,12 @@ parameters:
 
   ExerciseId:
     name: exerciseId
+    in: path
+    required: true
+    type: string
+
+  SubmissionId:
+    name: submissionId
     in: path
     required: true
     type: string
