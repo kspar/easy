@@ -1,0 +1,6 @@
+FROM pygrader
+
+COPY student-submission /student-submission
+COPY evaluate.sh /
+
+CMD /evaluate.sh
