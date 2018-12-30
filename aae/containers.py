@@ -19,7 +19,21 @@ RUNNING_STATUS = 'running'
 EXITED_STATUS = 'exited'
 
 
-def run_submission(submission, grading_script, assets, base_image_name, max_run_time_sec, max_mem_MB):
+def grade_submission(submission, grading_script, assets, base_image_name, max_run_time_sec, max_mem_MB, log):
+    """
+    :param submission: str, submission content
+    :param grading_script: str, grading script content
+    :param assets: list[tuple[str, str]], list on pairs (file_name, file_content), one pair for each asset
+    :param base_image_name: str, name of base docker image that contains dependencies for the grading script,
+                                note that this image must already exist
+    :param max_run_time_sec: int, maximum run time of the container / grading script in seconds
+    :param max_mem_MB: int, maximum memory usage of the container in megabytes, must be >= 4
+    :param log: function, logging function, must have one positional parameter (log message)
+
+    :return raw output of the container as string
+    """
+
+    # Create temporary dir for this submission and write submission data as files
     with tempfile.TemporaryDirectory() as student_dir:
         with open(os.path.join(student_dir, 'Dockerfile'), mode='w', encoding='utf-8') as docker_file:
             docker_file.write(DOCKERFILE_TEMPLATE.format(base_image_name))
@@ -27,6 +41,7 @@ def run_submission(submission, grading_script, assets, base_image_name, max_run_
         with open(os.path.join(student_dir, 'evaluate.sh'), mode='w', encoding='utf-8') as evaluate_file:
             evaluate_file.write(grading_script)
 
+        # Grading script needs read and execution permissions
         os.chmod(os.path.join(student_dir, 'evaluate.sh'), 0o500)
 
         os.mkdir(os.path.join(student_dir, 'student-submission'))
@@ -40,16 +55,14 @@ def run_submission(submission, grading_script, assets, base_image_name, max_run_
                       encoding='utf-8') as asset_file:
                 asset_file.write(asset[1])
 
-        run_in_container(student_dir, max_run_time_sec, max_mem_MB)
+        return _run_in_container(student_dir, max_run_time_sec, max_mem_MB, log)
 
 
-def run_in_container(source_dir, max_run_time_sec, max_mem_MB):
+def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
     docker_client = docker.from_env()
 
     # Create image
     image_id = docker_client.images.build(path=source_dir, rm=True)[0].id
-
-    # TODO: remove image after
 
     # Create and run container
     container = docker_client.containers.run(image_id,
@@ -61,23 +74,22 @@ def run_in_container(source_dir, max_run_time_sec, max_mem_MB):
         # Reload container status from docker daemon
         container.reload()
         status = container.status
-
         if status == EXITED_STATUS:
-            print('Container finished, removing')
-            print(container.logs().decode('utf-8'))
-            container.remove()
+            log('Container exited')
             break
-
         elif status == RUNNING_STATUS:
-            print('Container still running...')
-
+            log('Container still running...')
         else:
-            print('Unexpected container status: ' + status)
+            log('Unexpected container status: ' + status)
 
         if time() - start_time > max_run_time_sec:
-            print('Timeout, killing container')
+            log('Timeout, killing container')
             container.kill()
-            container.remove()
             break
 
         sleep(POLL_INTERVAL_SEC)
+
+    output = container.logs().decode('utf-8')
+    container.remove()
+    docker_client.images.remove(image=image_id)
+    return output
