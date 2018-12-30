@@ -4,6 +4,7 @@ import docker
 import tempfile
 import os
 import os.path
+import enum
 from time import time, sleep
 
 # Interval in seconds for polling Docker daemon for container status
@@ -30,7 +31,7 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
     :param max_mem_MB: int, maximum memory usage of the container in megabytes, must be >= 4
     :param log: function, logging function, must have one positional parameter (log message)
 
-    :return raw output of the container as string
+    :return pair (run_status: RunStatus, raw_output: str)
     """
 
     # Create temporary dir for this submission and write submission data as files
@@ -76,6 +77,7 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
         status = container.status
         if status == EXITED_STATUS:
             log('Container exited')
+            run_status = RunStatus.SUCCESS
             break
         elif status == RUNNING_STATUS:
             log('Container still running...')
@@ -85,6 +87,7 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
         if time() - start_time > max_run_time_sec:
             log('Timeout, killing container')
             container.kill()
+            run_status = RunStatus.TIME_EXCEEDED
             break
 
         sleep(POLL_INTERVAL_SEC)
@@ -92,4 +95,20 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
     output = container.logs().decode('utf-8')
     container.remove()
     docker_client.images.remove(image=image_id)
-    return output
+
+    if _was_memory_killed(output):
+        run_status = RunStatus.MEM_EXCEEDED
+
+    return run_status, output
+
+
+def _was_memory_killed(output):
+    # Assume the process was killed by OOM killer if the last non-empty lowercased line of the output contains 'killed'
+    return 'killed' in output.strip().split('\n')[-1].lower()
+
+
+@enum.unique
+class RunStatus(enum.Enum):
+    SUCCESS = enum.auto()
+    TIME_EXCEEDED = enum.auto()
+    MEM_EXCEEDED = enum.auto()
