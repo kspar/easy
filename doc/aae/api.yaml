@@ -1,0 +1,56 @@
+swagger: "2.0"
+info:
+  description: "This specification documents the API of easy:aae. Access to this API does not require explicit authentication or authorization."
+  version: "1.0"
+  title: Easy:aae API
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /v1
+
+
+paths:
+
+  /grade:
+    post:
+      summary: Grade a submission.
+      parameters:
+        - name: exerciseSubmission
+          in: body
+          schema:
+            properties:
+              submission:
+                type: string
+              grading_script:
+                type: string
+              assets:
+                type: array
+                items:
+                  properties:
+                    file_name:
+                      type: string
+                    file_content:
+                      type: string
+              image_name:
+                type: string
+                description: Name of base docker image that contains dependencies for the grading script, note that this image must already exist.
+              max_time_sec:
+                type: integer
+                description: Maximum run time of the container, values smaller than the container refresh rate may be ineffective.
+              max_mem_mb:
+                type: integer
+                minimum: 4
+                description: Maximum memory usage of the container in megabytes.
+
+      responses:
+        200:
+          description: Graded.
+          schema:
+            properties:
+              grade:
+                type: integer
+              feedback:
+                type: string
