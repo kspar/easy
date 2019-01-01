@@ -45,19 +45,22 @@ compileTestKotlin {
 
 repositories {
     mavenCentral()
+    jcenter()
 }
-
 
 dependencies {
 
     // Spring Boot
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // Logging
     implementation 'io.github.microutils:kotlin-logging:1.6.20'
 
     // Database
+    implementation 'org.jetbrains.exposed:exposed:0.11.2'
+    implementation 'com.zaxxer:HikariCP:3.2.0'
+    implementation "org.postgresql:postgresql:42.2.5"
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
     liquibaseRuntime 'org.postgresql:postgresql:42.2.5'
 
@@ -69,6 +72,7 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
+
 
 liquibase {
     activities {
