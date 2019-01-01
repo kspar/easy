@@ -4,7 +4,7 @@ liquibaseProperties.load(new FileInputStream(
 
 buildscript {
     ext {
-        kotlinVersion = '1.3.10'
+        kotlinVersion = '1.3.11'
         springBootVersion = '2.1.0.RELEASE'
         liquibaseVersion = '2.0.1'
     }
