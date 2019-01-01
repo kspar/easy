@@ -50,16 +50,22 @@ repositories {
 
 dependencies {
 
+    // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // Logging
     implementation 'io.github.microutils:kotlin-logging:1.6.20'
 
+    // Database
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
     liquibaseRuntime 'org.postgresql:postgresql:42.2.5'
 
+    // Kotlin support
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
