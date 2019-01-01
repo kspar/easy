@@ -69,3 +69,14 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
+
+liquibase {
+    activities {
+        main {
+            changeLogFile 'db/changelog.xml'
+            url liquibaseProperties.url
+            username liquibaseProperties.username
+            password liquibaseProperties.password
+        }
+    }
+}
