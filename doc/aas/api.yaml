@@ -1,0 +1,279 @@
+swagger: "2.0"
+info:
+  description: "This specification documents the API of easy:aas.
+  Services with the 'teacher' tag require a token containing claim 'easy_role: teacher'.
+  Services with the 'admin' tag require a token containing claim 'easy_role: admin'.
+  Services with the 'ems' tag are meant to be called only by the ems subsystem and are authenticated separately with a signature included as a parameter."
+  version: "1.0"
+  title: Easy:aas API
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /v1
+
+tags:
+  - name: teacher
+  - name: ems
+  - name: admin
+
+
+paths:
+
+  /exercises:
+    post:
+      summary: Create new exercise.
+      tags:
+        - teacher
+      parameters:
+        - name: exercise
+          in: body
+          schema:
+            properties:
+              grading_script:
+                type: string
+              container_image:
+                type: string
+              max_time_sec:
+                type: integer
+              max_mem_mb:
+                type: integer
+              assets:
+                type: array
+                description: List of assets, can be empty.
+                items:
+                  properties:
+                    file_name:
+                      type: string
+                    file_content:
+                      type: string
+              executors:
+                type: array
+                minItems: 1
+                description: List of executors, must contain at least one executor.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    base_url:
+                      type: string
+                    max_load:
+                      type: integer
+            required:
+              - grading_script
+              - container_image
+              - max_time_sec
+              - max_mem_mb
+              - executors
+      responses:
+        200:
+          description: Created.
+          schema:
+            properties:
+              id:
+                type: string
+
+
+  /exercises/{exerciseId}:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+    get:
+      summary: Get exercise details.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Exercise details.
+          schema:
+            $ref: '#/definitions/Exercise'
+
+    put:
+      summary: Modify this exercise.
+      tags:
+        - teacher
+      parameters:
+        - name: exercise
+          in: body
+          schema:
+            properties:
+              grading_script:
+                type: string
+              container_image:
+                type: string
+              max_time_sec:
+                type: integer
+              max_mem_mb:
+                type: integer
+              assets:
+                type: array
+                description: List of assets, can be empty.
+                items:
+                  properties:
+                    file_name:
+                      type: string
+                    file_content:
+                      type: string
+              executors:
+                type: array
+                minItems: 1
+                description: List of executors' ids, must contain at least one id.
+                items:
+                  type: integer
+            required:
+              - grading_script
+              - container_image
+              - max_time_sec
+              - max_mem_mb
+              - executors
+      responses:
+        200:
+          description: Modified.
+
+
+  /exercises/{exerciseId}/automatic-assessment:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+    post:
+      summary: Automatically assess this submission to this exercise.
+      tags:
+        - ems
+      parameters:
+        - name: submission
+          in: body
+          schema:
+            properties:
+              submission:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+              signature:
+                type: string
+                description: HMAC-SHA256 computed with a pre-shared secret of the concatenation of (exercise id, submission, timestamp).
+            required:
+              - submission
+              - timestamp
+              - signature
+      responses:
+        200:
+          description: Assessed.
+          schema:
+            properties:
+              grade:
+                type: integer
+              feedback:
+                type: string
+        403:
+          description: Signature is invalid or timestamp is too old.
+
+
+  /executors:
+    get:
+      summary: Get all executors.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Executors.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Executor'
+
+    post:
+      summary: Create new executor.
+      tags:
+        - admin
+      parameters:
+        - name: executor
+          in: body
+          schema:
+            properties:
+              name:
+                type: string
+              base_url:
+                type: string
+              max_load:
+                type: integer
+            required:
+              - name
+              - base_url
+              - max_load
+      responses:
+        300:
+          description: Created.
+          schema:
+            properties:
+              id:
+                type: string
+
+
+  /executors/{executorId}:
+    parameters:
+      - $ref: '#/parameters/ExecutorId'
+    delete:
+      summary: Delete executor.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Deleted.
+
+
+parameters:
+
+  ExerciseId:
+    name: exerciseId
+    in: path
+    required: true
+    type: string
+
+  ExecutorId:
+    name: executorId
+    in: path
+    required: true
+    type: string
+
+
+definitions:
+
+  Executor:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      base_url:
+        type: string
+      load:
+        type: integer
+      max_load:
+        type: integer
+
+  Asset:
+    properties:
+      file_name:
+        type: string
+      file_content:
+        type: string
+
+  Exercise:
+    properties:
+      grading_script:
+        type: string
+      container_image:
+        type: string
+      max_time_sec:
+        type: integer
+      max_mem_mb:
+        type: integer
+      assets:
+        type: array
+        items:
+          $ref: '#/definitions/Asset'
+      executors:
+        type: array
+        items:
+          $ref: '#/definitions/Executor'
