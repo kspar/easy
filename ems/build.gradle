@@ -1,5 +1,6 @@
 Properties liquibaseProperties = new Properties()
-liquibaseProperties.load(new FileInputStream(file("db/database.properties")))
+liquibaseProperties.load(new FileInputStream(
+        file("db/database.properties").exists() ? file("db/database.properties") : file("db/database.properties.sample")))
 
 
 buildscript {
@@ -63,7 +64,7 @@ dependencies {
     implementation "org.postgresql:postgresql:42.2.5"
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
     liquibaseRuntime 'org.postgresql:postgresql:42.2.5'
-    
+
     // Kotlin support
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
