@@ -1,0 +1,25 @@
+package ee.urgas.aas.bl.admin
+
+import ee.urgas.aas.db.Executor
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/v1")
+class DeleteExecutorController {
+
+    @DeleteMapping("/executors/{executorId}")
+    fun readExecutor(@PathVariable("executorId") executorId: String) {
+        deleteExecutor(executorId.toLong())
+    }
+}
+
+private fun deleteExecutor(executorId: Long) {
+    return transaction {
+        Executor.deleteWhere { Executor.id eq executorId }
+    }
+}
