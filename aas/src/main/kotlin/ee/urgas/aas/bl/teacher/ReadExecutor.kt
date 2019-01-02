@@ -25,7 +25,7 @@ class ReadExecutorController {
     }
 
     private fun mapToReadExecutorResponses(executors: List<ReadExecutor>): List<ReadExecutorResponse> =
-        executors.map { ex -> ReadExecutorResponse(ex.id.toString(), ex.name, ex.baseUrl, ex.load, ex.maxLoad) }
+            executors.map { ex -> ReadExecutorResponse(ex.id.toString(), ex.name, ex.baseUrl, ex.load, ex.maxLoad) }
 }
 
 private data class ReadExecutor(val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int)
