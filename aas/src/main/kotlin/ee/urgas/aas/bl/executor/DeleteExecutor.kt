@@ -1,4 +1,4 @@
-package ee.urgas.aas.bl.admin
+package ee.urgas.aas.bl.executor
 
 import ee.urgas.aas.db.Executor
 import org.jetbrains.exposed.sql.deleteWhere

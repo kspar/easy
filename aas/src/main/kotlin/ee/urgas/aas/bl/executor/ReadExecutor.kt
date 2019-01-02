@@ -1,4 +1,4 @@
-package ee.urgas.aas.bl.teacher
+package ee.urgas.aas.bl.executor
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.aas.db.Executor
