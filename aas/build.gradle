@@ -7,6 +7,7 @@ buildscript {
         kotlinVersion = '1.3.11'
         springBootVersion = '2.1.0.RELEASE'
         liquibaseVersion = '2.0.1'
+        jacksonVersion = '2.9.8'
     }
     repositories {
         mavenCentral()
@@ -65,9 +66,12 @@ dependencies {
     liquibaseRuntime 'org.postgresql:postgresql:42.2.5'
 
     // Kotlin support
-    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
+
+    // Serialization
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
