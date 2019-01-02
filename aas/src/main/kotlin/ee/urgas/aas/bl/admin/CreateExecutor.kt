@@ -1,7 +1,7 @@
-package ee.urgas.aas.admin
+package ee.urgas.aas.bl.admin
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.aas.dao.Executor
+import ee.urgas.aas.db.Executor
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.web.bind.annotation.PostMapping

@@ -1,4 +1,4 @@
-package ee.urgas.aas.dao
+package ee.urgas.aas.db
 
 import org.jetbrains.exposed.dao.LongIdTable
 

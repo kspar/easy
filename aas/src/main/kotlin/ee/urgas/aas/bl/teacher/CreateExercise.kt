@@ -1,10 +1,10 @@
-package ee.urgas.aas.teacher
+package ee.urgas.aas.bl.teacher
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.aas.dao.Asset
-import ee.urgas.aas.dao.Executor
-import ee.urgas.aas.dao.Exercise
-import ee.urgas.aas.dao.ExerciseExecutor
+import ee.urgas.aas.db.Asset
+import ee.urgas.aas.db.Executor
+import ee.urgas.aas.db.Exercise
+import ee.urgas.aas.db.ExerciseExecutor
 import ee.urgas.aas.exception.InvalidRequestException
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insert
