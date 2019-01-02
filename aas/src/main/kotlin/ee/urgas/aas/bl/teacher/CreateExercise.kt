@@ -34,14 +34,10 @@ class CreateExerciseController {
 
     @PostMapping("/exercises")
     fun createEx(@RequestBody body: CreateExBody): CreatedExResponse {
-        println(body)
         validateCreateExBody(body)
-
         // TODO: caller email from auth
         val newExercise = mapToNewExercise(body, "TODO")
-
         val exerciseId = insertExercise(newExercise)
-
         return CreatedExResponse(exerciseId.toString())
     }
 
