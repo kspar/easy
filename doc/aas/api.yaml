@@ -141,8 +141,8 @@ paths:
               submission:
                 type: string
               timestamp:
-                type: string
-                format: date-time
+                type: integer
+                description: Unix time.
               signature:
                 type: string
                 description: HMAC-SHA256 computed with a pre-shared secret of the concatenation of (exercise id, submission, timestamp).

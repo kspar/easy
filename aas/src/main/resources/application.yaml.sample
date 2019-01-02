@@ -4,4 +4,6 @@ spring:
     username: "<username>"
     password: "<password>"
 
+ems:
+  psk: "<ems shared key>"
 
