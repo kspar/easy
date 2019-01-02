@@ -5,20 +5,20 @@ import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Table
 
 
-object Teacher : Table() {
+object Teacher : Table("teacher") {
     val email = text("email").primaryKey()
     val createdAt = datetime("created_at")
     val givenName = text("given_name")
     val familyName = text("family_name")
 }
 
-object Exercise : LongIdTable() {
+object Exercise : LongIdTable("exercise") {
     val owner = reference("owned_by", Teacher.email)
     val createdAt = datetime("created_at")
     val public = bool("public")
 }
 
-object ExerciseVer : LongIdTable() {
+object ExerciseVer : LongIdTable("exercise_version") {
     val exercise = reference("exercise_id", Exercise)
     val author = reference("author", Teacher.email)
     val previous = reference("previous_id", ExerciseVer).nullable()
@@ -30,12 +30,12 @@ object ExerciseVer : LongIdTable() {
     val textHtml = text("text_html")
 }
 
-object Course : LongIdTable() {
+object Course : LongIdTable("course") {
     val createdAt = datetime("created_at")
     val title = text("title")
 }
 
-object CourseExercise : LongIdTable() {
+object CourseExercise : LongIdTable("course_exercise") {
     val course = reference("course_id", Course)
     val exercise = reference("exercise_id", Exercise)
     val gradeThreshold = integer("grade_threshold")
@@ -46,31 +46,31 @@ object CourseExercise : LongIdTable() {
     val assessmentsStudentVisible = bool("assessments_student_visible")
 }
 
-object TeacherCourseAccess : LongIdTable() {
+object TeacherCourseAccess : LongIdTable("teacher_course_access") {
     val teacher = reference("teacher_email", Teacher.email)
     val course = reference("course_id", Course)
 }
 
-object Student : Table() {
+object Student : Table("student") {
     val email = text("email").primaryKey()
     val createdAt = datetime("created_at")
     val givenName = text("given_name")
     val familyName = text("family_name")
 }
 
-object StudentCourseAccess : LongIdTable() {
+object StudentCourseAccess : LongIdTable("student_course_access") {
     val student = reference("student_email", Student.email)
     val course = reference("course_id", Course)
 }
 
-object Submission : LongIdTable() {
+object Submission : LongIdTable("submission") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_email", Student.email)
     val createdAt = datetime("created_at")
     val solution = text("solution")
 }
 
-object TeacherAssessment : LongIdTable() {
+object TeacherAssessment : LongIdTable("teacher_assessment") {
     val submission = reference("submission_id", Submission)
     val teacher = reference("teacher_email", Teacher.email)
     val createdAt = datetime("created_at")
@@ -78,7 +78,7 @@ object TeacherAssessment : LongIdTable() {
     val feedback = text("feedback").nullable()
 }
 
-object AutomaticAssessment : LongIdTable() {
+object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val submission = reference("submission_id", Submission)
     val createdAt = datetime("created_at")
     val grade = integer("grade")
