@@ -20,15 +20,15 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/v1")
 class CreateExerciseController {
 
-    data class CreateExBody(@JsonProperty("grading_script") val gradingScript: String,
-                            @JsonProperty("container_image") val containerImage: String,
-                            @JsonProperty("max_time_sec") val maxTime: Int,
-                            @JsonProperty("max_mem_mb") val maxMem: Int,
-                            @JsonProperty("assets") val assets: Set<CreateExAsset>?,
-                            @JsonProperty("executors") val executors: Set<String>)
+    data class CreateExBody(@JsonProperty("grading_script", required = true) val gradingScript: String,
+                            @JsonProperty("container_image", required = true) val containerImage: String,
+                            @JsonProperty("max_time_sec", required = true) val maxTime: Int,
+                            @JsonProperty("max_mem_mb", required = true) val maxMem: Int,
+                            @JsonProperty("assets", required = false) val assets: Set<CreateExAsset>?,
+                            @JsonProperty("executors", required = true) val executors: Set<String>)
 
-    data class CreateExAsset(@JsonProperty("file_name") val fileName: String,
-                             @JsonProperty("file_content") val fileContent: String)
+    data class CreateExAsset(@JsonProperty("file_name", required = true) val fileName: String,
+                             @JsonProperty("file_content", required = true) val fileContent: String)
 
     data class CreatedExResponse(@JsonProperty("id") val id: String)
 

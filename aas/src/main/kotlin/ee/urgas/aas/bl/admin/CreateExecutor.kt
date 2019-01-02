@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/v1")
 class CreateExecutorController {
 
-    data class CreateExecutorBody(@JsonProperty("name") val name: String,
-                                  @JsonProperty("base_url") val baseUrl: String,
-                                  @JsonProperty("max_load") val maxLoad: Int)
+    data class CreateExecutorBody(@JsonProperty("name", required = true) val name: String,
+                                  @JsonProperty("base_url", required = true) val baseUrl: String,
+                                  @JsonProperty("max_load", required = true) val maxLoad: Int)
 
     data class CreateExecutorResponse(@JsonProperty("id") val id: String)
 
