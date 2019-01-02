@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 class DeleteExecutorController {
 
     @DeleteMapping("/executors/{executorId}")
-    fun readExecutor(@PathVariable("executorId") executorId: String) {
+    fun removeExecutor(@PathVariable("executorId") executorId: String) {
         deleteExecutor(executorId.toLong())
     }
 }
