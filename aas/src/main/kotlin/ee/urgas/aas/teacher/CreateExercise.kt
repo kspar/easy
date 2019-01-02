@@ -45,13 +45,13 @@ class CreateExerciseController {
         return CreatedExResponse(exerciseId.toString())
     }
 
-    fun validateCreateExBody(body: CreateExBody) {
+    private fun validateCreateExBody(body: CreateExBody) {
         if (body.executors.isEmpty()) {
             throw InvalidRequestException("Must have at least one executor")
         }
     }
 
-    fun mapToNewExercise(dto: CreateExBody, callerEmail: String): NewExercise {
+    private fun mapToNewExercise(dto: CreateExBody, callerEmail: String): NewExercise {
         val assets = dto.assets?.map { NewAsset(it.fileName, it.fileContent) }?.toSet()
         val executors = dto.executors.map { it.toLong() }.toSet()
         return NewExercise(callerEmail, dto.gradingScript, dto.containerImage,
@@ -60,12 +60,12 @@ class CreateExerciseController {
 }
 
 
-data class NewExercise(val ownerEmail: String, val gradingScript: String, val containerImage: String,
-                       val maxTime: Int, val maxMem: Int, val assets: Set<NewAsset>?, val executorIds: Set<Long>)
+private data class NewExercise(val ownerEmail: String, val gradingScript: String, val containerImage: String,
+                               val maxTime: Int, val maxMem: Int, val assets: Set<NewAsset>?, val executorIds: Set<Long>)
 
-data class NewAsset(val fileName: String, val fileContent: String)
+private data class NewAsset(val fileName: String, val fileContent: String)
 
-fun insertExercise(newExercise: NewExercise): Long {
+private fun insertExercise(newExercise: NewExercise): Long {
     return transaction {
         val exId = Exercise.insertAndGetId {
             it[ownerEmail] = newExercise.ownerEmail
