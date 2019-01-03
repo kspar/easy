@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="151.5" viewBox="0 0 400 151.5">
+  <g id="Group_2" data-name="Group 2" transform="translate(-1462 600)">
+    <g id="Group_1" data-name="Group 1" transform="translate(1487.6 -561.5)">
+      <text id="A" transform="matrix(-1, 0, 0, 1, 98, 10)" fill="#0d7d3a" font-size="60" font-family="QuantumRegular, Quantum"><tspan x="0" y="59">A</tspan></text>
+      <text id="A-2" data-name="A" transform="matrix(-1, 0, 0, 1, 99, 0)" fill="#0d7d3a" font-size="70" font-family="QuantumRegular, Quantum"><tspan x="0" y="69">A</tspan></text>
+    </g>
+    <text id="Lahendus" transform="translate(1462 -600)" fill="#fff" font-size="90" font-family="FormationSansRegular-Regular, Formation Sans Regular"><tspan x="0.933" y="108">L</tspan><tspan y="108" font-size="109" font-family="QuantumRegular, Quantum">a</tspan><tspan y="108">hendus</tspan></text>
+  </g>
+</svg>
