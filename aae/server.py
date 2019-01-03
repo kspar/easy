@@ -2,7 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from werkzeug.exceptions import BadRequest
-#from containers import grade_submission
+from containers import grade_submission
 
 app = Flask(__name__)
 
@@ -19,19 +19,31 @@ def checkContent(content):
             raise BadRequest("Missing or incorrect parameter")
 
 
+def assetsTuple(assets):
+    assetsList = []
+
+    for asset in assets:
+        assetsList.append((asset["file_name"], asset["file_content"]))
+
+    return assetsList
+
+
 @app.route('/v1/grade', methods=['POST'])
 def postJson():
     if not request.is_json:
         raise BadRequest("Request body must be JSON")
 
-    content = checkContent(request.get_json())
+    content = request.get_json()
 
-    # TODO: map assets
+    checkContent(content)
+
     # TODO: log
 
-    #grade_submission(content["submission"], content["grading_script"], content["assets"], content["image_name"], content["max_time_sec"], content["max_mem_mb"])
+    status, output = grade_submission(content["submission"], content["grading_script"], assetsTuple(content["assets"]), content["image_name"], content["max_time_sec"], content["max_mem_mb"], print)
 
-    return jsonify({"grade": 2, "feedback": "Jama"})
+    # TODO: pars output
+
+    return jsonify({"grade": 2, "feedback": output})
 
 
 @app.errorhandler(BadRequest)
