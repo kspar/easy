@@ -35,14 +35,18 @@ def assets_to_tuples(assets):
 
 
 def parse_assessment_output(raw_output):
+    grade_separator = "#" * 50
+
     grade_string = raw_output.rstrip().split("\n")[-1].lower().strip()
+    app.logger.debug("Grade string: " + grade_string)
 
     if not grade_string.startswith("grade:"):
+        app.logger.error("'grade:' not found")
         raise Exception("Incorrect grader output format")
 
     grade_list = grade_string.split(":")
-
     if len(grade_list) != 2:
+        app.logger.error("More : than expected, len(grade_list) = " + str(len(grade_list)))
         raise Exception("Incorrect grader output format")
 
     grade = grade_list[1].strip()
@@ -50,12 +54,13 @@ def parse_assessment_output(raw_output):
     if not grade.isnumeric():
         raise Exception("Grade is not a number")
 
-    output_rspilt = raw_output.rsplit("#" * 50, 1)
+    output_rsplit = raw_output.rsplit(grade_separator, 1)
 
-    if len(output_rspilt) < 2:
+    if len(output_rsplit) < 2:
+        app.logger.error("Grade separator missing")
         raise Exception("Incorrect grader output format")
 
-    return round(float(grade)), ouput_rsplit[0]
+    return round(float(grade)), grade_separator.join(output_rsplit[0:-1])
 
 
 @app.route('/v1/grade', methods=['POST'])
@@ -90,4 +95,5 @@ def handle_bad_request(e):
     return jsonify({"message": e.description}), 400
 
 
-app.run(host='127.0.0.1', port=5000)
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
