@@ -20,7 +20,7 @@ RUNNING_STATUS = 'running'
 EXITED_STATUS = 'exited'
 
 
-def grade_submission(submission, grading_script, assets, base_image_name, max_run_time_sec, max_mem_MB, log):
+def grade_submission(submission, grading_script, assets, base_image_name, max_run_time_sec, max_mem_MB, logger):
     """
     :param submission: str, submission content
     :param grading_script: str, grading script content
@@ -29,7 +29,7 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
                                 note that this image must already exist
     :param max_run_time_sec: int, maximum run time of the container / grading script in seconds
     :param max_mem_MB: int, maximum memory usage of the container in megabytes, must be >= 4
-    :param log: function, logging function, must have one positional parameter (log message)
+    :param logger: logger object, must have standard debug, info etc methods
 
     :return pair (run_status: RunStatus, raw_output: str)
     """
@@ -56,10 +56,10 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
                       encoding='utf-8') as asset_file:
                 asset_file.write(asset[1])
 
-        return _run_in_container(student_dir, max_run_time_sec, max_mem_MB, log)
+        return _run_in_container(student_dir, max_run_time_sec, max_mem_MB, logger)
 
 
-def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
+def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, logger):
     docker_client = docker.from_env()
 
     # Create image
@@ -76,16 +76,16 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, log):
         container.reload()
         status = container.status
         if status == EXITED_STATUS:
-            log('Container exited')
+            logger.info('Container exited')
             run_status = RunStatus.SUCCESS
             break
         elif status == RUNNING_STATUS:
-            log('Container still running...')
+            logger.debug('Container still running...')
         else:
-            log('Unexpected container status: ' + status)
+            logger.error('Unexpected container status: ' + status)
 
         if time() - start_time > max_run_time_sec:
-            log('Timeout, killing container')
+            logger.warn('Timeout, killing container')
             container.kill()
             run_status = RunStatus.TIME_EXCEEDED
             break

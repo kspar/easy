@@ -10,6 +10,7 @@ TIME_EXCEEDED_MESSAGE = "TIME-TODO"
 MEM_EXCEEDED_MESSAGE = "MEM-TODO"
 
 app = Flask(__name__)
+app.logger.setLevel("DEBUG")
 
 
 def check_content(content):
@@ -40,16 +41,16 @@ def parse_assessment_output(raw_output):
 
 @app.route('/v1/grade', methods=['POST'])
 def post_grade():
+    app.logger.info("Request: " + request.get_data(as_text=True))
     if not request.is_json:
         raise BadRequest("Request body must be JSON")
 
     content = request.get_json()
     check_content(content)
 
-    # TODO: better log function?
     status, raw_output = grade_submission(content["submission"], content["grading_script"],
                                           assets_to_tuples(content["assets"]), content["image_name"],
-                                          content["max_time_sec"], content["max_mem_mb"], print)
+                                          content["max_time_sec"], content["max_mem_mb"], app.logger)
 
     if status == RunStatus.SUCCESS:
         assessment = parse_assessment_output(raw_output)
@@ -59,6 +60,8 @@ def post_grade():
         assessment = (0, MEM_EXCEEDED_MESSAGE)
     else:
         raise Exception("Unhandled run status: " + status.name)
+
+    app.logger.info("Assessment: " + str(assessment))
 
     return jsonify({"grade": assessment[0], "feedback": assessment[1]})
 
