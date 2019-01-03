@@ -5,9 +5,9 @@ from werkzeug.exceptions import BadRequest
 
 from containers import grade_submission, RunStatus
 
-# TODO: messages
-TIME_EXCEEDED_MESSAGE = "TIME-TODO"
-MEM_EXCEEDED_MESSAGE = "MEM-TODO"
+# TODO: move to conf file
+TIME_EXCEEDED_MESSAGE = "Programmi kontrollimine ületas lubatud käivitusaega."
+MEM_EXCEEDED_MESSAGE = "Programmi kontrollimine ületas lubatud mälumahtu."
 
 app = Flask(__name__)
 app.logger.setLevel("DEBUG")
