@@ -2,12 +2,17 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from werkzeug.exceptions import BadRequest
-from containers import grade_submission
+
+from containers import grade_submission, RunStatus
+
+# TODO: messages
+TIME_EXCEEDED_MESSAGE = "TIME-TODO"
+MEM_EXCEEDED_MESSAGE = "MEM-TODO"
 
 app = Flask(__name__)
 
 
-def checkContent(content):
+def check_content(content):
     if set(content.keys()) != {"submission", "grading_script", "assets", "image_name", "max_time_sec", "max_mem_mb"}:
         raise BadRequest("Missing or incorrect parameter")
 
@@ -19,31 +24,43 @@ def checkContent(content):
             raise BadRequest("Missing or incorrect parameter")
 
 
-def assetsTuple(assets):
-    assetsList = []
+def assets_to_tuples(assets):
+    assets_list = []
 
     for asset in assets:
-        assetsList.append((asset["file_name"], asset["file_content"]))
+        assets_list.append((asset["file_name"], asset["file_content"]))
 
-    return assetsList
+    return assets_list
+
+
+def parse_assessment_output(raw_output):
+    # TODO: parse
+    return 42, "forty-nine"
 
 
 @app.route('/v1/grade', methods=['POST'])
-def postJson():
+def post_grade():
     if not request.is_json:
         raise BadRequest("Request body must be JSON")
 
     content = request.get_json()
+    check_content(content)
 
-    checkContent(content)
+    # TODO: better log function?
+    status, raw_output = grade_submission(content["submission"], content["grading_script"],
+                                          assets_to_tuples(content["assets"]), content["image_name"],
+                                          content["max_time_sec"], content["max_mem_mb"], print)
 
-    # TODO: log
+    if status == RunStatus.SUCCESS:
+        assessment = parse_assessment_output(raw_output)
+    elif status == RunStatus.TIME_EXCEEDED:
+        assessment = (0, TIME_EXCEEDED_MESSAGE)
+    elif status == RunStatus.MEM_EXCEEDED:
+        assessment = (0, MEM_EXCEEDED_MESSAGE)
+    else:
+        raise Exception("Unhandled run status: " + status.name)
 
-    status, output = grade_submission(content["submission"], content["grading_script"], assetsTuple(content["assets"]), content["image_name"], content["max_time_sec"], content["max_mem_mb"], print)
-
-    # TODO: pars output
-
-    return jsonify({"grade": 2, "feedback": output})
+    return jsonify({"grade": assessment[0], "feedback": assessment[1]})
 
 
 @app.errorhandler(BadRequest)
