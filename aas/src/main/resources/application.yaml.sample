@@ -6,4 +6,4 @@ spring:
 
 ems:
   psk: "<ems shared key>"
-
+  allowed-delay-sec: 30

@@ -32,11 +32,12 @@ private val log = KotlinLogging.logger {}
 class AutoAssessController {
     companion object {
         const val SIGNATURE_ALGORITHM = "HmacSHA256"
-        const val ALLOWED_DELAY_SEC = 30
     }
 
     @Value("\${ems.psk}")
     private lateinit var keyString: String
+    @Value("\${ems.allowed-delay-sec}")
+    private var allowedDelaySec: Int = 0
 
     data class AutoAssessBody(@JsonProperty("submission", required = true) val submission: String,
                               @JsonProperty("timestamp", required = true) val timestamp: Int,
@@ -53,10 +54,14 @@ class AutoAssessController {
     }
 
     private fun validateMessage(exerciseId: String, submission: String, timestamp: Int, signature: String) {
+        if (allowedDelaySec == 0) {
+            log.warn { "Allowed request latency is 0 (might be uninitialized)" }
+        }
+
         // Check timestamp
         val currentTime = System.currentTimeMillis() / 1000
         val timeDelta = currentTime - timestamp
-        if (timeDelta > ALLOWED_DELAY_SEC) {
+        if (timeDelta > allowedDelaySec) {
             log.warn { "Request timestamp too old: $timestamp, current time: $currentTime, delta: $timeDelta" }
             throw ForbiddenException("Request timestamp is too old")
         }
