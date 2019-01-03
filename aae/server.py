@@ -35,8 +35,27 @@ def assets_to_tuples(assets):
 
 
 def parse_assessment_output(raw_output):
-    # TODO: parse
-    return 42, "forty-nine"
+    grade_string = raw_output.rstrip().split("\n")[-1].lower().strip()
+
+    if not grade_string.startswith("grade:"):
+        raise Exception("Incorrect grader output format")
+
+    grade_list = grade_string.split(":")
+
+    if len(grade_list) != 2:
+        raise Exception("Incorrect grader output format")
+
+    grade = grade_list[1].strip()
+
+    if not grade.isnumeric():
+        raise Exception("Grade is not a number")
+
+    output_rspilt = raw_output.rsplit("#" * 50, 1)
+
+    if len(output_rspilt) < 2:
+        raise Exception("Incorrect grader output format")
+
+    return round(float(grade)), ouput_rsplit[0]
 
 
 @app.route('/v1/grade', methods=['POST'])
