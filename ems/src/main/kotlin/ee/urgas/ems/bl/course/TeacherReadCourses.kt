@@ -2,7 +2,6 @@ package ee.urgas.ems.bl.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.db.Course
-import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
 import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherCourseAccess
@@ -55,9 +54,9 @@ private fun selectCoursesForTeacher(email: String): List<TeacherCourse> {
                 }
                 .map { course ->
                     val studentCount =
-                            (Student innerJoin StudentCourseAccess innerJoin Course)
-                                    .slice(Course.id, Student.id)  // exclude id from distinct
-                                    .select { Course.id eq course.first }
+                            StudentCourseAccess
+                                    .slice(StudentCourseAccess.course, StudentCourseAccess.student)  // exclude id from distinct
+                                    .select { StudentCourseAccess.course eq course.first }
                                     .withDistinct()
                                     .count()
 
