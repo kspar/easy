@@ -476,12 +476,6 @@ definitions:
         type: string
       title:
         type: string
-      next_deadline:
-        type: string
-        format: date-time
-      progress:
-        description: TODO
-        type: integer
 
   StudentExercise:
     properties:
