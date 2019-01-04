@@ -1,6 +1,5 @@
-package ee.urgas.ems.dao
+package ee.urgas.ems.db
 
-import ee.urgas.ems.model.GraderType
 import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Table
 
