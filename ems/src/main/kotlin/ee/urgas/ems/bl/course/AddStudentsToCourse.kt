@@ -6,8 +6,7 @@ import ee.urgas.ems.db.StudentCourseAccess
 import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.StdOutSqlLogger
-import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -35,24 +34,30 @@ class AddStudentsToCourseController {
             throw InvalidRequestException(e.message)
         }
     }
-
 }
 
 class StudentNotFoundException(override val message: String) : RuntimeException(message)
 
 private fun insertStudentCourseAccesses(courseId: Long, emails: List<String>) {
     transaction {
-        addLogger(StdOutSqlLogger)
-
-        emails.forEach {
-            val studentExists = Student.select { Student.id eq it }
-                    .count() == 1
+        emails.forEach { email ->
+            val studentExists =
+                    Student.select { Student.id eq email }
+                            .count() == 1
             if (!studentExists) {
-                throw StudentNotFoundException(it)
+                throw StudentNotFoundException(email)
             }
         }
 
-        StudentCourseAccess.batchInsert(emails) { email ->
+        val studentsWithoutAccess = emails.filter {
+            StudentCourseAccess.select {
+                StudentCourseAccess.student eq it and (StudentCourseAccess.course eq courseId)
+            }.count() == 0
+        }
+
+        log.debug { "Granting access to students (the rest already have access): $studentsWithoutAccess" }
+
+        StudentCourseAccess.batchInsert(studentsWithoutAccess) { email ->
             this[StudentCourseAccess.student] = EntityID(email, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }
