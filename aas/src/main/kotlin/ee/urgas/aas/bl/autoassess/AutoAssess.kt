@@ -6,6 +6,7 @@ import ee.urgas.aas.db.Executor
 import ee.urgas.aas.db.Exercise
 import ee.urgas.aas.db.ExerciseExecutor
 import ee.urgas.aas.exception.ForbiddenException
+import ee.urgas.aas.exception.OverloadedException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.select
@@ -119,9 +120,13 @@ private fun assess(submission: AutoAssessSubmission): AutoAssessment {
 }
 
 private fun selectExecutor(executors: Set<CapableExecutor>): CapableExecutor {
-    return executors.reduce { bestExec, currentExec ->
+    val executor = executors.reduce { bestExec, currentExec ->
         if (currentExec.load / currentExec.maxLoad < bestExec.load / bestExec.maxLoad) currentExec else bestExec
     }
+    if (executor.load >= executor.maxLoad) {
+        throw OverloadedException("All executors overloaded")
+    }
+    return executor
 }
 
 

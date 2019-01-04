@@ -9,3 +9,5 @@ class InvalidRequestException(override val message: String) : RuntimeException(m
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class ForbiddenException(override val message: String) : RuntimeException(message)
 
+@ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+class OverloadedException(override val message: String) : RuntimeException(message)
