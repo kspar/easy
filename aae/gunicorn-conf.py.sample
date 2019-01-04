@@ -1,0 +1,3 @@
+
+bind = 'ip:port'
+workers = 30
