@@ -3,6 +3,7 @@ package ee.urgas.ems.bl.register
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.Teacher
 import mu.KotlinLogging
+import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -64,14 +65,14 @@ private fun registerTeacher(teacher: TeacherAccount) {
 
 private fun studentExists(email: String): Boolean {
     return transaction {
-        Student.select { Student.email eq email }
+        Student.select { Student.id eq email }
                 .count() == 1
     }
 }
 
 private fun teacherExists(email: String): Boolean {
     return transaction {
-        Teacher.select { Teacher.email eq email }
+        Teacher.select { Teacher.id eq email }
                 .count() == 1
     }
 }
@@ -79,7 +80,7 @@ private fun teacherExists(email: String): Boolean {
 private fun insertStudent(student: StudentAccount) {
     transaction {
         Student.insert {
-            it[email] = student.email
+            it[id] = EntityID(student.email, Student)
             it[givenName] = student.givenName
             it[familyName] = student.familyName
             it[createdAt] = DateTime.now()
@@ -90,7 +91,7 @@ private fun insertStudent(student: StudentAccount) {
 private fun insertTeacher(teacher: TeacherAccount) {
     transaction {
         Teacher.insert {
-            it[email] = teacher.email
+            it[id] = EntityID(teacher.email, Teacher)
             it[givenName] = teacher.givenName
             it[familyName] = teacher.familyName
             it[createdAt] = DateTime.now()
