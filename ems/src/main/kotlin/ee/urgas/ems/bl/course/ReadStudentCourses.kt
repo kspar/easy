@@ -44,6 +44,7 @@ private fun selectCoursesForStudent(email: String): List<StudentCourse> {
                 .select {
                     Student.id eq email
                 }
+                .withDistinct()
                 .map {
                     StudentCourse(it[Course.id].value, it[Course.title])
                 }
