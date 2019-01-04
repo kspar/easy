@@ -318,9 +318,7 @@ paths:
             description: Student emails.
             type: array
             items:
-              properties:
-                email:
-                  type: string
+              type: string
       responses:
         200:
           description: Students added.
