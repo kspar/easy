@@ -26,6 +26,7 @@ class AddStudentsToCourseController {
     fun addStudentsToCourse(@PathVariable("courseId") courseId: String,
                             @RequestBody studentEmails: List<String>) {
 
+        // TODO: access control
         log.debug { "Adding access to course $courseId to students $studentEmails" }
         try {
             insertStudentCourseAccesses(courseId.toLong(), studentEmails)

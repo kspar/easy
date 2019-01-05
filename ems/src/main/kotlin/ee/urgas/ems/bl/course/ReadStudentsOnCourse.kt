@@ -24,6 +24,7 @@ class ReadStudentsOnCourseController {
 
     @GetMapping("/teacher/courses/{courseId}/students")
     fun readStudentsOnCourse(@PathVariable("courseId") courseId: String): List<StudentsOnCourseResponse> {
+        // TODO: access control
         val students = selectStudentsOnCourse(courseId.toLong())
         log.debug { "Students on course $courseId: $students" }
         return mapToStudentsOnCourseResponse(students)

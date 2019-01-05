@@ -20,6 +20,7 @@ class RemoveStudentFromCourseController {
     fun removeStudent(@PathVariable("courseId") courseId: String,
                       @PathVariable("studentEmail") studentEmail: String) {
 
+        // TODO: access control
         log.info { "Removing student $studentEmail from course $courseId" }
         deleteStudentFromCourse(studentEmail, courseId.toLong())
     }
