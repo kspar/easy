@@ -28,7 +28,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val graderType = enumerationByName("grader_type", 20, GraderType::class)
     val aasId = long("aas_id").nullable()
     val title = text("title")
-    val textHtml = text("text_html")
+    val textHtml = text("text_html").nullable()
 }
 
 object Course : LongIdTable("course") {
