@@ -83,7 +83,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
         data class SubmissionPartial(val id: Long, val email: String, val createdAt: DateTime)
 
         (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline, Exercise.id,
+                .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline,
                         Course.id, ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.validTo)
                 .select { Course.id eq courseId and ExerciseVer.validTo.isNull() }
                 .map { ex ->
@@ -119,7 +119,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                             val startedCount = submissionCount - completedCount
 
                             TeacherCourseEx(
-                                    ex[Exercise.id].value,
+                                    ex[CourseExercise.id].value,
                                     ex[ExerciseVer.title],
                                     ex[CourseExercise.softDeadline],
                                     ex[ExerciseVer.graderType],
@@ -134,7 +134,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                             val ungradedCount = submissionCount - gradedCount
 
                             TeacherCourseEx(
-                                    ex[Exercise.id].value,
+                                    ex[CourseExercise.id].value,
                                     ex[ExerciseVer.title],
                                     ex[CourseExercise.softDeadline],
                                     ex[ExerciseVer.graderType],
