@@ -584,13 +584,15 @@ definitions:
         type: string
       family_name:
         type: string
-      grade:
-        type: integer
-      created_at:
+      submission_time:
         type: string
         format: date-time
-      graded:
-        type: boolean
+      grade:
+        description: Optional, exists if the submission has been graded.
+        type: integer
+      graded_by:
+        description: Optional, exists if the submission has been graded.
+        $ref: '#/definitions/GraderType'
 
   TeacherSubmission:
     properties:
