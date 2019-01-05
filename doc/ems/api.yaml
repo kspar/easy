@@ -602,10 +602,10 @@ definitions:
         type: string
         format: date-time
       grade_auto:
-        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        description: Optional, exists if the submission has been automatically graded.
         type: integer
       feedback_auto:
-        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        description: Optional, exists if the submission has been automatically graded.
         type: string
       grade_teacher:
         description: Optional, exists if the submission has been graded by a teacher.
