@@ -2,6 +2,7 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import ee.urgas.ems.bl.access.canTeacherAccessCourse
 import ee.urgas.ems.db.AutomaticAssessment
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
@@ -10,9 +11,7 @@ import ee.urgas.ems.db.ExerciseVer
 import ee.urgas.ems.db.GraderType
 import ee.urgas.ems.db.StudentCourseAccess
 import ee.urgas.ems.db.Submission
-import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherAssessment
-import ee.urgas.ems.db.TeacherCourseAccess
 import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -71,14 +70,6 @@ data class TeacherCourseEx(val id: Long, val title: String, val softDeadline: Da
                            val gradedCount: Int?, val ungradedCount: Int?, val unstartedCount: Int,
                            val startedCount: Int?, val completedCount: Int?)
 
-
-private fun canTeacherAccessCourse(email: String, courseId: Long): Boolean {
-    return transaction {
-        (Teacher innerJoin TeacherCourseAccess)
-                .select { Teacher.id eq email and (TeacherCourseAccess.course eq courseId) }
-                .count() > 0
-    }
-}
 
 private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx> {
     return transaction {
