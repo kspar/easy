@@ -588,10 +588,9 @@ definitions:
         type: string
         format: date-time
       grade:
-        description: Optional, exists if the submission has been graded.
+        description: Optional, exists if the submission has been graded (together with graded_by).
         type: integer
       graded_by:
-        description: Optional, exists if the submission has been graded.
         $ref: '#/definitions/GraderType'
 
   TeacherSubmission:
