@@ -109,7 +109,7 @@ paths:
               $ref: '#/definitions/Submission'
 
     post:
-      summary: Add a new submission to the specified course exercise.
+      summary: Create a new submission to the specified course exercise.
       tags:
         - student
       parameters:
@@ -120,12 +120,8 @@ paths:
               solution:
                 type: string
       responses:
-        201:
-          description: Submission added.
-          headers:
-            Location:
-              type: string
-              description: URL for getting this submission's details.
+        200:
+          description: Submission created.
 
 
   /teacher/courses:
