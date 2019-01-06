@@ -69,6 +69,7 @@ object Submission : LongIdTable("submission") {
     val student = reference("student_email", Student)
     val createdAt = datetime("created_at")
     val solution = text("solution")
+    val autoAssInProgress = bool("auto_ass_in_progress")
 }
 
 object TeacherAssessment : LongIdTable("teacher_assessment") {

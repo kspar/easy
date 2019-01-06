@@ -400,5 +400,13 @@
         <dropColumn tableName="student" columnName="id"/>
         <addPrimaryKey tableName="student" columnNames="email"/>
     </changeSet>
+    
+    <changeSet id="060119-1" author="kspar">
+        <addColumn tableName="submission">
+            <column name="auto_ass_in_progress" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>
