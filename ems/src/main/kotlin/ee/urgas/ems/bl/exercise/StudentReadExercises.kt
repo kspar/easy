@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import ee.urgas.ems.bl.access.canStudentAccessCourse
 import ee.urgas.ems.db.AutomaticAssessment
-import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
 import ee.urgas.ems.db.ExerciseVer
