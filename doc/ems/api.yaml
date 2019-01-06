@@ -513,17 +513,29 @@ definitions:
 
   Submission:
     properties:
-      serial:
-        type: integer
+      # TODO: serial needed for what?
+#      serial:
+#        type: integer
       solution:
         type: string
-      grade:
-        type: integer
-      feedback:
-        type: string
-      time:
+      submission_time:
         type: string
         format: date-time
+      autoass_in_progress:
+        type: boolean
+        description: Whether this submission is currently being auto-assessed.
+      grade_auto:
+        description: Optional, exists if the submission has been automatically graded.
+        type: integer
+      feedback_auto:
+        description: Optional, exists if the submission has been automatically graded.
+        type: string
+      grade_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: integer
+      feedback_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: string
 
   TeacherCourse:
     properties:
