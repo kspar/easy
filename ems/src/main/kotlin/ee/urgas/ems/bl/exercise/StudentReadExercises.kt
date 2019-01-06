@@ -61,9 +61,11 @@ private fun selectStudentExercises(courseId: Long, studentEmail: String):
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
     return transaction {
-        (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold)
                 .select {
-                    Course.id eq courseId and ExerciseVer.validTo.isNull() and
+                    CourseExercise.course eq courseId and
+                            ExerciseVer.validTo.isNull() and
                             (CourseExercise.studentVisible eq true)
                 }
                 .map {
