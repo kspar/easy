@@ -49,7 +49,7 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
     get:
-      summary: Get summaries of exercises in the specified course (that the authenticated user has access to).
+      summary: Get summaries of exercises in the specified course (that are visible to students).
       tags:
         - student
       responses:
@@ -486,11 +486,14 @@ definitions:
       deadline:
         type: string
         format: date-time
+        description: Optional.
       status:
         $ref: '#/definitions/ExerciseStatus'
       grade:
-        description: TODO
         type: integer
+        description: Optional (together with graded_by).
+      graded_by:
+        $ref: '#/definitions/GraderType'
 
   StudentExerciseDetails:
     properties:
