@@ -517,9 +517,8 @@ definitions:
       submission_time:
         type: string
         format: date-time
-      autoass_in_progress:
-        type: boolean
-        description: Whether this submission is currently being auto-assessed.
+      autograde_status:
+        $ref: '#/definitions/AutogradeStatus'
       grade_auto:
         description: Optional, exists if the submission has been automatically graded.
         type: integer
@@ -700,3 +699,13 @@ definitions:
     enum:
       - AUTO
       - TEACHER
+
+  AutogradeStatus:
+    type: string
+    description: "Status of automatic assessment on a submission. The submission is either not graded automatically (NONE),
+    the automatic grading is in progress (IN_PROGRESS), completed (COMPLETED) or has failed (FAILED)."
+    enum:
+      - NONE
+      - IN_PROGRESS
+      - COMPLETED
+      - FAILED
