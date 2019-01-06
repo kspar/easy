@@ -6,11 +6,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 import javax.sql.DataSource
 
-
+@EnableAsync
 @SpringBootApplication
 class EmsApplication {
 

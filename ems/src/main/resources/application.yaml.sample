@@ -5,3 +5,5 @@ spring:
     password: "<password>"
 
 
+aas:
+  psk: "<aas-preshared-key>"

@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.access
 
+import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.StudentCourseAccess
 import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherCourseAccess
@@ -23,6 +24,18 @@ fun canStudentAccessCourse(studentEmail: String, courseId: Long): Boolean {
         StudentCourseAccess
                 .select { StudentCourseAccess.student eq studentEmail and
                         (StudentCourseAccess.course eq courseId) }
+                .count() > 0
+    }
+}
+
+fun isVisibleExerciseOnCourse(courseExId: Long, courseId: Long): Boolean {
+    return transaction {
+        CourseExercise
+                .select {
+                    CourseExercise.course eq courseId and
+                            (CourseExercise.id eq courseExId) and
+                            (CourseExercise.studentVisible eq true)
+                }
                 .count() > 0
     }
 }
