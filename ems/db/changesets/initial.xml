@@ -408,5 +408,14 @@
             </column>
         </addColumn>
     </changeSet>
+    
+    <changeSet id="060119-2" author="kspar">
+        <dropColumn tableName="submission" columnName="auto_ass_in_progress"/>
+        <addColumn tableName="submission">
+            <column name="auto_grade_status" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>

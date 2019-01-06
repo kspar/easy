@@ -26,7 +26,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val validFrom = datetime("valid_from")
     val validTo = datetime("valid_to").nullable()
     val graderType = enumerationByName("grader_type", 20, GraderType::class)
-    val aasId = long("aas_id").nullable()
+    val aasId = text("aas_id").nullable()
     val title = text("title")
     val textHtml = text("text_html").nullable()
 }
@@ -69,7 +69,7 @@ object Submission : LongIdTable("submission") {
     val student = reference("student_email", Student)
     val createdAt = datetime("created_at")
     val solution = text("solution")
-    val autoAssInProgress = bool("auto_ass_in_progress")
+    val autoGradeStatus = enumerationByName("auto_grade_status", 20, AutoGradeStatus::class)
 }
 
 object TeacherAssessment : LongIdTable("teacher_assessment") {
