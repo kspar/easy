@@ -6,6 +6,7 @@ import ee.urgas.aas.db.Executor
 import ee.urgas.aas.db.Exercise
 import ee.urgas.aas.db.ExerciseExecutor
 import ee.urgas.aas.exception.ForbiddenException
+import ee.urgas.aas.exception.OverloadedException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.select
@@ -32,11 +33,12 @@ private val log = KotlinLogging.logger {}
 class AutoAssessController {
     companion object {
         const val SIGNATURE_ALGORITHM = "HmacSHA256"
-        const val ALLOWED_DELAY_SEC = 30
     }
 
     @Value("\${ems.psk}")
     private lateinit var keyString: String
+    @Value("\${ems.allowed-delay-sec}")
+    private var allowedDelaySec: Int = 0
 
     data class AutoAssessBody(@JsonProperty("submission", required = true) val submission: String,
                               @JsonProperty("timestamp", required = true) val timestamp: Int,
@@ -45,7 +47,7 @@ class AutoAssessController {
     data class AutoAssessResponse(@JsonProperty("grade") val grade: Int,
                                   @JsonProperty("feedback") val feedback: String)
 
-    @PostMapping("/exercises/{exerciseId}/automatic-assessment")
+    @PostMapping("/noauth/exercises/{exerciseId}/automatic-assessment")
     fun autoAssess(@PathVariable("exerciseId") exerciseId: String, @RequestBody body: AutoAssessBody): AutoAssessResponse {
         validateMessage(exerciseId, body.submission, body.timestamp, body.signature)
         val submission = mapToAutoAssessSubmission(exerciseId, body)
@@ -53,10 +55,14 @@ class AutoAssessController {
     }
 
     private fun validateMessage(exerciseId: String, submission: String, timestamp: Int, signature: String) {
+        if (allowedDelaySec == 0) {
+            log.warn { "Allowed request latency is 0 (might be uninitialized)" }
+        }
+
         // Check timestamp
         val currentTime = System.currentTimeMillis() / 1000
         val timeDelta = currentTime - timestamp
-        if (timeDelta > ALLOWED_DELAY_SEC) {
+        if (timeDelta > allowedDelaySec) {
             log.warn { "Request timestamp too old: $timestamp, current time: $currentTime, delta: $timeDelta" }
             throw ForbiddenException("Request timestamp is too old")
         }
@@ -114,9 +120,13 @@ private fun assess(submission: AutoAssessSubmission): AutoAssessment {
 }
 
 private fun selectExecutor(executors: Set<CapableExecutor>): CapableExecutor {
-    return executors.reduce { bestExec, currentExec ->
+    val executor = executors.reduce { bestExec, currentExec ->
         if (currentExec.load / currentExec.maxLoad < bestExec.load / bestExec.maxLoad) currentExec else bestExec
     }
+    if (executor.load >= executor.maxLoad) {
+        throw OverloadedException("All executors overloaded")
+    }
+    return executor
 }
 
 

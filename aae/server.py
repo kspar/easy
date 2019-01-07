@@ -72,6 +72,8 @@ def post_grade():
     content = request.get_json()
     check_content(content)
 
+    # TODO: dummy switch from conf
+
     status, raw_output = grade_submission(content["submission"], content["grading_script"],
                                           assets_to_tuples(content["assets"]), content["image_name"],
                                           content["max_time_sec"], content["max_mem_mb"], app.logger)

@@ -11,6 +11,11 @@ body {
     background-size: cover;
 }
 
+.logo-img {
+    max-height: 58px;
+}
+
+
 nav {
     background-color: #4DAB54;
 }

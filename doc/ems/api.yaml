@@ -1,6 +1,8 @@
 swagger: "2.0"
 info:
-  description: "This specification documents the public API of easy:ems. Services with the 'student' tag require a token containing claim 'easy_role: student' and 'teacher' services analogously require 'easy_role: teacher'."
+  description: "This specification documents the public API of easy:ems. Services with the 'student' tag
+  require a token containing claim 'easy_role: student' and 'teacher' services analogously require 'easy_role: teacher'.
+  'Common' services can be called by either role."
   version: "1.0"
   title: Easy:ems Public API
 schemes:
@@ -14,9 +16,20 @@ basePath: /v1
 tags:
   - name: student
   - name: teacher
+  - name: common
 
 
 paths:
+
+  /register:
+    post:
+      summary: Register account with :ems. Must be called at least once per account before any other services. Has no effect when called multiple times.
+      tags:
+        - common
+      responses:
+        200:
+          description: Registered.
+
 
   /student/courses:
     get:
@@ -36,7 +49,7 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
     get:
-      summary: Get summaries of exercises in the specified course (that the authenticated user has access to).
+      summary: Get summaries of exercises in the specified course (that are visible to students).
       tags:
         - student
       responses:
@@ -96,7 +109,7 @@ paths:
               $ref: '#/definitions/Submission'
 
     post:
-      summary: Add a new submission to the specified course exercise.
+      summary: Create a new submission to the specified course exercise.
       tags:
         - student
       parameters:
@@ -107,12 +120,8 @@ paths:
               solution:
                 type: string
       responses:
-        201:
-          description: Submission added.
-          headers:
-            Location:
-              type: string
-              description: URL for getting this submission's details.
+        200:
+          description: Submission created.
 
 
   /teacher/courses:
@@ -255,6 +264,8 @@ paths:
                 type: integer
               feedback:
                 type: string
+            required:
+              - grade
       responses:
         200:
           description: Created.
@@ -305,9 +316,7 @@ paths:
             description: Student emails.
             type: array
             items:
-              properties:
-                email:
-                  type: string
+              type: string
       responses:
         200:
           description: Students added.
@@ -463,12 +472,6 @@ definitions:
         type: string
       title:
         type: string
-      next_deadline:
-        type: string
-        format: date-time
-      progress:
-        description: TODO
-        type: integer
 
   StudentExercise:
     properties:
@@ -479,11 +482,14 @@ definitions:
       deadline:
         type: string
         format: date-time
+        description: Optional.
       status:
         $ref: '#/definitions/ExerciseStatus'
       grade:
-        description: TODO
         type: integer
+        description: Optional (together with graded_by).
+      graded_by:
+        $ref: '#/definitions/GraderType'
 
   StudentExerciseDetails:
     properties:
@@ -491,9 +497,11 @@ definitions:
         type: string
       text_html:
         type: string
+        description: Optional.
       deadline:
         type: string
         format: date-time
+        description: Optional.
       grader_type:
         $ref: '#/definitions/GraderType'
       threshold:
@@ -501,17 +509,28 @@ definitions:
 
   Submission:
     properties:
-      serial:
-        type: integer
+      # TODO: serial needed for what?
+#      serial:
+#        type: integer
       solution:
         type: string
-      grade:
-        type: integer
-      feedback:
-        type: string
-      time:
+      submission_time:
         type: string
         format: date-time
+      autograde_status:
+        $ref: '#/definitions/AutogradeStatus'
+      grade_auto:
+        description: Optional, exists if the submission has been automatically graded.
+        type: integer
+      feedback_auto:
+        description: Optional, exists if the submission has been automatically graded.
+        type: string
+      grade_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: integer
+      feedback_teacher:
+        description: Optional, exists if the submission has been graded by a teacher.
+        type: string
 
   TeacherCourse:
     properties:
@@ -530,17 +549,18 @@ definitions:
         type: string
       soft_deadline:
         type: string
+        format: date-time
       grader_type:
         $ref: '#/definitions/GraderType'
+      unstarted_count:
+        type: integer
       graded_count:
         description: Property exists if grader_type == TEACHER.
         type: integer
       ungraded_count:
         description: Property exists if grader_type == TEACHER.
         type: integer
-      unstarted_count:
-        description: Property exists if grader_type == AUTO.
-        type: integer
+      # TODO: instead of graded, TEACHER exercises should also have "positively graded" ~ "completed" and opposite
       started_count:
         description: Property exists if grader_type == AUTO.
         type: integer
@@ -578,13 +598,14 @@ definitions:
         type: string
       family_name:
         type: string
-      grade:
-        type: integer
-      created_at:
+      submission_time:
         type: string
         format: date-time
-      graded:
-        type: boolean
+      grade:
+        description: Optional, exists if the submission has been graded (together with graded_by).
+        type: integer
+      graded_by:
+        $ref: '#/definitions/GraderType'
 
   TeacherSubmission:
     properties:
@@ -594,10 +615,10 @@ definitions:
         type: string
         format: date-time
       grade_auto:
-        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        description: Optional, exists if the submission has been automatically graded.
         type: integer
       feedback_auto:
-        description: Optional, exists if exercise grader type == AUTO and the submission has been automatically graded.
+        description: Optional, exists if the submission has been automatically graded.
         type: string
       grade_teacher:
         description: Optional, exists if the submission has been graded by a teacher.
@@ -678,3 +699,13 @@ definitions:
     enum:
       - AUTO
       - TEACHER
+
+  AutogradeStatus:
+    type: string
+    description: "Status of automatic assessment on a submission. The submission is either not graded automatically (NONE),
+    the automatic grading is in progress (IN_PROGRESS), completed (COMPLETED) or has failed (FAILED)."
+    enum:
+      - NONE
+      - IN_PROGRESS
+      - COMPLETED
+      - FAILED

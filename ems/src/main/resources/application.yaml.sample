@@ -1,7 +1,11 @@
 spring:
   datasource:
-    url: "<url>"
+    jdbc-url: "<url>"
     username: "<username>"
     password: "<password>"
 
 
+aas:
+  psk: "<aas-preshared-key>"
+
+auth-enabled: true

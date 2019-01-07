@@ -1,9 +1,11 @@
 spring:
   datasource:
-    url: "<url>"
+    jdbc-url: "<url>"
     username: "<username>"
     password: "<password>"
 
 ems:
   psk: "<ems shared key>"
+  allowed-delay-sec: 30
 
+auth-enabled: true

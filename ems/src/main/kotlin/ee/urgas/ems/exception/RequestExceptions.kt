@@ -1,4 +1,4 @@
-package ee.urgas.aas.exception
+package ee.urgas.ems.exception
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -8,6 +8,3 @@ class InvalidRequestException(override val message: String) : RuntimeException(m
 
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class ForbiddenException(override val message: String) : RuntimeException(message)
-
-@ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-class OverloadedException(override val message: String) : RuntimeException(message)
