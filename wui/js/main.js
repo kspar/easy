@@ -1,5 +1,18 @@
-function debug(msg) {
-    console.debug(msg)
+function reportError(o1, o2) {
+    // TODO: report error
+}
+
+function error(o1, o2) {
+    console.error(o1);
+    console.error(o2);
+    reportError(o1, o2);
+}
+
+function ensureTokenValid() {
+    return kc.updateToken(TOKEN_MIN_VALID_SEC)
+        .error(() => {
+           error("Token refresh failed");
+        });
 }
 
 
@@ -33,28 +46,41 @@ function exercisePage() {
 }
 
 
-
 function coursesPage() {
-    debug("Courses page")
+    console.debug("Courses page")
 
 }
 
 function authenticate() {
+    kc = Keycloak();
+    kc.init({
+        onLoad: 'login-required'
 
+    }).success((authenticated) => {
+        console.debug("Authenticated: " + authenticated);
+
+    }).error(function (e) {
+        error("Keycloak init failed", e);
+
+    });
+
+    kc.onTokenExpired = () => {
+        kc.updateToken();
+    }
 }
 
 function common() {
 
+    authenticate()
     // authenticate
 
     // parse auth token to retrieve user info
 }
 
 
-
 function runPageCode() {
     const pageId = $("body").data("pageid");
-    debug("Page id: " + pageId);
+    console.debug("Page id: " + pageId);
 
     common();
 
@@ -66,6 +92,11 @@ function runPageCode() {
     }
 }
 
+
+const TOKEN_MIN_VALID_SEC = 20;
+
+// Keycloak object
+let kc;
 
 $(document).ready(() => {
     runPageCode();
