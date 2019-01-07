@@ -1,6 +1,7 @@
 package ee.urgas.ems.conf.security
 
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
@@ -19,12 +20,17 @@ import javax.servlet.http.HttpServletResponse
 class SecurityConf : WebSecurityConfigurerAdapter() {
     private val log = KotlinLogging.logger {}
 
+    @Value("\${auth-enabled}")
+    private var authEnabled: Boolean = true
+
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
                 // All services require auth == any role by default
                 .anyRequest().authenticated()
 
-        http.addFilterAfter(PreAuthHeaderFilter(), RequestHeaderAuthenticationFilter::class.java)
+        http.addFilterAfter(
+                if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
+                RequestHeaderAuthenticationFilter::class.java)
 
         http.exceptionHandling()
                 .accessDeniedHandler { request, response, _ ->

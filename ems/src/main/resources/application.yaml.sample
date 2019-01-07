@@ -7,3 +7,5 @@ spring:
 
 aas:
   psk: "<aas-preshared-key>"
+
+auth-enabled: true
