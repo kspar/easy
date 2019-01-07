@@ -126,7 +126,7 @@ paths:
           description: Modified.
 
 
-  /exercises/{exerciseId}/automatic-assessment:
+  /noauth/exercises/{exerciseId}/automatic-assessment:
     parameters:
       - $ref: '#/parameters/ExerciseId'
     post:

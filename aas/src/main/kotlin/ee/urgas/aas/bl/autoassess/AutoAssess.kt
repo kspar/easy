@@ -47,7 +47,7 @@ class AutoAssessController {
     data class AutoAssessResponse(@JsonProperty("grade") val grade: Int,
                                   @JsonProperty("feedback") val feedback: String)
 
-    @PostMapping("/exercises/{exerciseId}/automatic-assessment")
+    @PostMapping("/noauth/exercises/{exerciseId}/automatic-assessment")
     fun autoAssess(@PathVariable("exerciseId") exerciseId: String, @RequestBody body: AutoAssessBody): AutoAssessResponse {
         validateMessage(exerciseId, body.submission, body.timestamp, body.signature)
         val submission = mapToAutoAssessSubmission(exerciseId, body)

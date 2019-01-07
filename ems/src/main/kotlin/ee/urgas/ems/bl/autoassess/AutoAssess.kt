@@ -8,7 +8,7 @@ import javax.crypto.spec.SecretKeySpec
 
 // TODO: get from conf
 const val AAS_URL = "http://aas.lahendus.ut.ee"
-const val AAS_AUTOGRADE_PATH_TEMPL = "/v1/exercises/{exerciseId}/automatic-assessment"
+const val AAS_AUTOGRADE_PATH_TEMPL = "/noauth/v1/exercises/{exerciseId}/automatic-assessment"
 
 data class AutoAssessResponse(val grade: Int, val feedback: String?)
 
