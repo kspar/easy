@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.register
 
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.Teacher
 import mu.KotlinLogging
@@ -19,47 +20,39 @@ private val log = KotlinLogging.logger {}
 class RegisterAccountController {
 
     @PostMapping("/register")
-    fun registerAccount() {
-        // TODO: get data from auth
-        val email = "ford"
-        val givenName = "Ford"
-        val familyName = "Prefect"
-        val roles = setOf("STUDENT", "TEACHER")
+    fun registerAccount(caller: EasyUser) {
 
-        if (roles.contains("STUDENT")) {
-            val student = StudentAccount(email, givenName, familyName)
-            log.debug { "Registering $student" }
-            registerStudent(student)
+        val account = Account(caller.email, caller.givenName, caller.familyName)
+        log.debug { "Register $account" }
+
+        if (caller.isStudent()) {
+            registerStudent(account)
         }
-        if (roles.contains("TEACHER")) {
-            val teacher = TeacherAccount(email, givenName, familyName)
-            log.debug { "Registering $teacher" }
-            registerTeacher(teacher)
+        if (caller.isTeacher()) {
+            registerTeacher(account)
         }
     }
 }
 
 
-data class StudentAccount(val email: String, val givenName: String, val familyName: String)
-data class TeacherAccount(val email: String, val givenName: String, val familyName: String)
+data class Account(val email: String, val givenName: String, val familyName: String)
 
 
-
-private fun registerStudent(student: StudentAccount) {
+private fun registerStudent(student: Account) {
     if (!studentExists(student.email)) {
-        log.debug { "Student not found, inserting" }
+        log.debug { "Student ${student.email} not found, inserting" }
         insertStudent(student)
     } else {
-        log.debug { "Student already exists" }
+        log.debug { "Student ${student.email} already exists" }
     }
 }
 
-private fun registerTeacher(teacher: TeacherAccount) {
+private fun registerTeacher(teacher: Account) {
     if (!teacherExists(teacher.email)) {
-        log.debug { "Teacher not found, inserting" }
+        log.debug { "Teacher ${teacher.email} not found, inserting" }
         insertTeacher(teacher)
     } else {
-        log.debug { "Teacher already exists" }
+        log.debug { "Teacher ${teacher.email} already exists" }
     }
 }
 
@@ -77,7 +70,7 @@ private fun teacherExists(email: String): Boolean {
     }
 }
 
-private fun insertStudent(student: StudentAccount) {
+private fun insertStudent(student: Account) {
     transaction {
         Student.insert {
             it[id] = EntityID(student.email, Student)
@@ -88,7 +81,7 @@ private fun insertStudent(student: StudentAccount) {
     }
 }
 
-private fun insertTeacher(teacher: TeacherAccount) {
+private fun insertTeacher(teacher: Account) {
     transaction {
         Teacher.insert {
             it[id] = EntityID(teacher.email, Teacher)
