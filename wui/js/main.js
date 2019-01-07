@@ -9,10 +9,15 @@ function error(o1, o2) {
 }
 
 function ensureTokenValid() {
-    return kc.updateToken(TOKEN_MIN_VALID_SEC)
-        .error(() => {
-           error("Token refresh failed");
-        });
+    if (AUTH_ENABLED) {
+        return kc.updateToken(TOKEN_MIN_VALID_SEC)
+            .error(() => {
+                error("Token refresh failed");
+            });
+
+    } else {
+        return new Promise.resolve();
+    }
 }
 
 
@@ -70,8 +75,9 @@ function authenticate() {
 }
 
 function common() {
-
-    authenticate()
+    if (AUTH_ENABLED) {
+        authenticate();
+    }
     // authenticate
 
     // parse auth token to retrieve user info
@@ -92,6 +98,8 @@ function runPageCode() {
     }
 }
 
+
+const AUTH_ENABLED = false;
 
 const TOKEN_MIN_VALID_SEC = 20;
 
