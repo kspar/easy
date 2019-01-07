@@ -127,9 +127,14 @@ h2 {
 
 #account {
     position: absolute;
-    right: 10px;
-    top: 5px;
+    right: 25px;
+    top: 3px;
     font-size: 1.7rem;
+}
+
+
+i.left {
+    margin-right: 10px;
 }
 
 #account-logo {
