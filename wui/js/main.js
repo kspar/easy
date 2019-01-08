@@ -42,15 +42,42 @@ function paintStudentExercises(exercises) {
 
         const titleItem = $("<div></div>").addClass("col").addClass("s4").text(e.title);
 
-        const deadlineString = "Tähtaeg: " + e.deadline;  // TODO: format
+        const deadlineString = "Tähtaeg: " + e.deadline;  // TODO: format, empty if null
         const deadlineItem = $("<div></div>").addClass("col").addClass("s4").text(deadlineString);
 
         const gradeString = (e.grade === null ? "--" : e.grade) + "/100";
         const gradeItem = $("<div></div>").addClass("col").addClass("s2").text(gradeString); // TODO: graded_by icon
 
-        const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("exercise-item")
+        const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("student-exercise-item")
             .attr("href", "/exercise.html?exercise-id=" + e.id + "&exercise-title=" + e.title)
             .append(statusItem, titleItem, deadlineItem, gradeItem);
+
+        $("#exercises-list").append(exerciseItem);
+    });
+}
+
+function paintTeacherExercises(exercises) {
+    exercises.forEach((e) => {
+        console.debug("Exercise " + e.id + ", title: " + e.title + ", soft_deadline: " + e.soft_deadline +
+            ", grader_type: " + e.grader_type + ", unstarted_count: " + e.unstarted_count + ", graded_count: " + e.graded_count +
+            ", ungraded_count: " + e.ungraded_count + ", started_count: " + e.started_count + ", completed_count: " + e.completed_count);
+
+        const deadlineString = "Tähtaeg: " + e.soft_deadline;  // TODO: format, empty if null
+        const count1String = "Esitamata: " + e.unstarted_count;
+        const count2String = e.grader_type === "AUTO" ? "Alustanud: " + e.started_count : "Hindamata: " + e.ungraded_count;
+        const count3String = e.grader_type === "AUTO" ? "Lõpetanud: " + e.completed_count : "Hinnatud: " + e.graded_count;
+
+        const exerciseItem = $("#teacher-exercise-item").clone()
+            .removeAttr("id").removeAttr("style")
+            .attr("href", "/exercise.html?exercise-id=" + e.id + "&exercise-title=" + e.title);
+
+        exerciseItem.find(".title-wrap").text(e.title);
+        exerciseItem.find(".deadline-wrap").text(deadlineString);
+        exerciseItem.find(".unstarted-wrap").text(count1String);
+        exerciseItem.find(".started-wrap").text(count2String);
+        exerciseItem.find(".completed-wrap").text(count3String);
+
+        // TODO: show grader_type somehow
 
         $("#exercises-list").append(exerciseItem);
     });
@@ -163,7 +190,6 @@ async function initCoursesPageAuth() {
 }
 
 async function initExercisesPageAuth() {
-
     // get course id
     const courseId = getQueryParam("course-id");
     console.debug("Course: " + courseId);
@@ -181,14 +207,16 @@ async function initExercisesPageAuth() {
         });
         paintStudentExercises(exercises);
 
-
     } else if (isTeacher()) {
-        // TODO
+        const exercises = await $.get({
+            url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises",
+            headers: getAuthHeader()
+        });
+        paintTeacherExercises(exercises);
 
     } else {
         error("Roles missing or unhandled role", roles);
     }
-
 }
 
 async function initExercisePageAuth() {

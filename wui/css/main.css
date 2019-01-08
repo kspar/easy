@@ -180,8 +180,13 @@ h2 {
 
 /** Exercises page **/
 
-.collection a.exercise-item {
+.collection a.student-exercise-item {
     line-height: 5rem;
+    color: #000;
+}
+
+.collection a.teacher-exercise-item {
+    line-height: 2.5rem;
     color: #000;
 }
 
