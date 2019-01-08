@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -43,6 +46,8 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
                 }
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+
+        http.cors().configurationSource(getCorsConfiguration())
         http.csrf().disable()
     }
 
@@ -51,11 +56,22 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     }
 
     private fun makeRequestLogMsg(req: HttpServletRequest): String {
+        println(req.headerNames.toList().joinToString("\n") { "$it : ${req.getHeader(it)}" })
         val email = req.getHeader("oidc_claim_email")
         val role = req.getHeader("oidc_claim_easy_role")
         val ip = req.remoteAddr
         val method = req.method
         val url = req.requestURL
         return "$email with role $role from $ip: $method $url"
+    }
+
+
+    fun getCorsConfiguration(): CorsConfigurationSource {
+        val conf = CorsConfiguration()
+        conf.allowedOrigins = listOf("http://localhost:63342", "https://lahendus.ut.ee")
+        conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT")
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", conf)
+        return source
     }
 }
