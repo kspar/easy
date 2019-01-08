@@ -56,7 +56,6 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     }
 
     private fun makeRequestLogMsg(req: HttpServletRequest): String {
-        println(req.headerNames.toList().joinToString("\n") { "$it : ${req.getHeader(it)}" })
         val email = req.getHeader("oidc_claim_email")
         val role = req.getHeader("oidc_claim_easy_role")
         val ip = req.remoteAddr
