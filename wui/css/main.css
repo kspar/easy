@@ -1,3 +1,4 @@
+
 html {
     font-family: 'Roboto', sans-serif;
     font-size: 62.5%;
@@ -11,11 +12,11 @@ body {
     background-size: cover;
 }
 
+
 .logo-img {
     max-height: 58px;
     height: 2.1rem;
 }
-
 
 nav {
     background-color: #4DAB54;
@@ -30,12 +31,11 @@ nav.nav-center ul li {
     float: none;
 }
 
-nav.nav-center ul li a {
+nav.nav-center ul li a.nav-link {
     font-weight: 500;
     font-size: 3rem;
     color: #fff;
     padding: 0 32px;
-    /*    display: inline-block;*/
 }
 
 @media only screen and (min-width: 601px) {
@@ -50,6 +50,12 @@ nav.nav-center ul li a {
         width: 62%;
     }
 }
+
+.dropdown-content li>a {
+    color: #000;
+    font-size: 1.5rem;
+}
+
 
 nav.clean {
     background: none;

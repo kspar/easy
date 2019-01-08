@@ -81,6 +81,8 @@ function common() {
     // authenticate
 
     // parse auth token to retrieve user info
+
+    $(".dropdown-trigger").dropdown();
 }
 
 
