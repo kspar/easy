@@ -82,7 +82,13 @@ function common() {
 
     // parse auth token to retrieve user info
 
+    // Init profile dropdown menu
     $(".dropdown-trigger").dropdown();
+
+    // Init logout link to redirect back to current page
+    const redirectUri = window.location.href;
+    const logoutLink = "https://idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/logout?redirect_uri=" + encodeURIComponent(redirectUri);
+    $("#logout-link").attr("href", logoutLink);
 }
 
 
