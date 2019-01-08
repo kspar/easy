@@ -3,6 +3,7 @@ package ee.urgas.ems.bl.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import ee.urgas.ems.bl.access.canStudentAccessCourse
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.AutomaticAssessment
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
@@ -17,6 +18,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -36,10 +38,12 @@ class StudentReadExercisesController {
                                         @JsonProperty("grade") val grade: Int?,
                                         @JsonProperty("graded_by") val gradedBy: GraderType?)
 
+    @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises")
-    fun getStudentExercises(@PathVariable("courseId") courseIdStr: String): List<StudentExercisesResponse> {
-        // TODO: get from auth
-        val callerEmail = "ford"
+    fun getStudentExercises(@PathVariable("courseId") courseIdStr: String, caller: EasyUser):
+            List<StudentExercisesResponse> {
+
+        val callerEmail = caller.email
         val courseId = courseIdStr.toLong()
 
         if (!canStudentAccessCourse(callerEmail, courseId)) {
