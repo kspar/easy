@@ -1,4 +1,3 @@
-
 /** Page-specific functions **/
 
 function editor(id) {
@@ -7,6 +6,17 @@ function editor(id) {
         lineNumbers: true,
         readOnly: true,
         autoRefresh: true
+    });
+}
+
+function paintStudentCourses(courses) {
+    courses.forEach((c) => {
+        console.log(c.id);
+        console.log(c.title);
+        const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
+            .attr("href", "/exercises.html?course-id=" + c.id)
+            .text(c.title);
+       $("#courses-list").append(courseItem);
     });
 }
 
@@ -38,8 +48,24 @@ function initCoursesPageNoAuth() {
 
 }
 
-function initCoursesPageAuth() {
-    // TODO: fetch courses
+async function initCoursesPageAuth() {
+    await ensureTokenValid();
+
+    if (isStudent()) {
+
+        const courses = await $.get({
+            url: EMS_ROOT + "/student/courses",
+            headers: getAuthHeader(),
+        });
+
+        paintStudentCourses(courses);
+
+    } else if (isTeacher()) {
+
+    } else {
+        error("Roles missing or unhandled role", roles);
+    }
+
 }
 
 function initCommonNoAuth() {
@@ -53,7 +79,7 @@ function initCommonNoAuth() {
     $("#logout-link").attr("href", logoutLink);
 }
 
-function initCommonAuth() {
+async function initCommonAuth() {
     const token = kc.tokenParsed;
     //console.log(token);
 
@@ -68,6 +94,16 @@ function initCommonAuth() {
 
     // Set roles
     roles = token.easy_role;
+
+    // Register with :ems
+    await ensureTokenValid();
+
+    return $.post({
+        url: EMS_ROOT + "/register",
+        headers: getAuthHeader(),
+    }).done(() => {
+        console.debug("Registration successful");
+    });
 }
 
 
@@ -76,8 +112,8 @@ function initCommonAuth() {
 /**
  * Initialize elements that require authentication.
  */
-function initPageAuth() {
-    initCommonAuth();
+async function initPageAuth() {
+    await initCommonAuth();
 
     const pageId = $("body").data("pageid");
     console.debug("Page id: " + pageId);
@@ -148,6 +184,13 @@ function ensureTokenValid() {
     }
 }
 
+function getAuthHeader() {
+    if (kc.token === undefined) {
+        error("Token is undefined", kc);
+    }
+    return {"Authorization": "Bearer " + kc.token};
+}
+
 function authenticate() {
     kc = Keycloak();
     kc.init({
@@ -157,7 +200,7 @@ function authenticate() {
         console.debug("Authenticated: " + authenticated);
         initPageAuth();
 
-    }).error(function (e) {
+    }).error((e) => {
         error("Keycloak init failed", e);
         // TODO: show error message
     });
@@ -176,10 +219,11 @@ function authenticate() {
 
 const AUTH_ENABLED = true;
 const TOKEN_MIN_VALID_SEC = 20;
+const EMS_ROOT = "https://ems.lahendus.ut.ee/v1";
 
 // Keycloak object
 let kc;
-// Roles
+// Roles list, do not use directly
 let roles;
 
 $(document).ready(() => {
