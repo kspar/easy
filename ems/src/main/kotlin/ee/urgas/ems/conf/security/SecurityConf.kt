@@ -65,11 +65,11 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
         return "$email with role $role from $ip: $method $url"
     }
 
-
-    fun getCorsConfiguration(): CorsConfigurationSource {
+    private fun getCorsConfiguration(): CorsConfigurationSource {
         val conf = CorsConfiguration()
         conf.allowedOrigins = listOf("http://localhost:63342", "https://lahendus.ut.ee")
         conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT")
+        conf.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", conf)
         return source
