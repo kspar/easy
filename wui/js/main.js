@@ -13,7 +13,7 @@ function paintStudentCourses(courses) {
     courses.forEach((c) => {
         console.debug("Course " + c.id + ", title: " + c.title);
         const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
-            .attr("href", "/exercises.html?course-id=" + c.id)
+            .attr("href", "/exercises.html?course-id=" + c.id + "&course-title=" + c.title)
             .text(c.title);
         $("#courses-list").append(courseItem);
     });
@@ -23,7 +23,7 @@ function paintTeacherCourses(courses) {
     courses.forEach((c) => {
         console.debug("Course " + c.id + ", title: " + c.title + ", count: " + c.student_count);
         const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
-            .attr("href", "/exercises.html?course-id=" + c.id)
+            .attr("href", "/exercises.html?course-id=" + c.id + "&course-title=" + c.title)
             .text(c.title);
         const studentCountString = c.student_count + (c.student_count === 1 ? " õpilane" : " õpilast");
         const studentCountItem = $("<span></span>").addClass("right").addClass("course-student-count")
@@ -77,7 +77,15 @@ function initCoursesPageNoAuth() {
 function initExercisesPageNoAuth() {
     console.debug("Exercises page");
 
-    // TODO: get course name from query param -> course-crumb and title
+    // Set breadcrumb name and page title to course name
+    let courseName = getQueryParam("course-title");
+    if (courseName === null || courseName === undefined) {
+        error("Course title not found", window.location.href);
+        courseName = "Ülesanded";
+    }
+
+    $("#course-crumb").text(courseName);
+    document.title = courseName;
 }
 
 function initExercisePageNoAuth() {
