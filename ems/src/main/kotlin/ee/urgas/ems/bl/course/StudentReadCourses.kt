@@ -1,6 +1,7 @@
 package ee.urgas.ems.bl.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
@@ -21,9 +22,8 @@ class StudentReadCoursesController {
                                       @JsonProperty("title") val title: String)
 
     @GetMapping("/student/courses")
-    fun readStudentCourses(): List<StudentCoursesResponse> {
-        // TODO: get from auth
-        val callerEmail = "ford"
+    fun readStudentCourses(caller: EasyUser): List<StudentCoursesResponse> {
+        val callerEmail = caller.email
         log.debug { "Getting courses for student $callerEmail" }
         val courses = selectCoursesForStudent(callerEmail)
         log.debug { "Found courses $courses" }
