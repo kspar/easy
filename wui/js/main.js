@@ -34,7 +34,26 @@ function paintTeacherCourses(courses) {
 }
 
 
-/** Init page functions **/
+/** Init page before auth functions **/
+
+function initCommonNoAuth() {
+    // Init profile dropdown menu
+    $(".dropdown-trigger").dropdown();
+
+    // Init logout link to redirect back to current page
+    const redirectUri = window.location.href;
+    // TODO: can get from kc?
+    const logoutLink = "https://idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/logout?redirect_uri=" + encodeURIComponent(redirectUri);
+    $("#logout-link").attr("href", logoutLink);
+}
+
+function initCoursesPageNoAuth() {
+    console.debug("Courses page");
+}
+
+function initExercisesPageNoAuth() {
+    console.debug("Exercises page");
+}
 
 function initExercisePageNoAuth() {
     // Init tabs
@@ -56,46 +75,8 @@ function initExercisePageNoAuth() {
     }
 }
 
-function initCoursesPageNoAuth() {
-    console.debug("Courses page")
 
-}
-
-async function initCoursesPageAuth() {
-    await ensureTokenValid();
-
-    if (isStudent()) {
-
-        const courses = await $.get({
-            url: EMS_ROOT + "/student/courses",
-            headers: getAuthHeader(),
-        });
-        paintStudentCourses(courses);
-
-    } else if (isTeacher()) {
-
-        const courses = await $.get({
-            url: EMS_ROOT + "/teacher/courses",
-            headers: getAuthHeader(),
-        });
-        paintTeacherCourses(courses);
-
-    } else {
-        error("Roles missing or unhandled role", roles);
-    }
-
-}
-
-function initCommonNoAuth() {
-    // Init profile dropdown menu
-    $(".dropdown-trigger").dropdown();
-
-    // Init logout link to redirect back to current page
-    const redirectUri = window.location.href;
-    // TODO: can get from kc?
-    const logoutLink = "https://idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/logout?redirect_uri=" + encodeURIComponent(redirectUri);
-    $("#logout-link").attr("href", logoutLink);
-}
+/** Init page after auth functions **/
 
 async function initCommonAuth() {
     const token = kc.tokenParsed;
@@ -124,6 +105,39 @@ async function initCommonAuth() {
     });
 }
 
+async function initCoursesPageAuth() {
+    await ensureTokenValid();
+
+    if (isStudent()) {
+
+        const courses = await $.get({
+            url: EMS_ROOT + "/student/courses",
+            headers: getAuthHeader(),
+        });
+        paintStudentCourses(courses);
+
+    } else if (isTeacher()) {
+
+        const courses = await $.get({
+            url: EMS_ROOT + "/teacher/courses",
+            headers: getAuthHeader(),
+        });
+        paintTeacherCourses(courses);
+
+    } else {
+        error("Roles missing or unhandled role", roles);
+    }
+}
+
+async function initExercisesPageAuth() {
+    console.debug("Exercises page");
+}
+
+async function initExercisePageAuth() {
+    console.debug("Exercise page");
+}
+
+
 
 /** General functions **/
 
@@ -140,8 +154,11 @@ async function initPageAuth() {
         case "courses":
             initCoursesPageAuth();
             break;
+        case "exercises":
+            initExercisesPageAuth();
+            break;
         case "exercise":
-
+            initExercisePageAuth();
             break;
     }
 }
@@ -158,6 +175,9 @@ function initPageNoAuth() {
     switch (pageId) {
         case "courses":
             initCoursesPageNoAuth();
+            break;
+        case "exercises":
+            initExercisesPageNoAuth();
             break;
         case "exercise":
             initExercisePageNoAuth();
