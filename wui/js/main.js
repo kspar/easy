@@ -11,12 +11,25 @@ function editor(id) {
 
 function paintStudentCourses(courses) {
     courses.forEach((c) => {
-        console.log(c.id);
-        console.log(c.title);
+        console.debug("Course " + c.id + ", title: " + c.title);
         const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
             .attr("href", "/exercises.html?course-id=" + c.id)
             .text(c.title);
        $("#courses-list").append(courseItem);
+    });
+}
+
+function paintTeacherCourses(courses) {
+    courses.forEach((c) => {
+        console.debug("Course " + c.id + ", title: " + c.title + ", count: " + c.student_count);
+        const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
+            .attr("href", "/exercises.html?course-id=" + c.id)
+            .text(c.title);
+        const studentCountString = c.student_count + (c.student_count === 1 ? " õpilane" : " õpilast");
+        const studentCountItem = $("<span></span>").addClass("right").addClass("course-student-count")
+            .text(studentCountString);
+        courseItem.append(studentCountItem);
+        $("#courses-list").append(courseItem);
     });
 }
 
@@ -57,10 +70,15 @@ async function initCoursesPageAuth() {
             url: EMS_ROOT + "/student/courses",
             headers: getAuthHeader(),
         });
-
         paintStudentCourses(courses);
 
     } else if (isTeacher()) {
+
+        const courses = await $.get({
+            url: EMS_ROOT + "/teacher/courses",
+            headers: getAuthHeader(),
+        });
+        paintTeacherCourses(courses);
 
     } else {
         error("Roles missing or unhandled role", roles);
