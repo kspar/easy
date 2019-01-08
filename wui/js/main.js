@@ -15,7 +15,7 @@ function paintStudentCourses(courses) {
         const courseItem = $("<a></a>").addClass("collection-item").addClass("course-item")
             .attr("href", "/exercises.html?course-id=" + c.id)
             .text(c.title);
-       $("#courses-list").append(courseItem);
+        $("#courses-list").append(courseItem);
     });
 }
 
@@ -30,6 +30,29 @@ function paintTeacherCourses(courses) {
             .text(studentCountString);
         courseItem.append(studentCountItem);
         $("#courses-list").append(courseItem);
+    });
+}
+
+function paintStudentExercises(exercises) {
+    exercises.forEach((e) => {
+        console.debug("Exercise " + e.id + ", title: " + e.title + ", deadline: " + e.deadline +
+            ", status: " + e.status + ", grade: " + e.grade + ", graded_by: " + e.graded_by);
+
+        const statusItem = $("<div></div>").addClass("col").addClass("s2"); // TODO: icon
+
+        const titleItem = $("<div></div>").addClass("col").addClass("s4").text(e.title);
+
+        const deadlineString = "Tähtaeg: " + e.deadline;  // TODO: format
+        const deadlineItem = $("<div></div>").addClass("col").addClass("s4").text(deadlineString);
+
+        const gradeString = (e.grade === null ? "--" : e.grade) + "/100";
+        const gradeItem = $("<div></div>").addClass("col").addClass("s2").text(gradeString); // TODO: graded_by icon
+
+        const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("exercise-item")
+            .attr("href", "/exercise.html?exercise-id=" + e.id + "&exercise-title=" + e.title)
+            .append(statusItem, titleItem, deadlineItem, gradeItem);
+
+        $("#exercises-list").append(exerciseItem);
     });
 }
 
@@ -53,6 +76,8 @@ function initCoursesPageNoAuth() {
 
 function initExercisesPageNoAuth() {
     console.debug("Exercises page");
+
+    // TODO: get course name from query param -> course-crumb and title
 }
 
 function initExercisePageNoAuth() {
@@ -130,13 +155,37 @@ async function initCoursesPageAuth() {
 }
 
 async function initExercisesPageAuth() {
-    console.debug("Exercises page");
+
+    // get course id
+    const courseId = getQueryParam("course-id");
+    console.debug("Course: " + courseId);
+    if (courseId === null || courseId === undefined) {
+        // TODO: show error message
+        error("No course id found", window.location.href);
+    }
+
+    await ensureTokenValid();
+
+    if (isStudent()) {
+        const exercises = await $.get({
+            url: EMS_ROOT + "/student/courses/" + courseId + "/exercises",
+            headers: getAuthHeader()
+        });
+        paintStudentExercises(exercises);
+
+
+    } else if (isTeacher()) {
+        // TODO
+
+    } else {
+        error("Roles missing or unhandled role", roles);
+    }
+
 }
 
 async function initExercisePageAuth() {
     console.debug("Exercise page");
 }
-
 
 
 /** General functions **/
@@ -208,6 +257,11 @@ function error(o1, o2) {
     console.error(o1);
     console.error(o2);
     reportError(o1, o2);
+}
+
+function getQueryParam(key) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(key);
 }
 
 function ensureTokenValid() {
