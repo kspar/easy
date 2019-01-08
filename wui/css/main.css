@@ -175,3 +175,15 @@ h2 {
 .course-student-count {
     /* TODO */
 }
+
+
+
+/** Exercises page **/
+
+.collection a.exercise-item {
+    line-height: 5rem;
+    color: #000;
+}
+
+
+
