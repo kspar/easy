@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Ülesanne</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,500" rel="stylesheet">
@@ -12,29 +14,37 @@
 </head>
 
 <body data-pageid="exercise">
+
 <nav class="nav-center" role="navigation">
     <div class="container">
         <div class="nav-wrapper">
-            <a href="#" id="logo" class="brand-logo left">Logo</a>
+            <a href="/" class="brand-logo left"><img class="logo-img" src="img/main-logo.svg" alt="Lahendus"/></a>
             <ul id="nav-mobile" class="hide-on-med-and-down">
                 <li><a class="nav-link" href="courses.html">Kursused</a></li>
                 <li><a class="nav-link" href="courses.html">Abi</a></li>
             </ul>
         </div>
     </div>
-    <div id="account">
-        <a href="#"><i id="account-logo" class="left material-icons">account_circle</i><span>Karmen</span></a>
+    <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+        <a href="#!">
+            <i id="profile-logo" class="left material-icons">account_circle</i><span id="profile-name">Kasutaja</span>
+        </a>
     </div>
 </nav>
+
+<!-- Profile dropdown menu structure -->
+<ul id="profile-dropdown" class="dropdown-content">
+    <li><a href="https://idp.lahendus.ut.ee/auth/realms/master/account">Konto andmed</a></li>
+    <li><a id="logout-link">Logi välja</a></li>
+</ul>
+
 
 <div class="container">
     <nav class="clean">
         <div class="nav-wrapper">
-            <div class="col s12">
-                <a href="#!" class="breadcrumb">Kursused</a>
-                <a href="#!" class="breadcrumb">Programmeerimine</a>
-                <a href="#!" class="breadcrumb">Ülesanne 1. Lorem ipsum</a>
-            </div>
+            <a href="#!" class="breadcrumb">Kursused</a>
+            <a id="course-crumb" href="#!" class="breadcrumb"></a>
+            <a id="exercise-crumb" href="#!" class="breadcrumb"></a>
         </div>
     </nav>
 
@@ -183,8 +193,10 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"
-        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
