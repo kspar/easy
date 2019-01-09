@@ -159,6 +159,16 @@ h2 {
     margin-bottom: 0;
 }
 
+#teacher-submissions-list {
+    font-size: 1.8rem;
+}
+
+.collection a.teacher-submission-item {
+    line-height: 3rem;
+    color: #000;
+}
+
+
 
 /** Courses page **/
 

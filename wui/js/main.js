@@ -132,7 +132,20 @@ function paintTeacherSubmissions(submissions) {
         console.debug("Given_name " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
             ", grade: " + s.grade + ", graded_by: " + s.graded_by);
 
-        // TODO: paint submissions
+        const submissionItem = $("#teacher-submission-item").clone().removeAttr("id").removeAttr("style");
+
+        const studentName = s.given_name + " " + s.family_name;
+        submissionItem.find(".teacher-submission-student").text(studentName);
+
+        const submissionTime = s.submission_time; // TODO: format
+        submissionItem.find(".teacher-submission-time").text(submissionTime);
+
+        const gradeString = (s.grade === null ? "--" : s.grade) + "/100";
+        submissionItem.find(".teacher-submission-grade").text(gradeString);
+
+        // TODO: show graded_by somehow
+
+        $("#teacher-submissions-list").append(submissionItem);
     });
 }
 
