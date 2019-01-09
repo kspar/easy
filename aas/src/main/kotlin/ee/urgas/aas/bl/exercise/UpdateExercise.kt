@@ -1,6 +1,7 @@
 package ee.urgas.aas.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import ee.urgas.aas.conf.security.EasyUser
 import ee.urgas.aas.db.Asset
 import ee.urgas.aas.db.Executor
 import ee.urgas.aas.db.Exercise
@@ -13,6 +14,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -33,11 +35,14 @@ class UpdateExerciseController {
     data class UpdateExAsset(@JsonProperty("file_name", required = true) val fileName: String,
                              @JsonProperty("file_content", required = true) val fileContent: String)
 
+    @Secured("ROLE_TEACHER")
     @PutMapping("/exercises/{exerciseId}")
-    fun modifyExercise(@PathVariable("exerciseId") exerciseIdString: String, @RequestBody body: UpdateExBody) {
+    fun modifyExercise(@PathVariable("exerciseId") exerciseIdString: String, @RequestBody body: UpdateExBody,
+                       caller: EasyUser) {
+
+        val callerEmail = caller.email
         val exerciseId = exerciseIdString.toLong()
-        // TODO: caller email from auth
-        validateUpdateEx(exerciseId, body, "TODO")
+        validateUpdateEx(exerciseId, body, callerEmail)
         val updExercise = mapToUpdExercise(body)
         updateExercise(exerciseId, updExercise)
     }

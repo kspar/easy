@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.aas.db.Executor
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -19,6 +20,7 @@ class CreateExecutorController {
 
     data class CreateExecutorResponse(@JsonProperty("id") val id: String)
 
+    @Secured("ROLE_ADMIN")
     @PostMapping("/executors")
     fun createExecutor(@RequestBody body: CreateExecutorBody): CreateExecutorResponse {
         val newExecutor = mapToNewExecutor(body)

@@ -8,6 +8,7 @@ import ee.urgas.aas.db.ExerciseExecutor
 import ee.urgas.aas.exception.InvalidRequestException
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -34,6 +35,7 @@ class ReadExerciseController {
                                             @JsonProperty("load") val load: Int,
                                             @JsonProperty("max_load") val maxLoad: Int)
 
+    @Secured("ROLE_TEACHER")
     @GetMapping("/exercises/{exerciseId}")
     fun readExercise(@PathVariable("exerciseId") exerciseId: String): ReadExerciseResponse {
         val exercise = selectExercise(exerciseId.toLong())

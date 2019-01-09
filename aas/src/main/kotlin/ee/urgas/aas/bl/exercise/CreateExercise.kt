@@ -1,6 +1,7 @@
 package ee.urgas.aas.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import ee.urgas.aas.conf.security.EasyUser
 import ee.urgas.aas.db.Asset
 import ee.urgas.aas.db.Executor
 import ee.urgas.aas.db.Exercise
@@ -11,6 +12,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,11 +34,14 @@ class CreateExerciseController {
 
     data class CreatedExResponse(@JsonProperty("id") val id: String)
 
+    @Secured("ROLE_TEACHER")
     @PostMapping("/exercises")
-    fun createEx(@RequestBody body: CreateExBody): CreatedExResponse {
+    fun createEx(@RequestBody body: CreateExBody, caller: EasyUser): CreatedExResponse {
+
+        val callerEmail = caller.email
+
         validateCreateExBody(body)
-        // TODO: caller email from auth
-        val newExercise = mapToNewExercise(body, "TODO")
+        val newExercise = mapToNewExercise(body, callerEmail)
         val exerciseId = insertExercise(newExercise)
         return CreatedExResponse(exerciseId.toString())
     }
