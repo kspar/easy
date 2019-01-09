@@ -80,7 +80,21 @@ function paintStudentExerciseDetails(ex) {
     console.debug("Exercise title: " + ex.title + ", text: " + ex.text_html + ", deadline: " + ex.deadline +
         ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold);
 
-    // TODO: paint exercise tab
+    $("#exercise-title").text(ex.title);
+    if (ex.text_html !== null) {
+        $("#exercise-text").text(ex.text_html);
+    }
+
+    const deadlineString = ex.deadline; // TODO: format and null
+    $("#exercise-soft-deadline").removeAttr("style")
+        .find("#exercise-soft-deadline-value").text(deadlineString);
+
+    const graderString = ex.grader_type === "AUTO" ? "automaatne" : "käsitsi";
+    $("#exercise-grader").removeAttr("style")
+        .find("#exercise-grader-value").text(graderString);
+
+    $("#exercise-threshold").removeAttr("style")
+        .find("#exercise-threshold-value").text(ex.threshold);
 }
 
 function paintStudentSubmit(s) {
@@ -128,7 +142,35 @@ function paintTeacherExerciseDetails(ex) {
         ", last_modified: " + ex.last_modified + ", student_visible: " + ex.student_visible +
         ", assessments_student_visible: " + ex.assessments_student_visible);
 
-    // TODO: paint exercise tab
+    $("#exercise-title").text(ex.title);
+    $("#exercise-text").text(ex.text_html);
+
+    const softDeadlineString = ex.soft_deadline; // TODO: format and null
+    $("#exercise-soft-deadline").removeAttr("style")
+        .find("#exercise-soft-deadline-value").text(softDeadlineString);
+
+    const hardDeadlineString = ex.hard_deadline; // TODO: format and null
+    $("#exercise-hard-deadline").removeAttr("style")
+        .find("#exercise-hard-deadline-value").text(hardDeadlineString);
+
+    const graderString = ex.grader_type === "AUTO" ? "automaatne" : "käsitsi";
+    $("#exercise-grader").removeAttr("style")
+        .find("#exercise-grader-value").text(graderString);
+
+    $("#exercise-threshold").removeAttr("style")
+        .find("#exercise-threshold-value").text(ex.threshold);
+
+    const lastModifiedString = ex.last_modified; // TODO: format and null
+    $("#exercise-last-modified").removeAttr("style")
+        .find("#exercise-last-modified-value").text(lastModifiedString);
+
+    const visibleString = ex.student_visible === true ? "Jah" : "Ei";
+    $("#exercise-student-visible").removeAttr("style")
+        .find("#exercise-student-visible-value").text(visibleString);
+
+    const assessmentsVisibleString = ex.assessments_student_visible === true ? "Jah" : "Ei";
+    $("#exercise-assessments-student-visible").removeAttr("style")
+        .find("#exercise-assessments-student-visible-value").text(assessmentsVisibleString);
 }
 
 
@@ -453,11 +495,11 @@ function getExerciseTitleFromQuery() {
 }
 
 function isStudent() {
-    return hasRole("student");
+    return !FORCE_TEACHER && hasRole("student");
 }
 
 function isTeacher() {
-    return hasRole("teacher");
+    return FORCE_TEACHER || hasRole("teacher");
 }
 
 function hasRole(role) {
@@ -527,6 +569,8 @@ function authenticate() {
 /** Main **/
 
 const AUTH_ENABLED = true;
+const FORCE_TEACHER = true; // Assumes the user has teacher role obviously
+
 const TOKEN_MIN_VALID_SEC = 20;
 const EMS_ROOT = "https://ems.lahendus.ut.ee/v1";
 
