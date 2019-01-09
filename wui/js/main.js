@@ -115,7 +115,20 @@ function initExercisesPageNoAuth() {
 function initExercisePageNoAuth() {
     console.debug("Exercise page");
 
-    // Set breadcrumb ≠
+    // Set course and exercise breadcrumbs (exercise name will be later updated from service)
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+    const courseName = getCourseTitleFromQuery();
+    const exerciseName = getExerciseTitleFromQuery();
+    $("#course-crumb").attr("href", "/exercises.html?course-id=" + courseId + "&course-title=" + courseName).text(courseName);
+    $("#exercise-crumb").text(exerciseName);
+
+
+
+
 
     // Init tabs
     $("#tabs").tabs();
@@ -191,14 +204,11 @@ async function initCoursesPageAuth() {
 }
 
 async function initExercisesPageAuth() {
-    // get course id
-    const courseId = getQueryParam("course-id");
+    const courseId = getCourseIdFromQueryOrNull();
     const courseTitle = getCourseTitleFromQuery();
 
     console.debug("Course: " + courseId);
-    if (courseId === null || courseId === undefined) {
-        // TODO: show error message
-        error("No course id found", window.location.href);
+    if (courseId === null) {
         return;
     }
 
@@ -274,6 +284,26 @@ function initPageNoAuth() {
     }
 }
 
+function getCourseIdFromQueryOrNull() {
+    const courseId = getQueryParam("course-id");
+    if (courseId === null || courseId === undefined) {
+        // TODO: show error message
+        error("No course id found", window.location.href);
+        return null;
+    }
+    return courseId;
+}
+
+function getExerciseIdFromQueryOrNull() {
+    const exerciseId = getQueryParam("exercise-id");
+    if (exerciseId === null || exerciseId === undefined) {
+        // TODO: show error message
+        error("No exercise id found", window.location.href);
+        return null;
+    }
+    return exerciseId;
+}
+
 function getCourseTitleFromQuery() {
     let courseName = getQueryParam("course-title");
     if (courseName === null || courseName === undefined) {
@@ -281,6 +311,15 @@ function getCourseTitleFromQuery() {
         courseName = "Ülesanded";
     }
     return courseName;
+}
+
+function getExerciseTitleFromQuery() {
+    let exerciseName = getQueryParam("exercise-title");
+    if (exerciseName === null || exerciseName === undefined) {
+        error("Exercise title not found", window.location.href);
+        exerciseName = "Ülesanne";
+    }
+    return exerciseName;
 }
 
 function isStudent() {
