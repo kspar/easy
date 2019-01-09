@@ -392,14 +392,14 @@ async function initExercisePageAuth() {
 
     // Async get and paint all tabs
     if (isStudent()) {
-        $("#tab-submit").removeAttr("style");
-        $("#tab-my-submissions").removeAttr("style");
+        $("#tab-submit").show();
+        $("#tab-my-submissions").show();
         initStudentExerciseDetailsTab(courseId, exerciseId);
         initStudentSubmitTab(courseId, exerciseId);
         initStudentSubmissionsTab(courseId, exerciseId);
 
     } else if (isTeacher()) {
-        $("#tab-student-submissions").removeAttr("style");
+        $("#tab-student-submissions").show();
         initTeacherExerciseDetailsTab(courseId, exerciseId);
         initTeacherSubmissionsTab(courseId, exerciseId);
 
@@ -409,14 +409,6 @@ async function initExercisePageAuth() {
 
     // Init again with new tabs
     $("#tabs").tabs();
-
-
-    //// if teacher (same)
-
-    // attach listeners to open new tab on student and load submission
-
-    // attach listeners to add assessment
-
 }
 
 async function initTeacherSubmissionsTab(courseId, exerciseId) {
