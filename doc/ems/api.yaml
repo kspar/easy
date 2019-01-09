@@ -594,6 +594,8 @@ definitions:
 
   TeacherSubmissionSummary:
     properties:
+      student_id:
+        type: string
       given_name:
         type: string
       family_name:

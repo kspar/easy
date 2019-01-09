@@ -30,7 +30,8 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class TeacherReadSubmissionSummariesController {
 
-    data class SubmissionSummaryResp(@JsonProperty("given_name") val studentGivenName: String,
+    data class SubmissionSummaryResp(@JsonProperty("student_id") val studentId: String,
+                                     @JsonProperty("given_name") val studentGivenName: String,
                                      @JsonProperty("family_name") val studentFamilyName: String,
                                      @JsonSerialize(using = DateTimeSerializer::class)
                                      @JsonProperty("submission_time") val submissionTime: DateTime,
@@ -56,13 +57,14 @@ class TeacherReadSubmissionSummariesController {
     private fun mapToSubmissionSummaryResp(submissions: List<TeacherSubmissionSummary>) =
             submissions.map {
                 SubmissionSummaryResp(
-                        it.studentGivenName, it.studentFamilyName, it.submissionTime, it.grade, it.gradedBy
+                        it.studentId, it.studentGivenName, it.studentFamilyName, it.submissionTime,
+                        it.grade, it.gradedBy
                 )
             }
 }
 
 
-data class TeacherSubmissionSummary(val studentGivenName: String, val studentFamilyName: String,
+data class TeacherSubmissionSummary(val studentId: String, val studentGivenName: String, val studentFamilyName: String,
                                     val submissionTime: DateTime, val grade: Int?, val gradedBy: GraderType?)
 
 
@@ -108,6 +110,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): 
             }
 
             TeacherSubmissionSummary(
+                    email,
                     studentName.first,
                     studentName.second,
                     sub.createdAt,
