@@ -1,14 +1,5 @@
 /** Page-specific functions **/
 
-function editor(id) {
-    CodeMirror.fromTextArea(id, {
-        mode: "javascript",
-        lineNumbers: true,
-        readOnly: true,
-        autoRefresh: true
-    });
-}
-
 function paintStudentCourses(courses) {
     courses.forEach((c) => {
         console.debug("Course " + c.id + ", title: " + c.title);
@@ -33,7 +24,7 @@ function paintTeacherCourses(courses) {
     });
 }
 
-function paintStudentExercises(exercises) {
+function paintStudentExercises(exercises, courseId, courseTitle) {
     exercises.forEach((e) => {
         console.debug("Exercise " + e.id + ", title: " + e.title + ", deadline: " + e.deadline +
             ", status: " + e.status + ", grade: " + e.grade + ", graded_by: " + e.graded_by);
@@ -49,14 +40,15 @@ function paintStudentExercises(exercises) {
         const gradeItem = $("<div></div>").addClass("col").addClass("s2").text(gradeString); // TODO: graded_by icon
 
         const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("student-exercise-item")
-            .attr("href", "/exercise.html?exercise-id=" + e.id + "&exercise-title=" + e.title)
+            .attr("href", "/exercise.html?" + "course-id=" + courseId + "&course-title=" + courseTitle +
+                "&exercise-id=" + e.id + "&exercise-title=" + e.title)
             .append(statusItem, titleItem, deadlineItem, gradeItem);
 
         $("#exercises-list").append(exerciseItem);
     });
 }
 
-function paintTeacherExercises(exercises) {
+function paintTeacherExercises(exercises, courseId, courseTitle) {
     exercises.forEach((e) => {
         console.debug("Exercise " + e.id + ", title: " + e.title + ", soft_deadline: " + e.soft_deadline +
             ", grader_type: " + e.grader_type + ", unstarted_count: " + e.unstarted_count + ", graded_count: " + e.graded_count +
@@ -69,7 +61,8 @@ function paintTeacherExercises(exercises) {
 
         const exerciseItem = $("#teacher-exercise-item").clone()
             .removeAttr("id").removeAttr("style")
-            .attr("href", "/exercise.html?exercise-id=" + e.id + "&exercise-title=" + e.title);
+            .attr("href", "/exercise.html?" + "course-id=" + courseId + "&course-title=" + courseTitle +
+                "&exercise-id=" + e.id + "&exercise-title=" + e.title);
 
         exerciseItem.find(".title-wrap").text(e.title);
         exerciseItem.find(".deadline-wrap").text(deadlineString);
@@ -80,6 +73,15 @@ function paintTeacherExercises(exercises) {
         // TODO: show grader_type somehow
 
         $("#exercises-list").append(exerciseItem);
+    });
+}
+
+function createCodeEditor(textAreaId) {
+    return CodeMirror.fromTextArea(textAreaId, {
+        mode: "javascript",
+        lineNumbers: true,
+        readOnly: true,
+        autoRefresh: true
     });
 }
 
@@ -105,17 +107,16 @@ function initExercisesPageNoAuth() {
     console.debug("Exercises page");
 
     // Set breadcrumb name and page title to course name
-    let courseName = getQueryParam("course-title");
-    if (courseName === null || courseName === undefined) {
-        error("Course title not found", window.location.href);
-        courseName = "Ülesanded";
-    }
-
+    const courseName = getCourseTitleFromQuery();
     $("#course-crumb").text(courseName);
     document.title = courseName;
 }
 
 function initExercisePageNoAuth() {
+    console.debug("Exercise page");
+
+    // Set breadcrumb ≠
+
     // Init tabs
     $("#tabs").tabs();
 
@@ -131,7 +132,7 @@ function initExercisePageNoAuth() {
 
     var answers = document.getElementsByClassName("answer-item");
     for (var i = 0; i < answers.length; i++) {
-        editor(answers[i]);
+        createCodeEditor(answers[i]);
     }
 }
 
@@ -192,10 +193,13 @@ async function initCoursesPageAuth() {
 async function initExercisesPageAuth() {
     // get course id
     const courseId = getQueryParam("course-id");
+    const courseTitle = getCourseTitleFromQuery();
+
     console.debug("Course: " + courseId);
     if (courseId === null || courseId === undefined) {
         // TODO: show error message
         error("No course id found", window.location.href);
+        return;
     }
 
     await ensureTokenValid();
@@ -205,14 +209,14 @@ async function initExercisesPageAuth() {
             url: EMS_ROOT + "/student/courses/" + courseId + "/exercises",
             headers: getAuthHeader()
         });
-        paintStudentExercises(exercises);
+        paintStudentExercises(exercises, courseId, courseTitle);
 
     } else if (isTeacher()) {
         const exercises = await $.get({
             url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises",
             headers: getAuthHeader()
         });
-        paintTeacherExercises(exercises);
+        paintTeacherExercises(exercises, courseId, courseTitle);
 
     } else {
         error("Roles missing or unhandled role", roles);
@@ -270,6 +274,15 @@ function initPageNoAuth() {
     }
 }
 
+function getCourseTitleFromQuery() {
+    let courseName = getQueryParam("course-title");
+    if (courseName === null || courseName === undefined) {
+        error("Course title not found", window.location.href);
+        courseName = "Ülesanded";
+    }
+    return courseName;
+}
+
 function isStudent() {
     return hasRole("student");
 }
@@ -306,7 +319,6 @@ function ensureTokenValid() {
             .error(() => {
                 error("Token refresh failed");
             });
-
     } else {
         return new Promise.resolve();
     }
