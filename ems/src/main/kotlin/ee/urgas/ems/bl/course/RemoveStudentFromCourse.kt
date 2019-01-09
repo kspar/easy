@@ -5,6 +5,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,6 +17,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class RemoveStudentFromCourseController {
 
+    @Secured("ROLE_TEACHER")
     @DeleteMapping("/teacher/courses/{courseId}/students/{studentEmail}")
     fun removeStudent(@PathVariable("courseId") courseId: String,
                       @PathVariable("studentEmail") studentEmail: String) {

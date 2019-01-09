@@ -3,6 +3,7 @@ package ee.urgas.ems.bl.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import ee.urgas.ems.bl.access.canStudentAccessCourse
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
 import ee.urgas.ems.db.ExerciseVer
@@ -14,6 +15,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,11 +34,13 @@ class StudentReadExerciseDetailsController {
                                @JsonProperty("grader_type") val graderType: GraderType,
                                @JsonProperty("threshold") val threshold: Int)
 
+    @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}")
     fun getStudentExerciseDetails(@PathVariable("courseId") courseIdStr: String,
-                                  @PathVariable("courseExerciseId") courseExIdStr: String): ExerciseDetails {
-        // TODO: get from auth
-        val callerEmail = "ford"
+                                  @PathVariable("courseExerciseId") courseExIdStr: String,
+                                  caller: EasyUser): ExerciseDetails {
+
+        val callerEmail = caller.email
         val courseId = courseIdStr.toLong()
         val courseExId = courseExIdStr.toLong()
 

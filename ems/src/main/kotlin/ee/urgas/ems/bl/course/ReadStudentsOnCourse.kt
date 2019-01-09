@@ -7,6 +7,7 @@ import ee.urgas.ems.db.StudentCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -22,6 +23,7 @@ class ReadStudentsOnCourseController {
                                         @JsonProperty("given_name") val givenName: String,
                                         @JsonProperty("family_name") val familyName: String)
 
+    @Secured("ROLE_TEACHER")
     @GetMapping("/teacher/courses/{courseId}/students")
     fun readStudentsOnCourse(@PathVariable("courseId") courseId: String): List<StudentsOnCourseResponse> {
         // TODO: access control

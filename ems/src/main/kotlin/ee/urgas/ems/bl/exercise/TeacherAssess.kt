@@ -2,6 +2,7 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Submission
@@ -16,6 +17,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -31,14 +33,14 @@ class TeacherAssessController {
     data class AssessBody(@JsonProperty("grade", required = true) val grade: Int,
                           @JsonProperty("feedback", required = false) val feedback: String?)
 
+    @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments")
     fun assess(@PathVariable("courseId") courseIdString: String,
                @PathVariable("courseExerciseId") courseExerciseIdString: String,
                @PathVariable("submissionId") submissionIdString: String,
-               @RequestBody assessment: AssessBody) {
+               @RequestBody assessment: AssessBody, caller: EasyUser) {
 
-        // TODO: get from auth
-        val callerEmail = "ford"
+        val callerEmail = caller.email
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
         val submissionId = submissionIdString.toLong()

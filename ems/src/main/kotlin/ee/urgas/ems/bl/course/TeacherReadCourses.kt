@@ -9,6 +9,7 @@ import ee.urgas.ems.db.TeacherCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -23,6 +24,7 @@ class TeacherReadCoursesController {
                                       @JsonProperty("title") val title: String,
                                       @JsonProperty("student_count") val studentCount: Int)
 
+    @Secured("ROLE_TEACHER")
     @GetMapping("/teacher/courses")
     fun readTeacherCourses(caller: EasyUser): List<TeacherCoursesResponse> {
         val callerEmail = caller.email

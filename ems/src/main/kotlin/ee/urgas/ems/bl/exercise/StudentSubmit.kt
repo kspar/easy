@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.access.canStudentAccessCourse
 import ee.urgas.ems.bl.access.isVisibleExerciseOnCourse
 import ee.urgas.ems.bl.autoassess.autoAssess
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.AutoGradeStatus
 import ee.urgas.ems.db.AutomaticAssessment
 import ee.urgas.ems.db.CourseExercise
@@ -25,6 +26,7 @@ import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Async
+import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -43,13 +45,13 @@ class StudentSubmitController(val autoAssessComponent: AutoAssessComponent) {
 
     data class StudentSubmissionBody(@JsonProperty("solution", required = true) val solution: String)
 
+    @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")
     fun createSubmission(@PathVariable("courseId") courseIdStr: String,
                          @PathVariable("courseExerciseId") courseExIdStr: String,
-                         @RequestBody solutionBody: StudentSubmissionBody) {
+                         @RequestBody solutionBody: StudentSubmissionBody, caller: EasyUser) {
 
-        // TODO: get from auth
-        val callerEmail = "ford"
+        val callerEmail = caller.email
         val courseId = courseIdStr.toLong()
         val courseExId = courseExIdStr.toLong()
 

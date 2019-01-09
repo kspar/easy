@@ -3,6 +3,7 @@ package ee.urgas.ems.bl.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.AutomaticAssessment
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
@@ -15,6 +16,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -34,12 +36,14 @@ class TeacherReadAllSubmissionsController {
                                      @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
                                      @JsonProperty("solution") val solution: String)
 
+    @Secured("ROLE_TEACHER")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentEmail}")
     fun readTeacherAllSubmissions(@PathVariable("courseId") courseIdString: String,
                                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                                  @PathVariable("studentEmail") studentEmail: String): List<TeacherSubmissionResp> {
-        // TODO: get from auth
-        val callerEmail = "ford"
+                                  @PathVariable("studentEmail") studentEmail: String,
+                                  caller: EasyUser): List<TeacherSubmissionResp> {
+
+        val callerEmail = caller.email
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
 

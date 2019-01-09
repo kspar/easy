@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -22,6 +23,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class AddStudentsToCourseController {
 
+    @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/courses/{courseId}/students")
     fun addStudentsToCourse(@PathVariable("courseId") courseId: String,
                             @RequestBody studentEmails: List<String>) {
