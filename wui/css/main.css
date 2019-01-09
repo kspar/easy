@@ -168,6 +168,12 @@ h2 {
     color: #000;
 }
 
+.editor-wrapper {
+    margin-top: 3rem;
+    padding: 1rem;
+    background-color: #eee;
+}
+
 
 
 /** Courses page **/

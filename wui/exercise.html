@@ -92,18 +92,17 @@
                 </div>
             </div>
             <div id="submit">
-                <div class="answer-feedback">
-                    <h2>Tagasiside</h2>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper
-                        placerat metus maximus faucibus. Cras ut ante in sapien pulvinar aliquam. Maecenas elementum
-                        tortor id nulla imperdiet auctor. Nullam facilisis a nisl sit amet consequat. Nunc sodales,
-                        lorem sollicitudin efficitur dapibus, magna lorem tincidunt sem, non lacinia est diam eu sapien.
-                        Vivamus quis porttitor odio, nec gravida ipsum. Sed purus nulla, elementum in mauris ut,
-                        molestie dictum enim.</p>
-                    <div class="answer-grade">
-                        Hinne: 90/100
-                    </div>
+                <div id="submission-auto">
+                    <h4>Automaatkontrolli hinnang</h4>
+                    <pre id="auto-feedback" class="feedback"></pre>
+                    <div>Hinne: <span id="auto-grade"></span></div>
                 </div>
+                <div id="submission-teacher">
+                    <h4>Õpetaja hinnang</h4>
+                    <pre id="teacher-feedback" class="feedback"></pre>
+                    <div>Hinne: <span id="teacher-grade"></span></div>
+                </div>
+                ...
                 <div class="answer container">
                     <form>
                         <label for="answerform"><a href="#"><i
@@ -177,6 +176,24 @@
                 </div>
             </div>
             <div id="student-submission">
+                <p><span class="subheading">Esitamise aeg: </span>
+                    <span id="teacher-submission-time"></span></p>
+                <div id="teacher-submission-auto" style="display: none;">
+                    <h4>Automaatkontrolli hinnang</h4>
+                    <pre id="teacher-auto-feedback" class="feedback"></pre>
+                    <div>Hinne: <span id="teacher-auto-grade"></span></div>
+                </div>
+                <div id="teacher-submission-teacher" style="display: none;">
+                    <h4>Õpetaja hinnang</h4>
+                    <pre id="teacher-teacher-feedback" class="feedback"></pre>
+                    <div>Hinne: <span id="teacher-teacher-grade"></span></div>
+                </div>
+
+                <div class="editor-wrapper">
+                    <form>
+                        <textarea id="teacher-submission-submission"></textarea>
+                    </form>
+                </div>
 
             </div>
         </div>

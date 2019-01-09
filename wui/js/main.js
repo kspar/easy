@@ -129,7 +129,7 @@ function paintStudentSubmissions(submissions) {
 
 function paintTeacherSubmissions(submissions) {
     submissions.forEach((s) => {
-        console.debug("Given_name " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
+        console.debug("Id: "+ s.student_id + ", given_name: " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
             ", grade: " + s.grade + ", graded_by: " + s.graded_by);
 
         const submissionItem = $("#teacher-submission-item").clone().removeAttr("id").removeAttr("style");
@@ -145,8 +145,72 @@ function paintTeacherSubmissions(submissions) {
 
         // TODO: show graded_by somehow
 
+        const shortStudentName = s.given_name + " " + s.family_name[0];
+
+        submissionItem.click(() => {
+            teacherOpenSubmissionTab(s.student_id, shortStudentName);
+        });
+
         $("#teacher-submissions-list").append(submissionItem);
     });
+}
+
+function paintTeacherSubmission(s) {
+    console.debug("Solution " + s.solution + ", time: " + s.created_at +
+        ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
+        ", feedback_teacher: " + s.feedback_teacher);
+
+    $("#teacher-submission-time").text(s.created_at);
+
+    if (s.grade_auto !== null) {
+        $("#teacher-auto-grade").text(s.grade_auto);
+        $("#teacher-auto-feedback").text(s.feedback_auto);
+        $("#teacher-submission-auto").show();
+    }
+    if (s.grade_teacher !== null) {
+        $("#teacher-teacher-grade-grade").text(s.grade_teacher);
+        $("#teacher-teacher-feedback").text(s.feedback_teacher);
+        $("#teacher-submission-teacher").show();
+    }
+
+    CodeMirror.fromTextArea(
+        document.getElementById("teacher-submission-submission"),
+        {
+            mode: "python",
+            lineNumbers: true,
+            readOnly: "nocursor"
+        }
+    ).setValue(s.solution);
+}
+
+function teacherOpenSubmissionTab(studentId, studentName) {
+    console.debug("Opening new tab for student: " + studentId);
+
+    const submissionTab = $("#tab-student-submission");
+    submissionTab.find("a").text(studentName);
+
+    // Load contents & paint async
+    initTeacherSubmissionTab(studentId);
+
+    // Show tab if it's hidden
+    submissionTab.show();
+
+    $("#tabs").tabs("select", "student-submission");
+        //.tabs("updateTabIndicator");
+}
+
+async function initTeacherSubmissionTab(studentId) {
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+
+    const submission = await $.get({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/latest/students/" + studentId,
+        headers: getAuthHeader(),
+    });
+    paintTeacherSubmission(submission);
 }
 
 function paintTeacherExerciseDetails(ex) {
@@ -187,14 +251,6 @@ function paintTeacherExerciseDetails(ex) {
 }
 
 
-function createCodeEditor(textAreaId) {
-    return CodeMirror.fromTextArea(textAreaId, {
-        mode: "javascript",
-        lineNumbers: true,
-        readOnly: true,
-        autoRefresh: true
-    });
-}
 
 
 /** Init page before auth functions **/
@@ -417,12 +473,6 @@ async function initStudentSubmissionsTab(courseId, exerciseId) {
 
 
 
-
-
-
-
-
-
 /** General functions **/
 
 /**
@@ -582,7 +632,7 @@ function authenticate() {
 /** Main **/
 
 const AUTH_ENABLED = true;
-const FORCE_TEACHER = true; // Assumes the user has teacher role obviously
+const FORCE_TEACHER = false; // Assumes the user has teacher role obviously
 
 const TOKEN_MIN_VALID_SEC = 20;
 const EMS_ROOT = "https://ems.lahendus.ut.ee/v1";
