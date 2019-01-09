@@ -41,7 +41,7 @@ function paintStudentExercises(exercises, courseId, courseTitle) {
 
         const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("student-exercise-item")
             .attr("href", "/exercise.html?" + "course-id=" + courseId + "&course-title=" + courseTitle +
-                "&exercise-id=" + e.id + "&exercise-title=" + e.title)
+                "&exercise-id=" + e.id + "&exercise-title=" + e.title + "&tab=description")
             .append(statusItem, titleItem, deadlineItem, gradeItem);
 
         $("#exercises-list").append(exerciseItem);
