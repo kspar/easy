@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -43,6 +46,8 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
                 }
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+
+        http.cors().configurationSource(getCorsConfiguration())
         http.csrf().disable()
     }
 
@@ -57,5 +62,15 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
         val method = req.method
         val url = req.requestURL
         return "$email with role $role from $ip: $method $url"
+    }
+
+    private fun getCorsConfiguration(): CorsConfigurationSource {
+        val conf = CorsConfiguration()
+        conf.allowedOrigins = listOf("http://localhost:63342", "https://lahendus.ut.ee")
+        conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT")
+        conf.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", conf)
+        return source
     }
 }
