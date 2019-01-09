@@ -41,7 +41,7 @@ function paintStudentExercises(exercises, courseId, courseTitle) {
 
         const exerciseItem = $("<a></a>").addClass("row").addClass("collection-item").addClass("student-exercise-item")
             .attr("href", "/exercise.html?" + "course-id=" + courseId + "&course-title=" + courseTitle +
-                "&exercise-id=" + e.id + "&exercise-title=" + e.title + "&tab=description")
+                "&exercise-id=" + e.id + "&exercise-title=" + e.title)
             .append(statusItem, titleItem, deadlineItem, gradeItem);
 
         $("#exercises-list").append(exerciseItem);
@@ -126,27 +126,23 @@ function initExercisePageNoAuth() {
     $("#course-crumb").attr("href", "/exercises.html?course-id=" + courseId + "&course-title=" + courseName).text(courseName);
     $("#exercise-crumb").text(exerciseName);
 
-
-
-
-
     // Init tabs
     $("#tabs").tabs();
 
-    var answer_editor = CodeMirror.fromTextArea(answerform, {
-        mode: "javascript",
-        lineNumbers: true,
-        autoRefresh: true
-    });
-
-    $('.collapsible').collapsible({
-        accordion: false
-    });
-
-    var answers = document.getElementsByClassName("answer-item");
-    for (var i = 0; i < answers.length; i++) {
-        createCodeEditor(answers[i]);
-    }
+    // var answer_editor = CodeMirror.fromTextArea(answerform, {
+    //     mode: "javascript",
+    //     lineNumbers: true,
+    //     autoRefresh: true
+    // });
+    //
+    // $('.collapsible').collapsible({
+    //     accordion: false
+    // });
+    //
+    // var answers = document.getElementsByClassName("answer-item");
+    // for (var i = 0; i < answers.length; i++) {
+    //     createCodeEditor(answers[i]);
+    // }
 }
 
 
