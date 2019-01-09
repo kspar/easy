@@ -98,22 +98,57 @@ function paintStudentExerciseDetails(ex) {
 }
 
 function paintStudentSubmit(s) {
-    console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
-        ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
-        ", feedback_teacher: " + s.feedback_teacher);
 
-    // TODO: paint submit tab
-    // Init editor
+    if (s !== null) {
+        console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
+            ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
+            ", feedback_teacher: " + s.feedback_teacher);
 
-    // var answer_editor = CodeMirror.fromTextArea(answerform, {
-    //     mode: "javascript",
-    //     lineNumbers: true,
-    //     autoRefresh: true
-    // });
-    //
-    // $('.collapsible').collapsible({
-    //     accordion: false
-    // });
+        $("#submission-time").text(s.submission_time);
+        $("#submission-time-wrapper").show();
+
+        if (s.grade_auto !== null) {
+            $("#auto-grade").text(s.grade_auto);
+            $("#auto-feedback").text(s.feedback_auto);
+            $("#submission-auto").show();
+        }
+        if (s.grade_teacher !== null) {
+            $("#teacher-grade").text(s.grade_teacher);
+            $("#teacher-feedback").text(s.feedback_teacher);
+            $("#submission-teacher").show();
+        }
+
+        if (s.autograde_status === "IN_PROGRESS") {
+            // TODO: show loading, start polling
+
+        } else if (s.autograde_status === "FAILED") {
+            $("#auto-grade").text("--");
+            $("#auto-feedback").text("Automaatne kontrollimine ebaõnnestus");
+            $("#submission-auto").show();
+        }
+
+        $("#submission-wrapper").show();
+
+        CodeMirror.fromTextArea(
+            document.getElementById("submission"),
+            {
+                mode: "python",
+                lineNumbers: true
+            }
+        ).setValue(s.solution);
+
+    } else {
+
+        $("#submission-wrapper").show();
+
+        CodeMirror.fromTextArea(
+            document.getElementById("submission"),
+            {
+                mode: "python",
+                lineNumbers: true
+            }
+        );
+    }
 }
 
 function paintStudentSubmissions(submissions) {

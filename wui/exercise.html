@@ -92,26 +92,22 @@
                 </div>
             </div>
             <div id="submit">
-                <div id="submission-auto">
+                <p id="submission-time-wrapper" style="display: none;">
+                    <span class="subheading">Esitamise aeg: </span>
+                    <span id="submission-time"></span></p>
+                <div id="submission-auto" style="display: none;">
                     <h4>Automaatkontrolli hinnang</h4>
                     <pre id="auto-feedback" class="feedback"></pre>
                     <div>Hinne: <span id="auto-grade"></span></div>
                 </div>
-                <div id="submission-teacher">
+                <div id="submission-teacher" style="display: none;">
                     <h4>Õpetaja hinnang</h4>
                     <pre id="teacher-feedback" class="feedback"></pre>
                     <div>Hinne: <span id="teacher-grade"></span></div>
                 </div>
-                ...
-                <div class="answer container">
+                <div id="submission-wrapper" class="editor-wrapper" style="display: none;">
                     <form>
-                        <label for="answerform"><a href="#"><i
-                                class="material-icons medium black-text">file_download</i></a><a href="#"><i
-                                class="material-icons medium black-text">file_upload</i></a></label>
-                        <textarea id="answerform" name="answerform" class="">function myScript(){return 100;}</textarea>
-                        <div class="center">
-                            <button type="submit" class="waves-effect waves-light btn">Esita</button>
-                        </div>
+                        <textarea id="submission"></textarea>
                     </form>
                 </div>
             </div>
