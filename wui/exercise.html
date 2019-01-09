@@ -52,8 +52,10 @@
         <div class="card-tabs center-align">
             <ul id="tabs" class="tabs">
                 <li class="tab active"><a href="#exercise">Ülesanne</a></li>
-                <li class="tab"><a href="#answer">Esitamine</a></li>
-                <li class="tab"><a href="#answers">Minu esitused</a></li>
+                <li id="tab-submit" class="tab" style="display: none;"><a href="#submit">Esitamine</a></li>
+                <li id="tab-my-submissions" class="tab" style="display: none;"><a href="#my-submissions">Minu esitused</a></li>
+                <li id="tab-student-submissions" class="tab" style="display: none;"><a href="#student-submissions">Esitused</a></li>
+                <li id="tab-student-submission" class="tab" style="display: none;"><a href="#student-submission"></a></li>
             </ul>
         </div>
         <div class="card-content bt">
@@ -81,7 +83,7 @@
                         quam. Cras in eros nulla.</p>
                 </div>
             </div>
-            <div id="answer">
+            <div id="submit">
                 <div class="answer-feedback">
                     <h2>Tagasiside</h2>
                     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam. Mauris semper
@@ -106,7 +108,7 @@
                     </form>
                 </div>
             </div>
-            <div id="answers">
+            <div id="my-submissions">
                 <ul class="collapsible expandable">
                     <li>
                         <div class="collapsible-header row">
@@ -160,33 +162,13 @@
                             </div>
                         </div>
                     </li>
-                    <li>
-                        <div class="collapsible-header row">
-                            <div class="col s12 m4 l2 left-align">#3</div>
-                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                            <div class="col s12 m4 l2 right-align">90/100</div>
-                        </div>
-                        <div class="collapsible-body">
-                            <div class="answer-feedback">
-                                <h2>Tagasiside</h2>
-                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
-                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
-                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
-                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
-                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
-                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
-                                    enim.</p>
-                                <div class="answer-grade">
-                                    Hinne: 90/100
-                                </div>
-                            </div>
-                            <div class="answer container">
-                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                <textarea id="answer_3" name="answer_3" class="answer-item">function myScript(){return 200;}</textarea>
-                            </div>
-                        </div>
-                    </li>
                 </ul>
+            </div>
+            <div id="student-submissions">
+
+            </div>
+            <div id="student-submission">
+
             </div>
         </div>
     </div>

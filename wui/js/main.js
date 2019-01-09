@@ -76,6 +76,62 @@ function paintTeacherExercises(exercises, courseId, courseTitle) {
     });
 }
 
+function paintStudentExerciseDetails(ex) {
+    console.debug("Exercise title: " + ex.title + ", text: " + ex.text_html + ", deadline: " + ex.deadline +
+        ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold);
+
+    // TODO: paint exercise tab
+}
+
+function paintStudentSubmit(s) {
+    console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
+        ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
+        ", feedback_teacher: " + s.feedback_teacher);
+
+    // TODO: paint submit tab
+    // Init editor
+
+    // var answer_editor = CodeMirror.fromTextArea(answerform, {
+    //     mode: "javascript",
+    //     lineNumbers: true,
+    //     autoRefresh: true
+    // });
+    //
+    // $('.collapsible').collapsible({
+    //     accordion: false
+    // });
+}
+
+function paintStudentSubmissions(submissions) {
+    submissions.forEach((s) => {
+        console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
+            ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
+            ", feedback_teacher: " + s.feedback_teacher);
+
+        // TODO: paint submissions
+        // No editors first, maybe later
+    });
+}
+
+function paintTeacherSubmissions(submissions) {
+    submissions.forEach((s) => {
+        console.debug("Given_name " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
+            ", grade: " + s.grade + ", graded_by: " + s.graded_by);
+
+        // TODO: paint submissions
+    });
+}
+
+function paintTeacherExerciseDetails(ex) {
+    console.debug("Exercise title: " + ex.title + ", text: " + ex.text_html + ", soft_deadline: " + ex.soft_deadline
+        + ", hard_deadline: " + ex.hard_deadline + ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold +
+        ", last_modified: " + ex.last_modified + ", student_visible: " + ex.student_visible +
+        ", assessments_student_visible: " + ex.assessments_student_visible);
+
+    // TODO: paint exercise tab
+}
+
+
 function createCodeEditor(textAreaId) {
     return CodeMirror.fromTextArea(textAreaId, {
         mode: "javascript",
@@ -126,23 +182,8 @@ function initExercisePageNoAuth() {
     $("#course-crumb").attr("href", "/exercises.html?course-id=" + courseId + "&course-title=" + courseName).text(courseName);
     $("#exercise-crumb").text(exerciseName);
 
-    // Init tabs
+    // Init default tabs
     $("#tabs").tabs();
-
-    // var answer_editor = CodeMirror.fromTextArea(answerform, {
-    //     mode: "javascript",
-    //     lineNumbers: true,
-    //     autoRefresh: true
-    // });
-    //
-    // $('.collapsible').collapsible({
-    //     accordion: false
-    // });
-    //
-    // var answers = document.getElementsByClassName("answer-item");
-    // for (var i = 0; i < answers.length; i++) {
-    //     createCodeEditor(answers[i]);
-    // }
 }
 
 
@@ -231,7 +272,100 @@ async function initExercisesPageAuth() {
 
 async function initExercisePageAuth() {
     console.debug("Exercise page");
+
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+
+    // Async get and paint all tabs
+    if (isStudent()) {
+        $("#tab-submit").removeAttr("style");
+        $("#tab-my-submissions").removeAttr("style");
+        initStudentExerciseDetailsTab(courseId, exerciseId);
+        initStudentSubmitTab(courseId, exerciseId);
+        initStudentSubmissionsTab(courseId, exerciseId);
+
+    } else if (isTeacher()) {
+        $("#tab-student-submissions").removeAttr("style");
+        initTeacherExerciseDetailsTab(courseId, exerciseId);
+        initTeacherSubmissionsTab(courseId, exerciseId);
+
+    } else {
+        error("Roles missing or unhandled role", roles);
+    }
+
+    // Init again with new tabs
+    $("#tabs").tabs();
+
+
+    //// if teacher (same)
+
+    // attach listeners to open new tab on student and load submission
+
+    // attach listeners to add assessment
+
 }
+
+async function initTeacherSubmissionsTab(courseId, exerciseId) {
+    await ensureTokenValid();
+    const submissions = await $.get({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/latest/students",
+        headers: getAuthHeader()
+    });
+
+    paintTeacherSubmissions(submissions);
+}
+
+async function initTeacherExerciseDetailsTab(courseId, exerciseId) {
+    await ensureTokenValid();
+    const exercise = await $.get({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId,
+        headers: getAuthHeader()
+    });
+
+    paintTeacherExerciseDetails(exercise);
+}
+
+async function initStudentExerciseDetailsTab(courseId, exerciseId) {
+    await ensureTokenValid();
+    const exercise = await $.get({
+        url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId,
+        headers: getAuthHeader()
+    });
+
+    paintStudentExerciseDetails(exercise);
+}
+
+async function initStudentSubmitTab(courseId, exerciseId) {
+    await ensureTokenValid();
+    const submission = await $.get({
+        url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/latest",
+        headers: getAuthHeader()
+    });
+
+    paintStudentSubmit(submission);
+}
+
+async function initStudentSubmissionsTab(courseId, exerciseId) {
+    await ensureTokenValid();
+    const submissions = await $.get({
+        url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId + "/submissions",
+        headers: getAuthHeader()
+    });
+
+    paintStudentSubmissions(submissions);
+}
+
+
+
+
+
+
+
+
+
 
 
 /** General functions **/
