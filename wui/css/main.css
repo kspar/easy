@@ -175,13 +175,25 @@ h2 {
     background-color: #eee;
 }
 
+#teacher-submission-time-wrapper, #submission-time-wrapper {
+    margin-bottom: 3rem;
+}
+
 pre.feedback {
     white-space: pre-wrap;
     font-size: 1.5rem;
 }
 
-#teacher-submission-teacher, #teacher-submission-auto {
-    margin-bottom: 2rem;
+#auto-feedback, #teacher-auto-feedback {
+    background-color: #f5f5f5;
+}
+
+#auto-grade, #teacher-auto-grade, #teacher-grade, #teacher-teacher-grade {
+    font-weight: 500;
+}
+
+#teacher-submission-teacher, #teacher-submission-auto, #submission-teacher, #submission-auto {
+    margin-bottom: 3rem;
 }
 
 #add-grade-wrapper {
