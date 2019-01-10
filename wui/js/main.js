@@ -680,12 +680,11 @@ function formatDateTime(rawString) {
     const dayRaw = dateParts[2];
     const monthNumber = dateParts[1];
     const year = dateParts[0];
-    // Remove leading 0s
-    const day = parseInt(dayRaw).toString();
+    const day = parseInt(dayRaw).toString();  // Remove leading 0s
     const month = months[parseInt(monthNumber) - 1];
 
     const timeParts = time.split(":");
-    const hour = timeParts[0];
+    const hour = ((parseInt(timeParts[0]) + 2) % 24).toString();  // Dirty UTC+2 conversion :)
     const minute = timeParts[1];
 
     return day + ". " + month + " " + year + ", " + hour + "." + minute;
