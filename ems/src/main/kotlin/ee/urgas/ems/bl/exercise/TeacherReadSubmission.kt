@@ -35,7 +35,8 @@ class TeacherReadSubmissionController {
                                      @JsonProperty("feedback_auto") val feedbackAuto: String?,
                                      @JsonProperty("grade_teacher") val gradeTeacher: Int?,
                                      @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
-                                     @JsonProperty("solution") val solution: String)
+                                     @JsonProperty("solution") val solution: String,
+                                     @JsonProperty("id") val submissionId: String)
 
     @Secured("ROLE_TEACHER")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentEmail}")
@@ -60,12 +61,13 @@ class TeacherReadSubmissionController {
     }
 
     private fun mapToTeacherSubmissionResp(sub: TeacherSubmission): TeacherSubmissionResp =
-            TeacherSubmissionResp(sub.createdAt, sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher, sub.solution)
+            TeacherSubmissionResp(sub.createdAt, sub.gradeAuto, sub.feedbackAuto,
+                    sub.gradeTeacher, sub.feedbackTeacher, sub.solution, sub.id.toString())
 
 }
 
 
-data class TeacherSubmission(val solution: String, val createdAt: DateTime, val gradeAuto: Int?, val feedbackAuto: String?,
+data class TeacherSubmission(val solution: String, val id: Long, val createdAt: DateTime, val gradeAuto: Int?, val feedbackAuto: String?,
                              val gradeTeacher: Int?, val feedbackTeacher: String?)
 
 
@@ -76,7 +78,8 @@ private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentEma
     return transaction {
         val lastSubmission =
                 (Course innerJoin CourseExercise innerJoin Submission)
-                        .slice(Course.id, CourseExercise.id, Submission.student, Submission.createdAt, Submission.id, Submission.solution)
+                        .slice(Course.id, CourseExercise.id, Submission.student, Submission.createdAt,
+                                Submission.id, Submission.solution)
                         .select {
                             Course.id eq courseId and
                                     (CourseExercise.id eq courseExId) and
@@ -97,6 +100,7 @@ private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentEma
 
             TeacherSubmission(
                     lastSubmission.solution,
+                    lastSubmission.id,
                     lastSubmission.createdAt,
                     autoAssessment?.grade,
                     autoAssessment?.feedback,

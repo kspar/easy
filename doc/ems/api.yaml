@@ -611,6 +611,8 @@ definitions:
 
   TeacherSubmission:
     properties:
+      id:
+        type: string
       solution:
         type: string
       created_at:
