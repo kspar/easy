@@ -179,6 +179,39 @@ pre.feedback {
     white-space: pre-wrap;
 }
 
+#teacher-submission-teacher {
+    margin-bottom: 2rem;
+}
+
+#add-grade-wrapper {
+    padding: 2rem;
+    border: 1px solid #eee;
+    font-size: 16px;
+}
+
+label[for=feedback], label[for=grade] {
+    font-size: 1.6rem;
+}
+
+#feedback:focus {
+    border-bottom: 1px solid #469c45;
+    -webkit-box-shadow: 0 1px 0 0 #469c45;
+    box-shadow: 0 1px 0 0 #469c45;
+}
+
+#feedback:focus + label {
+    color: #469c45;
+}
+
+#grade:focus {
+    border-bottom: 1px solid #469c45;
+    -webkit-box-shadow: 0 1px 0 0 #469c45;
+    box-shadow: 0 1px 0 0 #469c45;
+}
+
+#grade:focus + label {
+    color: #469c45;
+}
 
 
 /** Courses page **/
