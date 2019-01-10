@@ -108,7 +108,7 @@ function paintStudentSubmit(s) {
             ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
             ", feedback_teacher: " + s.feedback_teacher);
 
-        $("#submission-time").text(s.submission_time);
+        $("#submission-time").text(formatDateTime(s.submission_time));
         $("#submission-time-wrapper").show();
 
         if (s.grade_auto !== null) {
@@ -240,7 +240,7 @@ function paintTeacherSubmissions(submissions) {
         const studentName = s.given_name + " " + s.family_name;
         submissionItem.find(".teacher-submission-student").text(studentName);
 
-        const submissionTime = s.submission_time; // TODO: format
+        const submissionTime = formatDateTime(s.submission_time);
         submissionItem.find(".teacher-submission-time").text(submissionTime);
 
         const gradeString = (s.grade === null ? "--" : s.grade) + "/100";
@@ -263,7 +263,7 @@ function paintTeacherSubmission(s) {
         ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
         ", feedback_teacher: " + s.feedback_teacher);
 
-    $("#teacher-submission-time").text(s.created_at);
+    $("#teacher-submission-time").text(formatDateTime(s.created_at));
     $("#teacher-submission-time-wrapper").show();
 
     if (s.grade_auto !== null) {
