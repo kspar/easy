@@ -263,6 +263,12 @@ function paintTeacherSubmission(s) {
         ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
         ", feedback_teacher: " + s.feedback_teacher);
 
+    // Hide/init elements in case they have been used before
+    $("#teacher-submission-auto").hide();
+    $("#teacher-submission-teacher").hide();
+    $("#add-grade-wrapper").hide();
+    $("#grade-button").attr("disabled", false);
+
     $("#teacher-submission-time").text(formatDateTime(s.created_at));
     $("#teacher-submission-time-wrapper").show();
 
@@ -277,16 +283,12 @@ function paintTeacherSubmission(s) {
         $("#teacher-submission-teacher").show();
     }
 
-    // Init grading area if used before
-    $("#add-grade-wrapper").hide();
-    $("#grade-button").attr("disabled", false);
-
     $("#grade-button").off().click(() => {
         $("#grade-button").attr("disabled", true);
         teacherAddAssessment(s.id);
     });
 
-    $("#grade-link").show().click(() => {
+    $("#grade-link").off().show().click(() => {
         $('#add-grade-wrapper').show();
         $("#grade-link").hide();
     });
