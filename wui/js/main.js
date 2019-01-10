@@ -412,8 +412,6 @@ function paintTeacherExerciseDetails(ex) {
 }
 
 
-
-
 /** Init page before auth functions **/
 
 function initCommonNoAuth() {
@@ -624,9 +622,6 @@ async function initStudentSubmissionsTab(courseId, exerciseId) {
 }
 
 
-
-
-
 /** General functions **/
 
 /**
@@ -825,4 +820,3 @@ $(document).ready(() => {
     }
     initPageNoAuth();
 });
-
