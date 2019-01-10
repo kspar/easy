@@ -29,7 +29,7 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
                 // All services except /noauth services require auth == any role by default
-                .antMatchers("/noauth/**").permitAll()
+                .antMatchers("/v1/noauth/**").permitAll()
                 .anyRequest().authenticated()
 
         http.addFilterAfter(
