@@ -101,7 +101,7 @@ function paintStudentSubmit(s) {
 
     let previousSolution = "";
 
-    if (s !== null) {
+    if (s !== null && s !== undefined) {
         console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
             ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
             ", feedback_teacher: " + s.feedback_teacher);
