@@ -179,7 +179,7 @@ pre.feedback {
     white-space: pre-wrap;
 }
 
-#teacher-submission-teacher {
+#teacher-submission-teacher, #teacher-submission-auto {
     margin-bottom: 2rem;
 }
 
