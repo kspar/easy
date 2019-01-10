@@ -133,7 +133,8 @@ function paintStudentSubmit(s) {
             document.getElementById("submission"),
             {
                 mode: "python",
-                lineNumbers: true
+                lineNumbers: true,
+                autoRefresh: true
             }
         ).setValue(s.solution);
 
@@ -145,7 +146,8 @@ function paintStudentSubmit(s) {
             document.getElementById("submission"),
             {
                 mode: "python",
-                lineNumbers: true
+                lineNumbers: true,
+                autoRefresh: true
             }
         );
     }
