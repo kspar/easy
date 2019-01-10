@@ -314,7 +314,7 @@ async function teacherAddAssessment(submissionId) {
     const feedback = $("#feedback").val();
     const grade = $("#grade").val();
 
-    console.debug("New assessment, grade: " + grade + ", feedback: " + feedback);
+    console.debug("New assessment, submissionId: "+ submissionId  +", grade: " + grade + ", feedback: " + feedback);
 
     const courseId = getCourseIdFromQueryOrNull();
     const exerciseId = getExerciseIdFromQueryOrNull();
