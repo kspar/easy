@@ -198,6 +198,7 @@ function paintTeacherSubmission(s) {
         ", feedback_teacher: " + s.feedback_teacher);
 
     $("#teacher-submission-time").text(s.created_at);
+    $("#teacher-submission-time-wrapper").show();
 
     if (s.grade_auto !== null) {
         $("#teacher-auto-grade").text(s.grade_auto);
@@ -210,12 +211,15 @@ function paintTeacherSubmission(s) {
         $("#teacher-submission-teacher").show();
     }
 
+    $("#teacher-submission-wrapper").show();
+
     CodeMirror.fromTextArea(
         document.getElementById("teacher-submission-submission"),
         {
             mode: "python",
             lineNumbers: true,
-            readOnly: "nocursor"
+            readOnly: "nocursor",
+            autoRefresh: true
         }
     ).setValue(s.solution);
 }

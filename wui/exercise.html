@@ -113,67 +113,14 @@
                 <!-- TODO: submit button -->
             </div>
             <div id="my-submissions">
-                <ul class="collapsible expandable">
-                    <li>
-                        <div class="collapsible-header row">
-                            <div class="col s12 m4 l2 left-align">#1</div>
-                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                            <div class="col s12 m4 l2 right-align">90/100</div>
-                        </div>
-                        <div class="collapsible-body">
-                            <div class="answer-feedback">
-                                <h2>Tagasiside</h2>
-                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
-                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
-                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
-                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
-                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
-                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
-                                    enim.</p>
-                                <div class="answer-grade">
-                                    Hinne: 90/100
-                                </div>
-                            </div>
-                            <div class="answer container">
-                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                <textarea id="answer_1" name="answer_1" class="answer-item">function myScript(){return 200;}</textarea>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="collapsible-header row">
-                            <div class="col s12 m4 l2 left-align">#2</div>
-                            <div class="col s12 m4 l8 left-align">dd.mm.yyyy hh:mm</div>
-                            <div class="col s12 m4 l2 right-align">90/100</div>
-                        </div>
-                        <div class="collapsible-body">
-                            <div class="answer-feedback">
-                                <h2>Tagasiside</h2>
-                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed quis consectetur diam.
-                                    Mauris semper placerat metus maximus faucibus. Cras ut ante in sapien pulvinar
-                                    aliquam. Maecenas elementum tortor id nulla imperdiet auctor. Nullam facilisis a
-                                    nisl sit amet consequat. Nunc sodales, lorem sollicitudin efficitur dapibus, magna
-                                    lorem tincidunt sem, non lacinia est diam eu sapien. Vivamus quis porttitor odio,
-                                    nec gravida ipsum. Sed purus nulla, elementum in mauris ut, molestie dictum
-                                    enim.</p>
-                                <div class="answer-grade">
-                                    Hinne: 90/100
-                                </div>
-                            </div>
-                            <div class="answer container">
-                                <a href="#"><i class="material-icons medium black-text">file_download</i></a>
-                                <textarea id="answer_2" name="answer_2" class="answer-item">function myScript(){return 200;}</textarea>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
             </div>
             <div id="student-submissions">
                 <div id="teacher-submissions-list" class="collection">
                 </div>
             </div>
             <div id="student-submission">
-                <p><span class="subheading">Esitamise aeg: </span>
+                <p id="teacher-submission-time-wrapper" style="display: none">
+                    <span class="subheading">Esitamise aeg: </span>
                     <span id="teacher-submission-time"></span></p>
                 <div id="teacher-submission-auto" style="display: none;">
                     <h4>Automaatkontrolli hinnang</h4>
@@ -186,7 +133,7 @@
                     <div>Hinne: <span id="teacher-teacher-grade"></span></div>
                 </div>
 
-                <div class="editor-wrapper">
+                <div id="teacher-submission-wrapper" class="editor-wrapper" style="display: none">
                     <form>
                         <textarea id="teacher-submission-submission"></textarea>
                     </form>
