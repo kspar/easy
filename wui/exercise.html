@@ -138,6 +138,29 @@
                     <div>Hinne: <span id="teacher-teacher-grade"></span></div>
                 </div>
 
+                <a id="grade-link" href="#!" style="display: none">Lisa hinnang</a>
+                <div id="add-grade-wrapper" style="display: none;">
+                    <div class="row">
+                        <div class="input-field col s8">
+                            <textarea id="feedback" class="materialize-textarea"></textarea>
+                            <label for="feedback">Tagasiside</label>
+                        </div>
+                        <div class="col s4"></div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s4">
+                            <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
+                            <label for="grade">Hinne</label>
+                            <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
+                        </div>
+                        <div class="col s8"></div>
+                    </div>
+
+                    <div id="grade-button-wrapper">
+                        <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
+                    </div>
+                </div>
+
                 <div id="teacher-submission-wrapper" class="editor-wrapper" style="display: none">
                     <form>
                         <textarea id="teacher-submission-submission"></textarea>
@@ -149,6 +172,7 @@
     </div>
 </div>
 
+<input id="teacher-student-id" type="hidden"/>
 
 <a id="teacher-submission-item" class="row collection-item teacher-submission-item" style="display: none;">
     <div class="col s5 teacher-submission-student">nimi</div>

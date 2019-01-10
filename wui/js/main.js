@@ -259,7 +259,7 @@ function paintTeacherSubmissions(submissions) {
 }
 
 function paintTeacherSubmission(s) {
-    console.debug("Solution " + s.solution + ", time: " + s.created_at +
+    console.debug("Id: " + s.id + ", solution " + s.solution + ", time: " + s.created_at +
         ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
         ", feedback_teacher: " + s.feedback_teacher);
 
@@ -272,10 +272,24 @@ function paintTeacherSubmission(s) {
         $("#teacher-submission-auto").show();
     }
     if (s.grade_teacher !== null) {
-        $("#teacher-teacher-grade-grade").text(s.grade_teacher);
+        $("#teacher-teacher-grade").text(s.grade_teacher);
         $("#teacher-teacher-feedback").text(s.feedback_teacher);
         $("#teacher-submission-teacher").show();
     }
+
+    // Init grading area if used before
+    $("#add-grade-wrapper").hide();
+    $("#grade-button").attr("disabled", false);
+
+    $("#grade-button").click(() => {
+        $("#grade-button").attr("disabled", true);
+        teacherAddAssessment(s.id);
+    });
+
+    $("#grade-link").show().click(() => {
+        $('#add-grade-wrapper').show();
+        $("#grade-link").hide();
+    });
 
     $("#teacher-submission-wrapper").show();
 
@@ -294,6 +308,29 @@ function paintTeacherSubmission(s) {
             }
         ).setValue(s.solution);
     }
+}
+
+async function teacherAddAssessment(submissionId) {
+    const feedback = $("#feedback").val();
+    const grade = $("#grade").val();
+
+    console.debug("New assessment, grade: " + grade + ", feedback: " + feedback);
+
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+
+    await $.post({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/" + submissionId + "/assessments",
+        headers: getAuthHeader(),
+        data: JSON.stringify({"grade": parseInt(grade), "feedback": feedback}),
+        contentType:"application/json; charset=utf-8"
+    });
+
+    // Requery & repaint
+    initTeacherSubmissionTab($("#teacher-student-id").val());
 }
 
 function teacherOpenSubmissionTab(studentId, studentName) {
@@ -318,6 +355,9 @@ async function initTeacherSubmissionTab(studentId) {
     if (courseId === null || exerciseId === null) {
         return;
     }
+
+    console.debug("Init teacher submission tab for student: " + studentId);
+    $("#teacher-student-id").val(studentId);
 
     const submission = await $.get({
         url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/latest/students/" + studentId,
@@ -767,7 +807,7 @@ function authenticate() {
 /** Main **/
 
 const AUTH_ENABLED = true;
-const FORCE_TEACHER = false; // Assumes the user has teacher role obviously
+const FORCE_TEACHER = true; // Assumes the user has teacher role obviously
 
 const TOKEN_MIN_VALID_SEC = 20;
 const EMS_ROOT = "https://ems.lahendus.ut.ee/v1";
