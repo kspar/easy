@@ -282,6 +282,7 @@ function paintTeacherSubmission(s) {
     $("#grade-button").attr("disabled", false);
 
     $("#grade-button").click(() => {
+        console.debug("Click grade, submission id: " + s.id);
         $("#grade-button").attr("disabled", true);
         teacherAddAssessment(s.id);
     });
@@ -807,7 +808,7 @@ function authenticate() {
 /** Main **/
 
 const AUTH_ENABLED = true;
-const FORCE_TEACHER = true; // Assumes the user has teacher role obviously
+const FORCE_TEACHER = false; // Assumes the user has teacher role obviously
 
 const TOKEN_MIN_VALID_SEC = 20;
 const EMS_ROOT = "https://ems.lahendus.ut.ee/v1";
