@@ -132,29 +132,92 @@ function paintStudentSubmit(s) {
         previousSolution = s.solution;
     }
 
-    $("#submission-wrapper").show();
+    let editor;
 
-    const editorObject = CodeMirror.fromTextArea(
-        document.getElementById("submission"), {
-            mode: "python",
-            lineNumbers: true,
-            autoRefresh: true
-        });
+    const existingEditor = $(".CodeMirror");
+    if (existingEditor.length === 1) {
+        editor = existingEditor[0].CodeMirror;
 
-    editorObject.setValue(previousSolution);
+    } else {
+        $("#submission-wrapper").show();
+        editor = CodeMirror.fromTextArea(
+            document.getElementById("submission"), {
+                mode: "python",
+                lineNumbers: true,
+                autoRefresh: true
+            });
+    }
 
-    $("#submit-button").click(() => {
-        studentSubmitHandler(editorObject);
+    editor.setValue(previousSolution);
+
+    const submitButton =$("#submit-button");
+
+    submitButton.click(() => {
+        $("#submit-button").text("Kontrollin...").attr("disabled", true);
+        $("#auto-feedback").text("Kontrollin...");
+        $("#auto-grade").text("...");
+        studentSubmitHandler(editor);
     });
+
+    submitButton.text("Esita").attr("disabled", false);
 
     $("#submit-button-wrapper").show();
 }
 
-function studentSubmitHandler(editor) {
+async function studentSubmitHandler(editor) {
     console.debug("Submitting solution");
 
     const submissionText = editor.getValue();
-    // TODO: submit and requery last submission
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+
+    // Submit
+    await $.post({
+        url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId + "/submissions",
+        headers: getAuthHeader(),
+        data: JSON.stringify({"solution": submissionText}),
+        contentType:"application/json; charset=utf-8"
+    });
+
+    // TODO: might have to hide something while inside the polling loop?
+
+    // Start polling autograde status
+    pollAutogradeStatus(courseId, exerciseId);
+}
+
+async function pollAutogradeStatus(courseId, exerciseId) {
+    const sleepStart = 500;
+    const sleepStep = 250;
+    let sleepCounter = 0;
+
+    while(true) {
+        console.debug("Fetching submission...");
+        await ensureTokenValid();
+        const submission = await $.get({
+            url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/latest",
+            headers: getAuthHeader()
+        });
+
+        if (submission.autograde_status !== "IN_PROGRESS") {
+            console.debug("Autoassess finished with status: " + submission.autograde_status);
+            paintStudentSubmit(submission);
+            break;
+        } else {
+            console.debug("Autoassess still in progress");
+        }
+
+        sleepCounter++;
+        const sleepTime = sleepStart + sleepCounter * sleepStep;
+        console.debug("Sleeping for " + sleepTime + " ms");
+        await sleep(sleepTime);
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function paintStudentSubmissions(submissions) {
@@ -163,7 +226,6 @@ function paintStudentSubmissions(submissions) {
             ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
             ", feedback_teacher: " + s.feedback_teacher);
 
-        // TODO: paint submissions
         // No editors first, maybe later
     });
 }
@@ -441,7 +503,8 @@ async function initExercisePageAuth() {
         $("#tab-my-submissions").show();
         initStudentExerciseDetailsTab(courseId, exerciseId);
         initStudentSubmitTab(courseId, exerciseId);
-        initStudentSubmissionsTab(courseId, exerciseId);
+        // TODO: submissions tabs
+        //initStudentSubmissionsTab(courseId, exerciseId);
 
     } else if (isTeacher()) {
         $("#tab-student-submissions").show();
