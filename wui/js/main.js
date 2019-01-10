@@ -281,7 +281,7 @@ function paintTeacherSubmission(s) {
     $("#add-grade-wrapper").hide();
     $("#grade-button").attr("disabled", false);
 
-    $("#grade-button").click(() => {
+    $("#grade-button").off().click(() => {
         console.debug("Click grade, submission id: " + s.id);
         $("#grade-button").attr("disabled", true);
         teacherAddAssessment(s.id);
