@@ -99,6 +99,8 @@ function paintStudentExerciseDetails(ex) {
 
 function paintStudentSubmit(s) {
 
+    let previousSolution = "";
+
     if (s !== null) {
         console.debug("Solution " + s.solution + ", time: " + s.submission_time + ", autograde_status: " + s.autograde_status +
             ", grade_auto: " + s.grade_auto + ", feedback_auto: " + s.feedback_auto + ", grade_teacher: " + s.grade_teacher +
@@ -127,30 +129,32 @@ function paintStudentSubmit(s) {
             $("#submission-auto").show();
         }
 
-        $("#submission-wrapper").show();
-
-        CodeMirror.fromTextArea(
-            document.getElementById("submission"),
-            {
-                mode: "python",
-                lineNumbers: true,
-                autoRefresh: true
-            }
-        ).setValue(s.solution);
-
-    } else {
-
-        $("#submission-wrapper").show();
-
-        CodeMirror.fromTextArea(
-            document.getElementById("submission"),
-            {
-                mode: "python",
-                lineNumbers: true,
-                autoRefresh: true
-            }
-        );
+        previousSolution = s.solution;
     }
+
+    $("#submission-wrapper").show();
+
+    const editorObject = CodeMirror.fromTextArea(
+        document.getElementById("submission"), {
+            mode: "python",
+            lineNumbers: true,
+            autoRefresh: true
+        });
+
+    editorObject.setValue(previousSolution);
+
+    $("#submit-button").click(() => {
+        studentSubmitHandler(editorObject);
+    });
+
+    $("#submit-button-wrapper").show();
+}
+
+function studentSubmitHandler(editor) {
+    console.debug("Submitting solution");
+
+    const submissionText = editor.getValue();
+    // TODO: submit and requery last submission
 }
 
 function paintStudentSubmissions(submissions) {
