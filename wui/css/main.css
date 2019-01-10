@@ -177,6 +177,7 @@ h2 {
 
 pre.feedback {
     white-space: pre-wrap;
+    font-size: 1.5rem;
 }
 
 #teacher-submission-teacher, #teacher-submission-auto {
