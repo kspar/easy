@@ -39,7 +39,7 @@ class StudentReadLatestSubmissionController {
                                      @JsonProperty("grade_teacher") val gradeTeacher: Int?,
                                      @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
-    @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest")
+    @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest")
     fun readLatestSubmission(@PathVariable("courseId") courseIdString: String,
                              @PathVariable("courseExerciseId") courseExerciseIdString: String,
                              response: HttpServletResponse, caller: EasyUser): StudentSubmissionResp? {
