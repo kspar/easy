@@ -54,7 +54,7 @@ function paintTeacherExercises(exercises, courseId, courseTitle) {
             ", grader_type: " + e.grader_type + ", unstarted_count: " + e.unstarted_count + ", graded_count: " + e.graded_count +
             ", ungraded_count: " + e.ungraded_count + ", started_count: " + e.started_count + ", completed_count: " + e.completed_count);
 
-        const deadlineString = "Tähtaeg: " + e.soft_deadline;  // TODO: format, empty if null
+        const deadlineString = (e.soft_deadline ? "Tähtaeg: " + formatDateTime(e.soft_deadline) : "");
         const count1String = "Esitamata: " + e.unstarted_count;
         const count2String = e.grader_type === "AUTO" ? "Alustanud: " + e.started_count : "Hindamata: " + e.ungraded_count;
         const count3String = e.grader_type === "AUTO" ? "Lõpetanud: " + e.completed_count : "Hinnatud: " + e.graded_count;
@@ -85,9 +85,11 @@ function paintStudentExerciseDetails(ex) {
         $("#exercise-text").text(ex.text_html);
     }
 
-    const deadlineString = ex.deadline; // TODO: format and null
-    $("#exercise-soft-deadline").removeAttr("style")
-        .find("#exercise-soft-deadline-value").text(deadlineString);
+    if (ex.deadline) {
+        const deadlineString = formatDateTime(ex.deadline);
+        $("#exercise-soft-deadline").removeAttr("style")
+            .find("#exercise-soft-deadline-value").text(deadlineString);
+    }
 
     const graderString = ex.grader_type === "AUTO" ? "automaatne" : "käsitsi";
     $("#exercise-grader").removeAttr("style")
@@ -181,8 +183,6 @@ async function studentSubmitHandler(editor) {
         data: JSON.stringify({"solution": submissionText}),
         contentType:"application/json; charset=utf-8"
     });
-
-    // TODO: might have to hide something while inside the polling loop?
 
     // Start polling autograde status
     pollAutogradeStatus(courseId, exerciseId);
