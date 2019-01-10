@@ -33,7 +33,7 @@ function paintStudentExercises(exercises, courseId, courseTitle) {
 
         const titleItem = $("<div></div>").addClass("col").addClass("s4").text(e.title);
 
-        const deadlineString = "Tähtaeg: " + e.deadline;  // TODO: format, empty if null
+        const deadlineString = (e.deadline ? "Tähtaeg: " + formatDateTime(e.deadline) : "");
         const deadlineItem = $("<div></div>").addClass("col").addClass("s4").text(deadlineString);
 
         const gradeString = (e.grade === null ? "--" : e.grade) + "/100";
@@ -335,13 +335,17 @@ function paintTeacherExerciseDetails(ex) {
     $("#exercise-title").text(ex.title);
     $("#exercise-text").text(ex.text_html);
 
-    const softDeadlineString = ex.soft_deadline; // TODO: format and null
-    $("#exercise-soft-deadline").removeAttr("style")
-        .find("#exercise-soft-deadline-value").text(softDeadlineString);
+    if (ex.soft_deadline) {
+        const softDeadlineString = formatDateTime(ex.soft_deadline);
+        $("#exercise-soft-deadline").removeAttr("style")
+            .find("#exercise-soft-deadline-value").text(softDeadlineString);
+    }
 
-    const hardDeadlineString = ex.hard_deadline; // TODO: format and null
-    $("#exercise-hard-deadline").removeAttr("style")
-        .find("#exercise-hard-deadline-value").text(hardDeadlineString);
+    if (ex.hard_deadline) {
+        const hardDeadlineString = formatDateTime(ex.hard_deadline);
+        $("#exercise-hard-deadline").removeAttr("style")
+            .find("#exercise-hard-deadline-value").text(hardDeadlineString);
+    }
 
     const graderString = ex.grader_type === "AUTO" ? "automaatne" : "käsitsi";
     $("#exercise-grader").removeAttr("style")
@@ -350,9 +354,11 @@ function paintTeacherExerciseDetails(ex) {
     $("#exercise-threshold").removeAttr("style")
         .find("#exercise-threshold-value").text(ex.threshold);
 
-    const lastModifiedString = ex.last_modified; // TODO: format and null
-    $("#exercise-last-modified").removeAttr("style")
-        .find("#exercise-last-modified-value").text(lastModifiedString);
+    if (ex.last_modified) {
+        const lastModifiedString = formatDateTime(ex.last_modified);
+        $("#exercise-last-modified").removeAttr("style")
+            .find("#exercise-last-modified-value").text(lastModifiedString);
+    }
 
     const visibleString = ex.student_visible === true ? "Jah" : "Ei";
     $("#exercise-student-visible").removeAttr("style")
@@ -623,6 +629,29 @@ function initPageNoAuth() {
             initExercisePageNoAuth();
             break;
     }
+}
+
+function formatDateTime(rawString) {
+    const months = ["jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
+        "juuli", "august", "september", "oktoober", "november", "detsember"];
+
+    const dateTimeParts = rawString.trim().split("T");
+    const date = dateTimeParts[0];
+    const time = dateTimeParts[1];
+
+    const dateParts = date.split("-");
+    const dayRaw = dateParts[2];
+    const monthNumber = dateParts[1];
+    const year = dateParts[0];
+    // Remove leading 0s
+    const day = parseInt(dayRaw).toString();
+    const month = months[parseInt(monthNumber) - 1];
+
+    const timeParts = time.split(":");
+    const hour = timeParts[0];
+    const minute = timeParts[1];
+
+    return day + ". " + month + " " + year + ", " + hour + "." + minute;
 }
 
 function getCourseIdFromQueryOrNull() {
