@@ -279,15 +279,21 @@ function paintTeacherSubmission(s) {
 
     $("#teacher-submission-wrapper").show();
 
-    CodeMirror.fromTextArea(
-        document.getElementById("teacher-submission-submission"),
-        {
-            mode: "python",
-            lineNumbers: true,
-            readOnly: "nocursor",
-            autoRefresh: true
-        }
-    ).setValue(s.solution);
+    const existingEditor = $(".CodeMirror");
+    if (existingEditor.length === 1) {
+        existingEditor[0].CodeMirror.setValue(s.solution);
+
+    } else {
+        CodeMirror.fromTextArea(
+            document.getElementById("teacher-submission-submission"),
+            {
+                mode: "python",
+                lineNumbers: true,
+                readOnly: "nocursor",
+                autoRefresh: true
+            }
+        ).setValue(s.solution);
+    }
 }
 
 function teacherOpenSubmissionTab(studentId, studentName) {
