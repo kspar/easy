@@ -81,9 +81,7 @@ function paintStudentExerciseDetails(ex) {
         ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold);
 
     $("#exercise-title").text(ex.title);
-    if (ex.text_html !== null) {
-        $("#exercise-text").text(ex.text_html);
-    }
+    $("#exercise-text").html(ex.text_html);
 
     if (ex.deadline) {
         const deadlineString = formatDateTime(ex.deadline);
@@ -375,7 +373,7 @@ function paintTeacherExerciseDetails(ex) {
         ", assessments_student_visible: " + ex.assessments_student_visible);
 
     $("#exercise-title").text(ex.title);
-    $("#exercise-text").text(ex.text_html);
+    $("#exercise-text").html(ex.text_html);
 
     if (ex.soft_deadline) {
         const softDeadlineString = formatDateTime(ex.soft_deadline);
