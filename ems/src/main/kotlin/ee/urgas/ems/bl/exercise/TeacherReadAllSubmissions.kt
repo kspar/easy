@@ -89,6 +89,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
 
             TeacherSubmission(
                     it.solution,
+                    it.id,
                     it.createdAt,
                     autoAssessment?.grade,
                     autoAssessment?.feedback,
