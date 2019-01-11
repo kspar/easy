@@ -259,3 +259,8 @@ label[for=feedback], label[for=grade] {
 
 
 
+/* Code editor */
+
+.CodeMirror {
+    font-size: 1.9rem;
+}
