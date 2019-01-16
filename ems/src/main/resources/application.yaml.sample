@@ -15,11 +15,6 @@ spring:
             enable: true
 
 
-aas:
-  psk: "<aas-preshared-key>"
-
-auth-enabled: true
-
 easy:
   ems:
     auth-enabled: true
