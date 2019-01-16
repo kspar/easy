@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse
 class SecurityConf : WebSecurityConfigurerAdapter() {
     private val log = KotlinLogging.logger {}
 
-    @Value("\${auth-enabled}")
+    @Value("\${easy.ems.auth-enabled}")
     private var authEnabled: Boolean = true
 
     override fun configure(http: HttpSecurity) {

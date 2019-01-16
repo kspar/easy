@@ -40,7 +40,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class StudentSubmitController(val autoAssessComponent: AutoAssessComponent) {
 
-    @Value("\${aas.psk}")
+    @Value("\${easy.ems.aas.psk}")
     private lateinit var aasKey: String
 
     data class StudentSubmissionBody(@JsonProperty("solution", required = true) val solution: String)

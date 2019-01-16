@@ -22,6 +22,9 @@ auth-enabled: true
 
 easy:
   ems:
+    auth-enabled: true
+    aas:
+      psk: "<aas-preshared-key>"
     mail:
       sys:
         from: "<from-address>"
