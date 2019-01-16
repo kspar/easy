@@ -18,9 +18,16 @@ class SendMailService(private val mailSender: JavaMailSender) {
     private lateinit var fromAddress: String
     @Value("\${easy.ems.mail.sys.to}")
     private lateinit var toSysAddress: String
+    @Value("\${easy.ems.mail.sys.enabled}")
+    private var enabled: Boolean = true
 
     @Async
     fun sendSystemNotification(message: String) {
+        if (!enabled) {
+            log.info { "System notifications disabled, ignoring" }
+            return
+        }
+
         val time = Instant.now().toString()
         val messageId = UUID.randomUUID().toString()
         log.info("Sending notification $messageId ($time) from $fromAddress to $toSysAddress")
