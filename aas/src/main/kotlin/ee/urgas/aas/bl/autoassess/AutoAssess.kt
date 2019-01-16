@@ -35,9 +35,9 @@ class AutoAssessController {
         const val SIGNATURE_ALGORITHM = "HmacSHA256"
     }
 
-    @Value("\${ems.psk}")
+    @Value("\${easy.aas.ems.psk}")
     private lateinit var keyString: String
-    @Value("\${ems.allowed-delay-sec}")
+    @Value("\${easy.aas.ems.allowed-delay-sec}")
     private var allowedDelaySec: Int = 0
 
     data class AutoAssessBody(@JsonProperty("submission", required = true) val submission: String,

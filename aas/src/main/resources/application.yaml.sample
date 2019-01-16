@@ -3,9 +3,26 @@ spring:
     jdbc-url: "<url>"
     username: "<username>"
     password: "<password>"
+  mail:
+    host: "<mailhost>"
+    properties:
+      mail:
+        transport:
+          protocol: "smtp"
+        smtp:
+          port: 587
+          starttls:
+            enable: true
 
-ems:
-  psk: "<ems shared key>"
-  allowed-delay-sec: 30
 
-auth-enabled: true
+easy:
+  aas:
+    auth-enabled: true
+    ems:
+      psk: "<ems-preshared-key>"
+      allowed-delay-sec: 30
+    mail:
+      sys:
+        enabled: true
+        from: "<from-address>"
+        to: "<to-address>"
