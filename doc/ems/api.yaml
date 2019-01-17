@@ -389,12 +389,8 @@ paths:
               - public
               - grader_type
       responses:
-        201:
+        200:
           description: Exercise created.
-          headers:
-            Location:
-              description: URL of this exercise's details.
-              type: string
 
 
   /teacher/exercises/{exerciseId}:
