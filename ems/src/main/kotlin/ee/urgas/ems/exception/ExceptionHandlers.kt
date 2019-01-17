@@ -14,13 +14,28 @@ private val log = KotlinLogging.logger {}
 @ControllerAdvice
 class EmsExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
 
+    @ExceptionHandler(value = [ForbiddenException::class])
+    fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<Any> {
+        log.warn("ForbiddenException", ex)
+        log.warn("Request info: ${request.getDescription(true)}")
+        mailService.sendSystemNotification(ex.stackTraceString)
+        return ResponseEntity(HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(value = [InvalidRequestException::class])
+    fun handleInvalidReqException(ex: InvalidRequestException, request: WebRequest): ResponseEntity<Any> {
+        log.warn("InvalidRequestException", ex)
+        log.warn("Request info: ${request.getDescription(true)}")
+        mailService.sendSystemNotification(ex.stackTraceString)
+        return ResponseEntity(HttpStatus.BAD_REQUEST)
+    }
+
     @ExceptionHandler(value = [Exception::class])
     fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
         log.error("Caught a big one", ex)
         log.error("Request info: ${request.getDescription(true)}")
-
         mailService.sendSystemNotification(ex.stackTraceString)
-
         return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }
+
