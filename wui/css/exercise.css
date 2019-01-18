@@ -1,0 +1,16 @@
+
+/* Note: all rules should be applied only to #exercise-text children */
+
+#exercise-text {
+    font-size: 1.6rem;
+}
+
+#exercise-text p {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+#exercise-text .italic {
+    font-style: italic;
+}
+
