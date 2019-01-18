@@ -28,7 +28,7 @@ private val log = KotlinLogging.logger {}
 class TeacherUpdateExerciseController {
 
     data class UpdateExerciseBody(@JsonProperty("title", required = true) val title: String,
-                                  @JsonProperty("text_html", required = true) val textHtml: String,
+                                  @JsonProperty("text_html", required = false) val textHtml: String?,
                                   @JsonProperty("public", required = true) val public: Boolean)
 
     @Secured("ROLE_TEACHER")
