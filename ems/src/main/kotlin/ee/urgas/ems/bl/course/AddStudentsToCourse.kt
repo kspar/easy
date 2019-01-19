@@ -3,7 +3,6 @@ package ee.urgas.ems.bl.course
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
-import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
@@ -30,12 +29,8 @@ class AddStudentsToCourseController {
 
         // TODO: access control
         log.debug { "Adding access to course $courseId to students $studentEmails" }
-        try {
-            insertStudentCourseAccesses(courseId.toLong(), studentEmails)
-        } catch (e: StudentNotFoundException) {
-            log.info { "Adding failed, student not found: ${e.message}" }
-            throw InvalidRequestException(e.message)
-        }
+
+        insertStudentCourseAccesses(courseId.toLong(), studentEmails)
     }
 }
 

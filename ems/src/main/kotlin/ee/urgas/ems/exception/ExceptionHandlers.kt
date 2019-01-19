@@ -1,5 +1,6 @@
 package ee.urgas.ems.exception
 
+import ee.urgas.ems.bl.course.StudentNotFoundException
 import ee.urgas.ems.util.SendMailService
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
@@ -13,6 +14,14 @@ private val log = KotlinLogging.logger {}
 
 @ControllerAdvice
 class EmsExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
+
+    @ExceptionHandler(value = [StudentNotFoundException::class])
+    fun handleStudentNotFoundException(ex: StudentNotFoundException, request: WebRequest): ResponseEntity<String> {
+        log.info("StudentNotFoundException: ${ex.message}")
+        log.info("Request info: ${request.getDescription(true)}")
+        mailService.sendSystemNotification(ex.stackTraceString)
+        return ResponseEntity(ex.message, HttpStatus.BAD_REQUEST)
+    }
 
     @ExceptionHandler(value = [ForbiddenException::class])
     fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<Any> {
