@@ -20,7 +20,13 @@ function paintTeacherCourses(courses) {
         const studentCountItem = $("<span></span>").addClass("right").addClass("course-student-count")
             .text(studentCountString);
         courseItem.append(studentCountItem);
-        $("#courses-list").append(courseItem);
+
+        const studentsLink = "/students.html?course-id=" + c.id;
+        const studentsButton = $('<a class= "course-add-students"><i class="material-icons">group</i></a>')
+            .attr("href", studentsLink);
+        const courseWrapper = $('<div class="course-wrapper"></div>').append(courseItem).append(studentsButton);
+
+        $("#courses-list").append(courseWrapper);
     });
 }
 
@@ -781,6 +787,7 @@ function authenticate() {
 
     }).success((authenticated) => {
         console.debug("Authenticated: " + authenticated);
+        console.debug(kc.token);
         initPageAuth();
 
     }).error((e) => {
