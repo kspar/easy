@@ -288,6 +288,41 @@ h4.subsection {
     margin-bottom: 2rem;
 }
 
+a#add-students-link {
+    display: inline-block;
+    margin-bottom: 2rem;
+}
+
 span.student-toast {
     font-size: 1.6rem;
 }
+
+#add-students-wrapper {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid #eee;
+    font-size: 1.6rem;
+}
+
+div#new-students-list-wrapper {
+    margin-bottom: 1rem;
+}
+
+label[for=new-students-list] {
+    font-size: 1.6rem;
+}
+
+#new-students-list:focus {
+    border-bottom: 1px solid #469c45;
+    -webkit-box-shadow: 0 1px 0 0 #469c45;
+    box-shadow: 0 1px 0 0 #469c45;
+}
+
+#new-students-list:focus + label {
+    color: #469c45;
+}
+
+#new-students-list {
+    min-height: 5rem;
+}
+

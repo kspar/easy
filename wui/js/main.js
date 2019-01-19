@@ -476,7 +476,6 @@ async function addStudents() {
     } catch (e) {
         const errorEmail = e.responseText;
         console.error("Student " + errorEmail + " does not exist");
-        // TODO: show error
         const errorHtml = '<i class="material-icons" style="margin-right: 10px">error_outline</i><span class="student-toast"> Lisamine ebaõnnestus.<br/>Ei leidnud õpilast emailiga ' + errorEmail + '</span><button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">Sain aru</button>'
         M.toast({html: errorHtml, displayLength: 30000});
         $("#add-students-button").removeAttr("disabled");
