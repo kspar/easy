@@ -304,8 +304,12 @@ span.student-toast {
     font-size: 1.6rem;
 }
 
+div#add-students-help {
+    margin-bottom: 2rem;
+}
+
 div#new-students-list-wrapper {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
 }
 
 label[for=new-students-list] {
