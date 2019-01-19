@@ -422,6 +422,10 @@ function paintStudents(students) {
     const studentsList = $("#students-list");
     studentsList.empty();
 
+    const courseTitle = getCourseTitleFromQuery();
+    $("#course-title").text(courseTitle);
+    $("#students-container").show();
+
     students.forEach((s) => {
         console.debug("Student givenName: " + s.given_name + ", familyName: " + s.family_name + ", email: " + s.email);
 
@@ -812,7 +816,7 @@ function getCourseTitleFromQuery() {
     let courseName = getQueryParam("course-title");
     if (courseName === null || courseName === undefined) {
         error("Course title not found", window.location.href);
-        courseName = "Ülesanded";
+        courseName = "Kursus";
     }
     return courseName;
 }
