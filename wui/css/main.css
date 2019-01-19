@@ -273,3 +273,21 @@ a.course-add-students {
 .CodeMirror {
     font-size: 1.9rem;
 }
+
+
+/** Participants page **/
+
+h2#course-title {
+    margin-top: 0;
+    margin-bottom: 2rem;
+}
+
+h4.subsection {
+    font-size: 2rem;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+}
+
+span.student-toast {
+    font-size: 1.6rem;
+}

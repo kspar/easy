@@ -156,7 +156,7 @@ function paintStudentSubmit(s) {
 
     editor.setValue(previousSolution);
 
-    const submitButton =$("#submit-button");
+    const submitButton = $("#submit-button");
 
     submitButton.off().click(() => {
         $("#submit-button").text("Kontrollin...").attr("disabled", true);
@@ -185,7 +185,7 @@ async function studentSubmitHandler(editor) {
         url: EMS_ROOT + "/student/courses/" + courseId + "/exercises/" + exerciseId + "/submissions",
         headers: getAuthHeader(),
         data: JSON.stringify({"solution": submissionText}),
-        contentType:"application/json; charset=utf-8"
+        contentType: "application/json; charset=utf-8"
     });
 
     // Start polling autograde status
@@ -197,7 +197,7 @@ async function pollAutogradeStatus(courseId, exerciseId) {
     const sleepStep = 250;
     let sleepCounter = 0;
 
-    while(true) {
+    while (true) {
         console.debug("Fetching submission...");
         await ensureTokenValid();
         const submission = await $.get({
@@ -236,7 +236,7 @@ function paintStudentSubmissions(submissions) {
 
 function paintTeacherSubmissions(submissions) {
     submissions.forEach((s) => {
-        console.debug("Id: "+ s.student_id + ", given_name: " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
+        console.debug("Id: " + s.student_id + ", given_name: " + s.given_name + ", family_name: " + s.family_name + ", submission_time: " + s.submission_time +
             ", grade: " + s.grade + ", graded_by: " + s.graded_by);
 
         const submissionItem = $("#teacher-submission-item").clone().removeAttr("id").removeAttr("style");
@@ -320,7 +320,7 @@ async function teacherAddAssessment(submissionId) {
     const feedback = $("#feedback").val();
     const grade = $("#grade").val();
 
-    console.debug("New assessment, submissionId: "+ submissionId  +", grade: " + grade + ", feedback: " + feedback);
+    console.debug("New assessment, submissionId: " + submissionId + ", grade: " + grade + ", feedback: " + feedback);
 
     const courseId = getCourseIdFromQueryOrNull();
     const exerciseId = getExerciseIdFromQueryOrNull();
@@ -332,7 +332,7 @@ async function teacherAddAssessment(submissionId) {
         url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/submissions/" + submissionId + "/assessments",
         headers: getAuthHeader(),
         data: JSON.stringify({"grade": parseInt(grade), "feedback": feedback}),
-        contentType:"application/json; charset=utf-8"
+        contentType: "application/json; charset=utf-8"
     });
 
     // Requery & repaint
@@ -352,7 +352,7 @@ function teacherOpenSubmissionTab(studentId, studentName) {
     submissionTab.show();
 
     $("#tabs").tabs("select", "student-submission");
-        //.tabs("updateTabIndicator");
+    //.tabs("updateTabIndicator");
 }
 
 async function initTeacherSubmissionTab(studentId) {
@@ -415,6 +415,74 @@ function paintTeacherExerciseDetails(ex) {
         .find("#exercise-assessments-student-visible-value").text(assessmentsVisibleString);
 }
 
+function paintStudents(students) {
+    // Init elements in case they have already been painted before
+    const addStudentsButton = $("#add-students-button");
+    addStudentsButton.removeAttr("disabled");
+    const studentsList = $("#students-list");
+    studentsList.empty();
+
+    students.forEach((s) => {
+        console.debug("Student givenName: " + s.given_name + ", familyName: " + s.family_name + ", email: " + s.email);
+
+        const studentItem = $("#student-item").clone().removeAttr("id").removeAttr("style");
+
+        const studentText = s.given_name + " " + s.family_name + " (" + s.email + ")";
+        studentItem.text(studentText);
+        $("#students-list").append(studentItem);
+    });
+
+    const addStudentsLink = $("#add-students-link");
+    addStudentsLink.off().show().click(() => {
+        $('#add-students-wrapper').show();
+        addStudentsLink.hide();
+    });
+
+    addStudentsButton.off().click(() => {
+        addStudentsButton.attr("disabled", true);
+        addStudents();
+    });
+}
+
+async function addStudents() {
+    const newStudentsElement = $("#new-students-list");
+    const newStudentsString = newStudentsElement.val();
+
+    console.debug(newStudentsString);
+    const newStudentsList = newStudentsString.split(/\s+/)
+        .map(s => s.replace(',', '').replace(';', ''))
+        .filter(s => s);
+    console.debug(newStudentsList);
+
+    const courseId = getCourseIdFromQueryOrNull();
+    if (courseId === null) {
+        console.error("Cannot add students, course id not found.");
+        return
+    }
+
+    try {
+        await $.post({
+            url: EMS_ROOT + "/teacher/courses/" + courseId + "/students",
+            headers: getAuthHeader(),
+            data: JSON.stringify(newStudentsList),
+            contentType: "application/json; charset=utf-8"
+        });
+
+        $('#add-students-wrapper').hide();
+        $("#add-students-link").show();
+        newStudentsElement.val("");
+        initStudentsPageAuth();
+
+    } catch (e) {
+        const errorEmail = e.responseText;
+        console.error("Student " + errorEmail + " does not exist");
+        // TODO: show error
+        const errorHtml = '<i class="material-icons" style="margin-right: 10px">error_outline</i><span class="student-toast"> Lisamine ebaõnnestus.<br/>Ei leidnud õpilast emailiga ' + errorEmail + '</span><button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">Sain aru</button>'
+        M.toast({html: errorHtml, displayLength: 30000});
+        $("#add-students-button").removeAttr("disabled");
+    }
+}
+
 
 /** Init page before auth functions **/
 
@@ -445,7 +513,7 @@ function initExercisesPageNoAuth() {
 function initExercisePageNoAuth() {
     console.debug("Exercise page");
 
-    // Set course and exercise breadcrumbs (exercise name will be later updated from service)
+    // Set course and exercise breadcrumbs
     const courseId = getCourseIdFromQueryOrNull();
     const exerciseId = getExerciseIdFromQueryOrNull();
     if (courseId === null || exerciseId === null) {
@@ -458,6 +526,12 @@ function initExercisePageNoAuth() {
 
     // Init default tabs
     $("#tabs").tabs();
+}
+
+function initStudentsPageNoAuth() {
+    const courseName = getCourseTitleFromQuery();
+    $("#course-crumb").text(courseName);
+    document.title = courseName;
 }
 
 
@@ -575,6 +649,21 @@ async function initExercisePageAuth() {
     $("#tabs").tabs();
 }
 
+async function initStudentsPageAuth() {
+    const courseId = getCourseIdFromQueryOrNull();
+    if (courseId === null) {
+        return;
+    }
+
+    await ensureTokenValid();
+    const students = await $.get({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/students",
+        headers: getAuthHeader()
+    });
+
+    paintStudents(students)
+}
+
 async function initTeacherSubmissionsTab(courseId, exerciseId) {
     await ensureTokenValid();
     const submissions = await $.get({
@@ -647,6 +736,9 @@ async function initPageAuth() {
         case "exercise":
             initExercisePageAuth();
             break;
+        case "students":
+            initStudentsPageAuth();
+            break;
     }
 }
 
@@ -668,6 +760,9 @@ function initPageNoAuth() {
             break;
         case "exercise":
             initExercisePageNoAuth();
+            break;
+        case "students":
+            initStudentsPageNoAuth();
             break;
     }
 }
