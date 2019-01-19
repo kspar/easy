@@ -21,7 +21,7 @@ function paintTeacherCourses(courses) {
             .text(studentCountString);
         courseItem.append(studentCountItem);
 
-        const studentsLink = "/students.html?course-id=" + c.id;
+        const studentsLink = "/students.html?course-id=" + c.id + "&course-title=" + c.title;
         const studentsButton = $('<a class= "course-add-students"><i class="material-icons">group</i></a>')
             .attr("href", studentsLink);
         const courseWrapper = $('<div class="course-wrapper"></div>').append(courseItem).append(studentsButton);
