@@ -422,7 +422,13 @@ function paintStudents(students) {
     const studentsList = $("#students-list");
     studentsList.empty();
 
+    const courseId = getCourseIdFromQueryOrNull();
+    if (courseId === null) {
+        return;
+    }
+
     const courseTitle = getCourseTitleFromQuery();
+    $("#course-crumb").attr("href", "/exercises.html?course-id=" + courseId + "&course-title=" + courseTitle).text(courseTitle);
     $("#course-title").text(courseTitle);
     $("#students-container").show();
 
@@ -444,11 +450,11 @@ function paintStudents(students) {
 
     addStudentsButton.off().click(() => {
         addStudentsButton.attr("disabled", true);
-        addStudents();
+        addStudentsHandler();
     });
 }
 
-async function addStudents() {
+async function addStudentsHandler() {
     const newStudentsElement = $("#new-students-list");
     const newStudentsString = newStudentsElement.val();
 
