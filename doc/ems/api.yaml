@@ -212,12 +212,16 @@ paths:
         200:
           description: Removed.
 
+
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
 
     post:
+      summary: Test autoassessment of this exercise with this solution.
+      tags:
+        - teacher
       parameters:
         - name: solution
           in: body
