@@ -212,6 +212,29 @@ paths:
         200:
           description: Removed.
 
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+
+    post:
+      parameters:
+        - name: solution
+          in: body
+          schema:
+            properties:
+              solution:
+                type: string
+      responses:
+        200:
+          description: Assessment completed.
+          schema:
+            properties:
+              grade:
+                type: integer
+              feedback:
+                type: string
+
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students:
     parameters:
