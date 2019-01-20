@@ -685,7 +685,7 @@ async function initExercisePageAuth() {
     // Async get and paint all tabs
     if (isStudent()) {
         $("#tab-submit").show();
-        $("#tab-my-submissions").show();
+        //$("#tab-my-submissions").show();
         initStudentExerciseDetailsTab(courseId, exerciseId);
         initStudentSubmitTab(courseId, exerciseId);
         // TODO: submissions tabs
