@@ -944,7 +944,7 @@ function authenticate() {
 
     }).success((authenticated) => {
         console.debug("Authenticated: " + authenticated);
-        console.debug(kc.token);
+        //console.debug(kc.token);
         initPageAuth();
 
     }).error((e) => {
