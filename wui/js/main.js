@@ -162,6 +162,7 @@ function paintStudentSubmit(s) {
         $("#submit-button").text("Kontrollin...").attr("disabled", true);
         $("#auto-feedback").text("Kontrollin...");
         $("#auto-grade").text("...");
+        $("#submission-teacher").hide();
         studentSubmitHandler(editor);
     });
 
