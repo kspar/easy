@@ -14,3 +14,6 @@
     font-style: italic;
 }
 
+#exercise-text code {
+    background-color: #eeeeee;
+}
