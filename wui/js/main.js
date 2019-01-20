@@ -83,7 +83,7 @@ function paintTeacherExercises(exercises, courseId, courseTitle) {
 }
 
 function paintStudentExerciseDetails(ex) {
-    console.debug("Exercise title: " + ex.title + ", text: " + ex.text_html + ", deadline: " + ex.deadline +
+    console.debug("Exercise title: " + ex.title  + ", deadline: " + ex.deadline +
         ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold);
 
     $("#exercise-title").text(ex.title);
@@ -374,7 +374,7 @@ async function initTeacherSubmissionTab(studentId) {
 }
 
 function paintTeacherExerciseDetails(ex) {
-    console.debug("Exercise title: " + ex.title + ", text: " + ex.text_html + ", soft_deadline: " + ex.soft_deadline
+    console.debug("Exercise title: " + ex.title + ", soft_deadline: " + ex.soft_deadline
         + ", hard_deadline: " + ex.hard_deadline + ", grader_type: " + ex.grader_type + ", threshold: " + ex.threshold +
         ", last_modified: " + ex.last_modified + ", student_visible: " + ex.student_visible +
         ", assessments_student_visible: " + ex.assessments_student_visible);
