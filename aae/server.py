@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import time
+
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -67,7 +69,10 @@ def parse_assessment_output(raw_output):
 
 @app.route('/v1/grade', methods=['POST'])
 def post_grade():
-    app.logger.info("Request: " + request.get_data(as_text=True))
+    # app.logger.info("Request: " + request.get_data(as_text=True))
+    request_time = time.time()
+    app.logger.info("Request started: {}".format(request_time))
+
     if not request.is_json:
         raise BadRequest("Request body must be JSON")
 
@@ -89,7 +94,8 @@ def post_grade():
     else:
         raise Exception("Unhandled run status: " + status.name)
 
-    app.logger.info("Assessment: " + str(assessment))
+    # app.logger.info("Assessment: " + str(assessment))
+    app.logger.info("Request finished: {}".format(request_time))
 
     return jsonify({"grade": assessment[0], "feedback": assessment[1]})
 
