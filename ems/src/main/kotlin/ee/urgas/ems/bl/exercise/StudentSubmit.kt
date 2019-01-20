@@ -72,11 +72,11 @@ class StudentSubmitController(val autoAssessComponent: AutoAssessComponent) {
 
         when (exerciseType.graderType) {
             GraderType.TEACHER -> {
-                log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId: $solution" }
+                log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
                 insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE)
             }
             GraderType.AUTO -> {
-                log.debug { "Creating new submission to autograded exercise $courseExId by $studentId: $solution" }
+                log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 if (exerciseType.aasId == null) {
                     log.warn { "Grader type is AUTO but aas_id is null" }
                     insertSubmission(courseExId, solution, studentId, AutoGradeStatus.FAILED)
@@ -153,7 +153,7 @@ class AutoAssessComponent {
         try {
             log.debug { "Starting autoassessment with aas id $aasId" }
             val autoAss = autoAssess(aasId, solution, aasKey)
-            log.debug { "Finished autoassessment: $autoAss" }
+            log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId)
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
