@@ -299,7 +299,7 @@ function paintTeacherSubmission(s) {
 
     $("#teacher-submission-wrapper").show();
 
-    const existingEditor = $(".CodeMirror");
+    const existingEditor = $("#teacher-submission-submission + .CodeMirror");
     if (existingEditor.length === 1) {
         existingEditor[0].CodeMirror.setValue(s.solution);
 
@@ -413,6 +413,51 @@ function paintTeacherExerciseDetails(ex) {
     const assessmentsVisibleString = ex.assessments_student_visible === true ? "Jah" : "Ei";
     $("#exercise-assessments-student-visible").removeAttr("style")
         .find("#exercise-assessments-student-visible-value").text(assessmentsVisibleString);
+}
+
+function paintTeacherTesting() {
+    $("#testing-content-wrapper").show();
+
+    const editor = CodeMirror.fromTextArea(
+        document.getElementById("testing-submission"), {
+            mode: "python",
+            lineNumbers: true,
+            autoRefresh: true
+        });
+
+    const submitButton = $("#testing-submit-button");
+
+    submitButton.click(() => {
+        submitButton.text("Kontrollin...").attr("disabled", true);
+        $("#testing-submission-auto").show();
+        $("#testing-auto-feedback").text("Kontrollin...");
+        $("#testing-auto-grade").text("...");
+        teacherTestingHandler(editor);
+    });
+}
+
+async function teacherTestingHandler(editor) {
+    console.debug("Submitting solution");
+
+    const submissionText = editor.getValue();
+    const courseId = getCourseIdFromQueryOrNull();
+    const exerciseId = getExerciseIdFromQueryOrNull();
+    if (courseId === null || exerciseId === null) {
+        return;
+    }
+
+    // Submit
+    const result = await $.post({
+        url: EMS_ROOT + "/teacher/courses/" + courseId + "/exercises/" + exerciseId + "/autoassess",
+        headers: getAuthHeader(),
+        data: JSON.stringify({"solution": submissionText}),
+        contentType: "application/json; charset=utf-8"
+    });
+
+    // After autoassessment has finished, paint result
+    $("#testing-auto-feedback").text(result.feedback);
+    $("#testing-auto-grade").text(result.grade);
+    $("#testing-submit-button").text("Esita").removeAttr("disabled");
 }
 
 function paintStudents(students) {
@@ -647,7 +692,9 @@ async function initExercisePageAuth() {
 
     } else if (isTeacher()) {
         $("#tab-student-submissions").show();
+        $("#tab-testing").show();
         initTeacherExerciseDetailsTab(courseId, exerciseId);
+        initTeacherTestingTab();
         initTeacherSubmissionsTab(courseId, exerciseId);
 
     } else {
@@ -691,6 +738,11 @@ async function initTeacherExerciseDetailsTab(courseId, exerciseId) {
     });
 
     paintTeacherExerciseDetails(exercise);
+}
+
+async function initTeacherTestingTab() {
+    // Nothing to query here since last submission is not saved
+    paintTeacherTesting();
 }
 
 async function initStudentExerciseDetailsTab(courseId, exerciseId) {

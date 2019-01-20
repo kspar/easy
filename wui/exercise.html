@@ -55,6 +55,7 @@
                 <li id="tab-submit" class="tab" style="display: none;"><a href="#submit">Esitamine</a></li>
                 <li id="tab-my-submissions" class="tab" style="display: none;">
                     <a href="#my-submissions">Minu esitused</a></li>
+                <li id="tab-testing" class="tab" style="display: none;"><a href="#testing">Testimine</a></li>
                 <li id="tab-student-submissions" class="tab" style="display: none;"><a href="#student-submissions">Esitused</a>
                 </li>
                 <li id="tab-student-submission" class="tab" style="display: none;"><a href="#student-submission"></a>
@@ -97,13 +98,13 @@
                     <span id="submission-time"></span></p>
                 <div id="submission-auto" style="display: none;">
                     <h4>Automaatkontrolli hinnang</h4>
-                    <pre id="auto-feedback" class="feedback"></pre>
-                    <div>Automaatne hinne: <span id="auto-grade"></span></div>
+                    <pre id="auto-feedback" class="feedback auto-feedback"></pre>
+                    <div>Automaatne hinne: <span id="auto-grade" class="grade-number"></span></div>
                 </div>
                 <div id="submission-teacher" style="display: none;">
                     <h4>Õpetaja hinnang</h4>
                     <pre id="teacher-feedback" class="feedback"></pre>
-                    <div>Hinne: <span id="teacher-grade"></span></div>
+                    <div>Hinne: <span id="teacher-grade" class="grade-number"></span></div>
                 </div>
                 <div id="submission-wrapper" class="editor-wrapper" style="display: none;">
                     <form>
@@ -118,6 +119,23 @@
             <div id="my-submissions">
             </div>
 
+            <div id="testing">
+                <div id="testing-content-wrapper" style="display: none;">
+                    <div id="testing-submission-auto" style="display: none;">
+                        <h4>Automaatkontrolli hinnang</h4>
+                        <pre id="testing-auto-feedback" class="feedback auto-feedback"></pre>
+                        <div>Automaatne hinne: <span id="testing-auto-grade" class="grade-number"></span></div>
+                    </div>
+
+                    <div id="testing-submission-wrapper" class="editor-wrapper">
+                        <textarea id="testing-submission"></textarea>
+                    </div>
+                    <div id="testing-submit-button-wrapper" class="center">
+                        <button id="testing-submit-button" class="waves-effect waves-light btn">Esita</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="student-submissions">
                 <div id="teacher-submissions-list" class="collection">
                 </div>
@@ -129,13 +147,13 @@
                     <span id="teacher-submission-time"></span></p>
                 <div id="teacher-submission-auto" style="display: none;">
                     <h4>Automaatkontrolli hinnang</h4>
-                    <pre id="teacher-auto-feedback" class="feedback"></pre>
-                    <div>Automaatne hinne: <span id="teacher-auto-grade"></span></div>
+                    <pre id="teacher-auto-feedback" class="feedback auto-feedback"></pre>
+                    <div>Automaatne hinne: <span id="teacher-auto-grade" class="grade-number"></span></div>
                 </div>
                 <div id="teacher-submission-teacher" style="display: none;">
                     <h4>Õpetaja hinnang</h4>
                     <pre id="teacher-teacher-feedback" class="feedback"></pre>
-                    <div>Hinne: <span id="teacher-teacher-grade"></span></div>
+                    <div>Hinne: <span id="teacher-teacher-grade" class="grade-number"></span></div>
                 </div>
 
                 <a id="grade-link" href="#!" style="display: none">Lisa hinnang</a>
