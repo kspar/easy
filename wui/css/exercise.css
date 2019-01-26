@@ -17,3 +17,7 @@
 #exercise-text code {
     background-color: #eeeeee;
 }
+
+#exercise-text img {
+    display: block;
+}
