@@ -272,6 +272,12 @@ a.course-add-students {
 
 .CodeMirror {
     font-size: 1.9rem;
+    height: auto;
+}
+
+.CodeMirror-scroll {
+    min-height: 20vh;
+    max-height: 85vh;
 }
 
 .no-cursor .CodeMirror-cursors {

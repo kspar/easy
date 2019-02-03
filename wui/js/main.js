@@ -150,7 +150,8 @@ function paintStudentSubmit(s) {
             document.getElementById("submission"), {
                 mode: "python",
                 lineNumbers: true,
-                autoRefresh: true
+                autoRefresh: true,
+                viewportMargin: 100
             });
     }
 
@@ -311,7 +312,8 @@ function paintTeacherSubmission(s) {
                 mode: "python",
                 lineNumbers: true,
                 readOnly: true,
-                autoRefresh: true
+                autoRefresh: true,
+                viewportMargin: 100
             }
         ).setValue(s.solution);
     }
@@ -423,7 +425,8 @@ function paintTeacherTesting() {
         document.getElementById("testing-submission"), {
             mode: "python",
             lineNumbers: true,
-            autoRefresh: true
+            autoRefresh: true,
+            viewportMargin: 100
         });
 
     const submitButton = $("#testing-submit-button");
