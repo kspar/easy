@@ -117,8 +117,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): 
                     grade,
                     gradedBy
             )
-        }
-
+        }.sortedByDescending { it.submissionTime }
     }
 }
 
