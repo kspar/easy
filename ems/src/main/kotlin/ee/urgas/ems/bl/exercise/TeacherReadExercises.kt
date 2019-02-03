@@ -39,6 +39,7 @@ class TeacherReadCourseExercisesController {
                                    @JsonSerialize(using = DateTimeSerializer::class)
                                    @JsonProperty("soft_deadline") val softDeadline: DateTime?,
                                    @JsonProperty("grader_type") val graderType: GraderType,
+                                   @JsonProperty("ordering_idx") val orderingIndex: Int,
                                    @JsonProperty("unstarted_count") val unstartedCount: Int,
                                    @JsonProperty("graded_count") val gradedCount: Int?,
                                    @JsonProperty("ungraded_count") val ungradedCount: Int?,
@@ -63,16 +64,16 @@ class TeacherReadCourseExercisesController {
     private fun mapToTeacherCourseExResp(exercises: List<TeacherCourseEx>): List<TeacherCourseExResp> =
             exercises.map {
                 TeacherCourseExResp(
-                        it.id.toString(), it.title, it.softDeadline, it.graderType, it.unstartedCount, it.gradedCount,
-                        it.ungradedCount, it.startedCount, it.completedCount
+                        it.id.toString(), it.title, it.softDeadline, it.graderType, it.orderingIndex,
+                        it.unstartedCount, it.gradedCount, it.ungradedCount, it.startedCount, it.completedCount
                 )
             }
 }
 
 // TODO: subclasses for different types?
 data class TeacherCourseEx(val id: Long, val title: String, val softDeadline: DateTime?, val graderType: GraderType,
-                           val gradedCount: Int?, val ungradedCount: Int?, val unstartedCount: Int,
-                           val startedCount: Int?, val completedCount: Int?)
+                           val orderingIndex: Int, val gradedCount: Int?, val ungradedCount: Int?,
+                           val unstartedCount: Int, val startedCount: Int?, val completedCount: Int?)
 
 
 private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx> {
@@ -88,6 +89,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
 
         (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline,
+                        CourseExercise.orderIdx,
                         Course.id, ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.validTo)
                 .select { Course.id eq courseId and ExerciseVer.validTo.isNull() }
                 .map { ex ->
@@ -127,6 +129,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                                     ex[ExerciseVer.title],
                                     ex[CourseExercise.softDeadline],
                                     ex[ExerciseVer.graderType],
+                                    ex[CourseExercise.orderIdx],
                                     null, null,
                                     unstartedCount,
                                     startedCount,
@@ -142,6 +145,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                                     ex[ExerciseVer.title],
                                     ex[CourseExercise.softDeadline],
                                     ex[ExerciseVer.graderType],
+                                    ex[CourseExercise.orderIdx],
                                     gradedCount,
                                     ungradedCount,
                                     unstartedCount,

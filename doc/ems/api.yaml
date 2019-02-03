@@ -575,6 +575,8 @@ definitions:
         format: date-time
       grader_type:
         $ref: '#/definitions/GraderType'
+      ordering_idx:
+        type: integer
       unstarted_count:
         type: integer
       graded_count:
