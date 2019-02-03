@@ -92,6 +92,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                         CourseExercise.orderIdx,
                         Course.id, ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.validTo)
                 .select { Course.id eq courseId and ExerciseVer.validTo.isNull() }
+                .orderBy(CourseExercise.orderIdx to true)
                 .map { ex ->
                     // student_id -> submission
                     val lastSubmissions = HashMap<String, SubmissionPartial>()
