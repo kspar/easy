@@ -310,7 +310,7 @@ function paintTeacherSubmission(s) {
             {
                 mode: "python",
                 lineNumbers: true,
-                readOnly: "nocursor",
+                readOnly: true,
                 autoRefresh: true
             }
         ).setValue(s.solution);

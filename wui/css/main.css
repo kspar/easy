@@ -274,6 +274,10 @@ a.course-add-students {
     font-size: 1.9rem;
 }
 
+.no-cursor .CodeMirror-cursors {
+    visibility: hidden !important;
+}
+
 
 /** Participants page **/
 
