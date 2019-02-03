@@ -79,7 +79,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[gradeThreshold] = body.threshold
             it[softDeadline] = body.softDeadline
             it[hardDeadline] = body.hardDeadline
-            it[orderIdx] = 0 // TODO: not used at the moment
+            it[orderIdx] = 0 // TODO: not set at the moment
             it[studentVisible] = body.studentVisible
             it[assessmentsStudentVisible] = body.assStudentVisible
         }
