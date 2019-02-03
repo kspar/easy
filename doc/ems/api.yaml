@@ -513,6 +513,8 @@ definitions:
         description: Optional (together with graded_by).
       graded_by:
         $ref: '#/definitions/GraderType'
+      ordering_idx:
+        type: integer
 
   StudentExerciseDetails:
     properties:

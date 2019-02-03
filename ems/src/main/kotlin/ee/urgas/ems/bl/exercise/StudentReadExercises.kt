@@ -36,7 +36,8 @@ class StudentReadExercisesController {
                                         @JsonProperty("deadline") val softDeadline: DateTime?,
                                         @JsonProperty("status") val status: StudentExerciseStatus,
                                         @JsonProperty("grade") val grade: Int?,
-                                        @JsonProperty("graded_by") val gradedBy: GraderType?)
+                                        @JsonProperty("graded_by") val gradedBy: GraderType?,
+                                        @JsonProperty("ordering_idx") val orderingIndex: Int)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises")
@@ -60,23 +61,27 @@ enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
 private fun selectStudentExercises(courseId: Long, studentEmail: String):
         List<StudentReadExercisesController.StudentExercisesResponse> {
 
-    data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int)
+    data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
+                               val orderingIndex: Int)
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold)
+                .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold,
+                        CourseExercise.orderIdx)
                 .select {
                     CourseExercise.course eq courseId and
                             ExerciseVer.validTo.isNull() and
                             (CourseExercise.studentVisible eq true)
                 }
+                .orderBy(CourseExercise.orderIdx to true)
                 .map {
                     ExercisePartial(
                             it[CourseExercise.id].value,
                             it[ExerciseVer.title],
                             it[CourseExercise.softDeadline],
-                            it[CourseExercise.gradeThreshold]
+                            it[CourseExercise.gradeThreshold],
+                            it[CourseExercise.orderIdx]
                     )
                 }.map { ex ->
 
@@ -127,7 +132,8 @@ private fun selectStudentExercises(courseId: Long, studentEmail: String):
                             ex.deadline,
                             status,
                             grade,
-                            gradedBy
+                            gradedBy,
+                            ex.orderingIndex
                     )
                 }
     }
