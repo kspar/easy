@@ -21,3 +21,11 @@
 #exercise-text img {
     display: block;
 }
+
+#exercise-text .program-example {
+    border: 1px solid #ddd;
+}
+
+#exercise-text .exercise-hint {
+    font-size: 1.2rem;
+}
