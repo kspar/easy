@@ -29,6 +29,7 @@
 #exercise-text .program-example {
     border: 1px solid #ddd;
     padding: 0 1rem;
+    white-space: pre-wrap;
 }
 
 #exercise-text .exercise-hint {
