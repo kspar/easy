@@ -54,6 +54,7 @@ class CreateExerciseController {
 
     private fun mapToNewExercise(dto: CreateExBody, callerEmail: String): NewExercise {
         val assets = dto.assets?.map { NewAsset(it.fileName, it.fileContent) }?.toSet()
+        // TODO: should check if executor exists and that if ID is not integer, no error 500 is triggered
         val executors = dto.executors.map { it.toLong() }.toSet()
         return NewExercise(callerEmail, dto.gradingScript, dto.containerImage,
                 dto.maxTime, dto.maxMem, assets, executors)
