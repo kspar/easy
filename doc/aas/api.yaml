@@ -196,7 +196,7 @@ paths:
               - base_url
               - max_load
       responses:
-        300:
+        200:
           description: Created.
           schema:
             properties:
