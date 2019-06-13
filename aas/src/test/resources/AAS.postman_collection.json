@@ -78,18 +78,6 @@
 						"v1",
 						"exercises",
 						""
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				},
 				"description": "Prerequisite: executor with ID 1 must be present in the database."
@@ -168,18 +156,6 @@
 						"v1",
 						"exercises",
 						""
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				},
 				"description": "Prerequisite: executor with ID 1 and 2 must be present in the database."
@@ -251,18 +227,6 @@
 						"v1",
 						"exercises",
 						""
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -333,18 +297,6 @@
 						"v1",
 						"exercises",
 						""
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -423,18 +375,6 @@
 						"v1",
 						"exercises",
 						"1"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				},
 				"description": "Prerequisite: Exercise with ID 1 must be present in the database."
@@ -502,18 +442,6 @@
 						"v1",
 						"exercises",
 						"-1"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -580,18 +508,6 @@
 						"v1",
 						"exercises",
 						"string"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -662,18 +578,6 @@
 						"v1",
 						"exercises",
 						"1"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -744,18 +648,6 @@
 						"v1",
 						"exercises",
 						"-1"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -826,18 +718,6 @@
 						"v1",
 						"exercises",
 						"string"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
@@ -903,18 +783,6 @@
 					"path": [
 						"v1",
 						"executors"
-					],
-					"query": [
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						},
-						{
-							"key": "",
-							"value": "",
-							"disabled": true
-						}
 					]
 				}
 			},
