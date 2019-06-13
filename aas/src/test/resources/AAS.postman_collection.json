@@ -68,14 +68,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						""
 					]
@@ -146,14 +143,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\", \"2\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						""
 					]
@@ -217,14 +211,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"-1\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						""
 					]
@@ -287,14 +278,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"string\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						""
 					]
@@ -365,14 +353,11 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/1",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/1",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"1"
 					]
@@ -432,14 +417,11 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/-1",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/-1",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"-1"
 					]
@@ -498,14 +480,11 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/string",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/string",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"string"
 					]
@@ -568,14 +547,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/1",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/1",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"1"
 					]
@@ -638,14 +614,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/-1",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/-1",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"-1"
 					]
@@ -708,14 +681,11 @@
 					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\"\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/v1/exercises/string",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/exercises/string",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"exercises",
 						"string"
 					]
@@ -774,14 +744,11 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/v1/executors",
-					"protocol": "http",
+					"raw": "{{AASBASE}}/executors",
 					"host": [
-						"localhost"
+						"{{AASBASE}}"
 					],
-					"port": "8080",
 					"path": [
-						"v1",
 						"executors"
 					]
 				}
