@@ -141,6 +141,69 @@
 			"response": []
 		},
 		{
+			"name": "AAS: admin: post: delete executor: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					}
+				],
+				"url": {
+					"raw": "{{AASBASE}}/executors/2",
+					"host": [
+						"{{AASBASE}}"
+					],
+					"path": [
+						"executors",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "AAS: teacher: post: create exercise: success",
 			"event": [
 				{
@@ -212,81 +275,6 @@
 					]
 				},
 				"description": "Prerequisite: executor with ID 1 must be present in the database."
-			},
-			"response": []
-		},
-		{
-			"name": "AAS: teacher: post: create exercise: success-2-execturos",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
-						"exec": [
-							"pm.test(\"response is ok\", function () {\r",
-							"    pm.response.to.have.status(200);\r",
-							"});\r",
-							"\r",
-							"\r",
-							"// Test that ID is present\r",
-							"pm.test(\"response should be okay to process\", function () { \r",
-							"    pm.response.to.not.be.error; \r",
-							"    pm.response.to.have.jsonBody(\"id\"); \r",
-							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
-					},
-					{
-						"key": "oidc_claim_easy_role",
-						"type": "text",
-						"value": "teacher"
-					},
-					{
-						"key": "oidc_claim_email",
-						"type": "text",
-						"value": "foo@bar.com"
-					},
-					{
-						"key": "oidc_claim_given_name",
-						"type": "text",
-						"value": "Foo"
-					},
-					{
-						"key": "oidc_claim_family_name",
-						"type": "text",
-						"value": "Bar"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \"1\", \"2\"\r\n  ]\r\n}"
-				},
-				"url": {
-					"raw": "{{AASBASE}}/exercises/",
-					"host": [
-						"{{AASBASE}}"
-					],
-					"path": [
-						"exercises",
-						""
-					]
-				},
-				"description": "Prerequisite: executor with ID 1 and 2 must be present in the database."
 			},
 			"response": []
 		},
