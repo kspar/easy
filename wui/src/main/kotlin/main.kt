@@ -1,14 +1,7 @@
-import page.CoursesPage
-import page.ExercisesPage
+import pages.CoursesPage
+import pages.ExercisesPage
 import kotlin.browser.window
 
-object Page {
-    var id: PageId? = null
-}
-enum class PageId {
-    COURSES,
-    EXERCISES
-}
 
 fun main() {
     println("wut")
@@ -38,7 +31,7 @@ fun pageIdFromPath(path: String): PageId {
 }
 
 fun renderPage() {
-    when(Page.id) {
+    when (Page.id) {
         PageId.COURSES -> CoursesPage.render()
         PageId.EXERCISES -> ExercisesPage.render()
     }
