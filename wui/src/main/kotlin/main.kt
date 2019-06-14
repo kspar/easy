@@ -32,7 +32,7 @@ fun main() {
 fun pageIdFromPath(path: String): PageId {
     return when {
         path.matches("^/courses$") -> PageId.COURSES
-        path.matches("^/courses/.+?/exercises$") -> PageId.EXERCISES
+        path.matches("^/courses/\\w+/exercises$") -> PageId.EXERCISES
         else -> error("Unmatched path")
     }
 }
