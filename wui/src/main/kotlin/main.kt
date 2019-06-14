@@ -39,8 +39,8 @@ fun pageIdFromPath(path: String): PageId {
 
 fun renderPage() {
     when(Page.id) {
-        PageId.COURSES -> CoursesPage()
-        PageId.EXERCISES -> ExercisesPage()
+        PageId.COURSES -> CoursesPage.render()
+        PageId.EXERCISES -> ExercisesPage.render()
     }
 }
 
