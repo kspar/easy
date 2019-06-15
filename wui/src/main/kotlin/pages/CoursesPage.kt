@@ -1,9 +1,12 @@
 package pages
 
+import PageId
 import getElemById
 import kotlin.dom.appendText
 
 object CoursesPage : Page {
+    override val pageId: PageId
+        get() = PageId.COURSES
 
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses$")
