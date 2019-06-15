@@ -20,8 +20,6 @@ fun renderOnce() {
 }
 
 fun updatePage() {
-    // For starters, assume all info about a page is transferred via URL
-
     debug { "updatePage" }
 
     // Simulating paths for testing
@@ -37,9 +35,6 @@ fun updatePage() {
 
     PageState.id = page.pageId
 
-    // Instead of a global clearPage(), it would be possible to define custom clearPages
-    // for all Pages with a default one in Page
-
     page.clear()
     page.build()
 }
@@ -51,4 +46,3 @@ fun pageFromPath(path: String): Page {
         else -> error("Unmatched path")
     }
 }
-
