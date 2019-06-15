@@ -2,7 +2,6 @@ import pages.CoursesPage
 import pages.ExercisesPage
 import pages.Page
 import kotlin.browser.window
-import kotlin.dom.clear
 
 
 fun main() {
@@ -27,7 +26,7 @@ fun updatePage() {
 
     // Simulating paths for testing
 //    window.history.pushState(null, "", "/courses/12a/exercises")
-    window.history.pushState(null, "", "/courses")
+//    window.history.pushState(null, "", "/courses")
 
     val path = window.location.pathname
     debug { "Current path: $path" }
@@ -40,8 +39,8 @@ fun updatePage() {
 
     // Instead of a global clearPage(), it would be possible to define custom clearPages
     // for all Pages with a default one in Page
-    clearPage()
 
+    page.clear()
     page.build()
 }
 
@@ -51,9 +50,5 @@ fun pageFromPath(path: String): Page {
         ExercisesPage.pathMatches(path) -> ExercisesPage
         else -> error("Unmatched path")
     }
-}
-
-fun clearPage() {
-    getElemById("container").clear()
 }
 

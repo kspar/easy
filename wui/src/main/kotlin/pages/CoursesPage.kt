@@ -14,4 +14,8 @@ object CoursesPage : Page {
     override fun build() {
         getElemById("container").appendText("courses")
     }
+
+    override fun clear() {
+        // Do not clear for testing
+    }
 }
