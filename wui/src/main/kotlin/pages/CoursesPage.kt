@@ -1,6 +1,7 @@
 package pages
 
 import PageId
+import debug
 import getElemById
 import kotlin.dom.appendText
 
@@ -12,6 +13,7 @@ object CoursesPage : Page {
             path.matches("^/courses$")
 
     override fun build() {
+        debug { "CoursesPage.build" }
         getElemById("container").appendText("courses")
     }
 

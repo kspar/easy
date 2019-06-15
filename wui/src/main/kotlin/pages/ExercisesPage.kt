@@ -15,6 +15,7 @@ object ExercisesPage : Page {
 
 
     override fun build() {
+        debug { "ExercisesPage.build" }
         val courseId = extractCourseId(PageState.path)
         debug { "Course ID: $courseId" }
 
