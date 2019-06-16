@@ -14,7 +14,11 @@ fun setupLinkInterception() {
                 event.altKey ||
                 event.ctrlKey ||
                 event.metaKey ||
-                event.shiftKey) {
+                event.shiftKey ||
+                // Make sure the primary button was clicked, note that the 'click' event should fire only
+                // for primary clicks in the future, currently it does in Chrome but does not in FF,
+                // see https://developer.mozilla.org/en-US/docs/Web/Events#Mouse_events
+                event.button.toInt() != 0) {
             debug { "$LOG_PREFIX Click with modifier(s)" }
             return@addEventListener
         }
