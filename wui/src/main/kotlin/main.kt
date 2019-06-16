@@ -17,6 +17,7 @@ fun main() {
 fun renderOnce() {
     debug { "renderOnce" }
 
+    setupLinkInterception()
 }
 
 fun updatePage() {
