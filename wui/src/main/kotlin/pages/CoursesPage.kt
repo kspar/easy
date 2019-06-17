@@ -17,7 +17,4 @@ object CoursesPage : Page {
         getElemById("container").appendText("courses")
     }
 
-    override fun clear() {
-        // Do not clear for testing
-    }
 }

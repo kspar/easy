@@ -28,10 +28,6 @@ object ExercisesPage : Page {
         getElemById("container").appendText("exercises")
     }
 
-    override fun clear() {
-        // Do not clear for testing
-    }
-
     private fun extractCourseId(path: String): String {
         val match = path.match("^/courses/(\\w+)/exercises$")
         if (match != null && match.size == 2) {
