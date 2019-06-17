@@ -7,7 +7,7 @@ import getElemById
 import kotlin.dom.appendText
 import kotlin.js.Date
 
-object ExercisesPage : Page() {
+object ExercisesPage : Page<String>() {
     override val pageId: PageId
         get() = PageId.EXERCISES
 
@@ -15,13 +15,13 @@ object ExercisesPage : Page() {
             path.matches("^/courses/\\w+/exercises$")
 
 
-    override fun build(pageState: Any?) {
+    override fun build(pageState: String?) {
         debug { "ExercisesPage.build" }
         val courseId = extractCourseId(AppState.path)
         debug { "Course ID: $courseId" }
 
-        val state = pageState.unsafeCast<String?>()
-        debug { "Page state: $state" }
+        //val state = pageState.unsafeCast<String?>()
+        debug { "Page state: $pageState" }
 
         // Fetch exercises
 

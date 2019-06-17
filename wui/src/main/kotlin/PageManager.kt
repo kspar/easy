@@ -4,10 +4,14 @@ import kotlin.browser.window
 object PageManager {
 
     // No need for thread-safety, JS runs single-threaded
-    private var pages: List<Page> = emptyList()
+    private var pages: List<Page<Any>> = emptyList()
 
-    fun registerPages(vararg newPages: Page) {
-        pages += newPages
+    fun registerPages(vararg newPages: Page<*>) {
+        // Mandatory pledge:
+        // Dear compiler, I am aware that these objects are not really Page<Any> but I promise
+        // to take care to only pass to these Pages the objects that they expect.
+        // At least as long as the JS History API implementations behave. Hopeful smiley face?
+        pages += newPages.map { it as Page<Any> }
     }
 
     fun updatePage(pageState: Any? = null) {
@@ -24,7 +28,7 @@ object PageManager {
         page.build(pageState)
     }
 
-    private fun pageFromPath(path: String): Page {
+    private fun pageFromPath(path: String): Page<Any> {
         val matchingPages = pages.filter { it.pathMatches(path) }
         val matchingCount = matchingPages.size
         return when {

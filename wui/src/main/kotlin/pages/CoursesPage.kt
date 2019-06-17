@@ -5,14 +5,15 @@ import debug
 import getElemById
 import kotlin.dom.appendText
 
-object CoursesPage : Page() {
+object CoursesPage : Page<Nothing>() {
+
     override val pageId: PageId
         get() = PageId.COURSES
 
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses$")
 
-    override fun build(pageState: Any?) {
+    override fun build(pageState: Nothing?) {
         debug { "CoursesPage.build" }
         getElemById("container").appendText("courses")
     }
