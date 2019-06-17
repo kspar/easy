@@ -31,11 +31,11 @@ fun updatePage(pageState: Any? = null) {
     val path = window.location.pathname
     debug { "Current path: $path" }
 
-    PageState.path = path
+    AppState.path = path
 
     val page = pageFromPath(path)
 
-    PageState.id = page.pageId
+    AppState.id = page.pageId
 
     page.clear()
     page.build(pageState)

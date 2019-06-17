@@ -1,14 +1,14 @@
 package pages
 
 import PageId
-import PageState
+import AppState
 import getElemById
 import kotlin.browser.window
 import kotlin.dom.clear
 
 /**
  * Represents a page with a unique path scheme and rendering logic.
- * Implementations can utilize global page state in [PageState].
+ * Implementations can utilize global page state in [AppState].
  */
 abstract class Page {
 

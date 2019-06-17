@@ -1,7 +1,7 @@
 package pages
 
 import PageId
-import PageState
+import AppState
 import debug
 import getElemById
 import kotlin.dom.appendText
@@ -17,7 +17,7 @@ object ExercisesPage : Page() {
 
     override fun build(pageState: Any?) {
         debug { "ExercisesPage.build" }
-        val courseId = extractCourseId(PageState.path)
+        val courseId = extractCourseId(AppState.path)
         debug { "Course ID: $courseId" }
 
         val state = pageState.unsafeCast<String?>()
