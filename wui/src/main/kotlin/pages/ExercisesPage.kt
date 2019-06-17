@@ -1,17 +1,18 @@
 package pages
 
-import PageId
 import AppState
+import PageName
 import debug
 import debugFunEnd
 import debugFunStart
 import getElemById
+import spa.Page
 import kotlin.dom.appendText
 import kotlin.js.Date
 
 object ExercisesPage : Page<String>() {
-    override val pageId: PageId
-        get() = PageId.EXERCISES
+    override val pageName: PageName
+        get() = PageName.EXERCISES
 
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/exercises$")

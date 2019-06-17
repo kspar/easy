@@ -1,4 +1,4 @@
-enum class PageId {
+enum class PageName {
     COURSES,
     EXERCISES
 }

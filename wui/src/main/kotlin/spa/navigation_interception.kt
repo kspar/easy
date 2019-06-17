@@ -1,3 +1,6 @@
+package spa
+
+import debug
 import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.Node
 import org.w3c.dom.PopStateEvent

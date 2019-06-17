@@ -1,5 +1,8 @@
 import pages.CoursesPage
 import pages.ExercisesPage
+import spa.PageManager
+import spa.setupHistoryNavInterception
+import spa.setupLinkInterception
 
 
 fun main() {

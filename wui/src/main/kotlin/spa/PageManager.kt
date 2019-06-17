@@ -1,4 +1,9 @@
-import pages.Page
+package spa
+
+import AppState
+import debug
+import debugFunEnd
+import debugFunStart
 import kotlin.browser.window
 
 object PageManager {
@@ -15,6 +20,7 @@ object PageManager {
     }
 
     fun updatePage(pageState: Any? = null) {
+        // TODO: clear from non-spa stuff: logging and appstate
         val fl = debugFunStart("updatePage")
 
         val path = window.location.pathname
@@ -22,7 +28,6 @@ object PageManager {
         AppState.path = path
 
         val page = pageFromPath(path)
-        AppState.id = page.pageId
 
         page.clear()
         page.build(pageState)
@@ -36,7 +41,7 @@ object PageManager {
         return when {
             matchingCount == 1 -> matchingPages.single()
             matchingCount < 1 -> error("Path $path did not match any pages")
-            else -> error("Path $path matched several pages: ${matchingPages.map { it.pageId }}")
+            else -> error("Path $path matched several pages: ${matchingPages.map { it.pageName }}")
         }
     }
 

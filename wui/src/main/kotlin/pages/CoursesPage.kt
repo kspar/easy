@@ -1,15 +1,16 @@
 package pages
 
-import PageId
+import PageName
 import debugFunEnd
 import debugFunStart
 import getElemById
+import spa.Page
 import kotlin.dom.appendText
 
 object CoursesPage : Page<Nothing>() {
 
-    override val pageId: PageId
-        get() = PageId.COURSES
+    override val pageName: PageName
+        get() = PageName.COURSES
 
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses$")

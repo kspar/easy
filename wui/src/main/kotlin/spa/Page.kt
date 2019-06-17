@@ -1,14 +1,11 @@
-package pages
+package spa
 
-import AppState
-import PageId
 import getElemById
 import kotlin.browser.window
 import kotlin.dom.clear
 
 /**
  * Represents a page with a unique path scheme and rendering logic.
- * Implementations can utilize global app state in [AppState].
  *
  * This class abstracts storing and retrieving page state using the browser's History API:
  * store state via [updateState] and retrieve state via [build]'s parameter.
@@ -20,9 +17,12 @@ import kotlin.dom.clear
 abstract class Page<T> {
 
     /**
-     * Unique page id
+     * Human-readable page name used for representing pages in logs, should usually
+     * be unique among all the pages. Typically using an enum is a good idea to guarantee
+     * uniqueness. However, a simple String can also be used. [Any.toString] will be called
+     * to generate a string representation.
      */
-    abstract val pageId: PageId
+    abstract val pageName: Any
 
     /**
      * Determine whether the given path should be served by this page.
