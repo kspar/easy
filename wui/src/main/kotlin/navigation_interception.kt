@@ -56,13 +56,13 @@ fun setupLinkInterception() {
 fun setupHistoryNavInterception() {
     window.addEventListener("popstate", {event ->
         event as PopStateEvent
-        updatePage(event.state)
+        PageManager.updatePage(event.state)
     })
 }
 
 private fun handleLocalLinkClick(url: String) {
     window.history.pushState(null, "", url)
-    updatePage()
+    PageManager.updatePage()
 }
 
 private tailrec fun getClosestParentA(node: Node?): HTMLAnchorElement? = when {
