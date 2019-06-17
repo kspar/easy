@@ -15,7 +15,7 @@ object PageManager {
     }
 
     fun updatePage(pageState: Any? = null) {
-        debug { "updatePage" }
+        val fl = debugFunStart("updatePage")
 
         val path = window.location.pathname
         debug { "Current path: $path" }
@@ -26,6 +26,8 @@ object PageManager {
 
         page.clear()
         page.build(pageState)
+
+        debugFunEnd(fl)
     }
 
     private fun pageFromPath(path: String): Page<Any> {

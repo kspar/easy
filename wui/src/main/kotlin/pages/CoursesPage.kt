@@ -1,7 +1,8 @@
 package pages
 
 import PageId
-import debug
+import debugFunEnd
+import debugFunStart
 import getElemById
 import kotlin.dom.appendText
 
@@ -14,8 +15,11 @@ object CoursesPage : Page<Nothing>() {
             path.matches("^/courses$")
 
     override fun build(pageState: Nothing?) {
-        debug { "CoursesPage.build" }
+        val fl = debugFunStart("CoursesPage.build")
+
         getElemById("container").appendText("courses")
+
+        debugFunEnd(fl)
     }
 
 }

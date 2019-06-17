@@ -18,6 +18,22 @@ fun warn(msgProvider: () -> String) {
         println("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
+data class FunLog(val funName: String, val funStartTime: Double)
+
+fun debugFunStart(funName: String): FunLog? {
+    if (DEBUG_ENABLED) {
+        debug { "--> $funName" }
+        return FunLog(funName, Date.now())
+    }
+    return null
+}
+
+fun debugFunEnd(funLog: FunLog?) {
+    if (funLog != null) {
+        debug { "<-- ${funLog.funName} (took ${Date.now() - funLog.funStartTime} ms)" }
+    }
+}
+
 private fun datetimeString(): String {
     return Date().toISOString().replace("T", " ").replace("Z", "")
 }

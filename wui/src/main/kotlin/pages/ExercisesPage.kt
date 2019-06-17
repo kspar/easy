@@ -3,6 +3,8 @@ package pages
 import PageId
 import AppState
 import debug
+import debugFunEnd
+import debugFunStart
 import getElemById
 import kotlin.dom.appendText
 import kotlin.js.Date
@@ -16,7 +18,8 @@ object ExercisesPage : Page<String>() {
 
 
     override fun build(pageState: String?) {
-        debug { "ExercisesPage.build" }
+        val fl = debugFunStart("ExercisesPage.build")
+
         val courseId = extractCourseId(AppState.path)
         debug { "Course ID: $courseId" }
 
@@ -31,6 +34,8 @@ object ExercisesPage : Page<String>() {
 
         getElemById("container").appendText("exercises")
         updateState("ExercisesPage ${Date().toISOString()}")
+
+        debugFunEnd(fl)
     }
 
     private fun extractCourseId(path: String): String {

@@ -3,7 +3,7 @@ import pages.ExercisesPage
 
 
 fun main() {
-    debug { "Yello" }
+    val fl = debugFunStart("main")
 
     PageManager.registerPages(CoursesPage, ExercisesPage)
 
@@ -12,12 +12,15 @@ fun main() {
 
     renderOnce()
     PageManager.updatePage()
+
+    debugFunEnd(fl)
 }
 
 /**
  * Do actions that must be done only once per document load i.e. SPA refresh
  */
 fun renderOnce() {
-    debug { "renderOnce" }
+    val fl = debugFunStart("renderOnce")
 
+    debugFunEnd(fl)
 }
