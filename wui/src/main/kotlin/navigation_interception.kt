@@ -1,5 +1,6 @@
 import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.Node
+import org.w3c.dom.PopStateEvent
 import org.w3c.dom.events.MouseEvent
 import kotlin.browser.document
 import kotlin.browser.window
@@ -53,8 +54,9 @@ fun setupLinkInterception() {
 }
 
 fun setupHistoryNavInterception() {
-    window.addEventListener("popstate", {
-        updatePage()
+    window.addEventListener("popstate", {event ->
+        event as PopStateEvent
+        updatePage(event.state)
     })
 }
 

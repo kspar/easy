@@ -21,7 +21,7 @@ fun renderOnce() {
     setupHistoryNavInterception()
 }
 
-fun updatePage() {
+fun updatePage(pageState: Any? = null) {
     debug { "updatePage" }
 
     // Simulating paths for testing
@@ -38,7 +38,7 @@ fun updatePage() {
     PageState.id = page.pageId
 
     page.clear()
-    page.build()
+    page.build(pageState)
 }
 
 fun pageFromPath(path: String): Page {
