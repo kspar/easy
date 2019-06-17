@@ -52,6 +52,12 @@ fun setupLinkInterception() {
     })
 }
 
+fun setupHistoryNavInterception() {
+    window.addEventListener("popstate", {
+        updatePage()
+    })
+}
+
 private fun handleLocalLinkClick(url: String) {
     window.history.pushState(null, "", url)
     updatePage()

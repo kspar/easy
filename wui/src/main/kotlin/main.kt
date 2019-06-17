@@ -18,6 +18,7 @@ fun renderOnce() {
     debug { "renderOnce" }
 
     setupLinkInterception()
+    setupHistoryNavInterception()
 }
 
 fun updatePage() {
