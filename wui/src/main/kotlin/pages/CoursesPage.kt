@@ -2,7 +2,6 @@ package pages
 
 import PageName
 import debug
-import debugFunEnd
 import debugFunStart
 import getElemById
 import objOf
@@ -21,7 +20,7 @@ object CoursesPage : Page<CoursesPage.State>() {
             path.matches("^/courses$")
 
     override fun build(pageState: State?) {
-        val fl = debugFunStart("CoursesPage.build")
+        val funLog = debugFunStart("CoursesPage.build")
 
         val coursesListHtml = if (pageState != null) {
             debug { "Got courses from state" }
@@ -34,7 +33,7 @@ object CoursesPage : Page<CoursesPage.State>() {
 
         getElemById("container").innerHTML = coursesListHtml
 
-        debugFunEnd(fl)
+        funLog?.end()
     }
 
     private fun genCourseListHtml() = tmRender("tm-stud-course-list",

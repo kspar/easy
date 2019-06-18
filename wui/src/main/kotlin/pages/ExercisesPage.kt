@@ -3,7 +3,6 @@ package pages
 import AppState
 import PageName
 import debug
-import debugFunEnd
 import debugFunStart
 import getElemById
 import spa.Page
@@ -19,7 +18,7 @@ object ExercisesPage : Page<String>() {
 
 
     override fun build(pageState: String?) {
-        val fl = debugFunStart("ExercisesPage.build")
+        val funLog = debugFunStart("ExercisesPage.build")
 
         val courseId = extractCourseId(AppState.path)
         debug { "Course ID: $courseId" }
@@ -36,7 +35,7 @@ object ExercisesPage : Page<String>() {
         getElemById("container").appendText("exercises")
         updateState("ExercisesPage ${Date().toISOString()}")
 
-        debugFunEnd(fl)
+        funLog?.end()
     }
 
     private fun extractCourseId(path: String): String {

@@ -2,7 +2,6 @@ package spa
 
 import AppState
 import debug
-import debugFunEnd
 import debugFunStart
 import kotlin.browser.window
 
@@ -21,7 +20,7 @@ object PageManager {
 
     fun updatePage(pageState: Any? = null) {
         // TODO: clear from non-spa stuff: logging and appstate
-        val fl = debugFunStart("updatePage")
+        val funLog = debugFunStart("updatePage")
 
         val path = window.location.pathname
         debug { "Current path: $path" }
@@ -32,7 +31,7 @@ object PageManager {
         page.clear()
         page.build(pageState)
 
-        debugFunEnd(fl)
+        funLog?.end()
     }
 
     private fun pageFromPath(path: String): Page<Any> {

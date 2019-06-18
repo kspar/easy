@@ -6,7 +6,7 @@ import spa.setupLinkInterception
 
 
 fun main() {
-    val fl = debugFunStart("main")
+    val funLog = debugFunStart("main")
 
     PageManager.registerPages(CoursesPage, ExercisesPage)
 
@@ -16,14 +16,14 @@ fun main() {
     renderOnce()
     PageManager.updatePage()
 
-    debugFunEnd(fl)
+    funLog?.end()
 }
 
 /**
  * Do actions that must be done only once per document load i.e. SPA refresh
  */
 fun renderOnce() {
-    val fl = debugFunStart("renderOnce")
+    val funLog = debugFunStart("renderOnce")
 
-    debugFunEnd(fl)
+    funLog?.end()
 }

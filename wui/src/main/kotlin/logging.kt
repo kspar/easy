@@ -7,7 +7,6 @@ private const val DEBUG_ENABLED = true
 private const val WARN_ENABLED = true
 
 
-
 fun debug(msgProvider: () -> String) {
     if (DEBUG_ENABLED)
         println("$DEBUG_PREFIX ${datetimeString()}: ${msgProvider()}")
@@ -18,7 +17,12 @@ fun warn(msgProvider: () -> String) {
         println("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
-data class FunLog(val funName: String, val funStartTime: Double)
+
+class FunLog(private val funName: String, private val funStartTime: Double) {
+    fun end() {
+        debug { "<-- ${this.funName} (took ${Date.now() - this.funStartTime} ms)" }
+    }
+}
 
 fun debugFunStart(funName: String): FunLog? {
     if (DEBUG_ENABLED) {
@@ -28,11 +32,6 @@ fun debugFunStart(funName: String): FunLog? {
     return null
 }
 
-fun debugFunEnd(funLog: FunLog?) {
-    if (funLog != null) {
-        debug { "<-- ${funLog.funName} (took ${Date.now() - funLog.funStartTime} ms)" }
-    }
-}
 
 private fun datetimeString(): String {
     return Date().toISOString().replace("T", " ").replace("Z", "")
