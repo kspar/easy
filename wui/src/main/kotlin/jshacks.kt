@@ -6,13 +6,20 @@
 @JsName("Object")
 external class JsObject
 
-fun mapToJsObject(map: Map<String, Any>): dynamic {
+fun Map<String, Any>.toJsObj(): dynamic {
     val jsObject: dynamic = JsObject()
-    map.forEach {
+    this.forEach {
         jsObject[it.key] = it.value
     }
     return jsObject
 }
+
+fun objOf(pair: Pair<String, Any>): dynamic =
+        mapOf(pair).toJsObj()
+
+fun objOf(vararg pairs: Pair<String, Any>): dynamic =
+        mapOf(*pairs).toJsObj()
+
 
 fun dynamicToAny(d: dynamic) = d.unsafeCast<Any>()
 
