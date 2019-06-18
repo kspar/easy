@@ -7,5 +7,5 @@ fun tmRender(templateId: String, data: Map<String, Any>): String =
 
 private fun render(template: String, data: Map<String, Any>): String {
     Mustache.parse(template)
-    return Mustache.render(template, dynamicToAny(mapToJsObject(data)))
+    return Mustache.render(template, dynamicToAny(data.toJsObj()))
 }
