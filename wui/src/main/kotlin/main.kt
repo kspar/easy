@@ -4,6 +4,17 @@ import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
 
+@JsName("Keycloak")
+external class Keycloak {
+    val token: String
+
+    var onTokenExpired: dynamic
+    var onAuthRefreshSuccess: dynamic
+
+    fun init(options: dynamic): dynamic
+    fun updateToken(minValidSec: Int): dynamic
+}
+
 
 fun main() {
     val funLog = debugFunStart("main")

@@ -8,6 +8,8 @@ import objOf
 import spa.Page
 import tmRender
 import kotlin.js.Date
+import Keycloak
+import AppState
 
 object CoursesPage : Page<CoursesPage.State>() {
 
@@ -22,6 +24,31 @@ object CoursesPage : Page<CoursesPage.State>() {
     override fun build(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.build")
 
+
+        // Temporary auth poc
+        if (AppState.kc == null) {
+            val kc = Keycloak()
+            AppState.kc = kc
+
+            kc.init(objOf("onLoad" to "login-required"))
+                    .success { authenticated: Boolean ->
+                        debug { "auth: $authenticated" }
+                        debug { "token: ${AppState.kc?.token}" }
+                    }
+                    .error { error ->
+                        debug { "auth error: $error" }
+                    }
+        }
+
+
+//        paintDummyCourseList(pageState)
+
+
+        funLog?.end()
+    }
+
+
+    private fun paintDummyCourseList(pageState: State?) {
         val coursesListHtml = if (pageState != null) {
             debug { "Got courses from state" }
             pageState.coursesHtml
@@ -32,8 +59,6 @@ object CoursesPage : Page<CoursesPage.State>() {
         }
 
         getElemById("container").innerHTML = coursesListHtml
-
-        funLog?.end()
     }
 
     private fun genCourseListHtml() = tmRender("tm-stud-course-list",
@@ -41,6 +66,5 @@ object CoursesPage : Page<CoursesPage.State>() {
                     objOf("title" to "Title${Date().getMilliseconds()}", "id" to { 1 + 2 }),
                     objOf("title" to "Title84", "id" to "42f")
             )))
-
 
 }
