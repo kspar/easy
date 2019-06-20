@@ -1,11 +1,11 @@
 package pages
 
-import AppState
 import PageName
 import debug
 import debugFunStart
 import getElemById
 import spa.Page
+import kotlin.browser.window
 import kotlin.dom.appendText
 import kotlin.js.Date
 
@@ -20,10 +20,12 @@ object ExercisesPage : Page<String>() {
     override fun build(pageState: String?) {
         val funLog = debugFunStart("ExercisesPage.build")
 
-        val courseId = extractCourseId(AppState.path)
+        val path = window.location.pathname
+        debug { "Current path: $path" }
+
+        val courseId = extractCourseId(path)
         debug { "Course ID: $courseId" }
 
-        //val state = pageState.unsafeCast<String?>()
         debug { "Page state: $pageState" }
 
         // Fetch exercises
