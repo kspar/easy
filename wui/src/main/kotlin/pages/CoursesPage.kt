@@ -1,5 +1,6 @@
 package pages
 
+import Keycloak
 import PageName
 import debug
 import debugFunStart
@@ -8,8 +9,6 @@ import objOf
 import spa.Page
 import tmRender
 import kotlin.js.Date
-import Keycloak
-import AppState
 
 object CoursesPage : Page<CoursesPage.State>() {
 
@@ -24,21 +23,8 @@ object CoursesPage : Page<CoursesPage.State>() {
     override fun build(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.build")
 
-
-        // Temporary auth poc
-        if (AppState.kc == null) {
-            val kc = Keycloak()
-            AppState.kc = kc
-
-            kc.init(objOf("onLoad" to "login-required"))
-                    .success { authenticated: Boolean ->
-                        debug { "auth: $authenticated" }
-                        debug { "token: ${AppState.kc?.token}" }
-                    }
-                    .error { error ->
-                        debug { "auth error: $error" }
-                    }
-        }
+        debug { "${Keycloak.authenticated}" }
+        debug { Keycloak.subject }
 
 
 //        paintDummyCourseList(pageState)

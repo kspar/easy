@@ -1,0 +1,10 @@
+{
+  "realm": "master",
+  "auth-server-url": "https://dev.idp.lahendus.ut.ee/auth",
+  "ssl-required": "external",
+  "resource": "dev.lahendus.ut.ee",
+  "public-client": true,
+  "verify-token-audience": true,
+  "use-resource-role-mappings": true,
+  "confidential-port": 0
+}
