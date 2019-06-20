@@ -8,12 +8,22 @@ import spa.setupLinkInterception
 fun main() {
     val funLog = debugFunStart("main")
 
-    initAuthentication()
+    // Start authentication as soon as possible
+    initAuthentication { initAfterAuth() }
 
+    // Do stuff that does not require auth immediately
     PageManager.registerPages(CoursesPage, ExercisesPage)
-
     setupLinkInterception()
     setupHistoryNavInterception()
+
+    funLog?.end()
+}
+
+/**
+ * Do actions that require authentication to be successful
+ */
+fun initAfterAuth() {
+    val funLog = debugFunStart("initAfterAuth")
 
     renderOnce()
     PageManager.updatePage()
@@ -30,14 +40,13 @@ private fun renderOnce() {
     funLog?.end()
 }
 
-private fun initAuthentication() {
+private fun initAuthentication(afterAuthCallback: () -> Unit) {
     val funLog = debugFunStart("initAuthentication")
 
-    // TODO: race condition here: should not proceed with processing until auth has finished
-    // await...
     Keycloak.init(objOf("onLoad" to "login-required"))
             .success { authenticated: Boolean ->
                 debug { "Authenticated: $authenticated" }
+                afterAuthCallback()
             }
             .error { error ->
                 debug { "Authentication error: $error" }
