@@ -7,14 +7,15 @@ private const val DEBUG_ENABLED = true
 private const val WARN_ENABLED = true
 
 
+// No console.debug in kotlin/js...
 fun debug(msgProvider: () -> String) {
     if (DEBUG_ENABLED)
-        println("$DEBUG_PREFIX ${datetimeString()}: ${msgProvider()}")
+        console.log("$DEBUG_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
 fun warn(msgProvider: () -> String) {
     if (WARN_ENABLED)
-        println("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
+        console.warn("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
 
