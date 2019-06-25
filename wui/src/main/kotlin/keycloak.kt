@@ -1,3 +1,5 @@
+import kotlin.browser.window
+
 @JsName("Keycloak")
 open external class InternalKeycloak(confUrl: String = definedExternally) {
     val authenticated: Boolean
@@ -12,7 +14,7 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
 }
 
 // Expose keycloak instance via a singleton
-object Keycloak : InternalKeycloak("https://easy-test-spa.cloud.ut.ee/static/keycloak.json") {
+object Keycloak : InternalKeycloak("${window.location.origin}/static/keycloak.json") {
     val firstName: String
         get() = this.tokenParsed.given_name.unsafeCast<String>()
     val lastName: String
