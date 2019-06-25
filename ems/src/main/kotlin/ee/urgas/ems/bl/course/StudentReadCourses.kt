@@ -25,26 +25,25 @@ class StudentReadCoursesController {
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses")
     fun readStudentCourses(caller: EasyUser): List<StudentCoursesResponse> {
-        val callerEmail = caller.email
-        log.debug { "Getting courses for student $callerEmail" }
-        val courses = selectCoursesForStudent(callerEmail)
+        val callerId = caller.id
+        log.debug { "Getting courses for student $callerId" }
+        val courses = selectCoursesForStudent(callerId)
         log.debug { "Found courses $courses" }
         return mapToStudentCoursesResponse(courses)
     }
 
     private fun mapToStudentCoursesResponse(courses: List<StudentCourse>) =
             courses.map { StudentCoursesResponse(it.id.toString(), it.title) }
-
 }
 
 data class StudentCourse(val id: Long, val title: String)
 
-private fun selectCoursesForStudent(email: String): List<StudentCourse> {
+private fun selectCoursesForStudent(studentId: String): List<StudentCourse> {
     return transaction {
         (Student innerJoin StudentCourseAccess innerJoin Course)
                 .slice(Course.id, Course.title)
                 .select {
-                    Student.id eq email
+                    Student.id eq studentId
                 }
                 .withDistinct()
                 .map {

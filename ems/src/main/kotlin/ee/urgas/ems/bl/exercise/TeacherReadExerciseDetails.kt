@@ -48,11 +48,11 @@ class TeacherReadExerciseDetailsController {
                       @PathVariable("courseExerciseId") courseExerciseIdString: String,
                       caller: EasyUser): ExDetailsResponse {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
         val exerciseDetails = selectTeacherCourseExerciseDetails(courseId, courseExerciseIdString.toLong())

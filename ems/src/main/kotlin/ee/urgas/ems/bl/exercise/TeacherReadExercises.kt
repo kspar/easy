@@ -51,11 +51,11 @@ class TeacherReadCourseExercisesController {
     fun readTeacherCourseExercises(@PathVariable("courseId") courseIdString: String, caller: EasyUser):
             List<TeacherCourseExResp> {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseIdString")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseIdString")
         }
 
         return mapToTeacherCourseExResp(selectTeacherExercisesOnCourse(courseId))
@@ -85,7 +85,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                 .withDistinct()
                 .count()
 
-        data class SubmissionPartial(val id: Long, val email: String, val createdAt: DateTime)
+        data class SubmissionPartial(val id: Long, val studentId: String, val createdAt: DateTime)
 
         (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline,
@@ -107,9 +107,9 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                                 )
                             }
                             .forEach {
-                                val lastSub = lastSubmissions.get(it.email)
+                                val lastSub = lastSubmissions.get(it.studentId)
                                 if (lastSub == null || lastSub.createdAt.isBefore(it.createdAt)) {
-                                    lastSubmissions[it.email] = it
+                                    lastSubmissions[it.studentId] = it
                                 }
                             }
 

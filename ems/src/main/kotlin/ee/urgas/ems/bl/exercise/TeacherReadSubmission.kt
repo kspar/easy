@@ -39,23 +39,23 @@ class TeacherReadSubmissionController {
                                      @JsonProperty("id") val submissionId: String)
 
     @Secured("ROLE_TEACHER")
-    @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentEmail}")
+    @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}")
     fun readTeacherSubmission(@PathVariable("courseId") courseIdString: String,
                               @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                              @PathVariable("studentEmail") studentEmail: String,
+                              @PathVariable("studentId") studentId: String,
                               caller: EasyUser): TeacherSubmissionResp {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
-        val submission = selectTeacherSubmission(courseId, courseExId, studentEmail)
+        val submission = selectTeacherSubmission(courseId, courseExId, studentId)
                 ?: throw InvalidRequestException(
-                        "No submission found for student $studentEmail on exercise $courseExId on course $courseId")
+                        "No submission found for student $studentId on exercise $courseExId on course $courseId")
 
         return mapToTeacherSubmissionResp(submission)
     }
@@ -71,7 +71,7 @@ data class TeacherSubmission(val solution: String, val id: Long, val createdAt: 
                              val gradeTeacher: Int?, val feedbackTeacher: String?)
 
 
-private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentEmail: String): TeacherSubmission? {
+private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentId: String): TeacherSubmission? {
 
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
@@ -83,7 +83,7 @@ private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentEma
                         .select {
                             Course.id eq courseId and
                                     (CourseExercise.id eq courseExId) and
-                                    (Submission.student eq studentEmail)
+                                    (Submission.student eq studentId)
                         }
                         .orderBy(Submission.createdAt to false)
                         .limit(1)

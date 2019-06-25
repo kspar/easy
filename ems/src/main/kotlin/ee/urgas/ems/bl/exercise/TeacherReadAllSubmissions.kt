@@ -37,21 +37,21 @@ class TeacherReadAllSubmissionsController {
                                      @JsonProperty("solution") val solution: String)
 
     @Secured("ROLE_TEACHER")
-    @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentEmail}")
+    @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId}")
     fun readTeacherAllSubmissions(@PathVariable("courseId") courseIdString: String,
                                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                                  @PathVariable("studentEmail") studentEmail: String,
+                                  @PathVariable("studentId") studentId: String,
                                   caller: EasyUser): List<TeacherSubmissionResp> {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
-        val submissions = selectTeacherAllSubmissions(courseId, courseExId, studentEmail)
+        val submissions = selectTeacherAllSubmissions(courseId, courseExId, studentId)
 
         return mapToTeacherSubmissionResp(submissions)
     }
@@ -63,7 +63,7 @@ class TeacherReadAllSubmissionsController {
 }
 
 
-private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentEmail: String): List<TeacherSubmission> {
+private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): List<TeacherSubmission> {
 
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
@@ -74,7 +74,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                         .select {
                             Course.id eq courseId and
                                     (CourseExercise.id eq courseExId) and
-                                    (Submission.student eq studentEmail)
+                                    (Submission.student eq studentId)
                         }
                         .orderBy(Submission.createdAt to false)
                         .map {

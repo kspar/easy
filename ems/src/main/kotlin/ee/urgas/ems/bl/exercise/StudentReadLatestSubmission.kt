@@ -44,15 +44,15 @@ class StudentReadLatestSubmissionController {
                              @PathVariable("courseExerciseId") courseExerciseIdString: String,
                              response: HttpServletResponse, caller: EasyUser): StudentSubmissionResp? {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
 
-        if (!canStudentAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Student $callerEmail does not have access to course $courseId")
+        if (!canStudentAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Student $callerId does not have access to course $courseId")
         }
 
-        val submission = selectLatestStudentSubmission(courseId, courseExId, callerEmail)
+        val submission = selectLatestStudentSubmission(courseId, courseExId, callerId)
         return if (submission != null) {
             submission
         } else {

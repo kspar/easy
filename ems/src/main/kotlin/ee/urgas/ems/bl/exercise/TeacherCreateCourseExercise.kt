@@ -45,12 +45,12 @@ class TeacherCreateCourseExerciseController {
 
         log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString" }
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
         val exerciseId = body.exerciseId.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
         if (isExerciseOnCourse(courseId, exerciseId)) {

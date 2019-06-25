@@ -44,21 +44,21 @@ class StudentReadExercisesController {
     fun getStudentExercises(@PathVariable("courseId") courseIdStr: String, caller: EasyUser):
             List<StudentExercisesResponse> {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdStr.toLong()
 
-        if (!canStudentAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Student $callerEmail does not have access to course $courseId")
+        if (!canStudentAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Student $callerId does not have access to course $courseId")
         }
 
-        return selectStudentExercises(courseId, callerEmail)
+        return selectStudentExercises(courseId, callerId)
     }
 }
 
 
 enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
 
-private fun selectStudentExercises(courseId: Long, studentEmail: String):
+private fun selectStudentExercises(courseId: Long, studentId: String):
         List<StudentReadExercisesController.StudentExercisesResponse> {
 
     data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
@@ -89,7 +89,7 @@ private fun selectStudentExercises(courseId: Long, studentEmail: String):
                             Submission
                                     .select {
                                         Submission.courseExercise eq ex.courseExId and
-                                                (Submission.student eq studentEmail)
+                                                (Submission.student eq studentId)
                                     }
                                     .orderBy(Submission.createdAt to false)
                                     .limit(1)

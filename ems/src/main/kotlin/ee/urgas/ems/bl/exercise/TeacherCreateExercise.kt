@@ -33,10 +33,10 @@ class TeacherCreateExerciseController {
     @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/exercises")
     fun createExercise(@RequestBody dto: NewExerciseBody, caller: EasyUser) {
-        log.debug { "Create exercise '${dto.title}' by ${caller.email}" }
+        log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
 
-        val callerEmail = caller.email
-        insertExercise(callerEmail, dto)
+        val callerId = caller.id
+        insertExercise(callerId, dto)
     }
 }
 

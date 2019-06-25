@@ -43,14 +43,15 @@ class TeacherAutoassessController {
                           @RequestBody body: TeacherAutoAssessBody,
                           caller: EasyUser): TeacherAutoAssessResponse {
 
-        log.debug { "Teacher ${caller.email} autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
+        val callerId = caller.id
 
-        val callerEmail = caller.email
+        log.debug { "Teacher $callerId autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
+
         val courseId = courseIdStr.toLong()
         val courseExId = courseExIdStr.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
         val aasId = getAasId(courseId, courseExId)

@@ -19,10 +19,11 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class RegisterAccountController {
 
+    // TODO: register -> update
     @PostMapping("/register")
     fun registerAccount(caller: EasyUser) {
 
-        val account = Account(caller.email, caller.givenName, caller.familyName)
+        val account = Account(caller.id, caller.email, caller.givenName, caller.familyName)
         log.debug { "Register $account" }
 
         if (caller.isStudent()) {
@@ -35,37 +36,37 @@ class RegisterAccountController {
 }
 
 
-data class Account(val email: String, val givenName: String, val familyName: String)
+data class Account(val username: String, val email: String, val givenName: String, val familyName: String)
 
 
 private fun registerStudent(student: Account) {
-    if (!studentExists(student.email)) {
-        log.debug { "Student ${student.email} not found, inserting" }
+    if (!studentExists(student.username)) {
+        log.debug { "Student ${student.username} not found, inserting" }
         insertStudent(student)
     } else {
-        log.debug { "Student ${student.email} already exists" }
+        log.debug { "Student ${student.username} already exists" }
     }
 }
 
 private fun registerTeacher(teacher: Account) {
-    if (!teacherExists(teacher.email)) {
-        log.debug { "Teacher ${teacher.email} not found, inserting" }
+    if (!teacherExists(teacher.username)) {
+        log.debug { "Teacher ${teacher.username} not found, inserting" }
         insertTeacher(teacher)
     } else {
-        log.debug { "Teacher ${teacher.email} already exists" }
+        log.debug { "Teacher ${teacher.username} already exists" }
     }
 }
 
-private fun studentExists(email: String): Boolean {
+private fun studentExists(id: String): Boolean {
     return transaction {
-        Student.select { Student.id eq email }
+        Student.select { Student.id eq id }
                 .count() == 1
     }
 }
 
-private fun teacherExists(email: String): Boolean {
+private fun teacherExists(id: String): Boolean {
     return transaction {
-        Teacher.select { Teacher.id eq email }
+        Teacher.select { Teacher.id eq id }
                 .count() == 1
     }
 }
@@ -74,6 +75,7 @@ private fun insertStudent(student: Account) {
     transaction {
         Student.insert {
             it[id] = EntityID(student.email, Student)
+            it[email] = student.email
             it[givenName] = student.givenName
             it[familyName] = student.familyName
             it[createdAt] = DateTime.now()
@@ -85,6 +87,7 @@ private fun insertTeacher(teacher: Account) {
     transaction {
         Teacher.insert {
             it[id] = EntityID(teacher.email, Teacher)
+            it[email] = teacher.email
             it[givenName] = teacher.givenName
             it[familyName] = teacher.familyName
             it[createdAt] = DateTime.now()

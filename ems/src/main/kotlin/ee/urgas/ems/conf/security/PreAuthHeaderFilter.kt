@@ -9,17 +9,19 @@ import javax.servlet.http.HttpServletResponse
 
 class PreAuthHeaderFilter : OncePerRequestFilter() {
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
+        val username = getOptionalHeader("oidc_claim_preferred_username", request)
         val email = getOptionalHeader("oidc_claim_email", request)
         val givenName = getOptionalHeader("oidc_claim_given_name", request)
         val familyName = getOptionalHeader("oidc_claim_family_name", request)
         val roles = getOptionalHeader("oidc_claim_easy_role", request)
 
-        if (email != null
+        if (username != null
+                && email != null
                 && givenName != null
                 && familyName != null
                 && roles != null) {
 
-            val user = EasyUser(email, givenName, familyName, mapHeaderToRoles(roles))
+            val user = EasyUser(username, email, givenName, familyName, mapHeaderToRoles(roles))
             SecurityContextHolder.getContext().authentication = user
         }
 

@@ -40,13 +40,13 @@ class TeacherAssessController {
                @PathVariable("submissionId") submissionIdString: String,
                @RequestBody assessment: AssessBody, caller: EasyUser) {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
         val courseExId = courseExerciseIdString.toLong()
         val submissionId = submissionIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
         log.debug { "Adding teacher assessment $assessment to submission $submissionId" }
@@ -54,7 +54,7 @@ class TeacherAssessController {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
-        insertTeacherAssessment(callerEmail, submissionId, mapToTeacherAssessment(assessment))
+        insertTeacherAssessment(callerId, submissionId, mapToTeacherAssessment(assessment))
     }
 
     private fun mapToTeacherAssessment(body: AssessBody) = Assessment(body.grade, body.feedback)
@@ -76,11 +76,11 @@ private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Lon
     }
 }
 
-private fun insertTeacherAssessment(teacherEmail: String, submissionId: Long, assessment: Assessment) {
+private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: Assessment) {
     transaction {
         TeacherAssessment.insert {
             it[TeacherAssessment.submission] = EntityID(submissionId, Submission)
-            it[TeacherAssessment.teacher] = EntityID(teacherEmail, Teacher)
+            it[TeacherAssessment.teacher] = EntityID(teacherId, Teacher)
             it[TeacherAssessment.createdAt] = DateTime.now()
             it[TeacherAssessment.grade] = assessment.grade
             it[TeacherAssessment.feedback] = assessment.feedback

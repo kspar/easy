@@ -18,21 +18,21 @@ private val log = KotlinLogging.logger {}
 class RemoveStudentFromCourseController {
 
     @Secured("ROLE_TEACHER")
-    @DeleteMapping("/teacher/courses/{courseId}/students/{studentEmail}")
+    @DeleteMapping("/teacher/courses/{courseId}/students/{studentId}")
     fun removeStudent(@PathVariable("courseId") courseId: String,
-                      @PathVariable("studentEmail") studentEmail: String) {
+                      @PathVariable("studentId") studentId: String) {
 
         // TODO: access control
-        log.info { "Removing student $studentEmail from course $courseId" }
-        deleteStudentFromCourse(studentEmail, courseId.toLong())
+        log.info { "Removing student $studentId from course $courseId" }
+        deleteStudentFromCourse(studentId, courseId.toLong())
     }
 }
 
 
-private fun deleteStudentFromCourse(email: String, courseId: Long) {
+private fun deleteStudentFromCourse(id: String, courseId: Long) {
     transaction {
         StudentCourseAccess.deleteWhere {
-            StudentCourseAccess.student eq email and (StudentCourseAccess.course eq courseId)
+            StudentCourseAccess.student eq id and (StudentCourseAccess.course eq courseId)
         }
     }
 }

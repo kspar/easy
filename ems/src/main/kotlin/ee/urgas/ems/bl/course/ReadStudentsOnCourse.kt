@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v1")
 class ReadStudentsOnCourseController {
 
-    data class StudentsOnCourseResponse(@JsonProperty("email") val email: String,
+    data class StudentsOnCourseResponse(@JsonProperty("id") val id: String,
                                         @JsonProperty("given_name") val givenName: String,
                                         @JsonProperty("family_name") val familyName: String)
 
@@ -33,11 +33,11 @@ class ReadStudentsOnCourseController {
     }
 
     private fun mapToStudentsOnCourseResponse(students: List<StudentOnCourse>) =
-            students.map { StudentsOnCourseResponse(it.email, it.givenName, it.familyName) }
+            students.map { StudentsOnCourseResponse(it.id, it.givenName, it.familyName) }
 }
 
 
-data class StudentOnCourse(val email: String, val givenName: String, val familyName: String)
+data class StudentOnCourse(val id: String, val givenName: String, val familyName: String)
 
 
 private fun selectStudentsOnCourse(courseId: Long): List<StudentOnCourse> {

@@ -25,29 +25,29 @@ class AddStudentsToCourseController {
     @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/courses/{courseId}/students")
     fun addStudentsToCourse(@PathVariable("courseId") courseId: String,
-                            @RequestBody studentEmails: List<String>) {
+                            @RequestBody studentIds: List<String>) {
 
         // TODO: access control
-        log.debug { "Adding access to course $courseId to students $studentEmails" }
+        log.debug { "Adding access to course $courseId to students $studentIds" }
 
-        insertStudentCourseAccesses(courseId.toLong(), studentEmails)
+        insertStudentCourseAccesses(courseId.toLong(), studentIds)
     }
 }
 
 class StudentNotFoundException(override val message: String) : RuntimeException(message)
 
-private fun insertStudentCourseAccesses(courseId: Long, emails: List<String>) {
+private fun insertStudentCourseAccesses(courseId: Long, studentIds: List<String>) {
     transaction {
-        emails.forEach { email ->
+        studentIds.forEach { studentId ->
             val studentExists =
-                    Student.select { Student.id eq email }
+                    Student.select { Student.id eq studentId }
                             .count() == 1
             if (!studentExists) {
-                throw StudentNotFoundException(email)
+                throw StudentNotFoundException(studentId)
             }
         }
 
-        val studentsWithoutAccess = emails.filter {
+        val studentsWithoutAccess = studentIds.filter {
             StudentCourseAccess.select {
                 StudentCourseAccess.student eq it and (StudentCourseAccess.course eq courseId)
             }.count() == 0
@@ -55,8 +55,8 @@ private fun insertStudentCourseAccesses(courseId: Long, emails: List<String>) {
 
         log.debug { "Granting access to students (the rest already have access): $studentsWithoutAccess" }
 
-        StudentCourseAccess.batchInsert(studentsWithoutAccess) { email ->
-            this[StudentCourseAccess.student] = EntityID(email, Student)
+        StudentCourseAccess.batchInsert(studentsWithoutAccess) { id ->
+            this[StudentCourseAccess.student] = EntityID(id, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }
     }

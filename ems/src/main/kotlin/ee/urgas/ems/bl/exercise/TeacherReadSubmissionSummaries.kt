@@ -44,11 +44,11 @@ class TeacherReadSubmissionSummariesController {
                                 @PathVariable("courseExerciseId") courseExerciseIdString: String,
                                 caller: EasyUser): List<SubmissionSummaryResp> {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdString.toLong()
 
-        if (!canTeacherAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Teacher $callerEmail does not have access to course $courseId")
+        if (!canTeacherAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
         return mapToSubmissionSummaryResp(selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.toLong()))
@@ -71,7 +71,7 @@ data class TeacherSubmissionSummary(val studentId: String, val studentGivenName:
 private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): List<TeacherSubmissionSummary> {
     return transaction {
 
-        data class SubmissionPartial(val id: Long, val email: String, val createdAt: DateTime)
+        data class SubmissionPartial(val id: Long, val studentId: String, val createdAt: DateTime)
 
         // student_id -> submission
         val lastSubmissions = HashMap<String, SubmissionPartial>()
@@ -87,15 +87,15 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): 
                     )
                 }
                 .forEach {
-                    val lastSub = lastSubmissions[it.email]
+                    val lastSub = lastSubmissions[it.studentId]
                     if (lastSub == null || lastSub.createdAt.isBefore(it.createdAt)) {
-                        lastSubmissions[it.email] = it
+                        lastSubmissions[it.studentId] = it
                     }
                 }
 
-        lastSubmissions.map { (email, sub) ->
+        lastSubmissions.map { (studentId, sub) ->
 
-            val studentName = selectStudentName(email)
+            val studentName = selectStudentName(studentId)
 
             var gradedBy: GraderType? = null
             var grade = selectTeacherGrade(sub.id)
@@ -110,7 +110,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): 
             }
 
             TeacherSubmissionSummary(
-                    email,
+                    studentId,
                     studentName.first,
                     studentName.second,
                     sub.createdAt,
@@ -137,7 +137,7 @@ private fun selectTeacherGrade(submissionId: Long): Int? {
             .firstOrNull()
 }
 
-private fun selectStudentName(studentEmail: String): Pair<String, String> =
-        Student.select { Student.id eq studentEmail }
+private fun selectStudentName(studentId: String): Pair<String, String> =
+        Student.select { Student.id eq studentId }
                 .map { Pair(it[Student.givenName], it[Student.familyName]) }
                 .single()

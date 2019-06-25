@@ -36,12 +36,12 @@ class TeacherUpdateExerciseController {
     fun putExercise(@PathVariable("exerciseId") exIdString: String, @RequestBody dto: UpdateExerciseBody,
                     caller: EasyUser) {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val exerciseId = exIdString.toLong()
 
-        log.debug { "Update exercise $exIdString by $callerEmail" }
+        log.debug { "Update exercise $exIdString by $callerId" }
 
-        updateExercise(exerciseId, callerEmail, dto)
+        updateExercise(exerciseId, callerId, dto)
     }
 }
 

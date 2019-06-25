@@ -51,19 +51,19 @@ class StudentSubmitController(val autoAssessComponent: AutoAssessComponent) {
                          @PathVariable("courseExerciseId") courseExIdStr: String,
                          @RequestBody solutionBody: StudentSubmissionBody, caller: EasyUser) {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val courseId = courseIdStr.toLong()
         val courseExId = courseExIdStr.toLong()
 
-        if (!canStudentAccessCourse(callerEmail, courseId)) {
-            throw ForbiddenException("Student $callerEmail does not have access to course $courseId")
+        if (!canStudentAccessCourse(callerId, courseId)) {
+            throw ForbiddenException("Student $callerId does not have access to course $courseId")
         }
 
         if (!isVisibleExerciseOnCourse(courseExId, courseId)) {
             throw InvalidRequestException("Exercise $courseExId not found on course $courseId or it is hidden")
         }
 
-        submitSolution(courseExId, solutionBody.solution, callerEmail, aasKey)
+        submitSolution(courseExId, solutionBody.solution, callerId, aasKey)
     }
 
     // Must be in Spring Component to autowire autoAssessComponent

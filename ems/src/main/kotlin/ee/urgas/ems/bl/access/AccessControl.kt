@@ -9,20 +9,20 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 
-fun canTeacherAccessCourse(teacherEmail: String, courseId: Long): Boolean {
+fun canTeacherAccessCourse(teacherId: String, courseId: Long): Boolean {
     return transaction {
         // TODO: remove join
         (Teacher innerJoin TeacherCourseAccess)
-                .select { Teacher.id eq teacherEmail and (TeacherCourseAccess.course eq courseId) }
+                .select { Teacher.id eq teacherId and (TeacherCourseAccess.course eq courseId) }
                 .count() > 0
     }
 }
 
 
-fun canStudentAccessCourse(studentEmail: String, courseId: Long): Boolean {
+fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean {
     return transaction {
         StudentCourseAccess
-                .select { StudentCourseAccess.student eq studentEmail and
+                .select { StudentCourseAccess.student eq studentId and
                         (StudentCourseAccess.course eq courseId) }
                 .count() > 0
     }

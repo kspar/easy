@@ -21,14 +21,29 @@ tags:
 
 paths:
 
-  /register:
+  /account/update:
     post:
-      summary: Register account with :ems. Must be called at least once per account before any other services. Has no effect when called multiple times.
+      summary: Update account data with :ems. Creates account if it does not exist. If the account does not exist, this must be called before any other services.
       tags:
         - common
+      parameters:
+        - name: account
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              first_name:
+                type: string
+              last_name:
+                type: string
+            required:
+              - email
+              - first_name
+              - last_name
       responses:
         200:
-          description: Registered.
+          description: Updated.
 
 
   /student/courses:
@@ -257,11 +272,11 @@ paths:
               $ref: '#/definitions/TeacherSubmissionSummary'
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentEmail}:
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/StudentEmail'
+      - $ref: '#/parameters/StudentId'
     get:
       summary: Get this student's latest submission for this exercise.
       tags:
@@ -298,11 +313,11 @@ paths:
           description: Created.
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentEmail}:
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId}:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/StudentEmail'
+      - $ref: '#/parameters/StudentId'
     get:
       summary: Get this student's all submissions for this exercise.
       tags:
@@ -340,7 +355,7 @@ paths:
         - name: students
           in: body
           schema:
-            description: Student emails.
+            description: Student ids.
             type: array
             items:
               type: string
@@ -349,33 +364,17 @@ paths:
           description: Students added.
 
 
-  /teacher/courses/{courseId}/students/{studentEmail}:
+  /teacher/courses/{courseId}/students/{studentId}:
     delete:
       summary: Remove this student from this course.
       tags:
         - teacher
       parameters:
         - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/StudentEmail'
+        - $ref: '#/parameters/StudentId'
       responses:
         200:
           description: Student removed.
-
-
-  /teacher/students/{studentEmail}:
-    get:
-      summary: Check if student with this email exists and get their name.
-      tags:
-        - teacher
-      parameters:
-        - $ref: '#/parameters/StudentEmail'
-      responses:
-        200:
-          description: Student's name (student exists).
-          schema:
-            $ref: '#/definitions/StudentName'
-        404:
-          description: Student does not exist.
 
 
   /teacher/exercises:
@@ -424,6 +423,7 @@ paths:
     parameters:
       - $ref: '#/parameters/ExerciseId'
 
+    # TODO: not implemented
     get:
       summary: Get exercise details.
       tags:
@@ -468,8 +468,8 @@ parameters:
     required: true
     type: string
 
-  StudentEmail:
-    name: studentEmail
+  StudentId:
+    name: studentId
     in: path
     required: true
     type: string
@@ -660,7 +660,7 @@ definitions:
 
   Student:
     properties:
-      email:
+      id:
         type: string
       given_name:
         type: string
@@ -693,7 +693,7 @@ definitions:
       grader_type:
         $ref: '#/definitions/GraderType'
       owner:
-        description: Email of teacher who owns this exercise.
+        description: Id of teacher who owns this exercise.
         type: string
       text_html:
         type: string
