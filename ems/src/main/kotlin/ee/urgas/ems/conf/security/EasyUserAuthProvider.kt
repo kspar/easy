@@ -12,6 +12,11 @@ class EasyUserAuthProvider : AuthenticationProvider {
         return authentication
     }
 
-    override fun supports(authentication: Class<*>?): Boolean =
+    override fun supports(authentication: Class<*>?): Boolean {
+        return if (authentication == null) {
+            false
+        } else {
             EasyUser::class.java.isAssignableFrom(authentication)
+        }
+    }
 }
