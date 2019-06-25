@@ -37,6 +37,13 @@ fun initAfterAuth() {
 private fun renderOnce() {
     val funLog = debugFunStart("renderOnce")
 
+    val firstName = Keycloak.firstName
+    val lastName = Keycloak.lastName
+    val email = Keycloak.email
+
+    debug { "Updating account data to email: $email, first name: $firstName, last name: $lastName" }
+    // TODO: call update account info
+
     funLog?.end()
 }
 

@@ -1,6 +1,5 @@
 package pages
 
-import Keycloak
 import PageName
 import debug
 import debugFunStart
@@ -22,9 +21,6 @@ object CoursesPage : Page<CoursesPage.State>() {
 
     override fun build(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.build")
-
-        debug { "${Keycloak.authenticated}" }
-        debug { Keycloak.subject }
 
 
 //        paintDummyCourseList(pageState)

@@ -1,9 +1,8 @@
-
 @JsName("Keycloak")
 open external class InternalKeycloak(confUrl: String = definedExternally) {
     val authenticated: Boolean
     val token: String
-    val subject: String
+    val tokenParsed: dynamic
 
     var onTokenExpired: dynamic
     var onAuthRefreshSuccess: dynamic
@@ -13,4 +12,11 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
 }
 
 // Expose keycloak instance via a singleton
-object Keycloak : InternalKeycloak("https://easy-test-spa.cloud.ut.ee/static/keycloak.json")
+object Keycloak : InternalKeycloak("https://easy-test-spa.cloud.ut.ee/static/keycloak.json") {
+    val firstName: String
+        get() = this.tokenParsed.given_name.unsafeCast<String>()
+    val lastName: String
+        get() = this.tokenParsed.family_name.unsafeCast<String>()
+    val email: String
+        get() = this.tokenParsed.email.unsafeCast<String>()
+}
