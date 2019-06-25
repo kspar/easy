@@ -4,7 +4,7 @@ import org.jetbrains.exposed.dao.LongIdTable
 
 
 object Exercise : LongIdTable("exercise") {
-    val ownerEmail = text("owner_email")
+    val ownerId = text("owner_id")
     val gradingScript = text("grading_script")
     val containerImage = text("container_image")
     val maxTime = integer("max_time_sec")

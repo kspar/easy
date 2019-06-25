@@ -38,10 +38,10 @@ class CreateExerciseController {
     @PostMapping("/exercises")
     fun createEx(@RequestBody body: CreateExBody, caller: EasyUser): CreatedExResponse {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
 
         validateCreateExBody(body)
-        val newExercise = mapToNewExercise(body, callerEmail)
+        val newExercise = mapToNewExercise(body, callerId)
         val exerciseId = insertExercise(newExercise)
         return CreatedExResponse(exerciseId.toString())
     }
@@ -52,17 +52,17 @@ class CreateExerciseController {
         }
     }
 
-    private fun mapToNewExercise(dto: CreateExBody, callerEmail: String): NewExercise {
+    private fun mapToNewExercise(dto: CreateExBody, callerId: String): NewExercise {
         val assets = dto.assets?.map { NewAsset(it.fileName, it.fileContent) }?.toSet()
         // TODO: should check if executor exists and that if ID is not integer, no error 500 is triggered
         val executors = dto.executors.map { it.toLong() }.toSet()
-        return NewExercise(callerEmail, dto.gradingScript, dto.containerImage,
+        return NewExercise(callerId, dto.gradingScript, dto.containerImage,
                 dto.maxTime, dto.maxMem, assets, executors)
     }
 }
 
 
-private data class NewExercise(val ownerEmail: String, val gradingScript: String, val containerImage: String,
+private data class NewExercise(val ownerId: String, val gradingScript: String, val containerImage: String,
                                val maxTime: Int, val maxMem: Int, val assets: Set<NewAsset>?, val executorIds: Set<Long>)
 
 private data class NewAsset(val fileName: String, val fileContent: String)
@@ -70,7 +70,7 @@ private data class NewAsset(val fileName: String, val fileContent: String)
 private fun insertExercise(newExercise: NewExercise): Long {
     return transaction {
         val exId = Exercise.insertAndGetId {
-            it[ownerEmail] = newExercise.ownerEmail
+            it[ownerId] = newExercise.ownerId
             it[gradingScript] = newExercise.gradingScript
             it[containerImage] = newExercise.containerImage
             it[maxTime] = newExercise.maxTime

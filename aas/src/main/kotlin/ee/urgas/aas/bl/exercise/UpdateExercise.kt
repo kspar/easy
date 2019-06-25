@@ -40,19 +40,19 @@ class UpdateExerciseController {
     fun modifyExercise(@PathVariable("exerciseId") exerciseIdString: String, @RequestBody body: UpdateExBody,
                        caller: EasyUser) {
 
-        val callerEmail = caller.email
+        val callerId = caller.id
         val exerciseId = exerciseIdString.toLong()
-        validateUpdateEx(exerciseId, body, callerEmail)
+        validateUpdateEx(exerciseId, body, callerId)
         val updExercise = mapToUpdExercise(body)
         updateExercise(exerciseId, updExercise)
     }
 
-    private fun validateUpdateEx(exerciseId: Long, body: UpdateExBody, callerEmail: String) {
+    private fun validateUpdateEx(exerciseId: Long, body: UpdateExBody, callerId: String) {
         if (body.executors.isEmpty()) {
             throw InvalidRequestException("Must have at least one executor")
         }
-        if (callerEmail != getExerciseOwner(exerciseId)) {
-            throw ForbiddenException("$callerEmail is not the owner of the exercise and is not allowed to modify it")
+        if (callerId != getExerciseOwner(exerciseId)) {
+            throw ForbiddenException("$callerId is not the owner of the exercise and is not allowed to modify it")
         }
     }
 
@@ -71,9 +71,9 @@ private data class UpdAsset(val fileName: String, val fileContent: String)
 
 private fun getExerciseOwner(exId: Long): String {
     return transaction {
-        Exercise.slice(Exercise.ownerEmail)
+        Exercise.slice(Exercise.ownerId)
                 .select { Exercise.id eq exId }
-                .map { it[Exercise.ownerEmail] }[0]
+                .map { it[Exercise.ownerId] }[0]
     }
 }
 

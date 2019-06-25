@@ -4,13 +4,13 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
 
 
-class EasyUser(val email: String, val givenName: String, val familyName: String, val roles: Set<EasyGrantedAuthority>) :
+class EasyUser(val id: String, val email: String, val givenName: String, val familyName: String, val roles: Set<EasyGrantedAuthority>) :
         AbstractAuthenticationToken(roles) {
 
     // We have no credentials
     override fun getCredentials(): Any? = null
 
-    override fun getPrincipal(): Any = email
+    override fun getPrincipal(): Any = id
 
     fun isStudent(): Boolean = roles.contains(EasyGrantedAuthority(EasyRole.STUDENT))
 

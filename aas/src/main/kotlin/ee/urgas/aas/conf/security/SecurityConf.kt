@@ -57,12 +57,12 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     }
 
     private fun makeRequestLogMsg(req: HttpServletRequest): String {
-        val email = req.getHeader("oidc_claim_email")
+        val username = req.getHeader("oidc_claim_preferred_username")
         val role = req.getHeader("oidc_claim_easy_role")
         val ip = req.remoteAddr
         val method = req.method
         val url = req.requestURL
-        return "$email with role $role from $ip: $method $url"
+        return "$username with role $role from $ip: $method $url"
     }
 
     private fun getCorsConfiguration(): CorsConfigurationSource {
