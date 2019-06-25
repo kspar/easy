@@ -7,5 +7,6 @@
 
 
     <include file="changesets/initial.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/v2.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

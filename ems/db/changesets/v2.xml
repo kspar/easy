@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+
+    <changeSet id="250619-1" author="kspar">
+        <renameColumn tableName="student" oldColumnName="email" newColumnName="username"/>
+        <sql>alter table student rename constraint uniq_student_email to uniq_student_id;</sql>
+        <renameColumn tableName="student_course_access" oldColumnName="student_email" newColumnName="student_id"/>
+        <renameColumn tableName="submission" oldColumnName="student_email" newColumnName="student_id"/>
+        <addColumn tableName="student">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <renameColumn tableName="teacher" oldColumnName="email" newColumnName="username"/>
+        <sql>alter table teacher rename constraint uniq_teacher_email to uniq_teacher_id;</sql>
+        <renameColumn tableName="teacher_course_access" oldColumnName="teacher_email" newColumnName="teacher_id"/>
+        <renameColumn tableName="exercise_version" oldColumnName="author" newColumnName="author_id"/>
+        <renameColumn tableName="exercise" oldColumnName="owned_by" newColumnName="owned_by_id"/>
+        <renameColumn tableName="teacher_assessment" oldColumnName="teacher_email" newColumnName="teacher_id"/>
+        <addColumn tableName="teacher">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
