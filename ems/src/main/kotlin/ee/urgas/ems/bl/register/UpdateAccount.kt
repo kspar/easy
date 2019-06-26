@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class RegisterAccountController {
+class UpdateAccountController {
 
     data class PersonalDataBody(@JsonProperty("email", required = true) val email: String,
                                 @JsonProperty("first_name", required = true) val firstName: String,
