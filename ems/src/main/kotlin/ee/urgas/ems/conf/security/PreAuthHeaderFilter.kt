@@ -39,6 +39,7 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
                         when (it) {
                             "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
                             "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
+                            "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
                             else -> throw RuntimeException("Unmapped role $it")
                         }
                     }

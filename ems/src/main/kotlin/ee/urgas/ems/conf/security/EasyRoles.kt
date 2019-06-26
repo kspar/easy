@@ -15,6 +15,8 @@ class EasyUser(val id: String, val email: String, val givenName: String, val fam
     fun isStudent(): Boolean = roles.contains(EasyGrantedAuthority(EasyRole.STUDENT))
 
     fun isTeacher(): Boolean = roles.contains(EasyGrantedAuthority(EasyRole.TEACHER))
+
+    fun isAdmin(): Boolean = roles.contains(EasyGrantedAuthority(EasyRole.ADMIN))
 }
 
 class EasyGrantedAuthority(private val role: EasyRole) : GrantedAuthority {
@@ -36,5 +38,6 @@ class EasyGrantedAuthority(private val role: EasyRole) : GrantedAuthority {
 
 enum class EasyRole(val roleWithPrefix: String) {
     STUDENT("ROLE_STUDENT"),
-    TEACHER("ROLE_TEACHER")
+    TEACHER("ROLE_TEACHER"),
+    ADMIN("ROLE_ADMIN")
 }

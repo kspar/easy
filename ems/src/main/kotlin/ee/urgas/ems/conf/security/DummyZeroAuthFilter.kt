@@ -13,7 +13,10 @@ class DummyZeroAuthFilter : OncePerRequestFilter() {
         const val EMAIL = "ford@prefect.btl5"
         const val GIVEN_NAME = "Ford"
         const val FAMILY_NAME = "Prefect"
-        val ROLES = setOf(EasyGrantedAuthority(EasyRole.STUDENT), EasyGrantedAuthority(EasyRole.TEACHER))
+        val ROLES = setOf(
+                EasyGrantedAuthority(EasyRole.STUDENT),
+                EasyGrantedAuthority(EasyRole.TEACHER),
+                EasyGrantedAuthority(EasyRole.ADMIN))
     }
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
