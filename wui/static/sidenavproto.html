@@ -88,9 +88,15 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var elems = document.querySelectorAll('.sidenav');
-        instances = M.Sidenav.init(elems, {});
+        M.Sidenav.init(elems, {});
+        var dropdown = document.querySelectorAll('.dropdown-trigger');
+        var body = document.getElementsByTagName("body");
+        var dd = M.Dropdown.init(dropdown, {
+            constrainWidth: false,
+            coverTrigger: false,
+            container: body
+        });
     });
-    var instances;
 
 </script>
 <style>
