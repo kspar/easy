@@ -89,3 +89,11 @@ object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val feedback = text("feedback").nullable()
 }
 
+object Admin : IdTable<String>("admin") {
+    override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
+    val createdAt = datetime("created_at")
+    val email = text("email")
+    val givenName = text("given_name")
+    val familyName = text("family_name")
+}
+
