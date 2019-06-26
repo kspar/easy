@@ -30,4 +30,25 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="260619-1" author="priit">
+        <createTable tableName="admin">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="admin_seq_id" startValue="1" incrementBy="1"/>
+    </changeSet>
+
 </databaseChangeLog>
