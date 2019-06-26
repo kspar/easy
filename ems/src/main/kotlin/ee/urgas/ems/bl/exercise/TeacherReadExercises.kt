@@ -31,7 +31,7 @@ private val log = KotlinLogging.logger {}
 
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v2")
 class TeacherReadCourseExercisesController {
 
     data class TeacherCourseExResp(@JsonProperty("id") val id: String,

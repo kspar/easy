@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse
 private val log = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v2")
 class StudentReadLatestSubmissionController {
 
 

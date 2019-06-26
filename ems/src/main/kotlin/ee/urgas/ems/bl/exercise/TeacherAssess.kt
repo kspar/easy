@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController
 private val log = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v2")
 class TeacherAssessController {
 
     data class AssessBody(@JsonProperty("grade", required = true) val grade: Int,

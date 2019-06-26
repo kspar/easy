@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 private val log = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v2")
 class TeacherUpdateExerciseController {
 
     data class UpdateExerciseBody(@JsonProperty("title", required = true) val title: String,

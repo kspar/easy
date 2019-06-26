@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController
 private val log = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v2")
 class TeacherReadAllSubmissionsController {
 
     data class TeacherSubmissionResp(@JsonSerialize(using = DateTimeSerializer::class)
