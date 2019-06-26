@@ -25,7 +25,7 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
 
     fun initialize(): Promise<Boolean> =
-            Promise<Boolean> { resolve, reject ->
+            Promise { resolve, reject ->
                 this.init(objOf("onLoad" to "login-required"))
                         .success { authenticated: Boolean ->
                             debug { "Authenticated: $authenticated" }
