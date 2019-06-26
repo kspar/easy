@@ -3,7 +3,6 @@ import pages.ExercisesPage
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
-import kotlin.js.Promise
 
 
 private val PAGES = listOf(
@@ -57,18 +56,7 @@ private suspend fun updateAccountData() {
 private suspend fun initAuthentication() {
     val funLog = debugFunStart("initAuthentication")
 
-    Promise<Unit> { resolve, reject ->
-        Keycloak.init(objOf("onLoad" to "login-required"))
-                .success { authenticated: Boolean ->
-                    debug { "Authenticated: $authenticated" }
-                    resolve(Unit)
-                }
-                .error { error ->
-                    debug { "Authentication error: $error" }
-                    reject(RuntimeException("Authentication error"))
-                }
-        Unit
-    }.await()
+    Keycloak.initialize().await()
 
     funLog?.end()
 }
