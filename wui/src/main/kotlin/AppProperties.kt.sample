@@ -1,0 +1,5 @@
+
+object AppProperties {
+    const val EMS_ROOT = "https://dev.ems.lahendus.ut.ee/v2"
+    const val KEYCLOAK_CONF_URL = "https://dev.lahendus.ut.ee/static/keycloak.json"
+}
