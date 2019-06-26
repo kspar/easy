@@ -14,7 +14,7 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
 }
 
 // Expose keycloak instance via a singleton
-object Keycloak : InternalKeycloak("${window.location.origin}/static/keycloak.json") {
+object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     val firstName: String
         get() = this.tokenParsed.given_name.unsafeCast<String>()
     val lastName: String
