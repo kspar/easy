@@ -8,7 +8,7 @@ object PageManager {
     // No need for thread-safety, JS runs single-threaded
     private var pages: List<Page<Any>> = emptyList()
 
-    fun registerPages(vararg newPages: Page<*>) {
+    fun registerPages(newPages: List<Page<*>>) {
         // Mandatory pledge:
         // Dear compiler, I am aware that these objects are not really Page<Any> but I promise
         // to take care to only pass to these Pages the objects that they expect.

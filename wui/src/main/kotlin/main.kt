@@ -3,61 +3,72 @@ import pages.ExercisesPage
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
+import kotlin.js.Promise
+
+
+private val PAGES = listOf(
+        CoursesPage, ExercisesPage)
 
 
 fun main() {
     val funLog = debugFunStart("main")
 
     // Start authentication as soon as possible
-    initAuthentication { initAfterAuth() }
+    launch {
+        initAuthentication()
+        updateAccountData()
+        // Register pages in async block to avoid race condition
+        PageManager.registerPages(PAGES)
+        PageManager.updatePage()
+    }
 
-    // Do stuff that does not require auth immediately
-    PageManager.registerPages(CoursesPage, ExercisesPage)
+    // Do stuff that does not require auth
     setupLinkInterception()
     setupHistoryNavInterception()
 
     funLog?.end()
 }
 
-/**
- * Do actions that require authentication to be successful
- */
-fun initAfterAuth() {
-    val funLog = debugFunStart("initAfterAuth")
 
-    renderOnce()
-    PageManager.updatePage()
-
-    funLog?.end()
-}
-
-/**
- * Do actions that must be done only once per document load i.e. SPA refresh
- */
-private fun renderOnce() {
-    val funLog = debugFunStart("renderOnce")
+private suspend fun updateAccountData() {
+    val funLog = debugFunStart("updateAccountData")
 
     val firstName = Keycloak.firstName
     val lastName = Keycloak.lastName
     val email = Keycloak.email
 
-    debug { "Updating account data to email: $email, first name: $firstName, last name: $lastName" }
-    // TODO: call update account info
+    debug { "Updating account data to [email: $email, first name: $firstName, last name: $lastName]" }
+
+    val personalData = mapOf("email" to email, "first_name" to firstName, "last_name" to lastName)
+
+    fetchEms("/account/personal", ReqMethod.POST, personalData)
+            .then {
+                if (it.status == 200.toShort()) {
+                    debug { "Account data updated" }
+                } else {
+                    debug { "Updating account data failed with status ${it.status}" }
+                }
+            }
+            .await()
 
     funLog?.end()
 }
 
-private fun initAuthentication(afterAuthCallback: () -> Unit) {
+private suspend fun initAuthentication() {
     val funLog = debugFunStart("initAuthentication")
 
-    Keycloak.init(objOf("onLoad" to "login-required"))
-            .success { authenticated: Boolean ->
-                debug { "Authenticated: $authenticated" }
-                afterAuthCallback()
-            }
-            .error { error ->
-                debug { "Authentication error: $error" }
-            }
+    Promise<Unit> { resolve, reject ->
+        Keycloak.init(objOf("onLoad" to "login-required"))
+                .success { authenticated: Boolean ->
+                    debug { "Authenticated: $authenticated" }
+                    resolve(Unit)
+                }
+                .error { error ->
+                    debug { "Authentication error: $error" }
+                    reject(RuntimeException("Authentication error"))
+                }
+        Unit
+    }.await()
 
     funLog?.end()
 }
