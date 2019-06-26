@@ -45,7 +45,7 @@ private suspend fun updateAccountData() {
                 if (it.status == 200.toShort()) {
                     debug { "Account data updated" }
                 } else {
-                    debug { "Updating account data failed with status ${it.status}" }
+                    warn { "Updating account data failed with status ${it.status}" }
                 }
             }
             .await()
