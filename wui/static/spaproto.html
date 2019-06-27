@@ -37,14 +37,9 @@
     <li><a id="logout-link">Logi välja</a></li>
 </ul>
 
-<div>
-    <a href="/courses/12a/exercises">Exercises</a>
-    <a href="/courses">Courses</a>
-    <a href="https://google.com">Googl</a>
-</div>
 
 <div id="container" class="container"> <!-- TODO: is class container needed? or refactor css to use id -->
-    initial
+    Loading...
 </div>
 
 
@@ -52,9 +47,9 @@
 <script id="tm-stud-course-list" type="text/x-tm">
 <div class="card">
     <div id="courses-list" class="collection">
-        {{#course}}
+        {{#courses}}
         <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
-        {{/course}}
+        {{/courses}}
     </div>
 </div>
 </script>

@@ -9,6 +9,10 @@ enum class ReqMethod {
     POST
 }
 
+val Response.http200: Boolean
+    get() = status == 200.toShort()
+
+
 fun fetchEms(path: String, method: ReqMethod,
              data: Map<String, Any>? = null,
              headers: Map<String, String> = emptyMap()): Promise<Response> =

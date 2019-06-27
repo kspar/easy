@@ -1,17 +1,30 @@
 package pages
 
+import EasyRole
+import JsonUtil
+import Keycloak
 import PageName
+import ReqMethod
+import Str
 import debug
 import debugFunStart
-import getElemById
+import errorMessage
+import fetchEms
+import getContainer
+import http200
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.list
 import objOf
 import spa.Page
 import tmRender
-import kotlin.js.Date
+
 
 object CoursesPage : Page<CoursesPage.State>() {
 
     data class State(val coursesHtml: String)
+
+    @Serializable
+    data class StudentCourse(val id: String, val title: String)
 
     override val pageName: PageName
         get() = PageName.COURSES
@@ -22,31 +35,52 @@ object CoursesPage : Page<CoursesPage.State>() {
     override fun build(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.build")
 
-
-//        paintDummyCourseList(pageState)
-
+        when (Keycloak.getActiveRole()) {
+            EasyRole.STUDENT -> buildStudentCourses(pageState)
+            EasyRole.TEACHER, EasyRole.ADMIN -> buildTeacherCourses()
+        }
 
         funLog?.end()
     }
 
 
-    private fun paintDummyCourseList(pageState: State?) {
-        val coursesListHtml = if (pageState != null) {
+    private fun buildStudentCourses(pageState: State?) {
+        val funLog = debugFunStart("CoursesPage.buildStudentCourses")
+
+        // Just a PoC of using state, should probably not use here
+        if (pageState != null) {
             debug { "Got courses from state" }
-            pageState.coursesHtml
+            getContainer().innerHTML = pageState.coursesHtml
+
         } else {
-            val html = genCourseListHtml()
-            updateState(State(html))
-            html
+            fetchEms("/student/courses", ReqMethod.GET)
+                    .then {
+                        if (!it.http200) {
+                            errorMessage { Str.fetchingCoursesFailed }
+                            error("Fetching student courses failed")
+                        }
+                        it.text()
+                    }
+                    .then { JsonUtil.parse(StudentCourse.serializer().list, it) }
+                    .then { courses ->
+
+                        val coursesHtml = tmRender("tm-stud-course-list",
+                                mapOf("courses" to courses.map {
+                                    objOf("title" to it.title, "id" to it.id)
+                                }.toTypedArray()))
+
+                        debug { "Courses html: $coursesHtml" }
+                        updateState(State(coursesHtml))
+
+                        getContainer().innerHTML = coursesHtml
+                    }
         }
 
-        getElemById("container").innerHTML = coursesListHtml
+        funLog?.end()
     }
 
-    private fun genCourseListHtml() = tmRender("tm-stud-course-list",
-            mapOf("course" to arrayOf(
-                    objOf("title" to "Title${Date().getMilliseconds()}", "id" to { 1 + 2 }),
-                    objOf("title" to "Title84", "id" to "42f")
-            )))
+    private fun buildTeacherCourses() {
+        // TODO
+    }
 
 }
