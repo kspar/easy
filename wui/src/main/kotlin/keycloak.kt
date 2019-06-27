@@ -1,5 +1,11 @@
 import kotlin.js.Promise
 
+enum class EasyRole {
+    STUDENT,
+    TEACHER,
+    ADMIN
+}
+
 @JsName("Keycloak")
 open external class InternalKeycloak(confUrl: String = definedExternally) {
     val authenticated: Boolean
@@ -22,6 +28,20 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         get() = this.tokenParsed.family_name.unsafeCast<String>()
     val email: String
         get() = this.tokenParsed.email.unsafeCast<String>()
+
+
+    fun getActiveRole(): EasyRole {
+
+        // TODO: get actually active role
+        val role = when {
+            this.tokenParsed.easy_role.includes("admin") -> EasyRole.ADMIN
+            this.tokenParsed.easy_role.includes("teacher") -> EasyRole.TEACHER
+            this.tokenParsed.easy_role.includes("student") -> EasyRole.STUDENT
+            else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
+        }
+
+        return role
+    }
 
 
     fun initialize(): Promise<Boolean> =
