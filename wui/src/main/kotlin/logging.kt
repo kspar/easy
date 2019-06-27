@@ -33,6 +33,12 @@ fun debugFunStart(funName: String): FunLog? {
     return null
 }
 
+fun errorMessage(msgProvider: () -> String) {
+    val msg = msgProvider()
+    debug { "Showing error message: $msg" }
+    // TODO: show error message
+}
+
 
 private fun datetimeString(): String {
     return Date().toISOString().replace("T", " ").replace("Z", "")
