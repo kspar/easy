@@ -29,6 +29,11 @@ object PageManager {
         funLog?.end()
     }
 
+    fun navigateTo(path: String) {
+        window.history.pushState(null, "", path)
+        updatePage()
+    }
+
     private fun pageFromPath(path: String): Page<Any> {
         val matchingPages = pages.filter { it.pathMatches(path) }
         val matchingCount = matchingPages.size
