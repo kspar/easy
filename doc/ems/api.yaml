@@ -151,6 +151,22 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TeacherCourse'
+    post:
+      summary: Add new course
+      tags:
+        - teacher
+      parameters:
+        - name: course
+          in: body
+          schema:
+            properties:
+              title:
+                type: string
+            required:
+              - title
+      responses:
+        200:
+          description: Course added.
 
 
 
