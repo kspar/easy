@@ -11,14 +11,18 @@ version = "2"
 plugins {
     id("kotlin2js") version("1.3.31")
     id("kotlin-dce-js") version("1.3.31")
+    id("kotlinx-serialization") version("1.3.40")
 }
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-js")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.11.1")
     testCompile("junit:junit:4.11")
     testImplementation("org.jetbrains.kotlin:kotlin-test-js")
 }
