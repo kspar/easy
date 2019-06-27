@@ -1,5 +1,10 @@
 import org.w3c.dom.Element
+import org.w3c.dom.HTMLDivElement
 import kotlin.browser.document
+
+
+fun getContainer(): HTMLDivElement =
+        getElemByIdAs("container")
 
 
 fun getElemByIdOrNull(id: String): Element? =

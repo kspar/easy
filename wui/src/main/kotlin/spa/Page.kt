@@ -1,6 +1,6 @@
 package spa
 
-import getElemById
+import getContainer
 import kotlin.browser.window
 import kotlin.dom.clear
 
@@ -42,7 +42,7 @@ abstract class Page<T> {
      * The default implementations clears the whole container.
      */
     open fun clear() {
-        getElemById("container").clear()
+        getContainer().clear()
     }
 
     /**
