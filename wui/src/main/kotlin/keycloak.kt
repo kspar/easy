@@ -31,8 +31,7 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                             debug { "Authenticated: $authenticated" }
                             resolve(authenticated)
                         }
-                        .error { error ->
-                            warn { "Authentication error: $error" }
+                        .error {
                             reject(RuntimeException("Authentication error"))
                         }
                 Unit
