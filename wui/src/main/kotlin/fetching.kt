@@ -22,7 +22,7 @@ fun fetchEms(path: String, method: ReqMethod,
 
                         val combinedHeaders = defaultHeaders + headers
 
-                        val jsonData = if (data == null) "" else JSON.stringify(dynamicToAny(data.toJsObj()))
+                        val jsonData = if (data == null) null else JSON.stringify(dynamicToAny(data.toJsObj()))
 
                         window.fetch(AppProperties.EMS_ROOT + path,
                                 RequestInit(
