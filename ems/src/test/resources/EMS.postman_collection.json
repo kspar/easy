@@ -1,0 +1,166 @@
+{
+	"info": {
+		"_postman_id": "1e348543-0bd1-4670-a2ad-d82d033c1dd1",
+		"name": "EMS",
+		"description": "This collection implements tests for the API of easy:ems",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "EMS: teacher: post: create new account: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"foo@bar.com\",\r\n  \"first_name\": \"foo\",\r\n  \"last_name\": \"bar\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/account/personal",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"account",
+						"personal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: create new course: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"test\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "51d6d31c-cd97-4893-914a-b4fbd766f7c3",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "afd7e7b2-09e0-4e85-b71b-d1dd7ad36a51",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
