@@ -10,3 +10,4 @@ build/
 database.properties
 application.yaml
 gunicorn-conf.py
+AppProperties.kt
