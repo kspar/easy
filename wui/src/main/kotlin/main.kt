@@ -18,6 +18,7 @@ fun main() {
     // Start authentication as soon as possible
     MainScope().launch {
         initAuthentication()
+        renderNavbar()
         updateAccountData()
         // Register pages in async block to avoid race condition
         PageManager.registerPages(PAGES)
@@ -31,6 +32,17 @@ fun main() {
     funLog?.end()
 }
 
+
+private fun renderNavbar() {
+    val navHtml = tmRender("tm-navbar",
+            mapOf("userName" to Keycloak.firstName,
+                    "myCourses" to Str.myCourses,
+                    "account" to Str.accountData,
+                    "logOut" to Str.logOut,
+                    "accountLink" to "${AppProperties.IDP_ROOT}/auth/realms/master/account"))
+    debug { "Navbar html: $navHtml" }
+    getElemById("nav-wrap").innerHTML = navHtml
+}
 
 private suspend fun updateAccountData() {
     val funLog = debugFunStart("updateAccountData")
