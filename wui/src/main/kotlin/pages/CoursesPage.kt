@@ -1,7 +1,6 @@
 package pages
 
 import EasyRole
-import JsonUtil
 import Keycloak
 import PageName
 import ReqMethod
@@ -15,6 +14,7 @@ import http200
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.list
 import objOf
+import parseTo
 import spa.Page
 import tmRender
 
@@ -47,7 +47,7 @@ object CoursesPage : Page<CoursesPage.State>() {
     private fun buildStudentCourses(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")
 
-        // Just a PoC of using state, should probably not use here
+        // Just a PoC of using state, should probably not use here because courses might change
         if (pageState != null) {
             debug { "Got courses from state" }
             getContainer().innerHTML = pageState.coursesHtml
@@ -59,17 +59,17 @@ object CoursesPage : Page<CoursesPage.State>() {
                             errorMessage { Str.fetchingCoursesFailed }
                             error("Fetching student courses failed")
                         }
-                        it.text()
+                        it.parseTo(StudentCourse.serializer().list)
                     }
-                    .then { JsonUtil.parse(StudentCourse.serializer().list, it) }
                     .then { courses ->
 
                         val coursesHtml = tmRender("tm-stud-course-list",
-                                mapOf("courses" to courses.map {
-                                    objOf("title" to it.title, "id" to it.id)
-                                }.toTypedArray()))
+                                mapOf("courses" to
+                                        courses.map {
+                                            objOf("title" to it.title, "id" to it.id)
+                                        }.toTypedArray()))
 
-                        debug { "Courses html: $coursesHtml" }
+                        debug { "Rendered courses html: $coursesHtml" }
                         updateState(State(coursesHtml))
 
                         getContainer().innerHTML = coursesHtml

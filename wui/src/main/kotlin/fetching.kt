@@ -1,3 +1,4 @@
+import kotlinx.serialization.DeserializationStrategy
 import org.w3c.fetch.RequestInit
 import org.w3c.fetch.Response
 import kotlin.browser.window
@@ -9,8 +10,13 @@ enum class ReqMethod {
     POST
 }
 
+
 val Response.http200: Boolean
     get() = status == 200.toShort()
+
+
+fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
+        this.text().then { JsonUtil.parse(deserializer, it) }
 
 
 fun fetchEms(path: String, method: ReqMethod,
