@@ -15,6 +15,8 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
     var onTokenExpired: dynamic
     var onAuthRefreshSuccess: dynamic
 
+    fun createAccountUrl(): String
+    fun createLogoutUrl(options: dynamic = definedExternally): String
     protected fun init(options: dynamic): dynamic
     protected fun updateToken(minValidSec: Int): dynamic
 }

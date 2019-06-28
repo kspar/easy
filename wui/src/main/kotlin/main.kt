@@ -41,7 +41,8 @@ private fun renderNavbar() {
                     "myCourses" to Str.myCourses,
                     "account" to Str.accountData,
                     "logOut" to Str.logOut,
-                    "accountLink" to "${AppProperties.IDP_ROOT}/auth/realms/master/account"))
+                    "accountLink" to Keycloak.createAccountUrl(),
+                    "logoutLink" to Keycloak.createLogoutUrl()))
     debug { "Navbar html: $navHtml" }
     getElemById("nav-wrap").innerHTML = navHtml
 

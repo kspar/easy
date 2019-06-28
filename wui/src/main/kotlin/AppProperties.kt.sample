@@ -1,6 +1,5 @@
 
 object AppProperties {
-    const val IDP_ROOT = "https://dev.idp.lahendus.ut.ee"
     const val EMS_ROOT = "https://dev.ems.lahendus.ut.ee/v2"
     const val KEYCLOAK_CONF_URL = "https://dev.lahendus.ut.ee/static/keycloak.json"
     const val KEYCLOAK_TOKEN_MIN_VALID_SEC = 30
