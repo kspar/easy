@@ -22,6 +22,10 @@ nav {
     background-color: #4DAB54;
 }
 
+nav .brand-logo {
+    padding-left: 2%;
+}
+
 .logo-img {
     max-height: 58px;
     height: 2.1rem;
@@ -38,7 +42,7 @@ nav.nav-center ul li {
 
 nav.nav-center ul li a.nav-link {
     font-weight: 500;
-    font-size: 3rem;
+    font-size: 2.7rem;
     color: #fff;
     padding: 0 32px;
 }
