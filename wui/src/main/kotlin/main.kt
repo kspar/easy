@@ -46,11 +46,10 @@ private fun renderNavbar() {
     debug { "Navbar html: $navHtml" }
     getElemById("nav-wrap").innerHTML = navHtml
 
-    val dropdownTrigger = getElemById("profile-wrapper")
-    M.Dropdown.init(dropdownTrigger,
+    M.Dropdown.init(getElemById("profile-wrapper"),
             mapOf("constrainWidth" to false,
                     "coverTrigger" to false,
-                    "container" to document.body!!).toJsObj())
+                    "container" to getBody()).toJsObj())
 }
 
 private suspend fun updateAccountData() {

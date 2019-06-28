@@ -1,4 +1,5 @@
 import org.w3c.dom.Element
+import org.w3c.dom.HTMLBodyElement
 import org.w3c.dom.HTMLDivElement
 import kotlin.browser.document
 
@@ -6,6 +7,8 @@ import kotlin.browser.document
 fun getContainer(): HTMLDivElement =
         getElemByIdAs("container")
 
+fun getBody(): HTMLBodyElement =
+        document.body as HTMLBodyElement
 
 fun getElemByIdOrNull(id: String): Element? =
         document.getElementById(id)
