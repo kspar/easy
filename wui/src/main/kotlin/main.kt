@@ -1,3 +1,6 @@
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
 import pages.CoursesPage
 import pages.ExercisesPage
 import spa.PageManager
@@ -13,7 +16,7 @@ fun main() {
     val funLog = debugFunStart("main")
 
     // Start authentication as soon as possible
-    launch {
+    MainScope().launch {
         initAuthentication()
         updateAccountData()
         // Register pages in async block to avoid race condition

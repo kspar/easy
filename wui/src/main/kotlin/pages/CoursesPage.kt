@@ -11,6 +11,9 @@ import errorMessage
 import fetchEms
 import getContainer
 import http200
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.list
 import objOf
@@ -53,27 +56,28 @@ object CoursesPage : Page<CoursesPage.State>() {
             getContainer().innerHTML = pageState.coursesHtml
 
         } else {
-            fetchEms("/student/courses", ReqMethod.GET)
-                    .then {
-                        if (!it.http200) {
-                            errorMessage { Str.fetchingCoursesFailed }
-                            error("Fetching student courses failed")
-                        }
-                        it.parseTo(StudentCourse.serializer().list)
-                    }
-                    .then { courses ->
 
-                        val coursesHtml = tmRender("tm-stud-course-list",
-                                mapOf("courses" to
-                                        courses.map {
-                                            objOf("title" to it.title, "id" to it.id)
-                                        }.toTypedArray()))
+            MainScope().launch {
+                val funLogFetch = debugFunStart("CoursesPage.buildStudentCourses.asyncFetchBuild")
 
-                        debug { "Rendered courses html: $coursesHtml" }
-                        updateState(State(coursesHtml))
+                val resp = fetchEms("/student/courses", ReqMethod.GET).await()
+                if (!resp.http200) {
+                    errorMessage { Str.fetchingCoursesFailed }
+                    error("Fetching student courses failed")
+                }
+                val courses = resp.parseTo(StudentCourse.serializer().list).await()
+                val coursesHtml = tmRender("tm-stud-course-list",
+                        mapOf("courses" to courses.map {
+                            objOf("title" to it.title, "id" to it.id)
+                        }.toTypedArray()))
 
-                        getContainer().innerHTML = coursesHtml
-                    }
+                debug { "Rendered courses html: $coursesHtml" }
+                updateState(State(coursesHtml))
+
+                getContainer().innerHTML = coursesHtml
+
+                funLogFetch?.end()
+            }
         }
 
         funLog?.end()

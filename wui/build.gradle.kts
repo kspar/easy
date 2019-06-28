@@ -21,6 +21,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-js")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.0-M2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.11.1")
     testCompile("junit:junit:4.11")
