@@ -1,11 +1,13 @@
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import libheaders.M
 import pages.CoursesPage
 import pages.ExercisesPage
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
+import kotlin.browser.document
 
 
 private val PAGES = listOf(
@@ -42,6 +44,12 @@ private fun renderNavbar() {
                     "accountLink" to "${AppProperties.IDP_ROOT}/auth/realms/master/account"))
     debug { "Navbar html: $navHtml" }
     getElemById("nav-wrap").innerHTML = navHtml
+
+    val dropdownTrigger = getElemById("profile-wrapper")
+    M.Dropdown.init(dropdownTrigger,
+            mapOf("constrainWidth" to false,
+                    "coverTrigger" to false,
+                    "container" to document.body!!).toJsObj())
 }
 
 private suspend fun updateAccountData() {
