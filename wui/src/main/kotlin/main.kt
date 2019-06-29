@@ -1,14 +1,12 @@
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import libheaders.M
-import org.w3c.dom.HTMLAnchorElement
 import pages.CoursesPage
 import pages.ExercisesPage
+import pages.Navbar
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
-import kotlin.dom.clear
 
 
 private val PAGES = listOf(
@@ -21,7 +19,7 @@ fun main() {
     // Start authentication as soon as possible
     MainScope().launch {
         initAuthentication()
-        renderNavbar()
+        buildStatics()
         updateAccountData()
         // Register pages in async block to avoid race condition
         PageManager.registerPages(PAGES)
@@ -35,64 +33,11 @@ fun main() {
     funLog?.end()
 }
 
-
-private fun buildRoleChangeBackToMainRole() {
-    val roleToMainHtml = tmRender("tm-role-link", mapOf(
-            "changeRole" to Str.roleChangeBack,
-            "changeRoleId" to "role-link-main"
-    ))
-    getElemById("role-wrap").innerHTML = roleToMainHtml
-
-    getElemByIdAs<HTMLAnchorElement>("role-link-main").onclick = {
-        getElemById("profile-role").clear()
-        buildRoleChangeToStudentIfPossible()
-        initProfileDropdown()
-        Keycloak.switchRoleToMain()
-        PageManager.updatePage()
-        it
-    }
+fun buildStatics() {
+    Navbar.build()
+    // sidebar
 }
 
-private fun buildRoleChangeToStudentIfPossible() {
-    if (Keycloak.canToggleRole()) {
-        val roleToStudentHtml = tmRender("tm-role-link", mapOf(
-                "changeRole" to Str.roleChangeStudent,
-                "changeRoleId" to "role-link-student"
-        ))
-        getElemById("role-wrap").innerHTML = roleToStudentHtml
-
-        getElemByIdAs<HTMLAnchorElement>("role-link-student").onclick = {
-            getElemById("profile-role").textContent = Str.roleCHangeStudentSuffix
-            buildRoleChangeBackToMainRole()
-            initProfileDropdown()
-            Keycloak.switchRoleToStudent()
-            PageManager.updatePage()
-            it
-        }
-    }
-}
-
-
-private fun renderNavbar() {
-    val navHtml = tmRender("tm-navbar", mapOf(
-            "userName" to Keycloak.firstName,
-            "myCourses" to Str.myCourses,
-            "account" to Str.accountData,
-            "logOut" to Str.logOut,
-            "accountLink" to Keycloak.createAccountUrl(),
-            "logoutLink" to Keycloak.createLogoutUrl()))
-    getElemById("nav-wrap").innerHTML = navHtml
-
-    buildRoleChangeToStudentIfPossible()
-    initProfileDropdown()
-}
-
-private fun initProfileDropdown() {
-    M.Dropdown.init(getElemById("profile-wrapper"),
-            mapOf("constrainWidth" to false,
-                    "coverTrigger" to false,
-                    "container" to getBody()).toJsObj())
-}
 
 private suspend fun updateAccountData() {
     val funLog = debugFunStart("updateAccountData")

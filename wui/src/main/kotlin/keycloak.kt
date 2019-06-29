@@ -38,6 +38,7 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     fun isAdmin(): Boolean = this.tokenParsed.easy_role.includes("admin").unsafeCast<Boolean>()
 
     fun canToggleRole(): Boolean = (isTeacher() || isAdmin()) && isStudent()
+    fun isMainRoleActive(): Boolean = getMainRole() == activeRole
 
     fun getMainRole(): EasyRole = when {
         isAdmin() -> EasyRole.ADMIN
