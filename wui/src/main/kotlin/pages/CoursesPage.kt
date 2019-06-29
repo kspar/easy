@@ -38,7 +38,7 @@ object CoursesPage : Page<CoursesPage.State>() {
     override fun build(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.build")
 
-        when (Keycloak.getActiveRole()) {
+        when (Keycloak.activeRole) {
             EasyRole.STUDENT -> buildStudentCourses(pageState)
             EasyRole.TEACHER, EasyRole.ADMIN -> buildTeacherCourses()
         }

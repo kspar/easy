@@ -31,26 +31,39 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     val email: String
         get() = this.tokenParsed.email.unsafeCast<String>()
 
+    lateinit var activeRole: EasyRole
 
-    fun getActiveRole(): EasyRole {
+    fun isStudent(): Boolean = this.tokenParsed.easy_role.includes("student").unsafeCast<Boolean>()
+    fun isTeacher(): Boolean = this.tokenParsed.easy_role.includes("teacher").unsafeCast<Boolean>()
+    fun isAdmin(): Boolean = this.tokenParsed.easy_role.includes("admin").unsafeCast<Boolean>()
 
-        // TODO: get actually active role
-        val role = when {
-            this.tokenParsed.easy_role.includes("admin") -> EasyRole.ADMIN
-            this.tokenParsed.easy_role.includes("teacher") -> EasyRole.TEACHER
-            this.tokenParsed.easy_role.includes("student") -> EasyRole.STUDENT
-            else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
-        }
+    fun canToggleRole(): Boolean = (isTeacher() || isAdmin()) && isStudent()
 
-        return role
+    fun getMainRole(): EasyRole = when {
+        isAdmin() -> EasyRole.ADMIN
+        isTeacher() -> EasyRole.TEACHER
+        isStudent() -> EasyRole.STUDENT
+        else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
     }
 
+    fun switchRoleToStudent() {
+        if (!isStudent()) {
+            errorMessage { Str.somethingWentWrong }
+            error("Role change to student but user is not student")
+        }
+        activeRole = EasyRole.STUDENT
+    }
+
+    fun switchRoleToMain() {
+        activeRole = getMainRole()
+    }
 
     fun initialize(): Promise<Boolean> =
             Promise { resolve, reject ->
                 this.init(objOf("onLoad" to "login-required"))
                         .success { authenticated: Boolean ->
                             debug { "Authenticated: $authenticated" }
+                            activeRole = getMainRole()
                             resolve(authenticated)
                         }
                         .error {
