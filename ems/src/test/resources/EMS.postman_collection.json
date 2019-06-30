@@ -7,6 +7,73 @@
 	},
 	"item": [
 		{
+			"name": "EMS: admin: post: update account: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"foo@bar.com\",\r\n  \"first_name\": \"foo\",\r\n  \"last_name\": \"bar\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/account/personal",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"account",
+						"personal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "EMS: admin: post: create new course: success",
 			"event": [
 				{
