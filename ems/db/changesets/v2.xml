@@ -32,7 +32,7 @@
 
     <changeSet id="260619-1" author="priit">
         <createTable tableName="admin">
-            <column name="id" type="bigint">
+            <column name="username" type="text">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="created_at" type="timestamp">
