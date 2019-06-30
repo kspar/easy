@@ -17,6 +17,7 @@ tags:
   - name: student
   - name: teacher
   - name: common
+  - name: admin
 
 
 paths:
@@ -138,6 +139,24 @@ paths:
         200:
           description: Submission created.
 
+  /admin/courses:
+    post:
+      summary: Add new course
+      tags:
+        - admin
+      parameters:
+        - name: course
+          in: body
+          schema:
+            properties:
+              title:
+                type: string
+            required:
+              - title
+      responses:
+        200:
+          description: Course added.
+
 
   /teacher/courses:
     get:
@@ -151,22 +170,6 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TeacherCourse'
-    post:
-      summary: Add new course
-      tags:
-        - teacher
-      parameters:
-        - name: course
-          in: body
-          schema:
-            properties:
-              title:
-                type: string
-            required:
-              - title
-      responses:
-        200:
-          description: Course added.
 
 
 
@@ -551,8 +554,8 @@ definitions:
   Submission:
     properties:
       # TODO: serial needed for what?
-#      serial:
-#        type: integer
+      #      serial:
+      #        type: integer
       solution:
         type: string
       submission_time:

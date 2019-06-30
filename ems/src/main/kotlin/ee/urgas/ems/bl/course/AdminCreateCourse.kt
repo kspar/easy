@@ -1,14 +1,10 @@
-package ee.urgas.ems.bl.exercise
+package ee.urgas.ems.bl.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
-import ee.urgas.ems.db.Teacher
-import ee.urgas.ems.db.TeacherCourseAccess
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -25,30 +21,20 @@ class TeacherCreateCourseController {
 
     data class NewCourseBody(@JsonProperty("title", required = true) val title: String)
 
-    @Secured("ROLE_TEACHER")
-    @PostMapping("/teacher/courses")
+    @Secured("ROLE_ADMIN")
+    @PostMapping("/admin/courses")
     fun createExercise(@RequestBody dto: NewCourseBody, caller: EasyUser) {
         log.debug { "Create course '${dto.title}' by ${caller.id}" }
-
-        val callerId = caller.id
-        insertCourse(callerId, dto)
+        insertCourse(dto)
     }
 }
 
 
-private fun insertCourse(ownerId: String, body: TeacherCreateCourseController.NewCourseBody) {
-    val teacherId = EntityID(ownerId, Teacher)
-
+private fun insertCourse(body: TeacherCreateCourseController.NewCourseBody) {
     transaction {
-        val courseId =
-                Course.insertAndGetId {
-                    it[createdAt] = DateTime.now()
-                    it[title] = body.title
-                }
-
-        TeacherCourseAccess.insert {
-            it[teacher] = teacherId
-            it[course] = courseId
+        Course.insert {
+            it[createdAt] = DateTime.now()
+            it[title] = body.title
         }
     }
 }
