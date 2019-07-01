@@ -22,10 +22,6 @@ nav {
     background-color: #4DAB54;
 }
 
-nav .brand-logo {
-    padding-left: 2%;
-}
-
 .logo-img {
     max-height: 58px;
     height: 2.1rem;
@@ -56,8 +52,8 @@ nav.nav-center ul li a.nav-link {
 
 #profile-wrapper {
     position: absolute;
-    right: 25px;
-    top: 3px;
+    right: 0;
+    top: 2px;
     font-size: 1.7rem;
 }
 
@@ -78,6 +74,10 @@ nav.nav-center ul li a.nav-link {
     .container {
         width: 62%;
     }
+}
+
+div.container {
+    position: relative;
 }
 
 

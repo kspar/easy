@@ -28,17 +28,17 @@
 <!-- Templates -->
 <script id="tm-navbar" type="text/x-tm">
 <nav class="nav-center" role="navigation">
-    <div class="nav-wrapper">
+    <div class="container">
         <a href="/courses" class="brand-logo left"><img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/></a>
         <ul id="nav-mobile" class="hide-on-med-and-down">
             <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
         </ul>
-    </div>
-    <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
-        <a href="#!">
-            <i id="profile-logo" class="left material-icons">account_circle</i>
-            <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
-        </a>
+        <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+            <a href="#!">
+                <i id="profile-logo" class="left material-icons">account_circle</i>
+                <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
+            </a>
+        </div>
     </div>
 </nav>
 <!-- Profile dropdown menu structure -->
