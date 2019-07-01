@@ -12,7 +12,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
     <link rel="stylesheet" href="css/main.css"/>
     <link rel="stylesheet" href="css/exercise.css"/>
+
 </head>
+<style>
+    .loading-course-item {
+        height: 6rem;
+        margin: 2rem;
+        animation: pulse 2.5s infinite ease-in-out;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes pulse {
+        0% {
+            background-color: #f3f3f3;
+        }
+        50% {
+            background-color: #e4e4e4;
+        }
+        100% {
+            background-color: #f3f3f3;
+        }
+    }
+
+</style>
 <body>
 
 <div id="nav-wrap">
@@ -40,19 +62,16 @@
 </ul>
 
 
-
 <div id="container" class="container">
     <div class="card">
         <div id="courses-list" class="collection">
-            <a class="collection-item course-item" href="#!">Blablabla</a>
-            <a class="collection-item course-item" href="#!">Blablabla123412312</a>
-            <a class="collection-item course-item" href="#!">Blablabla123123141515</a>
-            <a class="collection-item course-item" href="#!">YOYOYOYOYOYOYOLOLOLOLO</a>
+            <div class="loading-course-item"></div>
+            <div class="loading-course-item"></div>
+            <div class="loading-course-item"></div>
         </div>
+
     </div>
 </div>
-
-
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
