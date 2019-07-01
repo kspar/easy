@@ -10,6 +10,7 @@ import debugFunStart
 import errorMessage
 import fetchEms
 import getContainer
+import getElemById
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -20,6 +21,7 @@ import objOf
 import parseTo
 import spa.Page
 import tmRender
+import kotlin.dom.clear
 
 
 object CoursesPage : Page<CoursesPage.State>() {
@@ -46,6 +48,10 @@ object CoursesPage : Page<CoursesPage.State>() {
         funLog?.end()
     }
 
+    override fun clear() {
+        getElemById("sidenav-wrap").clear()
+        getContainer().clear()
+    }
 
     private fun buildStudentCourses(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")

@@ -26,7 +26,7 @@ object ExercisesPage : Page<String>() {
         val courseId = extractCourseId(path)
         debug { "Course ID: $courseId" }
 
-        debug { "Page state: $pageState" }
+        Sidenav.build(courseId)
 
         // Fetch exercises
 

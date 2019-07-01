@@ -16,7 +16,7 @@
 <body>
 
 <div id="nav-wrap"></div>
-
+<div id="sidenav-wrap"></div>
 
 
 
@@ -53,6 +53,18 @@
 <li><a id="{{changeRoleId}}">{{changeRole}}</a></li>
 </script>
 
+<script id="tm-sidenav" type="text/x-tm">
+<ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
+    <li><a class="subheader">{{header}}</a></li>
+    <li class="divider-wrap"><div class="divider"></div></li>
+    <li><a class="waves-effect sidenav-close" href="/exercises/new?addto={{courseId}}"><i class="material-icons">create</i>{{newExercise}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/addexercise"><i class="material-icons">add_box</i>{{addExistingExercise}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participants}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{grades}}</a></li>
+</ul>
+<a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+</script>
+
 <script id="tm-stud-course-list" type="text/x-tm">
 <div class="card">
     <div id="courses-list" class="collection">
@@ -76,5 +88,57 @@
 <script src="/static/js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
 <script src="/static/js/wui.js"></script>
 <div id="date"></div> <!-- Temporary, for automatic generation time -->
+<style>
+
+    div.sidenav-container {
+        padding-left: 300px;
+        max-width: unset;
+    }
+
+    @media only screen and (max-width : 992px) {
+        div.sidenav-container {
+            padding-left: 0;
+        }
+        .sidenav-trigger {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #fff;
+        }
+    }
+
+    @media only screen and (min-width: 993px) {
+        .sidenav-trigger {
+            display: none;
+        }
+    }
+
+    .sidenav > li > a, .sidenav .subheader {
+        color: #4c4c4c;
+        height: 60px;
+        line-height: 60px;
+    }
+    .sidenav > li > a {
+        font-size: 1.4rem;
+    }
+
+    .sidenav .subheader {
+        font-size: 2rem;
+        text-align: center;
+    }
+
+    .sidenav .divider {
+        margin: 0 0 8px 0;
+        height: 2px;
+        /*background-color: #fff;*/
+    }
+
+    .sidenav > li > a > i.material-icons {
+        margin-right: 15px;
+        margin-top: 5px;
+    }
+
+</style>
+
 </body>
 </html>

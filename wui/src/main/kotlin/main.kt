@@ -35,7 +35,6 @@ fun main() {
 
 fun buildStatics() {
     Navbar.build()
-    // sidebar
 }
 
 

@@ -11,6 +11,11 @@ abstract class TranslatableStrings {
     abstract val roleChangeStudent: String
     abstract val roleChangeBack: String
     abstract val roleCHangeStudentSuffix: String
+    abstract val sidenavHeader: String
+    abstract val newExercise: String
+    abstract val addExistingExercise: String
+    abstract val participants: String
+    abstract val grades: String
 }
 
 
@@ -31,4 +36,14 @@ object EstStrings : TranslatableStrings() {
         get() = "Taasmuutu põhirollile"
     override val roleCHangeStudentSuffix: String
         get() = " (õpilane)"
+    override val sidenavHeader: String
+        get() = "Kursuse seaded"
+    override val newExercise: String
+        get() = "Uus ülesanne"
+    override val addExistingExercise: String
+        get() = "Lisa olemasolev ülesanne"
+    override val participants: String
+        get() = "Osalejad"
+    override val grades: String
+        get() = "Hinded"
 }
