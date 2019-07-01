@@ -66,14 +66,11 @@
 </script>
 
 <script id="tm-stud-course-list" type="text/x-tm">
-<div class="card">
     <div id="courses-list" class="collection">
         {{#courses}}
         <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
         {{/courses}}
     </div>
-</div>
-
 </script>
 
 
@@ -89,6 +86,19 @@
 <script src="/static/js/wui.js"></script>
 <div id="date"></div> <!-- Temporary, for automatic generation time -->
 <style>
+
+    #courses-list > a.course-item {
+        margin-bottom: 1rem;
+        box-shadow:
+                0 1px 1px 0 rgba(0,0,0,0.1),
+                0 2px 1px -2px rgba(0,0,0,0.09),
+                0 1px 3px 0 rgba(0,0,0,0.1);
+    }
+
+    #courses-list {
+        border: none;
+    }
+
 
     div.sidenav-container {
         padding-left: 300px;
