@@ -2,9 +2,13 @@ package pages
 
 import Str
 import getElemById
+import getElemsByClass
 import libheaders.Materialize
 import objOf
 import tmRender
+import kotlin.dom.addClass
+import kotlin.dom.clear
+import kotlin.dom.removeClass
 
 object Sidenav {
 
@@ -23,8 +27,19 @@ object Sidenav {
                         "grades" to Str.grades
                 ))
         getElemById("sidenav-wrap").innerHTML = sidenavHtml
+
+        getElemsByClass("container").forEach {
+            it.addClass("sidenav-container")
+        }
         initSidenav()
 
+    }
+
+    fun remove() {
+        getElemById("sidenav-wrap").clear()
+        getElemsByClass("container").forEach {
+            it.removeClass("sidenav-container")
+        }
     }
 
 

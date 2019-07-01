@@ -10,7 +10,6 @@ import debugFunStart
 import errorMessage
 import fetchEms
 import getContainer
-import getElemById
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -49,8 +48,8 @@ object CoursesPage : Page<CoursesPage.State>() {
     }
 
     override fun clear() {
-        getElemById("sidenav-wrap").clear()
         getContainer().clear()
+        Sidenav.remove()
     }
 
     private fun buildStudentCourses(pageState: State?) {
@@ -91,6 +90,7 @@ object CoursesPage : Page<CoursesPage.State>() {
 
     private fun buildTeacherCourses() {
         // TODO
+        getContainer().innerHTML = "<a href=\"/courses/abc/exercises\">exercises</a>"
     }
 
 }
