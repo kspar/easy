@@ -156,7 +156,10 @@ paths:
       responses:
         200:
           description: Course added.
-
+          schema:
+            properties:
+              id:
+                type: string
 
   /teacher/courses:
     get:

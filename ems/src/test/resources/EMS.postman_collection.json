@@ -84,7 +84,12 @@
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							""
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"id\");\r",
+							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
+							"});"
 						],
 						"type": "text/javascript"
 					}

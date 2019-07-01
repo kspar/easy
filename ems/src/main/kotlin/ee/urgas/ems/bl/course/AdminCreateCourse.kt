@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -21,20 +21,25 @@ class TeacherCreateCourseController {
 
     data class NewCourseBody(@JsonProperty("title", required = true) val title: String)
 
+    data class CreatedCourseResponse(@JsonProperty("id") val id: String)
+
+
     @Secured("ROLE_ADMIN")
     @PostMapping("/admin/courses")
-    fun createExercise(@RequestBody dto: NewCourseBody, caller: EasyUser) {
+    fun createExercise(@RequestBody dto: NewCourseBody, caller: EasyUser): CreatedCourseResponse {
         log.debug { "Create course '${dto.title}' by ${caller.id}" }
-        insertCourse(dto)
+        val courseId = insertCourse(dto)
+        return CreatedCourseResponse(courseId.toString())
     }
 }
 
 
-private fun insertCourse(body: TeacherCreateCourseController.NewCourseBody) {
-    transaction {
-        Course.insert {
+private fun insertCourse(body: TeacherCreateCourseController.NewCourseBody): Long {
+    return transaction {
+        Course.insertAndGetId {
             it[createdAt] = DateTime.now()
             it[title] = body.title
         }
-    }
+    }.value
+
 }
