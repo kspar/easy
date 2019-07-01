@@ -16,6 +16,7 @@ abstract class TranslatableStrings {
     abstract val addExistingExercise: String
     abstract val participants: String
     abstract val grades: String
+    abstract val coursesPageTitle: Any
 }
 
 
@@ -46,4 +47,6 @@ object EstStrings : TranslatableStrings() {
         get() = "Osalejad"
     override val grades: String
         get() = "Hinded"
+    override val coursesPageTitle: Any
+        get() = "Minu kursused"
 }

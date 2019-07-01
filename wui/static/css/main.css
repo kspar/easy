@@ -281,7 +281,7 @@ label[for=feedback], label[for=grade] {
 
 #courses-list {
     font-size: 2.1rem;
-    margin-top: 5rem;
+    margin-top: 2rem;
 }
 
 .collection a.course-item {
@@ -392,7 +392,7 @@ label[for=new-students-list] {
 }
 
 
-/** Divided collection **/
+/** Common page **/
 
 div.divided-collection > a.collection-item {
     margin-bottom: 1rem;
@@ -404,4 +404,8 @@ div.divided-collection > a.collection-item {
 
 div.divided-collection {
     border: none;
+}
+
+h3.page-title {
+    margin-top: 5rem;
 }
