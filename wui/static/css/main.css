@@ -68,6 +68,47 @@ nav.nav-center ul li a.nav-link {
 }
 
 
+/** Sidenav **/
+
+.sidenav-trigger {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: #fff;
+}
+
+@media only screen and (min-width: 993px) {
+    .sidenav-trigger {
+        display: none;
+    }
+}
+
+.sidenav > li > a, .sidenav .subheader {
+    color: #4c4c4c;
+    height: 58px;
+    line-height: 58px;
+}
+
+.sidenav > li > a {
+    font-size: 1.4rem;
+}
+
+.sidenav .subheader {
+    font-size: 2rem;
+    text-align: center;
+}
+
+.sidenav .divider {
+    margin: 0 0 8px 0;
+    height: 2px;
+}
+
+.sidenav > li > a > i.material-icons {
+    margin-right: 15px;
+    margin-top: 5px;
+}
+
+
 /** Container **/
 
 @media only screen and (min-width: 993px) {
@@ -78,6 +119,12 @@ nav.nav-center ul li a.nav-link {
 
 div.container {
     position: relative;
+}
+
+div.sidenav-container {
+    padding-left: 300px;
+    max-width: unset;
+    width: 80%;
 }
 
 
@@ -344,3 +391,17 @@ label[for=new-students-list] {
     min-height: 5rem;
 }
 
+
+/** Divided collection **/
+
+div.divided-collection > a.collection-item {
+    margin-bottom: 1rem;
+    box-shadow:
+            0 1px 1px 0 rgba(0,0,0,0.1),
+            0 2px 1px -2px rgba(0,0,0,0.09),
+            0 1px 3px 0 rgba(0,0,0,0.1);
+}
+
+div.divided-collection {
+    border: none;
+}
