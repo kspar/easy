@@ -20,6 +20,7 @@ import objOf
 import parseTo
 import spa.Page
 import tmRender
+import kotlin.dom.clear
 
 
 object CoursesPage : Page<CoursesPage.State>() {
@@ -46,6 +47,10 @@ object CoursesPage : Page<CoursesPage.State>() {
         funLog?.end()
     }
 
+    override fun clear() {
+        getContainer().clear()
+        Sidenav.remove()
+    }
 
     private fun buildStudentCourses(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")
@@ -67,9 +72,10 @@ object CoursesPage : Page<CoursesPage.State>() {
                 }
                 val courses = resp.parseTo(StudentCourse.serializer().list).await()
                 val coursesHtml = tmRender("tm-stud-course-list",
-                        mapOf("courses" to courses.map {
-                            objOf("title" to it.title, "id" to it.id)
-                        }.toTypedArray()))
+                        mapOf("title" to Str.coursesPageTitle,
+                                "courses" to courses.map {
+                                    objOf("title" to it.title, "id" to it.id)
+                                }.toTypedArray()))
 
                 debug { "Rendered courses html: $coursesHtml" }
                 updateState(State(coursesHtml))
@@ -85,6 +91,7 @@ object CoursesPage : Page<CoursesPage.State>() {
 
     private fun buildTeacherCourses() {
         // TODO
+        getContainer().innerHTML = "<a href=\"/courses/abc/exercises\">exercises</a>"
     }
 
 }

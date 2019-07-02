@@ -16,7 +16,7 @@
 <body>
 
 <div id="nav-wrap"></div>
-
+<div id="sidenav-wrap"></div>
 
 
 
@@ -28,17 +28,17 @@
 <!-- Templates -->
 <script id="tm-navbar" type="text/x-tm">
 <nav class="nav-center" role="navigation">
-    <div class="nav-wrapper">
+    <div class="container">
         <a href="/courses" class="brand-logo left"><img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/></a>
         <ul id="nav-mobile" class="hide-on-med-and-down">
             <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
         </ul>
-    </div>
-    <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
-        <a href="#!">
-            <i id="profile-logo" class="left material-icons">account_circle</i>
-            <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
-        </a>
+        <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+            <a href="#!">
+                <i id="profile-logo" class="left material-icons">account_circle</i>
+                <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
+            </a>
+        </div>
     </div>
 </nav>
 <!-- Profile dropdown menu structure -->
@@ -53,6 +53,18 @@
 <li><a id="{{changeRoleId}}">{{changeRole}}</a></li>
 </script>
 
+<script id="tm-sidenav" type="text/x-tm">
+<ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
+    <li><a class="subheader">{{header}}</a></li>
+    <li class="divider-wrap"><div class="divider"></div></li>
+    <li><a class="waves-effect sidenav-close" href="/exercises/new?addto={{courseId}}"><i class="material-icons">create</i>{{newExercise}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/addexercise"><i class="material-icons">add_box</i>{{addExistingExercise}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participants}}</a></li>
+    <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{grades}}</a></li>
+</ul>
+<a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+</script>
+
 <script id="tm-add-course" type="text/x-tm">
     <div class="input-field">
         <textarea id="course-title" class="materialize-textarea"></textarea>
@@ -64,14 +76,12 @@
 </script>
 
 <script id="tm-stud-course-list" type="text/x-tm">
-<div class="card">
-    <div id="courses-list" class="collection">
-        {{#courses}}
-        <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
-        {{/courses}}
-    </div>
+<h3 class="page-title">{{title}}</h3>
+<div id="courses-list" class="collection divided-collection">
+    {{#courses}}
+    <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+    {{/courses}}
 </div>
-
 </script>
 
 
@@ -86,5 +96,6 @@
 <script src="/static/js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
 <script src="/static/js/wui.js"></script>
 <div id="date"></div> <!-- Temporary, for automatic generation time -->
+
 </body>
 </html>

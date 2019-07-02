@@ -6,7 +6,7 @@ import buildStatics
 import getBody
 import getElemById
 import getElemByIdAs
-import libheaders.M
+import libheaders.Materialize
 import org.w3c.dom.HTMLAnchorElement
 import spa.PageManager
 import tmRender
@@ -72,7 +72,7 @@ object Navbar {
     }
 
     private fun initProfileDropdown() {
-        M.Dropdown.init(getElemById("profile-wrapper"),
+        Materialize.Dropdown.init(getElemById("profile-wrapper"),
                 mapOf("constrainWidth" to false,
                         "coverTrigger" to false,
                         "container" to getBody()).toJsObj())
