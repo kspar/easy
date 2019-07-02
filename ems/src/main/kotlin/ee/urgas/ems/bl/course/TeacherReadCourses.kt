@@ -8,6 +8,7 @@ import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,16 +21,26 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadCoursesController {
 
+    // TODO: refactor using response object & teacher query
+
     data class TeacherCoursesResponse(@JsonProperty("id") val id: String,
                                       @JsonProperty("title") val title: String,
                                       @JsonProperty("student_count") val studentCount: Int)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses")
     fun readTeacherCourses(caller: EasyUser): List<TeacherCoursesResponse> {
         val callerId = caller.id
-        log.debug { "Getting courses for teacher $callerId" }
-        val courses = selectCoursesForTeacher(callerId)
+
+        val courses =
+                if (caller.isAdmin()) {
+                    log.debug { "Getting courses for admin $callerId" }
+                    selectCoursesForAdmin()
+                } else {
+                    log.debug { "Getting courses for teacher $callerId" }
+                    selectCoursesForTeacher(callerId)
+                }
+
         log.debug { "Found courses $courses" }
         return mapToTeacherCoursesResponse(courses)
     }
@@ -42,6 +53,17 @@ class TeacherReadCoursesController {
 
 data class TeacherCourse(val id: Long, val title: String, val studentCount: Int)
 
+
+private fun selectCoursesForAdmin(): List<TeacherCourse> = transaction {
+    Course.slice(Course.id, Course.title)
+            .selectAll()
+            .map {
+                val studentCount = StudentCourseAccess
+                        .select { StudentCourseAccess.course eq Course.id }
+                        .count()
+                TeacherCourse(it[Course.id].value, it[Course.title], studentCount)
+            }
+}
 
 private fun selectCoursesForTeacher(teacherId: String): List<TeacherCourse> {
     return transaction {
