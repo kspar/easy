@@ -53,6 +53,16 @@
 <li><a id="{{changeRoleId}}">{{changeRole}}</a></li>
 </script>
 
+<script id="tm-add-course" type="text/x-tm">
+    <div class="input-field">
+        <textarea id="course-title" class="materialize-textarea"></textarea>
+        <label for="course-title">{{newCourseName}}</label>
+    </div>
+    <div id="add-course-button-wrapper">
+        <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
+    </div>
+</script>
+
 <script id="tm-stud-course-list" type="text/x-tm">
 <div class="card">
     <div id="courses-list" class="collection">

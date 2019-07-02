@@ -1,6 +1,7 @@
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import pages.AddCoursePage
 import pages.CoursesPage
 import pages.ExercisesPage
 import pages.Navbar
@@ -10,7 +11,7 @@ import spa.setupLinkInterception
 
 
 private val PAGES = listOf(
-        CoursesPage, ExercisesPage)
+        CoursesPage, ExercisesPage, AddCoursePage)
 
 
 fun main() {
