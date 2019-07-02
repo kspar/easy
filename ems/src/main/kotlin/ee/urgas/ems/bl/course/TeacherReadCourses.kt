@@ -59,7 +59,7 @@ private fun selectCoursesForAdmin(): List<TeacherCourse> = transaction {
             .selectAll()
             .map {
                 val studentCount = StudentCourseAccess
-                        .select { StudentCourseAccess.course eq Course.id }
+                        .select { StudentCourseAccess.course eq it[Course.id] }
                         .count()
                 TeacherCourse(it[Course.id].value, it[Course.title], studentCount)
             }
