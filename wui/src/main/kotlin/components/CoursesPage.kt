@@ -82,7 +82,7 @@ object CoursesPage : Page() {
             }
             val courses = resp.parseTo(StudentCourse.serializer().list).await()
             val coursesHtml = tmRender("tm-stud-course-list",
-                    mapOf("title" to Str.coursesPageTitle,
+                    mapOf("title" to Str.coursesTitle,
                             "courses" to courses.map {
                                 objOf("title" to it.title, "id" to it.id)
                             }.toTypedArray()))
@@ -121,7 +121,7 @@ object CoursesPage : Page() {
             }
             val courses = resp.parseTo(TeacherCourse.serializer().list).await()
             val html = tmRender("tm-teach-course-list", mapOf(
-                    "title" to if (isAdmin) Str.allCourses else Str.myCourses,
+                    "title" to if (isAdmin) Str.coursesTitleAdmin else Str.coursesTitle,
                     "addCourse" to isAdmin,
                     "newCourse" to Str.newCourseLink,
                     "courses" to courses.map {

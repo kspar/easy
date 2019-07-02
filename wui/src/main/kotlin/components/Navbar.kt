@@ -18,7 +18,7 @@ object Navbar {
     fun build() {
         val navHtml = tmRender("tm-navbar", mapOf(
                 "userName" to Auth.firstName,
-                "myCourses" to Str.myCourses,
+                "myCourses" to Str.topMenuCourses,
                 "account" to Str.accountData,
                 "logOut" to Str.logOut,
                 "accountLink" to Auth.createAccountUrl(),

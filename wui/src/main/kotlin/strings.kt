@@ -3,38 +3,46 @@ var Str: TranslatableStrings = EstStrings
 
 
 abstract class TranslatableStrings {
-    abstract val noPermissionForPage: String
 
-    abstract val allCourses: String
-    abstract val newCourseLink: String
-    abstract val coursesStudents: String
-    abstract val coursesStudent: String
+    // General
+    abstract val noPermissionForPage: String
     abstract val somethingWentWrong: String
-    abstract val fetchingCoursesFailed: String
-    abstract val courseCreationFailed: String
-    abstract val myCourses: String
+
+    // Navbar
+    abstract val topMenuCourses: String
     abstract val accountData: String
     abstract val logOut: String
     abstract val roleChangeStudent: String
     abstract val roleChangeBack: String
     abstract val roleCHangeStudentSuffix: String
-    abstract val newCourseName: String
-    abstract val addNewCourse: String
 
+    // Sidenav
     abstract val sidenavHeader: String
     abstract val newExercise: String
     abstract val addExistingExercise: String
     abstract val participants: String
     abstract val grades: String
-    abstract val coursesPageTitle: Any
+
+    // Courses page
+    abstract val coursesTitle: String
+    abstract val coursesTitleAdmin: String
+    abstract val fetchingCoursesFailed: String
+    abstract val newCourseLink: String
+    abstract val coursesStudents: String
+    abstract val coursesStudent: String
+
+    // New course page
+    abstract val courseCreationFailed: String
+    abstract val newCourseName: String
+    abstract val addNewCourse: String
 }
 
 
-object EstStrings : TranslatableStrings() {
+private object EstStrings : TranslatableStrings() {
+    override val topMenuCourses: String
+        get() = "Minu kursused"
     override val noPermissionForPage: String
         get() = "Teil puudub õigus selle lehe vaatamiseks."
-    override val allCourses: String
-        get() = "Kõik kursused"
     override val newCourseLink: String
         get() = "Uus kursus"
     override val coursesStudents: String
@@ -51,8 +59,8 @@ object EstStrings : TranslatableStrings() {
         get() = "Kursuste laadimine ebaõnnestus."
     override val courseCreationFailed: String
         get() = "Uue kursuse loomine ebaõnnestus."
-    override val myCourses: String
-        get() = "Minu kursused"
+    override val coursesTitleAdmin: String
+        get() = "Kõik kursused"
     override val accountData: String
         get() = "Konto andmed"
     override val logOut: String
@@ -73,6 +81,6 @@ object EstStrings : TranslatableStrings() {
         get() = "Osalejad"
     override val grades: String
         get() = "Hinded"
-    override val coursesPageTitle: Any
+    override val coursesTitle: String
         get() = "Minu kursused"
 }
