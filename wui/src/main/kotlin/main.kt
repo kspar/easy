@@ -1,10 +1,10 @@
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import pages.AddCoursePage
-import pages.CoursesPage
-import pages.ExercisesPage
-import pages.Navbar
+import components.AddCoursePage
+import components.CoursesPage
+import components.ExercisesPage
+import components.Navbar
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
