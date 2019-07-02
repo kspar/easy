@@ -58,6 +58,8 @@ object CoursesPage : Page() {
     override fun clear() {
         getContainer().clear()
         Sidenav.remove()
+
+        getContainer().innerHTML = tmRender("tm-loading-placeholders", emptyMap())
     }
 
 
