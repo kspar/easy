@@ -3,6 +3,10 @@ var Str: TranslatableStrings = EstStrings
 
 
 abstract class TranslatableStrings {
+    abstract val allCourses: String
+    abstract val newCourseLink: String
+    abstract val coursesStudents: String
+    abstract val coursesStudent: String
     abstract val somethingWentWrong: String
     abstract val fetchingCoursesFailed: String
     abstract val courseCreationFailed: String
@@ -25,6 +29,14 @@ abstract class TranslatableStrings {
 
 
 object EstStrings : TranslatableStrings() {
+    override val allCourses: String
+        get() = "Kõik kursused"
+    override val newCourseLink: String
+        get() = "Uus kursus"
+    override val coursesStudents: String
+        get() = "õpilast"
+    override val coursesStudent: String
+        get() = "õpilane"
     override val addNewCourse: String
         get() = "Lisa uus kursus"
     override val newCourseName: String

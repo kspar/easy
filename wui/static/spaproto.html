@@ -75,15 +75,38 @@
     </div>
 </script>
 
+<script id="tm-teach-course-list" type="text/x-tm">
+    <div class="title-wrap">
+        <h3 class="title">{{title}}</h3>
+        {{#addCourse}}
+        <a class="waves-effect waves-light btn title-button" href="/courses/new">
+            <i class="material-icons left">add</i>{{newCourse}}</a>
+        {{/addCourse}}
+    </div>
+    <div id="courses-list" class="collection divided-collection">
+        {{#courses}}
+        <div class="teacher-course-wrapper">
+            <a class="collection-item course-item" href="/courses/{{id}}/exercises">
+                {{title}}<span class="right course-student-count">{{count}} {{students}}</span>
+            </a>
+            <a class="course-add-students" href="/courses/{{id}}/participants">
+                <i class="material-icons">group</i>
+            </a>
+        </div>
+        {{/courses}}
+    </div>
+</script>
+
 <script id="tm-stud-course-list" type="text/x-tm">
-<h3 class="page-title">{{title}}</h3>
+<div class="title-wrap">
+    <h3 class="title">{{title}}</h3>
+</div>
 <div id="courses-list" class="collection divided-collection">
     {{#courses}}
     <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
     {{/courses}}
 </div>
 </script>
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>

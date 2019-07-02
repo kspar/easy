@@ -25,10 +25,14 @@ import kotlin.dom.clear
 
 object CoursesPage : Page<CoursesPage.State>() {
 
-    data class State(val coursesHtml: String)
+    data class State(val coursesHtml: String, val role: EasyRole)
 
     @Serializable
     data class StudentCourse(val id: String, val title: String)
+
+    @Serializable
+    data class TeacherCourse(val id: String, val title: String, val student_count: Int)
+
 
     override val pageName: PageName
         get() = PageName.COURSES
@@ -41,7 +45,7 @@ object CoursesPage : Page<CoursesPage.State>() {
 
         when (Keycloak.activeRole) {
             EasyRole.STUDENT -> buildStudentCourses(pageState)
-            EasyRole.TEACHER, EasyRole.ADMIN -> buildTeacherCourses()
+            EasyRole.TEACHER, EasyRole.ADMIN ->  buildTeacherCourses(pageState, Keycloak.activeRole)
         }
 
         funLog?.end()
@@ -52,11 +56,11 @@ object CoursesPage : Page<CoursesPage.State>() {
         Sidenav.remove()
     }
 
+
     private fun buildStudentCourses(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")
 
-        // Just a PoC of using state, should probably not use here because courses might change
-        if (pageState != null) {
+        if (pageState != null && pageState.role == EasyRole.STUDENT) {
             debug { "Got courses from state" }
             getContainer().innerHTML = pageState.coursesHtml
 
@@ -78,7 +82,7 @@ object CoursesPage : Page<CoursesPage.State>() {
                                 }.toTypedArray()))
 
                 debug { "Rendered courses html: $coursesHtml" }
-                updateState(State(coursesHtml))
+                updateState(State(coursesHtml, EasyRole.STUDENT))
 
                 getContainer().innerHTML = coursesHtml
 
@@ -89,9 +93,42 @@ object CoursesPage : Page<CoursesPage.State>() {
         funLog?.end()
     }
 
-    private fun buildTeacherCourses() {
-        // TODO
-        getContainer().innerHTML = "<a href=\"/courses/abc/exercises\">exercises</a>"
+    private fun buildTeacherCourses(pageState: State?, activeRole: EasyRole) {
+
+        if (pageState != null && pageState.role == activeRole) {
+            debug { "Got courses html from state" }
+            getContainer().innerHTML = pageState.coursesHtml
+            return
+        }
+
+        MainScope().launch {
+            val funLogFetch = debugFunStart("CoursesPage.buildTeacherCourses.asyncFetchBuild")
+
+            val isAdmin = activeRole == EasyRole.ADMIN
+
+            val resp = fetchEms("/teacher/courses", ReqMethod.GET).await()
+            if (!resp.http200) {
+                errorMessage { Str.fetchingCoursesFailed }
+                error("Fetching teacher courses failed with status ${resp.status}")
+            }
+            val courses = resp.parseTo(TeacherCourse.serializer().list).await()
+            val html = tmRender("tm-teach-course-list", mapOf(
+                    "title" to if(isAdmin) Str.allCourses else Str.myCourses,
+                    "addCourse" to isAdmin,
+                    "newCourse" to Str.newCourseLink,
+                    "courses" to courses.map {
+                        objOf("id" to it.id,
+                                "title" to it.title,
+                                "count" to it.student_count,
+                                "students" to if (it.student_count == 1) Str.coursesStudent else Str.coursesStudents)
+                    }.toTypedArray()))
+
+            getContainer().innerHTML = html
+
+            updateState(State(html, activeRole))
+
+            funLogFetch?.end()
+        }
     }
 
 }
