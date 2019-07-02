@@ -1,8 +1,8 @@
 package components
 
-import EasyRole
+import Role
 import JsonUtil
-import Keycloak
+import Auth
 import PageName
 import ReqMethod
 import Str
@@ -27,7 +27,7 @@ import kotlin.dom.clear
 object CoursesPage : Page() {
 
     @Serializable
-    data class State(val coursesHtml: String, val role: EasyRole)
+    data class State(val coursesHtml: String, val role: Role)
 
     @Serializable
     data class StudentCourse(val id: String, val title: String)
@@ -47,9 +47,9 @@ object CoursesPage : Page() {
 
         val pageState = pageStateStr.parseTo(State.serializer())
 
-        when (Keycloak.activeRole) {
-            EasyRole.STUDENT -> buildStudentCourses(pageState)
-            EasyRole.TEACHER, EasyRole.ADMIN -> buildTeacherCourses(pageState, Keycloak.activeRole)
+        when (Auth.activeRole) {
+            Role.STUDENT -> buildStudentCourses(pageState)
+            Role.TEACHER, Role.ADMIN -> buildTeacherCourses(pageState, Auth.activeRole)
         }
 
         funLog?.end()
@@ -66,7 +66,7 @@ object CoursesPage : Page() {
     private fun buildStudentCourses(pageState: State?) {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")
 
-        if (pageState != null && pageState.role == EasyRole.STUDENT) {
+        if (pageState != null && pageState.role == Role.STUDENT) {
             debug { "Got courses html from state" }
             getContainer().innerHTML = pageState.coursesHtml
             return
@@ -91,7 +91,7 @@ object CoursesPage : Page() {
 
             getContainer().innerHTML = coursesHtml
 
-            val newState = State(coursesHtml, EasyRole.STUDENT)
+            val newState = State(coursesHtml, Role.STUDENT)
             updateState(JsonUtil.stringify(State.serializer(), newState))
 
             funLogFetch?.end()
@@ -100,7 +100,7 @@ object CoursesPage : Page() {
         funLog?.end()
     }
 
-    private fun buildTeacherCourses(pageState: State?, activeRole: EasyRole) {
+    private fun buildTeacherCourses(pageState: State?, activeRole: Role) {
         val funLog = debugFunStart("CoursesPage.buildTeacherCourses")
 
         if (pageState != null && pageState.role == activeRole) {
@@ -112,7 +112,7 @@ object CoursesPage : Page() {
         MainScope().launch {
             val funLogFetch = debugFunStart("CoursesPage.buildTeacherCourses.asyncFetchBuild")
 
-            val isAdmin = activeRole == EasyRole.ADMIN
+            val isAdmin = activeRole == Role.ADMIN
 
             val resp = fetchEms("/teacher/courses", ReqMethod.GET).await()
             if (!resp.http200) {

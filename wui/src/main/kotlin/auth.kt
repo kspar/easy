@@ -1,6 +1,6 @@
 import kotlin.js.Promise
 
-enum class EasyRole {
+enum class Role {
     STUDENT,
     TEACHER,
     ADMIN
@@ -23,7 +23,7 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
 
 // Expose keycloak instance via a singleton
 // Note: Do not override methods or define methods with same name, javascript freezes because javascript
-object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
+object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     val firstName: String
         get() = this.tokenParsed.given_name.unsafeCast<String>()
     val lastName: String
@@ -31,7 +31,7 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     val email: String
         get() = this.tokenParsed.email.unsafeCast<String>()
 
-    lateinit var activeRole: EasyRole
+    lateinit var activeRole: Role
 
     fun isStudent(): Boolean = this.tokenParsed.easy_role.includes("student").unsafeCast<Boolean>()
     fun isTeacher(): Boolean = this.tokenParsed.easy_role.includes("teacher").unsafeCast<Boolean>()
@@ -40,14 +40,14 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     fun canToggleRole(): Boolean = (isTeacher() || isAdmin()) && isStudent()
 
     fun isMainRoleActive(): Boolean = getMainRole() == activeRole
-    fun isStudentActive(): Boolean = activeRole == EasyRole.STUDENT
-    fun isTeacherActive(): Boolean = activeRole == EasyRole.TEACHER
-    fun isAdminActive(): Boolean = activeRole == EasyRole.ADMIN
+    fun isStudentActive(): Boolean = activeRole == Role.STUDENT
+    fun isTeacherActive(): Boolean = activeRole == Role.TEACHER
+    fun isAdminActive(): Boolean = activeRole == Role.ADMIN
 
-    fun getMainRole(): EasyRole = when {
-        isAdmin() -> EasyRole.ADMIN
-        isTeacher() -> EasyRole.TEACHER
-        isStudent() -> EasyRole.STUDENT
+    fun getMainRole(): Role = when {
+        isAdmin() -> Role.ADMIN
+        isTeacher() -> Role.TEACHER
+        isStudent() -> Role.STUDENT
         else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
     }
 
@@ -56,7 +56,7 @@ object Keycloak : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             errorMessage { Str.somethingWentWrong }
             error("Role change to student but user is not student")
         }
-        activeRole = EasyRole.STUDENT
+        activeRole = Role.STUDENT
     }
 
     fun switchRoleToMain() {

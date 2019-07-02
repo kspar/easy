@@ -24,10 +24,10 @@ fun fetchEms(path: String, method: ReqMethod,
              headers: Map<String, String> = emptyMap()): Promise<Response> =
 
         Promise { resolve, reject ->
-            Keycloak.makeSureTokenIsValid()
+            Auth.makeSureTokenIsValid()
                     .then {
                         val defaultHeaders = mapOf(
-                                "Authorization" to "Bearer ${Keycloak.token}",
+                                "Authorization" to "Bearer ${Auth.token}",
                                 "Content-Type" to "application/json")
 
                         val combinedHeaders = defaultHeaders + headers

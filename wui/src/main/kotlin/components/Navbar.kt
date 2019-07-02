@@ -1,6 +1,6 @@
 package components
 
-import Keycloak
+import Auth
 import Str
 import buildStatics
 import getBody
@@ -17,15 +17,15 @@ object Navbar {
 
     fun build() {
         val navHtml = tmRender("tm-navbar", mapOf(
-                "userName" to Keycloak.firstName,
+                "userName" to Auth.firstName,
                 "myCourses" to Str.myCourses,
                 "account" to Str.accountData,
                 "logOut" to Str.logOut,
-                "accountLink" to Keycloak.createAccountUrl(),
-                "logoutLink" to Keycloak.createLogoutUrl()))
+                "accountLink" to Auth.createAccountUrl(),
+                "logoutLink" to Auth.createLogoutUrl()))
         getElemById("nav-wrap").innerHTML = navHtml
 
-        if (Keycloak.isMainRoleActive())
+        if (Auth.isMainRoleActive())
             buildRoleChangeToStudentIfPossible()
         else
             buildRoleChangeBackToMainRole()
@@ -45,14 +45,14 @@ object Navbar {
             getElemById("profile-role").clear()
             buildRoleChangeToStudentIfPossible()
             initProfileDropdown()
-            Keycloak.switchRoleToMain()
+            Auth.switchRoleToMain()
             PageManager.updatePage()
             it
         }
     }
 
     private fun buildRoleChangeToStudentIfPossible() {
-        if (Keycloak.canToggleRole()) {
+        if (Auth.canToggleRole()) {
             val roleToStudentHtml = tmRender("tm-role-link", mapOf(
                     "changeRole" to Str.roleChangeStudent,
                     "changeRoleId" to "role-link-student"
@@ -64,7 +64,7 @@ object Navbar {
                 getElemById("profile-role").textContent = Str.roleCHangeStudentSuffix
                 buildRoleChangeBackToMainRole()
                 initProfileDropdown()
-                Keycloak.switchRoleToStudent()
+                Auth.switchRoleToStudent()
                 PageManager.updatePage()
                 it
             }

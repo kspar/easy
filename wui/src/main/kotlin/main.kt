@@ -42,9 +42,9 @@ fun buildStatics() {
 private suspend fun updateAccountData() {
     val funLog = debugFunStart("updateAccountData")
 
-    val firstName = Keycloak.firstName
-    val lastName = Keycloak.lastName
-    val email = Keycloak.email
+    val firstName = Auth.firstName
+    val lastName = Auth.lastName
+    val email = Auth.email
 
     debug { "Updating account data to [email: $email, first name: $firstName, last name: $lastName]" }
 
@@ -62,7 +62,7 @@ private suspend fun updateAccountData() {
 private suspend fun initAuthentication() {
     val funLog = debugFunStart("initAuthentication")
 
-    Keycloak.initialize().await()
+    Auth.initialize().await()
 
     funLog?.end()
 }
