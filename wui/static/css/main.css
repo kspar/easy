@@ -112,7 +112,7 @@ nav.nav-center ul li a.nav-link {
 /** Container **/
 
 @media only screen and (min-width: 993px) {
-    .container {
+    div.container {
         width: 62%;
     }
 }

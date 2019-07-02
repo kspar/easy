@@ -6,7 +6,7 @@ import kotlin.browser.document
 
 
 fun getContainer(): HTMLDivElement =
-        getElemByIdAs("container")
+        getElemByIdAs("content-container")
 
 fun getBody(): HTMLBodyElement =
         document.body as HTMLBodyElement

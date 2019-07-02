@@ -3,7 +3,7 @@ package components
 import PageName
 import debug
 import debugFunStart
-import getElemById
+import getContainer
 import spa.Page
 import kotlin.browser.window
 import kotlin.dom.appendText
@@ -33,7 +33,7 @@ object ExercisesPage : Page() {
 
         // Paint
 
-        getElemById("container").appendText("exercises")
+        getContainer().appendText("exercises")
 
         funLog?.end()
     }
