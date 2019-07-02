@@ -65,41 +65,41 @@ object CoursesPage : Page() {
         val funLog = debugFunStart("CoursesPage.buildStudentCourses")
 
         if (pageState != null && pageState.role == EasyRole.STUDENT) {
-            debug { "Got courses from state" }
+            debug { "Got courses html from state" }
             getContainer().innerHTML = pageState.coursesHtml
+            return
+        }
 
-        } else {
+        MainScope().launch {
+            val funLogFetch = debugFunStart("CoursesPage.buildStudentCourses.asyncFetchBuild")
 
-            MainScope().launch {
-                val funLogFetch = debugFunStart("CoursesPage.buildStudentCourses.asyncFetchBuild")
-
-                val resp = fetchEms("/student/courses", ReqMethod.GET).await()
-                if (!resp.http200) {
-                    errorMessage { Str.fetchingCoursesFailed }
-                    error("Fetching student courses failed")
-                }
-                val courses = resp.parseTo(StudentCourse.serializer().list).await()
-                val coursesHtml = tmRender("tm-stud-course-list",
-                        mapOf("title" to Str.coursesPageTitle,
-                                "courses" to courses.map {
-                                    objOf("title" to it.title, "id" to it.id)
-                                }.toTypedArray()))
-
-                debug { "Rendered courses html: $coursesHtml" }
-
-                val newState = State(coursesHtml, EasyRole.STUDENT)
-                updateState(JsonUtil.stringify(State.serializer(), newState))
-
-                getContainer().innerHTML = coursesHtml
-
-                funLogFetch?.end()
+            val resp = fetchEms("/student/courses", ReqMethod.GET).await()
+            if (!resp.http200) {
+                errorMessage { Str.fetchingCoursesFailed }
+                error("Fetching student courses failed with status ${resp.status}")
             }
+            val courses = resp.parseTo(StudentCourse.serializer().list).await()
+            val coursesHtml = tmRender("tm-stud-course-list",
+                    mapOf("title" to Str.coursesPageTitle,
+                            "courses" to courses.map {
+                                objOf("title" to it.title, "id" to it.id)
+                            }.toTypedArray()))
+
+            debug { "Rendered courses html: $coursesHtml" }
+
+            getContainer().innerHTML = coursesHtml
+
+            val newState = State(coursesHtml, EasyRole.STUDENT)
+            updateState(JsonUtil.stringify(State.serializer(), newState))
+
+            funLogFetch?.end()
         }
 
         funLog?.end()
     }
 
     private fun buildTeacherCourses(pageState: State?, activeRole: EasyRole) {
+        val funLog = debugFunStart("CoursesPage.buildTeacherCourses")
 
         if (pageState != null && pageState.role == activeRole) {
             debug { "Got courses html from state" }
@@ -136,6 +136,8 @@ object CoursesPage : Page() {
 
             funLogFetch?.end()
         }
+
+        funLog?.end()
     }
 
 }
