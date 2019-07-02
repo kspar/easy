@@ -473,3 +473,22 @@ div.title-wrap > .title-button > i.material-icons {
     animation-delay: 0.7s;
 }
 
+
+/** Toast **/
+
+#toast-container {
+    top: 58px;
+    left: 50%;
+    right: unset;
+    transform: translateX(-50%);
+}
+
+
+.toast:first-child {
+    margin-top: 0;
+}
+
+.toast .btn-flat {
+    min-width: 100px;
+}
+

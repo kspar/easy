@@ -4,6 +4,8 @@ package libheaders
 external object Materialize {
     val Dropdown: MDropdown
     val Sidenav: MSidenav
+
+    fun toast(options: dynamic)
 }
 
 external object MDropdown {

@@ -7,6 +7,7 @@ abstract class TranslatableStrings {
     // General
     abstract val noPermissionForPage: String
     abstract val somethingWentWrong: String
+    abstract val errorDismiss: String
 
     // Navbar
     abstract val topMenuCourses: String
@@ -39,6 +40,8 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
+    override val errorDismiss: String
+        get() = "Sain aru"
     override val topMenuCourses: String
         get() = "Minu kursused"
     override val noPermissionForPage: String

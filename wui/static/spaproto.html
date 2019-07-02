@@ -65,6 +65,12 @@
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 </script>
 
+<script id="tm-error-message" type="text/x-tm">
+    <i class="material-icons" style="margin-right: 10px;">error_outline</i>
+    <span class="student-toast">{{error}}</span>
+    <button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">{{dismiss}}</button>
+</script>
+
 <script id="tm-add-course" type="text/x-tm">
     <div class="input-field">
         <textarea id="course-title" class="materialize-textarea"></textarea>

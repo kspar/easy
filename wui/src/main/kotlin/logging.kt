@@ -1,3 +1,4 @@
+import libheaders.Materialize
 import kotlin.js.Date
 
 private const val DEBUG_PREFIX = "[DEBUG]"
@@ -36,7 +37,14 @@ fun debugFunStart(funName: String): FunLog? {
 fun errorMessage(msgProvider: () -> String) {
     val msg = msgProvider()
     debug { "Showing error message: $msg" }
-    // TODO: show error message
+    val toastHtml = tmRender("tm-error-message", mapOf(
+            "error" to msg,
+            "dismiss" to Str.errorDismiss
+    ))
+    Materialize.toast(objOf(
+            "html" to toastHtml,
+            "displayLength" to 8000
+    ))
 }
 
 
