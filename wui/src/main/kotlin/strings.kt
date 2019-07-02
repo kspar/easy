@@ -14,7 +14,7 @@ abstract class TranslatableStrings {
     abstract val logOut: String
     abstract val roleChangeStudent: String
     abstract val roleChangeBack: String
-    abstract val roleCHangeStudentSuffix: String
+    abstract val roleChangeStudentSuffix: String
 
     // Sidenav
     abstract val sidenavHeader: String
@@ -69,7 +69,7 @@ private object EstStrings : TranslatableStrings() {
         get() = "Digimuutu õpilaseks"
     override val roleChangeBack: String
         get() = "Taasmuutu põhirollile"
-    override val roleCHangeStudentSuffix: String
+    override val roleChangeStudentSuffix: String
         get() = " (õpilane)"
     override val sidenavHeader: String
         get() = "Kursuse seaded"

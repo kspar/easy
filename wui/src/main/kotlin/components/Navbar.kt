@@ -61,7 +61,7 @@ object Navbar {
 
             getElemByIdAs<HTMLAnchorElement>("role-link-student").onclick = {
                 buildStatics()
-                getElemById("profile-role").textContent = Str.roleCHangeStudentSuffix
+                getElemById("profile-role").textContent = Str.roleChangeStudentSuffix
                 buildRoleChangeBackToMainRole()
                 initProfileDropdown()
                 Auth.switchRoleToStudent()
