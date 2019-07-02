@@ -5,6 +5,7 @@ import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.Node
 import org.w3c.dom.PopStateEvent
 import org.w3c.dom.events.MouseEvent
+import warn
 import kotlin.browser.document
 import kotlin.browser.window
 
@@ -57,9 +58,16 @@ fun setupLinkInterception() {
 }
 
 fun setupHistoryNavInterception() {
-    window.addEventListener("popstate", {event ->
+    window.addEventListener("popstate", { event ->
         event as PopStateEvent
-        PageManager.updatePage(event.state)
+        val state = event.state
+        if (state == null || state is String) {
+            PageManager.updatePage(state as? String)
+        } else {
+            warn { "Page state was a non-null non-string:" }
+            console.dir(state)
+            PageManager.updatePage()
+        }
     })
 }
 

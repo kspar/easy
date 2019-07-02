@@ -7,9 +7,8 @@ import getElemById
 import spa.Page
 import kotlin.browser.window
 import kotlin.dom.appendText
-import kotlin.js.Date
 
-object ExercisesPage : Page<String>() {
+object ExercisesPage : Page() {
     override val pageName: PageName
         get() = PageName.EXERCISES
 
@@ -17,7 +16,7 @@ object ExercisesPage : Page<String>() {
             path.matches("^/courses/\\w+/exercises$")
 
 
-    override fun build(pageState: String?) {
+    override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("ExercisesPage.build")
 
         val path = window.location.pathname
@@ -35,7 +34,6 @@ object ExercisesPage : Page<String>() {
         // Paint
 
         getElemById("container").appendText("exercises")
-        updateState("ExercisesPage ${Date().toISOString()}")
 
         funLog?.end()
     }

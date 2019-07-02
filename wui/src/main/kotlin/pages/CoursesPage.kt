@@ -1,6 +1,7 @@
 package pages
 
 import EasyRole
+import JsonUtil
 import Keycloak
 import PageName
 import ReqMethod
@@ -23,8 +24,9 @@ import tmRender
 import kotlin.dom.clear
 
 
-object CoursesPage : Page<CoursesPage.State>() {
+object CoursesPage : Page() {
 
+    @Serializable
     data class State(val coursesHtml: String, val role: EasyRole)
 
     @Serializable
@@ -40,12 +42,14 @@ object CoursesPage : Page<CoursesPage.State>() {
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses$")
 
-    override fun build(pageState: State?) {
+    override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("CoursesPage.build")
+
+        val pageState = pageStateStr.parseTo(State.serializer())
 
         when (Keycloak.activeRole) {
             EasyRole.STUDENT -> buildStudentCourses(pageState)
-            EasyRole.TEACHER, EasyRole.ADMIN ->  buildTeacherCourses(pageState, Keycloak.activeRole)
+            EasyRole.TEACHER, EasyRole.ADMIN -> buildTeacherCourses(pageState, Keycloak.activeRole)
         }
 
         funLog?.end()
@@ -82,7 +86,9 @@ object CoursesPage : Page<CoursesPage.State>() {
                                 }.toTypedArray()))
 
                 debug { "Rendered courses html: $coursesHtml" }
-                updateState(State(coursesHtml, EasyRole.STUDENT))
+
+                val newState = State(coursesHtml, EasyRole.STUDENT)
+                updateState(JsonUtil.stringify(State.serializer(), newState))
 
                 getContainer().innerHTML = coursesHtml
 
@@ -113,7 +119,7 @@ object CoursesPage : Page<CoursesPage.State>() {
             }
             val courses = resp.parseTo(TeacherCourse.serializer().list).await()
             val html = tmRender("tm-teach-course-list", mapOf(
-                    "title" to if(isAdmin) Str.allCourses else Str.myCourses,
+                    "title" to if (isAdmin) Str.allCourses else Str.myCourses,
                     "addCourse" to isAdmin,
                     "newCourse" to Str.newCourseLink,
                     "courses" to courses.map {
@@ -125,7 +131,8 @@ object CoursesPage : Page<CoursesPage.State>() {
 
             getContainer().innerHTML = html
 
-            updateState(State(html, activeRole))
+            val newState = State(html, activeRole)
+            updateState(JsonUtil.stringify(State.serializer(), newState))
 
             funLogFetch?.end()
         }

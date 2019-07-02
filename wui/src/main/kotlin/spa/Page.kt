@@ -8,13 +8,9 @@ import kotlin.dom.clear
  * Represents a page with a unique path scheme and rendering logic.
  *
  * This class abstracts storing and retrieving page state using the browser's History API:
- * store state via [updateState] and retrieve state via [build]'s parameter.
- * Therefore, implementations should not use the History API (window.history) directly
- * to avoid circumventing the type safety of page state objects.
- *
- * @param T Type of the page's state object. Pass [Nothing] if storing and retrieving state is not desired.
+ * store serialized state objects via [updateState] and retrieve them via [build]'s parameter.
  */
-abstract class Page<T> {
+abstract class Page {
 
     /**
      * Human-readable page name used for representing pages in logs, should usually
@@ -31,10 +27,10 @@ abstract class Page<T> {
 
     /**
      * Build the current page: fetch resources, perform requests, render templates, add listeners etc.
-     * A page state object is passed that was previously set by the page via [updateState].
-     * If no state object is available then null is passed.
+     * A page state string is passed that was previously set by the page via [updateState].
+     * If no state string is available then null is passed.
      */
-    abstract fun build(pageState: T?)
+    abstract fun build(pageStateStr: String?)
 
     /**
      * Clear page, this is typically called before [build].
@@ -46,11 +42,10 @@ abstract class Page<T> {
     }
 
     /**
-     * Update page state in history. The given state object can be defined by the implementation
-     * and will be later passed to [build] if it's available.
+     * Update page state in history. The given state string will be later passed to [build] if it's available.
      * This state persists over browser navigation but not refresh.
      */
-    fun updateState(pageState: T) {
-        window.history.replaceState(pageState, "")
+    fun updateState(pageStateStr: String) {
+        window.history.replaceState(pageStateStr, "")
     }
 }

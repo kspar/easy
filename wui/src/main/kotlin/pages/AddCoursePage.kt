@@ -21,7 +21,7 @@ import spa.PageManager.navigateTo
 import tmRender
 
 
-object AddCoursePage : Page<Nothing>() {
+object AddCoursePage : Page() {
 
     override val pageName: PageName
         get() = PageName.ADD_COURSE
@@ -29,7 +29,7 @@ object AddCoursePage : Page<Nothing>() {
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses/new/?$")
 
-    override fun build(pageState: Nothing?) {
+    override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("AddCoursePage.build")
         getContainer().innerHTML = tmRender("tm-add-course", mapOf(
                 "newCourseName" to Str.newCourseName,
