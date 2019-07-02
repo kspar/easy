@@ -31,6 +31,12 @@ object AddCoursePage : Page() {
 
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("AddCoursePage.build")
+
+        if (Auth.activeRole != Role.ADMIN) {
+            errorMessage { Str.noPermissionForPage }
+            error("User is not admin")
+        }
+
         getContainer().innerHTML = tmRender("tm-add-course", mapOf(
                 "newCourseName" to Str.newCourseName,
                 "addNewCourse" to Str.addNewCourse))

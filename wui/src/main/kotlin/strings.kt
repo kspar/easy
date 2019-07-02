@@ -3,6 +3,8 @@ var Str: TranslatableStrings = EstStrings
 
 
 abstract class TranslatableStrings {
+    abstract val noPermissionForPage: String
+
     abstract val allCourses: String
     abstract val newCourseLink: String
     abstract val coursesStudents: String
@@ -29,6 +31,8 @@ abstract class TranslatableStrings {
 
 
 object EstStrings : TranslatableStrings() {
+    override val noPermissionForPage: String
+        get() = "Teil puudub õigus selle lehe vaatamiseks."
     override val allCourses: String
         get() = "Kõik kursused"
     override val newCourseLink: String
