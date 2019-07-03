@@ -5,85 +5,71 @@ var Str: TranslatableStrings = EstStrings
 abstract class TranslatableStrings {
 
     // General
-    abstract val noPermissionForPage: String
-    abstract val somethingWentWrong: String
-    abstract val errorDismiss: String
+
+    abstract fun noPermissionForPage(): String
+    abstract fun somethingWentWrong(): String
+    abstract fun errorDismiss(): String
+
 
     // Navbar
-    abstract val topMenuCourses: String
-    abstract val accountData: String
-    abstract val logOut: String
-    abstract val roleChangeStudent: String
-    abstract val roleChangeBack: String
-    abstract val roleChangeStudentSuffix: String
+
+    abstract fun topMenuCourses(): String
+    abstract fun accountData(): String
+    abstract fun logOut(): String
+    abstract fun roleChangeStudent(): String
+    abstract fun roleChangeBack(): String
+    abstract fun roleChangeStudentSuffix(): String
+
 
     // Sidenav
-    abstract val sidenavHeader: String
-    abstract val newExercise: String
-    abstract val addExistingExercise: String
-    abstract val participants: String
-    abstract val grades: String
+
+    abstract fun sidenavHeader(): String
+    abstract fun newExercise(): String
+    abstract fun addExistingExercise(): String
+    abstract fun participants(): String
+    abstract fun grades(): String
+
 
     // Courses page
-    abstract val coursesTitle: String
-    abstract val coursesTitleAdmin: String
-    abstract val fetchingCoursesFailed: String
-    abstract val newCourseLink: String
-    abstract val coursesStudents: String
-    abstract val coursesStudent: String
+
+    abstract fun coursesTitle(): String
+    abstract fun coursesTitleAdmin(): String
+    abstract fun fetchingCoursesFailed(): String
+    abstract fun newCourseLink(): String
+    abstract fun coursesStudents(): String
+    abstract fun coursesStudent(): String
+
 
     // New course page
-    abstract val courseCreationFailed: String
-    abstract val newCourseName: String
-    abstract val addNewCourse: String
+
+    abstract fun courseCreationFailed(): String
+    abstract fun newCourseName(): String
+    abstract fun addNewCourse(): String
 }
 
 
 private object EstStrings : TranslatableStrings() {
-    override val errorDismiss: String
-        get() = "Sain aru"
-    override val topMenuCourses: String
-        get() = "Minu kursused"
-    override val noPermissionForPage: String
-        get() = "Teil puudub õigus selle lehe vaatamiseks."
-    override val newCourseLink: String
-        get() = "Uus kursus"
-    override val coursesStudents: String
-        get() = "õpilast"
-    override val coursesStudent: String
-        get() = "õpilane"
-    override val addNewCourse: String
-        get() = "Lisa uus kursus"
-    override val newCourseName: String
-        get() = "Uue kursuse nimi"
-    override val somethingWentWrong: String
-        get() = "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
-    override val fetchingCoursesFailed: String
-        get() = "Kursuste laadimine ebaõnnestus."
-    override val courseCreationFailed: String
-        get() = "Uue kursuse loomine ebaõnnestus."
-    override val coursesTitleAdmin: String
-        get() = "Kõik kursused"
-    override val accountData: String
-        get() = "Konto andmed"
-    override val logOut: String
-        get() = "Logi välja"
-    override val roleChangeStudent: String
-        get() = "Digimuutu õpilaseks"
-    override val roleChangeBack: String
-        get() = "Taasmuutu põhirollile"
-    override val roleChangeStudentSuffix: String
-        get() = " (õpilane)"
-    override val sidenavHeader: String
-        get() = "Kursuse seaded"
-    override val newExercise: String
-        get() = "Uus ülesanne"
-    override val addExistingExercise: String
-        get() = "Lisa olemasolev ülesanne"
-    override val participants: String
-        get() = "Osalejad"
-    override val grades: String
-        get() = "Hinded"
-    override val coursesTitle: String
-        get() = "Minu kursused"
+    override fun errorDismiss() = "Sain aru"
+    override fun topMenuCourses() = "Minu kursused"
+    override fun noPermissionForPage() = "Teil puudub õigus selle lehe vaatamiseks."
+    override fun newCourseLink() = "Uus kursus"
+    override fun coursesStudents() = "õpilast"
+    override fun coursesStudent() = "õpilane"
+    override fun addNewCourse() = "Lisa uus kursus"
+    override fun newCourseName() = "Uue kursuse nimi"
+    override fun somethingWentWrong() = "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
+    override fun fetchingCoursesFailed() = "Kursuste laadimine ebaõnnestus."
+    override fun courseCreationFailed() = "Uue kursuse loomine ebaõnnestus."
+    override fun coursesTitleAdmin() = "Kõik kursused"
+    override fun accountData() = "Konto andmed"
+    override fun logOut() = "Logi välja"
+    override fun roleChangeStudent() = "Digimuutu õpilaseks"
+    override fun roleChangeBack() = "Taasmuutu põhirollile"
+    override fun roleChangeStudentSuffix() = " (õpilane)"
+    override fun sidenavHeader() = "Kursuse seaded"
+    override fun newExercise() = "Uus ülesanne"
+    override fun addExistingExercise() = "Lisa olemasolev ülesanne"
+    override fun participants() = "Osalejad"
+    override fun grades() = "Hinded"
+    override fun coursesTitle() = "Minu kursused"
 }

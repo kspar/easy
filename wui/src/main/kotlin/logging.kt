@@ -39,7 +39,7 @@ fun errorMessage(msgProvider: () -> String) {
     debug { "Showing error message: $msg" }
     val toastHtml = tmRender("tm-error-message", mapOf(
             "error" to msg,
-            "dismiss" to Str.errorDismiss
+            "dismiss" to Str.errorDismiss()
     ))
     Materialize.toast(objOf(
             "html" to toastHtml,

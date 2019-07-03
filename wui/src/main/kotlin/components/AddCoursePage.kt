@@ -39,13 +39,13 @@ object AddCoursePage : Page() {
         val funLog = debugFunStart("AddCoursePage.build")
 
         if (Auth.activeRole != Role.ADMIN) {
-            errorMessage { Str.noPermissionForPage }
+            errorMessage { Str.noPermissionForPage() }
             error("User is not admin")
         }
 
         getContainer().innerHTML = tmRender("tm-add-course", mapOf(
-                "newCourseName" to Str.newCourseName,
-                "addNewCourse" to Str.addNewCourse))
+                "newCourseName" to Str.newCourseName(),
+                "addNewCourse" to Str.addNewCourse()))
 
         getElemByIdAs<HTMLButtonElement>("add-course-button").onclick = {
             val title = getElemByIdAs<HTMLTextAreaElement>("course-title").value
@@ -55,7 +55,7 @@ object AddCoursePage : Page() {
                 val resp = fetchEms("/admin/courses", ReqMethod.POST, mapOf("title" to title)).await()
 
                 if (!resp.http200) {
-                    errorMessage { Str.courseCreationFailed }
+                    errorMessage { Str.courseCreationFailed() }
                     error("Creation of new course failed")
                 }
 

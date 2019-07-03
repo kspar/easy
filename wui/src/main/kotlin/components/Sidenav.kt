@@ -20,11 +20,11 @@ object Sidenav {
 
         val sidenavHtml = tmRender("tm-sidenav",
                 mapOf("courseId" to courseId,
-                        "header" to Str.sidenavHeader,
-                        "newExercise" to Str.newExercise,
-                        "addExistingExercise" to Str.addExistingExercise,
-                        "participants" to Str.participants,
-                        "grades" to Str.grades
+                        "header" to Str.sidenavHeader(),
+                        "newExercise" to Str.newExercise(),
+                        "addExistingExercise" to Str.addExistingExercise(),
+                        "participants" to Str.participants(),
+                        "grades" to Str.grades()
                 ))
         getElemById("sidenav-wrap").innerHTML = sidenavHtml
 

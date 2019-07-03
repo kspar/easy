@@ -77,12 +77,12 @@ object CoursesPage : Page() {
 
             val resp = fetchEms("/student/courses", ReqMethod.GET).await()
             if (!resp.http200) {
-                errorMessage { Str.fetchingCoursesFailed }
+                errorMessage { Str.fetchingCoursesFailed() }
                 error("Fetching student courses failed with status ${resp.status}")
             }
             val courses = resp.parseTo(StudentCourse.serializer().list).await()
             val coursesHtml = tmRender("tm-stud-course-list",
-                    mapOf("title" to Str.coursesTitle,
+                    mapOf("title" to Str.coursesTitle(),
                             "courses" to courses.map {
                                 objOf("title" to it.title, "id" to it.id)
                             }.toTypedArray()))
@@ -116,19 +116,19 @@ object CoursesPage : Page() {
 
             val resp = fetchEms("/teacher/courses", ReqMethod.GET).await()
             if (!resp.http200) {
-                errorMessage { Str.fetchingCoursesFailed }
+                errorMessage { Str.fetchingCoursesFailed() }
                 error("Fetching teacher courses failed with status ${resp.status}")
             }
             val courses = resp.parseTo(TeacherCourse.serializer().list).await()
             val html = tmRender("tm-teach-course-list", mapOf(
-                    "title" to if (isAdmin) Str.coursesTitleAdmin else Str.coursesTitle,
+                    "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
                     "addCourse" to isAdmin,
-                    "newCourse" to Str.newCourseLink,
+                    "newCourse" to Str.newCourseLink(),
                     "courses" to courses.map {
                         objOf("id" to it.id,
                                 "title" to it.title,
                                 "count" to it.student_count,
-                                "students" to if (it.student_count == 1) Str.coursesStudent else Str.coursesStudents)
+                                "students" to if (it.student_count == 1) Str.coursesStudent() else Str.coursesStudents())
                     }.toTypedArray()))
 
             getContainer().innerHTML = html

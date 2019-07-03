@@ -18,9 +18,9 @@ object Navbar {
     fun build() {
         val navHtml = tmRender("tm-navbar", mapOf(
                 "userName" to Auth.firstName,
-                "myCourses" to Str.topMenuCourses,
-                "account" to Str.accountData,
-                "logOut" to Str.logOut,
+                "myCourses" to Str.topMenuCourses(),
+                "account" to Str.accountData(),
+                "logOut" to Str.logOut(),
                 "accountLink" to Auth.createAccountUrl(),
                 "logoutLink" to Auth.createLogoutUrl()))
         getElemById("nav-wrap").innerHTML = navHtml
@@ -35,7 +35,7 @@ object Navbar {
 
     private fun buildRoleChangeBackToMainRole() {
         val roleToMainHtml = tmRender("tm-role-link", mapOf(
-                "changeRole" to Str.roleChangeBack,
+                "changeRole" to Str.roleChangeBack(),
                 "changeRoleId" to "role-link-main"
         ))
         getElemById("role-wrap").innerHTML = roleToMainHtml
@@ -54,7 +54,7 @@ object Navbar {
     private fun buildRoleChangeToStudentIfPossible() {
         if (Auth.canToggleRole()) {
             val roleToStudentHtml = tmRender("tm-role-link", mapOf(
-                    "changeRole" to Str.roleChangeStudent,
+                    "changeRole" to Str.roleChangeStudent(),
                     "changeRoleId" to "role-link-student"
             ))
 
@@ -62,7 +62,7 @@ object Navbar {
 
             getElemByIdAs<HTMLAnchorElement>("role-link-student").onclick = {
                 buildStatics()
-                getElemById("profile-role").textContent = Str.roleChangeStudentSuffix
+                getElemById("profile-role").textContent = Str.roleChangeStudentSuffix()
                 buildRoleChangeBackToMainRole()
                 initProfileDropdown()
                 Auth.switchRoleToStudent()

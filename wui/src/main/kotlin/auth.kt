@@ -53,7 +53,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     fun switchRoleToStudent() {
         if (!isStudent()) {
-            errorMessage { Str.somethingWentWrong }
+            errorMessage { Str.somethingWentWrong() }
             error("Role change to student but user is not student")
         }
         activeRole = Role.STUDENT
