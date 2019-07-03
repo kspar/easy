@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+</head>
+<body>
+
+<div id="nav-wrap"></div>
+<div id="sidenav-wrap"></div>
+
+
+<div id="content-container" class="container">
+
+    <div id="courses-list" class="collection divided-collection">
+            <a class="collection-item course-item" href="/courses/a/exercises">
+                <span>1.1 Kes on minu president?</span>
+                <div class="dist">
+                    <span class="a d tooltipped" style="width: 30%" data-position="bottom" data-tooltip="Lõpetanud: 42"></span><span class="w d" style="width: 0.25%"></span></span><span class="b d tooltipped" style="width: 42%" data-position="bottom" data-tooltip="Alustanud: 42"></span><span class="w d" style="width: 0.25%"></span><span class="c d tooltipped" style="width: 27.5%" data-position="bottom" data-tooltip="Esitamata: 42"></span>
+                </div>
+            </a>
+
+            <a class="collection-item course-item" href="/courses/a/exercises">
+                <span>1.2 Optic Gaming vs GenG</span>
+                <div class="dist">
+                    <span class="a d tooltipped" style="width: 30%" data-position="bottom" data-tooltip="Lõpetanud: 42"></span></span><span class="b d tooltipped" style="width: 42%" data-position="bottom" data-tooltip="Alustanud: 42"></span><span class="c d tooltipped" style="width: 28%" data-position="bottom" data-tooltip="Esitamata: 42"></span>
+                </div>
+            </a>
+    </div>
+
+</div>
+
+<style>
+
+    .collection a.course-item {
+        padding-bottom: 0;
+    }
+
+    .dist {
+        line-height: 0;
+        margin-left: -20px;
+        margin-right: -60px;
+    }
+
+    .d {
+        display: inline-block;
+        height: 20px;
+    }
+
+    .a {
+        border-bottom: 7px solid #4DAB54;
+    }
+
+    .b {
+        border-bottom: 7px solid #ffd052;
+    }
+
+    .c {
+        border-bottom: 7px solid #c1c1c1;
+    }
+
+    .w {
+        border-bottom: 7px solid #fff;
+    }
+
+    .material-tooltip {
+        font-size: 1.6rem;
+    }
+
+    .collection a.collection-item:not(.active):hover {
+        background-color: #e5e5e5;
+    }
+
+    .divided-collection .collection-item {
+        border-bottom: none;
+    }
+
+    .divided-collection {
+        overflow: unset;
+    }
+
+
+
+
+
+
+
+    .container {
+        margin-top: 100px;
+    }
+
+
+
+</style>
+
+
+<!-- Templates -->
+<script id="tm-navbar" type="text/x-tm">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="/courses" class="brand-logo left"><img class="logo-img" src="img/main-logo.svg" alt="Lahendus"/></a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <span id="role-wrap"></span>
+        <li><a href="{{accountLink}}">{{account}}</a></li>
+        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+    </ul>
+</script>
+
+<script id="tm-role-link" type="text/x-tm">
+    <li><a id="{{changeRoleId}}">{{changeRole}}</a></li>
+</script>
+
+<script id="tm-sidenav" type="text/x-tm">
+    <ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
+        <li><a class="subheader">{{header}}</a></li>
+        <li class="divider-wrap"><div class="divider"></div></li>
+        <li><a class="waves-effect sidenav-close" href="/exercises/new?addto={{courseId}}"><i class="material-icons">create</i>{{newExercise}}</a></li>
+        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/addexercise"><i class="material-icons">add_box</i>{{addExistingExercise}}</a></li>
+        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participants}}</a></li>
+        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{grades}}</a></li>
+    </ul>
+    <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+</script>
+
+<script id="tm-error-message" type="text/x-tm">
+    <i class="material-icons" style="margin-right: 10px;">error_outline</i>
+    <span class="student-toast">{{error}}</span>
+    <button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">{{dismiss}}</button>
+</script>
+
+<script id="tm-add-course" type="text/x-tm">
+    <div class="input-field">
+        <textarea id="course-title" class="materialize-textarea"></textarea>
+        <label for="course-title">{{newCourseName}}</label>
+    </div>
+    <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
+</script>
+
+<script id="tm-loading-placeholders" type="text/x-tm">
+    <div class="collection loading-collection">
+        <div class="loading-item"></div>
+        <div class="loading-item"></div>
+        <div class="loading-item"></div>
+        <div class="loading-item"></div>
+    </div>
+</script>
+
+<script id="tm-teach-course-list" type="text/x-tm">
+    <div class="title-wrap">
+        <h3 class="title">{{title}}</h3>
+        {{#addCourse}}
+        <a class="waves-effect waves-light btn title-button" href="/courses/new">
+            <i class="material-icons left">add</i>{{newCourse}}</a>
+        {{/addCourse}}
+    </div>
+    <div id="courses-list" class="collection divided-collection">
+        {{#courses}}
+        <div class="teacher-course-wrapper">
+            <a class="collection-item course-item" href="/courses/{{id}}/exercises">
+                {{title}}<span class="right course-student-count">{{count}} {{students}}</span>
+            </a>
+            <a class="course-add-students" href="/courses/{{id}}/participants">
+                <i class="material-icons">group</i>
+            </a>
+        </div>
+        {{/courses}}
+    </div>
+</script>
+
+<script id="tm-stud-course-list" type="text/x-tm">
+    <div class="title-wrap">
+        <h3 class="title">{{title}}</h3>
+    </div>
+    <div id="courses-list" class="collection divided-collection">
+        {{#courses}}
+        <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+        {{/courses}}
+    </div>
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
+<script src="js/kotlin.js"></script>
+<script src="js/kotlinx-coroutines-core.js"></script>
+<script src="js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
+<script src="js/wui.js"></script>
+<div id="date"></div> <!-- Temporary, for automatic generation time -->
+
+<script>
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {
+        margin: 0,
+        transitionMovement: 10
+    });
+</script>
+</body>
+</html>
