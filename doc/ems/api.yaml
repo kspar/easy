@@ -163,9 +163,11 @@ paths:
 
   /teacher/courses:
     get:
-      summary: Get summaries of courses the authenticated teacher has access to.
+      summary: Get summaries of courses the authenticated teacher has access to. \
+      Get all courses if the caller is an admin.
       tags:
         - teacher
+        - admin
       responses:
         200:
           description: Course summaries.
