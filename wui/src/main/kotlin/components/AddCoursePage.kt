@@ -1,7 +1,6 @@
 package components
 
 import Auth
-import JsonUtil
 import PageName
 import ReqMethod
 import Role
@@ -16,14 +15,19 @@ import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
+import parseTo
 import spa.Page
 import spa.PageManager.navigateTo
 import tmRender
 
 
 object AddCoursePage : Page() {
+
+    @Serializable
+    data class AdminCourse(val id: String)
 
     override val pageName: PageName
         get() = PageName.ADD_COURSE
@@ -55,7 +59,7 @@ object AddCoursePage : Page() {
                     error("Creation of new course failed")
                 }
 
-                val courseID = JsonUtil.parseJson(resp.text().await()).jsonObject.getValue("id").primitive.content
+                val courseID = resp.parseTo(AdminCourse.serializer())
                 debug { "Saved new course with id $courseID" }
 
                 navigateTo("/courses/$courseID/exercises")
