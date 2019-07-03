@@ -59,7 +59,8 @@ object AddCoursePage : Page() {
                     error("Creation of new course failed")
                 }
 
-                val courseID = resp.parseTo(AdminCourse.serializer())
+                val course: AdminCourse = resp.parseTo(AdminCourse.serializer()).await()
+                val courseID = course.id
                 debug { "Saved new course with id $courseID" }
 
                 navigateTo("/courses/$courseID/exercises")
