@@ -57,6 +57,7 @@ object Navbar {
                     "changeRole" to Str.roleChangeStudent,
                     "changeRoleId" to "role-link-student"
             ))
+
             getElemById("role-wrap").innerHTML = roleToStudentHtml
 
             getElemByIdAs<HTMLAnchorElement>("role-link-student").onclick = {
@@ -75,6 +76,7 @@ object Navbar {
         Materialize.Dropdown.init(getElemById("profile-wrapper"),
                 mapOf("constrainWidth" to false,
                         "coverTrigger" to false,
+                        "alignment" to "right",
                         "container" to getBody()).toJsObj())
     }
 }
