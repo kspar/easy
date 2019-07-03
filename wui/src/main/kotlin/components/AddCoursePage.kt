@@ -1,8 +1,10 @@
 package components
 
+import Auth
 import JsonUtil
 import PageName
 import ReqMethod
+import Role
 import Str
 import debug
 import debugFunStart
@@ -14,7 +16,7 @@ import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
 import spa.Page
 import spa.PageManager.navigateTo
@@ -41,12 +43,12 @@ object AddCoursePage : Page() {
                 "newCourseName" to Str.newCourseName,
                 "addNewCourse" to Str.addNewCourse))
 
-        getElemByIdAs<HTMLElement>("add-course-button").onclick = {
+        getElemByIdAs<HTMLButtonElement>("add-course-button").onclick = {
             val title = getElemByIdAs<HTMLTextAreaElement>("course-title").value
             debug { "Got new course title: $title" }
 
             MainScope().launch {
-                val resp = fetchEms("/admin/courses", ReqMethod.POST, mapOf(Pair("title", title))).await()
+                val resp = fetchEms("/admin/courses", ReqMethod.POST, mapOf("title" to title)).await()
 
                 if (!resp.http200) {
                     errorMessage { Str.courseCreationFailed }
