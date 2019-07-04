@@ -30,21 +30,23 @@ class TeacherCreateExerciseController {
                                @JsonProperty("grader_type", required = true) val graderType: GraderType,
                                @JsonProperty("aas_id", required = false) val aasId: String?)
 
+    data class CreatedExerciseResponse(@JsonProperty("id") val id: String)
+
     @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/exercises")
-    fun createExercise(@RequestBody dto: NewExerciseBody, caller: EasyUser) {
+    fun createExercise(@RequestBody dto: NewExerciseBody, caller: EasyUser): CreatedExerciseResponse {
         log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
 
         val callerId = caller.id
-        insertExercise(callerId, dto)
+        return CreatedExerciseResponse(insertExercise(callerId, dto).toString())
     }
 }
 
 
-private fun insertExercise(ownerId: String, body: TeacherCreateExerciseController.NewExerciseBody) {
+private fun insertExercise(ownerId: String, body: TeacherCreateExerciseController.NewExerciseBody): Long {
     val teacherId = EntityID(ownerId, Teacher)
 
-    transaction {
+    return transaction {
         val exerciseId =
                 Exercise.insertAndGetId {
                     it[owner] = teacherId
@@ -61,5 +63,6 @@ private fun insertExercise(ownerId: String, body: TeacherCreateExerciseControlle
             it[title] = body.title
             it[textHtml] = body.textHtml
         }
+        exerciseId.value
     }
 }
