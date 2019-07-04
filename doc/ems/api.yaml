@@ -440,6 +440,10 @@ paths:
       responses:
         200:
           description: Exercise created.
+          schema:
+            properties:
+              id:
+                type: string
 
 
   /teacher/exercises/{exerciseId}:
