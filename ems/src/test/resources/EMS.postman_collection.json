@@ -144,6 +144,78 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "EMS: reacher: post: create new exercise: success ",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"id\");\r",
+							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"aas_id\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/exercises",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"exercises"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"event": [
