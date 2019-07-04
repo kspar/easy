@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="94.816681mm"
+   height="94.888626mm"
+   viewBox="0 0 94.816681 94.888626"
+   version="1.1"
+   id="svg5928"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   sodipodi:docname="lahenduslogo_1_1_viimane.svg">
+  <defs
+     id="defs5922">
+    <inkscape:path-effect
+       effect="powerstroke"
+       id="path-effect5984"
+       is_visible="true"
+       offset_points="3,0.13229166"
+       sort_points="true"
+       interpolator_type="CubicBezierJohan"
+       interpolator_beta="0.2"
+       start_linecap_type="zerowidth"
+       linejoin_type="extrp_arc"
+       miter_limit="4"
+       end_linecap_type="zerowidth" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.76608449"
+     inkscape:cx="311.60853"
+     inkscape:cy="38.94056"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:pagecheckerboard="true"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata5925">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-31.313507,-169.39253)">
+    <g
+       id="g7212">
+      <rect
+         y="213.61191"
+         x="32.60688"
+         height="36.348656"
+         width="40"
+         id="rect5942"
+         style="opacity:0.32100004;fill:none;fill-opacity:1;stroke-width:0.26458332" />
+      <rect
+         y="224.28116"
+         x="31.313507"
+         height="40"
+         width="40"
+         id="rect5948"
+         style="opacity:1;fill:#ffffff;fill-opacity:0.94117647;stroke-width:0.26458332" />
+      <rect
+         y="224.28116"
+         x="86.130188"
+         height="40"
+         width="40"
+         id="rect5948-5"
+         style="opacity:1;fill:#ffffff;fill-opacity:0.94117647;stroke-width:0.26458332" />
+      <g
+         transform="translate(0.79401553,-4.7625002)"
+         id="g7192">
+        <path
+           inkscape:connector-curvature="0"
+           style="opacity:1;fill:#ffffff;fill-opacity:0.94117647;stroke-width:0.26458332"
+           d="m 57.927761,174.15503 v 40.00014 H 97.927903 V 201.59418 L 63.491245,174.15503 Z"
+           id="rect5948-4" />
+        <path
+           inkscape:connector-curvature="0"
+           style="opacity:1;fill:#ffffff;fill-opacity:1;stroke-width:0.18329053"
+           d="m 74.071844,174.15503 23.855691,19.00816 v -19.00816 z m 23.855691,19.00816 v 8.702 h 3.68e-4 v -8.70165 z"
+           id="rect5948-4-6" />
+      </g>
+    </g>
+  </g>
+</svg>
