@@ -499,7 +499,7 @@
 							"\r",
 							"pm.test(\"response should be okay to process\", function () { \r",
 							"    pm.response.to.not.be.error; \r",
-							"    pm.response.to.have.body( '[{\"id\":\"1\",\"effective-title\":\"string\",\"deadline\":null,\"status\":\"UNSTARTED\",\"grade\":null,\"graded_by\":null,\"ordering_idx\":0}]');\r",
+							"    pm.response.to.have.body( '[{\"id\":\"1\",\"effective_title\":\"string\",\"deadline\":null,\"status\":\"UNSTARTED\",\"grade\":null,\"graded_by\":null,\"ordering_idx\":0}]');\r",
 							"});"
 						],
 						"type": "text/javascript"

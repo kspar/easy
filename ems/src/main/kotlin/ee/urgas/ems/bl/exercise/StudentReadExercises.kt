@@ -31,7 +31,7 @@ private val log = KotlinLogging.logger {}
 class StudentReadExercisesController {
 
     data class StudentExercisesResponse(@JsonProperty("id") val courseExId: String,
-                                        @JsonProperty("effective-title") val title: String,
+                                        @JsonProperty("effective_title") val title: String,
                                         @JsonSerialize(using = DateTimeSerializer::class)
                                         @JsonProperty("deadline") val softDeadline: DateTime?,
                                         @JsonProperty("status") val status: StudentExerciseStatus,
