@@ -87,6 +87,40 @@
     </div>
 </script>
 
+<script id="tm-stud-exercises-list" type="text/x-tm">
+    <div id="exercises-list" class="collection divided-collection">
+        {{#exercises}}
+        <a class="collection-item bb-wrap row" href="{{link}}">
+            <span class="col s6">{{title}}</span>
+            <span class="col s4 deadline">{{deadline}}</span>
+            <span class="col s2 grade">
+               <span class="">{{points}}{{^points}}-{{/points}}/100</span>
+                <span class="" style="">
+                    {{#evalAuto}}
+                    <img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}
+                    {{#evalTeacher}}
+                    <i class="material-icons eval-logo-teacher">face</i>
+                    {{/evalTeacher}}
+                </span>
+
+            </span>
+            <div class="bb">
+                {{#completed}}
+                <span class="bb-green bb-item" style="width: 100%">
+                {{/completed}}
+                {{#started}}
+                <span class="bb-yellow bb-item" style="width: 100%">
+                {{/started}}
+                {{#unstarted}}
+                <span class="bb-grey bb-item" style="width: 100%">
+                {{/unstarted}}
+            </div>
+        </a>
+        {{/exercises}}
+    </div>
+</script>
+
 <script id="tm-teach-course-list" type="text/x-tm">
     <div class="title-wrap">
         <h3 class="title">{{title}}</h3>
@@ -98,11 +132,10 @@
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
         <div class="teacher-course-wrapper">
-            <a class="collection-item course-item" href="/courses/{{id}}/exercises">
-                {{title}}<span class="right course-student-count">{{count}} {{students}}</span>
-            </a>
-            <a class="course-add-students" href="/courses/{{id}}/participants">
-                <i class="material-icons">group</i>
+            <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+            <a class="btn-flat waves-effect waves-green course-add-students" href="/courses/{{id}}/participants">
+                <i class="material-icons left">group</i>
+                <span class="course-student-count">{{count}} {{students}}</span>
             </a>
         </div>
         {{/courses}}

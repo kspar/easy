@@ -4,9 +4,10 @@ import PageName
 import debug
 import debugFunStart
 import getContainer
+import objOf
 import spa.Page
+import tmRender
 import kotlin.browser.window
-import kotlin.dom.appendText
 
 object ExercisesPage : Page() {
     override val pageName: PageName
@@ -33,7 +34,33 @@ object ExercisesPage : Page() {
 
         // Paint
 
-        getContainer().appendText("exercises")
+        getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
+                "exercises" to arrayOf(
+                        objOf(
+                                "link" to "/",
+                                "title" to "1.1 Blbblabla",
+                                "deadline" to "1. juuli 2019, 11.11",
+                                "evalTeacher" to true,
+                                "points" to 99,
+                                "completed" to true),
+                        objOf(
+                                "link" to "/",
+                                "title" to "1.2 Yoyoyoyoyo",
+                                "deadline" to "2. juuli 2019, 11.11",
+                                "evalAuto" to true,
+                                "unstarted" to true
+                        ),
+                        objOf(
+                                "link" to "/",
+                                "title" to "1.3 Miskeskus",
+                                "deadline" to "3. juuli 2019, 11.11",
+                                "evalAuto" to true,
+                                "points" to 42,
+                                "started" to true
+                        )
+                )
+        ))
+//        getContainer().appendText("exercises")
 
         funLog?.end()
     }

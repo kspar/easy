@@ -280,37 +280,59 @@ label[for=feedback], label[for=grade] {
 /** Courses page **/
 
 #courses-list {
-    font-size: 2.1rem;
     margin-top: 2rem;
 }
 
-div.teacher-course-wrapper {
+#courses-list div.teacher-course-wrapper {
     position: relative;
 }
 
-.course-student-count {
+#courses-list span.course-student-count {
     font-size: 1.9rem;
     color: #333;
 }
 
-a.course-add-students {
+#courses-list a.course-add-students {
     position: absolute;
-    top: 23px;
+    top: 19px;
     right: 20px;
     color: #4cab54;
+    text-transform: none;
+}
+
+#courses-list a.course-add-students:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+#courses-list a.course-add-students > i.material-icons {
+    font-size: 2.5rem;
 }
 
 
 /** Exercises page **/
 
-.collection a.student-exercise-item {
-    line-height: 5rem;
-    color: #000;
+#exercises-list {
+    /* TODO: margin */
 }
 
-.collection a.teacher-exercise-item {
-    line-height: 2.5rem;
-    color: #000;
+#exercises-list .deadline {
+    font-size: 1.9rem;
+}
+
+#exercises-list .grade {
+    text-align: right;
+    font-size: 1.9rem;
+}
+
+#exercises-list .eval-logo-auto {
+    vertical-align: sub;
+    width: 24px;
+    margin-left: 10px;
+}
+
+#exercises-list .eval-logo-teacher {
+    color: #aaa;
+    margin-left: 10px;
 }
 
 
@@ -391,15 +413,15 @@ label[for=new-students-list] {
 /** Divided collection **/
 
 div.divided-collection a.collection-item {
+    font-size: 2.1rem;
     line-height: 5rem;
     color: #333;
-    padding: 10px 60px 10px 20px;
+    padding: 10px 20px;
     margin-bottom: 1rem;
     border-bottom: none;
-    box-shadow:
-            0 1px 1px 0 rgba(0,0,0,0.1),
-            0 2px 1px -2px rgba(0,0,0,0.09),
-            0 1px 3px 0 rgba(0,0,0,0.1);
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1),
+    0 2px 1px -2px rgba(0, 0, 0, 0.09),
+    0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .divided-collection a.collection-item:not(.active):hover {
@@ -409,6 +431,7 @@ div.divided-collection a.collection-item {
 div.divided-collection {
     border: none;
     overflow: unset;
+    position: relative;
 }
 
 
@@ -424,7 +447,7 @@ div.divided-collection {
 
 div.divided-collection a.collection-item .bb {
     margin-left: -20px;
-    margin-right: -60px;
+    margin-right: -20px;
 }
 
 .bb-item {
@@ -473,7 +496,7 @@ div.title-wrap > .title-button > i.material-icons {
 
 /** Loading placeholders **/
 
-.loading-collection{
+.loading-collection {
     border: none;
     margin-top: 4rem;
 }
@@ -502,7 +525,7 @@ div.title-wrap > .title-button > i.material-icons {
 }
 
 .loading-collection :nth-child(1) {
-    width: 20%;  /* Page title */
+    width: 20%; /* Page title */
 }
 
 .loading-collection :nth-child(2) {
@@ -515,6 +538,13 @@ div.title-wrap > .title-button > i.material-icons {
 
 .loading-collection :nth-child(4) {
     animation-delay: 0.7s;
+}
+
+
+/** Icon **/
+
+i.material-icons {
+    vertical-align: middle;
 }
 
 
@@ -544,3 +574,8 @@ div.title-wrap > .title-button > i.material-icons {
 }
 
 
+/** Green waves **/
+
+.waves-effect.waves-green .waves-ripple {
+    background-color: #a5c9a4;
+}
