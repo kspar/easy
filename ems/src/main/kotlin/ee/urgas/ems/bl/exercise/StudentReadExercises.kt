@@ -31,7 +31,7 @@ private val log = KotlinLogging.logger {}
 class StudentReadExercisesController {
 
     data class StudentExercisesResponse(@JsonProperty("id") val courseExId: String,
-                                        @JsonProperty("title") val title: String,
+                                        @JsonProperty("effective-title") val title: String,
                                         @JsonSerialize(using = DateTimeSerializer::class)
                                         @JsonProperty("deadline") val softDeadline: DateTime?,
                                         @JsonProperty("status") val status: StudentExerciseStatus,
@@ -62,13 +62,14 @@ private fun selectStudentExercises(courseId: Long, studentId: String):
         List<StudentReadExercisesController.StudentExercisesResponse> {
 
     data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
-                               val orderingIndex: Int)
+                               val orderingIndex: Int, val titleAlias: String?)
+
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold,
-                        CourseExercise.orderIdx)
+                        CourseExercise.orderIdx, CourseExercise.titleAlias)
                 .select {
                     CourseExercise.course eq courseId and
                             ExerciseVer.validTo.isNull() and
@@ -81,7 +82,8 @@ private fun selectStudentExercises(courseId: Long, studentId: String):
                             it[ExerciseVer.title],
                             it[CourseExercise.softDeadline],
                             it[CourseExercise.gradeThreshold],
-                            it[CourseExercise.orderIdx]
+                            it[CourseExercise.orderIdx],
+                            it[CourseExercise.titleAlias]
                     )
                 }.map { ex ->
 
@@ -128,7 +130,7 @@ private fun selectStudentExercises(courseId: Long, studentId: String):
 
                     StudentReadExercisesController.StudentExercisesResponse(
                             ex.courseExId.toString(),
-                            ex.title,
+                            ex.titleAlias ?: ex.title,
                             ex.deadline,
                             status,
                             grade,
