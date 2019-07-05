@@ -47,7 +47,7 @@ object ExercisesPage : Page() {
                                 "link" to "/",
                                 "title" to "1.2 Yoyoyoyoyo",
                                 "deadline" to "2. juuli 2019, 11.11",
-                                "evalAuto" to true,
+                                "evalMissing" to true,
                                 "unstarted" to true
                         ),
                         objOf(

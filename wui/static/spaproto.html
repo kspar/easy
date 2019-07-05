@@ -94,14 +94,17 @@
             <span class="col s6">{{title}}</span>
             <span class="col s4 deadline">{{deadline}}</span>
             <span class="col s2 grade">
-               <span class="">{{points}}{{^points}}-{{/points}}/100</span>
-                <span class="" style="">
+               <span>{{points}}{{^points}}-{{/points}}/100</span>
+                <span>
                     {{#evalAuto}}
                     <img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
                     {{/evalAuto}}
                     {{#evalTeacher}}
                     <i class="material-icons eval-logo-teacher">face</i>
                     {{/evalTeacher}}
+                    {{#evalMissing}}
+                    <img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalMissing}}
                 </span>
 
             </span>
