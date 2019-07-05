@@ -527,7 +527,7 @@ definitions:
     properties:
       id:
         type: string
-      title:
+      effective-title:
         type: string
       deadline:
         type: string
