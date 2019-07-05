@@ -17,6 +17,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -38,6 +39,7 @@ class TeacherCreateCourseExerciseController {
                                      @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
                                      @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean)
 
+    @Secured("ROLE_TEACHER")
     @PostMapping("/teacher/courses/{courseId}/exercises")
     fun addExerciseToCourse(@PathVariable("courseId") courseIdString: String,
                             @RequestBody body: NewCourseExerciseBody,
