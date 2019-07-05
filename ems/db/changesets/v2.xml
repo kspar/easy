@@ -51,4 +51,15 @@
         <createSequence sequenceName="admin_seq_id" startValue="1" incrementBy="1"/>
     </changeSet>
 
+    <changeSet id="050719-1" author="priit">
+        <addColumn tableName="course_exercise">
+            <column name="instructions_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="title_alias" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>
