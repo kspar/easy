@@ -2,16 +2,10 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import ee.urgas.ems.bl.access.canStudentAccessCourse
+import ee.urgas.ems.bl.access.assertStudentHasAccessToCourse
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.AutomaticAssessment
-import ee.urgas.ems.db.CourseExercise
-import ee.urgas.ems.db.Exercise
-import ee.urgas.ems.db.ExerciseVer
-import ee.urgas.ems.db.GraderType
-import ee.urgas.ems.db.Submission
-import ee.urgas.ems.db.TeacherAssessment
-import ee.urgas.ems.exception.ForbiddenException
+import ee.urgas.ems.db.*
 import ee.urgas.ems.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -44,14 +38,13 @@ class StudentReadExercisesController {
     fun getStudentExercises(@PathVariable("courseId") courseIdStr: String, caller: EasyUser):
             List<StudentExercisesResponse> {
 
-        val callerId = caller.id
-        val courseId = courseIdStr.toLong()
+        log.debug { "Getting exercises for student ${caller.id}" }
+        val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        if (!canStudentAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Student $callerId does not have access to course $courseId")
-        }
-
-        return selectStudentExercises(courseId, callerId)
+        assertStudentHasAccessToCourse(caller.id, courseId)
+        val resp = selectStudentExercises(courseId, caller.id)
+        log.debug { "Got exercises: $resp" }
+        return resp
     }
 }
 

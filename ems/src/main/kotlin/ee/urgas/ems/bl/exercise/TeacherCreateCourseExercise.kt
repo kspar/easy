@@ -2,13 +2,12 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
-import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.exception.InvalidRequestException
 import ee.urgas.ems.util.DateTimeDeserializer
 import mu.KotlinLogging
@@ -19,11 +18,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -40,21 +35,18 @@ class TeacherCreateCourseExerciseController {
                                      @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
                                      @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
     fun addExerciseToCourse(@PathVariable("courseId") courseIdString: String,
                             @RequestBody body: NewCourseExerciseBody,
                             caller: EasyUser) {
 
-        log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString" }
+        log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
 
-        val callerId = caller.id
         val courseId = courseIdString.idToLongOrInvalidReq()
         val exerciseId = body.exerciseId.idToLongOrInvalidReq()
 
-        if (!canTeacherAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
-        }
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         if (isExerciseOnCourse(courseId, exerciseId)) {
             throw InvalidRequestException("Exercise $exerciseId is already on course $courseId")

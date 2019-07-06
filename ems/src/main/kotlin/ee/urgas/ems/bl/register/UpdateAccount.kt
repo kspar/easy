@@ -42,6 +42,8 @@ class UpdateAccountController {
         if (caller.isAdmin()) {
             log.debug { "Update admin ${caller.id}" }
             updateAdmin(account)
+            // Admins should also have a teacher entity to add assessments, exercises etc
+            updateTeacher(account)
         }
     }
 }

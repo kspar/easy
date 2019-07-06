@@ -1,6 +1,8 @@
 package ee.urgas.ems.bl.course
 
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
@@ -11,11 +13,7 @@ import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -23,15 +21,18 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddStudentsToCourseController {
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/students")
-    fun addStudentsToCourse(@PathVariable("courseId") courseId: String,
-                            @RequestBody studentIds: List<String>) {
+    fun addStudentsToCourse(@PathVariable("courseId") courseIdStr: String,
+                            @RequestBody studentIds: List<String>,
+                            caller: EasyUser) {
 
-        // TODO: access control
-        log.debug { "Adding access to course $courseId to students $studentIds" }
+        log.debug { "Adding access to course $courseIdStr to students $studentIds" }
+        val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        insertStudentCourseAccesses(courseId.idToLongOrInvalidReq(), studentIds)
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+
+        insertStudentCourseAccesses(courseId, studentIds)
     }
 }
 

@@ -1,38 +1,22 @@
 package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.ems.bl.access.canStudentAccessCourse
-import ee.urgas.ems.bl.access.isVisibleExerciseOnCourse
+import ee.urgas.ems.bl.access.assertIsVisibleExerciseOnCourse
+import ee.urgas.ems.bl.access.assertStudentHasAccessToCourse
 import ee.urgas.ems.bl.autoassess.autoAssess
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.AutoGradeStatus
-import ee.urgas.ems.db.AutomaticAssessment
-import ee.urgas.ems.db.CourseExercise
-import ee.urgas.ems.db.Exercise
-import ee.urgas.ems.db.ExerciseVer
-import ee.urgas.ems.db.GraderType
-import ee.urgas.ems.db.Student
-import ee.urgas.ems.db.Submission
-import ee.urgas.ems.exception.ForbiddenException
-import ee.urgas.ems.exception.InvalidRequestException
+import ee.urgas.ems.db.*
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Async
 import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Component
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -51,19 +35,14 @@ class StudentSubmitController(val autoAssessComponent: AutoAssessComponent) {
                          @PathVariable("courseExerciseId") courseExIdStr: String,
                          @RequestBody solutionBody: StudentSubmissionBody, caller: EasyUser) {
 
-        val callerId = caller.id
-        val courseId = courseIdStr.toLong()
-        val courseExId = courseExIdStr.toLong()
+        log.debug { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
+        val courseId = courseIdStr.idToLongOrInvalidReq()
+        val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        if (!canStudentAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Student $callerId does not have access to course $courseId")
-        }
+        assertStudentHasAccessToCourse(caller.id, courseId)
+        assertIsVisibleExerciseOnCourse(courseExId, courseId)
 
-        if (!isVisibleExerciseOnCourse(courseExId, courseId)) {
-            throw InvalidRequestException("Exercise $courseExId not found on course $courseId or it is hidden")
-        }
-
-        submitSolution(courseExId, solutionBody.solution, callerId, aasKey)
+        submitSolution(courseExId, solutionBody.solution, caller.id, aasKey)
     }
 
     // Must be in Spring Component to autowire autoAssessComponent

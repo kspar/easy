@@ -32,13 +32,12 @@ class TeacherCreateExerciseController {
 
     data class CreatedExerciseResponse(@JsonProperty("id") val id: String)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/exercises")
     fun createExercise(@RequestBody dto: NewExerciseBody, caller: EasyUser): CreatedExerciseResponse {
-        log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
 
-        val callerId = caller.id
-        return CreatedExerciseResponse(insertExercise(callerId, dto).toString())
+        log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
+        return CreatedExerciseResponse(insertExercise(caller.id, dto).toString())
     }
 }
 

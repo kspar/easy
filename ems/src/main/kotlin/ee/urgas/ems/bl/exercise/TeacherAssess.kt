@@ -1,11 +1,10 @@
 package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.*
-import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -26,23 +25,22 @@ class TeacherAssessController {
     data class AssessBody(@JsonProperty("grade", required = true) val grade: Int,
                           @JsonProperty("feedback", required = false) val feedback: String?)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments")
     fun assess(@PathVariable("courseId") courseIdString: String,
                @PathVariable("courseExerciseId") courseExerciseIdString: String,
                @PathVariable("submissionId") submissionIdString: String,
                @RequestBody assessment: AssessBody, caller: EasyUser) {
 
+        log.debug { "Adding teacher assessment by ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
+
         val callerId = caller.id
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
         val submissionId = submissionIdString.idToLongOrInvalidReq()
 
-        if (!canTeacherAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
-        }
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        log.debug { "Adding teacher assessment $assessment to submission $submissionId" }
         if (!submissionExists(submissionId, courseExId, courseId)) {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }

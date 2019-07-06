@@ -1,11 +1,10 @@
 package ee.urgas.ems.bl.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.ems.bl.access.canUserAccessCourse
+import ee.urgas.ems.bl.access.assertUserHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
-import ee.urgas.ems.exception.ForbiddenException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -32,9 +31,7 @@ class ReadBasicCourseInfo {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        if (!canUserAccessCourse(caller, courseId)) {
-            throw ForbiddenException("User ${caller.id} does not have access to course $courseId")
-        }
+        assertUserHasAccessToCourse(caller, courseId)
 
         val courseInfo = selectCourseInfo(courseId)
         log.debug { "Got course info: $courseInfo" }

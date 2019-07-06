@@ -2,11 +2,10 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.*
-import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.exception.InvalidRequestException
 import ee.urgas.ems.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -35,20 +34,18 @@ class TeacherReadSubmissionController {
                                      @JsonProperty("solution") val solution: String,
                                      @JsonProperty("id") val submissionId: String)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}")
     fun readTeacherSubmission(@PathVariable("courseId") courseIdString: String,
                               @PathVariable("courseExerciseId") courseExerciseIdString: String,
                               @PathVariable("studentId") studentId: String,
                               caller: EasyUser): TeacherSubmissionResp {
 
-        val callerId = caller.id
+        log.debug { "Getting $studentId's latest submission on course exercise $courseExerciseIdString on course $courseIdString for ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
-        if (!canTeacherAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
-        }
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         val submission = selectTeacherSubmission(courseId, courseExId, studentId)
                 ?: throw InvalidRequestException(

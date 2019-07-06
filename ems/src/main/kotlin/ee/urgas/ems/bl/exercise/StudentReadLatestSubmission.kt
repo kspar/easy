@@ -2,14 +2,10 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import ee.urgas.ems.bl.access.canStudentAccessCourse
+import ee.urgas.ems.bl.access.assertStudentHasAccessToCourse
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.AutoGradeStatus
-import ee.urgas.ems.db.AutomaticAssessment
-import ee.urgas.ems.db.CourseExercise
-import ee.urgas.ems.db.Submission
-import ee.urgas.ems.db.TeacherAssessment
-import ee.urgas.ems.exception.ForbiddenException
+import ee.urgas.ems.db.*
 import ee.urgas.ems.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -40,19 +36,17 @@ class StudentReadLatestSubmissionController {
                                      @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest")
-    fun readLatestSubmission(@PathVariable("courseId") courseIdString: String,
-                             @PathVariable("courseExerciseId") courseExerciseIdString: String,
+    fun readLatestSubmission(@PathVariable("courseId") courseIdStr: String,
+                             @PathVariable("courseExerciseId") courseExerciseIdStr: String,
                              response: HttpServletResponse, caller: EasyUser): StudentSubmissionResp? {
 
-        val callerId = caller.id
-        val courseId = courseIdString.toLong()
-        val courseExId = courseExerciseIdString.toLong()
+        log.debug { "Getting latest submission for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
+        val courseId = courseIdStr.idToLongOrInvalidReq()
+        val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
-        if (!canStudentAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Student $callerId does not have access to course $courseId")
-        }
+        assertStudentHasAccessToCourse(caller.id, courseId)
 
-        val submission = selectLatestStudentSubmission(courseId, courseExId, callerId)
+        val submission = selectLatestStudentSubmission(courseId, courseExId, caller.id)
         return if (submission != null) {
             submission
         } else {

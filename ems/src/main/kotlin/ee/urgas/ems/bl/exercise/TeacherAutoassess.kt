@@ -1,7 +1,7 @@
 package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.autoassess.AutoAssessResponse
 import ee.urgas.ems.bl.autoassess.autoAssess
 import ee.urgas.ems.bl.idToLongOrInvalidReq
@@ -9,7 +9,6 @@ import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
 import ee.urgas.ems.db.ExerciseVer
-import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -33,7 +32,7 @@ class TeacherAutoassessController {
     data class TeacherAutoAssessResponse(@JsonProperty("grade") val grade: Int,
                                          @JsonProperty("feedback") val feedback: String?)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExId}/autoassess")
     fun teacherAutoAssess(@PathVariable("courseId") courseIdStr: String,
                           @PathVariable("courseExId") courseExIdStr: String,
@@ -42,14 +41,12 @@ class TeacherAutoassessController {
 
         val callerId = caller.id
 
-        log.debug { "Teacher $callerId autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
+        log.debug { "Teacher/admin $callerId autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        if (!canTeacherAccessCourse(callerId, courseId)) {
-            throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
-        }
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         val aasId = getAasId(courseId, courseExId)
                 ?: throw InvalidRequestException("Autoassessment not found for exercise $courseExId on course $courseId")

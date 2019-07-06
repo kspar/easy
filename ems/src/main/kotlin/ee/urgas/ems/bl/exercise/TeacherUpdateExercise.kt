@@ -16,11 +16,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -32,17 +28,15 @@ class TeacherUpdateExerciseController {
                                   @JsonProperty("text_html", required = false) val textHtml: String?,
                                   @JsonProperty("public", required = true) val public: Boolean)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/teacher/exercises/{exerciseId}")
     fun putExercise(@PathVariable("exerciseId") exIdString: String, @RequestBody dto: UpdateExerciseBody,
                     caller: EasyUser) {
 
-        val callerId = caller.id
+        log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
-        log.debug { "Update exercise $exIdString by $callerId" }
-
-        updateExercise(exerciseId, callerId, dto)
+        updateExercise(exerciseId, caller.id, dto)
     }
 }
 

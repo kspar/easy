@@ -1,6 +1,8 @@
 package ee.urgas.ems.bl.course
 
+import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
+import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.StudentCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -18,14 +20,17 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class RemoveStudentFromCourseController {
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @DeleteMapping("/teacher/courses/{courseId}/students/{studentId}")
-    fun removeStudent(@PathVariable("courseId") courseId: String,
-                      @PathVariable("studentId") studentId: String) {
+    fun removeStudent(@PathVariable("courseId") courseIdStr: String,
+                      @PathVariable("studentId") studentId: String,
+                      caller: EasyUser) {
 
-        // TODO: access control
-        log.info { "Removing student $studentId from course $courseId" }
-        deleteStudentFromCourse(studentId, courseId.idToLongOrInvalidReq())
+        log.debug { "Removing student $studentId from course $courseIdStr" }
+
+        val courseId = courseIdStr.idToLongOrInvalidReq()
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        deleteStudentFromCourse(studentId, courseId)
     }
 }
 
