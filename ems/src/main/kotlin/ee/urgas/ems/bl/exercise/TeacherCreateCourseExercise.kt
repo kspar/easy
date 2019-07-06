@@ -3,6 +3,7 @@ package ee.urgas.ems.bl.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.CourseExercise
@@ -48,8 +49,8 @@ class TeacherCreateCourseExerciseController {
         log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString" }
 
         val callerId = caller.id
-        val courseId = courseIdString.toLong()
-        val exerciseId = body.exerciseId.toLong()
+        val courseId = courseIdString.idToLongOrInvalidReq()
+        val exerciseId = body.exerciseId.idToLongOrInvalidReq()
 
         if (!canTeacherAccessCourse(callerId, courseId)) {
             throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
@@ -73,7 +74,7 @@ private fun isExerciseOnCourse(courseId: Long, exerciseId: Long): Boolean {
 }
 
 private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.NewCourseExerciseBody) {
-    val exerciseId = body.exerciseId.toLong()
+    val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)

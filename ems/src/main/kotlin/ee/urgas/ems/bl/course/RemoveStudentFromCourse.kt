@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.course
 
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.db.StudentCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -24,7 +25,7 @@ class RemoveStudentFromCourseController {
 
         // TODO: access control
         log.info { "Removing student $studentId from course $courseId" }
-        deleteStudentFromCourse(studentId, courseId.toLong())
+        deleteStudentFromCourse(studentId, courseId.idToLongOrInvalidReq())
     }
 }
 

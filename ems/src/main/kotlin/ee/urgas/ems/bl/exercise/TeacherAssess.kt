@@ -2,12 +2,9 @@ package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.Course
-import ee.urgas.ems.db.CourseExercise
-import ee.urgas.ems.db.Submission
-import ee.urgas.ems.db.Teacher
-import ee.urgas.ems.db.TeacherAssessment
+import ee.urgas.ems.db.*
 import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -18,11 +15,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -41,9 +34,9 @@ class TeacherAssessController {
                @RequestBody assessment: AssessBody, caller: EasyUser) {
 
         val callerId = caller.id
-        val courseId = courseIdString.toLong()
-        val courseExId = courseExerciseIdString.toLong()
-        val submissionId = submissionIdString.toLong()
+        val courseId = courseIdString.idToLongOrInvalidReq()
+        val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
+        val submissionId = submissionIdString.idToLongOrInvalidReq()
 
         if (!canTeacherAccessCourse(callerId, courseId)) {
             throw ForbiddenException("Teacher $callerId does not have access to course $courseId")

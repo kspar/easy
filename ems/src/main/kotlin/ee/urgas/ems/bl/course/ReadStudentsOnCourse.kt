@@ -1,6 +1,7 @@
 package ee.urgas.ems.bl.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
@@ -27,7 +28,7 @@ class ReadStudentsOnCourseController {
     @GetMapping("/teacher/courses/{courseId}/students")
     fun readStudentsOnCourse(@PathVariable("courseId") courseId: String): List<StudentsOnCourseResponse> {
         // TODO: access control
-        val students = selectStudentsOnCourse(courseId.toLong())
+        val students = selectStudentsOnCourse(courseId.idToLongOrInvalidReq())
         log.debug { "Students on course $courseId: $students" }
         return mapToStudentsOnCourseResponse(students)
     }

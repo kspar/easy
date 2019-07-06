@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
 import ee.urgas.ems.bl.autoassess.AutoAssessResponse
 import ee.urgas.ems.bl.autoassess.autoAssess
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.CourseExercise
 import ee.urgas.ems.db.Exercise
@@ -16,11 +17,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -47,8 +44,8 @@ class TeacherAutoassessController {
 
         log.debug { "Teacher $callerId autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
 
-        val courseId = courseIdStr.toLong()
-        val courseExId = courseExIdStr.toLong()
+        val courseId = courseIdStr.idToLongOrInvalidReq()
+        val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         if (!canTeacherAccessCourse(callerId, courseId)) {
             throw ForbiddenException("Teacher $callerId does not have access to course $courseId")

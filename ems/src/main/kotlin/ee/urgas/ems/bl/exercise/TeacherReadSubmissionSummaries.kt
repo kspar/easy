@@ -3,14 +3,9 @@ package ee.urgas.ems.bl.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import ee.urgas.ems.bl.access.canTeacherAccessCourse
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.AutomaticAssessment
-import ee.urgas.ems.db.Course
-import ee.urgas.ems.db.CourseExercise
-import ee.urgas.ems.db.GraderType
-import ee.urgas.ems.db.Student
-import ee.urgas.ems.db.Submission
-import ee.urgas.ems.db.TeacherAssessment
+import ee.urgas.ems.db.*
 import ee.urgas.ems.exception.ForbiddenException
 import ee.urgas.ems.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -45,13 +40,14 @@ class TeacherReadSubmissionSummariesController {
                                 caller: EasyUser): List<SubmissionSummaryResp> {
 
         val callerId = caller.id
-        val courseId = courseIdString.toLong()
+        val courseId = courseIdString.idToLongOrInvalidReq()
 
         if (!canTeacherAccessCourse(callerId, courseId)) {
             throw ForbiddenException("Teacher $callerId does not have access to course $courseId")
         }
 
-        return mapToSubmissionSummaryResp(selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.toLong()))
+        return mapToSubmissionSummaryResp(
+                selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq()))
     }
 
     private fun mapToSubmissionSummaryResp(submissions: List<TeacherSubmissionSummary>) =

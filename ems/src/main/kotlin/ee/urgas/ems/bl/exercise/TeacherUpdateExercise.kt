@@ -1,6 +1,7 @@
 package ee.urgas.ems.bl.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Exercise
 import ee.urgas.ems.db.ExerciseVer
@@ -37,7 +38,7 @@ class TeacherUpdateExerciseController {
                     caller: EasyUser) {
 
         val callerId = caller.id
-        val exerciseId = exIdString.toLong()
+        val exerciseId = exIdString.idToLongOrInvalidReq()
 
         log.debug { "Update exercise $exIdString by $callerId" }
 

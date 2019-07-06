@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.course
 
+import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Student
 import ee.urgas.ems.db.StudentCourseAccess
@@ -30,7 +31,7 @@ class AddStudentsToCourseController {
         // TODO: access control
         log.debug { "Adding access to course $courseId to students $studentIds" }
 
-        insertStudentCourseAccesses(courseId.toLong(), studentIds)
+        insertStudentCourseAccesses(courseId.idToLongOrInvalidReq(), studentIds)
     }
 }
 
