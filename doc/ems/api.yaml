@@ -61,6 +61,24 @@ paths:
               $ref: '#/definitions/StudentCourse'
 
 
+  /courses/{courseId}/basic:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+    get:
+      summary: Get basic info about this course.
+      tags:
+        - common
+      responses:
+        200:
+          description: Course info.
+          schema:
+            properties:
+              title:
+                type: string
+            required:
+              - title
+
+
   /student/courses/{courseId}/exercises:
     parameters:
       - $ref: '#/parameters/CourseId'
