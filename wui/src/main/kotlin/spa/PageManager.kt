@@ -7,6 +7,7 @@ object PageManager {
 
     // No need for thread-safety, JS runs single-threaded
     private var pages: List<Page> = emptyList()
+    private var previousPage: Page? = null
 
     fun registerPages(newPages: List<Page>) {
         pages += newPages
@@ -16,10 +17,14 @@ object PageManager {
         val funLog = debugFunStart("updatePage")
 
         val path = window.location.pathname
-        val page = pageFromPath(path)
+        val newPage = pageFromPath(path)
 
-        page.clear()
-        page.build(pageState)
+        previousPage?.destruct()
+
+        newPage.clear()
+        newPage.build(pageState)
+
+        previousPage = newPage
 
         funLog?.end()
     }

@@ -42,6 +42,11 @@ abstract class Page {
     }
 
     /**
+     * Destruct built page. Called when navigating away from this page.
+     */
+    open fun destruct() {}
+
+    /**
      * Update page state in history. The given state string will be later passed to [build] if it's available.
      * This state persists over browser navigation but not refresh.
      */
