@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "ea649395-b590-4a66-94ee-a32cc4675a32",
+		"_postman_id": "674296ae-83d1-4157-acee-22c4256530b9",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -150,6 +150,80 @@
 					"path": [
 						"admin",
 						"courses"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: basic course info success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "1b7c3688-040f-404b-9b2a-54cc30cd5963",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"title\");\r",
+							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"value": "admin",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_email",
+						"value": "foo@bar.com",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"value": "Foo",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"value": "Bar",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"value": "fp",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/courses/1/basic",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"courses",
+						"1",
+						"basic"
 					]
 				}
 			},
