@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "1e348543-0bd1-4670-a2ad-d82d033c1dd1",
+		"_postman_id": "ea649395-b590-4a66-94ee-a32cc4675a32",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -54,6 +54,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -126,6 +131,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -198,6 +208,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -265,6 +280,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"url": {
@@ -328,6 +348,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -395,6 +420,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -448,7 +478,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "teachert"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -464,6 +494,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"body": {
@@ -537,6 +572,11 @@
 						"key": "oidc_claim_family_name",
 						"type": "text",
 						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
 					}
 				],
 				"url": {
