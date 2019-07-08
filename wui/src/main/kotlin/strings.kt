@@ -45,6 +45,11 @@ abstract class TranslatableStrings {
     abstract fun courseCreationFailed(): String
     abstract fun newCourseName(): String
     abstract fun addNewCourse(): String
+
+
+    // Exercises page
+
+
 }
 
 
