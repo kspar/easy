@@ -27,12 +27,13 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentReadExerciseDetailsController {
 
-    data class ExerciseDetails(@JsonProperty("title") val title: String,
+    data class ExerciseDetails(@JsonProperty("effective_title") val title: String,
                                @JsonProperty("text_html") val textHtml: String?,
                                @JsonSerialize(using = DateTimeSerializer::class)
                                @JsonProperty("deadline") val softDeadline: DateTime?,
                                @JsonProperty("grader_type") val graderType: GraderType,
-                               @JsonProperty("threshold") val threshold: Int)
+                               @JsonProperty("threshold") val threshold: Int,
+                               @JsonProperty("instructions_html") val instructionsHtml: String?)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}")
@@ -56,7 +57,8 @@ private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long):
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
-                        CourseExercise.softDeadline, CourseExercise.gradeThreshold)
+                        CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
+                        CourseExercise.titleAlias)
                 .select {
                     CourseExercise.course eq courseId and
                             (CourseExercise.id eq courseExId) and
@@ -64,11 +66,12 @@ private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long):
                 }
                 .map {
                     StudentReadExerciseDetailsController.ExerciseDetails(
-                            it[ExerciseVer.title],
+                            it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
                             it[ExerciseVer.textHtml],
                             it[CourseExercise.softDeadline],
                             it[ExerciseVer.graderType],
-                            it[CourseExercise.gradeThreshold]
+                            it[CourseExercise.gradeThreshold],
+                            it[CourseExercise.instructionsHtml]
                     )
                 }
                 .first()
