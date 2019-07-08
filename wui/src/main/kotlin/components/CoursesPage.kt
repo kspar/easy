@@ -45,7 +45,7 @@ object CoursesPage : Page() {
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("CoursesPage.build")
 
-        val pageState = pageStateStr.parseTo(State.serializer())
+        val pageState = pageStateStr?.parseTo(State.serializer())
 
         when (Auth.activeRole) {
             Role.STUDENT -> buildStudentCourses(pageState)
@@ -56,9 +56,7 @@ object CoursesPage : Page() {
     }
 
     override fun clear() {
-        getContainer().clear()
-        Sidenav.remove()
-
+        super.clear()
         getContainer().innerHTML = tmRender("tm-loading-placeholders", emptyMap())
     }
 
