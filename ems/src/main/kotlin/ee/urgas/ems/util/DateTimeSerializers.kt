@@ -10,7 +10,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
 
-private val FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss")
+private val FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
 class DateTimeSerializer : JsonSerializer<DateTime>() {
     override fun serialize(value: DateTime, gen: JsonGenerator, serializerProvider: SerializerProvider) {
