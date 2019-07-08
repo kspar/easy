@@ -627,18 +627,11 @@ definitions:
         type: integer
       unstarted_count:
         type: integer
-      graded_count:
-        description: Property exists if grader_type == TEACHER.
-        type: integer
       ungraded_count:
-        description: Property exists if grader_type == TEACHER.
         type: integer
-      # TODO: instead of graded, TEACHER exercises should also have "positively graded" ~ "completed" and opposite
       started_count:
-        description: Property exists if grader_type == AUTO.
         type: integer
       completed_count:
-        description: Property exists if grader_type == AUTO.
         type: integer
 
   TeacherCourseExerciseDetails:

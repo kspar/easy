@@ -33,10 +33,9 @@ class TeacherReadCourseExercisesController {
                                    @JsonProperty("grader_type") val graderType: GraderType,
                                    @JsonProperty("ordering_idx") val orderingIndex: Int,
                                    @JsonProperty("unstarted_count") val unstartedCount: Int,
-                                   @JsonProperty("graded_count") val gradedCount: Int?,
-                                   @JsonProperty("ungraded_count") val ungradedCount: Int?,
-                                   @JsonProperty("started_count") val startedCount: Int?,
-                                   @JsonProperty("completed_count") val completedCount: Int?)
+                                   @JsonProperty("ungraded_count") val ungradedCount: Int,
+                                   @JsonProperty("started_count") val startedCount: Int,
+                                   @JsonProperty("completed_count") val completedCount: Int)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises")
@@ -48,32 +47,19 @@ class TeacherReadCourseExercisesController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return mapToTeacherCourseExResp(selectTeacherExercisesOnCourse(courseId))
+        return selectTeacherExercisesOnCourse(courseId)
     }
-
-    private fun mapToTeacherCourseExResp(exercises: List<TeacherCourseEx>): List<TeacherCourseExResp> =
-            exercises.map {
-                TeacherCourseExResp(
-                        it.id.toString(), it.title, it.softDeadline, it.graderType, it.orderingIndex,
-                        it.unstartedCount, it.gradedCount, it.ungradedCount, it.startedCount, it.completedCount
-                )
-            }
 }
 
-// TODO: subclasses for different types?
-data class TeacherCourseEx(val id: Long, val title: String, val softDeadline: DateTime?, val graderType: GraderType,
-                           val orderingIndex: Int, val gradedCount: Int?, val ungradedCount: Int?,
-                           val unstartedCount: Int, val startedCount: Int?, val completedCount: Int?)
 
+private fun selectTeacherExercisesOnCourse(courseId: Long):
+        List<TeacherReadCourseExercisesController.TeacherCourseExResp> {
 
-private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx> {
     return transaction {
-        // Student count
-        val studentCount = StudentCourseAccess
-                .slice(StudentCourseAccess.student, StudentCourseAccess.course)
-                .select { StudentCourseAccess.course eq courseId }
-                .withDistinct()
-                .count()
+
+        val studentCount = StudentCourseAccess.select {
+            StudentCourseAccess.course eq courseId
+        }.count()
 
         data class SubmissionPartial(val id: Long, val studentId: String, val createdAt: DateTime)
 
@@ -104,68 +90,60 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): List<TeacherCourseEx
                             }
 
                     val lastSubmissionIds = lastSubmissions.values.map { it.id }
-                    val submissionCount = lastSubmissionIds.size
-                    val unstartedCount = studentCount - submissionCount
+                    val latestGrades = lastSubmissionIds.map { selectLatestGradeForSubmission(it) }
+                    val gradeThreshold = ex[CourseExercise.gradeThreshold]
 
-                    val graderType = ex[ExerciseVer.graderType]
+                    val unstartedCount = studentCount - lastSubmissionIds.size
+                    val ungradedCount = latestGrades.count { it == null }
+                    val startedCount = latestGrades.count { it != null && it < gradeThreshold }
+                    val completedCount = latestGrades.count { it != null && it >= gradeThreshold }
 
-                    when (graderType) {
-                        GraderType.AUTO -> {
-                            val completedCount = selectAutoExCompletedCount(
-                                    lastSubmissionIds, ex[CourseExercise.gradeThreshold])
-                            val startedCount = submissionCount - completedCount
-
-                            TeacherCourseEx(
-                                    ex[CourseExercise.id].value,
-                                    ex[ExerciseVer.title],
-                                    ex[CourseExercise.softDeadline],
-                                    ex[ExerciseVer.graderType],
-                                    ex[CourseExercise.orderIdx],
-                                    null, null,
-                                    unstartedCount,
-                                    startedCount,
-                                    completedCount
-                            )
+                    // Sanity check
+                    if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
+                        log.warn {
+                            "Student grade sanity check failed. unstarted: $unstartedCount, ungraded: $ungradedCount, " +
+                                    "started: $startedCount, completed: $completedCount, students in course: $studentCount"
                         }
-                        GraderType.TEACHER -> {
-                            val gradedCount = selectTeacherExGradedCount(lastSubmissionIds)
-                            val ungradedCount = submissionCount - gradedCount
 
-                            TeacherCourseEx(
-                                    ex[CourseExercise.id].value,
-                                    ex[ExerciseVer.title],
-                                    ex[CourseExercise.softDeadline],
-                                    ex[ExerciseVer.graderType],
-                                    ex[CourseExercise.orderIdx],
-                                    gradedCount,
-                                    ungradedCount,
-                                    unstartedCount,
-                                    null, null
-                            )
-                        }
-                    }
+                    TeacherReadCourseExercisesController.TeacherCourseExResp(
+                            ex[CourseExercise.id].value.toString(),
+                            ex[ExerciseVer.title],
+                            ex[CourseExercise.softDeadline],
+                            ex[ExerciseVer.graderType],
+                            ex[CourseExercise.orderIdx],
+                            unstartedCount,
+                            ungradedCount,
+                            startedCount,
+                            completedCount
+                    )
+
                 }
     }
 }
 
-private fun selectAutoExCompletedCount(lastSubmissionIds: List<Long>, threshold: Int): Int {
-    return lastSubmissionIds.map {
-        // TODO: should consider TeacherAssessment first if it exists
-        AutomaticAssessment
-                .slice(AutomaticAssessment.submission, AutomaticAssessment.createdAt, AutomaticAssessment.grade)
-                .select { AutomaticAssessment.submission eq it }
-                .orderBy(AutomaticAssessment.createdAt to false)
-                .limit(1)
-                .map { it[AutomaticAssessment.grade] }
-                .firstOrNull()
-    }.filter { it != null && it >= threshold }.count()
-}
+private fun selectLatestGradeForSubmission(submissionId: Long): Int? {
+    val teacherGrade = TeacherAssessment
+            .slice(TeacherAssessment.submission,
+                    TeacherAssessment.createdAt,
+                    TeacherAssessment.grade)
+            .select { TeacherAssessment.submission eq submissionId }
+            .orderBy(TeacherAssessment.createdAt to false)
+            .limit(1)
+            .map { it[TeacherAssessment.grade] }
+            .firstOrNull()
 
-private fun selectTeacherExGradedCount(submissionIds: List<Long>): Int {
-    return submissionIds.filter {
-        TeacherAssessment
-                .select { TeacherAssessment.submission eq it }
-                .count() > 0
-    }.count()
-}
+    if (teacherGrade != null)
+        return teacherGrade
 
+    val autoGrade = AutomaticAssessment
+            .slice(AutomaticAssessment.submission,
+                    AutomaticAssessment.createdAt,
+                    AutomaticAssessment.grade)
+            .select { AutomaticAssessment.submission eq submissionId }
+            .orderBy(AutomaticAssessment.createdAt to false)
+            .limit(1)
+            .map { it[AutomaticAssessment.grade] }
+            .firstOrNull()
+
+    return autoGrade
+}
