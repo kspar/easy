@@ -562,7 +562,7 @@ definitions:
 
   StudentExerciseDetails:
     properties:
-      title:
+      effective_title:
         type: string
       text_html:
         type: string
@@ -575,6 +575,8 @@ definitions:
         $ref: '#/definitions/GraderType'
       threshold:
         type: integer
+      instructions_html:
+        type: string
 
   Submission:
     properties:
