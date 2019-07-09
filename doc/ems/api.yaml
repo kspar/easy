@@ -234,6 +234,10 @@ paths:
                 type: boolean
               assessments_student_visible:
                 type: boolean
+              instructions_html:
+                type: string
+              title_alias:
+                type: string
             required:
               - exercise_id
               - threshold
