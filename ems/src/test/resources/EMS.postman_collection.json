@@ -591,7 +591,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: student: get: get exercise details: success",
+			"name": "EMS: student: get: get exercises details: success",
 			"event": [
 				{
 					"listen": "test",
@@ -678,7 +678,13 @@
 							"\r",
 							"pm.test(\"response should be okay to process\", function () { \r",
 							"    pm.response.to.not.be.error; \r",
-							"    pm.response.to.have.body( '{\"effective_title\":\"string\",\"text_html\":\"string\",\"deadline\":null,\"grader_type\":\"AUTO\",\"threshold\":0,\"instructions_html\":null}');\r",
+							"    pm.response.to.have.jsonBody(\"effective_title\");\r",
+							"    pm.response.to.have.jsonBody(\"text_html\");\r",
+							"    pm.response.to.have.jsonBody(\"deadline\");\r",
+							"    pm.response.to.have.jsonBody(\"grader_type\");\r",
+							"    pm.response.to.have.jsonBody(\"grader_type\");\r",
+							"    pm.response.to.have.jsonBody(\"threshold\");\r",
+							"    pm.response.to.have.jsonBody(\"instructions_html\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -808,6 +814,91 @@
 						"courses",
 						"1",
 						"exercises"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: course specific exercise details: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"title\");\r",
+							"    pm.response.to.have.jsonBody(\"text_html\");\r",
+							"    pm.response.to.have.jsonBody(\"soft_deadline\");\r",
+							"    pm.response.to.have.jsonBody(\"hard_deadline\");\r",
+							"    pm.response.to.have.jsonBody(\"grader_type\");\r",
+							"    pm.response.to.have.jsonBody(\"threshold\");\r",
+							"    pm.response.to.have.jsonBody(\"last_modified\");\r",
+							"    pm.response.to.have.jsonBody(\"student_visible\");\r",
+							"    pm.response.to.have.jsonBody(\"assessments_student_visible\");\r",
+							"    pm.response.to.have.jsonBody(\"instructions_html\");\r",
+							"    pm.response.to.have.jsonBody(\"title_alias\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses",
+						"1",
+						"exercises",
+						"1"
 					]
 				}
 			},
