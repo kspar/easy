@@ -616,7 +616,7 @@ definitions:
     properties:
       id:
         type: string
-      title:
+      effective_title:
         type: string
       soft_deadline:
         type: string
