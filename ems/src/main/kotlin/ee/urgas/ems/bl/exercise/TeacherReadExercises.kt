@@ -29,7 +29,7 @@ private val log = KotlinLogging.logger {}
 class TeacherReadCourseExercisesController {
 
     data class Resp(@JsonProperty("id") val id: String,
-                    @JsonProperty("title") val title: String,
+                    @JsonProperty("effective_title") val title: String,
                     @JsonSerialize(using = DateTimeSerializer::class)
                     @JsonProperty("soft_deadline") val softDeadline: DateTime?,
                     @JsonProperty("grader_type") val graderType: GraderType,
@@ -70,7 +70,8 @@ private fun selectTeacherExercisesOnCourse(courseId: Long):
                         CourseExercise.orderIdx,
                         ExerciseVer.graderType,
                         ExerciseVer.title,
-                        ExerciseVer.validTo)
+                        ExerciseVer.validTo,
+                        CourseExercise.titleAlias)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
                 .orderBy(CourseExercise.orderIdx to true)
                 .map { ex ->
@@ -94,7 +95,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long):
 
                     TeacherReadCourseExercisesController.Resp(
                             ex[CourseExercise.id].value.toString(),
-                            ex[ExerciseVer.title],
+                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.softDeadline],
                             ex[ExerciseVer.graderType],
                             ex[CourseExercise.orderIdx],
