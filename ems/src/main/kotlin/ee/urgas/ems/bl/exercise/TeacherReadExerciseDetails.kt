@@ -36,7 +36,9 @@ class TeacherReadExerciseDetailsController {
                                  @JsonSerialize(using = DateTimeSerializer::class)
                                  @JsonProperty("last_modified") val lastModified: DateTime,
                                  @JsonProperty("student_visible") val studentVisible: Boolean,
-                                 @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean)
+                                 @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
+                                 @JsonProperty("instructions_html") val instructionsHtml: String?,
+                                 @JsonProperty("title_alias") val titleAlias: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}")
@@ -58,13 +60,14 @@ class TeacherReadExerciseDetailsController {
     private fun mapToExDetailsResponse(exDetails: TeacherExDetails): ExDetailsResponse =
             ExDetailsResponse(exDetails.title, exDetails.text, exDetails.softDeadline, exDetails.hardDeadline,
                     exDetails.grader, exDetails.threshold, exDetails.lastModified, exDetails.studentVisible,
-                    exDetails.assStudentVisible)
+                    exDetails.assStudentVisible, exDetails.instructionsHtml, exDetails.titleAlias)
 }
 
 
 data class TeacherExDetails(val title: String, val text: String?, val softDeadline: DateTime?, val hardDeadline: DateTime?,
                             val grader: GraderType, val threshold: Int, val lastModified: DateTime,
-                            val studentVisible: Boolean, val assStudentVisible: Boolean)
+                            val studentVisible: Boolean, val assStudentVisible: Boolean, val instructionsHtml: String?,
+                            val titleAlias: String?)
 
 
 private fun selectTeacherCourseExerciseDetails(courseId: Long, courseExId: Long): TeacherExDetails? {
@@ -72,7 +75,8 @@ private fun selectTeacherCourseExerciseDetails(courseId: Long, courseExId: Long)
         (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(Course.id, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.hardDeadline,
                         CourseExercise.gradeThreshold, CourseExercise.studentVisible, CourseExercise.assessmentsStudentVisible,
-                        ExerciseVer.validTo, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.validFrom)
+                        ExerciseVer.validTo, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.validFrom,
+                        CourseExercise.instructionsHtml, CourseExercise.titleAlias)
                 .select {
                     Course.id eq courseId and
                             (CourseExercise.id eq courseExId) and
@@ -88,7 +92,9 @@ private fun selectTeacherCourseExerciseDetails(courseId: Long, courseExId: Long)
                             it[CourseExercise.gradeThreshold],
                             it[ExerciseVer.validFrom],
                             it[CourseExercise.studentVisible],
-                            it[CourseExercise.assessmentsStudentVisible]
+                            it[CourseExercise.assessmentsStudentVisible],
+                            it[CourseExercise.instructionsHtml],
+                            it[CourseExercise.titleAlias]
                     )
                 }
                 .singleOrNull()
