@@ -33,7 +33,9 @@ class TeacherCreateCourseExerciseController {
                                      @JsonDeserialize(using = DateTimeDeserializer::class)
                                      @JsonProperty("hard_deadline", required = false) val hardDeadline: DateTime?,
                                      @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
-                                     @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean)
+                                     @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
+                                     @JsonProperty("instructions_html", required = false) val instructionsHtml: String?,
+                                     @JsonProperty("title_alias", required = false) val titleAlias: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
@@ -77,6 +79,8 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[orderIdx] = 0 // TODO: not set at the moment
             it[studentVisible] = body.studentVisible
             it[assessmentsStudentVisible] = body.assStudentVisible
+            it[instructionsHtml] = body.instructionsHtml
+            it[titleAlias] = body.titleAlias
         }
     }
 }
