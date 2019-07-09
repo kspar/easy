@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "674296ae-83d1-4157-acee-22c4256530b9",
+		"_postman_id": "902780a8-d15b-487d-bd7d-10fdcd95366a",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -211,10 +211,6 @@
 						"type": "text"
 					}
 				],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/basic",
 					"host": [
@@ -738,6 +734,80 @@
 						"1",
 						"exercises",
 						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: course exercise details: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.body('[{\"id\":\"1\",\"effective_title\":\"string\",\"soft_deadline\":null,\"grader_type\":\"AUTO\",\"ordering_idx\":0,\"unstarted_count\":1,\"ungraded_count\":0,\"started_count\":0,\"completed_count\":0}]');\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses/1/exercises",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses",
+						"1",
+						"exercises"
 					]
 				}
 			},
