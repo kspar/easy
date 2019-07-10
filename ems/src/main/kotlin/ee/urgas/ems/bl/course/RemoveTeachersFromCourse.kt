@@ -4,6 +4,7 @@ import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherCourseAccess
+import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
@@ -40,7 +41,7 @@ private fun deleteTeachersFromCourse(teacherIds: List<String>, courseId: Long) {
                     Teacher.select { Teacher.id eq teacherId }
                             .count() == 1
             if (!teacherExists) {
-                throw TeacherNotFoundException(teacherId)
+                throw InvalidRequestException("Teacher not found: $teacherId")
             }
         }
 

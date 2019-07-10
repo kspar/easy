@@ -5,6 +5,7 @@ import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
 import ee.urgas.ems.db.Teacher
 import ee.urgas.ems.db.TeacherCourseAccess
+import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
@@ -33,7 +34,6 @@ class AddTeachersToCourse {
     }
 }
 
-class TeacherNotFoundException(override val message: String) : RuntimeException(message)
 
 private fun insertTeacherCourseAccesses(courseId: Long, teacherIds: List<String>) {
 
@@ -43,7 +43,7 @@ private fun insertTeacherCourseAccesses(courseId: Long, teacherIds: List<String>
                     Teacher.select { Teacher.id eq teacherId }
                             .count() == 1
             if (!teacherExists) {
-                throw TeacherNotFoundException(teacherId)
+                throw InvalidRequestException("Teacher not found: $teacherId")
             }
         }
 
