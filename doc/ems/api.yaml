@@ -159,7 +159,7 @@ paths:
 
   /admin/courses:
     post:
-      summary: Add new course
+      summary: Add new course.
       tags:
         - admin
       parameters:
@@ -178,6 +178,27 @@ paths:
             properties:
               id:
                 type: string
+
+  /courses/{courseId}/teachers:
+    post:
+      summary: Add teacher access to course.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: teacher
+          in: body
+          schema:
+            description: Teacher ids.
+            type: array
+            items:
+              type: string
+
+      responses:
+        200:
+          description: Teachers added.
+
+
 
   /teacher/courses:
     get:
