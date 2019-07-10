@@ -18,7 +18,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AddTeacherToCourse {
+class AddTeachersToCourse {
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
