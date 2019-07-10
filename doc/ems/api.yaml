@@ -197,7 +197,22 @@ paths:
       responses:
         200:
           description: Teachers added.
-
+    delete:
+      summary: Remove teacher acces from course.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: teacher
+          in: body
+          schema:
+            description: Teacher ids.
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: Teachers access removed.
 
 
   /teacher/courses:
