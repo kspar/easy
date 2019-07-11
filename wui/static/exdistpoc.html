@@ -15,11 +15,110 @@
 </head>
 <body>
 
-<div id="nav-wrap"></div>
+<div id="nav-wrap">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="/courses" class="brand-logo left"><img class="logo-img" src="../../doc/wui/design/new_logo.svg" alt="Lahendus"/></a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">{{userName}}</span><span id="profile-role"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <span id="role-wrap"></span>
+        <li><a href="{{accountLink}}">{{account}}</a></li>
+        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+    </ul>
+</div>
 <div id="sidenav-wrap"></div>
 
 
 <div id="content-container" class="container">
+
+<!--    <div id="exercises-list" class="collection divided-collection">-->
+<!--        <a class="collection-item bb-wrap row" href="">-->
+<!--            <span class="col s6">1.1 Pealkiri</span>-->
+<!--            <span class="col s4 deadline">1. juuli 2019, 11.11</span>-->
+<!--            <span class="col s2 grade">-->
+<!--                <img style="vertical-align: sub; width: 2.2rem; margin-right: 5px;" class="tooltipped" data-position="bottom" data-tooltip="Automaatkontrolli hinnang" src="../../doc/wui/design/auto_icon_1_v1.svg" alt="Automaatne hinnang"/>-->
+<!--                <i style="color: #aaa;" class="material-icons">face</i>-->
+<!--                <span >99/100</span></span>-->
+<!--            <div class="bb">-->
+<!--                <span class="bb-green bb-item" style="width: 100%">-->
+<!--            </div>-->
+<!--        </a>-->
+<!--    </div>-->
+
+    <div id="exercises-list" class="collection divided-collection">
+        <a class="collection-item bb-wrap row" href="asd">
+            <span class="col s6">1.1 Wutwut</span>
+            <span class="col s4 deadline">1. juuli 2019, 11.11</span>
+            <span class="col s2 grade">
+               <span class="">6/100</span>
+                <span class="" style="">
+<!--                        <img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom"-->
+<!--                             data-tooltip="asd" alt="asd"/>-->
+                        <i class="material-icons eval-logo-teacher">face</i>
+                </span>
+
+            </span>
+            <div class="bb">
+                    <span class="bb-green bb-item" style="width: 100%">
+<!--                    <span class="bb-yellow bb-item" style="width: 100%">-->
+                        <!--                    <span class="bb-grey bb-item" style="width: 100%">-->
+            </div>
+        </a>
+
+        <a class="collection-item bb-wrap row" href="asd">
+            <span class="col s6">1.1 Wutwut</span>
+            <span class="col s4 deadline">1. juuli 2019, 11.11</span>
+            <span class="col s2 grade">
+               <span class="">6/100</span>
+                <span class="" style="">
+                        <img class="tooltipped eval-logo-auto" src="../../doc/wui/design/auto_icon_1_v2_v1.svg" data-position="bottom"
+                             data-tooltip="asd" alt="asd"/>
+                    <!--                        <i class="material-icons eval-logo-teacher">face</i>-->
+                </span>
+
+            </span>
+            <div class="bb">
+                    <span class="bb-green bb-item" style="width: 100%">
+<!--                    <span class="bb-yellow bb-item" style="width: 100%">-->
+                        <!--                    <span class="bb-grey bb-item" style="width: 100%">-->
+            </div>
+        </a>
+
+        <a class="collection-item bb-wrap row" href="asd">
+            <span class="col s6">1.1 Wutwut</span>
+            <span class="col s4 deadline">1. juuli 2019, 11.11</span>
+            <span class="col s2 grade">
+               <span class="">6/100</span>
+                <span class="" style="">
+                        <img class="tooltipped eval-logo-missing" src="../../doc/wui/design/missing_feedback_v3.svg" data-position="bottom"
+                             data-tooltip="asd" alt="asd"/>
+                    <!--                        <i class="material-icons eval-logo-teacher">face</i>-->
+                </span>
+
+            </span>
+            <div class="bb">
+                    <span class="bb-green bb-item" style="width: 100%">
+<!--                    <span class="bb-yellow bb-item" style="width: 100%">-->
+                        <!--                    <span class="bb-grey bb-item" style="width: 100%">-->
+            </div>
+        </a>
+
+
+
+    </div>
+
+
 
     <div id="courses-list" class="collection divided-collection">
             <a class="collection-item bb-wrap" href="/courses/a/exercises">
