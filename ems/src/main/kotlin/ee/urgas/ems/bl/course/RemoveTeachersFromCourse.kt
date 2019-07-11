@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.course
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Teacher
@@ -19,42 +20,45 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class RemoveTeachersFromCourseController {
 
+    data class Req(@JsonProperty("teacher_id") val teacherId: String)
+
+
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/courses/{courseId}/teachers")
     fun removeTeachers(@PathVariable("courseId") courseIdStr: String,
-                       @RequestBody teacherIds: List<String>,
+                       @RequestBody teachers: List<Req>,
                        caller: EasyUser) {
 
-        log.debug { "Removing teachers $teacherIds from course $courseIdStr" }
+        log.debug { "Removing teachers $teachers from course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        deleteTeachersFromCourse(teacherIds, courseId)
+        deleteTeachersFromCourse(teachers, courseId)
     }
 }
 
 
-private fun deleteTeachersFromCourse(teacherIds: List<String>, courseId: Long) {
+private fun deleteTeachersFromCourse(teachers: List<RemoveTeachersFromCourseController.Req>, courseId: Long) {
     transaction {
-        teacherIds.forEach { teacherId ->
+        teachers.forEach { teacher ->
             val teacherExists =
-                    Teacher.select { Teacher.id eq teacherId }
+                    Teacher.select { Teacher.id eq teacher.teacherId }
                             .count() == 1
             if (!teacherExists) {
-                throw InvalidRequestException("Teacher not found: $teacherId")
+                throw InvalidRequestException("Teacher not found: $teacher")
             }
         }
 
-        val teachersWithAccess = teacherIds.filter {
+        val teachersWithAccess = teachers.filter {
             TeacherCourseAccess.select {
-                TeacherCourseAccess.teacher eq it and (TeacherCourseAccess.course eq courseId)
+                TeacherCourseAccess.teacher eq it.teacherId and (TeacherCourseAccess.course eq courseId)
             }.count() > 0
         }
 
 
-        teachersWithAccess.forEach { teacherId ->
+        teachersWithAccess.forEach { teacher ->
             TeacherCourseAccess.deleteWhere {
-                TeacherCourseAccess.teacher eq teacherId and (TeacherCourseAccess.course eq courseId)
+                TeacherCourseAccess.teacher eq teacher.teacherId and (TeacherCourseAccess.course eq courseId)
             }
         }
 

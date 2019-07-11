@@ -1,5 +1,6 @@
 package ee.urgas.ems.bl.course
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
 import ee.urgas.ems.db.Course
@@ -21,42 +22,44 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddTeachersToCourse {
 
+    data class Req(@JsonProperty("teacher_id") val teacherId: String)
+
     @Secured("ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
     fun addTeachersToCourse(@PathVariable("courseId") courseIdStr: String,
-                            @RequestBody teacherIds: List<String>,
+                            @RequestBody teachers: List<Req>,
                             caller: EasyUser) {
 
-        log.debug { "Adding access to course $courseIdStr to teachers $teacherIds" }
+        log.debug { "Adding access to course $courseIdStr to teachers $teachers" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        insertTeacherCourseAccesses(courseId, teacherIds)
+        insertTeacherCourseAccesses(courseId, teachers)
     }
 }
 
 
-private fun insertTeacherCourseAccesses(courseId: Long, teacherIds: List<String>) {
+private fun insertTeacherCourseAccesses(courseId: Long, teachers: List<AddTeachersToCourse.Req>) {
 
     transaction {
-        teacherIds.forEach { teacherId ->
+        teachers.forEach { teacher ->
             val teacherExists =
-                    Teacher.select { Teacher.id eq teacherId }
+                    Teacher.select { Teacher.id eq teacher.teacherId }
                             .count() == 1
             if (!teacherExists) {
-                throw InvalidRequestException("Teacher not found: $teacherId")
+                throw InvalidRequestException("Teacher not found: $teacher")
             }
         }
 
-        val teachersWithoutAccess = teacherIds.filter {
+        val teachersWithoutAccess = teachers.filter {
             TeacherCourseAccess.select {
-                TeacherCourseAccess.teacher eq it and (TeacherCourseAccess.course eq courseId)
+                TeacherCourseAccess.teacher eq it.teacherId and (TeacherCourseAccess.course eq courseId)
             }.count() == 0
         }
 
         log.debug { "Granting access to teacher (the rest already have access): $teachersWithoutAccess" }
 
-        TeacherCourseAccess.batchInsert(teachersWithoutAccess) { id ->
-            this[TeacherCourseAccess.teacher] = EntityID(id, Teacher)
+        TeacherCourseAccess.batchInsert(teachersWithoutAccess) { teacher ->
+            this[TeacherCourseAccess.teacher] = EntityID(teacher.teacherId, Teacher)
             this[TeacherCourseAccess.course] = EntityID(courseId, Course)
         }
     }
