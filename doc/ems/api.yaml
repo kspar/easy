@@ -413,21 +413,49 @@ paths:
               $ref: '#/definitions/TeacherSubmission'
 
 
-  /teacher/courses/{courseId}/students:
+  /courses/{courseId}/participants:
     parameters:
       - $ref: '#/parameters/CourseId'
-
     get:
-      summary: Get all students who are registered to this course.
+      summary: Get all participants who are registered to this course.
+      parameters:
+        - in: query
+          name: role
+          type: string
+          description: "Optional. This query parameter defines if the service should return all participants, only
+          teachers or only students. If left empty, all are returned."
+          enum: [teacher, student, all]
       tags:
-        - teacher
+        - common
       responses:
         200:
-          description: Students in this course.
+          description: Participants in this course.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/Student'
+            properties:
+              students:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    email:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+              teachers:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    email:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
 
     post:
       summary: Add the given students to this course
