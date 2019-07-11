@@ -188,12 +188,13 @@ paths:
         - $ref: '#/parameters/CourseId'
         - name: teacher
           in: body
+          description: Teacher ids.
           schema:
-            description: Teacher ids.
             type: array
             items:
-              type: string
-
+              properties:
+                teacher_id:
+                  type: string
       responses:
         200:
           description: Teachers added.
@@ -205,15 +206,16 @@ paths:
         - $ref: '#/parameters/CourseId'
         - name: teacher
           in: body
+          description: Teacher ids.
           schema:
-            description: Teacher ids.
             type: array
             items:
-              type: string
+              properties:
+                teacher_id:
+                  type: string
       responses:
         200:
           description: Teachers access removed.
-
 
   /teacher/courses:
     get:
