@@ -1,10 +1,12 @@
 swagger: "2.0"
 info:
-  description: "This specification documents the public API of easy:ems. Services with the 'student' tag
-  require a token containing claim 'easy_role: student' and 'teacher' services analogously require 'easy_role: teacher'.
-  'Common' services can be called by either role."
+  description: "This specification documents the public API of easy:core.
+  Services with the 'student' tag require a token containing claim 'easy_role: student'.
+  Services with the 'teacher' tag require a token containing claim 'easy_role: teacher' or 'easy_role: admin'.
+  Services with the 'admin' tag require a token containing claim 'easy_role: admin'.
+  'Common' services can be called by all roles."
   version: "2.0"
-  title: Easy:ems Public API
+  title: Easy:core Public API
 schemes:
   - https
 consumes:
@@ -16,8 +18,8 @@ basePath: /v2
 tags:
   - name: student
   - name: teacher
-  - name: common
   - name: admin
+  - name: common
 
 
 paths:
@@ -426,7 +428,7 @@ paths:
           teachers or only students. If left empty, all are returned."
           enum: [teacher, student, all]
       tags:
-        - common
+        - teacher
       responses:
         200:
           description: Participants in this course.
