@@ -26,7 +26,9 @@ paths:
 
   /account/personal:
     post:
-      summary: Update account data with :ems. Creates account if it does not exist. If the account does not exist, this must be called before any other services.
+      summary: "Update account data in easy:core.
+      Creates account if it does not exist. If the account does not exist,
+      then this must be called before any other services."
       tags:
         - common
       parameters:
@@ -85,7 +87,7 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
     get:
-      summary: Get summaries of exercises in the specified course (that are visible to students).
+      summary: Get summaries of exercises on this course.
       tags:
         - student
       responses:
@@ -131,19 +133,6 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
-
-    get:
-      summary: Get all submissions to the specified course exercise.
-      tags:
-        - student
-      responses:
-        200:
-          description: All submissions to this exercise.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Submission'
-
     post:
       summary: Create a new submission to the specified course exercise.
       tags:
@@ -158,6 +147,7 @@ paths:
       responses:
         200:
           description: Submission created.
+
 
   /admin/courses:
     post:
@@ -181,13 +171,16 @@ paths:
               id:
                 type: string
 
+
   /courses/{courseId}/teachers:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+
     post:
-      summary: Add teacher access to course.
+      summary: Add teacher accesses to course.
       tags:
         - admin
       parameters:
-        - $ref: '#/parameters/CourseId'
         - name: teacher
           in: body
           description: Teacher ids.
@@ -199,13 +192,13 @@ paths:
                   type: string
       responses:
         200:
-          description: Teachers added.
+          description: Teacher accesses added.
+
     delete:
-      summary: Remove teacher acces from course.
+      summary: Remove teachers' accesses from course.
       tags:
         - admin
       parameters:
-        - $ref: '#/parameters/CourseId'
         - name: teacher
           in: body
           description: Teacher ids.
@@ -217,7 +210,8 @@ paths:
                   type: string
       responses:
         200:
-          description: Teachers access removed.
+          description: Teachers' accesses removed.
+
 
   /teacher/courses:
     get:
@@ -231,7 +225,6 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TeacherCourse'
-
 
 
   /teacher/courses/{courseId}/exercises:
@@ -459,6 +452,8 @@ paths:
                     family_name:
                       type: string
 
+
+  /courses/{courseId}/students:
     post:
       summary: Add the given students to this course
       tags:
@@ -490,18 +485,6 @@ paths:
 
 
   /teacher/exercises:
-    get:
-      summary: Get all summaries of exercises (that the authenticated teacher has access to).
-      tags:
-        - teacher
-      responses:
-        200:
-          description: Exercise summaries.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherExercise'
-
     post:
       summary: Create a new exercise.
       tags:
@@ -538,18 +521,6 @@ paths:
   /teacher/exercises/{exerciseId}:
     parameters:
       - $ref: '#/parameters/ExerciseId'
-
-    # TODO: not implemented
-    get:
-      summary: Get exercise details.
-      tags:
-        - teacher
-      responses:
-        200:
-          description: Exercise details.
-          schema:
-            $ref: '#/definitions/TeacherExerciseDetails'
-
     put:
       summary: Modify exercise.
       tags:
@@ -904,7 +875,10 @@ definitions:
   # Enums
   ExerciseStatus:
     type: string
-    description: Student-specific status of a course exercise. The student either has not made any submissions to it (UNSTARTED), has made submissions but the last submission did not meet the threshold (STARTED) or the last submission did meet the threshold (COMPLETED).
+    description: "Student-specific status of a course exercise.
+    The student either has not made any submissions to it (UNSTARTED),
+    has made submissions but the last submission did not meet the threshold (STARTED)
+    or the last submission did meet the threshold (COMPLETED)."
     enum:
       - UNSTARTED
       - STARTED
@@ -912,15 +886,20 @@ definitions:
 
   GraderType:
     type: string
-    description: Type of grading used for an exercise. The exercise is either graded automatically (AUTO) or manually by a teacher (TEACHER). Note that automatically graded exercises can have teacher assessments as well.
+    description: "Type of grading used for an exercise.
+    The exercise is either graded automatically (AUTO) or
+    manually by a teacher (TEACHER).
+    Note that automatically graded exercises can have teacher assessments as well."
     enum:
       - AUTO
       - TEACHER
 
   AutogradeStatus:
     type: string
-    description: "Status of automatic assessment on a submission. The submission is either not graded automatically (NONE),
-    the automatic grading is in progress (IN_PROGRESS), completed (COMPLETED) or has failed (FAILED)."
+    description: "Status of automatic assessment on a submission.
+    The submission is either not graded automatically (NONE),
+    the automatic grading is in progress (IN_PROGRESS),
+    completed (COMPLETED) or has failed (FAILED)."
     enum:
       - NONE
       - IN_PROGRESS
