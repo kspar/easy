@@ -92,7 +92,6 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName, StudentCourseAccess.course)
                 .select { StudentCourseAccess.course eq courseId }
-                .withDistinct()
                 .map {
                     ReadParticipantsOnCourseController.StudentsOnCourseResponse(
                             it[Student.id].value,
@@ -109,7 +108,6 @@ private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCours
         (Teacher innerJoin TeacherCourseAccess)
                 .slice(Teacher.id, Teacher.email, Teacher.givenName, Teacher.familyName, TeacherCourseAccess.course)
                 .select { TeacherCourseAccess.course eq courseId }
-                .withDistinct()
                 .map {
                     ReadParticipantsOnCourseController.TeachersOnCourseResponse(
                             it[Teacher.id].value,
