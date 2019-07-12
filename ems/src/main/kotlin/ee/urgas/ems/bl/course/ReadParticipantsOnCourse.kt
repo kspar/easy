@@ -58,14 +58,14 @@ class ReadParticipantsOnCourseController {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
                 log.debug { "Teachers on course $courseId: $teachers" }
-                return ParticipantOnCourseResponse(null, mapToTeachersOnCourseResponse(teachers))
+                return ParticipantOnCourseResponse(null, selectTeachersOnCourse(courseId))
 
             }
 
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId)
                 log.debug { "Students on course $courseId: $students" }
-                return ParticipantOnCourseResponse(mapToStudentsOnCourseResponse(students), null)
+                return ParticipantOnCourseResponse(selectStudentsOnCourse(courseId), null)
             }
 
             Role.ALL.paramValue, null -> {
@@ -75,33 +75,23 @@ class ReadParticipantsOnCourseController {
                 log.debug { "Students on course $courseId: $students" }
                 log.debug { "Teachers on course $courseId: $teachers" }
 
-                return ParticipantOnCourseResponse(
-                        mapToStudentsOnCourseResponse(students),
-                        mapToTeachersOnCourseResponse(teachers)
-                )
+                return ParticipantOnCourseResponse(selectStudentsOnCourse(courseId), selectTeachersOnCourse(courseId))
             }
 
             else -> throw InvalidRequestException("Invalid parameter $roleReq")
         }
     }
-
-    private fun mapToStudentsOnCourseResponse(students: List<StudentOnCourse>) =
-            students.map { StudentsOnCourseResponse(it.id, it.email, it.givenName, it.familyName) }
-
-    private fun mapToTeachersOnCourseResponse(teachers: List<TeacherOnCourse>) =
-            teachers.map { TeachersOnCourseResponse(it.id, it.email, it.givenName, it.familyName) }
 }
 
-data class StudentOnCourse(val id: String, val email: String, val givenName: String, val familyName: String)
 
-private fun selectStudentsOnCourse(courseId: Long): List<StudentOnCourse> {
+private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsOnCourseResponse> {
     return transaction {
         (Student innerJoin StudentCourseAccess innerJoin Course)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
                 .select { Course.id eq courseId }
                 .withDistinct()
                 .map {
-                    StudentOnCourse(
+                    ReadParticipantsOnCourseController.StudentsOnCourseResponse(
                             it[Student.id].value,
                             it[Student.email],
                             it[Student.givenName],
@@ -111,16 +101,14 @@ private fun selectStudentsOnCourse(courseId: Long): List<StudentOnCourse> {
     }
 }
 
-data class TeacherOnCourse(val id: String, val email: String, val givenName: String, val familyName: String)
-
-private fun selectTeachersOnCourse(courseId: Long): List<TeacherOnCourse> {
+private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.TeachersOnCourseResponse> {
     return transaction {
         (Teacher innerJoin TeacherCourseAccess innerJoin Course)
                 .slice(Teacher.id, Teacher.email, Teacher.givenName, Teacher.familyName)
                 .select { Course.id eq courseId }
                 .withDistinct()
                 .map {
-                    TeacherOnCourse(
+                    ReadParticipantsOnCourseController.TeachersOnCourseResponse(
                             it[Teacher.id].value,
                             it[Teacher.email],
                             it[Teacher.givenName],
