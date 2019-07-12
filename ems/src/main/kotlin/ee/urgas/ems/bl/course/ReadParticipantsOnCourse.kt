@@ -48,7 +48,7 @@ class ReadParticipantsOnCourseController {
                              @RequestParam("role", required = false) roleReq: String?,
                              caller: EasyUser): ParticipantOnCourseResponse {
 
-        log.debug { "Getting participants on course for ${caller.id} with role $roleReq" }
+        log.debug { "Getting participants on course $courseIdStr for ${caller.id} with role $roleReq" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
