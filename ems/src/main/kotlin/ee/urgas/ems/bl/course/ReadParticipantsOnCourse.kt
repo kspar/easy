@@ -36,10 +36,10 @@ class ReadParticipantsOnCourseController {
                                            @JsonInclude(Include.NON_NULL) val teachers: List<TeachersOnCourseResponse>?)
 
 
-    enum class Role {
-        TEACHER,
-        STUDENT,
-        ALL
+    enum class Role(val paramValue: String) {
+        TEACHER("teacher"),
+        STUDENT("student"),
+        ALL("all")
     }
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -55,20 +55,20 @@ class ReadParticipantsOnCourseController {
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         when (roleReq) {
-            Role.TEACHER.name.toLowerCase() -> {
+            Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
                 log.debug { "Teachers on course $courseId: $teachers" }
                 return ParticipantOnCourseResponse(null, mapToTeachersOnCourseResponse(teachers))
 
             }
 
-            Role.STUDENT.name.toLowerCase() -> {
+            Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId)
                 log.debug { "Students on course $courseId: $students" }
                 return ParticipantOnCourseResponse(mapToStudentsOnCourseResponse(students), null)
             }
 
-            Role.ALL.name.toLowerCase(), null -> {
+            Role.ALL.paramValue, null -> {
                 val students = selectStudentsOnCourse(courseId)
                 val teachers = selectTeachersOnCourse(courseId)
 
