@@ -62,4 +62,78 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="120719-1" author="kspar">
+        <createTable tableName="automatic_exercise">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="grading_script" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="container_image" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_time_sec" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_mem_mb" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="asset">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)" foreignKeyName="fk_asset_auto_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="file_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_content" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="executor">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="base_url" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="load" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_load" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="auto_exercise_executor">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)" foreignKeyName="fk_auto_exercise_executor_auto_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="executor_id" type="bigint">
+                <constraints references="executor(id)" foreignKeyName="fk_auto_exercise_executor_executor"
+                             nullable="false"/>
+            </column>
+        </createTable>
+
+        <addColumn tableName="exercise_version">
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)" foreignKeyName="fk_exercise_version_automatic_exercise"
+                             nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+
+
 </databaseChangeLog>

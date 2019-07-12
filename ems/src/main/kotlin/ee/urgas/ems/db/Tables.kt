@@ -6,6 +6,8 @@ import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Column
 
 
+// EMS
+
 object Teacher : IdTable<String>("teacher") {
     override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
     val createdAt = datetime("created_at")
@@ -24,6 +26,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val exercise = reference("exercise_id", Exercise)
     val author = reference("author_id", Teacher)
     val previous = reference("previous_id", ExerciseVer).nullable()
+    val autoExerciseId = reference("auto_exercise_id", AutoExercise).nullable()
     val validFrom = datetime("valid_from")
     val validTo = datetime("valid_to").nullable()
     val graderType = enumerationByName("grader_type", 20, GraderType::class)
@@ -46,8 +49,8 @@ object CourseExercise : LongIdTable("course_exercise") {
     val orderIdx = integer("ordering_index")
     val studentVisible = bool("student_visible")
     val assessmentsStudentVisible = bool("assessments_student_visible")
-    val instructionsHtml  = text("instructions_html").nullable()
-    val titleAlias  = text("title_alias").nullable()
+    val instructionsHtml = text("instructions_html").nullable()
+    val titleAlias = text("title_alias").nullable()
 }
 
 object TeacherCourseAccess : LongIdTable("teacher_course_access") {
@@ -99,3 +102,30 @@ object Admin : IdTable<String>("admin") {
     val familyName = text("family_name")
 }
 
+
+// AAS
+
+object AutoExercise : LongIdTable("automatic_exercise") {
+    val gradingScript = text("grading_script")
+    val containerImage = text("container_image")
+    val maxTime = integer("max_time_sec")
+    val maxMem = integer("max_mem_mb")
+}
+
+object Asset : LongIdTable("asset") {
+    val autoExercise = reference("auto_exercise_id", AutoExercise)
+    val fileName = text("file_name")
+    val fileContent = text("file_content")
+}
+
+object Executor : LongIdTable("executor") {
+    val name = text("name")
+    val baseUrl = text("base_url")
+    val load = integer("load")
+    val maxLoad = integer("max_load")
+}
+
+object AutoExerciseExecutor : LongIdTable("auto_exercise_executor") {
+    val autoExercise = reference("auto_exercise_id", AutoExercise)
+    val executor = reference("executor_id", Executor)
+}
