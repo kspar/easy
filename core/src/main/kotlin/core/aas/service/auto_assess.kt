@@ -22,20 +22,6 @@ private const val EXECUTOR_GRADE_URL = "/v1/grade"
 private val log = KotlinLogging.logger {}
 
 
-private data class AutoAssessExerciseDetails(
-        val gradingScript: String, val containerImage: String, val maxTime: Int, val maxMem: Int,
-        val assets: List<AutoAssessExerciseAsset>)
-
-private data class AutoAssessExerciseAsset(
-        val fileName: String, val fileContent: String)
-
-private data class CapableExecutor(
-        val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int)
-
-data class AutoAssessment(
-        val grade: Int, val feedback: String)
-
-
 /**
  * Autoassess a solution to an automatic exercise.
  * The assessment is performed synchronously and may take a long time.
@@ -51,6 +37,20 @@ fun autoAssess(autoExerciseId: Long, submission: String): AutoAssessment {
     val selectedExecutor = selectExecutor(executors)
     return callExecutor(selectedExecutor, request)
 }
+
+
+private data class AutoAssessExerciseDetails(
+        val gradingScript: String, val containerImage: String, val maxTime: Int, val maxMem: Int,
+        val assets: List<AutoAssessExerciseAsset>)
+
+private data class AutoAssessExerciseAsset(
+        val fileName: String, val fileContent: String)
+
+private data class CapableExecutor(
+        val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int)
+
+data class AutoAssessment(
+        val grade: Int, val feedback: String)
 
 
 private fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails {
