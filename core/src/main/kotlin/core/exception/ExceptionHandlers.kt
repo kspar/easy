@@ -1,5 +1,6 @@
 package core.exception
 
+import core.aas.ExecutorOverloadException
 import core.ems.service.course.StudentNotFoundException
 import core.util.SendMailService
 import mu.KotlinLogging
@@ -21,6 +22,14 @@ class EmsExceptionHandler(private val mailService: SendMailService) : ResponseEn
         log.info("Request info: ${request.getDescription(true)}")
         mailService.sendSystemNotification(ex.stackTraceString)
         return ResponseEntity(ex.message, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(value = [ExecutorOverloadException::class])
+    fun handleExecutorOverloadException(ex: ExecutorOverloadException, request: WebRequest): ResponseEntity<Any> {
+        log.warn("ExecutorOverloadException", ex)
+        log.warn("Request info: ${request.getDescription(true)}")
+        mailService.sendSystemNotification(ex.stackTraceString)
+        return ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE)
     }
 
     @ExceptionHandler(value = [ForbiddenException::class])
