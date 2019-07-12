@@ -6,7 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import ee.urgas.ems.bl.access.assertTeacherOrAdminHasAccessToCourse
 import ee.urgas.ems.bl.idToLongOrInvalidReq
 import ee.urgas.ems.conf.security.EasyUser
-import ee.urgas.ems.db.*
+import ee.urgas.ems.db.Student
+import ee.urgas.ems.db.StudentCourseAccess
+import ee.urgas.ems.db.Teacher
+import ee.urgas.ems.db.TeacherCourseAccess
 import ee.urgas.ems.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
@@ -86,9 +89,9 @@ class ReadParticipantsOnCourseController {
 
 private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsOnCourseResponse> {
     return transaction {
-        (Student innerJoin StudentCourseAccess innerJoin Course)
-                .slice(Student.id, Student.email, Student.givenName, Student.familyName)
-                .select { Course.id eq courseId }
+        (Student innerJoin StudentCourseAccess)
+                .slice(Student.id, Student.email, Student.givenName, Student.familyName, StudentCourseAccess.course)
+                .select { StudentCourseAccess.course eq courseId }
                 .withDistinct()
                 .map {
                     ReadParticipantsOnCourseController.StudentsOnCourseResponse(
@@ -103,9 +106,9 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
 
 private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.TeachersOnCourseResponse> {
     return transaction {
-        (Teacher innerJoin TeacherCourseAccess innerJoin Course)
-                .slice(Teacher.id, Teacher.email, Teacher.givenName, Teacher.familyName)
-                .select { Course.id eq courseId }
+        (Teacher innerJoin TeacherCourseAccess)
+                .slice(Teacher.id, Teacher.email, Teacher.givenName, Teacher.familyName, TeacherCourseAccess.course)
+                .select { TeacherCourseAccess.course eq courseId }
                 .withDistinct()
                 .map {
                     ReadParticipantsOnCourseController.TeachersOnCourseResponse(
