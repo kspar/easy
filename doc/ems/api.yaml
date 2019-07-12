@@ -568,6 +568,71 @@ paths:
           description: Modified.
 
 
+  /executors:
+    get:
+      summary: Get all executors.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Executors.
+          schema:
+            type: array
+            items:
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                base_url:
+                  type: string
+                load:
+                  type: integer
+                max_load:
+                  type: integer
+
+    post:
+      summary: Create new executor.
+      tags:
+        - admin
+      parameters:
+        - name: executor
+          in: body
+          required: true
+          schema:
+            properties:
+              name:
+                type: string
+              base_url:
+                type: string
+              max_load:
+                type: integer
+            required:
+              - name
+              - base_url
+              - max_load
+      responses:
+        200:
+          description: Created.
+          schema:
+            properties:
+              id:
+                type: string
+
+
+  /executors/{executorId}:
+    parameters:
+      - $ref: '#/parameters/ExecutorId'
+    delete:
+      summary: Delete executor.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Deleted.
+
+
+
 parameters:
 
   CourseId:
@@ -596,6 +661,12 @@ parameters:
 
   SubmissionId:
     name: submissionId
+    in: path
+    required: true
+    type: string
+
+  ExecutorId:
+    name: executorId
     in: path
     required: true
     type: string
