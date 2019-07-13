@@ -19,5 +19,4 @@ pluginManagement {
 rootProject.name = 'easy'
 
 include 'wui',
-        'core',
-        'aas'
+        'core'
