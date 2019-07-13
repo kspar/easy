@@ -926,61 +926,6 @@ definitions:
         description: Optional, exists if the submission has been graded by a teacher.
         type: string
 
-  Student:
-    properties:
-      id:
-        type: string
-      given_name:
-        type: string
-      family_name:
-        type: string
-
-  StudentName:
-    properties:
-      given_name:
-        type: string
-      family_name:
-        type: string
-
-  TeacherExercise:
-    properties:
-      id:
-        type: string
-      title:
-        type: string
-      grader_type:
-        $ref: '#/definitions/GraderType'
-      owner:
-        description: TODO
-        type: string
-
-  TeacherExerciseDetails:
-    properties:
-      title:
-        type: string
-      grader_type:
-        $ref: '#/definitions/GraderType'
-      owner:
-        description: Id of teacher who owns this exercise.
-        type: string
-      text_html:
-        type: string
-      public:
-        type: boolean
-      courses:
-        type: array
-        items:
-          properties:
-            id:
-              type: string
-            title:
-              type: string
-      created_at:
-        type: string
-        format: date-time
-      last_modified:
-        type: string
-        format: date-time
 
 
   # Enums
