@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "902780a8-d15b-487d-bd7d-10fdcd95366a",
+		"_postman_id": "8aeb7c4c-c238-4559-9964-69d155e3d1e6",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -217,6 +217,365 @@
 					"path": [
 						"account",
 						"personal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AAS: admin: post: create new executor: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"id\");\r",
+							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"string\",\r\n  \"max_load\": 0\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/executors",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"executors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AAS: admin: post: create new executor: success-repeat",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"id\");\r",
+							"    pm.response.to.not.have.jsonBody(\"error\"); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"string\",\r\n  \"max_load\": 0\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/executors",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"executors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AAS: teacher: get: get all executors",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/executors",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"executors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AAS: admin: post: delete executor: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/executors/2",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"executors",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AAS: admin: post: delete executor: delete-executor-not-present",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/executors/2",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"executors",
+						"2"
 					]
 				}
 			},
@@ -574,6 +933,10 @@
 						"type": "text"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/basic",
 					"host": [
@@ -650,15 +1013,156 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"aas_id\": \"string\"\r\n}"
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/exercises",
+					"raw": "{{EMSBASE}}/exercises",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
+						"exercises"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: create new exercise: fail-no-executors",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": []\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/exercises",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"exercises"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: create new exercise: fail-invalid-executor",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n  \t{\r\n  \t  \"executor_id\": \"1337\"\r\n  \t}\r\n  ]\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/exercises",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
 						"exercises"
 					]
 				}
@@ -720,13 +1224,16 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/exercises",
+					"raw": "{{EMSBASE}}/exercises",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
 						"exercises"
 					]
 				}
@@ -790,15 +1297,14 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"aas_id\": \"string\"\r\n}"
+					"raw": "{\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"TEACHER\"\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/exercises",
+					"raw": "{{EMSBASE}}/exercises",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
 						"exercises"
 					]
 				}
@@ -1012,6 +1518,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/student/courses/1/exercises",
 					"host": [
@@ -1092,6 +1602,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/student/courses/1/exercises/1",
 					"host": [
@@ -1167,6 +1681,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/teacher/courses/1/exercises",
 					"host": [
@@ -1207,6 +1725,12 @@
 							"    pm.response.to.have.jsonBody(\"assessments_student_visible\");\r",
 							"    pm.response.to.have.jsonBody(\"instructions_html\");\r",
 							"    pm.response.to.have.jsonBody(\"title_alias\");\r",
+							"    pm.response.to.have.jsonBody(\"grading_script\");\r",
+							"    pm.response.to.have.jsonBody(\"container_image\");\r",
+							"    pm.response.to.have.jsonBody(\"max_time_sec\");\r",
+							"    pm.response.to.have.jsonBody(\"max_mem_mb\");\r",
+							"    pm.response.to.have.jsonBody(\"assets\");\r",
+							"    pm.response.to.have.jsonBody(\"executors\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -1251,6 +1775,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1",
 					"host": [
@@ -1327,6 +1855,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/participants",
 					"host": [
@@ -1401,6 +1933,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/participants?role=all",
 					"host": [
@@ -1481,6 +2017,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/participants?role=teacher",
 					"host": [
@@ -1561,6 +2101,10 @@
 						"value": "fp"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/participants?role=student",
 					"host": [
