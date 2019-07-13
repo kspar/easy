@@ -14,7 +14,6 @@ import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
@@ -23,9 +22,6 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class TeacherAutoassCont {
-
-    @Value("\${easy.ems.aas.psk}")
-    private lateinit var aasKey: String
 
     data class Req(
             @JsonProperty("solution") val solution: String)
