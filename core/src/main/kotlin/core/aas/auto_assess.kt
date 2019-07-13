@@ -1,9 +1,6 @@
-package core.aas.service
+package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.aas.ExecutorException
-import core.aas.ExecutorOverloadException
-import core.aas.NoExecutorsException
 import core.db.Asset
 import core.db.AutoExercise
 import core.db.AutoExerciseExecutor

@@ -2,7 +2,7 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import core.aas.service.selectAutoExercise
+import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.Exercise

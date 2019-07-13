@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.aas.service.insertAutoExercise
+import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.Exercise
 import core.db.ExerciseVer

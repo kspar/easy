@@ -1,4 +1,4 @@
-package core.aas.service
+package core.aas
 
 import core.db.Asset
 import core.db.AutoExercise

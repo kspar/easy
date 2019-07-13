@@ -1,10 +1,9 @@
-package core.aas.service
+package core.aas
 
 import core.db.Asset
 import core.db.AutoExercise
 import core.db.AutoExerciseExecutor
 import core.db.Executor
-import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.batchInsert
