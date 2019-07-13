@@ -1,16 +1,16 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.aas.service.autoAssess
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.autoassess.AutoAssessResponse
-import core.ems.service.autoassess.autoAssess
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
+import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -22,22 +22,25 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassessController {
+class TeacherAutoassCont {
 
     @Value("\${easy.ems.aas.psk}")
     private lateinit var aasKey: String
 
-    data class TeacherAutoAssessBody(@JsonProperty("solution") val solution: String)
+    data class Req(
+            @JsonProperty("solution") val solution: String)
 
-    data class TeacherAutoAssessResponse(@JsonProperty("grade") val grade: Int,
-                                         @JsonProperty("feedback") val feedback: String?)
+    data class Resp(
+            @JsonProperty("grade") val grade: Int,
+            @JsonProperty("feedback") val feedback: String?)
+
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExId}/autoassess")
-    fun teacherAutoAssess(@PathVariable("courseId") courseIdStr: String,
-                          @PathVariable("courseExId") courseExIdStr: String,
-                          @RequestBody body: TeacherAutoAssessBody,
-                          caller: EasyUser): TeacherAutoAssessResponse {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @PathVariable("courseExId") courseExIdStr: String,
+                   @RequestBody dto: Req,
+                   caller: EasyUser): Resp {
 
         val callerId = caller.id
 
@@ -48,28 +51,25 @@ class TeacherAutoassessController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val aasId = getAasId(courseId, courseExId)
+        val aaId = getAutoExerciseId(courseId, courseExId)
                 ?: throw InvalidRequestException("Autoassessment not found for exercise $courseExId on course $courseId")
 
-        val autoResult = autoAssess(aasId, body.solution, aasKey)
-        return mapToResponse(autoResult)
+        val aaResult = autoAssess(aaId, dto.solution)
+        return Resp(aaResult.grade, aaResult.feedback)
     }
-
-    private fun mapToResponse(autoResult: AutoAssessResponse): TeacherAutoAssessResponse =
-            TeacherAutoAssessResponse(autoResult.grade, autoResult.feedback)
 }
 
 
-private fun getAasId(courseId: Long, courseExerciseId: Long): String? {
+private fun getAutoExerciseId(courseId: Long, courseExerciseId: Long): EntityID<Long>? {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.aasId)
+                .slice(ExerciseVer.autoExerciseId)
                 .select {
                     CourseExercise.course eq courseId and
                             (CourseExercise.id eq courseExerciseId) and
                             ExerciseVer.validTo.isNull()
                 }
-                .map { it[ExerciseVer.aasId] }
-                .firstOrNull()
+                .map { it[ExerciseVer.autoExerciseId] }
+                .single()
     }
 }

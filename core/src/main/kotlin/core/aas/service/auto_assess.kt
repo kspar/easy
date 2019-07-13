@@ -9,6 +9,7 @@ import core.db.AutoExercise
 import core.db.AutoExerciseExecutor
 import core.db.Executor
 import mu.KotlinLogging
+import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -30,12 +31,13 @@ private val log = KotlinLogging.logger {}
  * @throws ExecutorOverloadException if all executors capable of assessing this exercise are already overloaded
  * @throws ExecutorException if an executor fails
  */
-fun autoAssess(autoExerciseId: Long, submission: String): AutoAssessment {
-    val autoExercise = getAutoExerciseDetails(autoExerciseId)
-    val request = mapToExecutorRequest(autoExercise, submission)
-    val executors = getCapableExecutors(autoExerciseId)
-    val selectedExecutor = selectExecutor(executors)
-    return callExecutor(selectedExecutor, request)
+fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessment {
+    return AutoAssessment(42, "gut")
+//    val autoExercise = getAutoExerciseDetails(autoExerciseId)
+//    val request = mapToExecutorRequest(autoExercise, submission)
+//    val executors = getCapableExecutors(autoExerciseId)
+//    val selectedExecutor = selectExecutor(executors)
+//    return callExecutor(selectedExecutor, request)
 }
 
 
@@ -53,7 +55,7 @@ data class AutoAssessment(
         val grade: Int, val feedback: String)
 
 
-private fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails {
+private fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessExerciseDetails {
     return transaction {
         val assets = Asset
                 .select { Asset.autoExercise eq autoExerciseId }
@@ -101,7 +103,7 @@ private fun mapToExecutorRequest(exercise: AutoAssessExerciseDetails, submission
                 exercise.maxMem
         )
 
-private fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
+private fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExecutor> {
     return transaction {
         (Executor innerJoin AutoExerciseExecutor)
                 .select { AutoExerciseExecutor.autoExercise eq autoExerciseId }
