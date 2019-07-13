@@ -14,14 +14,13 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.scheduling.annotation.Async
 import org.springframework.security.access.annotation.Secured
-import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class StudentSubmitCont(val autoAssessComponent: AutoAssessComponent) {
+class StudentSubmitCont {
 
     data class Req(
             @JsonProperty("solution", required = true) val solution: String)
@@ -42,7 +41,6 @@ class StudentSubmitCont(val autoAssessComponent: AutoAssessComponent) {
         submitSolution(courseExId, solutionBody.solution, caller.id)
     }
 
-    // Must be in Spring Component to autowire autoAssessComponent
     private fun submitSolution(courseExId: Long, solution: String, studentId: String) {
         when (selectGraderType(courseExId)) {
             GraderType.TEACHER -> {
@@ -52,8 +50,28 @@ class StudentSubmitCont(val autoAssessComponent: AutoAssessComponent) {
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS)
-                autoAssessComponent.autoAssessAsync(courseExId, solution, submissionId)
+                autoAssessAsync(courseExId, solution, submissionId)
             }
+        }
+    }
+
+    // Must be in Spring Component for Async
+    @Async
+    fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long) {
+        try {
+            val autoExerciseId = selectAutoExId(courseExId)
+            if (autoExerciseId == null) {
+                insertAutoAssFailed(submissionId)
+                throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+            }
+
+            log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
+            val autoAss = autoAssess(autoExerciseId, solution)
+            log.debug { "Finished autoassessment" }
+            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId)
+        } catch (e: Exception) {
+            log.error("Autoassessment failed", e)
+            insertAutoAssFailed(submissionId)
         }
     }
 }
@@ -110,31 +128,6 @@ private fun insertAutoAssFailed(submissionId: Long) {
     transaction {
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.FAILED
-        }
-    }
-}
-
-
-@Component
-class AutoAssessComponent {
-    // TODO: move to controller
-    // Must be in Spring Component for Async
-    @Async
-    fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long) {
-        try {
-            val autoExerciseId = selectAutoExId(courseExId)
-            if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId)
-                throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-            }
-
-            log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
-            val autoAss = autoAssess(autoExerciseId, solution)
-            log.debug { "Finished autoassessment" }
-            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId)
-        } catch (e: Exception) {
-            log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId)
         }
     }
 }
