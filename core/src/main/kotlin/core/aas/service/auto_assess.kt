@@ -32,12 +32,11 @@ private val log = KotlinLogging.logger {}
  * @throws ExecutorException if an executor fails
  */
 fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessment {
-    return AutoAssessment(42, "gut")
-//    val autoExercise = getAutoExerciseDetails(autoExerciseId)
-//    val request = mapToExecutorRequest(autoExercise, submission)
-//    val executors = getCapableExecutors(autoExerciseId)
-//    val selectedExecutor = selectExecutor(executors)
-//    return callExecutor(selectedExecutor, request)
+    val autoExercise = getAutoExerciseDetails(autoExerciseId)
+    val request = mapToExecutorRequest(autoExercise, submission)
+    val executors = getCapableExecutors(autoExerciseId)
+    val selectedExecutor = selectExecutor(executors)
+    return callExecutor(selectedExecutor, request)
 }
 
 
