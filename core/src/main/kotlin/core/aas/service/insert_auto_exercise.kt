@@ -19,7 +19,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * @throws InvalidRequestException if some required params are missing or incorrect
  */
 fun insertAutoExercise(gradingScript: String?, containerImage: String?, maxTime: Int?, maxMem: Int?,
-                       assets: List<Pair<String, String>>?, executors: List<String>?): EntityID<Long> {
+                       assets: List<Pair<String, String>>?, executors: List<Long>?): EntityID<Long> {
 
     return transaction {
 
@@ -38,7 +38,7 @@ fun insertAutoExercise(gradingScript: String?, containerImage: String?, maxTime:
         }
 
         val executorIds = executors.map {
-            val executorId = EntityID(it.idToLongOrInvalidReq(), Executor)
+            val executorId = EntityID(it, Executor)
             if (Executor.select { Executor.id eq executorId }.count() == 0) {
                 throw InvalidRequestException("Executor $executorId does not exist")
             }

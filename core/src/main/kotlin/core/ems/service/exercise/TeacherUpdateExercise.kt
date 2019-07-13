@@ -69,7 +69,7 @@ private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerci
                 if (req.graderType == GraderType.AUTO) {
                     insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
                             req.assets?.map { it.fileName to it.fileContent },
-                            req.executors?.map { it.executorId })
+                            req.executors?.map { it.executorId.idToLongOrInvalidReq() })
 
                 } else null
 

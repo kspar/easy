@@ -7,6 +7,7 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
 import core.db.Teacher
+import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -66,7 +67,7 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
                 if (req.graderType == GraderType.AUTO) {
                     insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
                             req.assets?.map { it.fileName to it.fileContent },
-                            req.executors?.map { it.executorId })
+                            req.executors?.map { it.executorId.idToLongOrInvalidReq() })
 
                 } else null
 
