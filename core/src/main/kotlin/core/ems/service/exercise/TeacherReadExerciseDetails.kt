@@ -2,8 +2,12 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import core.aas.service.selectAutoExercise
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.CourseExercise
+import core.db.Exercise
+import core.db.ExerciseVer
+import core.db.GraderType
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -23,68 +27,93 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadExerciseDetailsController {
+class TeacherReadExDetailsCont {
 
-    data class ExDetailsResponse(@JsonProperty("title") val title: String,
-                                 @JsonProperty("text_html") val text: String?,
-                                 @JsonSerialize(using = DateTimeSerializer::class)
-                                 @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-                                 @JsonSerialize(using = DateTimeSerializer::class)
-                                 @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
-                                 @JsonProperty("grader_type") val grader: GraderType,
-                                 @JsonProperty("threshold") val threshold: Int,
-                                 @JsonSerialize(using = DateTimeSerializer::class)
-                                 @JsonProperty("last_modified") val lastModified: DateTime,
-                                 @JsonProperty("student_visible") val studentVisible: Boolean,
-                                 @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
-                                 @JsonProperty("instructions_html") val instructionsHtml: String?,
-                                 @JsonProperty("title_alias") val titleAlias: String?)
+    data class Resp(
+            @JsonProperty("title") val title: String,
+            @JsonProperty("title_alias") val titleAlias: String?,
+            @JsonProperty("instructions_html") val instructionsHtml: String?,
+            @JsonProperty("text_html") val text: String?,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+            @JsonProperty("grader_type") val grader: GraderType,
+            @JsonProperty("threshold") val threshold: Int,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("last_modified") val lastModified: DateTime,
+            @JsonProperty("student_visible") val studentVisible: Boolean,
+            @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
+            @JsonProperty("grading_script") val gradingScript: String?,
+            @JsonProperty("container_image") val containerImage: String?,
+            @JsonProperty("max_time_sec") val maxTime: Int?,
+            @JsonProperty("max_mem_mb") val maxMem: Int?,
+            @JsonProperty("assets") val assets: List<RespAsset>?,
+            @JsonProperty("executors") val executors: List<RespExecutor>?)
+
+    data class RespAsset(
+            @JsonProperty("file_name") val fileName: String,
+            @JsonProperty("file_content") val fileContent: String)
+
+    data class RespExecutor(
+            @JsonProperty("id") val id: String,
+            @JsonProperty("name") val name: String)
+
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}")
     fun readExDetails(@PathVariable("courseId") courseIdString: String,
                       @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                      caller: EasyUser): ExDetailsResponse {
+                      caller: EasyUser): Resp {
 
         log.debug { "Getting exercise details for ${caller.id} for course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val exerciseDetails = selectTeacherCourseExerciseDetails(courseId, courseExerciseIdString.idToLongOrInvalidReq())
+        return selectCourseExerciseDetails(courseId, courseExerciseIdString.idToLongOrInvalidReq())
                 ?: throw InvalidRequestException("No course exercise found with id $courseExerciseIdString from course $courseId")
-
-        return mapToExDetailsResponse(exerciseDetails)
     }
 
-    private fun mapToExDetailsResponse(exDetails: TeacherExDetails): ExDetailsResponse =
-            ExDetailsResponse(exDetails.title, exDetails.text, exDetails.softDeadline, exDetails.hardDeadline,
-                    exDetails.grader, exDetails.threshold, exDetails.lastModified, exDetails.studentVisible,
-                    exDetails.assStudentVisible, exDetails.instructionsHtml, exDetails.titleAlias)
 }
 
 
-data class TeacherExDetails(val title: String, val text: String?, val softDeadline: DateTime?, val hardDeadline: DateTime?,
-                            val grader: GraderType, val threshold: Int, val lastModified: DateTime,
-                            val studentVisible: Boolean, val assStudentVisible: Boolean, val instructionsHtml: String?,
-                            val titleAlias: String?)
-
-
-private fun selectTeacherCourseExerciseDetails(courseId: Long, courseExId: Long): TeacherExDetails? {
+private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): TeacherReadExDetailsCont.Resp? {
     return transaction {
-        (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(Course.id, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.hardDeadline,
-                        CourseExercise.gradeThreshold, CourseExercise.studentVisible, CourseExercise.assessmentsStudentVisible,
-                        ExerciseVer.validTo, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.validFrom,
-                        CourseExercise.instructionsHtml, CourseExercise.titleAlias)
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(CourseExercise.softDeadline,
+                        CourseExercise.hardDeadline,
+                        CourseExercise.gradeThreshold,
+                        CourseExercise.studentVisible,
+                        CourseExercise.assessmentsStudentVisible,
+                        CourseExercise.instructionsHtml,
+                        CourseExercise.titleAlias,
+
+                        ExerciseVer.title,
+                        ExerciseVer.textHtml,
+                        ExerciseVer.graderType,
+                        ExerciseVer.validFrom,
+                        ExerciseVer.autoExerciseId
+                )
                 .select {
-                    Course.id eq courseId and
+                    CourseExercise.course eq courseId and
                             (CourseExercise.id eq courseExId) and
                             ExerciseVer.validTo.isNull()
                 }
                 .map {
-                    TeacherExDetails(
+                    val graderType = it[ExerciseVer.graderType]
+
+                    val autoExercise =
+                            if (graderType == GraderType.AUTO) {
+                                val autoExerciseId = it[ExerciseVer.autoExerciseId]
+                                        ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+                                selectAutoExercise(autoExerciseId)
+                            } else null
+
+                    TeacherReadExDetailsCont.Resp(
                             it[ExerciseVer.title],
+                            it[CourseExercise.titleAlias],
+                            it[CourseExercise.instructionsHtml],
                             it[ExerciseVer.textHtml],
                             it[CourseExercise.softDeadline],
                             it[CourseExercise.hardDeadline],
@@ -93,8 +122,12 @@ private fun selectTeacherCourseExerciseDetails(courseId: Long, courseExId: Long)
                             it[ExerciseVer.validFrom],
                             it[CourseExercise.studentVisible],
                             it[CourseExercise.assessmentsStudentVisible],
-                            it[CourseExercise.instructionsHtml],
-                            it[CourseExercise.titleAlias]
+                            autoExercise?.gradingScript,
+                            autoExercise?.containerImage,
+                            autoExercise?.maxTime,
+                            autoExercise?.maxMem,
+                            autoExercise?.assets?.map { TeacherReadExDetailsCont.RespAsset(it.first, it.second) },
+                            autoExercise?.executors?.map { TeacherReadExDetailsCont.RespExecutor(it.id.toString(), it.name) }
                     )
                 }
                 .singleOrNull()

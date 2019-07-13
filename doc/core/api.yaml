@@ -294,7 +294,74 @@ paths:
         200:
           description: Exercise details.
           schema:
-            $ref: '#/definitions/TeacherCourseExerciseDetails'
+            properties:
+              title:
+                type: string
+              title_alias:
+                type: string
+              instructions_html:
+                type: string
+              text_html:
+                type: string
+              soft_deadline:
+                type: string
+                format: date-time
+              hard_deadline:
+                type: string
+                format: date-time
+              grader_type:
+                $ref: '#/definitions/GraderType'
+              threshold:
+                type: integer
+              last_modified:
+                type: string
+                format: date-time
+              student_visible:
+                type: boolean
+              assessments_student_visible:
+                type: boolean
+              grading_script:
+                type: string
+                description: Exists iff grader_type == AUTO.
+              container_image:
+                type: string
+                description: Exists iff grader_type == AUTO.
+              max_time_sec:
+                type: integer
+                description: Exists iff grader_type == AUTO.
+              max_mem_mb:
+                type: integer
+                description: Exists iff grader_type == AUTO.
+              assets:
+                type: array
+                description: Exists iff grader_type == AUTO.
+                items:
+                  properties:
+                    file_name:
+                      type: string
+                    file_content:
+                      type: string
+                  required:
+                    - file_name
+                    - file_content
+              executors:
+                type: array
+                minItems: 1
+                description: Exists iff grader_type == AUTO.
+                items:
+                  properties:
+                    executor_id:
+                      type: string
+                  required:
+                    - executor_id
+            required:
+              - title
+              - grader_type
+              - threshold
+              - last_modified
+              - student_visible
+              - assessments_student_visible
+
 
     delete:
       summary: Remove this exercise from this course.
@@ -819,34 +886,6 @@ definitions:
         type: integer
       completed_count:
         type: integer
-
-  TeacherCourseExerciseDetails:
-    properties:
-      title:
-        type: string
-      text_html:
-        type: string
-      soft_deadline:
-        type: string
-        format: date-time
-      hard_deadline:
-        type: string
-        format: date-time
-      grader_type:
-        $ref: '#/definitions/GraderType'
-      threshold:
-        type: integer
-      last_modified:
-        type: string
-        format: date-time
-      student_visible:
-        type: boolean
-      assessments_student_visible:
-        type: boolean
-      instructions_html:
-        type: string
-      title_alias:
-        type: string
 
   TeacherSubmissionSummary:
     properties:
