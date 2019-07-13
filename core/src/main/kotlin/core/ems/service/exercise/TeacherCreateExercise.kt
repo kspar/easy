@@ -1,13 +1,16 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.aas.service.insertAutoExercise
 import core.conf.security.EasyUser
-import core.db.*
-import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
+import core.db.Exercise
+import core.db.ExerciseVer
+import core.db.GraderType
+import core.db.Teacher
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -58,53 +61,14 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
     val teacherId = EntityID(ownerId, Teacher)
 
     return transaction {
-        addLogger(StdOutSqlLogger)
 
-        var newAutoExerciseId: EntityID<Long>? = null
+        val newAutoExerciseId =
+                if (req.graderType == GraderType.AUTO) {
+                    insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
+                            req.assets?.map { it.fileName to it.fileContent },
+                            req.executors?.map { it.executorId })
 
-        if (req.graderType == GraderType.AUTO) {
-
-            if (req.gradingScript == null ||
-                    req.containerImage == null ||
-                    req.maxTime == null ||
-                    req.maxMem == null ||
-                    req.assets == null ||
-                    req.executors == null) {
-
-                throw InvalidRequestException("Parameters for autoassessable exercise are missing.")
-            }
-
-            if (req.executors.isEmpty()) {
-                throw InvalidRequestException("Autoassessable exercise must have at least 1 executor")
-            }
-
-            val executorIds = req.executors.map {
-                val executorId = EntityID(it.executorId.idToLongOrInvalidReq(), Executor)
-                if (Executor.select { Executor.id eq executorId }.count() == 0) {
-                    throw InvalidRequestException("Executor $executorId does not exist")
-                }
-                executorId
-            }
-
-            newAutoExerciseId = AutoExercise.insertAndGetId {
-                it[gradingScript] = req.gradingScript
-                it[containerImage] = req.containerImage
-                it[maxTime] = req.maxTime
-                it[maxMem] = req.maxMem
-            }
-
-            Asset.batchInsert(req.assets) {
-                this[Asset.autoExercise] = newAutoExerciseId
-                this[Asset.fileName] = it.fileName
-                this[Asset.fileContent] = it.fileContent
-            }
-
-            AutoExerciseExecutor.batchInsert(executorIds) {
-                this[AutoExerciseExecutor.autoExercise] = newAutoExerciseId
-                this[AutoExerciseExecutor.executor] = it
-            }
-        }
-
+                } else null
 
         val exerciseId = Exercise.insertAndGetId {
             it[owner] = teacherId
@@ -125,3 +89,4 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
         exerciseId.value
     }
 }
+

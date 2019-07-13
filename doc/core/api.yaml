@@ -550,7 +550,7 @@ paths:
                 type: string
 
 
-  /teacher/exercises/{exerciseId}:
+  /exercises/{exerciseId}:
     parameters:
       - $ref: '#/parameters/ExerciseId'
     put:
@@ -568,6 +568,46 @@ paths:
                 type: string
               public:
                 type: boolean
+              grader_type:
+                $ref: '#/definitions/GraderType'
+              grading_script:
+                type: string
+                description: Required if grader_type == AUTO, else ignored.
+              container_image:
+                type: string
+                description: Required if grader_type == AUTO, else ignored.
+              max_time_sec:
+                type: integer
+                description: Required if grader_type == AUTO, else ignored.
+              max_mem_mb:
+                type: integer
+                description: Required if grader_type == AUTO, else ignored.
+              assets:
+                type: array
+                description: Required if grader_type == AUTO, else ignored.
+                items:
+                  properties:
+                    file_name:
+                      type: string
+                    file_content:
+                      type: string
+                  required:
+                    - file_name
+                    - file_content
+              executors:
+                type: array
+                minItems: 1
+                description: Required if grader_type == AUTO, else ignored.
+                items:
+                  properties:
+                    executor_id:
+                      type: string
+                  required:
+                    - executor_id
+            required:
+              - title
+              - public
+              - grader_type
       responses:
         200:
           description: Modified.
