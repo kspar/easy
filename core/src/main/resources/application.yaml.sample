@@ -20,7 +20,7 @@ spring:
 
 
 easy:
-  ems:
+  core:
     auth-enabled: true
     mail:
       sys:

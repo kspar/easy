@@ -14,11 +14,11 @@ private val log = KotlinLogging.logger {}
 @Service
 class SendMailService(private val mailSender: JavaMailSender) {
 
-    @Value("\${easy.ems.mail.sys.from}")
+    @Value("\${easy.core.mail.sys.from}")
     private lateinit var fromAddress: String
-    @Value("\${easy.ems.mail.sys.to}")
+    @Value("\${easy.core.mail.sys.to}")
     private lateinit var toSysAddress: String
-    @Value("\${easy.ems.mail.sys.enabled}")
+    @Value("\${easy.core.mail.sys.enabled}")
     private var enabled: Boolean = true
 
     @Async
