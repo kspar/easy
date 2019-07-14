@@ -36,6 +36,7 @@ class AddStudentsToCourseController {
     }
 }
 
+// TODO: use InvalidRequestException with custom code
 class StudentNotFoundException(override val message: String) : RuntimeException(message)
 
 private fun insertStudentCourseAccesses(courseId: Long, studentIds: List<String>) {

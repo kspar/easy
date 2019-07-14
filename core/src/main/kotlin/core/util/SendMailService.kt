@@ -7,7 +7,6 @@ import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.time.Instant
-import java.util.*
 
 private val log = KotlinLogging.logger {}
 
@@ -22,25 +21,24 @@ class SendMailService(private val mailSender: JavaMailSender) {
     private var enabled: Boolean = true
 
     @Async
-    fun sendSystemNotification(message: String) {
+    fun sendSystemNotification(message: String, id: String) {
         if (!enabled) {
             log.info { "System notifications disabled, ignoring" }
             return
         }
 
         val time = Instant.now().toString()
-        val messageId = UUID.randomUUID().toString()
-        log.info("Sending notification $messageId ($time) from $fromAddress to $toSysAddress")
+        log.info("Sending notification $id ($time) from $fromAddress to $toSysAddress")
 
-        val bodyText = "$time\n$messageId\n\n$message"
+        val bodyText = "$time\n$id\n\n$message"
 
         val mailMessage = SimpleMailMessage()
-        mailMessage.setSubject("Easy:ems system notification $messageId")
+        mailMessage.setSubject("Easy:core system notification $id")
         mailMessage.setText(bodyText)
         mailMessage.setTo(toSysAddress)
         mailMessage.setFrom(fromAddress)
         mailSender.send(mailMessage)
 
-        log.info("Sent notification $messageId")
+        log.info("Sent notification $id")
     }
 }
