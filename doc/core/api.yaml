@@ -521,6 +521,8 @@ paths:
 
 
   /courses/{courseId}/students:
+    parameters:
+      - $ref: '#/parameters/CourseId'
     post:
       summary: Add the given students to this course
       tags:
