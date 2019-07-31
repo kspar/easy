@@ -6,6 +6,7 @@ import core.util.SendMailService
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
@@ -80,6 +81,23 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.error("Request info: ${request.getDescription(true)}")
         mailService.sendSystemNotification(ex.stackTraceString, id)
         return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    @ExceptionHandler(value = [AccessDeniedException::class])
+    fun handleAccessDeniedException(ex: AccessDeniedException, request: WebRequest): ResponseEntity<Any> {
+        val id = UUID.randomUUID().toString()
+
+        log.warn("Access denied error: ${ex.message}")
+        log.warn("Request info: ${request.getDescription(true)}")
+
+        mailService.sendSystemNotification(ex.stackTraceString, id)
+
+        val resp = RequestErrorResponse(id,
+                ReqError.ROLE_NOT_ALLOWED.errorCodeStr,
+                emptyMap(),
+                "Access denied for this request due to insufficient access privileges.")
+
+        return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
 }
 

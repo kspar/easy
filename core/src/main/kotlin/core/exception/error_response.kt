@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 
 enum class ReqError(val errorCodeStr: String) {
-    ENTITY_WITH_ID_NOT_FOUND("ENTITY_WITH_ID_NOT_FOUND")
+    ENTITY_WITH_ID_NOT_FOUND("ENTITY_WITH_ID_NOT_FOUND"),
+    ROLE_NOT_ALLOWED("ROLE_NOT_ALLOWED")
 }
 
 
