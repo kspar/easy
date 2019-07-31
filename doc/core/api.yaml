@@ -744,6 +744,30 @@ paths:
       responses:
         200:
           description: Deleted.
+    put:
+      parameters:
+        - $ref: '#/parameters/ExecutorId'
+        - name: executor
+          in: body
+          required: true
+          schema:
+            properties:
+              name:
+                type: string
+              base_url:
+                type: string
+              max_load:
+                type: integer
+            required:
+              - name
+              - base_url
+              - max_load
+      summary: Update executor.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Updated.
 
 
 
