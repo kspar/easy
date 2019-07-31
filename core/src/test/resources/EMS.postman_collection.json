@@ -280,7 +280,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"string\",\r\n  \"max_load\": 0\r\n}"
+					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"http://localhost:8080/\",\r\n  \"max_load\": 100\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors",
@@ -352,7 +352,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"string\",\r\n  \"max_load\": 0\r\n}"
+					"raw": "{\r\n  \"name\": \"string\",\r\n  \"base_url\": \"http://localhost:8080/\",\r\n  \"max_load\": 100\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors",
@@ -494,7 +494,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"string2\",\r\n  \"base_url\": \"string2\",\r\n  \"max_load\": 0\r\n}"
+					"raw": "{\r\n  \"name\": \"string2\",\r\n  \"base_url\": \"string2\",\r\n  \"max_load\": 100\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors/2",
@@ -2373,6 +2373,156 @@
 							"key": "role",
 							"value": "student"
 						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: student: post: submit submission: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "student"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"solution\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/submissions",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"student",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"submissions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: student: get: latest autograded submission: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "student"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/submissions/latest/autograded",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"student",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"submissions",
+						"latest",
+						"autograded"
 					]
 				}
 			},
