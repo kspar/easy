@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseExercise
+import core.db.CourseExercise.orderIdx
 import core.db.Exercise
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -70,13 +71,25 @@ private fun isExerciseOnCourse(courseId: Long, exerciseId: Long): Boolean {
 private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.NewCourseExerciseBody) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
+
+        val currentMaxOrderIdx = CourseExercise
+                .select {
+                    CourseExercise.course eq courseId
+                }.map { it[orderIdx] }
+                .max()
+
+        val orderIndex = when (currentMaxOrderIdx) {
+            null -> 0
+            else -> currentMaxOrderIdx + 1
+        }
+
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)
             it[exercise] = EntityID(exerciseId, Exercise)
             it[gradeThreshold] = body.threshold
             it[softDeadline] = body.softDeadline
             it[hardDeadline] = body.hardDeadline
-            it[orderIdx] = 0 // TODO: not set at the moment
+            it[orderIdx] = orderIndex
             it[studentVisible] = body.studentVisible
             it[assessmentsStudentVisible] = body.assStudentVisible
             it[instructionsHtml] = body.instructionsHtml
