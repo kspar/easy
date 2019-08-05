@@ -27,3 +27,8 @@ easy:
         enabled: true
         from: "<from-address>"
         to: "<to-address>"
+    service:
+      await-assessment:
+        sleep-start-ms: 500
+        sleep-step-ms: 250
+        timeout-steps: 10

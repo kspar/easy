@@ -2510,7 +2510,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/submissions/latest/autograded",
+					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/submissions/latest/await",
 					"host": [
 						"{{EMSBASE}}"
 					],
@@ -2522,7 +2522,7 @@
 						"1",
 						"submissions",
 						"latest",
-						"autograded"
+						"await"
 					]
 				}
 			},

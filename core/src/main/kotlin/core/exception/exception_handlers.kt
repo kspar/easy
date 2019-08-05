@@ -100,13 +100,15 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
 
-    @ExceptionHandler(value = [ServerTimeoutException::class])
-    fun handleServerTimeOutException(ex: ServerTimeoutException, request: WebRequest): ResponseEntity<String> {
+    @ExceptionHandler(value = [AwaitTimeoutException::class])
+    fun handleServerTimeOutException(ex: AwaitTimeoutException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
         log.info("ServerTimeoutException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
         mailService.sendSystemNotification(ex.stackTraceString, id)
-        return ResponseEntity(ex.message, HttpStatus.BAD_REQUEST)
+
+        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
+        return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }
 

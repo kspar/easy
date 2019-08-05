@@ -8,9 +8,9 @@ class InvalidRequestException(
 ) : RuntimeException(message)
 
 
-class ServerTimeoutException(
+class AwaitTimeoutException(
         override val message: String,
-        val code: ReqError? = null,
+        val code: ReqError,
         vararg val attributes: Pair<String, String>
 ) : RuntimeException(message)
 
