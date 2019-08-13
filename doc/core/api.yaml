@@ -281,6 +281,72 @@ paths:
           description: Exercise added.
 
 
+  /courses/teacher/{courseId}/grades:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+    get:
+      summary: Get all the grades from all of the course students and from all of the course exercises.
+      parameters:
+        - in: query
+          name: offset
+          type: integer
+          description: The number of exercises to skip before starting to collect the result set.
+        - in: query
+          name: limit
+          type: integer
+          description: The numbers of exercises to return.
+        - in: query
+          name: search
+          type: string
+          description: Client-specified search string.
+      tags:
+        - admin
+        - teacher
+      responses:
+        200:
+          description: Exercises, students and their grades.
+          schema:
+            properties:
+              student_count:
+                type: integer
+              students:
+                type: array
+                items:
+                  properties:
+                    student_id:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+                    email:
+                      type: string
+              exercises:
+                type: array
+                items:
+                  properties:
+                    exercise_id:
+                      type: string
+                    effective_title:
+                      type: string
+                    grade_threshold:
+                      type: integer
+                    student_visible:
+                      type: boolean
+                    grades:
+                      type: array
+                      items:
+                        properties:
+                          student_id:
+                            type: string
+                          grade:
+                            type: integer
+                          grader_type:
+                            $ref: '#/definitions/GraderType'
+                          feedback:
+                            type: string
+
+
   /teacher/courses/{courseId}/exercises/{courseExerciseId}:
     parameters:
       - $ref: '#/parameters/CourseId'
