@@ -57,14 +57,14 @@ class TeacherReadGradesController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectGradesResponse(courseId, 0, 0, search)
+        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), search)
     }
 }
 
 private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, search: String?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
     val students = selectStudentsOnCourse(courseId)
-    val exercises = selectExercisesOnCourse(courseId)
+    val exercises = selectExercisesOnCourse(courseId, offset ?: 0, limit ?: studentCount)
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
@@ -126,7 +126,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): TeacherReadGradesControl
             .firstOrNull()
 }
 
-private fun selectExercisesOnCourse(courseId: Long): List<TeacherReadGradesController.Exercises> {
+private fun selectExercisesOnCourse(courseId: Long, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id,
@@ -137,6 +137,7 @@ private fun selectExercisesOnCourse(courseId: Long): List<TeacherReadGradesContr
                         ExerciseVer.validTo,
                         CourseExercise.titleAlias)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+                .limit(limit, offset)
                 .orderBy(CourseExercise.orderIdx to true)
                 .map { ex ->
                     TeacherReadGradesController.Exercises(
