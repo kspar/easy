@@ -57,11 +57,11 @@ class TeacherReadGradesController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return generateResponse(courseId, 0, 0, search)
+        return selectGradesResponse(courseId, 0, 0, search)
     }
 }
 
-private fun generateResponse(courseId: Long, offset: Int?, limit: Int?, search: String?): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, search: String?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
     val students = selectStudentsOnCourse(courseId)
     val exercises = selectExercisesOnCourse(courseId)
