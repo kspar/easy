@@ -73,7 +73,7 @@ private fun selectStudentsOnCourse(courseId: Long): List<TeacherReadGradesContro
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
                 .select { StudentCourseAccess.course eq courseId }
-                .mapNotNull {
+                .map {
                     TeacherReadGradesController.Students(
                             it[Student.id].value,
                             it[Student.givenName],
