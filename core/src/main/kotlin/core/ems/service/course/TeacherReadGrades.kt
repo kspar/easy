@@ -71,7 +71,7 @@ private fun generateResponse(courseId: Long, offset: Int?, limit: Int?, search: 
 private fun selectStudentsOnCourse(courseId: Long): List<TeacherReadGradesController.Students> {
     return transaction {
         (Student innerJoin StudentCourseAccess)
-                .slice(Student.id, Student.email, Student.givenName, Student.familyName, StudentCourseAccess.course)
+                .slice(Student.id, Student.email, Student.givenName, Student.familyName)
                 .select { StudentCourseAccess.course eq courseId }
                 .mapNotNull {
                     TeacherReadGradesController.Students(
