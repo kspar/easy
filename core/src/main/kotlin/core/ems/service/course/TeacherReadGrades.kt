@@ -10,6 +10,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
@@ -57,22 +58,40 @@ class TeacherReadGradesController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), search)
+        val query = search?.split(" ")
+
+        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), query)
     }
 }
 
-private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, search: String?): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
-    val students = selectStudentsOnCourse(courseId)
-    val exercises = selectExercisesOnCourse(courseId, offset ?: 0, limit ?: studentCount)
+    val students = selectStudentsOnCourse(courseId, queryWords)
+
+    val exercises = selectExercisesOnCourse(courseId,
+            students.map { it.studentId },
+            offset ?: 0,
+            limit ?: Int.MAX_VALUE)
+
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
-private fun selectStudentsOnCourse(courseId: Long): List<TeacherReadGradesController.Students> {
+private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): List<TeacherReadGradesController.Students> {
     return transaction {
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
-                .select { StudentCourseAccess.course eq courseId }
+                .select {
+                    when (queryWords) {
+                        null -> StudentCourseAccess.course eq courseId
+                        else -> {
+                            StudentCourseAccess.course eq courseId and
+                                    ((Student.id inList (queryWords)) or
+                                            (Student.email inList (queryWords)) or
+                                            (Student.givenName inList queryWords) or
+                                            (Student.familyName inList (queryWords)))
+                        }
+                    }
+                }
                 .map {
                     TeacherReadGradesController.Students(
                             it[Student.id].value,
@@ -84,11 +103,13 @@ private fun selectStudentsOnCourse(courseId: Long): List<TeacherReadGradesContro
     }
 }
 
-fun selectLatestGradeForSubmission(submissionId: Long): TeacherReadGradesController.Grade? {
+fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.Grade? {
     val studentId = Submission
             .select { Submission.id eq submissionId }
             .map { it[Submission.student] }
             .firstOrNull()?.value.toString()
+
+    if (!studentIds.contains(studentId)) return null
 
     val teacherGrade = TeacherAssessment
             .slice(TeacherAssessment.submission,
@@ -126,7 +147,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): TeacherReadGradesControl
             .firstOrNull()
 }
 
-private fun selectExercisesOnCourse(courseId: Long, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
+private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id,
@@ -146,7 +167,7 @@ private fun selectExercisesOnCourse(courseId: Long, offset: Int, limit: Int): Li
                             ex[CourseExercise.gradeThreshold],
                             ex[CourseExercise.studentVisible],
                             selectLatestSubmissionsForExercise(ex[CourseExercise.id].value).mapNotNull {
-                                selectLatestGradeForSubmission(it)
+                                selectLatestGradeForSubmission(it, studentIds)
                             }
                     )
                 }
