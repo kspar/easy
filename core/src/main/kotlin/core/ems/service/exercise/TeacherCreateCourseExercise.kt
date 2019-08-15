@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseExercise
-import core.db.CourseExercise.orderIdx
 import core.db.Exercise
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -71,13 +70,14 @@ private fun isExerciseOnCourse(courseId: Long, exerciseId: Long): Boolean {
 private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.NewCourseExerciseBody) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
-
         val currentMaxOrderIdx = CourseExercise
                 .slice(CourseExercise.course, CourseExercise.orderIdx)
                 .select {
                     CourseExercise.course eq courseId
-                }.map { it[orderIdx] }
-                .max()
+                }.orderBy(CourseExercise.orderIdx, isAsc = false)
+                .limit(1)
+                .map { it[CourseExercise.orderIdx] }
+                .firstOrNull()
 
         val orderIndex = when (currentMaxOrderIdx) {
             null -> 0
