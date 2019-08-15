@@ -9,6 +9,7 @@ import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.containsInList
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
+import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
@@ -59,9 +60,21 @@ class TeacherReadGradesController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
+        if (!isCoursePresent(courseId)) {
+            throw InvalidRequestException("Course $courseId does not exist (caller: ${caller.id})")
+        }
+
         val query = search?.split(" ")
 
         return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), query)
+    }
+}
+
+private fun isCoursePresent(courseId: Long): Boolean {
+    return transaction {
+        Course.select {
+            Course.id eq courseId
+        }.count() > 0
     }
 }
 
