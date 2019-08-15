@@ -73,6 +73,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
     transaction {
 
         val currentMaxOrderIdx = CourseExercise
+                .slice(CourseExercise.course, CourseExercise.orderIdx)
                 .select {
                     CourseExercise.course eq courseId
                 }.map { it[orderIdx] }
