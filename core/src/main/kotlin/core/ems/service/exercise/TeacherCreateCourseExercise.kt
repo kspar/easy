@@ -50,8 +50,12 @@ class TeacherCreateCourseExerciseController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
+        if (!isCoursePresent(courseId)) {
+            throw InvalidRequestException("Course $courseId does not exist (caller: ${caller.id})")
+        }
+
         if (isExerciseOnCourse(courseId, exerciseId)) {
-            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId")
+            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId (caller: ${caller.id})")
         }
 
         insertCourseExercise(courseId, body)
@@ -63,6 +67,14 @@ private fun isExerciseOnCourse(courseId: Long, exerciseId: Long): Boolean {
     return transaction {
         CourseExercise.select {
             CourseExercise.course eq courseId and (CourseExercise.exercise eq exerciseId)
+        }.count() > 0
+    }
+}
+
+private fun isCoursePresent(courseId: Long): Boolean {
+    return transaction {
+        Course.select {
+            Course.id eq courseId
         }.count() > 0
     }
 }
