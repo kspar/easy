@@ -44,7 +44,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): Int? {
 infix fun <T> ExpressionWithColumnType<T>.containsInList(list: Iterable<T>): Op<Boolean> = ContainsListOrNotInListOp(this, list, containsInList = true)
 
 /**
- * inList analogue for IDs, controls similarity (~ / !~), not equality.
+ * Derived from Kotlin inList for IDs, controls similarity (~ / !~), not equality.
  */
 @Suppress("UNCHECKED_CAST")
 @JvmName("inListIds")
