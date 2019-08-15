@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.containsInList
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
 import mu.KotlinLogging
@@ -85,10 +86,10 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): L
                         null -> StudentCourseAccess.course eq courseId
                         else -> {
                             StudentCourseAccess.course eq courseId and
-                                    ((Student.id inList (queryWords)) or
-                                            (Student.email inList (queryWords)) or
-                                            (Student.givenName inList queryWords) or
-                                            (Student.familyName inList (queryWords)))
+                                    ((Student.id containsInList (queryWords)) or
+                                            (Student.email containsInList (queryWords)) or
+                                            (Student.givenName containsInList queryWords) or
+                                            (Student.familyName containsInList (queryWords)))
                         }
                     }
                 }
@@ -102,6 +103,34 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): L
                 }
     }
 }
+
+private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
+    return transaction {
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(CourseExercise.id,
+                        CourseExercise.gradeThreshold,
+                        CourseExercise.studentVisible,
+                        CourseExercise.orderIdx,
+                        ExerciseVer.title,
+                        ExerciseVer.validTo,
+                        CourseExercise.titleAlias)
+                .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+                .limit(limit, offset)
+                .orderBy(CourseExercise.orderIdx to true)
+                .map { ex ->
+                    TeacherReadGradesController.Exercises(
+                            ex[CourseExercise.id].value.toString(),
+                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                            ex[CourseExercise.gradeThreshold],
+                            ex[CourseExercise.studentVisible],
+                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value).mapNotNull {
+                                selectLatestGradeForSubmission(it, studentIds)
+                            }
+                    )
+                }
+    }
+}
+
 
 fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.Grade? {
     val studentId = Submission
@@ -145,31 +174,4 @@ fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>)
                         assessment[AutomaticAssessment.feedback])
             }
             .firstOrNull()
-}
-
-private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
-    return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id,
-                        CourseExercise.gradeThreshold,
-                        CourseExercise.studentVisible,
-                        CourseExercise.orderIdx,
-                        ExerciseVer.title,
-                        ExerciseVer.validTo,
-                        CourseExercise.titleAlias)
-                .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .limit(limit, offset)
-                .orderBy(CourseExercise.orderIdx to true)
-                .map { ex ->
-                    TeacherReadGradesController.Exercises(
-                            ex[CourseExercise.id].value.toString(),
-                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                            ex[CourseExercise.gradeThreshold],
-                            ex[CourseExercise.studentVisible],
-                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value).mapNotNull {
-                                selectLatestGradeForSubmission(it, studentIds)
-                            }
-                    )
-                }
-    }
 }

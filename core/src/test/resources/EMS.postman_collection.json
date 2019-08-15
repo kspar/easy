@@ -2734,7 +2734,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{EMSBASE}}/courses/teacher/1/grades?search=foo bar",
+					"raw": "{{EMSBASE}}/courses/teacher/1/grades?search=oo",
 					"host": [
 						"{{EMSBASE}}"
 					],
@@ -2747,7 +2747,7 @@
 					"query": [
 						{
 							"key": "search",
-							"value": "foo bar"
+							"value": "oo"
 						}
 					]
 				}
