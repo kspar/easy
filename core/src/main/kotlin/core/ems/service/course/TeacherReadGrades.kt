@@ -92,7 +92,8 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: String?, offset: 
                         null -> StudentCourseAccess.course eq courseId
                         else -> {
                             StudentCourseAccess.course eq courseId and
-                                    ((Student.email.lowerCase() regexp queryWords) or
+                                    ((Student.id inList queryWords.split("\\|")) or
+                                            (Student.email.lowerCase() regexp queryWords) or
                                             (Student.givenName.lowerCase() regexp queryWords) or
                                             (Student.familyName.lowerCase() regexp queryWords))
                         }
