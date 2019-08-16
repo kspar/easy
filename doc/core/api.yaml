@@ -300,7 +300,6 @@ paths:
           type: string
           description: Client-specified search string.
       tags:
-        - admin
         - teacher
       responses:
         200:
