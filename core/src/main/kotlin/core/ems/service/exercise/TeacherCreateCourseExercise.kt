@@ -12,9 +12,9 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.max
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -83,13 +83,15 @@ private fun isCoursePresent(courseId: Long): Boolean {
 private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.NewCourseExerciseBody) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
+        val orderIdxMaxColumn = CourseExercise.orderIdx.max()
+
         val currentMaxOrderIdx = CourseExercise
-                .slice(CourseExercise.course, CourseExercise.orderIdx)
+                .slice(CourseExercise.course, orderIdxMaxColumn)
                 .select {
                     CourseExercise.course eq courseId
-                }.orderBy(CourseExercise.orderIdx, SortOrder.DESC)
+                }.groupBy(CourseExercise.course)
                 .limit(1)
-                .map { it[CourseExercise.orderIdx] }
+                .map { it[orderIdxMaxColumn] }
                 .firstOrNull()
 
         val orderIndex = when (currentMaxOrderIdx) {
