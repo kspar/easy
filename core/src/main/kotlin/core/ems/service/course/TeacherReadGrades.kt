@@ -26,25 +26,25 @@ class TeacherReadGradesController {
 
     data class Resp(@JsonProperty("student_count") val studentCount: Int,
                     @JsonProperty("students")
-                    @JsonInclude(Include.NON_NULL) val students: List<Students>,
+                    @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>,
                     @JsonProperty("exercises")
-                    @JsonInclude(Include.NON_NULL) val exercises: List<Exercises>)
+                    @JsonInclude(Include.NON_NULL) val exercises: List<ExercisesResp>)
 
-    data class Students(@JsonProperty("student_id") val studentId: String,
-                        @JsonProperty("given_name") val givenName: String,
-                        @JsonProperty("family_name") val familyName: String,
-                        @JsonProperty("email") val email: String)
+    data class StudentsResp(@JsonProperty("student_id") val studentId: String,
+                            @JsonProperty("given_name") val givenName: String,
+                            @JsonProperty("family_name") val familyName: String,
+                            @JsonProperty("email") val email: String)
 
-    data class Exercises(@JsonProperty("exercise_id") val exerciseId: String,
-                         @JsonProperty("effective_title") val effectiveTitle: String,
-                         @JsonProperty("grade_threshold") val gradeThreshold: Int,
-                         @JsonProperty("student_visible") val studentVisible: Boolean,
-                         @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<Grade?>?)
+    data class ExercisesResp(@JsonProperty("exercise_id") val exerciseId: String,
+                             @JsonProperty("effective_title") val effectiveTitle: String,
+                             @JsonProperty("grade_threshold") val gradeThreshold: Int,
+                             @JsonProperty("student_visible") val studentVisible: Boolean,
+                             @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp?>?)
 
-    data class Grade(@JsonProperty("student_id") val studentId: String,
-                     @JsonProperty("grade") val grade: Int,
-                     @JsonProperty("grader_type") val graderType: GraderType,
-                     @JsonProperty("feedback") @JsonInclude(Include.NON_NULL) val feedback: String?)
+    data class GradeResp(@JsonProperty("student_id") val studentId: String,
+                         @JsonProperty("grade") val grade: Int,
+                         @JsonProperty("grader_type") val graderType: GraderType,
+                         @JsonProperty("feedback") @JsonInclude(Include.NON_NULL) val feedback: String?)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -80,13 +80,13 @@ private fun isCoursePresent(courseId: Long): Boolean {
 
 private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
-    val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0,  limit ?: studentCount)
+    val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0, limit ?: studentCount)
     val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
 
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
-private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, offset: Int, limit: Int): List<TeacherReadGradesController.Students> {
+private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
     return transaction {
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
@@ -104,7 +104,7 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, of
                 }
                 .limit(limit, offset)
                 .map {
-                    TeacherReadGradesController.Students(
+                    TeacherReadGradesController.StudentsResp(
                             it[Student.id].value,
                             it[Student.givenName],
                             it[Student.familyName],
@@ -114,7 +114,7 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, of
     }
 }
 
-private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.Exercises> {
+private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.ExercisesResp> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id,
@@ -127,7 +127,7 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
                 .orderBy(CourseExercise.orderIdx to true)
                 .map { ex ->
-                    TeacherReadGradesController.Exercises(
+                    TeacherReadGradesController.ExercisesResp(
                             ex[CourseExercise.id].value.toString(),
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.gradeThreshold],
@@ -141,7 +141,7 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
 }
 
 
-fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.Grade? {
+fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.GradeResp? {
     val studentId = Submission
             .select { Submission.id eq submissionId }
             .map { it[Submission.student] }
@@ -158,7 +158,7 @@ fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>)
             .orderBy(TeacherAssessment.createdAt to false)
             .limit(1)
             .map { assessment ->
-                TeacherReadGradesController.Grade(studentId,
+                TeacherReadGradesController.GradeResp(studentId,
                         assessment[TeacherAssessment.grade],
                         GraderType.TEACHER,
                         assessment[TeacherAssessment.feedback])
@@ -177,7 +177,7 @@ fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>)
             .orderBy(AutomaticAssessment.createdAt to false)
             .limit(1)
             .map { assessment ->
-                TeacherReadGradesController.Grade(studentId,
+                TeacherReadGradesController.GradeResp(studentId,
                         assessment[AutomaticAssessment.grade],
                         GraderType.AUTO,
                         assessment[AutomaticAssessment.feedback])
