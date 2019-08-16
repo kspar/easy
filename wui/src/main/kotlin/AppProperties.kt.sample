@@ -3,6 +3,6 @@ object AppProperties {
     const val EMS_ROOT = "https://dev.ems.lahendus.ut.ee/v2"
     const val KEYCLOAK_CONF_URL = "https://dev.lahendus.ut.ee/static/keycloak.json"
     const val KEYCLOAK_TOKEN_MIN_VALID_SEC = 30
-    const val DEBUG_ENABLED = true
-    const val WARN_ENABLED = true
+    const val LOG_DEBUG_ENABLED = true
+    const val LOG_WARN_ENABLED = true
 }
