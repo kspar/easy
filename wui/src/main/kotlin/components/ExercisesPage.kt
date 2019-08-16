@@ -116,8 +116,6 @@ object ExercisesPage : Page() {
             }
 
             val courseTitle = courseInfoResp.parseTo(CourseInfo.serializer()).await().title
-            buildHeader(courseTitle)
-
             val exercises = exercisesResp.parseTo(TeacherExercise.serializer().list).await()
 
             // TODO
@@ -131,6 +129,8 @@ object ExercisesPage : Page() {
         // TODO
 
         getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
+                "courses" to Str.courses(),
+                "coursesHref" to "/courses",
                 "title" to "Kursus",
                 "exercises" to arrayOf(
                         objOf(
@@ -157,10 +157,6 @@ object ExercisesPage : Page() {
                         )
                 )
         ))
-    }
-
-    private fun buildHeader(courseTitle: String) {
-        // TODO
     }
 
 }

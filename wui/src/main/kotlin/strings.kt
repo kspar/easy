@@ -49,7 +49,7 @@ abstract class TranslatableStrings {
 
     // Exercises page
 
-
+    abstract fun courses(): String
 }
 
 
@@ -77,4 +77,5 @@ private object EstStrings : TranslatableStrings() {
     override fun participants() = "Osalejad"
     override fun grades() = "Hinded"
     override fun coursesTitle() = "Minu kursused"
+    override fun courses() = "Minu kursused"
 }

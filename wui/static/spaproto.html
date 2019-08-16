@@ -88,6 +88,10 @@
 </script>
 
 <script id="tm-stud-exercises-list" type="text/x-tm">
+    <nav class="crumb-wrap">
+        <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
+        <a class="breadcrumb">{{title}}</a>
+    </nav>
     <div class="title-wrap">
         <h3 class="title">{{title}}</h3>
     </div>
@@ -129,7 +133,7 @@
 
 <script id="tm-teach-course-list" type="text/x-tm">
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h3 class="title no-crumb">{{title}}</h3>
         {{#addCourse}}
         <a class="waves-effect waves-light btn title-button" href="/courses/new">
             <i class="material-icons left">add</i>{{newCourse}}</a>
@@ -150,7 +154,7 @@
 
 <script id="tm-stud-course-list" type="text/x-tm">
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h3 class="title no-crumb">{{title}}</h3>
     </div>
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}

@@ -130,21 +130,21 @@ div.sidenav-container {
 
 /** Breadcrumbs **/
 
-nav.clean {
+nav.crumb-wrap {
     background: none;
     box-shadow: none;
 }
 
-nav.clean .breadcrumb {
+nav.crumb-wrap .breadcrumb {
     color: rgb(128, 128, 128);
     font-size: 1.5rem;
 }
 
-nav.clean .breadcrumb:last-child {
+nav.crumb-wrap .breadcrumb:last-child {
     color: rgb(0, 0, 0);
 }
 
-nav.clean .breadcrumb:before {
+nav.crumb-wrap .breadcrumb:before {
     color: rgba(128, 128, 128, 0.7);
 }
 
@@ -278,10 +278,6 @@ label[for=feedback], label[for=grade] {
 
 
 /** Courses page **/
-
-#courses-list {
-    margin-top: 2rem;
-}
 
 #courses-list div.teacher-course-wrapper {
     position: relative;
@@ -438,6 +434,7 @@ div.divided-collection {
     border: none;
     overflow: unset;
     position: relative;
+    margin-top: 2rem;
 }
 
 
@@ -482,6 +479,10 @@ div.divided-collection a.collection-item .bb {
 
 h3.title {
     margin-bottom: 0;
+    margin-top: 1.5rem;
+}
+
+h3.no-crumb {
     margin-top: 5rem;
 }
 
