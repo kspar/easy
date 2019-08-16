@@ -61,7 +61,7 @@ class TeacherReadGradesController {
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         if (!isCoursePresent(courseId)) {
-            throw InvalidRequestException("Course $courseId does not exist (caller: ${caller.id})")
+            throw InvalidRequestException("Course $courseId does not exist")
         }
 
         val query = search?.split(" ")
