@@ -8,6 +8,7 @@ import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -116,7 +117,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long): 
 
 private fun selectAutoGrade(submissionId: Long): Int? {
     return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to false)
+            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[AutomaticAssessment.grade] }
             .firstOrNull()
@@ -124,7 +125,7 @@ private fun selectAutoGrade(submissionId: Long): Int? {
 
 private fun selectTeacherGrade(submissionId: Long): Int? {
     return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to false)
+            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[TeacherAssessment.grade] }
             .firstOrNull()
