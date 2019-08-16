@@ -11,6 +11,7 @@ import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -63,7 +64,7 @@ class TeacherReadGradesController {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
-        val query = search?.replace(Regex(" +"), " ")?.split(" ")
+        val query = search?.trim()?.toLowerCase()?.replace(Regex(" +"), "|")
 
         return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), query)
     }
@@ -77,7 +78,7 @@ private fun isCoursePresent(courseId: Long): Boolean {
     }
 }
 
-private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>?): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: String?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
     val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0, limit ?: studentCount)
     val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
@@ -85,7 +86,7 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
-private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
+private fun selectStudentsOnCourse(courseId: Long, queryWords: String?, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
     return transaction {
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
@@ -94,10 +95,9 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, of
                         null -> StudentCourseAccess.course eq courseId
                         else -> {
                             StudentCourseAccess.course eq courseId and
-                                    ((Student.id containsInList queryWords) or
-                                            (Student.email containsInList queryWords) or
-                                            (Student.givenName containsInList queryWords) or
-                                            (Student.familyName containsInList queryWords))
+                                    ((Student.email.lowerCase() regexp queryWords) or
+                                            (Student.givenName.lowerCase() regexp queryWords) or
+                                            (Student.familyName.lowerCase() regexp queryWords))
                         }
                     }
                 }

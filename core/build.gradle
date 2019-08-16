@@ -61,7 +61,7 @@ dependencies {
     implementation 'io.github.microutils:kotlin-logging:1.6.22'
 
     // Database
-    implementation 'org.jetbrains.exposed:exposed:0.11.2'
+    implementation 'org.jetbrains.exposed:exposed:0.16.2'
     implementation 'com.zaxxer:HikariCP:3.2.0'
     implementation "org.postgresql:postgresql:42.2.5"
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
