@@ -12,6 +12,7 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -86,7 +87,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
                 .slice(CourseExercise.course, CourseExercise.orderIdx)
                 .select {
                     CourseExercise.course eq courseId
-                }.orderBy(CourseExercise.orderIdx, isAsc = false)
+                }.orderBy(CourseExercise.orderIdx, SortOrder.DESC)
                 .limit(1)
                 .map { it[CourseExercise.orderIdx] }
                 .firstOrNull()
