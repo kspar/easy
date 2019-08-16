@@ -9,6 +9,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -79,7 +80,7 @@ private fun selectTeacherSubmission(courseId: Long, courseExId: Long, studentId:
                                     (CourseExercise.id eq courseExId) and
                                     (Submission.student eq studentId)
                         }
-                        .orderBy(Submission.createdAt to false)
+                        .orderBy(Submission.createdAt to SortOrder.DESC)
                         .limit(1)
                         .map {
                             SubmissionPartial(it[Submission.id].value,
@@ -111,7 +112,7 @@ data class AssessmentSummary(val grade: Int, val feedback: String?)
 
 private fun lastAutoAssessment(submissionId: Long): AssessmentSummary? {
     return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to false)
+            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { AssessmentSummary(it[AutomaticAssessment.grade], it[AutomaticAssessment.feedback]) }
             .firstOrNull()
@@ -119,7 +120,7 @@ private fun lastAutoAssessment(submissionId: Long): AssessmentSummary? {
 
 private fun lastTeacherAssessment(submissionId: Long): AssessmentSummary? {
     return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to false)
+            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { AssessmentSummary(it[TeacherAssessment.grade], it[TeacherAssessment.feedback]) }
             .firstOrNull()
