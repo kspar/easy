@@ -49,7 +49,7 @@ class TeacherReadGradesController {
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @RequestParam("offset", required = false) offsetStr: String?,
                    @RequestParam("limit", required = false) limitStr: String?,
-                   @RequestParam("search", required = false) search: String?,
+                   @RequestParam("search", required = false, defaultValue = "") search: String,
                    caller: EasyUser): Resp {
 
         log.debug { "Getting grades for ${caller.id} on course $courseIdStr" }
@@ -61,9 +61,9 @@ class TeacherReadGradesController {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
-        val query = search?.trim()?.toLowerCase()?.replace(Regex(" +"), "|")
+        val queryWords = search.trim().toLowerCase().split(Regex(" +"))
 
-        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), query)
+        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords)
     }
 }
 
@@ -75,7 +75,8 @@ private fun isCoursePresent(courseId: Long): Boolean {
     }
 }
 
-private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: String?): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>): TeacherReadGradesController.Resp {
+    // TODO: student count should respect search string
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
     val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0, limit ?: studentCount)
     val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
@@ -83,23 +84,21 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
-private fun selectStudentsOnCourse(courseId: Long, queryWords: String?, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
+private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
     return transaction {
-        (Student innerJoin StudentCourseAccess)
+        val query = (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
-                .select {
-                    when (queryWords) {
-                        null -> StudentCourseAccess.course eq courseId
-                        else -> {
-                            StudentCourseAccess.course eq courseId and
-                                    ((Student.id inList queryWords.split("\\|")) or
-                                            (Student.email.lowerCase() regexp queryWords) or
-                                            (Student.givenName.lowerCase() regexp queryWords) or
-                                            (Student.familyName.lowerCase() regexp queryWords))
-                        }
-                    }
-                }
-                .limit(limit, offset)
+                .select { StudentCourseAccess.course eq courseId }
+
+        queryWords.forEach {
+            query.andWhere {
+                (Student.id like "%$it%") or
+                        (Student.email like "%$it%") or
+                        (Student.givenName like "%$it%") or
+                        (Student.familyName like "%$it%")
+            }
+        }
+        query.limit(limit, offset)
                 .map {
                     TeacherReadGradesController.StudentsResp(
                             it[Student.id].value,
@@ -136,7 +135,6 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                 }
     }
 }
-
 
 fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.GradeResp? {
     val studentId = Submission
