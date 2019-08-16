@@ -63,7 +63,7 @@ class TeacherReadGradesController {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
-        val query = search?.split(" ")
+        val query = search?.replace(Regex(" +"), " ")?.split(" ")
 
         return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), query)
     }
