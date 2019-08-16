@@ -80,17 +80,13 @@ private fun isCoursePresent(courseId: Long): Boolean {
 
 private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>?): TeacherReadGradesController.Resp {
     val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
-    val students = selectStudentsOnCourse(courseId, queryWords)
-
-    val exercises = selectExercisesOnCourse(courseId,
-            students.map { it.studentId },
-            offset ?: 0,
-            limit ?: Int.MAX_VALUE)
+    val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0,  limit ?: studentCount)
+    val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
 
     return TeacherReadGradesController.Resp(studentCount, students, exercises);
 }
 
-private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): List<TeacherReadGradesController.Students> {
+private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, offset: Int, limit: Int): List<TeacherReadGradesController.Students> {
     return transaction {
         (Student innerJoin StudentCourseAccess)
                 .slice(Student.id, Student.email, Student.givenName, Student.familyName)
@@ -106,6 +102,7 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): L
                         }
                     }
                 }
+                .limit(limit, offset)
                 .map {
                     TeacherReadGradesController.Students(
                             it[Student.id].value,
@@ -117,7 +114,7 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?): L
     }
 }
 
-private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.Exercises> {
+private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.Exercises> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id,
@@ -128,7 +125,6 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>, of
                         ExerciseVer.validTo,
                         CourseExercise.titleAlias)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .limit(limit, offset)
                 .orderBy(CourseExercise.orderIdx to true)
                 .map { ex ->
                     TeacherReadGradesController.Exercises(
