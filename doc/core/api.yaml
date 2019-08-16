@@ -290,15 +290,15 @@ paths:
         - in: query
           name: offset
           type: integer
-          description: The number of exercises to skip before starting to collect the result set.
+          description: The number of students to skip before starting to collect the result set.
         - in: query
           name: limit
           type: integer
-          description: The numbers of exercises to return.
+          description: The numbers of students to return.
         - in: query
           name: search
           type: string
-          description: Client-specified search string.
+          description: Client-specified search string (over students).
       tags:
         - teacher
       responses:
