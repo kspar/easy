@@ -94,10 +94,10 @@ private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>?, of
                         null -> StudentCourseAccess.course eq courseId
                         else -> {
                             StudentCourseAccess.course eq courseId and
-                                    ((Student.id containsInList (queryWords)) or
-                                            (Student.email containsInList (queryWords)) or
+                                    ((Student.id containsInList queryWords) or
+                                            (Student.email containsInList queryWords) or
                                             (Student.givenName containsInList queryWords) or
-                                            (Student.familyName containsInList (queryWords)))
+                                            (Student.familyName containsInList queryWords))
                         }
                     }
                 }
