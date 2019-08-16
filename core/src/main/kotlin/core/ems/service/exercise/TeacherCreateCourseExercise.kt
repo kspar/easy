@@ -52,11 +52,11 @@ class TeacherCreateCourseExerciseController {
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         if (!isCoursePresent(courseId)) {
-            throw InvalidRequestException("Course $courseId does not exist (caller: ${caller.id})")
+            throw InvalidRequestException("Course $courseId does not exist")
         }
 
         if (isExerciseOnCourse(courseId, exerciseId)) {
-            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId (caller: ${caller.id})")
+            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId")
         }
 
         insertCourseExercise(courseId, body)
