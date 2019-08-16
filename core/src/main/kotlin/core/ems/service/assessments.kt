@@ -2,6 +2,7 @@ package core.ems.service
 
 import core.db.AutomaticAssessment
 import core.db.TeacherAssessment
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.select
 
 
@@ -15,7 +16,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): Int? {
                     TeacherAssessment.createdAt,
                     TeacherAssessment.grade)
             .select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to false)
+            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[TeacherAssessment.grade] }
             .firstOrNull()
@@ -28,7 +29,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): Int? {
                     AutomaticAssessment.createdAt,
                     AutomaticAssessment.grade)
             .select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to false)
+            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[AutomaticAssessment.grade] }
             .firstOrNull()
