@@ -55,8 +55,8 @@ class ContainsListOrNotInListOp<T>(val expr: ExpressionWithColumnType<T>, val li
                 if (!i.hasNext()) {
                     append(expr.toSQL(queryBuilder))
                     when {
-                        containsInList -> append(" ~ ")
-                        else -> append(" !~ ")
+                        containsInList -> append(" ~* ")
+                        else -> append(" !~* ")
                     }
                     append(queryBuilder.registerArgument(expr.columnType, first))
                 } else {
