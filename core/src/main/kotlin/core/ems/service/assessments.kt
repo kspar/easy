@@ -2,9 +2,7 @@ package core.ems.service
 
 import core.db.AutomaticAssessment
 import core.db.TeacherAssessment
-import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.dao.IdTable
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.select
 
 
 /**
@@ -36,50 +34,4 @@ fun selectLatestGradeForSubmission(submissionId: Long): Int? {
             .firstOrNull()
 
     return autoGrade
-}
-
-/**
- * infix method derived from Kotlin inList. It is inList analogue, except this method controls similarity (~ / !~), not equality.
- */
-infix fun <T> ExpressionWithColumnType<T>.containsInList(list: Iterable<T>): Op<Boolean> = ContainsListOrNotInListOp(this, list, containsInList = true)
-
-/**
- * Derived from Kotlin inList for IDs, controls similarity (~ / !~), not equality.
- */
-@Suppress("UNCHECKED_CAST")
-@JvmName("inListIds")
-infix fun <T : Comparable<T>> Column<EntityID<T>>.containsInList(list: Iterable<T>): Op<Boolean> {
-    val idTable = (columnType as EntityIDColumnType<T>).idColumn.table as IdTable<T>
-    return containsInList(list.map { EntityID(it, idTable) })
-}
-
-class ContainsListOrNotInListOp<T>(val expr: ExpressionWithColumnType<T>, val list: Iterable<T>, val containsInList: Boolean = true) : Op<Boolean>() {
-    override fun toSQL(queryBuilder: QueryBuilder): String = buildString {
-        list.iterator().let { i ->
-            if (!i.hasNext()) {
-                val expr = Op.build { booleanLiteral(!containsInList) eq booleanLiteral(true) }
-                append(expr.toSQL(queryBuilder))
-            } else {
-                val first = i.next()
-                if (!i.hasNext()) {
-                    append(expr.toSQL(queryBuilder))
-                    when {
-                        containsInList -> append(" ~ ")
-                        else -> append(" !~ ")
-                    }
-                    append(queryBuilder.registerArgument(expr.columnType, first))
-                } else {
-                    append(expr.toSQL(queryBuilder))
-                    when {
-                        containsInList -> append(" IN (")
-                        else -> append(" NOT IN (")
-                    }
-
-                    queryBuilder.registerArguments(expr.columnType, list).joinTo(this)
-
-                    append(")")
-                }
-            }
-        }
-    }
 }
