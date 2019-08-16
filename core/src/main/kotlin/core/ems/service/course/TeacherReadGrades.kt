@@ -10,10 +10,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.lowerCase
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -124,7 +121,7 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                         ExerciseVer.validTo,
                         CourseExercise.titleAlias)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .orderBy(CourseExercise.orderIdx to true)
+                .orderBy(CourseExercise.orderIdx to SortOrder.ASC)
                 .map { ex ->
                     TeacherReadGradesController.ExercisesResp(
                             ex[CourseExercise.id].value.toString(),
@@ -154,7 +151,7 @@ fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>)
                     TeacherAssessment.grade,
                     TeacherAssessment.feedback)
             .select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to false)
+            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { assessment ->
                 TeacherReadGradesController.GradeResp(studentId,
@@ -173,7 +170,7 @@ fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>)
                     AutomaticAssessment.grade,
                     AutomaticAssessment.feedback)
             .select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to false)
+            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { assessment ->
                 TeacherReadGradesController.GradeResp(studentId,
