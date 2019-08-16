@@ -2,7 +2,7 @@
 
 # Add page generation time to html
 d=$(date)
-s="s+<div id=\"date\">.*</div>+<div id=\"date\">$d</div>+g"
+s="s#<div id=\"date\">.*</div>#<div id=\"date\">$d</div>#g"
 sed -i "$s" static/spaproto.html
 
 
