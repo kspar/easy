@@ -28,7 +28,8 @@ class UpdateAccountController {
     @PostMapping("/account/personal")
     fun updateAccount(@RequestBody dto: PersonalDataBody, caller: EasyUser) {
 
-        val account = Account(caller.id, dto.email, dto.firstName, dto.lastName)
+        val account = Account(caller.id, dto.email,
+                correctNameCapitalisation(dto.firstName), correctNameCapitalisation(dto.lastName))
         log.debug { "Update personal data for $account" }
 
         if (caller.isStudent()) {
@@ -48,9 +49,15 @@ class UpdateAccountController {
     }
 }
 
-
 data class Account(val username: String, val email: String, val givenName: String, val familyName: String)
 
+private fun correctNameCapitalisation(name: String) =
+        name.split(Regex(" +"))
+                .joinToString(separator = " ") {
+                    it.split("-").joinToString(separator = "-") {
+                        it.toLowerCase().capitalize()
+                    }
+                }
 
 private fun updateStudent(student: Account) {
     transaction {
