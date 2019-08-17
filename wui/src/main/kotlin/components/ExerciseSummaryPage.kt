@@ -10,7 +10,7 @@ object ExerciseSummaryPage : Page() {
         get() = PageName.EXERCISE_SUMMARY
 
     override fun pathMatches(path: String) =
-            path.matches("^/courses/\\w+/exercises/\\w+/summary$")
+            path.matches("^/courses/\\w+/exercises/\\w+/summary/?$")
 
     override fun build(pageStateStr: String?) {
 
@@ -24,7 +24,7 @@ object ExerciseSummaryPage : Page() {
     data class PathIds(val courseId: String, val exerciseId: String)
 
     private fun extractSanitizedPathIds(path: String): PathIds {
-        val match = path.match("^/courses/(\\w+)/exercises/(\\w+)/summary\$")
+        val match = path.match("^/courses/(\\w+)/exercises/(\\w+)/summary/?\$")
         if (match != null && match.size == 3) {
             return PathIds(match[1], match[2])
         } else {

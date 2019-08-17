@@ -40,7 +40,7 @@ object CoursesPage : Page() {
         get() = PageName.COURSES
 
     override fun pathMatches(path: String): Boolean =
-            path.matches("^/courses$")
+            path.matches("^/courses/?$")
 
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("CoursesPage.build")
