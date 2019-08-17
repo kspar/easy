@@ -1,17 +1,14 @@
+import components.*
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import components.AddCoursePage
-import components.CoursesPage
-import components.ExercisesPage
-import components.Navbar
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
 
 
 private val PAGES = listOf(
-        CoursesPage, ExercisesPage, AddCoursePage)
+        CoursesPage, ExercisesPage, ExerciseSummaryPage, AddCoursePage)
 
 
 fun main() {

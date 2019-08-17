@@ -1,5 +1,6 @@
 enum class PageName {
-    ADD_COURSE,
     COURSES,
-    EXERCISES
+    EXERCISES,
+    EXERCISE_SUMMARY,
+    ADD_COURSE
 }
