@@ -307,10 +307,6 @@ label[for=feedback], label[for=grade] {
 
 /** Exercises page **/
 
-#exercises-list {
-    /* TODO: margin */
-}
-
 #exercises-list .deadline {
     font-size: 1.9rem;
 }
@@ -335,6 +331,10 @@ label[for=feedback], label[for=grade] {
     vertical-align: middle;
     width: 24px;
     margin-left: 10px;
+}
+
+#exercises-list .collection-item .row {
+    margin-bottom: 0;
 }
 
 
@@ -446,6 +446,8 @@ div.divided-collection {
 
 .bb {
     line-height: 0;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 div.divided-collection a.collection-item .bb {
@@ -467,12 +469,12 @@ div.divided-collection a.collection-item .bb {
     border-bottom: 7px solid #ffd052;
 }
 
-.bb-grey {
-    border-bottom: 7px solid #c1c1c1;
+.bb-blue {
+    border-bottom: 7px solid #688ffd;
 }
 
-.bb-white {
-    border-bottom: 7px solid #fff;
+.bb-grey {
+    border-bottom: 7px solid #c1c1c1;
 }
 
 

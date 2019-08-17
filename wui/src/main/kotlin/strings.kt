@@ -54,6 +54,10 @@ abstract class TranslatableStrings {
     abstract fun teacherAssessLabel(): String
     abstract fun missingAssessLabel(): String
     abstract fun deadlineLabel(): String
+    abstract fun completedLabel(): String
+    abstract fun startedLabel(): String
+    abstract fun ungradedLabel(): String
+    abstract fun unstartedLabel(): String
 }
 
 
@@ -86,4 +90,8 @@ private object EstStrings : TranslatableStrings() {
     override fun autoAssessLabel() = "Automaatselt hinnatud"
     override fun teacherAssessLabel() = "Käsitsi hinnatud"
     override fun missingAssessLabel() = "Pole veel hinnatud"
+    override fun completedLabel() = "Lõpetanud"
+    override fun startedLabel() = "Nässu läinud"
+    override fun ungradedLabel() = "Hindamata"
+    override fun unstartedLabel() = "Esitamata"
 }

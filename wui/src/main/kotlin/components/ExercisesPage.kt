@@ -26,6 +26,7 @@ import toEstonianString
 import toJsObj
 import kotlin.browser.window
 import kotlin.js.Date
+import kotlin.math.max
 
 
 object ExercisesPage : Page() {
@@ -53,7 +54,7 @@ object ExercisesPage : Page() {
 
     @Serializable
     data class TeacherExercise(val id: String,
-                               val title: String,
+                               val effective_title: String,
                                @Serializable(with = DateSerializer::class)
                                val soft_deadline: Date?,
                                val grader_type: GraderType,
@@ -122,10 +123,83 @@ object ExercisesPage : Page() {
             val courseTitle = courseInfoResp.parseTo(CourseInfo.serializer()).await().title
             val exercises = exercisesResp.parseTo(TeacherExercise.serializer().list).await()
 
-            // TODO
-            debug { "exercises: $exercises" }
+            debug { "Exercises: $exercises" }
 
+            val exerciseArray = exercises
+                    .sortedBy { it.ordering_idx }
+                    .map { ex ->
+                        val exMap = mutableMapOf<String, Any>(
+                                "href" to "/courses/$courseId/exercises/${ex.id}/summary",
+                                "title" to ex.effective_title,
+                                "deadlineLabel" to Str.deadlineLabel(),
+                                "completedLabel" to Str.completedLabel(),
+                                "startedLabel" to Str.startedLabel(),
+                                "ungradedLabel" to Str.ungradedLabel(),
+                                "unstartedLabel" to Str.unstartedLabel()
+                        )
+
+                        ex.soft_deadline?.let {
+                            exMap["deadline"] = it.toEstonianString()
+                        }
+
+                        val counts = StudentCounts(ex.completed_count, ex.started_count, ex.ungraded_count, ex.unstarted_count)
+                        val shares = calculateStudentShares(counts)
+
+                        exMap["completedPc"] = shares.completedShare * 100
+                        exMap["startedPc"] = shares.startedShare * 100
+                        exMap["ungradedPc"] = shares.ungradedShare * 100
+                        exMap["unstartedPc"] = shares.unstartedShare * 100
+
+                        exMap["completedCount"] = ex.completed_count
+                        exMap["startedCount"] = ex.started_count
+                        exMap["ungradedCount"] = ex.ungraded_count
+                        exMap["unstartedCount"] = ex.unstarted_count
+
+                        if (shares.completedShare + shares.startedShare + shares.ungradedShare + shares.unstartedShare == 0.0)
+                            exMap["noBb"] = true
+
+                        exMap.toJsObj()
+                    }.toTypedArray()
+
+            getContainer().innerHTML = tmRender("tm-teach-exercises-list", mapOf(
+                    "courses" to Str.courses(),
+                    "coursesHref" to "/courses",
+                    "title" to courseTitle,
+                    "exercises" to exerciseArray
+            ))
+
+            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
         }
+    }
+
+    data class StudentCounts(val completedCount: Int, val startedCount: Int, val ungradedCount: Int, val unstartedCount: Int)
+    data class StudentShares(val completedShare: Double, val startedShare: Double, val ungradedShare: Double, val unstartedShare: Double)
+
+    private fun calculateStudentShares(counts: StudentCounts): StudentShares {
+        val studentCount = counts.completedCount + counts.startedCount + counts.ungradedCount + counts.unstartedCount
+
+        val correctedShares = mapOf("completed" to counts.completedCount,
+                "started" to counts.startedCount,
+                "ungraded" to counts.ungradedCount,
+                "unstarted" to counts.unstartedCount)
+                .filter { it.value > 0 }
+                .map { it.key to it.value.toDouble() / studentCount }
+                .map { it.first to max(it.second, 0.01) }.toMap()
+
+        val overCorrection = correctedShares.values.sum() - 1
+        debug { "Overcorrection: $overCorrection" }
+
+        // Account for overcorrection by subtracting the total overcorrection from all shares respecting each share,
+        // also add 0.1% according to the shares to compensate for inaccurate browser floating-point width calculations
+        val backcorrectedShares = correctedShares
+                .map { it.key to it.value - it.value * 0.97 * overCorrection + 0.001 / correctedShares.size }.toMap()
+        val backCorrected = backcorrectedShares.values.sum() - 1
+        debug { "Error after backcorrection: $backCorrected" }
+
+        return StudentShares(backcorrectedShares["completed"] ?: 0.0,
+                backcorrectedShares["started"] ?: 0.0,
+                backcorrectedShares["ungraded"] ?: 0.0,
+                backcorrectedShares["unstarted"] ?: 0.0)
     }
 
     private fun buildStudentExercises(courseId: String) {
