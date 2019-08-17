@@ -1,7 +1,4 @@
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLBodyElement
-import org.w3c.dom.HTMLDivElement
-import org.w3c.dom.asList
+import org.w3c.dom.*
 import kotlin.browser.document
 
 
@@ -10,6 +7,9 @@ fun getContainer(): HTMLDivElement =
 
 fun getBody(): HTMLBodyElement =
         document.body as HTMLBodyElement
+
+fun getNodelistBySelector(selector: String): NodeList =
+        document.querySelectorAll(selector)
 
 fun getElemsByClass(className: String): List<Element> =
         document.getElementsByClassName(className).asList()

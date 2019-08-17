@@ -99,31 +99,26 @@
         {{#exercises}}
         <a class="collection-item bb-wrap row" href="{{link}}">
             <span class="col s6">{{title}}</span>
-            <span class="col s4 deadline">{{deadline}}</span>
+            <span class="col s4 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
             <span class="col s2 grade">
-               <span>{{points}}{{^points}}-{{/points}}/100</span>
-                <span>
-                    {{#evalAuto}}
-                    <img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}
-                    {{#evalTeacher}}
-                    <i class="material-icons eval-logo-teacher">face</i>
-                    {{/evalTeacher}}
-                    {{#evalMissing}}
-                    <img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalMissing}}
-                </span>
-
+               <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+               >{{#evalAuto
+                }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                {{/evalAuto}}{{#evalTeacher
+                }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                {{/evalTeacher}}{{#evalMissing
+                }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                {{/evalMissing}}
             </span>
             <div class="bb">
                 {{#completed}}
-                <span class="bb-green bb-item" style="width: 100%">
+                <span class="bb-item bb-green">
                 {{/completed}}
                 {{#started}}
-                <span class="bb-yellow bb-item" style="width: 100%">
+                <span class="bb-item bb-yellow">
                 {{/started}}
                 {{#unstarted}}
-                <span class="bb-grey bb-item" style="width: 100%">
+                <span class="bb-item bb-grey">
                 {{/unstarted}}
             </div>
         </a>

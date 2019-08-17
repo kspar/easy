@@ -50,6 +50,10 @@ abstract class TranslatableStrings {
     // Exercises page
 
     abstract fun courses(): String
+    abstract fun autoAssessLabel(): String
+    abstract fun teacherAssessLabel(): String
+    abstract fun missingAssessLabel(): String
+    abstract fun deadlineLabel(): String
 }
 
 
@@ -78,4 +82,8 @@ private object EstStrings : TranslatableStrings() {
     override fun grades() = "Hinded"
     override fun coursesTitle() = "Minu kursused"
     override fun courses() = "Minu kursused"
+    override fun deadlineLabel() = "Tähtaeg"
+    override fun autoAssessLabel() = "Automaatselt hinnatud"
+    override fun teacherAssessLabel() = "Käsitsi hinnatud"
+    override fun missingAssessLabel() = "Pole veel hinnatud"
 }

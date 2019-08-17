@@ -456,6 +456,7 @@ div.divided-collection a.collection-item .bb {
 .bb-item {
     display: inline-block;
     height: 20px;
+    width: 100%;
 }
 
 .bb-green {

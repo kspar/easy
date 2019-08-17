@@ -11,16 +11,19 @@ import debugFunStart
 import errorMessage
 import fetchEms
 import getContainer
+import getNodelistBySelector
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.list
-import objOf
+import libheaders.Materialize
 import parseTo
 import spa.Page
 import tmRender
+import toEstonianString
+import toJsObj
 import kotlin.browser.window
 import kotlin.js.Date
 
@@ -38,6 +41,7 @@ object ExercisesPage : Page() {
     @Serializable
     data class CourseInfo(val title: String)
 
+    @Serializable
     data class StudentExercise(val id: String,
                                val effective_title: String,
                                @Serializable(with = DateSerializer::class)
@@ -125,38 +129,81 @@ object ExercisesPage : Page() {
     }
 
     private fun buildStudentExercises(courseId: String) {
+        MainScope().launch {
+            val courseInfoPromise = fetchEms("/courses/$courseId/basic", ReqMethod.GET)
+            val exercisesPromise = fetchEms("/student/courses/$courseId/exercises", ReqMethod.GET)
 
-        // TODO
+            val courseInfoResp = courseInfoPromise.await()
+            val exercisesResp = exercisesPromise.await()
 
-        getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
-                "courses" to Str.courses(),
-                "coursesHref" to "/courses",
-                "title" to "Kursus",
-                "exercises" to arrayOf(
-                        objOf(
-                                "link" to "/",
-                                "title" to "1.1 Blbblabla",
-                                "deadline" to "1. juuli 2019, 11.11",
-                                "evalTeacher" to true,
-                                "points" to 99,
-                                "completed" to true),
-                        objOf(
-                                "link" to "/",
-                                "title" to "1.2 Yoyoyoyoyo",
-                                "deadline" to "2. juuli 2019, 11.11",
-                                "evalMissing" to true,
-                                "unstarted" to true
-                        ),
-                        objOf(
-                                "link" to "/",
-                                "title" to "1.3 Miskeskus",
-                                "deadline" to "3. juuli 2019, 11.11",
-                                "evalAuto" to true,
-                                "points" to 42,
-                                "started" to true
+            if (!courseInfoResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching course info failed with status ${courseInfoResp.status}")
+            }
+            if (!exercisesResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching exercises failed with status ${exercisesResp.status}")
+            }
+
+            val courseTitle = courseInfoResp.parseTo(CourseInfo.serializer()).await().title
+            val exercises = exercisesResp.parseTo(StudentExercise.serializer().list).await()
+
+            debug { "Exercises: $exercises" }
+
+            val exerciseArray = exercises
+                    .sortedBy { it.ordering_idx }
+                    .map { ex ->
+                        val exMap = mutableMapOf<String, Any>(
+                                "link" to "/courses/$courseId/exercises/${ex.id}/summary",
+                                "title" to ex.effective_title,
+                                "deadlineLabel" to Str.deadlineLabel(),
+                                "autoLabel" to Str.autoAssessLabel(),
+                                "teacherLabel" to Str.teacherAssessLabel(),
+                                "missingLabel" to Str.missingAssessLabel()
                         )
-                )
-        ))
-    }
 
+                        ex.deadline?.let {
+                            exMap["deadline"] = it.toEstonianString()
+                        }
+
+                        when (ex.status) {
+                            ExerciseStatus.UNSTARTED -> {
+                                exMap["unstarted"] = true
+                            }
+                            ExerciseStatus.STARTED -> {
+                                exMap["started"] = true
+                            }
+                            ExerciseStatus.COMPLETED -> {
+                                exMap["completed"] = true
+                            }
+                        }
+
+                        when (ex.graded_by) {
+                            GraderType.AUTO -> {
+                                exMap["evalAuto"] = true
+                                exMap["points"] = ex.grade ?: error("Grader type is set but no grade found")
+                            }
+                            GraderType.TEACHER -> {
+                                exMap["evalTeacher"] = true
+                                exMap["points"] = ex.grade ?: error("Grader type is set but no grade found")
+                            }
+                            null -> {
+                                if (ex.status != ExerciseStatus.UNSTARTED)
+                                    exMap["evalMissing"] = true
+                            }
+                        }
+
+                        exMap.toJsObj()
+                    }.toTypedArray()
+
+            getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
+                    "courses" to Str.courses(),
+                    "coursesHref" to "/courses",
+                    "title" to courseTitle,
+                    "exercises" to exerciseArray
+            ))
+
+            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        }
+    }
 }
