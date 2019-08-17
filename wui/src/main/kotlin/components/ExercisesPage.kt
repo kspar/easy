@@ -154,7 +154,7 @@ object ExercisesPage : Page() {
                     .sortedBy { it.ordering_idx }
                     .map { ex ->
                         val exMap = mutableMapOf<String, Any>(
-                                "link" to "/courses/$courseId/exercises/${ex.id}/summary",
+                                "href" to "/courses/$courseId/exercises/${ex.id}/summary",
                                 "title" to ex.effective_title,
                                 "deadlineLabel" to Str.deadlineLabel(),
                                 "autoLabel" to Str.autoAssessLabel(),
