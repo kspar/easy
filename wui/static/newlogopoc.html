@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+
+    <link href="https://fonts.googleapis.com/css?family=Averia+Libre|Baloo+Paaji|Jua|Katibeh|KoHo|Quando|Salsa|Sniglet|ZCOOL+XiaoWei&display=swap"
+          rel="stylesheet">
+</head>
+<body>
+
+
+
+<div id="nav-wrap">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="/courses" class="brand-logo left">
+                <img style="height: 4rem; vertical-align: middle;" class="logo-img"
+                     src="../../doc/wui/design/new_logo.svg" alt="LAHENDUS"/>
+                <span class="logo-text a2">LAHENDUS</span>
+            </a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="/courses">Minu kursused</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap</span><span id="profile-role"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <span id="role-wrap"></span>
+        <li><a href="{{accountLink}}">{{account}}</a></li>
+        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+    </ul>
+</div>
+
+
+<style>
+    .logo-text {
+        font-size: 2.5rem;
+    }
+
+    .a2 {
+        font-family: 'Sniglet', cursive;
+    }
+
+
+    #nav-wrap {
+        margin-top: 100px;
+    }
+
+
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
+<script src="js/kotlin.js"></script>
+<script src="js/kotlinx-coroutines-core.js"></script>
+<script src="js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
+<script src="js/wui.js"></script>
+<div id="date"></div> <!-- Temporary, for automatic generation time -->
+
+<script>
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {
+        // margin: 0,
+        // transitionMovement: 10
+    });
+</script>
+</body>
+</html>
