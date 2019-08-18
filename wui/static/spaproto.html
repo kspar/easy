@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/static/css/pace.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
     <link rel="stylesheet" href="/static/css/main.css"/>
     <link rel="stylesheet" href="/static/css/exercise.css"/>
@@ -28,7 +28,10 @@
 <script id="tm-navbar" type="text/x-tm">
     <nav class="nav-center" role="navigation">
         <div class="container">
-            <a href="/courses" class="brand-logo left"><img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/></a>
+            <a href="/courses" class="brand-logo left">
+                <img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/>
+                <span class="logo-text">LAHENDUS</span>
+            </a>
             <ul id="nav-mobile" class="hide-on-med-and-down">
                 <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
             </ul>
