@@ -76,38 +76,39 @@ private fun isCoursePresent(courseId: Long): Boolean {
 }
 
 private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>): TeacherReadGradesController.Resp {
-    // TODO: student count should respect search string
-    val studentCount = transaction { StudentCourseAccess.select { StudentCourseAccess.course eq courseId }.count() }
-    val students = selectStudentsOnCourse(courseId, queryWords, offset ?: 0, limit ?: studentCount)
-    val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
-
-    return TeacherReadGradesController.Resp(studentCount, students, exercises);
+    return transaction {
+        val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords)
+        val studentCount = studentsQuery.count()
+        val students = transaction {
+            studentsQuery.limit(limit ?: studentCount, offset ?: 0)
+                    .map {
+                        TeacherReadGradesController.StudentsResp(
+                                it[Student.id].value,
+                                it[Student.givenName],
+                                it[Student.familyName],
+                                it[Student.email]
+                        )
+                    }
+        }
+        val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
+        TeacherReadGradesController.Resp(studentCount, students, exercises)
+    }
 }
 
-private fun selectStudentsOnCourse(courseId: Long, queryWords: List<String>, offset: Int, limit: Int): List<TeacherReadGradesController.StudentsResp> {
-    return transaction {
-        val query = (Student innerJoin StudentCourseAccess)
-                .slice(Student.id, Student.email, Student.givenName, Student.familyName)
-                .select { StudentCourseAccess.course eq courseId }
+private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>): Query {
+    val query = (Student innerJoin StudentCourseAccess)
+            .slice(Student.id, Student.email, Student.givenName, Student.familyName)
+            .select { StudentCourseAccess.course eq courseId }
 
-        queryWords.forEach {
-            query.andWhere {
-                (Student.id like "%$it%") or
-                        (Student.email like "%$it%") or
-                        (Student.givenName like "%$it%") or
-                        (Student.familyName like "%$it%")
-            }
+    queryWords.forEach {
+        query.andWhere {
+            (Student.id like "%$it%") or
+                    (Student.email like "%$it%") or
+                    (Student.givenName like "%$it%") or
+                    (Student.familyName like "%$it%")
         }
-        query.limit(limit, offset)
-                .map {
-                    TeacherReadGradesController.StudentsResp(
-                            it[Student.id].value,
-                            it[Student.givenName],
-                            it[Student.familyName],
-                            it[Student.email]
-                    )
-                }
     }
+    return query
 }
 
 private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.ExercisesResp> {
