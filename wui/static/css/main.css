@@ -544,6 +544,8 @@ div.title-wrap > .title-button > i.material-icons {
 
 .loading-collection :nth-child(1) {
     width: 20%; /* Page title */
+    height: 3.7rem;
+    margin-bottom: 2.5rem;
 }
 
 .loading-collection :nth-child(2) {
