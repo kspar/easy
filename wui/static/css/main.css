@@ -157,132 +157,112 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-/** Tabs **/
+/** Exercise page **/
 
-.tabs .tab {
+#exercise-card {
+    font-size: 1.7rem;
+}
+
+#exercise-card #tabs-wrap {
+    text-align: center;
+}
+
+#exercise-card .tabs .tab {
     text-transform: none;
 }
 
-.tabs .tab a {
+#exercise-card .tabs .tab a {
     font-size: 2.1rem;
     color: gray;
 }
 
-.tabs .tab a:hover, .tabs .tab a.active {
+#exercise-card .tabs .tab a:hover,
+#exercise-card .tabs .tab a.active {
     background-color: transparent;
     color: #4DAB54;
 }
 
-.tabs .tab a:focus, .tabs .tab a:focus.active {
+#exercise-card .tabs .tab a:focus,
+#exercise-card .tabs .tab a:focus.active {
     background-color: rgba(77, 171, 84, 0.2);
     outline: none;
 }
 
-.tabs .indicator {
+#exercise-card .tabs .indicator {
     background-color: #4DAB54;
 }
 
-
-/** Card **/
-
-.bt {
-    border-top: 1px solid rgba(160, 160, 160, 0.2);
+#exercise-card .card-content {
+    border-top: 1px solid #e2e2e2;
 }
 
-.card {
-    font-size: 1.7rem;
-}
-
-
-/** Exercise page **/
-
-.subheading {
+#exercise-card .exercise-info .subheading {
     color: #4DAB54;
     font-weight: 500;
 }
 
-h2 {
+#exercise-card h2 {
     font-size: 2.3rem;
 }
 
-.btn {
-    background-color: #4DAB54;
+#exercise-card pre.feedback {
+    white-space: pre-wrap;
+    font-size: 1.5rem;
 }
 
-.btn:hover {
-    background-color: #4DAB54;
+#exercise-card pre.auto-feedback {
+    background-color: #f5f5f5;
 }
 
-.collapsible-header {
-    margin-bottom: 0;
+#exercise-card .grade-number {
+    font-weight: 500;
 }
 
-#teacher-submissions-list {
-    font-size: 1.8rem;
+#exercise-card label[for=feedback],
+#exercise-card label[for=grade] {
+    font-size: 1.6rem;
 }
+
+#exercise-card #feedback:focus {
+    border-bottom: 1px solid #469c45;
+    -webkit-box-shadow: 0 1px 0 0 #469c45;
+    box-shadow: 0 1px 0 0 #469c45;
+}
+
+#exercise-card #feedback:focus + label {
+    color: #469c45;
+}
+
+#exercise-card #submission-info,
+#exercise-card #submission-teacher,
+#exercise-card #submission-auto {
+    margin-bottom: 3rem;
+}
+
+#exercise-card #add-grade-wrap {
+    padding: 2rem;
+    border: 1px solid #eee;
+    font-size: 16px;
+}
+
+#exercise-card #grade:focus {
+    border-bottom: 1px solid #469c45;
+    -webkit-box-shadow: 0 1px 0 0 #469c45;
+    box-shadow: 0 1px 0 0 #469c45;
+}
+
+#exercise-card #grade:focus + label {
+    color: #469c45;
+}
+
+
+
 
 .collection a.teacher-submission-item {
     line-height: 3rem;
     color: #000;
 }
 
-.editor-wrapper {
-    margin-top: 3rem;
-    margin-bottom: 3rem;
-    padding: 1rem;
-    background-color: #eee;
-}
-
-#teacher-submission-time-wrapper, #submission-time-wrapper {
-    margin-bottom: 3rem;
-}
-
-pre.feedback {
-    white-space: pre-wrap;
-    font-size: 1.5rem;
-}
-
-pre.auto-feedback {
-    background-color: #f5f5f5;
-}
-
-.grade-number {
-    font-weight: 500;
-}
-
-#teacher-submission-teacher, #teacher-submission-auto, #submission-teacher, #submission-auto {
-    margin-bottom: 3rem;
-}
-
-#add-grade-wrapper {
-    padding: 2rem;
-    border: 1px solid #eee;
-    font-size: 16px;
-}
-
-label[for=feedback], label[for=grade] {
-    font-size: 1.6rem;
-}
-
-#feedback:focus {
-    border-bottom: 1px solid #469c45;
-    -webkit-box-shadow: 0 1px 0 0 #469c45;
-    box-shadow: 0 1px 0 0 #469c45;
-}
-
-#feedback:focus + label {
-    color: #469c45;
-}
-
-#grade:focus {
-    border-bottom: 1px solid #469c45;
-    -webkit-box-shadow: 0 1px 0 0 #469c45;
-    box-shadow: 0 1px 0 0 #469c45;
-}
-
-#grade:focus + label {
-    color: #469c45;
-}
 
 
 /** Courses page **/
@@ -347,6 +327,13 @@ label[for=feedback], label[for=grade] {
 
 
 /* Code editor */
+
+.editor-wrapper {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+    padding: 1rem;
+    background-color: #eee;
+}
 
 .CodeMirror {
     font-size: 1.9rem;
@@ -418,7 +405,27 @@ label[for=new-students-list] {
     min-height: 5rem;
 }
 
+
 /** Common **/
+
+
+/** General **/
+
+.display-none {
+    display: none;
+}
+
+
+/** Buttons **/
+
+.btn {
+    background-color: #4DAB54;
+}
+
+.btn:hover {
+    background-color: #4DAB54;
+}
+
 
 /** Divided collection **/
 

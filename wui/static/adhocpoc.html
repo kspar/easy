@@ -19,7 +19,8 @@
     <nav class="nav-center" role="navigation">
         <div class="container">
             <a href="/courses" class="brand-logo left">
-                <img style="height: 4rem; vertical-align: middle;" class="logo-img" src="../../doc/wui/design/new_logo.svg" alt="Lahendus"/>
+                <img style="height: 4rem; vertical-align: middle;" class="logo-img"
+                     src="../../doc/wui/design/new_logo.svg" alt="Lahendus"/>
                 <span style="font-size: 2.5rem">Lahendus</span>
             </a>
             <ul id="nav-mobile" class="hide-on-med-and-down">
@@ -45,39 +46,97 @@
 
 <div id="content-container" class="container">
 
-
-    <div id="exercises-list" class="collection divided-collection">
-        <a class="collection-item bb-wrap" href="/courses/a/exercises">
-            <div class="row">
-                <span class="col s6">1.2 Optic Gaming vs GenG</span>
-                <span class="col s6 deadline">1. juuli 2019, 11.11</span>
+    <div id="exercise-card" class="card">
+        <div id="tabs-wrap">
+            <ul class="tabs">
+                <li class="tab"><a class="active" href="#exercise">Ülesanne</a></li>
+                <li class="tab"><a href="#testing">Testimine</a></li>
+                <li class="tab"><a href="#student-submissions">Esitused</a></li>
+                <li id="tab-student-submission" class="tab"><a href="#student-submission">Andrus</a></li>
+            </ul>
+        </div>
+        <div class="card-content">
+            <div id="exercise">
+                <div class="exercise-info">
+                    <p><span class="subheading">Tähtaeg: </span>18. jaanuar 2019, 12.42</p>
+                    <p><span class="subheading">Sulgemise aeg: </span>1. juuni 2019, 23.59</p>
+                    <p><span class="subheading">Hindamine: </span>automaatne</p>
+                    <p><span class="subheading">Lävend: </span>42%</p>
+                    <p><span class="subheading">Õpilastele nähtav: </span>jah</p>
+                    <p><span class="subheading">Hinnangud õpilastele nähtavad: </span>jah</p>
+                    <p><span class="subheading">Viimati muudetud: </span>18. märts 2018, 9.15</p>
+                </div>
+                <div>
+                    <h2>Ülesande pealkiri</h2>
+                    <div>Ülesande tekst</div>
+                </div>
             </div>
-            <div class="bb">
-                <span class="bb-green bb-item tooltipped" style="width: 10%" data-position="bottom" data-tooltip="Lõpetanud: 42"></span><span class="bb-yellow bb-item tooltipped" style="width: 8%" data-position="bottom" data-tooltip="Nässu läinud: 42"></span><span class="bb-blue bb-item tooltipped" style="width: 42%" data-position="bottom" data-tooltip="Hindamata: 42"></span><span class="bb-grey bb-item tooltipped" style="width: 40%" data-position="bottom" data-tooltip="Esitamata: 42"></span>
-            </div>
-        </a>
 
-        <a class="collection-item bb-wrap row" href="/courses/a/exercises">
-            <span class="col s6">1.2 Optic Gaming vs GenG</span>
-            <span class="col s6 deadline">1. juuli 2019, 11.11</span>
-            <div class="bb">
-                <span class="bb-green bb-item tooltipped" style="width: 10%" data-position="bottom" data-tooltip="Lõpetanud: 42"></span><span class="bb-yellow bb-item tooltipped" style="width: 8%" data-position="bottom" data-tooltip="Nässu läinud: 42"></span><span class="bb-blue bb-item tooltipped" style="width: 42%" data-position="bottom" data-tooltip="Hindamata: 42"></span><span class="bb-grey bb-item tooltipped" style="width: 40%" data-position="bottom" data-tooltip="Esitamata: 42"></span>
+            <div id="testing">
+                <h4>Automaatkontrolli hinnang</h4>
+                <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
+                <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+                <div class="editor-wrapper">
+                    <textarea id="testing-submission"></textarea>
+                </div>
+                <div class="center">
+                    <button id="testing-submit" class="waves-effect waves-light btn">Esita</button>
+                </div>
             </div>
-        </a>
 
+            <div id="student-submissions">
+            </div>
+
+            <div id="student-submission">
+                <p id="submission-info">
+                    <span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
+                <div id="submission-auto">
+                    <h4>Automaatkontrolli hinnang</h4>
+                    <pre class="feedback auto-feedback">Gut :)</pre>
+                    <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+                </div>
+                <div id="submission-teacher">
+                    <h4>Õpetaja hinnang</h4>
+                    <pre class="feedback">Sehr gut :)</pre>
+                    <div>Hinne: <span class="grade-number">66</span>/100</div>
+                </div>
+
+                <a id="add-grade-link" href="#!">Lisa hinnang</a>
+                <div id="add-grade-wrap">
+                    <div class="row">
+                        <div class="input-field col s8">
+                            <textarea id="feedback" class="materialize-textarea"></textarea>
+                            <label for="feedback">Tagasiside</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s4">
+                            <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
+                            <label for="grade">Hinne</label>
+                            <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
+                        </div>
+                    </div>
+
+                    <div id="grade-button-wrapper">
+                        <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
+                    </div>
+                </div>
+
+                <div id="teacher-submission-wrapper" class="editor-wrapper no-cursor">
+                    <form>
+                        <textarea id="teacher-submission-submission"></textarea>
+                    </form>
+                </div>
+
+            </div>
+        </div>
     </div>
+
 
 </div>
 
 
-
-
-
 <style>
-
-
-
-
 
 
     .container {
@@ -85,9 +144,7 @@
     }
 
 
-
 </style>
-
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -107,6 +164,8 @@
         // margin: 0,
         // transitionMovement: 10
     });
+
+    M.Tabs.init(document.getElementsByClassName('tabs').item(0), {});
 </script>
 </body>
 </html>
