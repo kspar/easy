@@ -2,7 +2,10 @@ package components
 
 import PageName
 import getContainer
+import getElemsByClass
+import libheaders.Materialize
 import spa.Page
+import tmRender
 import kotlin.browser.window
 
 object ExerciseSummaryPage : Page() {
@@ -16,8 +19,20 @@ object ExerciseSummaryPage : Page() {
 
         val pathIds = extractSanitizedPathIds(window.location.pathname)
 
-        // TODO
         getContainer().innerHTML = "Exercise summary for exercise ${pathIds.exerciseId} on course ${pathIds.courseId}"
+
+        getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
+                "coursesHref" to "/courses",
+                "courseHref" to "/courses/${pathIds.courseId}/exercises",
+                "courses" to "Minu kursused",
+                "courseTitle" to "TODO",
+                "exerciseTitle" to "TODO",
+                "exerciseLabel" to "Ülesanne",
+                "testingLabel" to "Katsetamine",
+                "studentSubmLabel" to "Esitused"
+        ))
+
+        Materialize.Tabs.init(getElemsByClass("tabs")[0])
 
     }
 

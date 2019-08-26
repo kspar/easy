@@ -5,6 +5,7 @@ external object Materialize {
     val Dropdown: MDropdown
     val Sidenav: MSidenav
     val Tooltip: MTooltip
+    val Tabs: MTabs
 
     fun toast(options: dynamic)
 }
@@ -18,5 +19,9 @@ external object MSidenav {
 }
 
 external object MTooltip {
+    fun init(elements: dynamic, options: dynamic = definedExternally)
+}
+
+external object MTabs {
     fun init(elements: dynamic, options: dynamic = definedExternally)
 }
