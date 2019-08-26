@@ -51,8 +51,8 @@
             <ul class="tabs">
                 <li class="tab"><a class="active" href="#exercise">Ülesanne</a></li>
                 <li class="tab"><a href="#testing">Testimine</a></li>
-                <li class="tab"><a href="#student-submissions">Esitused</a></li>
-                <li id="tab-student-submission" class="tab"><a href="#student-submission">Andrus</a></li>
+                <li class="tab"><a href="#students">Esitused</a></li>
+                <li id="tab-student" class="tab"><a href="#student">Andrus</a></li>
             </ul>
         </div>
         <div class="card-content">
@@ -84,10 +84,10 @@
                 </div>
             </div>
 
-            <div id="student-submissions">
+            <div id="students">
             </div>
 
-            <div id="student-submission">
+            <div id="student">
                 <p id="submission-info">
                     <span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
                 <div id="submission-auto">
@@ -116,15 +116,12 @@
                             <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
                         </div>
                     </div>
-
-                    <div id="grade-button-wrapper">
-                        <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
-                    </div>
+                    <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
                 </div>
 
-                <div id="teacher-submission-wrapper" class="editor-wrapper no-cursor">
+                <div class="editor-wrapper no-cursor">
                     <form>
-                        <textarea id="teacher-submission-submission"></textarea>
+                        <textarea id="student-submission"></textarea>
                     </form>
                 </div>
 

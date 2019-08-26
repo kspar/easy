@@ -90,6 +90,105 @@
     </div>
 </script>
 
+<script id="tm-teach-exercise-student-tab" type="text/x-tm">
+    <a href="#student">{{name}}</a>
+</script>
+
+<script id="tm-teach-exercise-testing-feedback" type="text/x-tm">
+    <h4>Automaatkontrolli hinnang</h4>
+    <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
+    <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+</script>
+
+<script id="tm-teach-exercise-student-submission" type="text/x-tm">
+    <p id="submission-info"><span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
+    <div id="submission-auto">
+        <h4>Automaatkontrolli hinnang</h4>
+        <pre class="feedback auto-feedback">Gut :)</pre>
+        <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+    </div>
+    <div id="submission-teacher">
+        <h4>Õpetaja hinnang</h4>
+        <pre class="feedback">Sehr gut :)</pre>
+        <div>Hinne: <span class="grade-number">66</span>/100</div>
+    </div>
+
+    <a id="add-grade-link" href="#!">Lisa hinnang</a>
+    <div id="add-grade-wrap">
+        <div class="row">
+            <div class="input-field col s8">
+                <textarea id="feedback" class="materialize-textarea"></textarea>
+                <label for="feedback">Tagasiside</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s4">
+                <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
+                <label for="grade">Hinne</label>
+                <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
+            </div>
+        </div>
+        <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
+    </div>
+
+    <div class="editor-wrapper no-cursor">
+        <form>
+            <textarea id="student-submission"></textarea>
+        </form>
+    </div>
+</script>
+
+<script id="tm-teach-exercise" type="text/x-tm">
+    <nav class="crumb-wrap">
+        <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
+        <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
+        <a class="breadcrumb">{{exerciseTitle}}</a>
+    </nav>
+    <div id="exercise-card" class="card">
+        <div id="tabs-wrap">
+            <ul class="tabs">
+                <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
+                <li class="tab"><a href="#testing">{{testingLabel}}</a></li>
+                <li class="tab"><a href="#students">{{studentSubmLabel}}</a></li>
+                <li id="tab-student" class="tab"></li>
+            </ul>
+        </div>
+        <div class="card-content">
+            <div id="exercise">
+                <div class="exercise-info">
+                    <p><span class="subheading">Tähtaeg: </span>18. jaanuar 2019, 12.42</p>
+                    <p><span class="subheading">Sulgemise aeg: </span>1. juuni 2019, 23.59</p>
+                    <p><span class="subheading">Hindamine: </span>automaatne</p>
+                    <p><span class="subheading">Lävend: </span>42%</p>
+                    <p><span class="subheading">Õpilastele nähtav: </span>jah</p>
+                    <p><span class="subheading">Hinnangud õpilastele nähtavad: </span>jah</p>
+                    <p><span class="subheading">Viimati muudetud: </span>18. märts 2018, 9.15</p>
+                </div>
+                <div>
+                    <h2>Ülesande pealkiri</h2>
+                    <div>Ülesande tekst</div>
+                </div>
+            </div>
+
+            <div id="testing">
+                <div class="editor-wrapper">
+                    <textarea id="testing-submission"></textarea>
+                </div>
+                <div class="center">
+                    <button id="testing-submit" class="waves-effect waves-light btn">Esita</button>
+                </div>
+            </div>
+
+            <div id="students">
+                <!-- TODO -->
+                TODO
+            </div>
+
+            <div id="student"></div>
+        </div>
+    </div>
+</script>
+
 <script id="tm-teach-exercises-list" type="text/x-tm">
     <nav class="crumb-wrap">
         <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
