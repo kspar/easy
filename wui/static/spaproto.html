@@ -25,7 +25,7 @@
 
 
 <!-- Templates -->
-<script id="tm-navbar" type="text/x-tm">
+<script id="tm-navbar" type="text/x-handlebars-template">
     <nav class="nav-center" role="navigation">
         <div class="container">
             <a href="/courses" class="brand-logo left">
@@ -51,11 +51,11 @@
     </ul>
 </script>
 
-<script id="tm-role-link" type="text/x-tm">
+<script id="tm-role-link" type="text/x-handlebars-template">
     <li><a id="{{changeRoleId}}">{{changeRole}}</a></li>
 </script>
 
-<script id="tm-sidenav" type="text/x-tm">
+<script id="tm-sidenav" type="text/x-handlebars-template">
     <ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
         <li><a class="subheader">{{header}}</a></li>
         <li class="divider-wrap"><div class="divider"></div></li>
@@ -67,13 +67,13 @@
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 </script>
 
-<script id="tm-error-message" type="text/x-tm">
+<script id="tm-error-message" type="text/x-handlebars-template">
     <i class="material-icons" style="margin-right: 10px;">error_outline</i>
     <span class="student-toast">{{error}}</span>
     <button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">{{dismiss}}</button>
 </script>
 
-<script id="tm-add-course" type="text/x-tm">
+<script id="tm-add-course" type="text/x-handlebars-template">
     <div class="input-field">
         <textarea id="course-title" class="materialize-textarea"></textarea>
         <label for="course-title">{{newCourseName}}</label>
@@ -81,7 +81,7 @@
     <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
 </script>
 
-<script id="tm-loading-placeholders" type="text/x-tm">
+<script id="tm-loading-placeholders" type="text/x-handlebars-template">
     <div class="collection loading-collection">
         <div class="loading-item"></div>
         <div class="loading-item"></div>
@@ -90,17 +90,17 @@
     </div>
 </script>
 
-<script id="tm-teach-exercise-student-tab" type="text/x-tm">
+<script id="tm-teach-exercise-student-tab" type="text/x-handlebars-template">
     <a href="#student">{{name}}</a>
 </script>
 
-<script id="tm-teach-exercise-testing-feedback" type="text/x-tm">
+<script id="tm-teach-exercise-testing-feedback" type="text/x-handlebars-template">
     <h4>Automaatkontrolli hinnang</h4>
     <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
     <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
 </script>
 
-<script id="tm-teach-exercise-student-submission" type="text/x-tm">
+<script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <p id="submission-info"><span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
     <div id="submission-auto">
         <h4>Automaatkontrolli hinnang</h4>
@@ -138,7 +138,7 @@
     </div>
 </script>
 
-<script id="tm-teach-exercise" type="text/x-tm">
+<script id="tm-teach-exercise" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
         <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
         <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
@@ -189,7 +189,7 @@
     </div>
 </script>
 
-<script id="tm-teach-exercises-list" type="text/x-tm">
+<script id="tm-teach-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
         <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
         <a class="breadcrumb">{{title}}</a>
@@ -215,7 +215,7 @@
     </div>
 </script>
 
-<script id="tm-stud-exercises-list" type="text/x-tm">
+<script id="tm-stud-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
         <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
         <a class="breadcrumb">{{title}}</a>
@@ -254,7 +254,7 @@
     </div>
 </script>
 
-<script id="tm-teach-course-list" type="text/x-tm">
+<script id="tm-teach-course-list" type="text/x-handlebars-template">
     <div class="title-wrap">
         <h3 class="title no-crumb">{{title}}</h3>
         {{#addCourse}}
@@ -275,7 +275,7 @@
     </div>
 </script>
 
-<script id="tm-stud-course-list" type="text/x-tm">
+<script id="tm-stud-course-list" type="text/x-handlebars-template">
     <div class="title-wrap">
         <h3 class="title no-crumb">{{title}}</h3>
     </div>
