@@ -1,10 +1,11 @@
 package components
 
-import Role
-import JsonUtil
 import Auth
+import CourseInfoCache
+import JsonUtil
 import PageName
 import ReqMethod
+import Role
 import Str
 import debug
 import debugFunStart
@@ -19,9 +20,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.list
 import objOf
 import parseTo
+import queries.CourseInfo
 import spa.Page
 import tmRender
-import kotlin.dom.clear
 
 
 object CoursesPage : Page() {
@@ -79,6 +80,12 @@ object CoursesPage : Page() {
                 error("Fetching student courses failed with status ${resp.status}")
             }
             val courses = resp.parseTo(StudentCourse.serializer().list).await()
+
+            // Populate course info cache
+            courses.forEach {
+                CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
+            }
+
             val coursesHtml = tmRender("tm-stud-course-list",
                     mapOf("title" to Str.coursesTitle(),
                             "courses" to courses.map {
@@ -118,6 +125,12 @@ object CoursesPage : Page() {
                 error("Fetching teacher courses failed with status ${resp.status}")
             }
             val courses = resp.parseTo(TeacherCourse.serializer().list).await()
+
+            // Populate course info cache
+            courses.forEach {
+                CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
+            }
+
             val html = tmRender("tm-teach-course-list", mapOf(
                     "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
                     "addCourse" to isAdmin,
