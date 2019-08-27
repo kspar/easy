@@ -226,27 +226,29 @@
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
         <a class="collection-item bb-wrap row" href="{{href}}">
-            <span class="col s6">{{title}}</span>
-            <span class="col s4 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
-            <span class="col s2 grade">
-               <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-               >{{#evalAuto
-                }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                {{/evalAuto}}{{#evalTeacher
-                }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                {{/evalTeacher}}{{#evalMissing
-                }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                {{/evalMissing}}
-            </span>
+            <div class="row">
+                <span class="col s6">{{title}}</span>
+                <span class="col s4 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
+                <span class="col s2 grade">
+                   <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                   >{{#evalAuto
+                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+                    }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                </span>
+            </div>
             <div class="bb">
                 {{#completed}}
-                <span class="bb-item bb-green">
+                <span class="bb-item bb-green"></span>
                 {{/completed}}
                 {{#started}}
-                <span class="bb-item bb-yellow">
+                <span class="bb-item bb-yellow"></span>
                 {{/started}}
                 {{#unstarted}}
-                <span class="bb-item bb-grey">
+                <span class="bb-item bb-grey"></span>
                 {{/unstarted}}
             </div>
         </a>
