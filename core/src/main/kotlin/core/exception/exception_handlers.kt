@@ -107,7 +107,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.info("Request info: ${request.getDescription(true)}")
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
-        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
+        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
         return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }

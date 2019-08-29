@@ -17,6 +17,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -45,6 +46,7 @@ class StudentAwaitLatestSubmissionController {
                     @JsonProperty("grade_teacher") val gradeTeacher: Int?,
                     @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
+    @Secured("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/await")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExerciseIdStr: String,
@@ -84,30 +86,28 @@ private fun selectLatestStudentSubmission(courseId: Long,
                                  val time: DateTime,
                                  val autogradeStatus: AutoGradeStatus)
 
-    val lastSubmission = transaction {
-        (CourseExercise innerJoin Submission)
-                .slice(Submission.createdAt, Submission.id, Submission.solution, Submission.autoGradeStatus)
-                .select {
-                    CourseExercise.course eq courseId and
-                            (CourseExercise.id eq courseExId) and
-                            (Submission.student eq studentId)
-                }
-                .orderBy(Submission.createdAt to SortOrder.DESC)
-                .limit(1)
-                .map {
-                    SubmissionPartial(it[Submission.id].value,
-                            it[Submission.solution],
-                            it[Submission.createdAt],
-                            it[Submission.autoGradeStatus])
-                }
-                .singleOrNull()
-    } ?: return null
-
-    val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
-
     var sleepCounter = 0
     while (true) {
-        log.debug { "Waiting for submission grading... Iteration $sleepCounter" }
+        val lastSubmission = transaction {
+            (CourseExercise innerJoin Submission)
+                    .slice(Submission.createdAt, Submission.id, Submission.solution, Submission.autoGradeStatus)
+                    .select {
+                        CourseExercise.course eq courseId and
+                                (CourseExercise.id eq courseExId) and
+                                (Submission.student eq studentId)
+                    }
+                    .orderBy(Submission.createdAt to SortOrder.DESC)
+                    .limit(1)
+                    .map {
+                        SubmissionPartial(it[Submission.id].value,
+                                it[Submission.solution],
+                                it[Submission.createdAt],
+                                it[Submission.autoGradeStatus])
+                    }
+                    .singleOrNull()
+        } ?: return null
+
+        val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
 
         val response = transaction {
             val autoAssessment = lastAutoAssessment(lastSubmission.id)
@@ -123,23 +123,22 @@ private fun selectLatestStudentSubmission(courseId: Long,
             )
         }
 
-
         if (response.autoGradeStatus != AutoGradeStatus.IN_PROGRESS) {
-            log.debug { "Received submission results on iteration $sleepCounter" }
+            log.debug { "Got finished autograde status on iteration $sleepCounter for submission ${lastSubmission.id}" }
             return response
 
         } else {
             sleepCounter++
 
             if (sleepCounter > timeoutSteps) {
-                throw AwaitTimeoutException("Waiting for submission results reached timeout after $timeoutSteps steps.", ReqError.ASSESSMENT_AWAIT_TIMEOUT)
+                throw AwaitTimeoutException("Waiting for submission (id ${lastSubmission.id}) results reached timeout after $timeoutSteps steps.", ReqError.ASSESSMENT_AWAIT_TIMEOUT)
             }
-
-            Thread.sleep((sleepStart + sleepCounter * sleepStep).toLong())
+            val sleep = (sleepStart + sleepCounter * sleepStep).toLong()
+            log.debug { "Waiting $sleep milliseconds for submission (id ${lastSubmission.id}) grading... Iteration $sleepCounter" }
+            Thread.sleep(sleep)
         }
 
     }
-
 }
 
 private fun lastAutoAssessment(submissionId: Long): AssessmentSummary? {
