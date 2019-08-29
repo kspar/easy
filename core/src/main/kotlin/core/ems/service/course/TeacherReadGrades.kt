@@ -79,17 +79,16 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     return transaction {
         val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords)
         val studentCount = studentsQuery.count()
-        val students = transaction {
-            studentsQuery.limit(limit ?: studentCount, offset ?: 0)
-                    .map {
-                        TeacherReadGradesController.StudentsResp(
-                                it[Student.id].value,
-                                it[Student.givenName],
-                                it[Student.familyName],
-                                it[Student.email]
-                        )
-                    }
-        }
+        val students = studentsQuery.limit(limit ?: studentCount, offset ?: 0)
+                .map {
+                    TeacherReadGradesController.StudentsResp(
+                            it[Student.id].value,
+                            it[Student.givenName],
+                            it[Student.familyName],
+                            it[Student.email]
+                    )
+                }
+
         val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
         TeacherReadGradesController.Resp(studentCount, students, exercises)
     }
