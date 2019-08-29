@@ -101,9 +101,9 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     }
 
     @ExceptionHandler(value = [AwaitTimeoutException::class])
-    fun handleServerTimeOutException(ex: AwaitTimeoutException, request: WebRequest): ResponseEntity<Any> {
+    fun handleAwaitTimeoutException(ex: AwaitTimeoutException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.info("ServerTimeoutException: ${ex.message}")
+        log.info("AwaitTimeoutException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
