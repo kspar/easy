@@ -25,6 +25,19 @@ tags:
 paths:
 
   /account/personal:
+    get:
+      summary: Get all system management notifications.
+      tags:
+        - common
+      responses:
+        200:
+          description: System management notifications (messages).
+          schema:
+            type: array
+            items:
+              properties:
+                message:
+                  type: string
     post:
       summary: "Update account data in easy:core.
       Creates account if it does not exist. If the account does not exist,
@@ -49,6 +62,65 @@ paths:
       responses:
         200:
           description: Updated.
+
+
+  /management/notifications:
+    get:
+      summary: Get all system management notifications.
+      tags:
+        - admin
+      responses:
+        200:
+          description: System management notifications (messages).
+          schema:
+            type: array
+            items:
+              properties:
+                id:
+                  type: string
+                message:
+                  type: string
+    post:
+      summary: Create new system management notification.
+      tags:
+        - admin
+      parameters:
+        - name: notification
+          in: body
+          schema:
+            properties:
+              message:
+                type: string
+            required:
+              - message
+      responses:
+        200:
+          description: Notification created.
+
+  /management/notifications/{notificationId}:
+    parameters:
+      - $ref: '#/parameters/NotificationId'
+    patch:
+      summary: Update corresponding system management notification if notification is present.
+      tags:
+        - admin
+      parameters:
+        - name: notification
+          in: body
+          schema:
+            properties:
+              message:
+                type: string
+      responses:
+        200:
+          description: Notification updated.
+    delete:
+      summary: Delete corresponding system management notification if notification is present.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Notification deleted
 
 
   /student/courses:
@@ -870,6 +942,12 @@ parameters:
 
   ExecutorId:
     name: executorId
+    in: path
+    required: true
+    type: string
+
+  NotificationId:
+    name: notificationId
     in: path
     required: true
     type: string
