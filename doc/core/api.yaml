@@ -540,6 +540,10 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
+      - in: query
+        name: search
+        type: string
+        description: Search string that is matched on student names and username.
     get:
       summary: Get latest submission summaries for this exercise of all students in this course.
       tags:
