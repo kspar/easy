@@ -134,6 +134,17 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="310819-1" author="priit">
+        <createTable tableName="management_notification">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="message" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="management_notification_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
 
 
 </databaseChangeLog>
