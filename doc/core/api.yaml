@@ -370,7 +370,7 @@ paths:
         - in: query
           name: search
           type: string
-          description: Client-specified search string (over students).
+          description: Search string that is matched on student names, username and email.
       tags:
         - teacher
       responses:
