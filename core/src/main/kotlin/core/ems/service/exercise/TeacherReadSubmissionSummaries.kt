@@ -12,10 +12,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -35,23 +32,29 @@ class TeacherReadSubmissionSummariesController {
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
     fun controller(@PathVariable("courseId") courseIdString: String,
                    @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   @RequestParam("search", required = false, defaultValue = "") searchString: String,
                    caller: EasyUser): List<Resp> {
 
-        log.debug { "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.debug {
+            "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString " +
+                    "on course $courseIdString (search string: '$searchString')"
+        }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq())
+        val queryWords = searchString.trim().toLowerCase().split(Regex(" +"))
+
+        return selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(), queryWords)
     }
 }
 
-private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long):
+private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, queryWords: List<String>):
         List<TeacherReadSubmissionSummariesController.Resp> {
     return transaction {
         val maxSubTime = Submission.createdAt.max()
 
-        (StudentCourseAccess innerJoin Student leftJoin (Submission innerJoin CourseExercise))
+        val query = (StudentCourseAccess innerJoin Student leftJoin (Submission innerJoin CourseExercise))
                 .slice(Student.id, Student.givenName, Student.familyName, maxSubTime)
                 .select {
                     // CourseExercise.id & CourseExercise.course are null when the student has no submission
@@ -59,7 +62,16 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long):
                             (CourseExercise.course eq courseId or CourseExercise.course.isNull()) and
                             (StudentCourseAccess.course eq courseId)
                 }
-                .groupBy(Student.id, Student.givenName, Student.familyName)
+
+        queryWords.forEach {
+            query.andWhere {
+                (Student.id like "%$it%") or
+                        (Student.givenName.lowerCase() like "%$it%") or
+                        (Student.familyName.lowerCase() like "%$it%")
+            }
+        }
+
+        query.groupBy(Student.id, Student.givenName, Student.familyName)
                 .map { latestSubmission ->
 
                     val latestSubTime = latestSubmission[maxSubTime]
