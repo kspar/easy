@@ -45,6 +45,10 @@ class TeacherAssessController {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
+        if (assessment.grade < 0 || assessment.grade > 100) {
+            throw InvalidRequestException("Expected submission $submissionId grade on course exercise $courseExId on course $courseId to be [0,100], but got ${assessment.grade}")
+        }
+
         insertTeacherAssessment(callerId, submissionId, mapToTeacherAssessment(assessment))
     }
 
