@@ -989,11 +989,16 @@ definitions:
       submission_time:
         type: string
         format: date-time
+        description: Exists if the student has a submission.
       grade:
-        description: Optional, exists if the submission has been graded (together with graded_by).
         type: integer
+        description: Exists if the student has an assessment on the latest submission (together with graded_by).
       graded_by:
         $ref: '#/definitions/GraderType'
+    required:
+      - student_id
+      - given_name
+      - family_name
 
   TeacherSubmission:
     properties:
