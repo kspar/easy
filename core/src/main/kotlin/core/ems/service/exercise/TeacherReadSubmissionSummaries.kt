@@ -6,6 +6,8 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
@@ -15,6 +17,20 @@ import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
+
+// TODO: waiting for NULLS FIRST/LAST support (https://github.com/JetBrains/Exposed/issues/478)
+private enum class OrderBy {
+    FAMILY_NAME,
+    // latest - earliest - no submission
+    // no submission - earliest - latest
+    SUBMISSION_TIME,
+    // auto, teacher, missing
+    // teacher, auto, missing
+    GRADED_BY,
+    // high, low, missing (nulls last)
+    // missing, low, high (nulls first)
+    GRADE
+}
 
 @RestController
 @RequestMapping("/v2")
@@ -33,29 +49,56 @@ class TeacherReadSubmissionSummariesController {
     fun controller(@PathVariable("courseId") courseIdString: String,
                    @PathVariable("courseExerciseId") courseExerciseIdString: String,
                    @RequestParam("search", required = false, defaultValue = "") searchString: String,
+                   @RequestParam("orderby", required = false) orderByString: String?,
+                   @RequestParam("order", required = false) orderString: String?,
                    caller: EasyUser): List<Resp> {
 
         log.debug {
             "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString " +
-                    "on course $courseIdString (search string: '$searchString')"
+                    "on course $courseIdString (search string: '$searchString', orderby: $orderByString, order: $orderString)"
         }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
+        val orderBy = when (orderByString) {
+            "name" -> OrderBy.FAMILY_NAME
+            "time" -> OrderBy.SUBMISSION_TIME
+            "gradedby" -> OrderBy.GRADED_BY
+            "grade" -> OrderBy.GRADE
+            null -> OrderBy.FAMILY_NAME
+            else -> throw InvalidRequestException("Invalid value for orderby parameter", ReqError.INVALID_PARAMETER_VALUE)
+        }
+        val order = when (orderString) {
+            "asc" -> SortOrder.ASC
+            "desc" -> SortOrder.DESC
+            null -> SortOrder.ASC
+            else -> throw InvalidRequestException("Invalid value for order parameter", ReqError.INVALID_PARAMETER_VALUE)
+        }
+
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val queryWords = searchString.trim().toLowerCase().split(Regex(" +"))
+        val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
-        return selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(), queryWords)
+        return selectTeacherSubmissionSummaries(
+                courseId, courseExerciseIdString.idToLongOrInvalidReq(), queryWords, orderBy, order)
     }
 }
 
-private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, queryWords: List<String>):
+private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, queryWords: List<String>,
+                                             orderBy: OrderBy, order: SortOrder):
         List<TeacherReadSubmissionSummariesController.Resp> {
     return transaction {
-        val maxSubTime = Submission.createdAt.max()
+        addLogger(StdOutSqlLogger) // TODO: remove
 
-        val query = (StudentCourseAccess innerJoin Student leftJoin (Submission innerJoin CourseExercise))
-                .slice(Student.id, Student.givenName, Student.familyName, maxSubTime)
+        // Alias is needed on distinctOn for some reason
+        val distinctStudentId = Student.id.distinctOn().alias("student_id")
+        // Prevent teacher and auto grade name clash
+        val autoGradeAlias = AutomaticAssessment.grade.alias("autograde")
+        val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("real_grade")
+
+        val subQuery = (StudentCourseAccess innerJoin Student leftJoin
+                (Submission innerJoin CourseExercise leftJoin AutomaticAssessment leftJoin TeacherAssessment))
+                .slice(distinctStudentId, Student.givenName, Student.familyName, Submission.createdAt,
+                        autoGradeAlias, TeacherAssessment.grade, validGradeAlias)
                 .select {
                     // CourseExercise.id & CourseExercise.course are null when the student has no submission
                     (CourseExercise.id eq courseExId or CourseExercise.id.isNull()) and
@@ -64,69 +107,58 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
                 }
 
         queryWords.forEach {
-            query.andWhere {
+            subQuery.andWhere {
                 (Student.id like "%$it%") or
                         (Student.givenName.lowerCase() like "%$it%") or
                         (Student.familyName.lowerCase() like "%$it%")
             }
         }
 
-        query.groupBy(Student.id, Student.givenName, Student.familyName)
-                .map { latestSubmission ->
+        val subTable = subQuery.orderBy(distinctStudentId to SortOrder.ASC,
+                Submission.createdAt to SortOrder.DESC,
+                AutomaticAssessment.createdAt to SortOrder.DESC,
+                TeacherAssessment.createdAt to SortOrder.DESC)
+                .alias("t")
 
-                    val latestSubTime = latestSubmission[maxSubTime]
+        val wrapQuery = subTable
+                // Slice is needed because aliased columns are not included by default
+                .slice(subTable[distinctStudentId], subTable[Student.givenName], subTable[Student.familyName],
+                        subTable[Submission.createdAt], subTable[TeacherAssessment.grade], subTable[autoGradeAlias],
+                        subTable[validGradeAlias])
+                .selectAll()
 
-                    if (latestSubTime == null) {
-                        TeacherReadSubmissionSummariesController.Resp(
-                                latestSubmission[Student.id].value,
-                                latestSubmission[Student.givenName],
-                                latestSubmission[Student.familyName],
-                                null,
-                                null,
-                                null
-                        )
-                    } else {
-                        var gradedBy: GraderType? = null
-                        var grade = selectTeacherGrade(latestSubTime)
+        when (orderBy) {
+            OrderBy.FAMILY_NAME -> wrapQuery.orderBy(subTable[Student.familyName] to order)
+            OrderBy.SUBMISSION_TIME -> wrapQuery.orderBy(subTable[Submission.createdAt] to order)
+            OrderBy.GRADED_BY -> wrapQuery.orderBy(subTable[autoGradeAlias] to order, subTable[TeacherAssessment.grade] to order)
+            OrderBy.GRADE -> wrapQuery.orderBy(subTable[validGradeAlias] to order)
+        }
 
-                        if (grade != null) {
-                            gradedBy = GraderType.TEACHER
-                        } else {
-                            grade = selectAutoGrade(latestSubTime)
-                            if (grade != null) {
-                                gradedBy = GraderType.AUTO
-                            }
-                        }
+        wrapQuery.map {
+            // Explicit nullable types because exposed's type system seems to fail here: it's assuming
+            // non-nullable types as they are in the table, does not account for left joins that create nulls
+            val autoGrade: Int? = it[subTable[autoGradeAlias]]
+            val teacherGrade: Int? = it[subTable[TeacherAssessment.grade]]
+            val validGrade: Int? = it[subTable[validGradeAlias]]
 
-                        TeacherReadSubmissionSummariesController.Resp(
-                                latestSubmission[Student.id].value,
-                                latestSubmission[Student.givenName],
-                                latestSubmission[Student.familyName],
-                                latestSubTime,
-                                grade,
-                                gradedBy
-                        )
-                    }
-                }
+            val validGradePair = when {
+                teacherGrade != null -> teacherGrade to GraderType.TEACHER
+                autoGrade != null -> autoGrade to GraderType.AUTO
+                else -> null
+            }
+
+            if (validGrade != validGradePair?.first) {
+                log.warn { "Valid grade is incorrect. From db: $validGrade, real: $validGradePair" }
+            }
+
+            TeacherReadSubmissionSummariesController.Resp(
+                    it[subTable[distinctStudentId]].value,
+                    it[subTable[Student.givenName]],
+                    it[subTable[Student.familyName]],
+                    it[subTable[Submission.createdAt]],
+                    validGradePair?.first,
+                    validGradePair?.second
+            )
+        }
     }
-}
-
-private fun selectAutoGrade(submissionTime: DateTime): Int? {
-    return (AutomaticAssessment innerJoin Submission)
-            .slice(AutomaticAssessment.grade)
-            .select { Submission.createdAt eq submissionTime }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[AutomaticAssessment.grade] }
-            .firstOrNull()
-}
-
-private fun selectTeacherGrade(submissionTime: DateTime): Int? {
-    return (TeacherAssessment innerJoin Submission)
-            .slice(TeacherAssessment.grade)
-            .select { Submission.createdAt eq submissionTime }
-            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[TeacherAssessment.grade] }
-            .firstOrNull()
 }
