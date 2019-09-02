@@ -1,8 +1,7 @@
 package core.db
 
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Function
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 
@@ -26,5 +25,15 @@ class InsertOrUpdate<Key : Any>(
         val updateSetter = updateCols.joinToString { "${tm.identity(it)} = EXCLUDED.${tm.identity(it)}" }
         val onConflict = "ON CONFLICT (${tm.identity(key)}) DO UPDATE SET $updateSetter"
         return "${super.prepareSQL(transaction)} $onConflict"
+    }
+}
+
+
+// Waiting for exposed DISTINCT ON. Extension inspired by https://github.com/JetBrains/Exposed/issues/500
+fun <T> Column<T>.distinctOn() = DistinctOn(this)
+
+class DistinctOn<T>(private val expr: Column<T>) : Function<T>(expr.columnType) {
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+        queryBuilder { append("DISTINCT ON (", expr, ") ", expr) }
     }
 }
