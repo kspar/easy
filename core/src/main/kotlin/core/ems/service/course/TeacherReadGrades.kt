@@ -102,9 +102,9 @@ private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>
     queryWords.forEach {
         query.andWhere {
             (Student.id like "%$it%") or
-                    (Student.email like "%$it%") or
-                    (Student.givenName like "%$it%") or
-                    (Student.familyName like "%$it%")
+                    (Student.email.lowerCase() like "%$it%") or
+                    (Student.givenName.lowerCase() like "%$it%") or
+                    (Student.familyName.lowerCase() like "%$it%")
         }
     }
     return query
