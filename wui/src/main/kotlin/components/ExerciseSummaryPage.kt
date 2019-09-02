@@ -1,13 +1,68 @@
 package components
 
+import DateSerializer
 import PageName
+import Str
+import debug
+import errorMessage
+import fetchEms
 import getContainer
 import getElemsByClass
+import http200
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import parseTo
+import queries.BasicCourseInfo
 import tmRender
+import toEstonianString
 import kotlin.browser.window
+import kotlin.js.Date
 
 object ExerciseSummaryPage : EasyPage() {
+
+    @Serializable
+    data class TeacherExercise(
+            val title: String,
+            val title_alias: String?,
+            val instructions_html: String?,
+            val text_html: String?,
+            @Serializable(with = DateSerializer::class)
+            val hard_deadline: Date?,
+            @Serializable(with = DateSerializer::class)
+            val soft_deadline: Date?,
+            val grader_type: GraderType,
+            val threshold: Int,
+            @Serializable(with = DateSerializer::class)
+            val last_modified: Date,
+            val student_visible: Boolean,
+            val assessments_student_visible: Boolean,
+            val grading_script: String?,
+            val container_image: String?,
+            val max_time_sec: Int?,
+            val max_mem_mb: Int?,
+            val assets: List<AutoAsset>?,
+            val executors: List<AutoExecutor>?
+    )
+
+    @Serializable
+    data class AutoAsset(
+            val file_name: String,
+            val file_content: String
+    )
+
+    @Serializable
+    data class AutoExecutor(
+            val executor_id: String
+    )
+
+    enum class GraderType {
+        AUTO, TEACHER
+    }
+
+
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
 
@@ -17,21 +72,46 @@ object ExerciseSummaryPage : EasyPage() {
     override fun build(pageStateStr: String?) {
 
         val pathIds = extractSanitizedPathIds(window.location.pathname)
+        val courseId = pathIds.courseId
+        val courseExerciseId = pathIds.exerciseId
 
-        getContainer().innerHTML = "Exercise summary for exercise ${pathIds.exerciseId} on course ${pathIds.courseId}"
+        MainScope().launch {
 
-        getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
-                "coursesHref" to "/courses",
-                "courseHref" to "/courses/${pathIds.courseId}/exercises",
-                "courses" to "Minu kursused",
-                "courseTitle" to "TODO",
-                "exerciseTitle" to "TODO",
-                "exerciseLabel" to "Ülesanne",
-                "testingLabel" to "Katsetamine",
-                "studentSubmLabel" to "Esitused"
-        ))
+            val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET)
 
-        Materialize.Tabs.init(getElemsByClass("tabs")[0])
+            val courseTitle = BasicCourseInfo.get(pathIds.courseId).await().title
+
+            val exerciseResp = exercisePromise.await()
+            if (!exerciseResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching exercises failed with status ${exerciseResp.status}")
+            }
+
+            val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
+            debug { "Exercise: $exercise" }
+
+            getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
+                    "coursesHref" to "/courses",
+                    "courseHref" to "/courses/${pathIds.courseId}/exercises",
+                    "courses" to "Minu kursused",
+                    "courseTitle" to courseTitle,
+                    "exerciseTitle" to (exercise.title_alias ?: exercise.title),
+                    "exerciseLabel" to "Ülesanne",
+                    "testingLabel" to "Katsetamine",
+                    "studentSubmLabel" to "Esitused",
+                    "softDeadline" to (exercise.soft_deadline?.toEstonianString() ?: ""),
+                    "hardDeadline" to (exercise.hard_deadline?.toEstonianString() ?: ""),
+                    "graderType" to if (exercise.grader_type == GraderType.AUTO) "automaatne" else "käsitsi",
+                    "threshold" to exercise.threshold,
+                    "studentVisible" to if (exercise.student_visible) "jah" else "ei",
+                    "assStudentVisible" to if (exercise.assessments_student_visible) "jah" else "ei",
+                    "lastModified" to exercise.last_modified.toEstonianString(),
+                    "exerciseText" to (exercise.text_html ?: "")
+            ))
+
+            Materialize.Tabs.init(getElemsByClass("tabs")[0])
+
+        }
 
     }
 

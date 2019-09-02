@@ -167,17 +167,17 @@
         <div class="card-content">
             <div id="exercise">
                 <div class="exercise-info">
-                    <p><span class="subheading">Tähtaeg: </span>18. jaanuar 2019, 12.42</p>
-                    <p><span class="subheading">Sulgemise aeg: </span>1. juuni 2019, 23.59</p>
-                    <p><span class="subheading">Hindamine: </span>automaatne</p>
-                    <p><span class="subheading">Lävend: </span>42%</p>
-                    <p><span class="subheading">Õpilastele nähtav: </span>jah</p>
-                    <p><span class="subheading">Hinnangud õpilastele nähtavad: </span>jah</p>
-                    <p><span class="subheading">Viimati muudetud: </span>18. märts 2018, 9.15</p>
+                    {{#softDeadline}}<p><span class="subheading">Tähtaeg: </span>{{softDeadline}}</p>{{/softDeadline}}
+                    {{#hardDeadline}}<p><span class="subheading">Sulgemise aeg: </span>{{hardDeadline}}</p>{{/hardDeadline}}
+                    {{#graderType}}<p><span class="subheading">Hindamine: </span>{{graderType}}</p>{{/graderType}}
+                    {{#threshold}}<p><span class="subheading">Lävend: </span>{{threshold}}%</p>{{/threshold}}
+                    {{#studentVisible}}<p><span class="subheading">Õpilastele nähtav: </span>{{studentVisible}}</p>{{/studentVisible}}
+                    {{#assStudentVisible}}<p><span class="subheading">Hinnangud õpilastele nähtavad: </span>{{assStudentVisible}}</p>{{/assStudentVisible}}
+                    {{#lastModified}}<p><span class="subheading">Viimati muudetud: </span>{{lastModified}}</p>{{/lastModified}}
                 </div>
                 <div>
-                    <h2>Ülesande pealkiri</h2>
-                    <div>Ülesande tekst</div>
+                    <h2>{{exerciseTitle}}</h2>
+                    <div>{{exerciseText}}</div>
                 </div>
             </div>
 
