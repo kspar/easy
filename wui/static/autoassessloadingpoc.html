@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+</head>
+<style>
+
+
+    body {
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+    }
+
+    main {
+        flex: 1 0 auto;
+    }
+
+    footer.page-footer {
+        padding-top: 5px;
+        padding-bottom: 10px;
+    }
+
+    footer .fa-github:hover {
+        opacity: 0.7;
+    }
+
+    footer .fa-github {
+        color: #fff;
+        font-size: 4.5rem;
+        margin-top: 25px;
+    }
+
+    footer .footer-heading {
+        font-size: 2.5rem;
+        margin-top: 25px;
+        font-weight: 400;
+    }
+
+    footer .statistics-subheading {
+        font-size: 1.3rem;
+        font-variant: all-small-caps;
+        letter-spacing: 3px;
+    }
+
+    footer .statistics-value {
+        font-size: 2.1rem;
+        font-weight: 500;
+        letter-spacing: 2px;
+    }
+
+    footer .version-string {
+        font-size: 1.3rem;
+    }
+
+    footer hr {
+        border-color: rgba(255, 255, 255, 0.31);
+    }
+
+    footer .row {
+        margin-bottom: 3px;
+    }
+
+    footer .content-wrap {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: row;
+    }
+
+    footer .statistics-wrap {
+        width: 75%;
+    }
+
+    @media screen and (max-width: 992px) {
+        footer .statistics-wrap {
+            width: 100%;
+        }
+
+        footer .content-wrap {
+            flex-direction: column;
+        }
+
+    }
+
+
+    .missing-content-wrap .robot {
+        display: flex;
+        justify-content: space-between;
+        flex-shrink: 0;
+        width: 100px;
+        height: 60px;
+        padding: 22px 14px 0 14px;
+        background-color: #a8a8a8;
+        border-top-left-radius: 20% 25%;
+        border-top-right-radius: 20% 25%;
+        z-index: 2;
+    }
+
+    .missing-content-wrap .robot-yaw {
+        flex-shrink: 0;
+        width: 100px;
+        height: 20px;
+        background-color: #a8a8a8;
+        border-bottom-left-radius: 20% 75%;
+        border-bottom-right-radius: 20% 75%;
+        animation: eating 2s infinite;
+    }
+
+    .missing-content-wrap .antenna {
+        width: 16px;
+        height: 20px;
+        flex-shrink: 0;
+        background-color: #a8a8a8;
+    }
+
+    .missing-content-wrap .antennaball {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        background-color: #a8a8a8;
+        border-radius: 50%;
+        transform: translateY(6px);
+    }
+
+    .missing-content-wrap .antennaball:hover {
+        background-color: #fbff00;
+        box-shadow: 0 0 20px 20px rgba(255, 255, 190, 0.8);
+    }
+
+    .missing-content-wrap .robot-eye {
+        background: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        animation: eye-blink 3s infinite;
+    }
+
+    .missing-content-wrap .eating-wrap {
+        background-color: rgba(255, 255, 255, 0);
+        height: 20px;
+        width: 106px;
+        line-height: 1;
+        text-align: right;
+        transform: translate(-110px, 132px);
+    }
+
+    .missing-content-wrap .eating-text{
+        color: #333333;
+        font-size: 18px;
+        font-family: 'DejaVu Sans Mono', monospace;
+        display: inline-block;
+        opacity: 0;
+
+    }
+
+    .missing-content-wrap .eating-text-1{
+        animation: letter-eating-1 8s infinite;
+
+    }
+
+    .missing-content-wrap .eating-text-2{
+        animation: letter-eating-2 8s infinite;
+
+    }
+
+    .missing-content-wrap .eating-text-3{
+        animation: letter-eating-3 8s infinite;
+
+    }
+
+
+    @keyframes letter-eating-1 {
+        0%{
+            transform: translate(0, 0);
+        }
+
+        12.5%{
+            transform: translate(0, 0);
+
+        }
+
+        25%{
+            transform: translate(0, 0);
+            opacity: 1;
+        }
+        37.5%{
+            transform: translateX(70px);
+        }
+        50%{
+            transform: translateX(70px) scale(0, 0);
+        }
+
+        100%{
+            transform: translateX(70px) scale(0, 0);
+            opacity: 1;
+
+        }
+
+    }
+
+    @keyframes letter-eating-2 {
+        0%{
+            transform: translate(0, 0);
+        }
+
+        12.5%{
+            transform: translate(0, 0);
+
+        }
+        25%{
+            opacity: 1;
+        }
+
+        30%{
+            transform: translate(0, 0);
+        }
+
+
+        37.5%{
+            transform: translateX(40px);
+        }
+        50%{
+            transform: translateX(40px);
+        }
+
+        62.5%{
+            transform: translateX(100px);
+        }
+
+        75%{
+            transform: translateX(100px) scale(0, 0);
+
+        }
+
+        100%{
+            transform: translateX(100px) scale(0, 0);
+            opacity: 1;
+        }
+
+    }
+
+    @keyframes letter-eating-3 {
+        0%{
+            transform: translate(0, 0);
+        }
+
+        12.5%{
+            transform: translate(0, 0);
+
+        }
+
+        25%{
+            transform: translate(0, 0);
+            opacity: 1;
+        }
+
+        37.5% {
+
+            transform: translate(0, 0);
+
+        }
+        50%{
+            transform: translateX(40px);
+        }
+
+        62.5%{
+            transform: translateX(70px);
+        }
+
+        75%{
+            transform: translateX(70px);
+
+        }
+
+        87.5%{
+            transform: translateX(130px);
+
+        }
+
+        100%{
+            transform: translateX(130px) scale(0, 0);
+            opacity: 1;
+        }
+
+    }
+
+
+    @keyframes eye-blink {
+        0%, 100% {
+            transform: scale(1, .05);
+        }
+        5%, 95% {
+            transform: scale(1, 1);
+        }
+    }
+
+    @keyframes eating {
+        0%, 100%{
+            transform: translateY(0px);
+        }
+        5%{
+            transform: translateY(20px);
+        }
+
+    }
+
+    .missing-content-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 25vh;
+        margin-top: 2rem;
+        padding: 40px;
+        background-color: #e3e3e3;
+    }
+
+
+
+</style>
+<body>
+
+<header>
+    <div id="nav-wrap">
+        <nav class="nav-center" role="navigation">
+            <div class="nav-wrapper">
+                <a href="/courses" class="brand-logo left"><img class="logo-img" src="img/main-logo.svg" alt="Lahendus"></a>
+                <ul id="nav-mobile" class="hide-on-med-and-down">
+                    <li><a class="nav-link" href="/courses">Minu kursused</a></li>
+                </ul>
+            </div>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap-Ants-Mets</span><span id="profile-role"> (õpilane)</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <li><a href="https://idp.lahendus.ut.ee/auth/realms/master/account">Konto andmed</a></li>
+        <li><a id="logout-link">Logi välja</a></li>
+    </ul>
+</header>
+<main>
+    <div id="content-container" class="container">
+        <div class="title-wrap">
+            <h3 class="title no-crumb">Minu kursused</h3>
+        </div>
+        <div class="missing-content-wrap">
+            <div class="eating-wrap">
+                <span class="eating-text eating-text-3">pri</span><span class="eating-text eating-text-2">nt(</span><span class="eating-text eating-text-1">'a')</span>
+            </div>
+            <div class="antennaball"></div>
+            <div class="antenna"></div>
+            <div class="robot">
+                <div class="robot-eye"></div>
+                <div class="robot-eye"></div>
+            </div>
+            <div class="robot-yaw"></div>
+
+        </div>
+
+    </div>
+</main>
+
+<footer class="page-footer grey darken-3">
+    <div class="container">
+        <div class="content-wrap">
+            <div class="statistics-wrap">
+                <h4 class="footer-heading">Statistika</h4>
+                <hr/>
+                <div class="row">
+                    <div class="col s4">
+                        <span class="statistics-value">0</span>
+                    </div>
+                    <div class="col s4">
+                        <span class="statistics-value">4556</span>
+                    </div>
+                    <div class="col s4">
+                        <span class="statistics-value">100</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s4">
+                        <span class="statistics-subheading">Esitust kontrollimisel</span>
+                    </div>
+                    <div class="col s4">
+                        <span class="statistics-subheading">Esitust kokku</span>
+                    </div>
+                    <div class="col s4">
+                        <span class="statistics-subheading">Kasutajat kokku</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <a href="#" class="fa fa-github"></a>
+                    <p class="version-string">easy/wui v2 <br> (build 2019-08-29 19:54:26 +0200)</p>
+                    <!-- Temporary, for automatic generation time -->
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
+
+
+</body>
+</html>
