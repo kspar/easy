@@ -21,7 +21,6 @@ import kotlinx.serialization.list
 import libheaders.Materialize
 import parseTo
 import queries.BasicCourseInfo
-import spa.Page
 import tmRender
 import toEstonianString
 import toJsObj
@@ -30,7 +29,7 @@ import kotlin.js.Date
 import kotlin.math.max
 
 
-object ExercisesPage : Page() {
+object ExercisesPage : EasyPage() {
 
     enum class GraderType {
         AUTO, TEACHER
@@ -84,11 +83,6 @@ object ExercisesPage : Page() {
         funLog?.end()
     }
 
-    override fun destruct() {
-        super.destruct()
-        Sidenav.remove()
-    }
-
     private fun extractSanitizedCourseId(path: String): String {
         val match = path.match("^/courses/(\\w+)/exercises/?$")
         if (match != null && match.size == 2) {
@@ -99,8 +93,6 @@ object ExercisesPage : Page() {
     }
 
     private fun buildTeacherExercises(courseId: String) {
-        Sidenav.build(courseId)
-
         MainScope().launch {
             val exercisesPromise = fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.GET)
             val courseInfoPromise = BasicCourseInfo.get(courseId)

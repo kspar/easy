@@ -4,11 +4,10 @@ import PageName
 import getContainer
 import getElemsByClass
 import libheaders.Materialize
-import spa.Page
 import tmRender
 import kotlin.browser.window
 
-object ExerciseSummaryPage : Page() {
+object ExerciseSummaryPage : EasyPage() {
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
 

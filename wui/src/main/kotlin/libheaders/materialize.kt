@@ -20,6 +20,11 @@ external object MSidenav {
 
 external object MTooltip {
     fun init(elements: dynamic, options: dynamic = definedExternally)
+    fun getInstance(element: dynamic): MTooltipInstance
+}
+
+external class MTooltipInstance {
+    fun destroy()
 }
 
 external object MTabs {

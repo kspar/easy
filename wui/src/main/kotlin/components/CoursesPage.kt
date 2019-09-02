@@ -21,11 +21,10 @@ import kotlinx.serialization.list
 import objOf
 import parseTo
 import queries.CourseInfo
-import spa.Page
 import tmRender
 
 
-object CoursesPage : Page() {
+object CoursesPage : EasyPage() {
 
     @Serializable
     data class State(val coursesHtml: String, val role: Role)

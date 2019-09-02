@@ -34,12 +34,9 @@ abstract class Page {
 
     /**
      * Clear page, this is typically called before [build].
-     * Implementations should override to perform custom clearing operations.
-     * The default implementations clears the whole container.
+     * The default implementation performs no clearing.
      */
-    open fun clear() {
-        getContainer().clear()
-    }
+    open fun clear() {}
 
     /**
      * Destruct built page. Called when navigating away from this page.

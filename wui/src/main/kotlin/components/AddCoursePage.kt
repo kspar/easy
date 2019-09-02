@@ -19,12 +19,11 @@ import kotlinx.serialization.Serializable
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
 import parseTo
-import spa.Page
 import spa.PageManager.navigateTo
 import tmRender
 
 
-object AddCoursePage : Page() {
+object AddCoursePage : EasyPage() {
 
     @Serializable
     data class AdminCourse(val id: String)
