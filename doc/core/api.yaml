@@ -24,7 +24,7 @@ tags:
 
 paths:
 
-  /account/personal:
+  /account/checkin:
     post:
       summary: Get all system management notifications.
       tags:
