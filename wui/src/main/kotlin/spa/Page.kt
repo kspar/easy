@@ -1,8 +1,6 @@
 package spa
 
-import getContainer
 import kotlin.browser.window
-import kotlin.dom.clear
 
 /**
  * Represents a page with a unique path scheme and rendering logic.
@@ -33,13 +31,14 @@ abstract class Page {
     abstract fun build(pageStateStr: String?)
 
     /**
-     * Clear page, this is typically called before [build].
+     * Clear page. Called before [build].
      * The default implementation performs no clearing.
      */
     open fun clear() {}
 
     /**
      * Destruct built page. Called when navigating away from this page.
+     * The default implementation does nothing.
      */
     open fun destruct() {}
 
