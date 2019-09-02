@@ -37,13 +37,16 @@ private enum class OrderBy {
 @RequestMapping("/v2")
 class TeacherReadSubmissionSummariesController {
 
-    data class Resp(@JsonProperty("student_id") val studentId: String,
-                    @JsonProperty("given_name") val studentGivenName: String,
-                    @JsonProperty("family_name") val studentFamilyName: String,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("submission_time") val submissionTime: DateTime?,
-                    @JsonProperty("grade") val grade: Int?,
-                    @JsonProperty("graded_by") val gradedBy: GraderType?)
+    data class Resp(@JsonProperty("student_count") val studentCount: Int,
+                    @JsonProperty("students") val students: List<StudentsResp>)
+
+    data class StudentsResp(@JsonProperty("student_id") val studentId: String,
+                            @JsonProperty("given_name") val studentGivenName: String,
+                            @JsonProperty("family_name") val studentFamilyName: String,
+                            @JsonSerialize(using = DateTimeSerializer::class)
+                            @JsonProperty("submission_time") val submissionTime: DateTime?,
+                            @JsonProperty("grade") val grade: Int?,
+                            @JsonProperty("graded_by") val gradedBy: GraderType?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
@@ -52,7 +55,9 @@ class TeacherReadSubmissionSummariesController {
                    @RequestParam("search", required = false, defaultValue = "") searchString: String,
                    @RequestParam("orderby", required = false) orderByString: String?,
                    @RequestParam("order", required = false) orderString: String?,
-                   caller: EasyUser): List<Resp> {
+                   @RequestParam("limit", required = false) limitStr: String?,
+                   @RequestParam("offset", required = false) offsetStr: String?,
+                   caller: EasyUser): Resp {
 
         log.debug {
             "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString " +
@@ -79,16 +84,18 @@ class TeacherReadSubmissionSummariesController {
 
         val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
-        return selectTeacherSubmissionSummaries(
-                courseId, courseExerciseIdString.idToLongOrInvalidReq(), queryWords, orderBy, order)
+        val t0 = System.currentTimeMillis()
+        val resp = selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(),
+                queryWords, orderBy, order, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull())
+        log.debug { "Got latest submission summaries (${System.currentTimeMillis() - t0}ms): $resp" }
+        return resp
     }
 }
 
 private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, queryWords: List<String>,
-                                             orderBy: OrderBy, order: SortOrder):
-        List<TeacherReadSubmissionSummariesController.Resp> {
+                                             orderBy: OrderBy, order: SortOrder, offset: Int?, limit: Int?):
+        TeacherReadSubmissionSummariesController.Resp {
     return transaction {
-        addLogger(StdOutSqlLogger) // TODO: remove
 
         // Alias is needed on distinctOn for some reason
         val distinctStudentId = Student.id.distinctOn().alias("student_id")
@@ -106,6 +113,11 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
                             (CourseExercise.course eq courseId or CourseExercise.course.isNull()) and
                             (StudentCourseAccess.course eq courseId)
                 }
+                // These ORDER BY clauses are for selecting correct first rows in DISTINCT groups
+                .orderBy(distinctStudentId to SortOrder.ASC,
+                        Submission.createdAt to SortOrder.DESC,
+                        AutomaticAssessment.createdAt to SortOrder.DESC,
+                        TeacherAssessment.createdAt to SortOrder.DESC)
 
         queryWords.forEach {
             subQuery.andWhere {
@@ -115,12 +127,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
             }
         }
 
-        val subTable = subQuery.orderBy(distinctStudentId to SortOrder.ASC,
-                Submission.createdAt to SortOrder.DESC,
-                AutomaticAssessment.createdAt to SortOrder.DESC,
-                TeacherAssessment.createdAt to SortOrder.DESC)
-                .alias("t")
-
+        val subTable = subQuery.alias("t")
         val wrapQuery = subTable
                 // Slice is needed because aliased columns are not included by default
                 .slice(subTable[distinctStudentId], subTable[Student.givenName], subTable[Student.familyName],
@@ -142,31 +149,36 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
                     subTable[validGradeAlias] to order)
         }
 
-        wrapQuery.map {
-            // Explicit nullable types because exposed's type system seems to fail here: it's assuming
-            // non-nullable types as they are in the table, does not account for left joins that create nulls
-            val autoGrade: Int? = it[subTable[autoGradeAlias]]
-            val teacherGrade: Int? = it[subTable[TeacherAssessment.grade]]
-            val validGrade: Int? = it[subTable[validGradeAlias]]
+        val resultCount = wrapQuery.count()
 
-            val validGradePair = when {
-                teacherGrade != null -> teacherGrade to GraderType.TEACHER
-                autoGrade != null -> autoGrade to GraderType.AUTO
-                else -> null
-            }
+        val studentsResp =
+                wrapQuery.limit(limit ?: resultCount, offset ?: 0).map {
+                    // Explicit nullable types because exposed's type system seems to fail here: it's assuming
+                    // non-nullable types as they are in the table, does not account for left joins that create nulls
+                    val autoGrade: Int? = it[subTable[autoGradeAlias]]
+                    val teacherGrade: Int? = it[subTable[TeacherAssessment.grade]]
+                    val validGrade: Int? = it[subTable[validGradeAlias]]
 
-            if (validGrade != validGradePair?.first) {
-                log.warn { "Valid grade is incorrect. From db: $validGrade, real: $validGradePair" }
-            }
+                    val validGradePair = when {
+                        teacherGrade != null -> teacherGrade to GraderType.TEACHER
+                        autoGrade != null -> autoGrade to GraderType.AUTO
+                        else -> null
+                    }
 
-            TeacherReadSubmissionSummariesController.Resp(
-                    it[subTable[distinctStudentId]].value,
-                    it[subTable[Student.givenName]],
-                    it[subTable[Student.familyName]],
-                    it[subTable[Submission.createdAt]],
-                    validGradePair?.first,
-                    validGradePair?.second
-            )
-        }
+                    if (validGrade != validGradePair?.first) {
+                        log.warn { "Valid grade is incorrect. From db: $validGrade, real: $validGradePair" }
+                    }
+
+                    TeacherReadSubmissionSummariesController.StudentsResp(
+                            it[subTable[distinctStudentId]].value,
+                            it[subTable[Student.givenName]],
+                            it[subTable[Student.familyName]],
+                            it[subTable[Submission.createdAt]],
+                            validGradePair?.first,
+                            validGradePair?.second
+                    )
+                }
+
+        TeacherReadSubmissionSummariesController.Resp(resultCount, studentsResp)
     }
 }

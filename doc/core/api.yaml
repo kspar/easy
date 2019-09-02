@@ -357,14 +357,8 @@ paths:
     get:
       summary: Get all the grades from all of the course students and from all of the course exercises.
       parameters:
-        - in: query
-          name: offset
-          type: integer
-          description: The number of students to skip before starting to collect the result set.
-        - in: query
-          name: limit
-          type: integer
-          description: The numbers of students to return.
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
         - in: query
           name: search
           type: string
@@ -567,15 +561,44 @@ paths:
             - asc
             - desc
           default: asc
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
       tags:
         - teacher
       responses:
         200:
           description: Latest submission summaries.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherSubmissionSummary'
+            properties:
+              student_count:
+                type: integer
+                description: number of total results
+              students:
+                type: array
+                items:
+                  properties:
+                    student_id:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+                    submission_time:
+                      type: string
+                      format: date-time
+                      description: Exists if the student has a submission.
+                    grade:
+                      type: integer
+                      description: Exists if the student has an assessment on the latest submission (together with graded_by).
+                    graded_by:
+                      $ref: '#/definitions/GraderType'
+                  required:
+                    - student_id
+                    - given_name
+                    - family_name
+            required:
+              - student_count
+              - students
 
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}:
@@ -977,6 +1000,18 @@ parameters:
     required: true
     type: string
 
+  Offset:
+    name: offset
+    in: query
+    type: integer
+    description: The number of results to skip from the beginning.
+
+  Limit:
+    name: limit
+    in: query
+    type: integer
+    description: The numbers of results to return.
+
 
 definitions:
 
@@ -1080,28 +1115,6 @@ definitions:
         type: integer
       completed_count:
         type: integer
-
-  TeacherSubmissionSummary:
-    properties:
-      student_id:
-        type: string
-      given_name:
-        type: string
-      family_name:
-        type: string
-      submission_time:
-        type: string
-        format: date-time
-        description: Exists if the student has a submission.
-      grade:
-        type: integer
-        description: Exists if the student has an assessment on the latest submission (together with graded_by).
-      graded_by:
-        $ref: '#/definitions/GraderType'
-    required:
-      - student_id
-      - given_name
-      - family_name
 
   TeacherSubmission:
     properties:
