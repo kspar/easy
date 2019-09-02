@@ -18,17 +18,18 @@ import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
-// TODO: waiting for NULLS FIRST/LAST support (https://github.com/JetBrains/Exposed/issues/478)
 private enum class OrderBy {
+    // a - b - c (asc)
+    // c - b - a (desc)
     FAMILY_NAME,
-    // latest - earliest - no submission
-    // no submission - earliest - latest
+    // latest - earliest - no submission (desc)
+    // no submission - earliest - latest (asc)
     SUBMISSION_TIME,
-    // auto, teacher, missing
-    // teacher, auto, missing
+    // auto, teacher, missing (asc)
+    // teacher, auto, missing (desc)
     GRADED_BY,
-    // high, low, missing (nulls last)
-    // missing, low, high (nulls first)
+    // high, low, missing (desc)
+    // missing, low, high (asc)
     GRADE
 }
 
@@ -92,8 +93,8 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
         // Alias is needed on distinctOn for some reason
         val distinctStudentId = Student.id.distinctOn().alias("student_id")
         // Prevent teacher and auto grade name clash
-        val autoGradeAlias = AutomaticAssessment.grade.alias("autograde")
-        val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("real_grade")
+        val autoGradeAlias = AutomaticAssessment.grade.alias("auto_grade")
+        val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("valid_grade")
 
         val subQuery = (StudentCourseAccess innerJoin Student leftJoin
                 (Submission innerJoin CourseExercise leftJoin AutomaticAssessment leftJoin TeacherAssessment))
@@ -129,9 +130,16 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
 
         when (orderBy) {
             OrderBy.FAMILY_NAME -> wrapQuery.orderBy(subTable[Student.familyName] to order)
-            OrderBy.SUBMISSION_TIME -> wrapQuery.orderBy(subTable[Submission.createdAt] to order)
-            OrderBy.GRADED_BY -> wrapQuery.orderBy(subTable[autoGradeAlias] to order, subTable[TeacherAssessment.grade] to order)
-            OrderBy.GRADE -> wrapQuery.orderBy(subTable[validGradeAlias] to order)
+            OrderBy.SUBMISSION_TIME -> wrapQuery.orderBy(
+                    subTable[Submission.createdAt].isNull() to order.complement(),
+                    subTable[Submission.createdAt] to order)
+            OrderBy.GRADED_BY -> wrapQuery.orderBy(
+                    (subTable[autoGradeAlias].isNull() and subTable[TeacherAssessment.grade].isNull()) to SortOrder.ASC,
+                    subTable[autoGradeAlias] to order,
+                    subTable[TeacherAssessment.grade] to order)
+            OrderBy.GRADE -> wrapQuery.orderBy(
+                    subTable[validGradeAlias].isNull() to order.complement(),
+                    subTable[validGradeAlias] to order)
         }
 
         wrapQuery.map {

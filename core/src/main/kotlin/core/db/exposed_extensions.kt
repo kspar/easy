@@ -37,3 +37,21 @@ class DistinctOn<T>(private val expr: Column<T>) : Function<T>(expr.columnType) 
         queryBuilder { append("DISTINCT ON (", expr, ") ", expr) }
     }
 }
+
+
+// Waiting for NULLS FIRST/LAST support (https://github.com/JetBrains/Exposed/issues/478)
+// Workaround: use ORDER BY <col> IS NULL ASC to force nulls last
+
+// IS NULL clause that can be used in ORDER BY
+fun <T> Expression<T>.isNull() = IsNullExp(this)
+
+class IsNullExp(val expr: Expression<*>) : Op<Boolean>() {
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) = queryBuilder { append(expr, " IS NULL") }
+}
+
+
+// Shortcut for finding the complement/negation of SortOrder
+fun SortOrder.complement() = when(this) {
+    SortOrder.ASC -> SortOrder.DESC
+    SortOrder.DESC -> SortOrder.ASC
+}
