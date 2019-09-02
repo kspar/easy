@@ -26,20 +26,37 @@ paths:
 
   /account/checkin:
     post:
-      summary: Get all system management notifications.
+      summary: "Update account data in easy:core.
+            Creates account if it does not exist. If the account does not exist,
+            then this must be called before any other services. Returns system management notifications."
       tags:
         - common
-      responses:
-        200:
-          description: System management notifications (messages).
+      parameters:
+        - name: account
+          in: body
           schema:
             properties:
-              messages:
-                type: array
-                items:
-                  properties:
-                    message:
-                      type: string
+              email:
+                type: string
+              first_name:
+                type: string
+              last_name:
+                type: string
+            required:
+              - email
+              - first_name
+              - last_name
+      responses:
+        200:
+           description: Returns system management notifications (messages).
+           schema:
+             properties:
+               messages:
+                 type: array
+                 items:
+                   properties:
+                     message:
+                       type: string
 
 
   /management/notifications:
