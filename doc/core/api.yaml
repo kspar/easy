@@ -538,12 +538,35 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
-      - in: query
-        name: search
-        type: string
-        description: Search string that is matched on student names and username.
     get:
       summary: Get latest submission summaries for this exercise of all students in this course.
+      parameters:
+        - in: query
+          name: search
+          type: string
+          description: Search string that is matched on student names and username.
+        - in: query
+          name: orderby
+          type: string
+          description: "Used for ordering results.
+          Possible choices are: family name (order lexicographically by the student's family name),
+          submission time (ASC: no submission - earliest - latest; DESC: latest - earliest - no submission),
+          valid grade (ASC: missing - low - high; DESC: high - low - missing),
+          whether the submission is graded automatically or by a teacher (ASC: auto - teacher - no grade; DESC: teacher - auto - no grade)."
+          enum:
+            - name
+            - time
+            - grade
+            - gradedby
+          default: name
+        - in: query
+          name: order
+          type: string
+          description: "Whether to order the results in ascending or descending order."
+          enum:
+            - asc
+            - desc
+          default: asc
       tags:
         - teacher
       responses:
