@@ -4,14 +4,18 @@ import core.aas.ExecutorOverloadException
 import core.ems.service.course.StudentNotFoundException
 import core.util.SendMailService
 import mu.KotlinLogging
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
+import org.springframework.validation.FieldError
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 import java.util.*
+
 
 private val log = KotlinLogging.logger {}
 
@@ -110,5 +114,20 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
         return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
     }
-}
 
+    // https://www.baeldung.com/spring-boot-bean-validation and
+    // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
+    override fun handleMethodArgumentNotValid(ex: MethodArgumentNotValidException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {
+        val id = UUID.randomUUID().toString()
+        val errors = HashMap<String, String>()
+
+        ex.bindingResult.allErrors.forEach {
+            val fieldName = (it as FieldError).field
+            val errorMessage = it.getDefaultMessage()
+            errors[fieldName] = errorMessage ?: ""
+        }
+
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, errors, ex.message)
+        return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
+    }
+}
