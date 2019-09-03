@@ -24,7 +24,7 @@ class DeleteManagementNotification {
 
         val notificationId = notificationIdStr.idToLongOrInvalidReq()
 
-        log.debug { "${caller.id} is deleting system management notification $notificationId" }
+        log.debug { "${caller.id} is requests deleting system management notification with ID $notificationId" }
 
         deleteMessage(notificationId)
     }

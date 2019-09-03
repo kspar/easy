@@ -25,7 +25,7 @@ class UpdateManagementNotificationsController {
 
         val notificationId = notificationIdStr.idToLongOrInvalidReq()
 
-        log.debug { "${caller.id} is updating system management notification $notificationId with $dto" }
+        log.debug { "${caller.id} requests updating system management notification with ID $notificationId with $dto" }
 
         updateMessage(dto, notificationId)
     }
