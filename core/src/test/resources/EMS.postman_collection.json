@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "2c2be6d0-fc19-42a1-a965-b60e5afc539c",
+		"_postman_id": "f1094e9a-596b-4433-9a7b-f0c2c465481f",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -66,13 +66,13 @@
 					"raw": "{\r\n  \"email\": \"foo@bar.com\",\r\n  \"first_name\": \"foo\",\r\n  \"last_name\": \"bar\"\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/account/personal",
+					"raw": "{{EMSBASE}}/account/checkin",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"account",
-						"personal"
+						"checkin"
 					]
 				}
 			},
@@ -138,13 +138,13 @@
 					"raw": "{\r\n  \"email\": \"foo@bar.com\",\r\n  \"first_name\": \"foo\",\r\n  \"last_name\": \"bar\"\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/account/personal",
+					"raw": "{{EMSBASE}}/account/checkin",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"account",
-						"personal"
+						"checkin"
 					]
 				}
 			},
@@ -210,13 +210,13 @@
 					"raw": "{\r\n  \"email\": \"foo@bar.com\",\r\n  \"first_name\": \"foo\",\r\n  \"last_name\": \"bar\"\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/account/personal",
+					"raw": "{{EMSBASE}}/account/checkin",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"account",
-						"personal"
+						"checkin"
 					]
 				}
 			},
@@ -3061,6 +3061,384 @@
 						"submissions",
 						"1",
 						"assessments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: post: create system message: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/notifications",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: get: read system messages: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"\r",
+							"pm.test('Has data', function() {\r",
+							"  pm.expect(jsonData).to.have.property('messages');\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/notifications",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: patch: update system message: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string2\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/notifications/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"notifications",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: get: read system messages: success-2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"\r",
+							"pm.test('Has data', function() {\r",
+							"  pm.expect(jsonData).to.have.property('messages');\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/notifications",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: delete: delete system message: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/notifications/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"notifications",
+						"1"
 					]
 				}
 			},
