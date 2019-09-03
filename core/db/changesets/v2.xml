@@ -146,5 +146,9 @@
         <createSequence sequenceName="management_notification_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
 
+    <changeSet id="030919-1" author="priit">
+        <addDefaultValue tableName="management_notification" columnName="id"
+                         defaultValueSequenceNext="management_notification_id_seq"/>
+    </changeSet>
 
 </databaseChangeLog>
