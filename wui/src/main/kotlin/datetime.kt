@@ -15,5 +15,7 @@ fun Date.toEet() =
  */
 fun Date.toEstonianString(): String {
     val d = this.toEet()
-    return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${d.getHours()}.${d.getMinutes()}"
+    val paddedHours = d.getHours().toString().padStart(2, '0')
+    val paddedMins = d.getMinutes().toString().padStart(2, '0')
+    return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
 }
