@@ -7,13 +7,16 @@ import debug
 import errorMessage
 import fetchEms
 import getContainer
+import getElemById
 import getElemsByClass
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import libheaders.CodeMirror
 import libheaders.Materialize
+import objOf
 import parseTo
 import queries.BasicCourseInfo
 import tmRender
@@ -106,11 +109,17 @@ object ExerciseSummaryPage : EasyPage() {
                     "studentVisible" to if (exercise.student_visible) "jah" else "ei",
                     "assStudentVisible" to if (exercise.assessments_student_visible) "jah" else "ei",
                     "lastModified" to exercise.last_modified.toEstonianString(),
-                    "exerciseText" to (exercise.text_html ?: "")
+                    "exerciseText" to (exercise.text_html ?: ""),
+                    "checkLabel" to "Kontrolli"
             ))
 
             Materialize.Tabs.init(getElemsByClass("tabs")[0])
 
+            CodeMirror.fromTextArea(getElemById("testing-submission"),
+                    objOf("mode" to "python",
+                            "lineNumbers" to true,
+                            "autoRefresh" to true,
+                            "viewportMargin" to 100))
         }
 
     }
