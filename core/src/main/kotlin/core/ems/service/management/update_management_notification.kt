@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.ManagementNotification
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
@@ -33,6 +35,13 @@ class UpdateManagementNotificationsController {
 
 private fun updateMessage(dto: UpdateManagementNotificationsController.Req, notificationId: Long) {
     transaction {
+
+        val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1
+
+        if (!messageExists) {
+            throw InvalidRequestException("No message with ID $notificationId found.")
+        }
+
         ManagementNotification.update({ ManagementNotification.id eq notificationId }) {
             it[message] = dto.message
         }

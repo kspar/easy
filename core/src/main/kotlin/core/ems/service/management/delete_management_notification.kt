@@ -3,8 +3,10 @@ package core.ems.service.management
 import core.conf.security.EasyUser
 import core.db.ManagementNotification
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -32,6 +34,12 @@ class DeleteManagementNotification {
 
 private fun deleteMessage(notificationId: Long) {
     transaction {
+
+        val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1
+
+        if (!messageExists) {
+            throw InvalidRequestException("No message with ID $notificationId found.")
+        }
         ManagementNotification.deleteWhere { ManagementNotification.id eq notificationId }
     }
 }
