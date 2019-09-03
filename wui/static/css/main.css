@@ -255,12 +255,40 @@ nav.crumb-wrap .breadcrumb:before {
     color: #469c45;
 }
 
+#exercise-card .collection-item .row {
+    margin-bottom: 0;
+}
 
+#exercise-card .eval-logo-auto {
+    vertical-align: sub;
+    width: 24px;
+    margin-left: 10px;
+}
 
+#exercise-card .time {
+    font-size: 1.9rem;
+}
 
-.collection a.teacher-submission-item {
-    line-height: 3rem;
-    color: #000;
+#exercise-card .grade {
+    text-align: right;
+    font-size: 1.9rem;
+}
+
+#exercise-card .eval-logo-teacher {
+    color: #aaa;
+    margin-left: 10px;
+}
+
+#exercise-card .eval-logo-missing {
+    vertical-align: middle;
+    width: 24px;
+    margin-left: 10px;
+}
+
+#exercise-card .divided-collection .collection-item {
+    box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.1),
+    0 2px 1px -2px rgba(0, 0, 0, 0.09),
+    0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 

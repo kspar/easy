@@ -2,6 +2,7 @@ package components
 
 import DateSerializer
 import PageName
+import ReqMethod
 import Str
 import debug
 import errorMessage
@@ -9,6 +10,7 @@ import fetchEms
 import getContainer
 import getElemById
 import getElemsByClass
+import getNodelistBySelector
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -21,6 +23,7 @@ import parseTo
 import queries.BasicCourseInfo
 import tmRender
 import toEstonianString
+import toJsObj
 import kotlin.browser.window
 import kotlin.js.Date
 
@@ -64,6 +67,23 @@ object ExerciseSummaryPage : EasyPage() {
     enum class GraderType {
         AUTO, TEACHER
     }
+
+    @Serializable
+    data class TeacherStudents(
+            val student_count: Int,
+            val students: List<TeacherStudent>
+    )
+
+    @Serializable
+    data class TeacherStudent(
+            val student_id: String,
+            val given_name: String,
+            val family_name: String,
+            @Serializable(with = DateSerializer::class)
+            val submission_time: Date?,
+            val grade: Int?,
+            val graded_by: GraderType?
+    )
 
 
     override val pageName: Any
@@ -120,7 +140,55 @@ object ExerciseSummaryPage : EasyPage() {
                             "lineNumbers" to true,
                             "autoRefresh" to true,
                             "viewportMargin" to 100))
+
+
+            val studentsPromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students", ReqMethod.GET)
+            val studentsResp = studentsPromise.await()
+            if (!studentsResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching student submissions failed with status ${studentsResp.status}")
+            }
+
+            val teacherStudents = studentsResp.parseTo(TeacherStudents.serializer()).await()
+            debug { "Students: $teacherStudents" }
+
+            val studentArray = teacherStudents.students.map { student ->
+                val studentMap = mutableMapOf<String, Any?>(
+                        "name" to "${student.given_name} ${student.family_name}",
+                        "time" to student.submission_time?.toEstonianString(),
+                        "points" to student.grade
+                )
+
+                when (student.graded_by) {
+                    GraderType.AUTO -> {
+                        studentMap["evalAuto"] = true
+                    }
+                    GraderType.TEACHER -> {
+                        studentMap["evalTeacher"] = true
+                    }
+                }
+
+                if (student.grade == null) {
+                    if (student.submission_time == null)
+                        studentMap["unstarted"] = true
+                    else
+                        studentMap["evalMissing"] = true
+                } else {
+                    if (student.grade >= exercise.threshold)
+                        studentMap["completed"] = true
+                    else
+                        studentMap["started"] = true
+                }
+
+                studentMap.toJsObj()
+            }.toTypedArray()
+
+            getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
+                    mapOf("students" to studentArray))
+
+            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
         }
+
 
     }
 

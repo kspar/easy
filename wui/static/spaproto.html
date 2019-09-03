@@ -111,6 +111,43 @@
     <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
 </script>
 
+<script id="tm-teach-exercise-students" type="text/x-handlebars-template">
+    <div class="collection divided-collection">
+        {{#students}}
+            <a class="collection-item bb-wrap row" href="#!">
+                <div class="row">
+                    <span class="col s6">{{name}}</span>
+                    <span class="col s4 time">{{time}}</span>
+                    <span class="col s2 grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        {{/evalAuto}}{{#evalTeacher
+                        }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                        {{/evalTeacher}}{{#evalMissing
+                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        {{/evalMissing}}
+                </span>
+                </div>
+                <div class="bb">
+                    {{#completed}}
+                        <span class="bb-item bb-green"></span>
+                    {{/completed}}
+                    {{#started}}
+                        <span class="bb-item bb-yellow"></span>
+                    {{/started}}
+                    {{#evalMissing}}
+                        <span class="bb-item bb-blue"></span>
+                    {{/evalMissing}}
+                    {{#unstarted}}
+                        <span class="bb-item bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+        {{/students}}
+    </div>
+</script>
+
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <p id="submission-info"><span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
     <div id="submission-auto">
