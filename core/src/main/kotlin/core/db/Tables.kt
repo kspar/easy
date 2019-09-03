@@ -102,6 +102,10 @@ object Admin : IdTable<String>("admin") {
     val familyName = text("family_name")
 }
 
+object ManagementNotification : LongIdTable("management_notification") {
+    val message = text("message")
+}
+
 
 // AAS
 
