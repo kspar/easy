@@ -1,13 +1,13 @@
 package core.ems.service.register
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Admin
-import core.db.Student
-import core.db.Teacher
-import core.db.insertOrUpdate
+import core.db.*
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,8 +25,13 @@ class UpdateAccountController {
                                 @JsonProperty("first_name", required = true) val firstName: String,
                                 @JsonProperty("last_name", required = true) val lastName: String)
 
-    @PostMapping("/account/personal")
-    fun updateAccount(@RequestBody dto: PersonalDataBody, caller: EasyUser) {
+    data class Resp(@JsonProperty("messages")
+                    @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
+
+    data class MessageResp(@JsonProperty("message") val message: String)
+
+    @PostMapping("/account/checkin")
+    fun controller(@RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
 
         val account = Account(caller.id, dto.email,
                 correctNameCapitalisation(dto.firstName), correctNameCapitalisation(dto.lastName))
@@ -46,6 +51,8 @@ class UpdateAccountController {
             // Admins should also have a teacher entity to add assessments, exercises etc
             updateTeacher(account)
         }
+
+        return selectMessages()
     }
 }
 
@@ -94,3 +101,16 @@ private fun updateAdmin(admin: Account) {
         }
     }
 }
+
+private fun selectMessages(): UpdateAccountController.Resp {
+    return transaction {
+        UpdateAccountController.Resp(ManagementNotification.selectAll()
+                .orderBy(ManagementNotification.id, SortOrder.DESC)
+                .map {
+                    UpdateAccountController.MessageResp(
+                            it[ManagementNotification.message]
+                    )
+                })
+    }
+}
+
