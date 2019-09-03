@@ -222,7 +222,8 @@ object ExercisesPage : EasyPage() {
                                 exMap["unstarted"] = true
                             }
                             ExerciseStatus.STARTED -> {
-                                exMap["started"] = true
+                                if (ex.graded_by != null)
+                                    exMap["started"] = true
                             }
                             ExerciseStatus.COMPLETED -> {
                                 exMap["completed"] = true
