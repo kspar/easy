@@ -24,20 +24,20 @@ fun setupLinkInterception() {
                 // for primary clicks in the future, currently it does in Chrome but does not in FF,
                 // see https://developer.mozilla.org/en-US/docs/Web/Events#Mouse_events
                 event.button.toInt() != 0) {
-            debug { "$LOG_PREFIX Click with modifier(s)" }
+            debug { "$LOG_PREFIX Click not intercepted - modified click" }
             return@addEventListener
         }
 
         val target = event.target
         if (target !is Node) {
-            debug { "$LOG_PREFIX Click target is not a Node" }
+            debug { "$LOG_PREFIX Click not intercepted - target is not a Node" }
             return@addEventListener
         }
 
         // Find closest parent <a>
         val anchorElement = getClosestParentA(target)
         if (anchorElement == null) {
-            debug { "$LOG_PREFIX No anchor element parent found" }
+            debug { "$LOG_PREFIX Click not intercepted - mo anchor parent found" }
             return@addEventListener
         }
 
@@ -45,13 +45,13 @@ fun setupLinkInterception() {
         val targetHost = anchorElement.hostname
         val currentHost = window.location.hostname
         if (targetHost != currentHost) {
-            debug { "$LOG_PREFIX Link is not local, target host: $targetHost, current host: $currentHost" }
+            debug { "$LOG_PREFIX Click not intercepted - destination is not local, target host: $targetHost, current host: $currentHost" }
             return@addEventListener
         }
 
         val targetUrl = anchorElement.href
 
-        debug { "$LOG_PREFIX Intercepted local link to $targetUrl" }
+        debug { "$LOG_PREFIX Intercepted click to local destination $targetUrl" }
         event.preventDefault()
         handleLocalLinkClick(targetUrl)
     })
