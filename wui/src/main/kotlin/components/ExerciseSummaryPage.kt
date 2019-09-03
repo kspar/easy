@@ -102,14 +102,14 @@ object ExerciseSummaryPage : EasyPage() {
                     "exerciseLabel" to "Ülesanne",
                     "testingLabel" to "Katsetamine",
                     "studentSubmLabel" to "Esitused",
-                    "softDeadline" to (exercise.soft_deadline?.toEstonianString() ?: ""),
-                    "hardDeadline" to (exercise.hard_deadline?.toEstonianString() ?: ""),
+                    "softDeadline" to exercise.soft_deadline?.toEstonianString(),
+                    "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
                     "graderType" to if (exercise.grader_type == GraderType.AUTO) "automaatne" else "käsitsi",
                     "threshold" to exercise.threshold,
-                    "studentVisible" to if (exercise.student_visible) "jah" else "ei",
-                    "assStudentVisible" to if (exercise.assessments_student_visible) "jah" else "ei",
+                    "studentVisible" to Str.translateBoolean(exercise.student_visible),
+                    "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
                     "lastModified" to exercise.last_modified.toEstonianString(),
-                    "exerciseText" to (exercise.text_html ?: ""),
+                    "exerciseText" to exercise.text_html,
                     "checkLabel" to "Kontrolli"
             ))
 

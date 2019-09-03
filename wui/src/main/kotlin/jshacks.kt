@@ -6,7 +6,7 @@
 @JsName("Object")
 external class JsObject
 
-fun Map<String, Any>.toJsObj(): dynamic {
+fun Map<String, Any?>.toJsObj(): dynamic {
     val jsObject: dynamic = JsObject()
     this.forEach {
         jsObject[it.key] = it.value

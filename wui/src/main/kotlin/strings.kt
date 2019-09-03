@@ -9,6 +9,10 @@ abstract class TranslatableStrings {
     abstract fun noPermissionForPage(): String
     abstract fun somethingWentWrong(): String
     abstract fun errorDismiss(): String
+    abstract fun yes(): String
+    abstract fun no(): String
+
+    fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
 
     // Navbar
@@ -62,6 +66,8 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun yes() = "jah"
+    override fun no() = "ei"
     override fun errorDismiss() = "Sain aru"
     override fun topMenuCourses() = "Minu kursused"
     override fun noPermissionForPage() = "Teil puudub õigus selle lehe vaatamiseks."
