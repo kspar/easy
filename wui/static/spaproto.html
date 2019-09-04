@@ -111,43 +111,6 @@
     <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
 </script>
 
-<script id="tm-teach-exercise-students" type="text/x-handlebars-template">
-    <div class="collection divided-collection">
-        {{#students}}
-            <a class="collection-item bb-wrap row" href="#!">
-                <div class="row">
-                    <span class="col s6">{{name}}</span>
-                    <span class="col s4 time">{{time}}</span>
-                    <span class="col s2 grade">
-                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                       >{{#evalAuto
-                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                        {{/evalAuto}}{{#evalTeacher
-                        }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                        {{/evalTeacher}}{{#evalMissing
-                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                        {{/evalMissing}}
-                </span>
-                </div>
-                <div class="bb">
-                    {{#completed}}
-                        <span class="bb-item bb-green"></span>
-                    {{/completed}}
-                    {{#started}}
-                        <span class="bb-item bb-yellow"></span>
-                    {{/started}}
-                    {{#evalMissing}}
-                        <span class="bb-item bb-blue"></span>
-                    {{/evalMissing}}
-                    {{#unstarted}}
-                        <span class="bb-item bb-grey"></span>
-                    {{/unstarted}}
-                </div>
-            </a>
-        {{/students}}
-    </div>
-</script>
-
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <p id="submission-info"><span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
     <div id="submission-auto">
@@ -186,11 +149,77 @@
     </div>
 </script>
 
+<script id="tm-teach-exercise-students" type="text/x-handlebars-template">
+    <div class="collection divided-collection">
+        {{#students}}
+            <a class="collection-item bb-wrap row" href="#!">
+                <div class="row">
+                    <span class="col s6">{{name}}</span>
+                    <span class="col s4 time">{{time}}</span>
+                    <span class="col s2 grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+                    }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                </span>
+                </div>
+                <div class="bb">
+                    {{#completed}}
+                        <span class="bb-item bb-green"></span>
+                    {{/completed}}
+                    {{#started}}
+                        <span class="bb-item bb-yellow"></span>
+                    {{/started}}
+                    {{#evalMissing}}
+                        <span class="bb-item bb-blue"></span>
+                    {{/evalMissing}}
+                    {{#unstarted}}
+                        <span class="bb-item bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+        {{/students}}
+    </div>
+</script>
+
+<script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
+    <div class="editor-wrapper">
+        <textarea id="testing-submission"></textarea>
+    </div>
+    <div class="center">
+        <button id="testing-submit" class="waves-effect waves-light btn">{{checkLabel}}</button>
+    </div>
+</script>
+
+<script id="tm-teach-exercise-summary" type="text/x-handlebars-template">
+    <div class="exercise-info">
+        {{#softDeadline}}<p><span class="subheading">Tähtaeg: </span>{{softDeadline}}</p>{{/softDeadline}}
+        {{#hardDeadline}}<p><span class="subheading">Sulgemise aeg: </span>{{hardDeadline}}</p>{{/hardDeadline}}
+        {{#graderType}}<p><span class="subheading">Hindamine: </span>{{graderType}}</p>{{/graderType}}
+        {{#threshold}}<p><span class="subheading">Lävend: </span>{{threshold}}%</p>{{/threshold}}
+        {{#studentVisible}}<p><span class="subheading">Õpilastele nähtav: </span>{{studentVisible}}</p>{{/studentVisible}}
+        {{#assStudentVisible}}<p><span class="subheading">Hinnangud õpilastele nähtavad: </span>{{assStudentVisible}}</p>{{/assStudentVisible}}
+        {{#lastModified}}<p><span class="subheading">Viimati muudetud: </span>{{lastModified}}</p>{{/lastModified}}
+    </div>
+    <div>
+        <h2>{{exerciseTitle}}</h2>
+        <div>{{{exerciseText}}}</div>
+    </div>
+</script>
+
+<script id="tm-teach-exercise-crumbs" type="text/x-handlebars-template">
+    <a href="{{coursesHref}}" class="breadcrumb">{{coursesLabel}}</a>
+    <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
+    <a class="breadcrumb">{{exerciseTitle}}</a>
+</script>
+
 <script id="tm-teach-exercise" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
-        <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
-        <a class="breadcrumb">{{exerciseTitle}}</a>
+    <nav id="crumbs" class="crumb-wrap">
+        <!-- TODO: placeholder -->
     </nav>
     <div id="exercise-card" class="card">
         <div id="tabs-wrap">
@@ -203,35 +232,12 @@
         </div>
         <div class="card-content">
             <div id="exercise">
-                <div class="exercise-info">
-                    {{#softDeadline}}<p><span class="subheading">Tähtaeg: </span>{{softDeadline}}</p>{{/softDeadline}}
-                    {{#hardDeadline}}<p><span class="subheading">Sulgemise aeg: </span>{{hardDeadline}}</p>{{/hardDeadline}}
-                    {{#graderType}}<p><span class="subheading">Hindamine: </span>{{graderType}}</p>{{/graderType}}
-                    {{#threshold}}<p><span class="subheading">Lävend: </span>{{threshold}}%</p>{{/threshold}}
-                    {{#studentVisible}}<p><span class="subheading">Õpilastele nähtav: </span>{{studentVisible}}</p>{{/studentVisible}}
-                    {{#assStudentVisible}}<p><span class="subheading">Hinnangud õpilastele nähtavad: </span>{{assStudentVisible}}</p>{{/assStudentVisible}}
-                    {{#lastModified}}<p><span class="subheading">Viimati muudetud: </span>{{lastModified}}</p>{{/lastModified}}
-                </div>
-                <div>
-                    <h2>{{exerciseTitle}}</h2>
-                    <div>{{{exerciseText}}}</div>
-                </div>
+                <!-- TODO: placeholder -->
             </div>
-
-            <div id="testing">
-                <div class="editor-wrapper">
-                    <textarea id="testing-submission"></textarea>
-                </div>
-                <div class="center">
-                    <button id="testing-submit" class="waves-effect waves-light btn">{{checkLabel}}</button>
-                </div>
-            </div>
-
+            <div id="testing"></div>
             <div id="students">
-                <!-- TODO -->
-                TODO
+                <!-- TODO: placeholder -->
             </div>
-
             <div id="student"></div>
         </div>
     </div>

@@ -1,10 +1,13 @@
 package components
 
+import Auth
 import DateSerializer
 import PageName
 import ReqMethod
+import Role
 import Str
 import debug
+import debugFunStart
 import errorMessage
 import fetchEms
 import getContainer
@@ -93,101 +96,142 @@ object ExerciseSummaryPage : EasyPage() {
             path.matches("^/courses/\\w+/exercises/\\w+/summary/?$")
 
     override fun build(pageStateStr: String?) {
-
         val pathIds = extractSanitizedPathIds(window.location.pathname)
         val courseId = pathIds.courseId
         val courseExerciseId = pathIds.exerciseId
 
-        MainScope().launch {
-
-            val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET)
-
-            val courseTitle = BasicCourseInfo.get(pathIds.courseId).await().title
-
-            val exerciseResp = exercisePromise.await()
-            if (!exerciseResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching exercises failed with status ${exerciseResp.status}")
-            }
-
-            val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
-            debug { "Exercise: $exercise" }
-
-            getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
-                    "coursesHref" to "/courses",
-                    "courseHref" to "/courses/${pathIds.courseId}/exercises",
-                    "courses" to "Minu kursused",
-                    "courseTitle" to courseTitle,
-                    "exerciseTitle" to (exercise.title_alias ?: exercise.title),
-                    "exerciseLabel" to "Ülesanne",
-                    "testingLabel" to "Katsetamine",
-                    "studentSubmLabel" to "Esitused",
-                    "softDeadline" to exercise.soft_deadline?.toEstonianString(),
-                    "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-                    "graderType" to if (exercise.grader_type == GraderType.AUTO) "automaatne" else "käsitsi",
-                    "threshold" to exercise.threshold,
-                    "studentVisible" to Str.translateBoolean(exercise.student_visible),
-                    "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
-                    "lastModified" to exercise.last_modified.toEstonianString(),
-                    "exerciseText" to exercise.text_html,
-                    "checkLabel" to "Kontrolli"
-            ))
-
-            Materialize.Tabs.init(getElemsByClass("tabs")[0])
-
-            CodeMirror.fromTextArea(getElemById("testing-submission"),
-                    objOf("mode" to "python",
-                            "lineNumbers" to true,
-                            "autoRefresh" to true,
-                            "viewportMargin" to 100))
-
-
-            val studentsPromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students", ReqMethod.GET)
-            val studentsResp = studentsPromise.await()
-            if (!studentsResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching student submissions failed with status ${studentsResp.status}")
-            }
-
-            val teacherStudents = studentsResp.parseTo(TeacherStudents.serializer()).await()
-            debug { "Students: $teacherStudents" }
-
-            val studentArray = teacherStudents.students.map { student ->
-                val studentMap = mutableMapOf<String, Any?>(
-                        "name" to "${student.given_name} ${student.family_name}",
-                        "time" to student.submission_time?.toEstonianString(),
-                        "points" to student.grade
-                )
-
-                when (student.graded_by) {
-                    GraderType.AUTO -> {
-                        studentMap["evalAuto"] = true
-                    }
-                    GraderType.TEACHER -> {
-                        studentMap["evalTeacher"] = true
-                    }
-                }
-
-                if (student.grade == null) {
-                    if (student.submission_time == null)
-                        studentMap["unstarted"] = true
-                    else
-                        studentMap["evalMissing"] = true
-                } else {
-                    if (student.grade >= exercise.threshold)
-                        studentMap["completed"] = true
-                    else
-                        studentMap["started"] = true
-                }
-
-                studentMap.toJsObj()
-            }.toTypedArray()
-
-            getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
-                    mapOf("students" to studentArray))
-
-            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        when (Auth.activeRole) {
+            Role.STUDENT -> buildStudentExercise(courseId)
+            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(courseId, courseExerciseId)
         }
+    }
+
+    private fun buildTeacherExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
+        val fl = debugFunStart("buildTeacherExercise")
+
+        getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
+                "exerciseLabel" to "Ülesanne",
+                "testingLabel" to "Katsetamine",
+                "studentSubmLabel" to "Esitused"
+        ))
+
+        Materialize.Tabs.init(getElemsByClass("tabs")[0])
+
+        // Could be optimised to load exercise details & students in parallel,
+        // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
+        val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
+        buildTeacherTesting()
+        buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.threshold)
+
+        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        fl?.end()
+    }
+
+    private suspend fun buildTeacherSummaryAndCrumbs(courseId: String, courseExerciseId: String): TeacherExercise {
+        val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
+
+        val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET)
+
+        val courseTitle = BasicCourseInfo.get(courseId).await().title
+
+        val exerciseResp = exercisePromise.await()
+        if (!exerciseResp.http200) {
+            errorMessage { Str.somethingWentWrong() }
+            error("Fetching exercises failed with status ${exerciseResp.status}")
+        }
+
+        val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
+        debug { "Exercise: $exercise" }
+
+        getElemById("crumbs").innerHTML = tmRender("tm-teach-exercise-crumbs", mapOf(
+                "coursesLabel" to "Minu kursused",
+                "coursesHref" to "/courses",
+                "courseTitle" to courseTitle,
+                "courseHref" to "/courses/$courseId/exercises",
+                "exerciseTitle" to (exercise.title_alias ?: exercise.title)
+        ))
+
+        getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", mapOf(
+                "softDeadline" to exercise.soft_deadline?.toEstonianString(),
+                "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
+                "graderType" to if (exercise.grader_type == GraderType.AUTO) "automaatne" else "käsitsi",
+                "threshold" to exercise.threshold,
+                "studentVisible" to Str.translateBoolean(exercise.student_visible),
+                "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
+                "lastModified" to exercise.last_modified.toEstonianString(),
+                "exerciseTitle" to (exercise.title_alias ?: exercise.title),
+                "exerciseText" to exercise.text_html
+        ))
+
+        fl?.end()
+        return exercise
+    }
+
+    private fun buildTeacherTesting() {
+        val fl = debugFunStart("buildTeacherTesting")
+        getElemById("testing").innerHTML = tmRender("tm-teach-exercise-testing", mapOf(
+                "checkLabel" to "Kontrolli"
+        ))
+        CodeMirror.fromTextArea(getElemById("testing-submission"),
+                objOf("mode" to "python",
+                        "lineNumbers" to true,
+                        "autoRefresh" to true,
+                        "viewportMargin" to 100))
+        fl?.end()
+    }
+
+    private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, threshold: Int) {
+        val fl = debugFunStart("buildTeacherStudents")
+
+        val studentsPromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students", ReqMethod.GET)
+        val studentsResp = studentsPromise.await()
+        if (!studentsResp.http200) {
+            errorMessage { Str.somethingWentWrong() }
+            error("Fetching student submissions failed with status ${studentsResp.status}")
+        }
+
+        val teacherStudents = studentsResp.parseTo(TeacherStudents.serializer()).await()
+        debug { "Students: $teacherStudents" }
+
+        val studentArray = teacherStudents.students.map { student ->
+            val studentMap = mutableMapOf<String, Any?>(
+                    "name" to "${student.given_name} ${student.family_name}",
+                    "time" to student.submission_time?.toEstonianString(),
+                    "points" to student.grade
+            )
+
+            when (student.graded_by) {
+                GraderType.AUTO -> {
+                    studentMap["evalAuto"] = true
+                }
+                GraderType.TEACHER -> {
+                    studentMap["evalTeacher"] = true
+                }
+            }
+
+            if (student.grade == null) {
+                if (student.submission_time == null)
+                    studentMap["unstarted"] = true
+                else
+                    studentMap["evalMissing"] = true
+            } else {
+                if (student.grade >= threshold)
+                    studentMap["completed"] = true
+                else
+                    studentMap["started"] = true
+            }
+
+            studentMap.toJsObj()
+        }.toTypedArray()
+
+        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
+                mapOf("students" to studentArray))
+
+        fl?.end()
+    }
+
+
+    private fun buildStudentExercise(courseId: String) {
 
 
     }
