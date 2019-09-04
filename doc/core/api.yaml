@@ -48,15 +48,15 @@ paths:
               - last_name
       responses:
         200:
-           description: Returns system management notifications (messages).
-           schema:
-             properties:
-               messages:
-                 type: array
-                 items:
-                   properties:
-                     message:
-                       type: string
+          description: Returns system management notifications (messages).
+          schema:
+            properties:
+              messages:
+                type: array
+                items:
+                  properties:
+                    message:
+                      type: string
 
 
   /management/notifications:
@@ -277,11 +277,13 @@ paths:
           in: body
           description: Teacher ids.
           schema:
-            type: array
-            items:
-              properties:
-                teacher_id:
-                  type: string
+            properties:
+              teachers:
+                type: array
+                items:
+                  properties:
+                    teacher_id:
+                      type: string
       responses:
         200:
           description: Teachers' accesses removed.
