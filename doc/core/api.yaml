@@ -130,9 +130,11 @@ paths:
         200:
           description: Course summaries.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/StudentCourse'
+            properties:
+              courses:
+                type: array
+                items:
+                  $ref: '#/definitions/StudentCourse'
 
 
   /courses/{courseId}/basic:
