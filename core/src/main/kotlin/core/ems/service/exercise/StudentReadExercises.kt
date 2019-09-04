@@ -34,10 +34,11 @@ class StudentReadExercisesController {
                                         @JsonProperty("graded_by") val gradedBy: GraderType?,
                                         @JsonProperty("ordering_idx") val orderingIndex: Int)
 
+    data class Resp(@JsonProperty("exercises") val exercises: List<StudentExercisesResponse>)
+
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises")
-    fun getStudentExercises(@PathVariable("courseId") courseIdStr: String, caller: EasyUser):
-            List<StudentExercisesResponse> {
+    fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
 
         log.debug { "Getting exercises for student ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -52,8 +53,7 @@ class StudentReadExercisesController {
 
 enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
 
-private fun selectStudentExercises(courseId: Long, studentId: String):
-        List<StudentReadExercisesController.StudentExercisesResponse> {
+private fun selectStudentExercises(courseId: Long, studentId: String): StudentReadExercisesController.Resp {
 
     data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
                                val orderingIndex: Int, val titleAlias: String?)
@@ -61,77 +61,80 @@ private fun selectStudentExercises(courseId: Long, studentId: String):
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
     return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold,
-                        CourseExercise.orderIdx, CourseExercise.titleAlias)
-                .select {
-                    CourseExercise.course eq courseId and
-                            ExerciseVer.validTo.isNull() and
-                            (CourseExercise.studentVisible eq true)
-                }
-                .orderBy(CourseExercise.orderIdx to true)
-                .map {
-                    ExercisePartial(
-                            it[CourseExercise.id].value,
-                            it[ExerciseVer.title],
-                            it[CourseExercise.softDeadline],
-                            it[CourseExercise.gradeThreshold],
-                            it[CourseExercise.orderIdx],
-                            it[CourseExercise.titleAlias]
-                    )
-                }.map { ex ->
-
-                    val lastSub =
-                            Submission
-                                    .select {
-                                        Submission.courseExercise eq ex.courseExId and
-                                                (Submission.student eq studentId)
-                                    }
-                                    .orderBy(Submission.createdAt to false)
-                                    .limit(1)
-                                    .map {
-                                        SubmissionPartial(
-                                                it[Submission.id].value,
-                                                it[Submission.solution],
-                                                it[Submission.createdAt]
-                                        )
-                                    }
-                                    .firstOrNull()
-
-                    var gradedBy: GraderType? = null
-                    var grade: Int? = null
-
-                    if (lastSub != null) {
-                        grade = lastTeacherGrade(lastSub.id)
-                        if (grade != null) {
-                            gradedBy = GraderType.TEACHER
-                        } else {
-                            grade = lastAutoGrade(lastSub.id)
-                            if (grade != null) {
-                                gradedBy = GraderType.AUTO
-                            }
+        StudentReadExercisesController.Resp(
+                (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                        .slice(ExerciseVer.title, CourseExercise.id, CourseExercise.softDeadline, CourseExercise.gradeThreshold,
+                                CourseExercise.orderIdx, CourseExercise.titleAlias)
+                        .select {
+                            CourseExercise.course eq courseId and
+                                    ExerciseVer.validTo.isNull() and
+                                    (CourseExercise.studentVisible eq true)
                         }
-                    }
+                        .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                        .map {
+                            ExercisePartial(
+                                    it[CourseExercise.id].value,
+                                    it[ExerciseVer.title],
+                                    it[CourseExercise.softDeadline],
+                                    it[CourseExercise.gradeThreshold],
+                                    it[CourseExercise.orderIdx],
+                                    it[CourseExercise.titleAlias]
+                            )
+                        }.map { ex ->
 
-                    val status: StudentExerciseStatus =
-                            if (lastSub == null) {
-                                StudentExerciseStatus.UNSTARTED
-                            } else if (grade != null && grade >= ex.threshold) {
-                                StudentExerciseStatus.COMPLETED
-                            } else {
-                                StudentExerciseStatus.STARTED
+                            val lastSub =
+                                    Submission
+                                            .select {
+                                                Submission.courseExercise eq ex.courseExId and
+                                                        (Submission.student eq studentId)
+                                            }
+                                            .orderBy(Submission.createdAt to false)
+                                            .limit(1)
+                                            .map {
+                                                SubmissionPartial(
+                                                        it[Submission.id].value,
+                                                        it[Submission.solution],
+                                                        it[Submission.createdAt]
+                                                )
+                                            }
+                                            .firstOrNull()
+
+                            var gradedBy: GraderType? = null
+                            var grade: Int? = null
+
+                            if (lastSub != null) {
+                                grade = lastTeacherGrade(lastSub.id)
+                                if (grade != null) {
+                                    gradedBy = GraderType.TEACHER
+                                } else {
+                                    grade = lastAutoGrade(lastSub.id)
+                                    if (grade != null) {
+                                        gradedBy = GraderType.AUTO
+                                    }
+                                }
                             }
 
-                    StudentReadExercisesController.StudentExercisesResponse(
-                            ex.courseExId.toString(),
-                            ex.titleAlias ?: ex.title,
-                            ex.deadline,
-                            status,
-                            grade,
-                            gradedBy,
-                            ex.orderingIndex
-                    )
-                }
+                            val status: StudentExerciseStatus =
+                                    if (lastSub == null) {
+                                        StudentExerciseStatus.UNSTARTED
+                                    } else if (grade != null && grade >= ex.threshold) {
+                                        StudentExerciseStatus.COMPLETED
+                                    } else {
+                                        StudentExerciseStatus.STARTED
+                                    }
+
+
+                            StudentReadExercisesController.StudentExercisesResponse(
+                                    ex.courseExId.toString(),
+                                    ex.titleAlias ?: ex.title,
+                                    ex.deadline,
+                                    status,
+                                    grade,
+                                    gradedBy,
+                                    ex.orderingIndex
+                            )
+                        }
+        )
     }
 }
 
