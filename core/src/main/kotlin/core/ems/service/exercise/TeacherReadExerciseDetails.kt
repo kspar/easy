@@ -62,9 +62,9 @@ class TeacherReadExDetailsCont {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}")
-    fun readExDetails(@PathVariable("courseId") courseIdString: String,
-                      @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                      caller: EasyUser): Resp {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting exercise details for ${caller.id} for course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
