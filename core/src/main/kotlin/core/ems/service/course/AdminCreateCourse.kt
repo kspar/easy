@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import javax.validation.Valid
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -19,22 +21,21 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AdminCreateCourseController {
 
-    data class NewCourseBody(@JsonProperty("title", required = true) val title: String)
+    data class Req(@JsonProperty("title", required = true) @field:Size(min = 1, max = 200) val title: String)
 
-    data class CreatedCourseResponse(@JsonProperty("id") val id: String)
-
+    data class Resp(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/admin/courses")
-    fun createCourse(@RequestBody dto: NewCourseBody, caller: EasyUser): CreatedCourseResponse {
+    fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
         log.debug { "Create course '${dto.title}' by ${caller.id}" }
         val courseId = insertCourse(dto)
-        return CreatedCourseResponse(courseId.toString())
+        return Resp(courseId.toString())
     }
 }
 
 
-private fun insertCourse(body: AdminCreateCourseController.NewCourseBody): Long {
+private fun insertCourse(body: AdminCreateCourseController.Req): Long {
     return transaction {
         Course.insertAndGetId {
             it[createdAt] = DateTime.now()
