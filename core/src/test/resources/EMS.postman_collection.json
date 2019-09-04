@@ -1000,7 +1000,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\r\n\t{\r\n\t\t\"teacher_id\": \"fp\"\r\n\t}\r\n]\r\n\r\n"
+					"raw": "{\r\n  \"teachers\": [\r\n    {\r\n      \"teacher_id\": \"fp\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/teachers",
