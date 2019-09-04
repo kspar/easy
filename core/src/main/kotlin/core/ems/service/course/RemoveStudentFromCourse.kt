@@ -22,9 +22,9 @@ class RemoveStudentFromCourseController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @DeleteMapping("/teacher/courses/{courseId}/students/{studentId}")
-    fun removeStudent(@PathVariable("courseId") courseIdStr: String,
-                      @PathVariable("studentId") studentId: String,
-                      caller: EasyUser) {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @PathVariable("studentId") studentId: String,
+                   caller: EasyUser) {
 
         log.debug { "Removing student $studentId from course $courseIdStr" }
 
