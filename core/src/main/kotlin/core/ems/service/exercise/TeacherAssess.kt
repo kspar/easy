@@ -34,7 +34,7 @@ class TeacherAssessController {
     fun controller(@PathVariable("courseId") courseIdString: String,
                    @PathVariable("courseExerciseId") courseExerciseIdString: String,
                    @PathVariable("submissionId") submissionIdString: String,
-                   @RequestBody @Valid assessment: Req, caller: EasyUser) {
+                   @Valid @RequestBody assessment: Req, caller: EasyUser) {
 
         log.debug { "Adding teacher assessment by ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 

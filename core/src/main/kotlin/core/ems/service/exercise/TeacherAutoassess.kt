@@ -35,7 +35,7 @@ class TeacherAutoassController {
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExId}/autoassess")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExId") courseExIdStr: String,
-                   @RequestBody @Valid dto: Req,
+                   @Valid @RequestBody dto: Req,
                    caller: EasyUser): Resp {
 
         val callerId = caller.id

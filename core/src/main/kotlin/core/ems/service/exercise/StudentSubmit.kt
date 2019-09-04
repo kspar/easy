@@ -30,7 +30,7 @@ class StudentSubmitCont {
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExIdStr: String,
-                   @RequestBody @Valid solutionBody: Req, caller: EasyUser) {
+                   @Valid @RequestBody solutionBody: Req, caller: EasyUser) {
 
         log.debug { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
