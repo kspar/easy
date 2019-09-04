@@ -141,7 +141,6 @@ object ExerciseSummaryPage : EasyPage() {
         }
 
         val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
-        debug { "Exercise: $exercise" }
 
         getElemById("crumbs").innerHTML = tmRender("tm-teach-exercise-crumbs", mapOf(
                 "coursesLabel" to "Minu kursused",
@@ -191,7 +190,6 @@ object ExerciseSummaryPage : EasyPage() {
         }
 
         val teacherStudents = studentsResp.parseTo(TeacherStudents.serializer()).await()
-        debug { "Students: $teacherStudents" }
 
         val studentArray = teacherStudents.students.map { student ->
             val studentMap = mutableMapOf<String, Any?>(
