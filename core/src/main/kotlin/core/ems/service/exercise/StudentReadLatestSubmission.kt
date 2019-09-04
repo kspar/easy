@@ -26,20 +26,19 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentReadLatestSubmissionController {
 
-
-    data class StudentSubmissionResp(@JsonProperty("solution") val solution: String,
-                                     @JsonSerialize(using = DateTimeSerializer::class)
-                                     @JsonProperty("submission_time") val submissionTime: DateTime,
-                                     @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
-                                     @JsonProperty("grade_auto") val gradeAuto: Int?,
-                                     @JsonProperty("feedback_auto") val feedbackAuto: String?,
-                                     @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-                                     @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
+    data class Resp(@JsonProperty("solution") val solution: String,
+                    @JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("submission_time") val submissionTime: DateTime,
+                    @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
+                    @JsonProperty("grade_auto") val gradeAuto: Int?,
+                    @JsonProperty("feedback_auto") val feedbackAuto: String?,
+                    @JsonProperty("grade_teacher") val gradeTeacher: Int?,
+                    @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest")
-    fun readLatestSubmission(@PathVariable("courseId") courseIdStr: String,
-                             @PathVariable("courseExerciseId") courseExerciseIdStr: String,
-                             response: HttpServletResponse, caller: EasyUser): StudentSubmissionResp? {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdStr: String,
+                   response: HttpServletResponse, caller: EasyUser): Resp? {
 
         log.debug { "Getting latest submission for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -59,7 +58,7 @@ class StudentReadLatestSubmissionController {
 
 
 private fun selectLatestStudentSubmission(courseId: Long, courseExId: Long, studentId: String):
-        StudentReadLatestSubmissionController.StudentSubmissionResp? {
+        StudentReadLatestSubmissionController.Resp? {
 
     data class SubmissionPartial(val id: Long, val solution: String, val time: DateTime,
                                  val autogradeStatus: AutoGradeStatus)
@@ -89,7 +88,7 @@ private fun selectLatestStudentSubmission(courseId: Long, courseExId: Long, stud
             val autoAssessment = lastAutoAssessment(lastSubmission.id)
             val teacherAssessment = lastTeacherAssessment(lastSubmission.id)
 
-            StudentReadLatestSubmissionController.StudentSubmissionResp(
+            StudentReadLatestSubmissionController.Resp(
                     lastSubmission.solution,
                     lastSubmission.time,
                     lastSubmission.autogradeStatus,
