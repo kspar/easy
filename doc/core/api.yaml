@@ -257,11 +257,13 @@ paths:
           in: body
           description: Teacher ids.
           schema:
-            type: array
-            items:
-              properties:
-                teacher_id:
-                  type: string
+            properties:
+              teachers:
+                type: array
+                items:
+                  properties:
+                    teacher_id:
+                      type: string
       responses:
         200:
           description: Teacher accesses added.

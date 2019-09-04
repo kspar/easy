@@ -15,6 +15,8 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -22,13 +24,14 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddTeachersToCourse {
 
-    data class Req(@JsonProperty("teacher_id") val teacherId: String)
+    data class Req(@JsonProperty("teachers") @field:Valid val teacherIds: List<TeacherIdReq>)
+    data class TeacherIdReq(@JsonProperty("teacher_id") @field:Size(min = 1, max = 100) val teacherId: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
-    fun addTeachersToCourse(@PathVariable("courseId") courseIdStr: String,
-                            @RequestBody teachers: List<Req>,
-                            caller: EasyUser) {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @Valid @RequestBody teachers: Req,
+                   caller: EasyUser) {
 
         log.debug { "Adding access to course $courseIdStr to teachers $teachers" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -38,10 +41,10 @@ class AddTeachersToCourse {
 }
 
 
-private fun insertTeacherCourseAccesses(courseId: Long, teachers: List<AddTeachersToCourse.Req>) {
+private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToCourse.Req) {
 
     transaction {
-        teachers.forEach { teacher ->
+        teachers.teacherIds.forEach { teacher ->
             val teacherExists =
                     Teacher.select { Teacher.id eq teacher.teacherId }
                             .count() == 1
@@ -50,7 +53,7 @@ private fun insertTeacherCourseAccesses(courseId: Long, teachers: List<AddTeache
             }
         }
 
-        val teachersWithoutAccess = teachers.filter {
+        val teachersWithoutAccess = teachers.teacherIds.filter {
             TeacherCourseAccess.select {
                 TeacherCourseAccess.teacher eq it.teacherId and (TeacherCourseAccess.course eq courseId)
             }.count() == 0
