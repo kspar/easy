@@ -91,6 +91,18 @@ object ExerciseSummaryPage : EasyPage() {
             val graded_by: GraderType?
     )
 
+    @Serializable
+    data class TeacherSubmission(
+            val id: String,
+            val solution: String,
+            @Serializable(with = DateSerializer::class)
+            val created_at: Date,
+            val grade_auto: Int?,
+            val feedback_auto: String?,
+            val grade_teacher: Int?,
+            val feedback_teacher: String?
+    )
+
 
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
@@ -256,9 +268,25 @@ object ExerciseSummaryPage : EasyPage() {
         tabs.select("student")
         tabs.updateTabIndicator()
 
-        getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
+        MainScope().launch {
+            val submissionResp =
+                    fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students/$studentId",
+                    ReqMethod.GET).await()
 
-        ))
+            if (!submissionResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching student submission failed with status ${submissionResp.status}")
+            }
+
+            val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
+
+            debug { submission.toString() }
+
+
+            getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
+
+            ))
+        }
     }
 
 
