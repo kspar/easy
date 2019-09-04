@@ -33,10 +33,10 @@ class ReadParticipantsOnCourseController {
                                         @JsonProperty("given_name") val givenName: String,
                                         @JsonProperty("family_name") val familyName: String)
 
-    data class ParticipantOnCourseResponse(@JsonProperty("students")
-                                           @JsonInclude(Include.NON_NULL) val students: List<StudentsOnCourseResponse>?,
-                                           @JsonProperty("teachers")
-                                           @JsonInclude(Include.NON_NULL) val teachers: List<TeachersOnCourseResponse>?)
+    data class Resp(@JsonProperty("students")
+                    @JsonInclude(Include.NON_NULL) val students: List<StudentsOnCourseResponse>?,
+                    @JsonProperty("teachers")
+                    @JsonInclude(Include.NON_NULL) val teachers: List<TeachersOnCourseResponse>?)
 
 
     enum class Role(val paramValue: String) {
@@ -47,9 +47,9 @@ class ReadParticipantsOnCourseController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/{courseId}/participants")
-    fun readStudentsOnCourse(@PathVariable("courseId") courseIdStr: String,
-                             @RequestParam("role", required = false) roleReq: String?,
-                             caller: EasyUser): ParticipantOnCourseResponse {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @RequestParam("role", required = false) roleReq: String?,
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting participants on course $courseIdStr for ${caller.id} with role $roleReq" }
 
@@ -61,14 +61,14 @@ class ReadParticipantsOnCourseController {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
                 log.debug { "Teachers on course $courseId: $teachers" }
-                return ParticipantOnCourseResponse(null, selectTeachersOnCourse(courseId))
+                return Resp(null, selectTeachersOnCourse(courseId))
 
             }
 
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId)
                 log.debug { "Students on course $courseId: $students" }
-                return ParticipantOnCourseResponse(selectStudentsOnCourse(courseId), null)
+                return Resp(selectStudentsOnCourse(courseId), null)
             }
 
             Role.ALL.paramValue, null -> {
@@ -78,7 +78,7 @@ class ReadParticipantsOnCourseController {
                 log.debug { "Students on course $courseId: $students" }
                 log.debug { "Teachers on course $courseId: $teachers" }
 
-                return ParticipantOnCourseResponse(selectStudentsOnCourse(courseId), selectTeachersOnCourse(courseId))
+                return Resp(selectStudentsOnCourse(courseId), selectTeachersOnCourse(courseId))
             }
 
             else -> throw InvalidRequestException("Invalid parameter $roleReq")
