@@ -19,26 +19,20 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentReadCoursesController {
 
-    data class StudentCoursesResponse(@JsonProperty("id") val id: String,
-                                      @JsonProperty("title") val title: String)
+    data class Resp(@JsonProperty("id") val id: String, @JsonProperty("title") val title: String)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses")
-    fun readStudentCourses(caller: EasyUser): List<StudentCoursesResponse> {
+    fun controller(caller: EasyUser): List<Resp> {
         val callerId = caller.id
         log.debug { "Getting courses for student $callerId" }
         val courses = selectCoursesForStudent(callerId)
         log.debug { "Found courses $courses" }
-        return mapToStudentCoursesResponse(courses)
+        return courses
     }
-
-    private fun mapToStudentCoursesResponse(courses: List<StudentCourse>) =
-            courses.map { StudentCoursesResponse(it.id.toString(), it.title) }
 }
 
-data class StudentCourse(val id: Long, val title: String)
-
-private fun selectCoursesForStudent(studentId: String): List<StudentCourse> {
+private fun selectCoursesForStudent(studentId: String): List<StudentReadCoursesController.Resp> {
     return transaction {
         (Student innerJoin StudentCourseAccess innerJoin Course)
                 .slice(Course.id, Course.title)
@@ -47,7 +41,7 @@ private fun selectCoursesForStudent(studentId: String): List<StudentCourse> {
                 }
                 .withDistinct()
                 .map {
-                    StudentCourse(it[Course.id].value, it[Course.title])
+                    StudentReadCoursesController.Resp(it[Course.id].value.toString(), it[Course.title])
                 }
     }
 }
