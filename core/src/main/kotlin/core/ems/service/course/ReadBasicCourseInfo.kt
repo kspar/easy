@@ -20,12 +20,11 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class ReadBasicCourseInfo {
 
-    data class BasicCourseResponse(@JsonProperty("title") val title: String)
+    data class Resp(@JsonProperty("title") val title: String)
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/{courseId}/basic")
-    fun getCourseBasic(@PathVariable("courseId") courseIdStr: String,
-                       caller: EasyUser): BasicCourseResponse {
+    fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
 
         log.debug { "Getting basic course info for ${caller.id} for course $courseIdStr" }
 
@@ -37,20 +36,20 @@ class ReadBasicCourseInfo {
         log.debug { "Got course info: $courseInfo" }
         return courseInfo
     }
-
-    private fun selectCourseInfo(courseId: Long): BasicCourseResponse =
-            transaction {
-                Course.slice(Course.title)
-                        .select {
-                            Course.id eq courseId
-                        }
-                        .map {
-                            BasicCourseResponse(
-                                    it[Course.title]
-                            )
-                        }
-                        .single()
-            }
 }
+
+private fun selectCourseInfo(courseId: Long): ReadBasicCourseInfo.Resp =
+        transaction {
+            Course.slice(Course.title)
+                    .select {
+                        Course.id eq courseId
+                    }
+                    .map {
+                        ReadBasicCourseInfo.Resp(
+                                it[Course.title]
+                        )
+                    }
+                    .single()
+        }
 
 
