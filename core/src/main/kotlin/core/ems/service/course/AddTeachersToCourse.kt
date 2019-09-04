@@ -25,6 +25,7 @@ private val log = KotlinLogging.logger {}
 class AddTeachersToCourse {
 
     data class Req(@JsonProperty("teachers") @field:Valid val teacherIds: List<TeacherIdReq>)
+
     data class TeacherIdReq(@JsonProperty("teacher_id") @field:Size(min = 1, max = 100) val teacherId: String)
 
     @Secured("ROLE_ADMIN")
