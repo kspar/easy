@@ -1,7 +1,6 @@
 package core.exception
 
 import core.aas.ExecutorOverloadException
-import core.ems.service.course.StudentNotFoundException
 import core.util.SendMailService
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
@@ -22,15 +21,6 @@ private val log = KotlinLogging.logger {}
 
 @ControllerAdvice
 class EasyExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
-
-    @ExceptionHandler(value = [StudentNotFoundException::class])
-    fun handleStudentNotFoundException(ex: StudentNotFoundException, request: WebRequest): ResponseEntity<String> {
-        val id = UUID.randomUUID().toString()
-        log.info("StudentNotFoundException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
-        mailService.sendSystemNotification(ex.stackTraceString, id)
-        return ResponseEntity(ex.message, HttpStatus.BAD_REQUEST)
-    }
 
     @ExceptionHandler(value = [ExecutorOverloadException::class])
     fun handleExecutorOverloadException(ex: ExecutorOverloadException, request: WebRequest): ResponseEntity<Any> {

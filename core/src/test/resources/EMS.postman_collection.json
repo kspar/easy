@@ -1791,7 +1791,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\r\n  \"fp\"\r\n]"
+					"raw": "{\r\n  \"students\": [\r\n    {\r\n      \"student_id\": \"fp\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/teacher/courses/1/students",

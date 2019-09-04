@@ -723,9 +723,13 @@ paths:
           in: body
           schema:
             description: Student ids.
-            type: array
-            items:
-              type: string
+            properties:
+              students:
+                type: array
+                items:
+                  properties:
+                    student_id:
+                      type: string
       responses:
         200:
           description: Students added.
