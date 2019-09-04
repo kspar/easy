@@ -10,6 +10,7 @@ import core.ems.service.selectLatestGradeForSubmission
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -73,7 +74,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long):
                         ExerciseVer.validTo,
                         CourseExercise.titleAlias)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .orderBy(CourseExercise.orderIdx to true)
+                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                 .map { ex ->
 
                     val latestSubmissionIds = selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
