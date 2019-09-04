@@ -9,31 +9,28 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import javax.validation.Valid
+import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
 class CreateExecutorController {
 
-    data class CreateExecutorBody(@JsonProperty("name", required = true) val name: String,
-                                  @JsonProperty("base_url", required = true) val baseUrl: String,
-                                  @JsonProperty("max_load", required = true) val maxLoad: Int)
+    data class Req(@JsonProperty("name", required = true) @field:Size(min = 1, max = 100) val name: String,
+                   @JsonProperty("base_url", required = true) @field:Size(min = 0, max = 2000) val baseUrl: String,
+                   @JsonProperty("max_load", required = true) val maxLoad: Int)
 
-    data class CreateExecutorResponse(@JsonProperty("id") val id: String)
+    data class Resp(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/executors")
-    fun createExecutor(@RequestBody body: CreateExecutorBody): CreateExecutorResponse {
-        val newExecutor = mapToNewExecutor(body)
-        val executorId = insertExecutor(newExecutor)
-        return CreateExecutorResponse(executorId.toString())
+    fun controller(@Valid @RequestBody body: Req): Resp {
+        val executorId = insertExecutor(body)
+        return Resp(executorId.toString())
     }
-
-    private fun mapToNewExecutor(dto: CreateExecutorBody): NewExecutor = NewExecutor(dto.name, dto.baseUrl, dto.maxLoad)
 }
 
-private data class NewExecutor(val name: String, val baseUrl: String, val maxLoad: Int)
-
-private fun insertExecutor(newExecutor: NewExecutor): Long {
+private fun insertExecutor(newExecutor: CreateExecutorController.Req): Long {
     return transaction {
         Executor.insertAndGetId {
             it[name] = newExecutor.name

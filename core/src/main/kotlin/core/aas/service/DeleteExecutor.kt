@@ -18,7 +18,7 @@ class DeleteExecutorController {
 
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/executors/{executorId}")
-    fun removeExecutor(@PathVariable("executorId") executorId: String) {
+    fun controller(@PathVariable("executorId") executorId: String) {
         deleteExecutor(executorId.idToLongOrInvalidReq())
     }
 }

@@ -16,7 +16,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class ReadExecutorCont {
+class ReadExecutorController {
 
     data class Resp(
             @JsonProperty("id") val id: String,
@@ -34,11 +34,11 @@ class ReadExecutorCont {
 }
 
 
-private fun selectAllExecutors(): List<ReadExecutorCont.Resp> {
+private fun selectAllExecutors(): List<ReadExecutorController.Resp> {
     return transaction {
         Executor.selectAll().sortedBy { Executor.id }
                 .map {
-                    ReadExecutorCont.Resp(
+                    ReadExecutorController.Resp(
                             it[Executor.id].value.toString(),
                             it[Executor.name],
                             it[Executor.baseUrl],
