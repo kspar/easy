@@ -27,19 +27,19 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentReadExerciseDetailsController {
 
-    data class ExerciseDetails(@JsonProperty("effective_title") val title: String,
-                               @JsonProperty("text_html") val textHtml: String?,
-                               @JsonSerialize(using = DateTimeSerializer::class)
-                               @JsonProperty("deadline") val softDeadline: DateTime?,
-                               @JsonProperty("grader_type") val graderType: GraderType,
-                               @JsonProperty("threshold") val threshold: Int,
-                               @JsonProperty("instructions_html") val instructionsHtml: String?)
+    data class Resp(@JsonProperty("effective_title") val title: String,
+                    @JsonProperty("text_html") val textHtml: String?,
+                    @JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("deadline") val softDeadline: DateTime?,
+                    @JsonProperty("grader_type") val graderType: GraderType,
+                    @JsonProperty("threshold") val threshold: Int,
+                    @JsonProperty("instructions_html") val instructionsHtml: String?)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}")
-    fun getStudentExerciseDetails(@PathVariable("courseId") courseIdStr: String,
-                                  @PathVariable("courseExerciseId") courseExIdStr: String,
-                                  caller: EasyUser): ExerciseDetails {
+    fun controller(@PathVariable("courseId") courseIdStr: String,
+                   @PathVariable("courseExerciseId") courseExIdStr: String,
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting exercise details for student ${caller.id} on course exercise $courseExIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -53,7 +53,7 @@ class StudentReadExerciseDetailsController {
 
 
 private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long):
-        StudentReadExerciseDetailsController.ExerciseDetails {
+        StudentReadExerciseDetailsController.Resp {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
@@ -65,7 +65,7 @@ private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long):
                             ExerciseVer.validTo.isNull()
                 }
                 .map {
-                    StudentReadExerciseDetailsController.ExerciseDetails(
+                    StudentReadExerciseDetailsController.Resp(
                             it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
                             it[ExerciseVer.textHtml],
                             it[CourseExercise.softDeadline],
