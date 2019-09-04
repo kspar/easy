@@ -7,6 +7,7 @@ import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -119,8 +120,10 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
     override fun handleMethodArgumentNotValid(ex: MethodArgumentNotValidException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        val errors = HashMap<String, String>()
+        log.info("MethodArgumentNotValidException: ${ex.message}")
+        log.info("Request info: ${request.getDescription(true)}")
 
+        val errors = HashMap<String, String>()
         ex.bindingResult.allErrors.forEach {
             val fieldName = (it as FieldError).field
             val errorMessage = it.getDefaultMessage()
@@ -128,6 +131,16 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         }
 
         val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, errors, ex.message)
+        return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
+    }
+
+    // https://stackoverflow.com/questions/44850637/how-to-handle-json-parse-error-in-spring-rest-web-service
+    override fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {
+        val id = UUID.randomUUID().toString()
+        log.info("HttpMessageNotReadableException: ${ex.message}")
+        log.info("Request info: ${request.getDescription(true)}")
+
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), ex.message ?: "")
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 }
