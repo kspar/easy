@@ -15,6 +15,8 @@ import org.joda.time.DateTime
 import org.springframework.scheduling.annotation.Async
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -22,14 +24,13 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentSubmitCont {
 
-    data class Req(
-            @JsonProperty("solution", required = true) val solution: String)
+    data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExIdStr: String,
-                   @RequestBody solutionBody: Req, caller: EasyUser) {
+                   @RequestBody @Valid solutionBody: Req, caller: EasyUser) {
 
         log.debug { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()

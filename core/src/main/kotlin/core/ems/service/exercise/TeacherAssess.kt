@@ -15,6 +15,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -22,15 +26,15 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherAssessController {
 
-    data class AssessBody(@JsonProperty("grade", required = true) val grade: Int,
-                          @JsonProperty("feedback", required = false) val feedback: String?)
+    data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
+                   @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments")
     fun assess(@PathVariable("courseId") courseIdString: String,
                @PathVariable("courseExerciseId") courseExerciseIdString: String,
                @PathVariable("submissionId") submissionIdString: String,
-               @RequestBody assessment: AssessBody, caller: EasyUser) {
+               @RequestBody @Valid assessment: Req, caller: EasyUser) {
 
         log.debug { "Adding teacher assessment by ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
@@ -45,19 +49,9 @@ class TeacherAssessController {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
-        if (assessment.grade < 0 || assessment.grade > 100) {
-            throw InvalidRequestException("Expected submission $submissionId grade on course exercise $courseExId on course $courseId to be [0,100], but got ${assessment.grade}")
-        }
-
-        insertTeacherAssessment(callerId, submissionId, mapToTeacherAssessment(assessment))
+        insertTeacherAssessment(callerId, submissionId, assessment)
     }
-
-    private fun mapToTeacherAssessment(body: AssessBody) = Assessment(body.grade, body.feedback)
-
 }
-
-
-data class Assessment(val grade: Int, val feedback: String?)
 
 
 private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean {
@@ -71,14 +65,14 @@ private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Lon
     }
 }
 
-private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: Assessment) {
+private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: TeacherAssessController.Req) {
     transaction {
         TeacherAssessment.insert {
-            it[TeacherAssessment.submission] = EntityID(submissionId, Submission)
-            it[TeacherAssessment.teacher] = EntityID(teacherId, Teacher)
-            it[TeacherAssessment.createdAt] = DateTime.now()
-            it[TeacherAssessment.grade] = assessment.grade
-            it[TeacherAssessment.feedback] = assessment.feedback
+            it[submission] = EntityID(submissionId, Submission)
+            it[teacher] = EntityID(teacherId, Teacher)
+            it[createdAt] = DateTime.now()
+            it[grade] = assessment.grade
+            it[feedback] = assessment.feedback
         }
     }
 }

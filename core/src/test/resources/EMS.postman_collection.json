@@ -1887,11 +1887,7 @@
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"\r",
-							"pm.test(\"response should be okay to process\", function () { \r",
-							"    pm.response.to.not.be.error; \r",
-							"    pm.response.to.have.body( '[{\"id\":\"1\",\"effective_title\":\"string\",\"deadline\":null,\"status\":\"UNSTARTED\",\"grade\":null,\"graded_by\":null,\"ordering_idx\":0},{\"id\":\"2\",\"effective_title\":\"string\",\"deadline\":null,\"status\":\"UNSTARTED\",\"grade\":null,\"graded_by\":null,\"ordering_idx\":1}]');\r",
-							"});"
+							""
 						],
 						"type": "text/javascript"
 					}
