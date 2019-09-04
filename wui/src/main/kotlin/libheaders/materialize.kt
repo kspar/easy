@@ -1,5 +1,7 @@
 package libheaders
 
+import org.w3c.dom.Element
+
 @JsName("M")
 external object Materialize {
     val Dropdown: MDropdown
@@ -20,7 +22,7 @@ external object MSidenav {
 
 external object MTooltip {
     fun init(elements: dynamic, options: dynamic = definedExternally)
-    fun getInstance(element: dynamic): MTooltipInstance
+    fun getInstance(element: Element): MTooltipInstance
 }
 
 external class MTooltipInstance {
@@ -29,4 +31,10 @@ external class MTooltipInstance {
 
 external object MTabs {
     fun init(elements: dynamic, options: dynamic = definedExternally)
+    fun getInstance(element: Element): MTabsInstance
+}
+
+external class MTabsInstance {
+    fun select(tabId: String)
+    fun updateTabIndicator()
 }
