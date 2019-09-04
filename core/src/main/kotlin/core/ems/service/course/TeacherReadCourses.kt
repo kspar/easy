@@ -21,15 +21,17 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadCoursesController {
 
-    // TODO: refactor using response object & teacher query
+    // TODO: refactor using teacher query
 
-    data class TeacherCoursesResponse(@JsonProperty("id") val id: String,
-                                      @JsonProperty("title") val title: String,
-                                      @JsonProperty("student_count") val studentCount: Int)
+    data class CourseResp(@JsonProperty("id") val id: String,
+                          @JsonProperty("title") val title: String,
+                          @JsonProperty("student_count") val studentCount: Int)
+
+    data class Resp(@JsonProperty("courses") val courses: List<CourseResp>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses")
-    fun readTeacherCourses(caller: EasyUser): List<TeacherCoursesResponse> {
+    fun controller(caller: EasyUser): Resp {
         val callerId = caller.id
 
         val courses =
@@ -42,49 +44,43 @@ class TeacherReadCoursesController {
                 }
 
         log.debug { "Found courses $courses" }
-        return mapToTeacherCoursesResponse(courses)
+        return courses
     }
-
-    private fun mapToTeacherCoursesResponse(courses: List<TeacherCourse>) =
-            courses.map { TeacherCoursesResponse(it.id.toString(), it.title, it.studentCount) }
-
 }
 
-
-data class TeacherCourse(val id: Long, val title: String, val studentCount: Int)
-
-
-private fun selectCoursesForAdmin(): List<TeacherCourse> = transaction {
-    Course.slice(Course.id, Course.title)
-            .selectAll()
-            .map {
-                val studentCount = StudentCourseAccess
-                        .select { StudentCourseAccess.course eq it[Course.id] }
-                        .count()
-                TeacherCourse(it[Course.id].value, it[Course.title], studentCount)
-            }
+private fun selectCoursesForAdmin(): TeacherReadCoursesController.Resp = transaction {
+    TeacherReadCoursesController.Resp(
+            Course.slice(Course.id, Course.title)
+                    .selectAll()
+                    .map {
+                        val studentCount = StudentCourseAccess
+                                .select { StudentCourseAccess.course eq it[Course.id] }
+                                .count()
+                        TeacherReadCoursesController.CourseResp(it[Course.id].value.toString(), it[Course.title], studentCount)
+                    })
 }
 
-private fun selectCoursesForTeacher(teacherId: String): List<TeacherCourse> {
+private fun selectCoursesForTeacher(teacherId: String): TeacherReadCoursesController.Resp {
     return transaction {
-        (Teacher innerJoin TeacherCourseAccess innerJoin Course)
-                .slice(Course.id, Course.title)
-                .select {
-                    Teacher.id eq teacherId
-                }
-                .withDistinct()
-                .map {
-                    Pair(it[Course.id], it[Course.title])
-                }
-                .map { course ->
-                    val studentCount =
-                            StudentCourseAccess
-                                    .slice(StudentCourseAccess.course, StudentCourseAccess.student)  // exclude id from distinct
-                                    .select { StudentCourseAccess.course eq course.first }
-                                    .withDistinct()
-                                    .count()
+        TeacherReadCoursesController.Resp(
+                (Teacher innerJoin TeacherCourseAccess innerJoin Course)
+                        .slice(Course.id, Course.title)
+                        .select {
+                            Teacher.id eq teacherId
+                        }
+                        .withDistinct()
+                        .map {
+                            Pair(it[Course.id], it[Course.title])
+                        }
+                        .map { course ->
+                            val studentCount =
+                                    StudentCourseAccess
+                                            .slice(StudentCourseAccess.course, StudentCourseAccess.student)  // exclude id from distinct
+                                            .select { StudentCourseAccess.course eq course.first }
+                                            .withDistinct()
+                                            .count()
 
-                    TeacherCourse(course.first.value, course.second, studentCount)
-                }
+                            TeacherReadCoursesController.CourseResp(course.first.value.toString(), course.second, studentCount)
+                        })
     }
 }

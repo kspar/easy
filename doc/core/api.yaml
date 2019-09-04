@@ -294,9 +294,11 @@ paths:
         200:
           description: Course summaries.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherCourse'
+            properties:
+              courses:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherCourse'
 
 
   /teacher/courses/{courseId}/exercises:
