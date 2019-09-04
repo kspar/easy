@@ -16,26 +16,26 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassCont {
+class TeacherAutoassController {
 
-    data class Req(
-            @JsonProperty("solution") val solution: String)
+    data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
-    data class Resp(
-            @JsonProperty("grade") val grade: Int,
-            @JsonProperty("feedback") val feedback: String?)
+    data class Resp(@JsonProperty("grade") val grade: Int,
+                    @JsonProperty("feedback") val feedback: String?)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExId}/autoassess")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExId") courseExIdStr: String,
-                   @RequestBody dto: Req,
+                   @RequestBody @Valid dto: Req,
                    caller: EasyUser): Resp {
 
         val callerId = caller.id

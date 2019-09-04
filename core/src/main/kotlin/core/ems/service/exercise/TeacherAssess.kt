@@ -31,10 +31,10 @@ class TeacherAssessController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments")
-    fun assess(@PathVariable("courseId") courseIdString: String,
-               @PathVariable("courseExerciseId") courseExerciseIdString: String,
-               @PathVariable("submissionId") submissionIdString: String,
-               @RequestBody @Valid assessment: Req, caller: EasyUser) {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   @PathVariable("submissionId") submissionIdString: String,
+                   @RequestBody @Valid assessment: Req, caller: EasyUser) {
 
         log.debug { "Adding teacher assessment by ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
