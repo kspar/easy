@@ -2,6 +2,7 @@ package core.exception
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import core.aas.ExecutorOverloadException
 import core.util.SendMailService
@@ -116,14 +117,10 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.info("MethodArgumentNotValidException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
 
-        val errors = HashMap<String, String>()
-        ex.bindingResult.allErrors.forEach {
-            val fieldName = (it as FieldError).field
-            val errorMessage = it.getDefaultMessage()
-            errors[fieldName] = errorMessage ?: ""
-        }
+        val msg = ex.bindingResult.allErrors
+                .joinToString(separator = ";") { "'${(it as FieldError).field}': ${it.getDefaultMessage()};" }
 
-        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), errors.toString())
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
@@ -136,7 +133,11 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         val msg = when (ex.cause) {
             is MissingKotlinParameterException -> {
                 val cause = ex.cause as MissingKotlinParameterException
-                "Missing parameter '${cause.parameter.name}' of type '${cause.parameter.type}'"
+                "Missing parameter '${cause.parameter.name}' of type '${cause.parameter.type.toString().replace("kotlin.", "")}'"
+            }
+            is MismatchedInputException -> {
+                val cause = ex.cause as MismatchedInputException
+                cause.originalMessage
             }
             is InvalidFormatException -> {
                 val cause = ex.cause as InvalidFormatException
@@ -145,7 +146,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
             else -> "Invalid request!"
         }
-
 
         val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
