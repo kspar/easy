@@ -29,21 +29,23 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadCourseExercisesController {
 
-    data class Resp(@JsonProperty("id") val id: String,
-                    @JsonProperty("effective_title") val title: String,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-                    @JsonProperty("grader_type") val graderType: GraderType,
-                    @JsonProperty("ordering_idx") val orderingIndex: Int,
-                    @JsonProperty("unstarted_count") val unstartedCount: Int,
-                    @JsonProperty("ungraded_count") val ungradedCount: Int,
-                    @JsonProperty("started_count") val startedCount: Int,
-                    @JsonProperty("completed_count") val completedCount: Int)
+    data class CourseExerciseResp(@JsonProperty("id") val id: String,
+                                  @JsonProperty("effective_title") val title: String,
+                                  @JsonSerialize(using = DateTimeSerializer::class)
+                                  @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+                                  @JsonProperty("grader_type") val graderType: GraderType,
+                                  @JsonProperty("ordering_idx") val orderingIndex: Int,
+                                  @JsonProperty("unstarted_count") val unstartedCount: Int,
+                                  @JsonProperty("ungraded_count") val ungradedCount: Int,
+                                  @JsonProperty("started_count") val startedCount: Int,
+                                  @JsonProperty("completed_count") val completedCount: Int)
+
+    data class Resp(@JsonProperty("course_exercises") val courseExercises: List<CourseExerciseResp>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises")
     fun controller(@PathVariable("courseId") courseIdString: String,
-                   caller: EasyUser): List<Resp> {
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
@@ -55,57 +57,56 @@ class TeacherReadCourseExercisesController {
 }
 
 
-private fun selectTeacherExercisesOnCourse(courseId: Long):
-        List<TeacherReadCourseExercisesController.Resp> {
+private fun selectTeacherExercisesOnCourse(courseId: Long): TeacherReadCourseExercisesController.Resp {
 
     return transaction {
-
         val studentCount = StudentCourseAccess.select {
             StudentCourseAccess.course eq courseId
         }.count()
 
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id,
-                        CourseExercise.gradeThreshold,
-                        CourseExercise.softDeadline,
-                        CourseExercise.orderIdx,
-                        ExerciseVer.graderType,
-                        ExerciseVer.title,
-                        ExerciseVer.validTo,
-                        CourseExercise.titleAlias)
-                .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                .map { ex ->
+        TeacherReadCourseExercisesController.Resp(
+                (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                        .slice(CourseExercise.id,
+                                CourseExercise.gradeThreshold,
+                                CourseExercise.softDeadline,
+                                CourseExercise.orderIdx,
+                                ExerciseVer.graderType,
+                                ExerciseVer.title,
+                                ExerciseVer.validTo,
+                                CourseExercise.titleAlias)
+                        .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+                        .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                        .map { ex ->
 
-                    val latestSubmissionIds = selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
-                    val latestGrades = latestSubmissionIds.map { selectLatestGradeForSubmission(it) }
+                            val latestSubmissionIds = selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
+                            val latestGrades = latestSubmissionIds.map { selectLatestGradeForSubmission(it) }
 
-                    val gradeThreshold = ex[CourseExercise.gradeThreshold]
+                            val gradeThreshold = ex[CourseExercise.gradeThreshold]
 
-                    val unstartedCount = studentCount - latestSubmissionIds.size
-                    val ungradedCount = latestGrades.count { it == null }
-                    val startedCount = latestGrades.count { it != null && it < gradeThreshold }
-                    val completedCount = latestGrades.count { it != null && it >= gradeThreshold }
+                            val unstartedCount = studentCount - latestSubmissionIds.size
+                            val ungradedCount = latestGrades.count { it == null }
+                            val startedCount = latestGrades.count { it != null && it < gradeThreshold }
+                            val completedCount = latestGrades.count { it != null && it >= gradeThreshold }
 
-                    // Sanity check
-                    if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
-                        log.warn {
-                            "Student grade sanity check failed. unstarted: $unstartedCount, ungraded: $ungradedCount, " +
-                                    "started: $startedCount, completed: $completedCount, students in course: $studentCount"
-                        }
+                            // Sanity check
+                            if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
+                                log.warn {
+                                    "Student grade sanity check failed. unstarted: $unstartedCount, ungraded: $ungradedCount, " +
+                                            "started: $startedCount, completed: $completedCount, students in course: $studentCount"
+                                }
 
-                    TeacherReadCourseExercisesController.Resp(
-                            ex[CourseExercise.id].value.toString(),
-                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                            ex[CourseExercise.softDeadline],
-                            ex[ExerciseVer.graderType],
-                            ex[CourseExercise.orderIdx],
-                            unstartedCount,
-                            ungradedCount,
-                            startedCount,
-                            completedCount
-                    )
+                            TeacherReadCourseExercisesController.CourseExerciseResp(
+                                    ex[CourseExercise.id].value.toString(),
+                                    ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                                    ex[CourseExercise.softDeadline],
+                                    ex[ExerciseVer.graderType],
+                                    ex[CourseExercise.orderIdx],
+                                    unstartedCount,
+                                    ungradedCount,
+                                    startedCount,
+                                    completedCount
+                            )
 
-                }
+                        })
     }
 }

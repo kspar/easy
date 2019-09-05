@@ -29,35 +29,32 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadExDetailsCont {
 
-    data class Resp(
-            @JsonProperty("title") val title: String,
-            @JsonProperty("title_alias") val titleAlias: String?,
-            @JsonProperty("instructions_html") val instructionsHtml: String?,
-            @JsonProperty("text_html") val text: String?,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
-            @JsonProperty("grader_type") val grader: GraderType,
-            @JsonProperty("threshold") val threshold: Int,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("last_modified") val lastModified: DateTime,
-            @JsonProperty("student_visible") val studentVisible: Boolean,
-            @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
-            @JsonProperty("grading_script") val gradingScript: String?,
-            @JsonProperty("container_image") val containerImage: String?,
-            @JsonProperty("max_time_sec") val maxTime: Int?,
-            @JsonProperty("max_mem_mb") val maxMem: Int?,
-            @JsonProperty("assets") val assets: List<RespAsset>?,
-            @JsonProperty("executors") val executors: List<RespExecutor>?)
+    data class Resp(@JsonProperty("title") val title: String,
+                    @JsonProperty("title_alias") val titleAlias: String?,
+                    @JsonProperty("instructions_html") val instructionsHtml: String?,
+                    @JsonProperty("text_html") val text: String?,
+                    @JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+                    @JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+                    @JsonProperty("grader_type") val grader: GraderType,
+                    @JsonProperty("threshold") val threshold: Int,
+                    @JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("last_modified") val lastModified: DateTime,
+                    @JsonProperty("student_visible") val studentVisible: Boolean,
+                    @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
+                    @JsonProperty("grading_script") val gradingScript: String?,
+                    @JsonProperty("container_image") val containerImage: String?,
+                    @JsonProperty("max_time_sec") val maxTime: Int?,
+                    @JsonProperty("max_mem_mb") val maxMem: Int?,
+                    @JsonProperty("assets") val assets: List<RespAsset>?,
+                    @JsonProperty("executors") val executors: List<RespExecutor>?)
 
-    data class RespAsset(
-            @JsonProperty("file_name") val fileName: String,
-            @JsonProperty("file_content") val fileContent: String)
+    data class RespAsset(@JsonProperty("file_name") val fileName: String,
+                         @JsonProperty("file_content") val fileContent: String)
 
-    data class RespExecutor(
-            @JsonProperty("id") val id: String,
-            @JsonProperty("name") val name: String)
+    data class RespExecutor(@JsonProperty("id") val id: String,
+                            @JsonProperty("name") val name: String)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
