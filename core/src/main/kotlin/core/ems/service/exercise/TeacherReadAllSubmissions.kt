@@ -35,10 +35,10 @@ class TeacherReadAllSubmissionsController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId}")
-    fun readTeacherAllSubmissions(@PathVariable("courseId") courseIdString: String,
-                                  @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                                  @PathVariable("studentId") studentId: String,
-                                  caller: EasyUser): List<TeacherSubmissionResp> {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   @PathVariable("studentId") studentId: String,
+                   caller: EasyUser): List<TeacherSubmissionResp> {
 
         log.debug { "Getting all submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
