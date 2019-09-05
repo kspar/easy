@@ -1,5 +1,8 @@
 package core.exception
 
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import core.aas.ExecutorOverloadException
 import core.util.SendMailService
 import mu.KotlinLogging
@@ -130,7 +133,21 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.info("HttpMessageNotReadableException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
 
-        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), "")
+        val msg = when (ex.cause) {
+            is MissingKotlinParameterException -> {
+                val cause = ex.cause as MissingKotlinParameterException
+                "Missing parameter '${cause.parameter.name}' of type '${cause.parameter.type}'"
+            }
+            is InvalidFormatException -> {
+                val cause = ex.cause as InvalidFormatException
+                "Cannot parse parameter '${cause.value}' to '${cause.targetType}'"
+            }
+            is JsonParseException -> "Invalid JSON format: JSON parsing failed"
+            else -> "Invalid request!"
+        }
+
+
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 }
