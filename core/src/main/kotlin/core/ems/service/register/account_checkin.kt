@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import javax.validation.Valid
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -21,9 +24,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UpdateAccountController {
 
-    data class PersonalDataBody(@JsonProperty("email", required = true) val email: String,
-                                @JsonProperty("first_name", required = true) val firstName: String,
-                                @JsonProperty("last_name", required = true) val lastName: String)
+    data class PersonalDataBody(@JsonProperty("email", required = true)
+                                @field:NotBlank @field:Size(max = 254) val email: String,
+                                @JsonProperty("first_name", required = true)
+                                @field:NotBlank @field:Size(max = 100) val firstName: String,
+                                @JsonProperty("last_name", required = true)
+                                @field:NotBlank @field:Size(max = 100) val lastName: String)
 
     data class Resp(@JsonProperty("messages")
                     @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
@@ -31,7 +37,7 @@ class UpdateAccountController {
     data class MessageResp(@JsonProperty("message") val message: String)
 
     @PostMapping("/account/checkin")
-    fun controller(@RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
+    fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
 
         val account = Account(caller.id, dto.email,
                 correctNameCapitalisation(dto.firstName), correctNameCapitalisation(dto.lastName))
