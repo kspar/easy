@@ -144,7 +144,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
                 "Cannot parse parameter '${cause.value}' to '${cause.targetType}'"
             }
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
-            else -> "Invalid request!"
+            else -> ex.message ?: "Invalid request!"
         }
 
         val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
