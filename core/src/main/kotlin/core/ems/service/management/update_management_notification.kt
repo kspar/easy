@@ -11,6 +11,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -18,12 +21,14 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UpdateManagementNotificationsController {
 
-    data class Req(@JsonProperty("message", required = true) val message: String)
+    data class Req(@JsonProperty("message", required = true)
+                   @field:NotBlank
+                   @field:Size(min = 1, max = 1000) val message: String)
 
     @Secured("ROLE_ADMIN")
     @PatchMapping("/management/notifications/{notificationId}")
     fun controller(@PathVariable("notificationId") notificationIdStr: String,
-                   @RequestBody dto: Req, caller: EasyUser) {
+                   @Valid @RequestBody dto: Req, caller: EasyUser) {
 
         val notificationId = notificationIdStr.idToLongOrInvalidReq()
 

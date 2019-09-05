@@ -3484,7 +3484,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+					"raw": ""
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/management/notifications",
@@ -3566,6 +3566,81 @@
 					"path": [
 						"management",
 						"notifications",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: all submissions: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/submissions/all/students/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"submissions",
+						"all",
+						"students",
 						"1"
 					]
 				}

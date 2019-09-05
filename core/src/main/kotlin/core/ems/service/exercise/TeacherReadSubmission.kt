@@ -26,21 +26,21 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadSubmissionController {
 
-    data class TeacherSubmissionResp(@JsonSerialize(using = DateTimeSerializer::class)
-                                     @JsonProperty("created_at") val createdAt: DateTime,
-                                     @JsonProperty("grade_auto") val gradeAuto: Int?,
-                                     @JsonProperty("feedback_auto") val feedbackAuto: String?,
-                                     @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-                                     @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
-                                     @JsonProperty("solution") val solution: String,
-                                     @JsonProperty("id") val submissionId: String)
+    data class Resp(@JsonSerialize(using = DateTimeSerializer::class)
+                    @JsonProperty("created_at") val createdAt: DateTime,
+                    @JsonProperty("grade_auto") val gradeAuto: Int?,
+                    @JsonProperty("feedback_auto") val feedbackAuto: String?,
+                    @JsonProperty("grade_teacher") val gradeTeacher: Int?,
+                    @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
+                    @JsonProperty("solution") val solution: String,
+                    @JsonProperty("id") val submissionId: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}")
-    fun readTeacherSubmission(@PathVariable("courseId") courseIdString: String,
-                              @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                              @PathVariable("studentId") studentId: String,
-                              caller: EasyUser): TeacherSubmissionResp {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   @PathVariable("studentId") studentId: String,
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting $studentId's latest submission on course exercise $courseExerciseIdString on course $courseIdString for ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
@@ -55,8 +55,8 @@ class TeacherReadSubmissionController {
         return mapToTeacherSubmissionResp(submission)
     }
 
-    private fun mapToTeacherSubmissionResp(sub: TeacherSubmission): TeacherSubmissionResp =
-            TeacherSubmissionResp(sub.createdAt, sub.gradeAuto, sub.feedbackAuto,
+    private fun mapToTeacherSubmissionResp(sub: TeacherSubmission): Resp =
+            Resp(sub.createdAt, sub.gradeAuto, sub.feedbackAuto,
                     sub.gradeTeacher, sub.feedbackTeacher, sub.solution, sub.id.toString())
 
 }

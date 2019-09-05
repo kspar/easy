@@ -20,6 +20,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.PositiveOrZero
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -27,22 +31,22 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherCreateCourseExerciseController {
 
-    data class NewCourseExerciseBody(@JsonProperty("exercise_id", required = true) val exerciseId: String,
-                                     @JsonProperty("threshold", required = true) val threshold: Int,
-                                     @JsonDeserialize(using = DateTimeDeserializer::class)
-                                     @JsonProperty("soft_deadline", required = false) val softDeadline: DateTime?,
-                                     @JsonDeserialize(using = DateTimeDeserializer::class)
-                                     @JsonProperty("hard_deadline", required = false) val hardDeadline: DateTime?,
-                                     @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
-                                     @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
-                                     @JsonProperty("instructions_html", required = false) val instructionsHtml: String?,
-                                     @JsonProperty("title_alias", required = false) val titleAlias: String?)
+    data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100) val exerciseId: String,
+                   @JsonProperty("threshold", required = true) @field:PositiveOrZero val threshold: Int,
+                   @JsonDeserialize(using = DateTimeDeserializer::class)
+                   @JsonProperty("soft_deadline", required = false) val softDeadline: DateTime?,
+                   @JsonDeserialize(using = DateTimeDeserializer::class)
+                   @JsonProperty("hard_deadline", required = false) val hardDeadline: DateTime?,
+                   @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
+                   @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
+                   @JsonProperty("instructions_html", required = false) @field:Size(max = 300000) val instructionsHtml: String?,
+                   @JsonProperty("title_alias", required = false) @field:Size(max = 100) val titleAlias: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
-    fun addExerciseToCourse(@PathVariable("courseId") courseIdString: String,
-                            @RequestBody body: NewCourseExerciseBody,
-                            caller: EasyUser) {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @Valid @RequestBody body: Req,
+                   caller: EasyUser) {
 
         log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
 
@@ -80,7 +84,7 @@ private fun isCoursePresent(courseId: Long): Boolean {
     }
 }
 
-private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.NewCourseExerciseBody) {
+private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.Req) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
         val orderIdxMaxColumn = CourseExercise.orderIdx.max()

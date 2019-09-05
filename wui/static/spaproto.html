@@ -148,7 +148,7 @@
 <script id="tm-teach-exercise-students" type="text/x-handlebars-template">
     <div class="collection divided-collection">
         {{#students}}
-            <a class="collection-item bb-wrap row" href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}">
+            <a class="collection-item bb-wrap row {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
                 <div class="row">
                     <span class="col s6">{{givenName}} {{familyName}}</span>
                     <span class="col s4 time">{{time}}</span>
@@ -234,7 +234,9 @@
             <div id="students">
                 <!-- TODO: placeholder -->
             </div>
-            <div id="student"></div>
+            <div id="student">
+                <!-- TODO: placeholder -->
+            </div>
         </div>
     </div>
 </script>

@@ -310,7 +310,6 @@ paths:
   /teacher/courses/{courseId}/exercises:
     parameters:
       - $ref: '#/parameters/CourseId'
-
     get:
       summary: Get this course's exercises.
       tags:
@@ -319,9 +318,11 @@ paths:
         200:
           description: Exercises.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherCourseExercise'
+            properties:
+              course_exercise:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherCourseExercise'
 
 
     post:
@@ -665,9 +666,11 @@ paths:
         300:
           description: Submissions.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherSubmission'
+            properties:
+              submissions:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherSubmission'
 
 
   /courses/{courseId}/participants:

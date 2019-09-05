@@ -18,6 +18,9 @@ import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -25,30 +28,27 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UpdateExerciseCont {
 
-    data class Req(
-            @JsonProperty("title", required = true) val title: String,
-            @JsonProperty("text_html", required = false) val textHtml: String?,
-            @JsonProperty("public", required = true) val public: Boolean,
-            @JsonProperty("grader_type", required = true) val graderType: GraderType,
-            @JsonProperty("grading_script", required = false) val gradingScript: String?,
-            @JsonProperty("container_image", required = false) val containerImage: String?,
-            @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
-            @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
-            @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
-            @JsonProperty("executors", required = false) val executors: List<ReqExecutor>?)
+    data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
+                   @JsonProperty("text_html", required = true) @field:Size(max = 300000) val textHtml: String,
+                   @JsonProperty("public", required = true) val public: Boolean,
+                   @JsonProperty("grader_type", required = true) val graderType: GraderType,
+                   @JsonProperty("grading_script", required = false) val gradingScript: String?,
+                   @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
+                   @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
+                   @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
+                   @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
+                   @JsonProperty("executors", required = false) val executors: List<ReqExecutor>?)
 
-    data class ReqAsset(
-            @JsonProperty("file_name", required = true) val fileName: String,
-            @JsonProperty("file_content", required = true) val fileContent: String)
+    data class ReqAsset(@JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
+                        @JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String)
 
-    data class ReqExecutor(
-            @JsonProperty("executor_id", required = true) val executorId: String)
+    data class ReqExecutor(@JsonProperty("executor_id", required = true) @field:Size(max = 100) val executorId: String)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/exercises/{exerciseId}")
     fun controller(@PathVariable("exerciseId") exIdString: String,
-                   @RequestBody dto: Req,
+                   @Valid @RequestBody dto: Req,
                    caller: EasyUser) {
 
         log.debug { "Update exercise $exIdString by ${caller.id}" }

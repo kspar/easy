@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import javax.validation.Valid
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -18,11 +21,13 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateManagementNotificationsController {
 
-    data class Req(@JsonProperty("message", required = true) val message: String)
+    data class Req(@JsonProperty("message", required = true)
+                   @field:NotBlank
+                   @field:Size(min = 1, max = 1000) val message: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/management/notifications")
-    fun controller(@RequestBody dto: Req, caller: EasyUser) {
+    fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {
 
         log.debug { "${caller.id} is creating new system management notification: $dto" }
 

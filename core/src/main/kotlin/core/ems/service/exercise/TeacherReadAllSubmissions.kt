@@ -33,12 +33,15 @@ class TeacherReadAllSubmissionsController {
                                      @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
                                      @JsonProperty("solution") val solution: String)
 
+    data class Resp(@JsonProperty("submissions") val submissions: List<TeacherSubmissionResp>)
+
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId}")
-    fun readTeacherAllSubmissions(@PathVariable("courseId") courseIdString: String,
-                                  @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                                  @PathVariable("studentId") studentId: String,
-                                  caller: EasyUser): List<TeacherSubmissionResp> {
+    fun controller(@PathVariable("courseId") courseIdString: String,
+                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
+                   @PathVariable("studentId") studentId: String,
+                   caller: EasyUser): Resp {
 
         log.debug { "Getting all submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
@@ -46,24 +49,14 @@ class TeacherReadAllSubmissionsController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val submissions = selectTeacherAllSubmissions(courseId, courseExId, studentId)
-
-        return mapToTeacherSubmissionResp(submissions)
+        return selectTeacherAllSubmissions(courseId, courseExId, studentId)
     }
-
-    private fun mapToTeacherSubmissionResp(subs: List<TeacherSubmission>): List<TeacherSubmissionResp> =
-            subs.map {
-                TeacherSubmissionResp(it.createdAt, it.gradeAuto, it.feedbackAuto, it.gradeTeacher, it.feedbackTeacher, it.solution)
-            }
 }
 
 
-private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): List<TeacherSubmission> {
-
-    data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
-
+private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): TeacherReadAllSubmissionsController.Resp {
     return transaction {
-        val submissions =
+        TeacherReadAllSubmissionsController.Resp(
                 (Course innerJoin CourseExercise innerJoin Submission)
                         .slice(Course.id, CourseExercise.id, Submission.student, Submission.createdAt, Submission.id, Submission.solution)
                         .select {
@@ -71,27 +64,22 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                                     (CourseExercise.id eq courseExId) and
                                     (Submission.student eq studentId)
                         }
-                        .orderBy(Submission.createdAt to false)
+                        .orderBy(Submission.createdAt, SortOrder.DESC)
                         .map {
-                            SubmissionPartial(it[Submission.id].value,
-                                    it[Submission.solution],
-                                    it[Submission.createdAt])
-                        }
+                            val id = it[Submission.id].value
 
-        submissions.map {
-            val autoAssessment = lastAutoAssessment(it.id)
-            val teacherAssessment = lastTeacherAssessment(it.id)
+                            val autoAssessment = lastAutoAssessment(id)
+                            val teacherAssessment = lastTeacherAssessment(id)
 
-            TeacherSubmission(
-                    it.solution,
-                    it.id,
-                    it.createdAt,
-                    autoAssessment?.grade,
-                    autoAssessment?.feedback,
-                    teacherAssessment?.grade,
-                    teacherAssessment?.feedback
-            )
-        }
+                            TeacherReadAllSubmissionsController.TeacherSubmissionResp(
+                                    it[Submission.createdAt],
+                                    autoAssessment?.grade,
+                                    autoAssessment?.feedback,
+                                    teacherAssessment?.grade,
+                                    teacherAssessment?.feedback,
+                                    it[Submission.solution])
+                        })
+
     }
 }
 

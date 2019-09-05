@@ -259,6 +259,14 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 0;
 }
 
+#exercise-card .collection-item.inactive {
+    color: #999;
+}
+
+#exercise-card .collection-item.inactive:hover {
+    background-color: unset;
+}
+
 #exercise-card .eval-logo-auto {
     vertical-align: sub;
     width: 24px;
