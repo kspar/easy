@@ -665,9 +665,11 @@ paths:
         300:
           description: Submissions.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/TeacherSubmission'
+            properties:
+              submissions:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherSubmission'
 
 
   /courses/{courseId}/participants:
