@@ -6,12 +6,12 @@ private const val WARN_PREFIX = "[WARN]"
 
 
 // No console.debug in kotlin/js...
-fun debug(msgProvider: () -> String) {
+fun debug(msgProvider: () -> String?) {
     if (AppProperties.LOG_DEBUG_ENABLED)
         console.log("$DEBUG_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
-fun warn(msgProvider: () -> String) {
+fun warn(msgProvider: () -> String?) {
     if (AppProperties.LOG_WARN_ENABLED)
         console.warn("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }

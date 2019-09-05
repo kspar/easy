@@ -22,6 +22,9 @@ import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
 import objOf
+import onVanillaClick
+import org.w3c.dom.Element
+import org.w3c.dom.asList
 import parseTo
 import queries.BasicCourseInfo
 import tmRender
@@ -88,6 +91,18 @@ object ExerciseSummaryPage : EasyPage() {
             val graded_by: GraderType?
     )
 
+    @Serializable
+    data class TeacherSubmission(
+            val id: String,
+            val solution: String,
+            @Serializable(with = DateSerializer::class)
+            val created_at: Date,
+            val grade_auto: Int?,
+            val feedback_auto: String?,
+            val grade_teacher: Int?,
+            val feedback_teacher: String?
+    )
+
 
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
@@ -115,7 +130,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "studentSubmLabel" to "Esitused"
         ))
 
-        Materialize.Tabs.init(getElemsByClass("tabs")[0])
+        Materialize.Tabs.init(getElemById("tabs"))
 
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
@@ -193,7 +208,9 @@ object ExerciseSummaryPage : EasyPage() {
 
         val studentArray = teacherStudents.students.map { student ->
             val studentMap = mutableMapOf<String, Any?>(
-                    "name" to "${student.given_name} ${student.family_name}",
+                    "id" to student.student_id,
+                    "givenName" to student.given_name,
+                    "familyName" to student.family_name,
                     "time" to student.submission_time?.toEstonianString(),
                     "points" to student.grade
             )
@@ -225,7 +242,51 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
                 mapOf("students" to studentArray))
 
+        getNodelistBySelector("[data-student-id]").asList().forEach {
+            if (it is Element) {
+                val id = it.getAttribute("data-student-id") ?: error("No data-student-id found on student item")
+                val givenName = it.getAttribute("data-given-name") ?: error("No data-given-name found on student item")
+                val familyName = it.getAttribute("data-family-name") ?: error("No data-family-name found on student item")
+
+                it.onVanillaClick {
+                    debug { "$id $givenName $familyName" }
+                    buildStudentTab(courseId, courseExerciseId, id, givenName, familyName)
+                }
+
+            } else {
+                error("Student item is not an Element")
+            }
+        }
+
         fl?.end()
+    }
+
+    private fun buildStudentTab(courseId: String, courseExerciseId: String, studentId: String, givenName: String, familyName: String) {
+        getElemById("tab-student").textContent = "$givenName ${familyName[0]}"
+
+        val tabs = Materialize.Tabs.getInstance(getElemById("tabs"))
+        tabs.select("student")
+        tabs.updateTabIndicator()
+
+        MainScope().launch {
+            val submissionResp =
+                    fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students/$studentId",
+                    ReqMethod.GET).await()
+
+            if (!submissionResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching student submission failed with status ${submissionResp.status}")
+            }
+
+            val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
+
+            debug { submission.toString() }
+
+
+            getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
+
+            ))
+        }
     }
 
 

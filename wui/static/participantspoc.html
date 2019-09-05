@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+</head>
+<style>
+
+</style>
+<body>
+
+<header>
+    <div id="nav-wrap">
+        <nav class="nav-center" role="navigation">
+            <div class="nav-wrapper">
+                <a href="/courses" class="brand-logo left"><img class="logo-img" src="img/main-logo.svg" alt="Lahendus"></a>
+                <ul id="nav-mobile" class="hide-on-med-and-down">
+                    <li><a class="nav-link" href="/courses">Minu kursused</a></li>
+                </ul>
+            </div>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap-Ants-Mets</span><span id="profile-role"> (õpilane)</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <li><a href="https://idp.lahendus.ut.ee/auth/realms/master/account">Konto andmed</a></li>
+        <li><a id="logout-link">Logi välja</a></li>
+    </ul>
+</header>
+<main>
+    <div id="content-container" class="container">
+
+            <div id="students-container" class="card-content">
+                <h2 id="course-title"></h2>
+                <h4 class="subsection">Õpilased</h4>
+
+                <a id="add-students-link" href="#!">Lisa õpilasi</a>
+                <div id="add-students-wrapper">
+                    <div id="add-students-help">Õpilaste lisamiseks sisesta kasutajate meiliaadressid
+                        eraldi ridadele või eraldatuna tühikutega.
+                    </div>
+                    <div id="new-students-list-wrapper" class="row">
+                        <div class="input-field col s8">
+                            <textarea id="new-students-list" class="materialize-textarea" placeholder="oskar@ohakas.ee  mari@maasikas.ee"></textarea>
+                            <label for="new-students-list">Õpilaste nimekiri</label>
+                        </div>
+                        <div class="col s4"></div>
+                    </div>
+                    <button id="add-students-button" class="waves-effect waves-light btn">Lisa</button>
+                </div>
+
+                <ul id="students-list" class="collection"></ul>
+            </div>
+    </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
+
+
+</body>
+</html>
