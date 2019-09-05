@@ -120,7 +120,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
             errors[fieldName] = errorMessage ?: ""
         }
 
-        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, errors, ex.message)
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), errors.toString())
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
@@ -130,7 +130,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.info("HttpMessageNotReadableException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
 
-        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), ex.message ?: "")
+        val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), "")
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 }
