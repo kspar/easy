@@ -24,10 +24,7 @@ import libheaders.CodeMirror
 import libheaders.Materialize
 import objOf
 import onVanillaClick
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.HTMLTextAreaElement
-import org.w3c.dom.asList
+import org.w3c.dom.*
 import parseTo
 import queries.BasicCourseInfo
 import tmRender
@@ -216,7 +213,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "givenName" to student.given_name,
                     "familyName" to student.family_name,
                     "time" to student.submission_time?.toEstonianString(),
-                    "points" to student.grade
+                    "points" to student.grade?.toString()
             )
 
             when (student.graded_by) {
@@ -253,8 +250,7 @@ object ExerciseSummaryPage : EasyPage() {
                 val familyName = it.getAttribute("data-family-name") ?: error("No data-family-name found on student item")
 
                 it.onVanillaClick(true) {
-                    debug { "$id $givenName $familyName" }
-                    buildStudentTab(courseId, courseExerciseId, id, givenName, familyName)
+                    buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName)
                 }
 
             } else {
@@ -265,7 +261,61 @@ object ExerciseSummaryPage : EasyPage() {
         fl?.end()
     }
 
-    private fun buildStudentTab(courseId: String, courseExerciseId: String, studentId: String, givenName: String, familyName: String) {
+    private fun buildStudentTab(courseId: String, courseExerciseId: String, threshold: Int,
+                                studentId: String, givenName: String, familyName: String) {
+
+        suspend fun addAssessment(grade: Int, feedback: String, submissionId: String) {
+            val assMap: MutableMap<String, Any> = mutableMapOf("grade" to grade)
+            if (feedback.isNotBlank())
+                assMap["feedback"] = feedback
+
+            debug { "Posting assessment $assMap" }
+
+            val assResp = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/$submissionId/assessments",
+                    ReqMethod.POST,
+                    assMap)
+                    .await()
+
+            if (!assResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Posting assessment failed with status ${assResp.status}")
+            }
+        }
+
+        fun toggleAddGradeBox(submissionId: String) {
+            if (getElemByIdOrNull("add-grade-wrap") == null) {
+                // Grading box is not visible
+                debug { "Open add grade" }
+                getElemById("add-grade-section").innerHTML = tmRender("tm-teach-exercise-add-grade", mapOf(
+                        "feedbackLabel" to "Tagasiside",
+                        "gradeLabel" to "Hinne (0-100)",
+                        "gradeValidationError" to "Hinne peab olema arv 0 ja 100 vahel.",
+                        "addGradeButton" to "Lisa hinnang"
+                ))
+
+                getElemById("grade-button").onVanillaClick(true) {
+                    val grade = getElemByIdAs<HTMLInputElement>("grade").valueAsNumber.toInt()
+                    val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
+                    MainScope().launch {
+                        addAssessment(grade, feedback, submissionId)
+                        toggleAddGradeBox(submissionId)
+                        getElemByIdAs<HTMLSpanElement>("teacher-grade").innerText = grade.toString()
+                        getElemByIdAs<HTMLPreElement>("teacher-feedback").innerText = feedback
+                        buildTeacherStudents(courseId, courseExerciseId, threshold)
+                    }
+                }
+
+                getElemById("add-grade-link").innerHTML = "&#9660; Sulge"
+
+            } else {
+                // Grading box is visible
+                debug { "Close add grade" }
+                getElemById("add-grade-section").clear()
+                getElemById("add-grade-link").innerHTML = "&#9658; Lisa hinnang"
+            }
+        }
+
+
         getElemById("tab-student").textContent = "$givenName ${familyName[0]}"
 
         val tabs = Materialize.Tabs.getInstance(getElemById("tabs"))
@@ -284,17 +334,14 @@ object ExerciseSummaryPage : EasyPage() {
 
             val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
 
-            debug { submission.toString() }
-
-
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
                     "time" to submission.created_at.toEstonianString(),
                     "autoLabel" to "Automaatkontrolli hinnang",
-                    "autoGrade" to submission.grade_auto,
+                    "autoGrade" to submission.grade_auto?.toString(),
                     "autoFeedback" to submission.feedback_auto,
                     "autoGradeLabel" to "Automaatne hinne",
                     "teacherLabel" to "Õpetaja hinnang",
-                    "teacherGrade" to submission.grade_teacher,
+                    "teacherGrade" to submission.grade_teacher?.toString(),
                     "teacherFeedback" to submission.feedback_teacher,
                     "teacherGradeLabel" to "Hinne",
                     "addGradeLink" to "&#9658; Lisa hinnang",
@@ -308,41 +355,8 @@ object ExerciseSummaryPage : EasyPage() {
                     "viewportMargin" to 100,
                     "readOnly" to true))
 
-            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox() }
+            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(submission.id) }
         }
-    }
-
-    private fun toggleAddGradeBox() {
-        if (getElemByIdOrNull("add-grade-wrap") == null) {
-            // Grading box is not visible
-            getElemById("add-grade-section").innerHTML = tmRender("tm-teach-exercise-add-grade", mapOf(
-                    "feedbackLabel" to "Tagasiside",
-                    "gradeLabel" to "Hinne (0-100)",
-                    "gradeValidationError" to "Hinne peab olema arv 0 ja 100 vahel.",
-                    "addGradeButton" to "Lisa hinnang"
-            ))
-
-            getElemById("grade-button").onVanillaClick(true) {
-                val grade = getElemByIdAs<HTMLInputElement>("grade").valueAsNumber.toInt()
-                val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
-                addAssessment(grade, feedback)
-                toggleAddGradeBox()
-            }
-
-            getElemById("add-grade-link").innerHTML = "&#9660; Sulge"
-
-
-        } else {
-            // Grading box is visible
-            getElemById("add-grade-section").clear()
-            getElemById("add-grade-link").innerHTML = "&#9658; Lisa hinnang"
-        }
-    }
-
-    private fun addAssessment(grade: Int, feedback: String) {
-        debug { "Grading" }
-
-        debug { "$grade $feedback" }
     }
 
 
