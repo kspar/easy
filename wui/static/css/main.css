@@ -416,6 +416,10 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 20px;
 }
 
+#participants-container table th {
+    font-weight: 500;
+}
+
 
 /** Common **/
 

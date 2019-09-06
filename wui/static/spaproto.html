@@ -390,19 +390,9 @@
 
         <h4 class="subsection">{{studentsLabel}}</h4>
 
-        <a id="add-students-link" href="#!">{{addStudentsLink}}</a>
-        <div id="add-students-wrap">
-            <div id="add-students-help">{{addStudentsHelp}}
-            </div>
-            <div id="new-students-form-wrap" class="row">
-                <div class="input-field col s8">
-                    <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;marimaasikas"></textarea>
-                    <label for="new-students-field">{{addStudentsFieldLabel}}</label>
-                </div>
-                <div class="col s4"></div>
-            </div>
-            <button id="add-students-button" class="waves-effect waves-light btn">{{addButtonLabel}}</button>
-        </div>
+        <a id="add-students-link" href="#!">{{{addStudentsLink}}}</a>
+        <div id="add-students-section"></div>
+
         <div class="card">
             <div class="card-content">
                 <table class="responsive-table highlight">
@@ -426,6 +416,21 @@
                 </table>
             </div>
         </div>
+    </div>
+</script>
+
+<script id="tm-teach-participants-add" type="text/x-handlebars-template">
+    <div id="add-students-wrap">
+        <div id="add-students-help">{{addStudentsHelp}}
+        </div>
+        <div id="new-students-form-wrap" class="row">
+            <div class="input-field col s8">
+                <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;maasikas"></textarea>
+                <label for="new-students-field" class="active">{{addStudentsFieldLabel}}</label>
+            </div>
+            <div class="col s4"></div>
+        </div>
+        <button id="add-students-button" class="waves-effect waves-light btn">{{addButtonLabel}}</button>
     </div>
 </script>
 

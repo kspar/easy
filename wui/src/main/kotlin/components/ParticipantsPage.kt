@@ -1,5 +1,9 @@
 package components
 
+import Auth
+import PageName
+import ReqMethod
+import Role
 import Str
 import debug
 import errorMessage
@@ -7,6 +11,7 @@ import fetchEms
 import getContainer
 import getElemById
 import getElemByIdAs
+import getElemByIdOrNull
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -16,10 +21,10 @@ import objOf
 import onVanillaClick
 import org.w3c.dom.HTMLTextAreaElement
 import parseTo
+import queries.BasicCourseInfo
 import tmRender
-import toJsObj
 import kotlin.browser.window
-import kotlin.test.todo
+import kotlin.dom.clear
 
 object ParticipantsPage : EasyPage() {
 
@@ -50,13 +55,15 @@ object ParticipantsPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
 
-        suspend fun postNewStudents(studentIds: List<String>, courseId: String){
+        suspend fun postNewStudents(studentIds: List<String>, courseId: String) {
+            debug { "Posting new students: $studentIds" }
+
             val newStudents = studentIds.map {
                 NewStudent(it)
             }
 
             val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
-            "students" to newStudents)).await()
+                    "students" to newStudents)).await()
 
             if (!resp.http200) {
                 errorMessage { Str.somethingWentWrong() }
@@ -66,7 +73,36 @@ object ParticipantsPage : EasyPage() {
 
         }
 
+        fun toggleAddStudents(courseId: String) {
+            if (getElemByIdOrNull("add-students-wrap") == null) {
+                // Box not visible
+                debug { "Open add students box" }
+                getElemById("add-students-section").innerHTML = tmRender("tm-teach-participants-add", mapOf(
+                        "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate kasutajanimed või meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
+                        "addStudentsFieldLabel" to "Õpilaste nimekiri",
+                        "addButtonLabel" to "Lisa"
+                ))
 
+                getElemById("add-students-button").onVanillaClick(true) {
+                    MainScope().launch {
+                        val ids = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
+                                .split(" ", "\n")
+                                .filter { it.isNotBlank() }
+
+                        postNewStudents(ids, courseId)
+                        build(null)
+                    }
+                }
+
+                getElemById("add-students-link").innerHTML = "&#9660; Sulge"
+
+            } else {
+                // Box is visible
+                debug { "Close add students box" }
+                getElemById("add-students-section").clear()
+                getElemById("add-students-link").innerHTML = "&#9658; Lisa õpilasi"
+            }
+        }
 
         if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
             errorMessage { Str.noPermissionForPage() }
@@ -77,7 +113,12 @@ object ParticipantsPage : EasyPage() {
         debug { "Course ID: $courseId" }
 
         MainScope().launch {
-            val resp = fetchEms("/courses/$courseId/participants", ReqMethod.GET).await()
+            val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET)
+            val courseInfoPromise = BasicCourseInfo.get(courseId)
+
+            val resp = participantsPromise.await()
+            val courseTitle = courseInfoPromise.await().title
+
             if (!resp.http200) {
                 errorMessage { Str.somethingWentWrong() }
                 error("Fetching participants failed with status ${resp.status}")
@@ -104,31 +145,20 @@ object ParticipantsPage : EasyPage() {
 
             getContainer().innerHTML = tmRender("tm-teach-participants", mapOf(
                     "myCoursesLabel" to "Minu kursused",
-                    "title" to "Programmeerimine",
-                    "courseHref" to "#",
+                    "title" to courseTitle,
+                    "courseHref" to "/courses/$courseId/exercises",
                     "participantsLabel" to "Osalejad",
                     "teacherLabel" to "Õpetajad",
                     "nameLabel" to "Nimi",
                     "usernameLabel" to "Kasutajanimi",
                     "emailLabel" to "Email",
                     "studentsLabel" to "Õpilased",
-                    "addStudentsLink" to "Lisa õpilasi",
-                    "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate kasutajanimed või meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
-                    "addStudentsFieldLabel" to "Õpilaste nimekiri",
-                    "addButtonLabel" to "Lisa",
+                    "addStudentsLink" to "&#9658; Lisa õpilasi",
                     "students" to students,
                     "teachers" to teachers
             ))
-            getElemById("add-students-button").onVanillaClick(true) {
-                MainScope().launch {
-                    val ids = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
-                            .split(" ", "\n")
-                            .filter { it.isNotBlank() }
-                    debug { "$ids" }
 
-                    postNewStudents(ids, courseId)
-                }
-            }
+            getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
         }
     }
 
