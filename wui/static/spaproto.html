@@ -346,80 +346,74 @@
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">
         <nav class="crumb-wrap">
-            <a href="/courses" class="breadcrumb">Minu kursused</a>
-            <a class="breadcrumb">Lennundus ja aeronautiline hüdraulika</a>
+            <a href="/courses" class="breadcrumb">{{myCoursesLabel}}</a>
+            <a href="{{courseHref}}" class="breadcrumb">{{title}}</a>
+            <a class="breadcrumb">{{participantsLabel}}</a>
         </nav>
         <div class="title-wrap">
-            <h3 class="title">Lennundus ja aeronautiline hüdraulika</h3>
+            <h3 class="title">{{title}}</h3>
         </div>
 
-        <h4 class="subsection">Õpetajad</h4>
+        <h4 class="subsection">{{teachersLabel}}</h4>
 
         <div class="card">
             <div class="card-content">
                 <table class="responsive-table highlight">
                     <thead>
                     <tr>
-                        <th>Nimi</th>
-                        <th>Kasutajanimi</th>
-                        <th>Email</th>
+                        <th>{{nameLabel}}</th>
+                        <th>{{usernameLabel}}</th>
+                        <th>{{emailLabel}}</th>
                     </tr>
                     </thead>
 
                     <tbody>
+                    {{#teachers}}
                     <tr>
-                        <td>Sass Maasikas</td>
-                        <td>sass</td>
-                        <td>aaasikas@we.com</td>
+                        <td>{{name}}</td>
+                        <td>{{username}}</td>
+                        <td>{{email}}</td>
                     </tr>
+                    {{/teachers}}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <h4 class="subsection">Õpilased</h4>
+        <h4 class="subsection">{{studentsLabel}}</h4>
 
-        <a id="add-students-link" href="#!">Lisa õpilasi</a>
+        <a id="add-students-link" href="#!">{{addStudentsLink}}</a>
         <div id="add-students-wrap">
-            <div id="add-students-help">Õpilaste lisamiseks sisesta kasutajate kasutajanimed või meiliaadressid
-                eraldi ridadele või eraldatuna tühikutega.
+            <div id="add-students-help">{{addStudentsHelp}}
             </div>
             <div id="new-students-form-wrap" class="row">
                 <div class="input-field col s8">
                     <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;marimaasikas"></textarea>
-                    <label for="new-students-field">Õpilaste nimekiri</label>
+                    <label for="new-students-field">{{addStudentsFieldLabel}}</label>
                 </div>
                 <div class="col s4"></div>
             </div>
-            <button id="add-students-button" class="waves-effect waves-light btn">Lisa</button>
+            <button id="add-students-button" class="waves-effect waves-light btn">{{addButtonLabel}}</button>
         </div>
         <div class="card">
             <div class="card-content">
                 <table class="responsive-table highlight">
                     <thead>
                     <tr>
-                        <th>Nimi</th>
-                        <th>Kasutajanimi</th>
-                        <th>Email</th>
+                        <th>{{nameLabel}}</th>
+                        <th>{{usernameLabel}}</th>
+                        <th>{{emailLabel}}</th>
                     </tr>
                     </thead>
 
                     <tbody>
+                    {{#students}}
                     <tr>
-                        <td>Malle Maasikas</td>
-                        <td>mmaasikas</td>
-                        <td>mallemaaasikas@we.com</td>
+                        <td>{{name}}</td>
+                        <td>{{username}}</td>
+                        <td>{{email}}</td>
                     </tr>
-                    <tr>
-                        <td>Kalle Saarmas</td>
-                        <td>kalles</td>
-                        <td>kalles@k.ee</td>
-                    </tr>
-                    <tr>
-                        <td>Jaanus Tasuja</td>
-                        <td>tasujajaanus</td>
-                        <td>tasuja@tasuja.ee</td>
-                    </tr>
+                    {{/students}}
                     </tbody>
                 </table>
             </div>
