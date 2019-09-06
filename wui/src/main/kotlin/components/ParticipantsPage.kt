@@ -38,13 +38,8 @@ object ParticipantsPage : EasyPage() {
     )
 
     @Serializable
-    data class NewStudents(
-            val students: List<NewStudent>
-    )
-
-    @Serializable
     data class NewStudent(
-            val student_id: String
+            val student_id_or_email: String
     )
 
     override val pageName: Any
@@ -60,7 +55,7 @@ object ParticipantsPage : EasyPage() {
                 NewStudent(it)
             }
 
-            val resp = fetchEms("/teacher/courses/$courseId/students", ReqMethod.POST, mapOf(
+            val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
             "students" to newStudents)).await()
 
             if (!resp.http200) {
@@ -134,8 +129,6 @@ object ParticipantsPage : EasyPage() {
                     postNewStudents(ids, courseId)
                 }
             }
-
-
         }
     }
 
