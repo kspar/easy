@@ -40,7 +40,7 @@ fun errorMessage(msgProvider: () -> String) {
     ))
     Materialize.toast(objOf(
             "html" to toastHtml,
-            "displayLength" to 8000
+            "displayLength" to 15_000
     ))
 }
 
