@@ -107,40 +107,48 @@
     <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
 </script>
 
-<script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
-    <p id="submission-info"><span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
-    <div id="submission-auto">
-        <h4>Automaatkontrolli hinnang</h4>
-        <pre class="feedback auto-feedback">Gut :)</pre>
-        <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
-    </div>
-    <div id="submission-teacher">
-        <h4>Õpetaja hinnang</h4>
-        <pre class="feedback">Sehr gut :)</pre>
-        <div>Hinne: <span class="grade-number">66</span>/100</div>
-    </div>
-
-    <a id="add-grade-link" href="#!">Lisa hinnang</a>
+<script id="tm-teach-exercise-add-grade" type="text/x-handlebars-template">
     <div id="add-grade-wrap">
         <div class="row">
             <div class="input-field col s8">
                 <textarea id="feedback" class="materialize-textarea"></textarea>
-                <label for="feedback">Tagasiside</label>
+                <label for="feedback">{{feedbackLabel}}</label>
             </div>
         </div>
         <div class="row">
             <div class="input-field col s4">
-                <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
-                <label for="grade">Hinne</label>
-                <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
+                <input id="grade" type="number" min="0" max="100" class="validate">
+                <label for="grade">{{gradeLabel}}</label>
+                <span class="helper-text" data-error="{{gradeValidationError}}"></span>
             </div>
         </div>
-        <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
+        <button id="grade-button" class="waves-effect waves-light btn">{{addGradeButton}}</button>
     </div>
+</script>
+
+<script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
+    <p id="submission-info"><span class="subheading">Esitamise aeg: </span>{{time}}</p>
+    {{#autoGrade}}
+    <div id="submission-auto">
+        <h4>{{autoLabel}}</h4>
+        <pre class="feedback auto-feedback">{{autoFeedback}}</pre>
+        <div>{{autoGradeLabel}}: <span class="grade-number">{{autoGrade}}</span>/100</div>
+    </div>
+    {{/autoGrade}}
+    {{#teacherGrade}}
+    <div id="submission-teacher">
+        <h4>{{teacherLabel}}</h4>
+        <pre class="feedback">{{teacherFeedback}}</pre>
+        <div>{{teacherGradeLabel}}: <span class="grade-number">{{teacherGrade}}</span>/100</div>
+    </div>
+    {{/teacherGrade}}
+
+    <a id="add-grade-link" href="#!">{{{addGradeLink}}}</a>
+    <div id="add-grade-section"></div>
 
     <div class="editor-wrapper no-cursor">
         <form>
-            <textarea id="student-submission"></textarea>
+            <textarea id="student-submission">{{solution}}</textarea>
         </form>
     </div>
 </script>
