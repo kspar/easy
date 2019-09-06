@@ -729,17 +729,33 @@ paths:
         - name: students
           in: body
           schema:
-            description: Student ids.
+            description: Student ids or emails.
             properties:
               students:
                 type: array
                 items:
                   properties:
-                    student_id:
+                    student_id_or_email:
                       type: string
       responses:
         200:
           description: Students added.
+        400:
+          description: One of the students not found by id or email.
+          schema:
+            properties:
+              id:
+                type: string
+              code:
+                type: string
+                description: Contains the code STUDENT_NOT_FOUND.
+              attrs:
+                properties:
+                  missing_student:
+                    type: string
+              log_msg:
+                type: string
+
 
 
   /teacher/courses/{courseId}/students/{studentId}:

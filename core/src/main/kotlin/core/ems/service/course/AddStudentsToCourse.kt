@@ -8,6 +8,7 @@ import core.db.StudentCourseAccess
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
@@ -28,44 +29,49 @@ class AddStudentsToCourseController {
 
     data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentIdReq>)
 
-    data class StudentIdReq(@JsonProperty("student_id") @field:NotBlank @field:Size(max = 100) val studentId: String)
+    data class StudentIdReq(@JsonProperty("student_id_or_email") @field:NotBlank @field:Size(max = 100) val studentIdOrEmail: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/teacher/courses/{courseId}/students")
+    @PostMapping("/courses/{courseId}/students")
     fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @RequestBody @Valid studentIds: Req, caller: EasyUser) {
+                   @RequestBody @Valid body: Req, caller: EasyUser) {
 
-        log.debug { "Adding access to course $courseIdStr to students $studentIds" }
+        log.debug { "Adding access to course $courseIdStr to students $body" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        insertStudentCourseAccesses(courseId, studentIds)
+        insertStudentCourseAccesses(courseId, body)
     }
 }
 
 
 private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req) {
     transaction {
-        students.studentIds.forEach { student ->
-            val studentExists =
-                    Student.select { Student.id eq student.studentId }
-                            .count() == 1
-            if (!studentExists) {
-                throw InvalidRequestException("Student not found: $student")
+        val studentIds = students.studentIds.map { student ->
+            val studentWithId = Student.select { Student.id eq student.studentIdOrEmail }.count()
+
+            if (studentWithId == 0) {
+                val studentId = Student.slice(Student.id)
+                        .select { Student.email eq student.studentIdOrEmail }
+                        .map { it[Student.id].value }.firstOrNull()
+                studentId ?: throw InvalidRequestException("Student not found: $student", ReqError.STUDENT_NOT_FOUND,
+                        "missing_student" to student.studentIdOrEmail)
+            } else {
+                student.studentIdOrEmail
             }
         }
 
-        val studentsWithoutAccess = students.studentIds.filter {
+        val studentsWithoutAccess = studentIds.filter {
             StudentCourseAccess.select {
-                StudentCourseAccess.student eq it.studentId and (StudentCourseAccess.course eq courseId)
+                StudentCourseAccess.student eq it and (StudentCourseAccess.course eq courseId)
             }.count() == 0
-        }
+        }.distinct()
 
         log.debug { "Granting access to students (the rest already have access): $studentsWithoutAccess" }
 
-        StudentCourseAccess.batchInsert(studentsWithoutAccess) { student ->
-            this[StudentCourseAccess.student] = EntityID(student.studentId, Student)
+        StudentCourseAccess.batchInsert(studentsWithoutAccess) {
+            this[StudentCourseAccess.student] = EntityID(it, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }
     }
