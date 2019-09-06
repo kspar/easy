@@ -5,16 +5,21 @@ import debug
 import errorMessage
 import fetchEms
 import getContainer
+import getElemById
+import getElemByIdAs
 import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
+import onVanillaClick
+import org.w3c.dom.HTMLTextAreaElement
 import parseTo
 import tmRender
 import toJsObj
 import kotlin.browser.window
+import kotlin.test.todo
 
 object ParticipantsPage : EasyPage() {
 
@@ -32,14 +37,43 @@ object ParticipantsPage : EasyPage() {
             val family_name: String
     )
 
+    @Serializable
+    data class NewStudents(
+            val students: List<NewStudent>
+    )
+
+    @Serializable
+    data class NewStudent(
+            val student_id: String
+    )
+
     override val pageName: Any
         get() = PageName.PARTICIPANTS
 
     override fun pathMatches(path: String): Boolean =
-        path.matches("^/courses/\\w+/participants/?$")
+            path.matches("^/courses/\\w+/participants/?$")
 
     override fun build(pageStateStr: String?) {
-        if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER){
+
+        suspend fun postNewStudents(studentIds: List<String>, courseId: String){
+            val newStudents = studentIds.map {
+                NewStudent(it)
+            }
+
+            val resp = fetchEms("/teacher/courses/$courseId/students", ReqMethod.POST, mapOf(
+            "students" to newStudents)).await()
+
+            if (!resp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Adding students failed with status ${resp.status}")
+            }
+            //TODO: handle non-existing students
+
+        }
+
+
+
+        if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
             errorMessage { Str.noPermissionForPage() }
             error("User is not admin nor teacher")
         }
@@ -49,7 +83,7 @@ object ParticipantsPage : EasyPage() {
 
         MainScope().launch {
             val resp = fetchEms("/courses/$courseId/participants", ReqMethod.GET).await()
-            if (!resp.http200){
+            if (!resp.http200) {
                 errorMessage { Str.somethingWentWrong() }
                 error("Fetching participants failed with status ${resp.status}")
             }
@@ -90,10 +124,21 @@ object ParticipantsPage : EasyPage() {
                     "students" to students,
                     "teachers" to teachers
             ))
+            getElemById("add-students-button").onVanillaClick(true) {
+                MainScope().launch {
+                    val ids = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
+                            .split(" ", "\n")
+                            .filter { it.isNotBlank() }
+                    debug { "$ids" }
+
+                    postNewStudents(ids, courseId)
+                }
+            }
+
+
         }
-
-
     }
+
     private fun extractSanitizedCourseId(path: String): String {
         val match = path.match("^/courses/(\\w+)/participants/?$")
         if (match != null && match.size == 2) {
@@ -102,6 +147,4 @@ object ParticipantsPage : EasyPage() {
             error("Unexpected match on path: ${match?.joinToString()}")
         }
     }
-
-
 }
