@@ -129,6 +129,10 @@ div.container {
     position: relative;
 }
 
+#content-container {
+    font-size: 1.6rem;
+}
+
 div.sidenav-container {
     padding-left: 300px;
     max-width: unset;
@@ -158,10 +162,6 @@ nav.crumb-wrap .breadcrumb:before {
 
 
 /** Exercise page **/
-
-#exercise-card {
-    font-size: 1.7rem;
-}
 
 #exercise-card #tabs-wrap {
     text-align: center;
@@ -387,57 +387,33 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Participants page **/
 
-h2#course-title {
-    margin-top: 0;
-    margin-bottom: 2rem;
-}
-
-h4.subsection {
+#participants-container h4.subsection {
     font-size: 2rem;
     margin-top: 4rem;
     margin-bottom: 2rem;
 }
 
-a#add-students-link {
-    display: inline-block;
+#participants-container #add-students-wrap {
+    padding: 2rem;
+    border: 1px solid #ddd;
+    background-color: #eee;
+}
+
+#participants-container div#add-students-help {
     margin-bottom: 2rem;
 }
 
-span.student-toast {
-    font-size: 1.6rem;
-}
-
-#add-students-wrapper {
-    padding: 1rem;
-    margin-bottom: 2rem;
-    border: 1px solid #eee;
-    font-size: 1.6rem;
-}
-
-div#add-students-help {
-    margin-bottom: 2rem;
-}
-
-div#new-students-list-wrapper {
+#participants-container div#new-students-form-wrap {
     margin-bottom: 0;
 }
 
-label[for=new-students-list] {
-    font-size: 1.6rem;
+#participants-container #new-students-field {
+    min-height: 6rem;
 }
 
-#new-students-list:focus {
-    border-bottom: 1px solid #469c45;
-    -webkit-box-shadow: 0 1px 0 0 #469c45;
-    box-shadow: 0 1px 0 0 #469c45;
-}
-
-#new-students-list:focus + label {
-    color: #469c45;
-}
-
-#new-students-list {
-    min-height: 5rem;
+#participants-container .card .card-content {
+    padding: 5px 10px 0 10px;
+    margin-top: 20px;
 }
 
 
@@ -471,6 +447,20 @@ label[for=new-students-list] {
 
 .input-field label{
     pointer-events: all;
+}
+
+textarea:focus {
+    border-bottom: 1px solid #469c45 !important;
+    -webkit-box-shadow: 0 1px 0 0 #469c45 !important;
+    box-shadow: 0 1px 0 0 #469c45 !important;
+}
+
+textarea + label {
+    font-size: 1.6rem !important;
+}
+
+textarea:focus + label {
+    color: #469c45 !important;
 }
 
 
