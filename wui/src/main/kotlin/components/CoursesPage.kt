@@ -17,7 +17,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.list
 import objOf
 import parseTo
 import queries.CourseInfo
@@ -30,7 +29,13 @@ object CoursesPage : EasyPage() {
     data class State(val coursesHtml: String, val role: Role)
 
     @Serializable
+    data class StudentCourses(val courses: List<StudentCourse>)
+
+    @Serializable
     data class StudentCourse(val id: String, val title: String)
+
+    @Serializable
+    data class TeacherCourses(val courses: List<TeacherCourse>)
 
     @Serializable
     data class TeacherCourse(val id: String, val title: String, val student_count: Int)
@@ -78,16 +83,16 @@ object CoursesPage : EasyPage() {
                 errorMessage { Str.fetchingCoursesFailed() }
                 error("Fetching student courses failed with status ${resp.status}")
             }
-            val courses = resp.parseTo(StudentCourse.serializer().list).await()
+            val courses = resp.parseTo(StudentCourses.serializer()).await()
 
             // Populate course info cache
-            courses.forEach {
+            courses.courses.forEach {
                 CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
             }
 
             val coursesHtml = tmRender("tm-stud-course-list",
                     mapOf("title" to Str.coursesTitle(),
-                            "courses" to courses.map {
+                            "courses" to courses.courses.map {
                                 objOf("title" to it.title, "id" to it.id)
                             }.toTypedArray()))
 
@@ -123,10 +128,10 @@ object CoursesPage : EasyPage() {
                 errorMessage { Str.fetchingCoursesFailed() }
                 error("Fetching teacher courses failed with status ${resp.status}")
             }
-            val courses = resp.parseTo(TeacherCourse.serializer().list).await()
+            val courses = resp.parseTo(TeacherCourses.serializer()).await()
 
             // Populate course info cache
-            courses.forEach {
+            courses.courses.forEach {
                 CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
             }
 
@@ -134,7 +139,7 @@ object CoursesPage : EasyPage() {
                     "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
                     "addCourse" to isAdmin,
                     "newCourse" to Str.newCourseLink(),
-                    "courses" to courses.map {
+                    "courses" to courses.courses.map {
                         objOf("id" to it.id,
                                 "title" to it.title,
                                 "count" to it.student_count,

@@ -17,7 +17,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.list
 import libheaders.Materialize
 import parseTo
 import queries.BasicCourseInfo
@@ -40,6 +39,9 @@ object ExercisesPage : EasyPage() {
     }
 
     @Serializable
+    data class StudentExercises(val exercises: List<StudentExercise>)
+
+    @Serializable
     data class StudentExercise(val id: String,
                                val effective_title: String,
                                @Serializable(with = DateSerializer::class)
@@ -48,6 +50,9 @@ object ExercisesPage : EasyPage() {
                                val grade: Int?,
                                val graded_by: GraderType?,
                                val ordering_idx: Int)
+
+    @Serializable
+    data class TeacherExercises(val exercises: List<TeacherExercise>)
 
     @Serializable
     data class TeacherExercise(val id: String,
@@ -104,11 +109,11 @@ object ExercisesPage : EasyPage() {
             }
 
             val courseTitle = courseInfoPromise.await().title
-            val exercises = exercisesResp.parseTo(TeacherExercise.serializer().list).await()
+            val exercises = exercisesResp.parseTo(TeacherExercises.serializer()).await()
 
             debug { "Exercises: $exercises" }
 
-            val exerciseArray = exercises
+            val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }
                     .map { ex ->
                         val exMap = mutableMapOf<String, Any>(
@@ -197,11 +202,11 @@ object ExercisesPage : EasyPage() {
             }
 
             val courseTitle = courseInfoPromise.await().title
-            val exercises = exercisesResp.parseTo(StudentExercise.serializer().list).await()
+            val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()
 
             debug { "Exercises: $exercises" }
 
-            val exerciseArray = exercises
+            val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }
                     .map { ex ->
                         val exMap = mutableMapOf<String, Any>(
