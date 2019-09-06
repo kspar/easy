@@ -2,7 +2,7 @@ import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.w3c.dom.events.MouseEvent
 
-fun Node.onVanillaClick(f: (event: MouseEvent) -> Unit) {
+fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit) {
     this.addEventListener("click", { event ->
         if (event is MouseEvent &&
                 !event.defaultPrevented &&
@@ -15,8 +15,10 @@ fun Node.onVanillaClick(f: (event: MouseEvent) -> Unit) {
                 // see https://developer.mozilla.org/en-US/docs/Web/Events#Mouse_events
                 event.button.toInt() == 0) {
 
+            if (preventDefault)
+                event.preventDefault()
+
             f(event)
-            event.preventDefault()
         }
     })
 }

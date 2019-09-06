@@ -12,7 +12,8 @@ import errorMessage
 import fetchEms
 import getContainer
 import getElemById
-import getElemsByClass
+import getElemByIdAs
+import getElemByIdOrNull
 import getNodelistBySelector
 import http200
 import kotlinx.coroutines.MainScope
@@ -24,6 +25,8 @@ import libheaders.Materialize
 import objOf
 import onVanillaClick
 import org.w3c.dom.Element
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.asList
 import parseTo
 import queries.BasicCourseInfo
@@ -31,6 +34,7 @@ import tmRender
 import toEstonianString
 import toJsObj
 import kotlin.browser.window
+import kotlin.dom.clear
 import kotlin.js.Date
 
 object ExerciseSummaryPage : EasyPage() {
@@ -248,7 +252,7 @@ object ExerciseSummaryPage : EasyPage() {
                 val givenName = it.getAttribute("data-given-name") ?: error("No data-given-name found on student item")
                 val familyName = it.getAttribute("data-family-name") ?: error("No data-family-name found on student item")
 
-                it.onVanillaClick {
+                it.onVanillaClick(true) {
                     debug { "$id $givenName $familyName" }
                     buildStudentTab(courseId, courseExerciseId, id, givenName, familyName)
                 }
@@ -284,9 +288,61 @@ object ExerciseSummaryPage : EasyPage() {
 
 
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
-
+                    "time" to submission.created_at.toEstonianString(),
+                    "autoLabel" to "Automaatkontrolli hinnang",
+                    "autoGrade" to submission.grade_auto,
+                    "autoFeedback" to submission.feedback_auto,
+                    "autoGradeLabel" to "Automaatne hinne",
+                    "teacherLabel" to "Õpetaja hinnang",
+                    "teacherGrade" to submission.grade_teacher,
+                    "teacherFeedback" to submission.feedback_teacher,
+                    "teacherGradeLabel" to "Hinne",
+                    "addGradeLink" to "&#9658; Lisa hinnang",
+                    "solution" to submission.solution
             ))
+
+            CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
+                    "mode" to "python",
+                    "lineNumbers" to true,
+                    "autoRefresh" to true,
+                    "viewportMargin" to 100,
+                    "readOnly" to true))
+
+            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox() }
         }
+    }
+
+    private fun toggleAddGradeBox() {
+        if (getElemByIdOrNull("add-grade-wrap") == null) {
+            // Grading box is not visible
+            getElemById("add-grade-section").innerHTML = tmRender("tm-teach-exercise-add-grade", mapOf(
+                    "feedbackLabel" to "Tagasiside",
+                    "gradeLabel" to "Hinne (0-100)",
+                    "gradeValidationError" to "Hinne peab olema arv 0 ja 100 vahel.",
+                    "addGradeButton" to "Lisa hinnang"
+            ))
+
+            getElemById("grade-button").onVanillaClick(true) {
+                val grade = getElemByIdAs<HTMLInputElement>("grade").valueAsNumber.toInt()
+                val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
+                addAssessment(grade, feedback)
+                toggleAddGradeBox()
+            }
+
+            getElemById("add-grade-link").innerHTML = "&#9660; Sulge"
+
+
+        } else {
+            // Grading box is visible
+            getElemById("add-grade-section").clear()
+            getElemById("add-grade-link").innerHTML = "&#9658; Lisa hinnang"
+        }
+    }
+
+    private fun addAssessment(grade: Int, feedback: String) {
+        debug { "Grading" }
+
+        debug { "$grade $feedback" }
     }
 
 
