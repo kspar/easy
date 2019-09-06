@@ -8,6 +8,7 @@ external object Materialize {
     val Sidenav: MSidenav
     val Tooltip: MTooltip
     val Tabs: MTabs
+    val Toast: MToast
 
     fun toast(options: dynamic)
 }
@@ -37,4 +38,8 @@ external object MTabs {
 external class MTabsInstance {
     fun select(tabId: String)
     fun updateTabIndicator()
+}
+
+external class MToast {
+    fun dismissAll()
 }
