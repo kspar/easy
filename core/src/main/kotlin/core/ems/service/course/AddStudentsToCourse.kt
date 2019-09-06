@@ -17,6 +17,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
+import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
@@ -27,7 +28,7 @@ class AddStudentsToCourseController {
 
     data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentIdReq>)
 
-    data class StudentIdReq(@JsonProperty("student_id") @field:Size(min = 1, max = 100) val studentId: String)
+    data class StudentIdReq(@JsonProperty("student_id") @field:NotBlank @field:Size(max = 100) val studentId: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/students")

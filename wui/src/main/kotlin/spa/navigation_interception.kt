@@ -12,7 +12,7 @@ import kotlin.browser.window
 const val LOG_PREFIX = "NavInterceptor:"
 
 fun setupLinkInterception() {
-    document.onVanillaClick { event ->
+    document.onVanillaClick(false) { event ->
         val target = event.target
         if (target !is Node) {
             debug { "$LOG_PREFIX Click not intercepted - target is not a Node" }
@@ -37,6 +37,7 @@ fun setupLinkInterception() {
         val targetUrl = anchorElement.href
 
         debug { "$LOG_PREFIX Intercepted click to local destination $targetUrl" }
+        event.preventDefault()
         handleLocalLinkClick(targetUrl)
     }
 }

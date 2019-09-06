@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.validation.Valid
+import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
@@ -21,7 +22,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AdminCreateCourseController {
 
-    data class Req(@JsonProperty("title", required = true) @field:Size(min = 1, max = 200) val title: String)
+    data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 200) val title: String)
 
     data class Resp(@JsonProperty("id") val id: String)
 

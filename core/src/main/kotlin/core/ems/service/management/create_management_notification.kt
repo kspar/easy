@@ -22,8 +22,7 @@ private val log = KotlinLogging.logger {}
 class CreateManagementNotificationsController {
 
     data class Req(@JsonProperty("message", required = true)
-                   @field:NotBlank
-                   @field:Size(min = 1, max = 1000) val message: String)
+                   @field:NotBlank @field:Size(max = 1000) val message: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/management/notifications")
