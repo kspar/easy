@@ -16,6 +16,15 @@
 
 </head>
 <style>
+    #content-container {
+        font-size: 1.6rem;
+    }
+    .card .card-content{
+        padding: 5px 10px 0 10px;
+        margin-top: 20px;
+
+    }
+
 
 </style>
 <body>
@@ -47,28 +56,90 @@
 </header>
 <main>
     <div id="content-container" class="container">
+        <nav class="crumb-wrap">
+            <a href="/courses" class="breadcrumb">Minu kursused</a>
+            <a class="breadcrumb">Lennundus ja aeronautiline hüdraulika</a>
+        </nav>
+        <div class="title-wrap">
+            <h3 class="title">Lennundus ja aeronautiline hüdraulika</h3>
+        </div>
 
-            <div id="students-container" class="card-content">
-                <h2 id="course-title"></h2>
-                <h4 class="subsection">Õpilased</h4>
+        <h4 class="subsection">Õpetajad</h4>
 
-                <a id="add-students-link" href="#!">Lisa õpilasi</a>
-                <div id="add-students-wrapper">
-                    <div id="add-students-help">Õpilaste lisamiseks sisesta kasutajate meiliaadressid
-                        eraldi ridadele või eraldatuna tühikutega.
-                    </div>
-                    <div id="new-students-list-wrapper" class="row">
-                        <div class="input-field col s8">
-                            <textarea id="new-students-list" class="materialize-textarea" placeholder="oskar@ohakas.ee  mari@maasikas.ee"></textarea>
-                            <label for="new-students-list">Õpilaste nimekiri</label>
-                        </div>
-                        <div class="col s4"></div>
-                    </div>
-                    <button id="add-students-button" class="waves-effect waves-light btn">Lisa</button>
-                </div>
+        <div class="card">
+            <div class="card-content">
+                <table class="responsive-table highlight">
+                    <thead>
+                    <tr>
+                        <th>Nimi</th>
+                        <th>Kasutajanimi</th>
+                        <th>Email</th>
+                    </tr>
+                    </thead>
 
-                <ul id="students-list" class="collection"></ul>
+                    <tbody>
+                    <tr>
+                        <td>Sass Maasikas</td>
+                        <td>sass</td>
+                        <td>aaasikas@we.com</td>
+                    </tr>
+                    </tbody>
+                </table>
+
             </div>
+
+        </div>
+        <h4 class="subsection">Õpilased</h4>
+        <div id="students-container" class="card-content">
+            <a id="add-students-link" href="#!">Lisa õpilasi</a>
+            <div id="add-students-wrapper">
+                <div id="add-students-help">Õpilaste lisamiseks sisesta kasutajate meiliaadressid
+                    eraldi ridadele või eraldatuna tühikutega.
+                </div>
+                <div id="new-students-list-wrapper" class="row">
+                    <div class="input-field col s8">
+                        <textarea id="new-students-list" class="materialize-textarea"
+                                  placeholder="oskar@ohakas.ee  mari@maasikas.ee"></textarea>
+                        <label for="new-students-list">Õpilaste nimekiri</label>
+                    </div>
+                    <div class="col s4"></div>
+                </div>
+                <button id="add-students-button" class="waves-effect waves-light btn">Lisa</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <table class="responsive-table highlight">
+                    <thead>
+                    <tr>
+                        <th>Nimi</th>
+                        <th>Kasutajanimi</th>
+                        <th>Email</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr>
+                        <td>Malle Maasikas</td>
+                        <td>mmaasikas</td>
+                        <td>mallemaaasikas@we.com</td>
+                    </tr>
+                    <tr>
+                        <td>Kalle Saarmas</td>
+                        <td>kalles</td>
+                        <td>kalles@k.ee</td>
+                    </tr>
+                    <tr>
+                        <td>Jaanus Tasuja</td>
+                        <td>tasujajaanus</td>
+                        <td>tasuja@tasuja.ee</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
     </div>
 </main>
 
