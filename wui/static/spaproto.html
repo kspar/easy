@@ -343,6 +343,90 @@
     </div>
 </script>
 
+<script id="tm-teach-participants" type="text/x-handlebars-template">
+    <div id="participants-container">
+        <nav class="crumb-wrap">
+            <a href="/courses" class="breadcrumb">Minu kursused</a>
+            <a class="breadcrumb">Lennundus ja aeronautiline hüdraulika</a>
+        </nav>
+        <div class="title-wrap">
+            <h3 class="title">Lennundus ja aeronautiline hüdraulika</h3>
+        </div>
+
+        <h4 class="subsection">Õpetajad</h4>
+
+        <div class="card">
+            <div class="card-content">
+                <table class="responsive-table highlight">
+                    <thead>
+                    <tr>
+                        <th>Nimi</th>
+                        <th>Kasutajanimi</th>
+                        <th>Email</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr>
+                        <td>Sass Maasikas</td>
+                        <td>sass</td>
+                        <td>aaasikas@we.com</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h4 class="subsection">Õpilased</h4>
+
+        <a id="add-students-link" href="#!">Lisa õpilasi</a>
+        <div id="add-students-wrap">
+            <div id="add-students-help">Õpilaste lisamiseks sisesta kasutajate kasutajanimed või meiliaadressid
+                eraldi ridadele või eraldatuna tühikutega.
+            </div>
+            <div id="new-students-form-wrap" class="row">
+                <div class="input-field col s8">
+                    <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;marimaasikas"></textarea>
+                    <label for="new-students-field">Õpilaste nimekiri</label>
+                </div>
+                <div class="col s4"></div>
+            </div>
+            <button id="add-students-button" class="waves-effect waves-light btn">Lisa</button>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <table class="responsive-table highlight">
+                    <thead>
+                    <tr>
+                        <th>Nimi</th>
+                        <th>Kasutajanimi</th>
+                        <th>Email</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr>
+                        <td>Malle Maasikas</td>
+                        <td>mmaasikas</td>
+                        <td>mallemaaasikas@we.com</td>
+                    </tr>
+                    <tr>
+                        <td>Kalle Saarmas</td>
+                        <td>kalles</td>
+                        <td>kalles@k.ee</td>
+                    </tr>
+                    <tr>
+                        <td>Jaanus Tasuja</td>
+                        <td>tasujajaanus</td>
+                        <td>tasuja@tasuja.ee</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
