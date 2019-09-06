@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
+import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
@@ -24,7 +25,7 @@ class RemoveTeachersFromCourseController {
 
     data class Req(@JsonProperty("teachers") @field:Valid val teacherIds: List<TeacherIdReq>)
 
-    data class TeacherIdReq(@JsonProperty("teacher_id") @field:Size(min = 1, max = 100) val teacherId: String)
+    data class TeacherIdReq(@JsonProperty("teacher_id") @field:NotBlank @field:Size(max = 100) val teacherId: String)
 
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/courses/{courseId}/teachers")

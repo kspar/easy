@@ -10,14 +10,15 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.validation.Valid
+import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
 class CreateExecutorController {
 
-    data class Req(@JsonProperty("name", required = true) @field:Size(min = 1, max = 100) val name: String,
-                   @JsonProperty("base_url", required = true) @field:Size(min = 0, max = 2000) val baseUrl: String,
+    data class Req(@JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
+                   @JsonProperty("base_url", required = true) @field:NotBlank @field:Size(max = 2000) val baseUrl: String,
                    @JsonProperty("max_load", required = true) val maxLoad: Int)
 
     data class Resp(@JsonProperty("id") val id: String)

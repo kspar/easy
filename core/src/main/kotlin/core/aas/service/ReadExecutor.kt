@@ -18,12 +18,11 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class ReadExecutorController {
 
-    data class Resp(
-            @JsonProperty("id") val id: String,
-            @JsonProperty("name") val name: String,
-            @JsonProperty("base_url") val baseUrl: String,
-            @JsonProperty("load") val load: Int,
-            @JsonProperty("max_load") val maxLoad: Int)
+    data class Resp(@JsonProperty("id") val id: String,
+                    @JsonProperty("name") val name: String,
+                    @JsonProperty("base_url") val baseUrl: String,
+                    @JsonProperty("load") val load: Int,
+                    @JsonProperty("max_load") val maxLoad: Int)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/executors")
