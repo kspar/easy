@@ -319,7 +319,7 @@ paths:
           description: Exercises.
           schema:
             properties:
-              course_exercise:
+              exercises:
                 type: array
                 items:
                   $ref: '#/definitions/TeacherCourseExercise'

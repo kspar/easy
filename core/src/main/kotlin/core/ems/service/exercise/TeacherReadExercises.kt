@@ -40,7 +40,7 @@ class TeacherReadCourseExercisesController {
                                   @JsonProperty("started_count") val startedCount: Int,
                                   @JsonProperty("completed_count") val completedCount: Int)
 
-    data class Resp(@JsonProperty("course_exercises") val courseExercises: List<CourseExerciseResp>)
+    data class Resp(@JsonProperty("exercises") val courseExercises: List<CourseExerciseResp>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises")
