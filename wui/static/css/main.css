@@ -242,7 +242,6 @@ nav.crumb-wrap .breadcrumb:before {
 #exercise-card #add-grade-wrap {
     padding: 2rem;
     border: 1px solid #eee;
-    font-size: 16px;
 }
 
 #exercise-card #grade:focus {
@@ -440,6 +439,15 @@ nav.crumb-wrap .breadcrumb:before {
 
 
 /** Form elements **/
+
+.input-field input[type=number],
+.input-field textarea  {
+    height: 3.5rem;
+}
+
+.input-field label{
+    pointer-events: all;
+}
 
 textarea:focus {
     border-bottom: 1px solid #469c45 !important;
