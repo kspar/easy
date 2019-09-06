@@ -14,6 +14,9 @@ enum class ReqMethod {
 val Response.http200: Boolean
     get() = status == 200.toShort()
 
+val Response.http400: Boolean
+    get() = status == 400.toShort()
+
 
 fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
         this.text().then { JsonUtil.parse(deserializer, it) }

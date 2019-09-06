@@ -13,6 +13,7 @@ import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
 import http200
+import http400
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -44,7 +45,20 @@ object ParticipantsPage : EasyPage() {
 
     @Serializable
     data class NewStudent(
-            val student_id_or_email: String
+            val student_id_or_emailasd: String
+    )
+
+    @Serializable
+    data class NoStudentFound(
+            val id: String,
+            val code: String,
+            val attrs: MissingStudent,
+            val log_msg: String
+    )
+
+    @Serializable
+    data class MissingStudent(
+            val missing_student: String
     )
 
     override val pageName: Any
@@ -65,12 +79,19 @@ object ParticipantsPage : EasyPage() {
             val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
                     "students" to newStudents)).await()
 
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Adding students failed with status ${resp.status}")
-            }
-            //TODO: handle non-existing students
+            if (resp.http200)
+                return
 
+            if (resp.http400) {
+                val noStudentBody = resp.parseTo(NoStudentFound.serializer()).await()
+                if (noStudentBody.code == "STUDENT_NOT_FOUND") {
+                    errorMessage { "Ei leidnud kasutajanime/emailiga õpilast: ${noStudentBody.attrs.missing_student}" }
+                    error(noStudentBody.log_msg)
+                }
+            }
+
+            errorMessage { Str.somethingWentWrong() }
+            error("Adding students failed with status ${resp.status}")
         }
 
         fun toggleAddStudents(courseId: String) {
