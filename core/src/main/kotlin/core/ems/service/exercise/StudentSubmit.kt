@@ -12,8 +12,10 @@ import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async
 import org.springframework.security.access.annotation.Secured
+import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
@@ -23,6 +25,9 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class StudentSubmitCont {
+
+    @Autowired
+    lateinit var some: StupidComponentForAsync
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
@@ -51,12 +56,17 @@ class StudentSubmitCont {
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS)
-                autoAssessAsync(courseExId, solution, submissionId)
+                some.autoAssessAsync(courseExId, solution, submissionId)
             }
         }
     }
 
-    // Must be in Spring Component for Async
+
+}
+
+@Component
+class StupidComponentForAsync {
+    // Must be in DIFFERENT Spring Component for Async than the caller
     @Async
     fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long) {
         try {
