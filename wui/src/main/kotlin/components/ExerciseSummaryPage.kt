@@ -534,38 +534,32 @@ object ExerciseSummaryPage : EasyPage() {
         debug { "Submitted" }
     }
 
-    private suspend fun buildSubmit(courseId: String, courseExerciseId: String) {
-        val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest", ReqMethod.GET)
-                .await()
-        when {
-            resp.http200 -> {
-                val submission = resp.parseTo(StudentSubmission.serializer()).await()
-                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                        "timeLabel" to "Viimase esituse aeg",
-                        "time" to submission.submission_time.toEstonianString(),
-                        "solution" to submission.solution,
-                        "checkLabel" to "Esita ja kontrolli"
-                ))
-                if (submission.grade_auto != null) {
-                    getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
-                }
-                if (submission.grade_teacher != null) {
-                    getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
-                }
-                if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
-                    pollForAutograde(courseId, courseExerciseId)
-                }
-            }
+    private suspend fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) {
 
-            resp.http204 -> {
-                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                        "checkLabel" to "Esita ja kontrolli"
-                ))
-            }
-
-            else -> {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching latest submission failed with status ${resp.status}")
+        if (existingSubmission != null) {
+            debug { "Building submit tab using an existing submission" }
+            paintSubmission(existingSubmission)
+        } else {
+            debug { "Building submit tab by fetching latest submission" }
+            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest", ReqMethod.GET)
+                    .await()
+            when {
+                resp.http200 -> {
+                    val submission = resp.parseTo(StudentSubmission.serializer()).await()
+                    paintSubmission(submission)
+                    if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                        pollForAutograde(courseId, courseExerciseId)
+                    }
+                }
+                resp.http204 -> {
+                    getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
+                            "checkLabel" to "Esita ja kontrolli"
+                    ))
+                }
+                else -> {
+                    errorMessage { Str.somethingWentWrong() }
+                    error("Fetching latest submission failed with status ${resp.status}")
+                }
             }
         }
 
@@ -597,6 +591,21 @@ object ExerciseSummaryPage : EasyPage() {
         }
     }
 
+    private fun paintSubmission(submission: StudentSubmission) {
+        getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
+                "timeLabel" to "Viimase esituse aeg",
+                "time" to submission.submission_time.toEstonianString(),
+                "solution" to submission.solution,
+                "checkLabel" to "Esita ja kontrolli"
+        ))
+        if (submission.grade_auto != null) {
+            getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
+        }
+        if (submission.grade_teacher != null) {
+            getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
+        }
+    }
+
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
         debug { "Starting long poll for autoassessment" }
         val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
@@ -605,9 +614,14 @@ object ExerciseSummaryPage : EasyPage() {
 
         fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET)
                 .then {
-                    debug { "Finished long poll, rebuilding" }
                     MainScope().launch {
-                        buildSubmit(courseId, courseExerciseId)
+                        if (!it.http200) {
+                            errorMessage { Str.somethingWentWrong() }
+                            error("Polling failed with status ${it.status}")
+                        }
+                        val submission = it.parseTo(StudentSubmission.serializer()).await()
+                        debug { "Finished long poll, rebuilding" }
+                        buildSubmit(courseId, courseExerciseId, submission)
                     }
                 }
     }
