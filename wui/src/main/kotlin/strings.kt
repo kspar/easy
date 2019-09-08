@@ -11,7 +11,7 @@ abstract class TranslatableStrings {
     abstract fun errorDismiss(): String
     abstract fun yes(): String
     abstract fun no(): String
-
+    abstract fun myCourses(): String
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
 
@@ -53,7 +53,6 @@ abstract class TranslatableStrings {
 
     // Exercises page
 
-    abstract fun courses(): String
     abstract fun autoAssessLabel(): String
     abstract fun teacherAssessLabel(): String
     abstract fun missingAssessLabel(): String
@@ -62,10 +61,47 @@ abstract class TranslatableStrings {
     abstract fun startedLabel(): String
     abstract fun ungradedLabel(): String
     abstract fun unstartedLabel(): String
+
+
+    // Exercise page
+    abstract fun tabExerciseLabel(): String
+    abstract fun tabTestingLabel(): String
+    abstract fun tabSubmissionsLabel(): String
+    abstract fun softDeadlineLabel(): String
+    abstract fun hardDeadlineLabel(): String
+    abstract fun graderTypeLabel(): String
+    abstract fun thresholdLabel(): String
+    abstract fun studentVisibleLabel(): String
+    abstract fun assStudentVisibleLabel(): String
+    abstract fun lastModifiedLabel(): String
+    abstract fun graderTypeAuto(): String
+    abstract fun graderTypeTeacher(): String
+    abstract fun autoAssessmentLabel(): String
+    abstract fun autoGradeLabel(): String
+    abstract fun teacherAssessmentLabel(): String
+    abstract fun teacherGradeLabel(): String
+    abstract fun doAutoAssess(): String
+    abstract fun autoAssessing(): String
+    abstract fun addAssessmentLink(): String
+    abstract fun closeAssessmentLink(): String
+    abstract fun addAssessmentGradeLabel(): String
+    abstract fun addAssessmentFeedbackLabel(): String
+    abstract fun addAssessmentGradeValidErr(): String
+    abstract fun addAssessmentButtonLabel(): String
+    abstract fun submissionTimeLabel(): String
+
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun softDeadlineLabel() = "Tähtaeg"
+    override fun hardDeadlineLabel()="Sulgemise aeg"
+    override fun graderTypeLabel()="Hindamine"
+    override fun thresholdLabel()="Lävend"
+    override fun studentVisibleLabel()="Õpilastele nähtav"
+    override fun assStudentVisibleLabel()="Hinnangud õpilastele nähtavad"
+    override fun lastModifiedLabel() = "Viimati muudetud"
+    override fun submissionTimeLabel() = "Esitamise aeg"
     override fun yes() = "jah"
     override fun no() = "ei"
     override fun errorDismiss() = "Sain aru"
@@ -91,7 +127,7 @@ private object EstStrings : TranslatableStrings() {
     override fun participants() = "Osalejad"
     override fun grades() = "Hinded"
     override fun coursesTitle() = "Minu kursused"
-    override fun courses() = "Minu kursused"
+    override fun myCourses() = "Minu kursused"
     override fun deadlineLabel() = "Tähtaeg"
     override fun autoAssessLabel() = "Automaatselt hinnatud"
     override fun teacherAssessLabel() = "Käsitsi hinnatud"
@@ -100,4 +136,21 @@ private object EstStrings : TranslatableStrings() {
     override fun startedLabel() = "Nässu läinud"
     override fun ungradedLabel() = "Hindamata"
     override fun unstartedLabel() = "Esitamata"
+    override fun tabExerciseLabel() = "Ülesanne"
+    override fun tabTestingLabel() = "Katsetamine"
+    override fun tabSubmissionsLabel() = "Esitused"
+    override fun autoAssessmentLabel() = "Automaatne hinnang"
+    override fun autoGradeLabel() = "Automaatne hinne"
+    override fun teacherAssessmentLabel() = "Õpetaja hinnang"
+    override fun teacherGradeLabel() = "Hinne"
+    override fun doAutoAssess() = "Kontrolli"
+    override fun autoAssessing() = "Kontrollin..."
+    override fun addAssessmentLink() = "&#9658; Lisa hinnang"
+    override fun closeAssessmentLink() = "&#9660; Sulge"
+    override fun graderTypeAuto() = "automaatne"
+    override fun graderTypeTeacher() = "manuaalne"
+    override fun addAssessmentGradeLabel() = "Hinne (0-100)"
+    override fun addAssessmentFeedbackLabel() = "Tagasiside"
+    override fun addAssessmentGradeValidErr() = "Hinne peab olema arv 0 ja 100 vahel."
+    override fun addAssessmentButtonLabel() = "Lisa hinnang"
 }

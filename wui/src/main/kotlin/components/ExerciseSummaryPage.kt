@@ -133,9 +133,9 @@ object ExerciseSummaryPage : EasyPage() {
         val fl = debugFunStart("buildTeacherExercise")
 
         getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
-                "exerciseLabel" to "Ülesanne",
-                "testingLabel" to "Katsetamine",
-                "studentSubmLabel" to "Esitused"
+                "exerciseLabel" to Str.tabExerciseLabel(),
+                "testingLabel" to Str.tabTestingLabel(),
+                "studentSubmLabel" to Str.tabSubmissionsLabel()
         ))
 
         Materialize.Tabs.init(getElemById("tabs"))
@@ -166,7 +166,7 @@ object ExerciseSummaryPage : EasyPage() {
         val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
 
         getElemById("crumbs").innerHTML = tmRender("tm-teach-exercise-crumbs", mapOf(
-                "coursesLabel" to "Minu kursused",
+                "coursesLabel" to Str.myCourses(),
                 "coursesHref" to "/courses",
                 "courseTitle" to courseTitle,
                 "courseHref" to "/courses/$courseId/exercises",
@@ -174,9 +174,16 @@ object ExerciseSummaryPage : EasyPage() {
         ))
 
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", mapOf(
+                "softDeadlineLabel" to "Tähtaeg",
+                "hardDeadlineLabel" to "Sulgemise aeg",
+                "graderTypeLabel" to "Hindamine",
+                "thresholdLabel" to "Lävend",
+                "studentVisibleLabel" to "Õpilastele nähtav",
+                "assStudentVisibleLabel" to "Hinnangud õpilastele nähtavad",
+                "lastModifiedLabel" to "Viimati muudetud",
                 "softDeadline" to exercise.soft_deadline?.toEstonianString(),
                 "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-                "graderType" to if (exercise.grader_type == GraderType.AUTO) "automaatne" else "käsitsi",
+                "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
                 "threshold" to exercise.threshold,
                 "studentVisible" to Str.translateBoolean(exercise.student_visible),
                 "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
@@ -208,7 +215,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val fl = debugFunStart("buildTeacherTesting")
         getElemById("testing").innerHTML = tmRender("tm-teach-exercise-testing", mapOf(
-                "checkLabel" to "Kontrolli"
+                "checkLabel" to Str.doAutoAssess()
         ))
         val editor = CodeMirror.fromTextArea(getElemById("testing-submission"),
                 objOf("mode" to "python",
@@ -221,19 +228,23 @@ object ExerciseSummaryPage : EasyPage() {
         submitButton.onVanillaClick(true) {
             MainScope().launch {
                 submitButton.disabled = true
-                submitButton.textContent = "Kontrollin..."
-                val autoAssessmentWrap = getElemById("submission-auto")
-                autoAssessmentWrap.innerHTML = tmRender("tm-teach-exercise-testing-feedback", mapOf(
+                submitButton.textContent = Str.doAutoAssess()
+                val autoAssessmentWrap = getElemById("assessment-auto")
+                autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
+                        "autoLabel" to Str.autoAssessmentLabel(),
+                        "autoGradeLabel" to Str.autoGradeLabel(),
                         "grade" to "-",
-                        "feedback" to "Kontrollin..."
+                        "feedback" to Str.autoAssessing()
                 ))
                 val solution = editor.getValue()
                 val result = postSolution(solution)
-                autoAssessmentWrap.innerHTML = tmRender("tm-teach-exercise-testing-feedback", mapOf(
+                autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
+                        "autoLabel" to Str.autoAssessmentLabel(),
+                        "autoGradeLabel" to Str.autoGradeLabel(),
                         "grade" to result.grade.toString(),
                         "feedback" to result.feedback
                 ))
-                submitButton.textContent = "Kontrolli"
+                submitButton.textContent = Str.doAutoAssess()
                 submitButton.disabled = false
             }
         }
@@ -332,10 +343,10 @@ object ExerciseSummaryPage : EasyPage() {
                 // Grading box is not visible
                 debug { "Open add grade" }
                 getElemById("add-grade-section").innerHTML = tmRender("tm-teach-exercise-add-grade", mapOf(
-                        "feedbackLabel" to "Tagasiside",
-                        "gradeLabel" to "Hinne (0-100)",
-                        "gradeValidationError" to "Hinne peab olema arv 0 ja 100 vahel.",
-                        "addGradeButton" to "Lisa hinnang"
+                        "feedbackLabel" to Str.addAssessmentFeedbackLabel(),
+                        "gradeLabel" to Str.addAssessmentGradeLabel(),
+                        "gradeValidationError" to Str.addAssessmentGradeValidErr(),
+                        "addGradeButton" to Str.addAssessmentButtonLabel()
                 ))
 
                 getElemById("grade-button").onVanillaClick(true) {
@@ -350,13 +361,13 @@ object ExerciseSummaryPage : EasyPage() {
                     }
                 }
 
-                getElemById("add-grade-link").innerHTML = "&#9660; Sulge"
+                getElemById("add-grade-link").innerHTML = Str.closeAssessmentLink()
 
             } else {
                 // Grading box is visible
                 debug { "Close add grade" }
                 getElemById("add-grade-section").clear()
-                getElemById("add-grade-link").innerHTML = "&#9658; Lisa hinnang"
+                getElemById("add-grade-link").innerHTML = Str.addAssessmentLink()
             }
         }
 
@@ -380,18 +391,20 @@ object ExerciseSummaryPage : EasyPage() {
             val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
 
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
+                    "timeLabel" to Str.submissionTimeLabel(),
                     "time" to submission.created_at.toEstonianString(),
-                    "autoLabel" to "Automaatkontrolli hinnang",
-                    "autoGrade" to submission.grade_auto?.toString(),
-                    "autoFeedback" to submission.feedback_auto,
-                    "autoGradeLabel" to "Automaatne hinne",
-                    "teacherLabel" to "Õpetaja hinnang",
-                    "teacherGrade" to submission.grade_teacher?.toString(),
-                    "teacherFeedback" to submission.feedback_teacher,
-                    "teacherGradeLabel" to "Hinne",
-                    "addGradeLink" to "&#9658; Lisa hinnang",
+                    "addGradeLink" to Str.addAssessmentLink(),
                     "solution" to submission.solution
             ))
+
+            if (submission.grade_auto != null) {
+                getElemById("assessment-auto").innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
+                        "autoLabel" to Str.autoAssessmentLabel(),
+                        "autoGradeLabel" to Str.autoGradeLabel(),
+                        "grade" to "-",
+                        "feedback" to Str.autoAssessing()
+                ))
+            }
 
             CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
                     "mode" to "python",

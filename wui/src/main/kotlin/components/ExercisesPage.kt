@@ -150,7 +150,7 @@ object ExercisesPage : EasyPage() {
                     }.toTypedArray()
 
             getContainer().innerHTML = tmRender("tm-teach-exercises-list", mapOf(
-                    "courses" to Str.courses(),
+                    "courses" to Str.myCourses(),
                     "coursesHref" to "/courses",
                     "title" to courseTitle,
                     "exercises" to exerciseArray
@@ -254,7 +254,7 @@ object ExercisesPage : EasyPage() {
                     }.toTypedArray()
 
             getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
-                    "courses" to Str.courses(),
+                    "courses" to Str.myCourses(),
                     "coursesHref" to "/courses",
                     "title" to courseTitle,
                     "exercises" to exerciseArray
