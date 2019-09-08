@@ -174,13 +174,13 @@ object ExerciseSummaryPage : EasyPage() {
         ))
 
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", mapOf(
-                "softDeadlineLabel" to "Tähtaeg",
-                "hardDeadlineLabel" to "Sulgemise aeg",
-                "graderTypeLabel" to "Hindamine",
-                "thresholdLabel" to "Lävend",
-                "studentVisibleLabel" to "Õpilastele nähtav",
-                "assStudentVisibleLabel" to "Hinnangud õpilastele nähtavad",
-                "lastModifiedLabel" to "Viimati muudetud",
+                "softDeadlineLabel" to Str.softDeadlineLabel(),
+                "hardDeadlineLabel" to Str.hardDeadlineLabel(),
+                "graderTypeLabel" to Str.graderTypeLabel(),
+                "thresholdLabel" to Str.thresholdLabel(),
+                "studentVisibleLabel" to Str.studentVisibleLabel(),
+                "assStudentVisibleLabel" to Str.assStudentVisibleLabel(),
+                "lastModifiedLabel" to Str.lastModifiedLabel(),
                 "softDeadline" to exercise.soft_deadline?.toEstonianString(),
                 "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
                 "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
