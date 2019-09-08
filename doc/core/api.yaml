@@ -490,10 +490,13 @@ paths:
                 description: Exists iff grader_type == AUTO.
                 items:
                   properties:
-                    executor_id:
+                    id:
+                      type: string
+                    name:
                       type: string
                   required:
-                    - executor_id
+                    - id
+                    - name
             required:
               - title
               - grader_type

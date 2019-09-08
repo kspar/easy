@@ -68,12 +68,19 @@ object ExerciseSummaryPage : EasyPage() {
 
     @Serializable
     data class AutoExecutor(
-            val executor_id: String
+            val id: String,
+            val name: String
     )
 
     enum class GraderType {
         AUTO, TEACHER
     }
+
+    @Serializable
+    data class AutoassResult(
+            val grade: Int,
+            val feedback: String?
+    )
 
     @Serializable
     data class TeacherStudents(
@@ -136,7 +143,7 @@ object ExerciseSummaryPage : EasyPage() {
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
         val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
-        buildTeacherTesting()
+        buildTeacherTesting(courseId, courseExerciseId)
         buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.threshold)
 
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
@@ -182,16 +189,54 @@ object ExerciseSummaryPage : EasyPage() {
         return exercise
     }
 
-    private fun buildTeacherTesting() {
+    private fun buildTeacherTesting(courseId: String, courseExerciseId: String) {
+
+        suspend fun postSolution(solution: String): AutoassResult {
+            debug { "Posting submission ${solution.substring(0, 15)}..." }
+            val resp = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/autoassess",
+                    ReqMethod.POST, mapOf("solution" to solution))
+                    .await()
+            if (!resp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Autoassessing failed with status ${resp.status}")
+            }
+            val result = resp.parseTo(AutoassResult.serializer()).await()
+            debug { "Received result, grade: ${result.grade}" }
+            return result
+        }
+
+
         val fl = debugFunStart("buildTeacherTesting")
         getElemById("testing").innerHTML = tmRender("tm-teach-exercise-testing", mapOf(
                 "checkLabel" to "Kontrolli"
         ))
-        CodeMirror.fromTextArea(getElemById("testing-submission"),
+        val editor = CodeMirror.fromTextArea(getElemById("testing-submission"),
                 objOf("mode" to "python",
                         "lineNumbers" to true,
                         "autoRefresh" to true,
                         "viewportMargin" to 100))
+
+        val submitButton = getElemByIdAs<HTMLButtonElement>("testing-submit")
+
+        submitButton.onVanillaClick(true) {
+            MainScope().launch {
+                submitButton.disabled = true
+                submitButton.textContent = "Kontrollin..."
+                val autoAssessmentWrap = getElemById("submission-auto")
+                autoAssessmentWrap.innerHTML = tmRender("tm-teach-exercise-testing-feedback", mapOf(
+                        "grade" to "-",
+                        "feedback" to "Kontrollin..."
+                ))
+                val solution = editor.getValue()
+                val result = postSolution(solution)
+                autoAssessmentWrap.innerHTML = tmRender("tm-teach-exercise-testing-feedback", mapOf(
+                        "grade" to result.grade.toString(),
+                        "feedback" to result.feedback
+                ))
+                submitButton.textContent = "Kontrolli"
+                submitButton.disabled = false
+            }
+        }
         fl?.end()
     }
 
