@@ -12,3 +12,6 @@ external class CodeMirrorInstance {
     fun getValue(): String
     fun setOption(key: String, value: Any?)
 }
+
+inline val Element.CodeMirror: CodeMirrorInstance?
+    get() = asDynamic().CodeMirror

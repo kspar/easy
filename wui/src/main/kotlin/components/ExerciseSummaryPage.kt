@@ -546,6 +546,7 @@ object ExerciseSummaryPage : EasyPage() {
                     val submission = resp.parseTo(StudentSubmission.serializer()).await()
                     paintSubmission(submission)
                     if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                        paintAutoassInProgress()
                         pollForAutograde(courseId, courseExerciseId)
                     }
                 }
@@ -567,26 +568,29 @@ object ExerciseSummaryPage : EasyPage() {
                         "autoRefresh" to true,
                         "viewportMargin" to 100))
 
-        val editorWrap = getElemById("submit-editor-wrap")
-        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
-
-        submitButton.onVanillaClick(true) {
+        getElemById("submit-button").onVanillaClick(true) {
             MainScope().launch {
-                submitButton.disabled = true
-                submitButton.textContent = Str.autoAssessing()
-                editor.setOption("readOnly", true)
-                editorWrap.addClass("no-cursor")
-                val autoAssessmentWrap = getElemById("assessment-auto")
-                autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
-                        "autoLabel" to Str.autoAssessmentLabel(),
-                        "autoGradeLabel" to Str.autoGradeLabel(),
-                        "grade" to "-",
-                        "feedback" to Str.autoAssessing()
-                ))
+                paintAutoassInProgress()
                 postSolution(courseId, courseExerciseId, editor.getValue())
                 pollForAutograde(courseId, courseExerciseId)
             }
         }
+    }
+
+    private fun paintAutoassInProgress() {
+        val editorWrap = getElemById("submit-editor-wrap")
+        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
+        val editor = editorWrap.getElementsByClassName("CodeMirror")[0]?.CodeMirror
+        submitButton.disabled = true
+        submitButton.textContent = Str.autoAssessing()
+        editor?.setOption("readOnly", true)
+        editorWrap.addClass("no-cursor")
+        getElemById("assessment-auto").innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
+                "autoLabel" to Str.autoAssessmentLabel(),
+                "autoGradeLabel" to Str.autoGradeLabel(),
+                "grade" to "-",
+                "feedback" to Str.autoAssessing()
+        ))
     }
 
     private fun paintSubmission(submission: StudentSubmission) {
@@ -606,10 +610,6 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
         debug { "Starting long poll for autoassessment" }
-        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
-        submitButton.disabled = true
-        submitButton.textContent = Str.autoAssessing()
-
         fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET)
                 .then {
                     MainScope().launch {
