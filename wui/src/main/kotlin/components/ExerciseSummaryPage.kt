@@ -512,7 +512,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         getContainer().innerHTML = tmRender("tm-stud-exercise", mapOf(
                 "exerciseLabel" to Str.tabExerciseLabel(),
-                "submitLabel" to "Esitamine"
+                "submitLabel" to Str.tabSubmitLabel()
         ))
 
         Materialize.Tabs.init(getElemById("tabs"))
@@ -525,8 +525,7 @@ object ExerciseSummaryPage : EasyPage() {
     private suspend fun postSolution(courseId: String, courseExerciseId: String, solution: String) {
         debug { "Posting submission ${solution.substring(0, 15)}..." }
         val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions",
-                ReqMethod.POST, mapOf("solution" to solution))
-                .await()
+                ReqMethod.POST, mapOf("solution" to solution)).await()
         if (!resp.http200) {
             errorMessage { Str.somethingWentWrong() }
             error("Submitting failed with status ${resp.status}")
@@ -535,7 +534,6 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private suspend fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) {
-
         if (existingSubmission != null) {
             debug { "Building submit tab using an existing submission" }
             paintSubmission(existingSubmission)
@@ -553,7 +551,7 @@ object ExerciseSummaryPage : EasyPage() {
                 }
                 resp.http204 -> {
                     getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                            "checkLabel" to "Esita ja kontrolli"
+                            "checkLabel" to Str.submitAndCheckLabel()
                     ))
                 }
                 else -> {
@@ -593,10 +591,10 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun paintSubmission(submission: StudentSubmission) {
         getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                "timeLabel" to "Viimase esituse aeg",
+                "timeLabel" to Str.lastSubmTimeLabel(),
                 "time" to submission.submission_time.toEstonianString(),
                 "solution" to submission.solution,
-                "checkLabel" to "Esita ja kontrolli"
+                "checkLabel" to Str.submitAndCheckLabel()
         ))
         if (submission.grade_auto != null) {
             getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)

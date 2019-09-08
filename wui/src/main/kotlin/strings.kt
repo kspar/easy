@@ -69,6 +69,7 @@ abstract class TranslatableStrings {
     abstract fun tabExerciseLabel(): String
     abstract fun tabTestingLabel(): String
     abstract fun tabSubmissionsLabel(): String
+    abstract fun tabSubmitLabel(): String
     abstract fun softDeadlineLabel(): String
     abstract fun hardDeadlineLabel(): String
     abstract fun graderTypeLabel(): String
@@ -91,11 +92,16 @@ abstract class TranslatableStrings {
     abstract fun addAssessmentGradeValidErr(): String
     abstract fun addAssessmentButtonLabel(): String
     abstract fun submissionTimeLabel(): String
+    abstract fun submitAndCheckLabel(): String
+    abstract fun lastSubmTimeLabel(): String
 
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun tabSubmitLabel() = "Esitamine"
+    override fun submitAndCheckLabel()="Esita ja kontrolli"
+    override fun lastSubmTimeLabel()="Viimase esituse aeg"
     override fun noCoursesLabel() = "Sind ei ole veel ühelegi kursusele lisatud."
     override fun softDeadlineLabel() = "Tähtaeg"
     override fun hardDeadlineLabel()="Sulgemise aeg"
