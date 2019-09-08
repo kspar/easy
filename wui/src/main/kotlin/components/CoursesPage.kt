@@ -92,8 +92,12 @@ object CoursesPage : EasyPage() {
 
             val coursesHtml = tmRender("tm-stud-course-list",
                     mapOf("title" to Str.coursesTitle(),
+                            "noCoursesLabel" to Str.noCoursesLabel(),
                             "courses" to courses.courses.map {
-                                objOf("title" to it.title, "id" to it.id)
+                                objOf(
+                                        "title" to it.title,
+                                        "id" to it.id
+                                )
                             }.toTypedArray()))
 
             debug { "Rendered courses html: $coursesHtml" }
@@ -139,6 +143,7 @@ object CoursesPage : EasyPage() {
                     "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
                     "addCourse" to isAdmin,
                     "newCourse" to Str.newCourseLink(),
+                    "noCoursesLabel" to Str.noCoursesLabel(),
                     "courses" to courses.courses.map {
                         objOf("id" to it.id,
                                 "title" to it.title,

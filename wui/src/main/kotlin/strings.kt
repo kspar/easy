@@ -39,6 +39,7 @@ abstract class TranslatableStrings {
 
     // Courses page
 
+    abstract fun noCoursesLabel(): String
     abstract fun coursesTitle(): String
     abstract fun coursesTitleAdmin(): String
     abstract fun fetchingCoursesFailed(): String
@@ -95,6 +96,7 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun noCoursesLabel() = "Sind ei ole veel ühelegi kursusele lisatud."
     override fun softDeadlineLabel() = "Tähtaeg"
     override fun hardDeadlineLabel()="Sulgemise aeg"
     override fun graderTypeLabel()="Hindamine"

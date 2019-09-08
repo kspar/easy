@@ -333,17 +333,40 @@
         </div>
         {{/courses}}
     </div>
+    {{^courses}}
+    <div class="missing-content-wrap">
+        <div class="antennaball"></div>
+        <div class="antenna"></div>
+        <div class="robot">
+            <div class="robot-eye"></div>
+            <div class="robot-eye"></div>
+        </div>
+        <p class="text">{{noCoursesLabel}}</p>
+    </div>
+    {{/courses}}
 </script>
 
 <script id="tm-stud-course-list" type="text/x-handlebars-template">
     <div class="title-wrap">
         <h3 class="title no-crumb">{{title}}</h3>
     </div>
+
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
         <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
         {{/courses}}
     </div>
+    {{^courses}}
+    <div class="missing-content-wrap">
+        <div class="antennaball"></div>
+        <div class="antenna"></div>
+        <div class="robot">
+            <div class="robot-eye"></div>
+            <div class="robot-eye"></div>
+        </div>
+        <p class="text">{{noCoursesLabel}}</p>
+    </div>
+    {{/courses}}
 </script>
 
 <script id="tm-teach-participants" type="text/x-handlebars-template">
