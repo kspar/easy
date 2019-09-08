@@ -134,8 +134,8 @@
 
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
-    <div id="assessment-auto"></div>
-    <div id="assessment-teacher"></div>
+    <div id="assessment-auto" class="assessment"></div>
+    <div id="assessment-teacher" class="assessment"></div>
 
     <a id="add-grade-link" href="#!">{{{addGradeLink}}}</a>
     <div id="add-grade-section"></div>
@@ -185,7 +185,7 @@
 </script>
 
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
-    <div id="assessment-auto"></div>
+    <div id="testing-assessment" class="assessment"></div>
     <div class="editor-wrapper">
         <textarea id="testing-submission"></textarea>
     </div>

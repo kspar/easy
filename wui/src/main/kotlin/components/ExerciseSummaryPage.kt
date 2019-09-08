@@ -229,7 +229,7 @@ object ExerciseSummaryPage : EasyPage() {
             MainScope().launch {
                 submitButton.disabled = true
                 submitButton.textContent = Str.doAutoAssess()
-                val autoAssessmentWrap = getElemById("assessment-auto")
+                val autoAssessmentWrap = getElemById("testing-assessment")
                 autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
                         "autoLabel" to Str.autoAssessmentLabel(),
                         "autoGradeLabel" to Str.autoGradeLabel(),
@@ -301,9 +301,12 @@ object ExerciseSummaryPage : EasyPage() {
 
         getNodelistBySelector("[data-student-id]").asList().forEach {
             if (it is Element) {
-                val id = it.getAttribute("data-student-id") ?: error("No data-student-id found on student item")
-                val givenName = it.getAttribute("data-given-name") ?: error("No data-given-name found on student item")
-                val familyName = it.getAttribute("data-family-name") ?: error("No data-family-name found on student item")
+                val id = it.getAttribute("data-student-id")
+                        ?: error("No data-student-id found on student item")
+                val givenName = it.getAttribute("data-given-name")
+                        ?: error("No data-given-name found on student item")
+                val familyName = it.getAttribute("data-family-name")
+                        ?: error("No data-family-name found on student item")
 
                 it.onVanillaClick(true) {
                     buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName)
@@ -355,8 +358,12 @@ object ExerciseSummaryPage : EasyPage() {
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
                         toggleAddGradeBox(submissionId)
-                        getElemByIdAs<HTMLSpanElement>("teacher-grade").innerText = grade.toString()
-                        getElemByIdAs<HTMLPreElement>("teacher-feedback").innerText = feedback
+                        getElemById("assessment-teacher").innerHTML = tmRender("tm-exercise-teacher-feedback", mapOf(
+                                "teacherLabel" to Str.teacherAssessmentLabel(),
+                                "teacherGradeLabel" to Str.teacherGradeLabel(),
+                                "grade" to grade.toString(),
+                                "feedback" to feedback
+                        ))
                         buildTeacherStudents(courseId, courseExerciseId, threshold)
                     }
                 }
@@ -381,7 +388,7 @@ object ExerciseSummaryPage : EasyPage() {
         MainScope().launch {
             val submissionResp =
                     fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students/$studentId",
-                    ReqMethod.GET).await()
+                            ReqMethod.GET).await()
 
             if (!submissionResp.http200) {
                 errorMessage { Str.somethingWentWrong() }
@@ -401,8 +408,16 @@ object ExerciseSummaryPage : EasyPage() {
                 getElemById("assessment-auto").innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
                         "autoLabel" to Str.autoAssessmentLabel(),
                         "autoGradeLabel" to Str.autoGradeLabel(),
-                        "grade" to "-",
-                        "feedback" to Str.autoAssessing()
+                        "grade" to submission.grade_auto.toString(),
+                        "feedback" to submission.feedback_auto
+                ))
+            }
+            if (submission.grade_teacher != null) {
+                getElemById("assessment-teacher").innerHTML = tmRender("tm-exercise-teacher-feedback", mapOf(
+                        "teacherLabel" to Str.teacherAssessmentLabel(),
+                        "teacherGradeLabel" to Str.teacherGradeLabel(),
+                        "grade" to submission.grade_teacher.toString(),
+                        "feedback" to submission.feedback_teacher
                 ))
             }
 

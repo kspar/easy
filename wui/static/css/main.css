@@ -234,8 +234,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card #submission-info,
-#exercise-card #assessment-teacher,
-#exercise-card #assessment-auto {
+#exercise-card .assessment {
     margin-bottom: 3rem;
 }
 
