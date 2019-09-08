@@ -29,6 +29,6 @@ easy:
         to: "<to-address>"
     service:
       await-assessment:
-        sleep-start-ms: 500
-        sleep-step-ms: 250
-        timeout-steps: 10
+        sleep-start-ms: 1000
+        sleep-step-ms: 150
+        timeout-steps: 20
