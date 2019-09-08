@@ -228,7 +228,7 @@ object ExerciseSummaryPage : EasyPage() {
         submitButton.onVanillaClick(true) {
             MainScope().launch {
                 submitButton.disabled = true
-                submitButton.textContent = Str.doAutoAssess()
+                submitButton.textContent = Str.autoAssessing()
                 val autoAssessmentWrap = getElemById("testing-assessment")
                 autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
                         "autoLabel" to Str.autoAssessmentLabel(),
