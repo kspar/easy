@@ -15,16 +15,12 @@ fun setupLinkInterception() {
     document.onVanillaClick(false) { event ->
         val target = event.target
         if (target !is Node) {
-            debug { "$LOG_PREFIX Click not intercepted - target is not a Node" }
             return@onVanillaClick
         }
 
         // Find closest parent <a>
         val anchorElement = getClosestParentA(target)
-        if (anchorElement == null) {
-            debug { "$LOG_PREFIX Click not intercepted - mo anchor parent found" }
-            return@onVanillaClick
-        }
+                ?: return@onVanillaClick
 
         // Don't intercept links to external hosts
         val targetHost = anchorElement.hostname
