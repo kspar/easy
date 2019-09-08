@@ -244,6 +244,17 @@
     </div>
 </script>
 
+<script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
+    {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>{{/time}}
+    <div id="assessment-auto" class="assessment"></div>
+    <div id="assessment-teacher" class="assessment"></div>
+    <div id="submit-editor-wrap" class="editor-wrapper">
+        <textarea id="submission">{{solution}}</textarea>
+    </div>
+    <div class="center">
+        <button id="submit-button" class="waves-effect waves-light btn">{{checkLabel}}</button>
+    </div>
+</script>
 
 <script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
     <div class="exercise-info">

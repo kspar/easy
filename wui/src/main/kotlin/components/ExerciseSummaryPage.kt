@@ -16,6 +16,7 @@ import getElemByIdAs
 import getElemByIdOrNull
 import getNodelistBySelector
 import http200
+import http204
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -31,6 +32,7 @@ import tmRender
 import toEstonianString
 import toJsObj
 import kotlin.browser.window
+import kotlin.dom.addClass
 import kotlin.dom.clear
 import kotlin.js.Date
 
@@ -120,6 +122,25 @@ object ExerciseSummaryPage : EasyPage() {
             val grader_type: GraderType,
             val threshold: Int,
             val instructions_html: String?
+    )
+
+    enum class AutogradeStatus {
+        NONE,
+        IN_PROGRESS,
+        COMPLETED,
+        FAILED
+    }
+
+    @Serializable
+    data class StudentSubmission(
+            val solution: String,
+            @Serializable(with = DateSerializer::class)
+            val submission_time: Date,
+            val autograde_status: AutogradeStatus,
+            val grade_auto: Int?,
+            val feedback_auto: String?,
+            val grade_teacher: Int?,
+            val feedback_teacher: String?
     )
 
 
@@ -486,10 +507,6 @@ object ExerciseSummaryPage : EasyPage() {
             ))
         }
 
-        suspend fun buildSubmit() {
-
-        }
-
 
         val fl = debugFunStart("buildStudentExercise")
 
@@ -501,9 +518,98 @@ object ExerciseSummaryPage : EasyPage() {
         Materialize.Tabs.init(getElemById("tabs"))
 
         buildExerciseAndCrumbs()
-        buildSubmit()
-
+        buildSubmit(courseId, courseExerciseId)
         fl?.end()
+    }
+
+    private suspend fun postSolution(courseId: String, courseExerciseId: String, solution: String) {
+        debug { "Posting submission ${solution.substring(0, 15)}..." }
+        val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions",
+                ReqMethod.POST, mapOf("solution" to solution))
+                .await()
+        if (!resp.http200) {
+            errorMessage { Str.somethingWentWrong() }
+            error("Submitting failed with status ${resp.status}")
+        }
+        debug { "Submitted" }
+    }
+
+    private suspend fun buildSubmit(courseId: String, courseExerciseId: String) {
+        val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest", ReqMethod.GET)
+                .await()
+        when {
+            resp.http200 -> {
+                val submission = resp.parseTo(StudentSubmission.serializer()).await()
+                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
+                        "timeLabel" to "Viimase esituse aeg",
+                        "time" to submission.submission_time.toEstonianString(),
+                        "solution" to submission.solution,
+                        "checkLabel" to "Esita ja kontrolli"
+                ))
+                if (submission.grade_auto != null) {
+                    getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
+                }
+                if (submission.grade_teacher != null) {
+                    getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
+                }
+                if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                    pollForAutograde(courseId, courseExerciseId)
+                }
+            }
+
+            resp.http204 -> {
+                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
+                        "checkLabel" to "Esita ja kontrolli"
+                ))
+            }
+
+            else -> {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching latest submission failed with status ${resp.status}")
+            }
+        }
+
+        val editor = CodeMirror.fromTextArea(getElemById("submission"),
+                objOf("mode" to "python",
+                        "lineNumbers" to true,
+                        "autoRefresh" to true,
+                        "viewportMargin" to 100))
+
+        val editorWrap = getElemById("submit-editor-wrap")
+        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
+
+        submitButton.onVanillaClick(true) {
+            MainScope().launch {
+                submitButton.disabled = true
+                submitButton.textContent = Str.autoAssessing()
+                editor.setOption("readOnly", true)
+                editorWrap.addClass("no-cursor")
+                val autoAssessmentWrap = getElemById("assessment-auto")
+                autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
+                        "autoLabel" to Str.autoAssessmentLabel(),
+                        "autoGradeLabel" to Str.autoGradeLabel(),
+                        "grade" to "-",
+                        "feedback" to Str.autoAssessing()
+                ))
+                postSolution(courseId, courseExerciseId, editor.getValue())
+                pollForAutograde(courseId, courseExerciseId)
+            }
+        }
+    }
+
+    private fun pollForAutograde(courseId: String, courseExerciseId: String) {
+        debug { "Starting long poll for autoassessment" }
+        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
+        submitButton.disabled = true
+        submitButton.textContent = Str.autoAssessing()
+
+        fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET)
+                .then {
+                    debug { "Finished long poll, rebuilding" }
+                    MainScope().launch {
+                        buildSubmit(courseId, courseExerciseId)
+                    }
+                }
     }
 
     data class PathIds(val courseId: String, val exerciseId: String)

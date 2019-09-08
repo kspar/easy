@@ -14,6 +14,9 @@ enum class ReqMethod {
 val Response.http200: Boolean
     get() = status == 200.toShort()
 
+val Response.http204: Boolean
+    get() = status == 204.toShort()
+
 val Response.http400: Boolean
     get() = status == 400.toShort()
 
