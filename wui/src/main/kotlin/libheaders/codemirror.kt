@@ -8,4 +8,6 @@ external object CodeMirror {
     fun fromTextArea(element: Element, options: dynamic): CodeMirrorInstance
 }
 
-external class CodeMirrorInstance
+external class CodeMirrorInstance {
+    fun getValue(): String
+}

@@ -103,8 +103,8 @@
 
 <script id="tm-teach-exercise-testing-feedback" type="text/x-handlebars-template">
     <h4>Automaatkontrolli hinnang</h4>
-    <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
-    <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+    <pre class="feedback auto-feedback">{{feedback}}</pre>
+    <div>Automaatne hinne: <span class="grade-number">{{grade}}</span>/100</div>
 </script>
 
 <script id="tm-teach-exercise-add-grade" type="text/x-handlebars-template">
@@ -129,6 +129,7 @@
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <p id="submission-info"><span class="subheading">Esitamise aeg: </span>{{time}}</p>
     {{#autoGrade}}
+        <!-- TODO: extract assessment as templates to add afterwards dynamically -->
     <div id="submission-auto">
         <h4>{{autoLabel}}</h4>
         <pre class="feedback auto-feedback">{{autoFeedback}}</pre>
@@ -191,6 +192,7 @@
 </script>
 
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
+    <div id="submission-auto"></div>
     <div class="editor-wrapper">
         <textarea id="testing-submission"></textarea>
     </div>
