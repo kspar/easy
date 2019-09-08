@@ -213,9 +213,9 @@ object ExercisesPage : EasyPage() {
                                 "href" to "/courses/$courseId/exercises/${ex.id}/summary",
                                 "title" to ex.effective_title,
                                 "deadlineLabel" to Str.deadlineLabel(),
-                                "autoLabel" to Str.autoAssessLabel(),
-                                "teacherLabel" to Str.teacherAssessLabel(),
-                                "missingLabel" to Str.missingAssessLabel()
+                                "autoLabel" to Str.gradedAutomatically(),
+                                "teacherLabel" to Str.gradedByTeacher(),
+                                "missingLabel" to Str.notGradedYet()
                         )
 
                         ex.deadline?.let {

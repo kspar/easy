@@ -12,6 +12,9 @@ abstract class TranslatableStrings {
     abstract fun yes(): String
     abstract fun no(): String
     abstract fun myCourses(): String
+    abstract fun gradedAutomatically(): String
+    abstract fun gradedByTeacher(): String
+    abstract fun notGradedYet(): String
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
 
@@ -53,9 +56,6 @@ abstract class TranslatableStrings {
 
     // Exercises page
 
-    abstract fun autoAssessLabel(): String
-    abstract fun teacherAssessLabel(): String
-    abstract fun missingAssessLabel(): String
     abstract fun deadlineLabel(): String
     abstract fun completedLabel(): String
     abstract fun startedLabel(): String
@@ -64,6 +64,7 @@ abstract class TranslatableStrings {
 
 
     // Exercise page
+
     abstract fun tabExerciseLabel(): String
     abstract fun tabTestingLabel(): String
     abstract fun tabSubmissionsLabel(): String
@@ -129,9 +130,9 @@ private object EstStrings : TranslatableStrings() {
     override fun coursesTitle() = "Minu kursused"
     override fun myCourses() = "Minu kursused"
     override fun deadlineLabel() = "Tähtaeg"
-    override fun autoAssessLabel() = "Automaatselt hinnatud"
-    override fun teacherAssessLabel() = "Käsitsi hinnatud"
-    override fun missingAssessLabel() = "Pole veel hinnatud"
+    override fun gradedAutomatically() = "Automaatselt hinnatud"
+    override fun gradedByTeacher() = "Õpetaja poolt hinnatud"
+    override fun notGradedYet() = "Hindamata"
     override fun completedLabel() = "Lõpetanud"
     override fun startedLabel() = "Nässu läinud"
     override fun ungradedLabel() = "Hindamata"

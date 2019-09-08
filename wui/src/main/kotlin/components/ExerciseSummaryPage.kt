@@ -291,8 +291,12 @@ object ExerciseSummaryPage : EasyPage() {
             studentMap.toJsObj()
         }.toTypedArray()
 
-        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
-                mapOf("students" to studentArray))
+        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students", mapOf(
+                "students" to studentArray,
+                "autoLabel" to Str.gradedAutomatically(),
+                "teacherLabel" to Str.gradedByTeacher(),
+                "missingLabel" to Str.notGradedYet()
+        ))
 
         getNodelistBySelector("[data-student-id]").asList().forEach {
             if (it is Element) {
@@ -311,6 +315,8 @@ object ExerciseSummaryPage : EasyPage() {
                 error("Student item is not an Element")
             }
         }
+
+        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
 
         fl?.end()
     }
