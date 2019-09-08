@@ -18,7 +18,8 @@ abstract class EasyPage : Page() {
 
         // Destroy tooltips
         getElemsByClass("tooltipped")
-                .forEach { Materialize.Tooltip.getInstance(it).destroy() }
+                .map { Materialize.Tooltip.getInstance(it) }
+                .forEach { it?.destroy() }
 
         // Dismiss toasts
         Materialize.Toast.dismissAll()
