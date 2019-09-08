@@ -111,6 +111,17 @@ object ExerciseSummaryPage : EasyPage() {
             val feedback_teacher: String?
     )
 
+    @Serializable
+    data class StudentExercise(
+            val effective_title: String,
+            val text_html: String?,
+            @Serializable(with = DateSerializer::class)
+            val deadline: Date?,
+            val grader_type: GraderType,
+            val threshold: Int,
+            val instructions_html: String?
+    )
+
 
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
@@ -124,7 +135,7 @@ object ExerciseSummaryPage : EasyPage() {
         val courseExerciseId = pathIds.exerciseId
 
         when (Auth.activeRole) {
-            Role.STUDENT -> buildStudentExercise(courseId)
+            Role.STUDENT -> buildStudentExercise(courseId, courseExerciseId)
             Role.TEACHER, Role.ADMIN -> buildTeacherExercise(courseId, courseExerciseId)
         }
     }
@@ -165,7 +176,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
 
-        getElemById("crumbs").innerHTML = tmRender("tm-teach-exercise-crumbs", mapOf(
+        getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                 "coursesLabel" to Str.myCourses(),
                 "coursesHref" to "/courses",
                 "courseTitle" to courseTitle,
@@ -428,6 +439,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "feedback" to feedback
         ))
     }
+
     private fun renderAutoAssessment(grade: Int, feedback: String?): String {
         return tmRender("tm-exercise-auto-feedback", mapOf(
                 "autoLabel" to Str.autoAssessmentLabel(),
@@ -438,9 +450,60 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildStudentExercise(courseId: String) {
+    private fun buildStudentExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
+
+        suspend fun buildExerciseAndCrumbs() {
+            val exercisePromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId",
+                    ReqMethod.GET)
+
+            val courseTitle = BasicCourseInfo.get(courseId).await().title
+
+            val exerciseResp = exercisePromise.await()
+            if (!exerciseResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching exercises failed with status ${exerciseResp.status}")
+            }
+
+            val exercise = exerciseResp.parseTo(StudentExercise.serializer()).await()
+
+            getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
+                    "coursesLabel" to Str.myCourses(),
+                    "coursesHref" to "/courses",
+                    "courseTitle" to courseTitle,
+                    "courseHref" to "/courses/$courseId/exercises",
+                    "exerciseTitle" to exercise.effective_title
+            ))
+
+            getElemById("exercise").innerHTML = tmRender("tm-stud-exercise-summary", mapOf(
+                    "deadlineLabel" to Str.softDeadlineLabel(),
+                    "deadline" to exercise.deadline?.toEstonianString(),
+                    "graderTypeLabel" to Str.graderTypeLabel(),
+                    "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
+                    "thresholdLabel" to Str.thresholdLabel(),
+                    "threshold" to exercise.threshold,
+                    "title" to exercise.effective_title,
+                    "text" to exercise.text_html
+            ))
+        }
+
+        suspend fun buildSubmit() {
+
+        }
 
 
+        val fl = debugFunStart("buildStudentExercise")
+
+        getContainer().innerHTML = tmRender("tm-stud-exercise", mapOf(
+                "exerciseLabel" to Str.tabExerciseLabel(),
+                "submitLabel" to "Esitamine"
+        ))
+
+        Materialize.Tabs.init(getElemById("tabs"))
+
+        buildExerciseAndCrumbs()
+        buildSubmit()
+
+        fl?.end()
     }
 
     data class PathIds(val courseId: String, val exerciseId: String)

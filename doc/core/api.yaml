@@ -1084,17 +1084,19 @@ definitions:
         type: string
       text_html:
         type: string
-        description: Optional.
       deadline:
         type: string
         format: date-time
-        description: Optional.
       grader_type:
         $ref: '#/definitions/GraderType'
       threshold:
         type: integer
       instructions_html:
         type: string
+    required:
+      - effective_title
+      - grader_type
+      - threshold
 
   Submission:
     properties:

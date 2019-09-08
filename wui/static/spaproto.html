@@ -210,7 +210,7 @@
     </div>
 </script>
 
-<script id="tm-teach-exercise-crumbs" type="text/x-handlebars-template">
+<script id="tm-exercise-crumbs" type="text/x-handlebars-template">
     <a href="{{coursesHref}}" class="breadcrumb">{{coursesLabel}}</a>
     <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
     <a class="breadcrumb">{{exerciseTitle}}</a>
@@ -238,6 +238,41 @@
                 <!-- TODO: placeholder -->
             </div>
             <div id="student">
+                <!-- TODO: placeholder -->
+            </div>
+        </div>
+    </div>
+</script>
+
+
+<script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
+    <div class="exercise-info">
+        {{#deadline}}<p><span class="subheading">{{deadlineLabel}}: </span>{{deadline}}</p>{{/deadline}}
+        {{#graderType}}<p><span class="subheading">{{graderTypeLabel}}: </span>{{graderType}}</p>{{/graderType}}
+        {{#threshold}}<p><span class="subheading">{{thresholdLabel}}: </span>{{threshold}}%</p>{{/threshold}}
+    </div>
+    <div>
+        <h2>{{title}}</h2>
+        <div>{{{text}}}</div>
+    </div>
+</script>
+
+<script id="tm-stud-exercise" type="text/x-handlebars-template">
+    <nav id="crumbs" class="crumb-wrap">
+        <!-- TODO: placeholder -->
+    </nav>
+    <div id="exercise-card" class="card">
+        <div id="tabs-wrap">
+            <ul id="tabs" class="tabs">
+                <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
+                <li class="tab"><a href="#submit">{{submitLabel}}</a></li>
+            </ul>
+        </div>
+        <div class="card-content">
+            <div id="exercise">
+                <!-- TODO: placeholder -->
+            </div>
+            <div id="submit">
                 <!-- TODO: placeholder -->
             </div>
         </div>
