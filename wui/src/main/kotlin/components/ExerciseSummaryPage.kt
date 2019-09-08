@@ -238,12 +238,7 @@ object ExerciseSummaryPage : EasyPage() {
                 ))
                 val solution = editor.getValue()
                 val result = postSolution(solution)
-                autoAssessmentWrap.innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
-                        "autoLabel" to Str.autoAssessmentLabel(),
-                        "autoGradeLabel" to Str.autoGradeLabel(),
-                        "grade" to result.grade.toString(),
-                        "feedback" to result.feedback
-                ))
+                autoAssessmentWrap.innerHTML = renderAutoAssessment(result.grade, result.feedback)
                 submitButton.textContent = Str.doAutoAssess()
                 submitButton.disabled = false
             }
@@ -358,12 +353,7 @@ object ExerciseSummaryPage : EasyPage() {
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
                         toggleAddGradeBox(submissionId)
-                        getElemById("assessment-teacher").innerHTML = tmRender("tm-exercise-teacher-feedback", mapOf(
-                                "teacherLabel" to Str.teacherAssessmentLabel(),
-                                "teacherGradeLabel" to Str.teacherGradeLabel(),
-                                "grade" to grade.toString(),
-                                "feedback" to feedback
-                        ))
+                        getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(grade, feedback)
                         buildTeacherStudents(courseId, courseExerciseId, threshold)
                     }
                 }
@@ -405,20 +395,12 @@ object ExerciseSummaryPage : EasyPage() {
             ))
 
             if (submission.grade_auto != null) {
-                getElemById("assessment-auto").innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
-                        "autoLabel" to Str.autoAssessmentLabel(),
-                        "autoGradeLabel" to Str.autoGradeLabel(),
-                        "grade" to submission.grade_auto.toString(),
-                        "feedback" to submission.feedback_auto
-                ))
+                getElemById("assessment-auto").innerHTML =
+                        renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
             }
             if (submission.grade_teacher != null) {
-                getElemById("assessment-teacher").innerHTML = tmRender("tm-exercise-teacher-feedback", mapOf(
-                        "teacherLabel" to Str.teacherAssessmentLabel(),
-                        "teacherGradeLabel" to Str.teacherGradeLabel(),
-                        "grade" to submission.grade_teacher.toString(),
-                        "feedback" to submission.feedback_teacher
-                ))
+                getElemById("assessment-teacher").innerHTML =
+                        renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
             }
 
             CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
@@ -430,6 +412,23 @@ object ExerciseSummaryPage : EasyPage() {
 
             getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(submission.id) }
         }
+    }
+
+    private fun renderTeacherAssessment(grade: Int, feedback: String?): String {
+        return tmRender("tm-exercise-teacher-feedback", mapOf(
+                "teacherLabel" to Str.teacherAssessmentLabel(),
+                "teacherGradeLabel" to Str.teacherGradeLabel(),
+                "grade" to grade.toString(),
+                "feedback" to feedback
+        ))
+    }
+    private fun renderAutoAssessment(grade: Int, feedback: String?): String {
+        return tmRender("tm-exercise-auto-feedback", mapOf(
+                "autoLabel" to Str.autoAssessmentLabel(),
+                "autoGradeLabel" to Str.autoGradeLabel(),
+                "grade" to grade.toString(),
+                "feedback" to feedback
+        ))
     }
 
 
