@@ -12,7 +12,6 @@ import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper
 import org.springframework.web.util.WebUtils
 import java.io.IOException
-import java.util.*
 import javax.servlet.FilterChain
 import javax.servlet.ServletException
 import javax.servlet.ServletRequest
@@ -58,7 +57,7 @@ class CachingRequestBodyFilter : GenericFilterBean() {
         val wrappedResponse = ContentCachingResponseWrapper(currentResponse)
 
         // Currently readable parameters
-        val path = "${req.scheme}://${req.serverName}:${req.serverPort}${req.requestURI}?${req.queryString ?: ""}"
+        val path = "${req.requestURI}?${req.queryString ?: ""}"
         val method = req.method
         val ip = req.getHeader("X-FORWARDED-FOR") ?: req.remoteAddr
         val user = req.getHeader("oidc_claim_preferred_username")
@@ -66,6 +65,7 @@ class CachingRequestBodyFilter : GenericFilterBean() {
 
         // Pass on wrapped request and response: these will cache request and response as soon as they are used in chain
         chain.doFilter(wrappedRequest, wrappedResponse)
+        val statusCode = wrappedResponse.statusCode
 
         // Parameters that were not readable before:
         val requestBody: String = getRequestBody(wrappedRequest).take(500).replace(Regex("[\n\r]"), "")
@@ -75,8 +75,7 @@ class CachingRequestBodyFilter : GenericFilterBean() {
         val endTime = req.getAttribute("endTime") as Long
         val executeTime = endTime - startTime
 
-        val id = UUID.randomUUID().toString()
-        log.info { "$id::${executeTime}ms::$user::$role::$ip::$method::${path}::[${requestBody}]->[${responseBody}]" }
+        log.info { "${executeTime}ms::$user::$role::$ip::$method::$statusCode::${path}::[${requestBody}]->[${responseBody}]" }
     }
 
     private fun getResponseBody(wrappedResponse: ContentCachingResponseWrapper): String {
