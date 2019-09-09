@@ -130,6 +130,8 @@ object ExercisesPage : EasyPage() {
                             exMap["deadline"] = it.toEstonianString()
                         }
 
+                        exMap["studentsExist"] = ex.completed_count + ex.started_count + ex.ungraded_count + ex.unstarted_count != 0
+
                         val counts = StudentCounts(ex.completed_count, ex.started_count, ex.ungraded_count, ex.unstarted_count)
                         val shares = calculateStudentShares(counts)
 

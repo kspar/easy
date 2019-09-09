@@ -305,12 +305,14 @@
                 <span class="col s6">{{title}}</span>
                 <span class="col s6 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
             </div>
+            {{#studentsExist}}
             <div class="bb">
                 <span class="bb-green bb-item tooltipped" style="width: {{completedPc}}%" data-position="bottom" data-tooltip="{{completedLabel}}: {{completedCount}}"></span
                 ><span class="bb-yellow bb-item tooltipped" style="width: {{startedPc}}%" data-position="bottom" data-tooltip="{{startedLabel}}: {{startedCount}}"></span
                 ><span class="bb-blue bb-item tooltipped" style="width: {{ungradedPc}}%" data-position="bottom" data-tooltip="{{ungradedLabel}}: {{ungradedCount}}"></span
                 ><span class="bb-grey bb-item tooltipped" style="width: {{unstartedPc}}%" data-position="bottom" data-tooltip="{{unstartedLabel}}: {{unstartedCount}}"></span>
             </div>
+            {{/studentsExist}}
         </a>
         {{/exercises}}
     </div>
