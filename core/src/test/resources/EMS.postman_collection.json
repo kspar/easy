@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "136a5208-bf58-464c-a37f-9debf6b52ec1",
+		"_postman_id": "c312c416-e117-4d9b-82f8-5223011c98f9",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -2037,11 +2037,7 @@
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"\r",
-							"pm.test(\"response should be okay to process\", function () { \r",
-							"    pm.response.to.not.be.error; \r",
-							"    pm.response.to.have.body('[{\"id\":\"1\",\"effective_title\":\"string\",\"soft_deadline\":null,\"grader_type\":\"AUTO\",\"ordering_idx\":0,\"unstarted_count\":1,\"ungraded_count\":0,\"started_count\":0,\"completed_count\":0},{\"id\":\"2\",\"effective_title\":\"string\",\"soft_deadline\":null,\"grader_type\":\"AUTO\",\"ordering_idx\":1,\"unstarted_count\":1,\"ungraded_count\":0,\"started_count\":0,\"completed_count\":0}]');\r",
-							"});"
+							""
 						],
 						"type": "text/javascript"
 					}
