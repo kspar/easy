@@ -45,7 +45,7 @@ object ParticipantsPage : EasyPage() {
 
     @Serializable
     data class NewStudent(
-            val student_id_or_emailasd: String
+            val student_id_or_email: String
     )
 
     @Serializable
@@ -169,7 +169,7 @@ object ParticipantsPage : EasyPage() {
                     "title" to courseTitle,
                     "courseHref" to "/courses/$courseId/exercises",
                     "participantsLabel" to "Osalejad",
-                    "teacherLabel" to "Õpetajad",
+                    "teachersLabel" to "Õpetajad",
                     "nameLabel" to "Nimi",
                     "usernameLabel" to "Kasutajanimi",
                     "emailLabel" to "Email",
