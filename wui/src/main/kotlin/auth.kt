@@ -1,3 +1,6 @@
+import org.w3c.dom.get
+import org.w3c.dom.set
+import kotlin.browser.localStorage
 import kotlin.js.Promise
 
 enum class Role {
@@ -44,23 +47,18 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     fun isTeacherActive(): Boolean = activeRole == Role.TEACHER
     fun isAdminActive(): Boolean = activeRole == Role.ADMIN
 
-    fun getMainRole(): Role = when {
-        isAdmin() -> Role.ADMIN
-        isTeacher() -> Role.TEACHER
-        isStudent() -> Role.STUDENT
-        else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
-    }
-
     fun switchRoleToStudent() {
         if (!isStudent()) {
             errorMessage { Str.somethingWentWrong() }
             error("Role change to student but user is not student")
         }
         activeRole = Role.STUDENT
+        localStorage["activeRole"] = "student"
     }
 
     fun switchRoleToMain() {
         activeRole = getMainRole()
+        localStorage.removeItem("activeRole")
     }
 
     fun initialize(): Promise<Boolean> =
@@ -68,7 +66,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 this.init(objOf("onLoad" to "login-required"))
                         .success { authenticated: Boolean ->
                             debug { "Authenticated: $authenticated" }
-                            activeRole = getMainRole()
+                            activeRole = getPersistedRole() ?: getMainRole()
                             resolve(authenticated)
                         }
                         .error {
@@ -91,4 +89,18 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 Unit
             }
 
+    private fun getPersistedRole(): Role? {
+        val persistedRoleStr = localStorage["activeRole"]
+        return when {
+            persistedRoleStr == "student" && isStudent() -> Role.STUDENT
+            else -> null
+        }
+    }
+
+    private fun getMainRole(): Role = when {
+        isAdmin() -> Role.ADMIN
+        isTeacher() -> Role.TEACHER
+        isStudent() -> Role.STUDENT
+        else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
+    }
 }
