@@ -83,7 +83,7 @@ def post_grade():
 
     status, raw_output = grade_submission(content["submission"], content["grading_script"],
                                           assets_to_tuples(content["assets"]), content["image_name"],
-                                          content["max_time_sec"], content["max_mem_mb"], app.logger)
+                                          content["max_time_sec"], content["max_mem_mb"], app.logger, request_time)
 
     if status == RunStatus.SUCCESS:
         assessment = parse_assessment_output(raw_output)
