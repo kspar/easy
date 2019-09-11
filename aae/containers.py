@@ -64,11 +64,11 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, logger):
 
     # Create image
     image_id = docker_client.images.build(path=source_dir, rm=True)[0].id
-    logger.debug('Built image', image_id)
+    logger.debug('Built image ' + image_id)
 
     # Create and run container
     container = docker_client.containers.run(image_id, detach=True, mem_limit='{}m'.format(max_mem_MB))
-    logger.debug("Started container", container.short_id)
+    logger.debug("Started container " + container.short_id)
     start_time = time()
 
     while True:
@@ -93,9 +93,9 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, logger):
         sleep(POLL_INTERVAL_SEC)
 
     output = container.logs().decode('utf-8')
-    logger.debug('Removing container', container.short_id)
+    logger.debug('Removing container ' + container.short_id)
     container.remove()
-    logger.debug('Removing image', image_id)
+    logger.debug('Removing image ' + image_id)
     try:
         docker_client.images.remove(image=image_id)
     except docker.errors.APIError as e:
