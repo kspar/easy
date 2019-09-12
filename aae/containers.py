@@ -4,7 +4,6 @@ import enum
 import os
 import os.path
 import tempfile
-import uuid
 from time import time, sleep
 
 import docker
@@ -16,7 +15,6 @@ POLL_INTERVAL_SEC = 0.5
 DOCKERFILE_TEMPLATE = '''FROM {}
 COPY student-submission /student-submission
 COPY evaluate.sh /
-COPY {} /
 CMD /evaluate.sh'''
 
 # Raw docker daemon status strings
@@ -39,12 +37,10 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
     :return pair (run_status: RunStatus, raw_output: str)
     """
 
-    uu = str(uuid.uuid4())
-
     # Create temporary dir for this submission and write submission data as files
     with tempfile.TemporaryDirectory() as student_dir:
         with open(os.path.join(student_dir, 'Dockerfile'), mode='w', encoding='utf-8') as docker_file:
-            docker_file.write(DOCKERFILE_TEMPLATE.format(base_image_name, uu))
+            docker_file.write(DOCKERFILE_TEMPLATE.format(base_image_name))
 
         with open(os.path.join(student_dir, 'evaluate.sh'), mode='w', encoding='utf-8') as evaluate_file:
             evaluate_file.write(grading_script)
@@ -53,9 +49,6 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
         os.chmod(os.path.join(student_dir, 'evaluate.sh'), 0o500)
 
         os.mkdir(os.path.join(student_dir, 'student-submission'))
-
-        with open(os.path.join(student_dir, uu), mode='w', encoding='utf-8') as _:
-            pass
 
         with open(os.path.join(student_dir, 'student-submission', 'submission'), mode='w',
                   encoding='utf-8') as submission_file:
