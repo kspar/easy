@@ -25,16 +25,16 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentReadExercisesController {
 
-    data class StudentExercisesResponse(@JsonProperty("id") val courseExId: String,
-                                        @JsonProperty("effective_title") val title: String,
-                                        @JsonSerialize(using = DateTimeSerializer::class)
-                                        @JsonProperty("deadline") val softDeadline: DateTime?,
-                                        @JsonProperty("status") val status: StudentExerciseStatus,
-                                        @JsonProperty("grade") val grade: Int?,
-                                        @JsonProperty("graded_by") val gradedBy: GraderType?,
-                                        @JsonProperty("ordering_idx") val orderingIndex: Int)
+    data class ExerciseResp(@JsonProperty("id") val courseExId: String,
+                            @JsonProperty("effective_title") val title: String,
+                            @JsonSerialize(using = DateTimeSerializer::class)
+                            @JsonProperty("deadline") val softDeadline: DateTime?,
+                            @JsonProperty("status") val status: StudentExerciseStatus,
+                            @JsonProperty("grade") val grade: Int?,
+                            @JsonProperty("graded_by") val gradedBy: GraderType?,
+                            @JsonProperty("ordering_idx") val orderingIndex: Int)
 
-    data class Resp(@JsonProperty("exercises") val exercises: List<StudentExercisesResponse>)
+    data class Resp(@JsonProperty("exercises") val exercises: List<ExerciseResp>)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises")
@@ -44,9 +44,7 @@ class StudentReadExercisesController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        val resp = selectStudentExercises(courseId, caller.id)
-        log.debug { "Got exercises: $resp" }
-        return resp
+        return selectStudentExercises(courseId, caller.id)
     }
 }
 
@@ -124,7 +122,7 @@ private fun selectStudentExercises(courseId: Long, studentId: String): StudentRe
                                     }
 
 
-                            StudentReadExercisesController.StudentExercisesResponse(
+                            StudentReadExercisesController.ExerciseResp(
                                     ex.courseExId.toString(),
                                     ex.titleAlias ?: ex.title,
                                     ex.deadline,
