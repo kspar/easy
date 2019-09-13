@@ -8,6 +8,12 @@ fun getContainer(): HTMLDivElement =
 fun getBody(): HTMLBodyElement =
         document.body as HTMLBodyElement
 
+fun getHeader(): Element =
+        document.getElementsByTagName("header")[0] ?: throw RuntimeException("No header element")
+
+fun getMain(): Element =
+        document.getElementsByTagName("main")[0] ?: throw RuntimeException("No main element")
+
 fun getNodelistBySelector(selector: String): NodeList =
         document.querySelectorAll(selector)
 

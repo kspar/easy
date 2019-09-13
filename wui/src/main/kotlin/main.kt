@@ -17,10 +17,9 @@ fun main() {
     // Start authentication as soon as possible
     MainScope().launch {
         initAuthentication()
-        buildStatics()
         updateAccountData()
-        // Register pages in async block to avoid race condition
         PageManager.registerPages(PAGES)
+        buildStatics()
         PageManager.updatePage()
     }
 
@@ -32,6 +31,9 @@ fun main() {
 }
 
 fun buildStatics() {
+    getHeader().innerHTML = """<div id="nav-wrap"></div>"""
+    getMain().innerHTML = """<div id="sidenav-wrap"></div>
+<div id="content-container" class="container"></div>"""
     Navbar.build()
 }
 
