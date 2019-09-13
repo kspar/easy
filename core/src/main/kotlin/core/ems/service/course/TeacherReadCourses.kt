@@ -34,17 +34,13 @@ class TeacherReadCoursesController {
     fun controller(caller: EasyUser): Resp {
         val callerId = caller.id
 
-        val courses =
-                if (caller.isAdmin()) {
-                    log.debug { "Getting courses for admin $callerId" }
-                    selectCoursesForAdmin()
-                } else {
-                    log.debug { "Getting courses for teacher $callerId" }
-                    selectCoursesForTeacher(callerId)
-                }
-
-        log.debug { "Found courses $courses" }
-        return courses
+        return if (caller.isAdmin()) {
+            log.debug { "Getting courses for admin $callerId" }
+            selectCoursesForAdmin()
+        } else {
+            log.debug { "Getting courses for teacher $callerId" }
+            selectCoursesForTeacher(callerId)
+        }
     }
 }
 
