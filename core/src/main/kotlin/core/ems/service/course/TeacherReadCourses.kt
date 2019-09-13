@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.StudentCourseAccess
-import core.db.Teacher
 import core.db.TeacherCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
@@ -20,8 +19,6 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class TeacherReadCoursesController {
-
-    // TODO: refactor using teacher query
 
     data class CourseResp(@JsonProperty("id") val id: String,
                           @JsonProperty("title") val title: String,
@@ -56,27 +53,17 @@ private fun selectCoursesForAdmin(): TeacherReadCoursesController.Resp = transac
                     })
 }
 
-private fun selectCoursesForTeacher(teacherId: String): TeacherReadCoursesController.Resp {
-    return transaction {
-        TeacherReadCoursesController.Resp(
-                (Teacher innerJoin TeacherCourseAccess innerJoin Course)
-                        .slice(Course.id, Course.title)
-                        .select {
-                            Teacher.id eq teacherId
-                        }
-                        .withDistinct()
-                        .map {
-                            Pair(it[Course.id], it[Course.title])
-                        }
-                        .map { course ->
-                            val studentCount =
-                                    StudentCourseAccess
-                                            .slice(StudentCourseAccess.course, StudentCourseAccess.student)  // exclude id from distinct
-                                            .select { StudentCourseAccess.course eq course.first }
-                                            .withDistinct()
-                                            .count()
-
-                            TeacherReadCoursesController.CourseResp(course.first.value.toString(), course.second, studentCount)
-                        })
-    }
+private fun selectCoursesForTeacher(teacherId: String): TeacherReadCoursesController.Resp = transaction {
+    TeacherReadCoursesController.Resp(
+            (Course innerJoin TeacherCourseAccess)
+                    .slice(Course.id, Course.title)
+                    .select {
+                        TeacherCourseAccess.teacher eq teacherId
+                    }
+                    .map {
+                        val studentCount = StudentCourseAccess
+                                .select { StudentCourseAccess.course eq it[Course.id] }
+                                .count()
+                        TeacherReadCoursesController.CourseResp(it[Course.id].value.toString(), it[Course.title], studentCount)
+                    })
 }
