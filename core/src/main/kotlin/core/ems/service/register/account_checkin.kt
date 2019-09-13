@@ -39,8 +39,11 @@ class UpdateAccountController {
     @PostMapping("/account/checkin")
     fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
 
-        val account = Account(caller.id, dto.email,
-                correctNameCapitalisation(dto.firstName), correctNameCapitalisation(dto.lastName))
+        val account = Account(
+                caller.id.toLowerCase(),
+                dto.email.toLowerCase(),
+                correctNameCapitalisation(dto.firstName),
+                correctNameCapitalisation(dto.lastName))
         log.debug { "Update personal data for $account" }
 
         if (caller.isStudent()) {

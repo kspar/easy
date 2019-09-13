@@ -13,6 +13,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
@@ -48,19 +49,21 @@ class AddStudentsToCourseController {
 
 private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req) {
     transaction {
-        val studentIds = students.studentIds.map { student ->
-            val studentWithId = Student.select { Student.id eq student.studentIdOrEmail }.count()
+        val studentIds = students.studentIds
+                .map { it.studentIdOrEmail.toLowerCase() }
+                .map { studentIdOrEmail ->
+                    val studentWithId = Student.select { Student.id eq studentIdOrEmail }.count()
 
-            if (studentWithId == 0) {
-                val studentId = Student.slice(Student.id)
-                        .select { Student.email eq student.studentIdOrEmail }
-                        .map { it[Student.id].value }.firstOrNull()
-                studentId ?: throw InvalidRequestException("Student not found: $student", ReqError.STUDENT_NOT_FOUND,
-                        "missing_student" to student.studentIdOrEmail)
-            } else {
-                student.studentIdOrEmail
-            }
-        }
+                    if (studentWithId == 0) {
+                        val studentId = Student.slice(Student.id)
+                                .select { Student.email.lowerCase() eq studentIdOrEmail }
+                                .map { it[Student.id].value }.firstOrNull()
+                        studentId ?: throw InvalidRequestException("Student not found: $studentIdOrEmail",
+                                ReqError.STUDENT_NOT_FOUND, "missing_student" to studentIdOrEmail)
+                    } else {
+                        studentIdOrEmail
+                    }
+                }
 
         val studentsWithoutAccess = studentIds.filter {
             StudentCourseAccess.select {
