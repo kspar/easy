@@ -84,11 +84,8 @@ class TeacherReadSubmissionSummariesController {
 
         val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
-        val t0 = System.currentTimeMillis()
-        val resp = selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(),
+        return selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(),
                 queryWords, orderBy, order, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull())
-        log.debug { "Got latest submission summaries (${System.currentTimeMillis() - t0}ms): $resp" }
-        return resp
     }
 }
 
