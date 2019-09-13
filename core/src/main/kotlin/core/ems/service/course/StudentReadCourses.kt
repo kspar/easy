@@ -28,9 +28,7 @@ class StudentReadCoursesController {
     fun controller(caller: EasyUser): Resp {
         val callerId = caller.id
         log.debug { "Getting courses for student $callerId" }
-        val courses = selectCoursesForStudent(callerId)
-        log.debug { "Found courses $courses" }
-        return courses
+        return selectCoursesForStudent(callerId)
     }
 }
 
