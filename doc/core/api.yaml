@@ -224,7 +224,9 @@ paths:
         - name: submission
           in: body
           schema:
-            $ref: '#/definitions/SubmissionDraft'
+            properties:
+              solution:
+                type: string
       responses:
         200:
           description: Submission draft uploaded.
