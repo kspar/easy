@@ -15,6 +15,7 @@ abstract class TranslatableStrings {
     abstract fun gradedAutomatically(): String
     abstract fun gradedByTeacher(): String
     abstract fun notGradedYet(): String
+    abstract fun closeToggleLink(): String
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
 
@@ -86,7 +87,6 @@ abstract class TranslatableStrings {
     abstract fun doAutoAssess(): String
     abstract fun autoAssessing(): String
     abstract fun addAssessmentLink(): String
-    abstract fun closeAssessmentLink(): String
     abstract fun addAssessmentGradeLabel(): String
     abstract fun addAssessmentFeedbackLabel(): String
     abstract fun addAssessmentGradeValidErr(): String
@@ -94,11 +94,17 @@ abstract class TranslatableStrings {
     abstract fun submissionTimeLabel(): String
     abstract fun submitAndCheckLabel(): String
     abstract fun lastSubmTimeLabel(): String
+    abstract fun submissionHeading(): String
+    abstract fun latestSubmissionSuffix(): String
+    abstract fun allSubmissionsLink(): String
 
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun submissionHeading()= "Esitus"
+    override fun latestSubmissionSuffix()="(viimane esitus)"
+    override fun allSubmissionsLink()="► Vaata kõiki esitusi"
     override fun tabSubmitLabel() = "Esitamine"
     override fun submitAndCheckLabel()="Esita ja kontrolli"
     override fun lastSubmTimeLabel()="Viimase esituse aeg"
@@ -155,7 +161,7 @@ private object EstStrings : TranslatableStrings() {
     override fun doAutoAssess() = "Kontrolli"
     override fun autoAssessing() = "Kontrollin..."
     override fun addAssessmentLink() = "&#9658; Lisa hinnang"
-    override fun closeAssessmentLink() = "&#9660; Sulge"
+    override fun closeToggleLink() = "&#9660; Sulge"
     override fun graderTypeAuto() = "automaatne"
     override fun graderTypeTeacher() = "manuaalne"
     override fun addAssessmentGradeLabel() = "Hinne (0-100)"

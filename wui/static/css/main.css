@@ -297,6 +297,23 @@ nav.crumb-wrap .breadcrumb:before {
     0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
+#exercise-card .submission-title {
+    display: inline-block;
+    margin: 2.5rem 0 1.5rem 0;
+}
+
+#exercise-card span.last-submission-label {
+    margin-left: 1rem;
+}
+
+#exercise-card h3 {
+    font-size: 2.3rem;
+}
+
+#exercise-card h4 {
+    font-size: 2rem;
+}
+
 
 /** Courses page **/
 
@@ -449,6 +466,13 @@ nav.crumb-wrap .breadcrumb:before {
 
 .btn:hover {
     background-color: #4DAB54;
+}
+
+
+/** Links **/
+
+.toggle-link {
+    display: block;
 }
 
 

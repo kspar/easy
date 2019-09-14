@@ -396,7 +396,7 @@ object ExerciseSummaryPage : EasyPage() {
                     }
                 }
 
-                getElemById("add-grade-link").innerHTML = Str.closeAssessmentLink()
+                getElemById("add-grade-link").innerHTML = Str.closeToggleLink()
 
             } else {
                 // Grading box is visible
@@ -425,7 +425,13 @@ object ExerciseSummaryPage : EasyPage() {
 
             val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
 
+            val submissionCount = 4 // TODO
+
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
+                    "allSubmissionsLink" to Str.allSubmissionsLink(),
+                    "latestSubmissionLabel" to Str.latestSubmissionSuffix(),
+                    "submissionLabel" to Str.submissionHeading(),
+                    "submissionCount" to submissionCount,
                     "timeLabel" to Str.submissionTimeLabel(),
                     "time" to submission.created_at.toEstonianString(),
                     "addGradeLink" to Str.addAssessmentLink(),

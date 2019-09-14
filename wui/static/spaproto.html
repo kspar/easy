@@ -141,11 +141,13 @@
 </script>
 
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
+    <a id="all-submissions-link" class="toggle-link" href="#!">{{allSubmissionsLink}} ({{submissionCount}})</a>
+    <h3 class="submission-title">{{submissionLabel}} #{{submissionCount}}</h3><span class="last-submission-label">{{latestSubmissionLabel}}</span>
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
 
-    <a id="add-grade-link" href="#!">{{{addGradeLink}}}</a>
+    <a id="add-grade-link" class="toggle-link" href="#!">{{{addGradeLink}}}</a>
     <div id="add-grade-section"></div>
 
     <div class="editor-wrapper no-cursor">
@@ -464,7 +466,7 @@
 
         <h4 class="subsection">{{studentsLabel}}</h4>
 
-        <a id="add-students-link" href="#!">{{{addStudentsLink}}}</a>
+        <a id="add-students-link" class="toggle-link" href="#!">{{{addStudentsLink}}}</a>
         <div id="add-students-section"></div>
 
         <div class="card">
