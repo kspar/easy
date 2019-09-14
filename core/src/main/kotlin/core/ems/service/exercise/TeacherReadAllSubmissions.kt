@@ -25,15 +25,17 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadAllSubmissionsController {
 
-    data class TeacherSubmissionResp(@JsonSerialize(using = DateTimeSerializer::class)
-                                     @JsonProperty("created_at") val createdAt: DateTime,
-                                     @JsonProperty("grade_auto") val gradeAuto: Int?,
-                                     @JsonProperty("feedback_auto") val feedbackAuto: String?,
-                                     @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-                                     @JsonProperty("feedback_teacher") val feedbackTeacher: String?,
-                                     @JsonProperty("solution") val solution: String)
+    data class SubmissionResp(
+            @JsonProperty("id") val submissionId: String,
+            @JsonProperty("solution") val solution: String,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("created_at") val createdAt: DateTime,
+            @JsonProperty("grade_auto") val gradeAuto: Int?,
+            @JsonProperty("feedback_auto") val feedbackAuto: String?,
+            @JsonProperty("grade_teacher") val gradeTeacher: Int?,
+            @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
-    data class Resp(@JsonProperty("submissions") val submissions: List<TeacherSubmissionResp>)
+    data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -71,13 +73,14 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                             val autoAssessment = lastAutoAssessment(id)
                             val teacherAssessment = lastTeacherAssessment(id)
 
-                            TeacherReadAllSubmissionsController.TeacherSubmissionResp(
+                            TeacherReadAllSubmissionsController.SubmissionResp(
+                                    id.toString(),
+                                    it[Submission.solution],
                                     it[Submission.createdAt],
                                     autoAssessment?.grade,
                                     autoAssessment?.feedback,
                                     teacherAssessment?.grade,
-                                    teacherAssessment?.feedback,
-                                    it[Submission.solution])
+                                    teacherAssessment?.feedback)
                         })
 
     }

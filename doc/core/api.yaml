@@ -681,14 +681,37 @@ paths:
       tags:
         - teacher
       responses:
-        300:
+        200:
           description: Submissions.
           schema:
             properties:
               submissions:
                 type: array
                 items:
-                  $ref: '#/definitions/TeacherSubmission'
+                  properties:
+                    id:
+                      type: string
+                    solution:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    grade_auto:
+                      description: Exists if the submission has been automatically graded.
+                      type: integer
+                    feedback_auto:
+                      description: Exists if the submission has been automatically graded.
+                      type: string
+                    grade_teacher:
+                      description: Exists if the submission has been graded by a teacher.
+                      type: integer
+                    feedback_teacher:
+                      description: Exists if the submission has been graded by a teacher.
+                      type: string
+                  required:
+                    - id
+                    - solution
+                    - created_at
 
 
   /courses/{courseId}/participants:
