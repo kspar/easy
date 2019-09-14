@@ -203,7 +203,7 @@ paths:
             $ref: '#/definitions/Submission'
 
 
-  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/draft:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/draft:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
