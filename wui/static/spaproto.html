@@ -140,8 +140,47 @@
     </div>
 </script>
 
+<script id="tm-teach-exercise-all-submissions" type="text/x-handlebars-template">
+    <div id="all-submissions-wrap" class="toggleable-wrap all-submissions-wrap">
+        <div class="collection divided-collection">
+            {{#submissions}}
+            <a class="collection-item sm row bb-wrap" href="#!">
+                <span class="col s2">#{{number}}</span>
+                <span class="col s7" style="text-align: center">{{time}}</span>
+                <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
+                    <span>{{grade}}/100</span><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
+                    <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                    >{{#evalAuto
+                    }}<img class="tooltipped eval-logo-auto sm" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+                    }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+                    }}<img class="tooltipped eval-logo-missing sm" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                </span>
+                <div class="bb sm">
+                    {{#completed}}
+                    <span class="bb-item sm bb-green"></span>
+                    {{/completed}}
+                    {{#started}}
+                    <span class="bb-item sm bb-yellow"></span>
+                    {{/started}}
+                    {{#evalMissing}}
+                    <span class="bb-item sm bb-blue"></span>
+                    {{/evalMissing}}
+                    {{#unstarted}}
+                    <span class="bb-item sm bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+            {{/submissions}}
+        </div>
+    </div>
+</script>
+
 <script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
     <a id="all-submissions-link" class="toggle-link" href="#!">{{allSubmissionsLink}} ({{submissionCount}})</a>
+    <div id="all-submissions-section"></div>
     <h3 class="submission-title">{{submissionLabel}} #{{submissionCount}}</h3><span class="last-submission-label">{{latestSubmissionLabel}}</span>
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>

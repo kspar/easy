@@ -238,11 +238,6 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 3rem;
 }
 
-#exercise-card #add-grade-wrap {
-    padding: 2rem;
-    border: 1px solid #eee;
-}
-
 #exercise-card #grade:focus {
     border-bottom: 1px solid #469c45;
     -webkit-box-shadow: 0 1px 0 0 #469c45;
@@ -312,6 +307,19 @@ nav.crumb-wrap .breadcrumb:before {
 
 #exercise-card h4 {
     font-size: 2rem;
+}
+
+#exercise-card .all-submissions-wrap {
+    max-height: 50vh;
+    overflow: auto;
+}
+
+#exercise-card .eval-logo-auto.sm {
+    width: 22px;
+}
+
+#exercise-card .eval-logo-missing.sm {
+    width: 22px;
 }
 
 
@@ -445,6 +453,10 @@ nav.crumb-wrap .breadcrumb:before {
     display: none;
 }
 
+.flex {
+    display: flex;
+}
+
 
 /** General animations **/
 
@@ -473,6 +485,11 @@ nav.crumb-wrap .breadcrumb:before {
 
 .toggle-link {
     display: block;
+}
+
+.toggleable-wrap {
+    padding: 2rem;
+    border: 1px solid #eee;
 }
 
 
@@ -516,6 +533,16 @@ div.divided-collection a.collection-item {
     0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
+.divided-collection .collection-item.sm {
+    padding-top: 0;
+    line-height: 4.5rem;
+    font-size: 1.6rem;
+}
+
+div.divided-collection a.collection-item:last-child {
+    margin-bottom: 0;
+}
+
 .divided-collection a.collection-item:not(.active):hover {
     background-color: #e5e5e5;
 }
@@ -524,7 +551,11 @@ div.divided-collection {
     border: none;
     overflow: unset;
     position: relative;
-    margin-top: 2rem;
+}
+
+.divided-collection .collection-item.sm .content {
+    display: flex;
+    justify-content: space-between;
 }
 
 
@@ -540,6 +571,10 @@ div.divided-collection {
     overflow: hidden;
 }
 
+.bb.sm {
+    font-size: 1rem;
+}
+
 div.divided-collection a.collection-item .bb {
     margin-left: -20px;
     margin-right: -20px;
@@ -549,6 +584,11 @@ div.divided-collection a.collection-item .bb {
     display: inline-block;
     height: 20px;
     width: 100%;
+}
+
+.bb-item.sm {
+    border-width: 3px;
+    height: 0;
 }
 
 .bb-green {
@@ -571,7 +611,7 @@ div.divided-collection a.collection-item .bb {
 /** Page title **/
 
 h3.title {
-    margin-bottom: 0;
+    margin-bottom: 2rem;
     margin-top: 1.5rem;
 }
 
