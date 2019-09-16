@@ -477,6 +477,7 @@ object ExerciseSummaryPage : EasyPage() {
                 getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
                         "submissions" to submissions
                 ))
+                Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
 
             } else {
                 // Box is visible at the moment
