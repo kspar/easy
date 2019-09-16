@@ -422,8 +422,10 @@ object ExerciseSummaryPage : EasyPage() {
             if (getElemByIdOrNull("all-submissions-wrap") == null) {
                 // Box is not visible yet
                 debug { "Open all submissions" }
-                // TODO: placeholder with all-submissions-wrap
-                getElemById("all-submissions-link").textContent = Str.loadingAllSubmissions()
+                getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions-placeholder", mapOf(
+                        "text" to Str.loadingAllSubmissions()
+                ))
+                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
 
                 val submissionResp =
                         fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
@@ -475,8 +477,6 @@ object ExerciseSummaryPage : EasyPage() {
                 getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
                         "submissions" to submissions
                 ))
-
-                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
 
             } else {
                 // Box is visible at the moment
