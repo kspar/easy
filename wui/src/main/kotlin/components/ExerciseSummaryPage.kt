@@ -423,7 +423,7 @@ object ExerciseSummaryPage : EasyPage() {
                 // Box is not visible yet
                 debug { "Open all submissions" }
                 // TODO: placeholder with all-submissions-wrap
-                getElemById("all-submissions-link").innerHTML = "Laen esitusi..."
+                getElemById("all-submissions-link").textContent = Str.loadingAllSubmissions()
 
                 val submissionResp =
                         fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
