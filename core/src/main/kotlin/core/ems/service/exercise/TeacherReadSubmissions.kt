@@ -23,7 +23,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadAllSubmissionsController {
+class TeacherReadSubmissionsController {
 
     data class SubmissionResp(
             @JsonProperty("id") val submissionId: String,
@@ -60,7 +60,7 @@ class TeacherReadAllSubmissionsController {
 
 
 private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Int?):
-        TeacherReadAllSubmissionsController.Resp {
+        TeacherReadSubmissionsController.Resp {
     return transaction {
 
         val query = (CourseExercise innerJoin Submission)
@@ -73,7 +73,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
 
         val count = query.count()
 
-        TeacherReadAllSubmissionsController.Resp(
+        TeacherReadSubmissionsController.Resp(
                 query.orderBy(Submission.createdAt, SortOrder.DESC)
                         .limit(limit ?: count, offset ?: 0)
                         .map {
@@ -81,7 +81,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                             val autoAssessment = lastAutoAssessment(id)
                             val teacherAssessment = lastTeacherAssessment(id)
 
-                            TeacherReadAllSubmissionsController.SubmissionResp(
+                            TeacherReadSubmissionsController.SubmissionResp(
                                     id.toString(),
                                     it[Submission.solution],
                                     it[Submission.createdAt],
