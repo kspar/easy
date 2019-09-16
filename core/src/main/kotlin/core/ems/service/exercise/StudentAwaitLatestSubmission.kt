@@ -48,8 +48,7 @@ class StudentAwaitLatestSubmissionController {
             @JsonProperty("grade_teacher") val gradeTeacher: Int?,
             @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
-    // TODO: only student should have access
-    @Secured("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN")
+    @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/await")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExerciseIdStr: String,
