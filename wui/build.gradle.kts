@@ -9,9 +9,9 @@ version = "2"
 
 
 plugins {
-    id("kotlin2js") version("1.3.31")
-    id("kotlin-dce-js") version("1.3.31")
-    id("kotlinx-serialization") version("1.3.40")
+    id("kotlin2js")
+    id("kotlin-dce-js")
+    id("kotlinx-serialization")
 }
 
 repositories {
@@ -21,9 +21,9 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-js")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.0-M2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.11.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:0.13.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.13.0")
     testCompile("junit:junit:4.11")
     testImplementation("org.jetbrains.kotlin:kotlin-test-js")
 }
