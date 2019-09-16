@@ -14,6 +14,7 @@ import getContainer
 import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
+import getElemBySelector
 import getNodelistBySelector
 import http200
 import kotlinx.coroutines.MainScope
@@ -30,9 +31,11 @@ import queries.BasicCourseInfo
 import tmRender
 import toEstonianString
 import toJsObj
+import warn
 import kotlin.browser.window
 import kotlin.dom.addClass
 import kotlin.dom.clear
+import kotlin.dom.removeClass
 import kotlin.js.Date
 
 object ExerciseSummaryPage : EasyPage() {
@@ -418,6 +421,40 @@ object ExerciseSummaryPage : EasyPage() {
             }
         }
 
+        fun paintSubmission(id: String, number: Int, time: Date, solution: String, isLast: Boolean,
+                            gradeAuto: Int?, feedbackAuto: String?, gradeTeacher: Int?, feedbackTeacher: String?) {
+
+            getElemById("submission-part").innerHTML = tmRender("tm-teach-exercise-student-submission-sub", mapOf(
+                    "id" to id,
+                    "submissionLabel" to Str.submissionHeading(),
+                    "submissionNo" to number,
+                    "latestSubmissionLabel" to if (isLast) Str.latestSubmissionSuffix() else null,
+                    // TODO: not last message
+                    "timeLabel" to Str.submissionTimeLabel(),
+                    "time" to time.toEstonianString(),
+                    "addGradeLink" to Str.addAssessmentLink(),
+                    "solution" to solution
+            ))
+
+            if (gradeAuto != null) {
+                getElemById("assessment-auto").innerHTML =
+                        renderAutoAssessment(gradeAuto, feedbackAuto)
+            }
+            if (gradeTeacher != null) {
+                getElemById("assessment-teacher").innerHTML =
+                        renderTeacherAssessment(gradeTeacher, feedbackTeacher)
+            }
+
+            CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
+                    "mode" to "python",
+                    "lineNumbers" to true,
+                    "autoRefresh" to true,
+                    "viewportMargin" to 100,
+                    "readOnly" to true))
+
+            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(id) }
+        }
+
         suspend fun toggleSubmissionsBox() {
             if (getElemByIdOrNull("all-submissions-wrap") == null) {
                 // Box is not visible yet
@@ -437,13 +474,22 @@ object ExerciseSummaryPage : EasyPage() {
                 }
 
                 val submissionsWrap = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
+
+                data class SubData(val number: Int, val isLast: Boolean, val time: Date, val solution: String,
+                                   val gradeAuto: Int?, val feedbackAuto: String?, val gradeTeacher: Int?, val feedbackTeacher: String?)
+
+                val submissionIdMap = mutableMapOf<String, SubData>()
                 var submissionNumber = submissionsWrap.count
                 val submissions = submissionsWrap.submissions.map {
+
+                    submissionIdMap[it.id] = SubData(submissionNumber, submissionNumber == submissionsWrap.count,
+                            it.created_at, it.solution, it.grade_auto, it.feedback_auto, it.grade_teacher, it.feedback_teacher)
 
                     val submissionMap = mutableMapOf<String, Any?>(
                             "autoLabel" to Str.gradedAutomatically(),
                             "teacherLabel" to Str.gradedByTeacher(),
                             "missingLabel" to Str.notGradedYet(),
+                            "id" to it.id,
                             "number" to submissionNumber--,
                             "time" to it.created_at.toEstonianString()
                     )
@@ -474,9 +520,36 @@ object ExerciseSummaryPage : EasyPage() {
                     submissionMap.toJsObj()
                 }.toTypedArray()
 
+                val selectedSubId = getElemBySelector("[data-active-sub]")?.getAttribute("data-active-sub")
+                debug { "Selected submission: $selectedSubId" }
+
                 getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
                         "submissions" to submissions
                 ))
+
+                if (selectedSubId != null) {
+                    refreshSubListLinks(selectedSubId)
+                } else {
+                    warn { "Active submission id is null" }
+                }
+
+                getNodelistBySelector("[data-sub-id]").asList().forEach {
+                    if (it is Element) {
+                        val id = it.getAttribute("data-sub-id")
+                                ?: error("No data-sub-id found on submission item")
+                        val sub = submissionIdMap[id] ?: error("No submission $id found in idMap")
+
+                        it.onVanillaClick(true) {
+                            debug { "Painting submission $id" }
+                            paintSubmission(id, sub.number, sub.time, sub.solution, sub.isLast,
+                                    sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher )
+                            refreshSubListLinks(id)
+                        }
+                    } else {
+                        error("Submission item is not an Element")
+                    }
+                }
+
                 Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
 
             } else {
@@ -507,35 +580,28 @@ object ExerciseSummaryPage : EasyPage() {
             val submissions = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
             val submission = submissions.submissions[0]
 
-            getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
-                    "allSubmissionsLink" to Str.allSubmissionsLink(),
-                    "latestSubmissionLabel" to Str.latestSubmissionSuffix(),
-                    "submissionLabel" to Str.submissionHeading(),
-                    "submissionCount" to submissions.count,
-                    "timeLabel" to Str.submissionTimeLabel(),
-                    "time" to submission.created_at.toEstonianString(),
-                    "addGradeLink" to Str.addAssessmentLink(),
-                    "solution" to submission.solution
+            getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", emptyMap())
+            getElemById("all-submissions-part").innerHTML = tmRender("tm-teach-exercise-student-submission-all", mapOf(
+                    "allSubmissionsLink" to Str.allSubmissionsLink()
             ))
+            paintSubmission(submission.id, submissions.count, submission.created_at, submission.solution, true,
+                    submission.grade_auto, submission.feedback_auto, submission.grade_teacher, submission.feedback_teacher)
+            refreshSubListLinks(submission.id)
 
-            if (submission.grade_auto != null) {
-                getElemById("assessment-auto").innerHTML =
-                        renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
-            }
-            if (submission.grade_teacher != null) {
-                getElemById("assessment-teacher").innerHTML =
-                        renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
-            }
-
-            CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
-                    "mode" to "python",
-                    "lineNumbers" to true,
-                    "autoRefresh" to true,
-                    "viewportMargin" to 100,
-                    "readOnly" to true))
-
-            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(submission.id) }
             getElemById("all-submissions-link").onVanillaClick(true) { MainScope().launch { toggleSubmissionsBox() } }
+        }
+    }
+
+    private fun refreshSubListLinks(selectedSubmissionid: String) {
+        getNodelistBySelector("[data-sub-id]").asList().filterIsInstance<Element>().forEach {
+            it.apply {
+                setAttribute("href", "#!")
+                removeClass("inactive")
+            }
+        }
+        getElemBySelector("[data-sub-id='$selectedSubmissionid']")?.apply {
+            removeAttribute("href")
+            addClass("inactive")
         }
     }
 
