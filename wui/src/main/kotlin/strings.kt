@@ -102,7 +102,7 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
-    override fun loadingAllSubmissions()= "Laen esitusi..."
+    override fun loadingAllSubmissions()= "► Laen esitusi..."
     override fun submissionHeading()= "Esitus"
     override fun latestSubmissionSuffix()="(viimane esitus)"
     override fun allSubmissionsLink()="► Vaata kõiki esitusi"
@@ -161,8 +161,8 @@ private object EstStrings : TranslatableStrings() {
     override fun teacherGradeLabel() = "Hinne"
     override fun doAutoAssess() = "Kontrolli"
     override fun autoAssessing() = "Kontrollin..."
-    override fun addAssessmentLink() = "&#9658; Lisa hinnang"
-    override fun closeToggleLink() = "&#9660; Sulge"
+    override fun addAssessmentLink() = "► Lisa hinnang"
+    override fun closeToggleLink() = "▼ Sulge"
     override fun graderTypeAuto() = "automaatne"
     override fun graderTypeTeacher() = "manuaalne"
     override fun addAssessmentGradeLabel() = "Hinne (0-100)"

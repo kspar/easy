@@ -408,13 +408,13 @@ object ExerciseSummaryPage : EasyPage() {
                     }
                 }
 
-                getElemById("add-grade-link").innerHTML = Str.closeToggleLink()
+                getElemById("add-grade-link").textContent = Str.closeToggleLink()
 
             } else {
                 // Grading box is visible
                 debug { "Close add grade" }
                 getElemById("add-grade-section").clear()
-                getElemById("add-grade-link").innerHTML = Str.addAssessmentLink()
+                getElemById("add-grade-link").textContent = Str.addAssessmentLink()
             }
         }
 
