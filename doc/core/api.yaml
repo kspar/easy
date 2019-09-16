@@ -706,6 +706,9 @@ paths:
       - $ref: '#/parameters/CourseExerciseId'
       - $ref: '#/parameters/StudentId'
     get:
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
       summary: Get this student's all submissions for this exercise.
       tags:
         - teacher
@@ -741,6 +744,11 @@ paths:
                     - id
                     - solution
                     - created_at
+              count:
+                type: integer
+            required:
+              - submissions
+              - count
 
 
   /courses/{courseId}/participants:

@@ -3,7 +3,10 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.AutomaticAssessment
+import core.db.CourseExercise
+import core.db.Submission
+import core.db.TeacherAssessment
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
@@ -14,10 +17,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val log = KotlinLogging.logger {}
 
@@ -35,7 +35,8 @@ class TeacherReadAllSubmissionsController {
             @JsonProperty("grade_teacher") val gradeTeacher: Int?,
             @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
-    data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>)
+    data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>,
+                    @JsonProperty("count") val submissionCount: Int)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -43,33 +44,40 @@ class TeacherReadAllSubmissionsController {
     fun controller(@PathVariable("courseId") courseIdString: String,
                    @PathVariable("courseExerciseId") courseExerciseIdString: String,
                    @PathVariable("studentId") studentId: String,
+                   @RequestParam("limit", required = false) limitStr: String?,
+                   @RequestParam("offset", required = false) offsetStr: String?,
                    caller: EasyUser): Resp {
 
-        log.debug { "Getting all submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.debug { "Getting submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString (limit: $limitStr, offset: $offsetStr)" }
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectTeacherAllSubmissions(courseId, courseExId, studentId)
+        return selectTeacherAllSubmissions(courseId, courseExId, studentId, limitStr?.toIntOrNull(), offsetStr?.toIntOrNull())
     }
 }
 
 
-private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): TeacherReadAllSubmissionsController.Resp {
+private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Int?):
+        TeacherReadAllSubmissionsController.Resp {
     return transaction {
+
+        val query = (CourseExercise innerJoin Submission)
+                .slice(Submission.createdAt, Submission.id, Submission.solution)
+                .select {
+                    CourseExercise.course eq courseId and
+                            (CourseExercise.id eq courseExId) and
+                            (Submission.student eq studentId)
+                }
+
+        val count = query.count()
+
         TeacherReadAllSubmissionsController.Resp(
-                (Course innerJoin CourseExercise innerJoin Submission)
-                        .slice(Course.id, CourseExercise.id, Submission.student, Submission.createdAt, Submission.id, Submission.solution)
-                        .select {
-                            Course.id eq courseId and
-                                    (CourseExercise.id eq courseExId) and
-                                    (Submission.student eq studentId)
-                        }
-                        .orderBy(Submission.createdAt, SortOrder.DESC)
+                query.orderBy(Submission.createdAt, SortOrder.DESC)
+                        .limit(limit ?: count, offset ?: 0)
                         .map {
                             val id = it[Submission.id].value
-
                             val autoAssessment = lastAutoAssessment(id)
                             val teacherAssessment = lastTeacherAssessment(id)
 
@@ -81,8 +89,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                                     autoAssessment?.feedback,
                                     teacherAssessment?.grade,
                                     teacherAssessment?.feedback)
-                        })
-
+                        }, count)
     }
 }
 
