@@ -92,10 +92,10 @@ private fun selectLatestStudentSubmission(courseId: Long, courseExId: Long, stud
                     lastSubmission.solution,
                     lastSubmission.time,
                     lastSubmission.autogradeStatus,
-                    autoAssessment?.grade,
-                    autoAssessment?.feedback,
-                    teacherAssessment?.grade,
-                    teacherAssessment?.feedback
+                    autoAssessment?.first,
+                    autoAssessment?.second,
+                    teacherAssessment?.first,
+                    teacherAssessment?.second
             )
         } else {
             null
@@ -104,18 +104,18 @@ private fun selectLatestStudentSubmission(courseId: Long, courseExId: Long, stud
 }
 
 
-private fun lastAutoAssessment(submissionId: Long): AssessmentSummary? {
+private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? {
     return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
             .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
-            .map { AssessmentSummary(it[AutomaticAssessment.grade], it[AutomaticAssessment.feedback]) }
+            .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }
             .firstOrNull()
 }
 
-private fun lastTeacherAssessment(submissionId: Long): AssessmentSummary? {
+private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? {
     return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
             .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
-            .map { AssessmentSummary(it[TeacherAssessment.grade], it[TeacherAssessment.feedback]) }
+            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }
             .firstOrNull()
 }
