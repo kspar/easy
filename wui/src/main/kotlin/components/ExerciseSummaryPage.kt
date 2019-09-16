@@ -16,7 +16,6 @@ import getElemByIdAs
 import getElemByIdOrNull
 import getNodelistBySelector
 import http200
-import http204
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -138,7 +137,14 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     @Serializable
+    data class StudentSubmissions(
+            val submissions: List<StudentSubmission>,
+            val count: Int
+    )
+
+    @Serializable
     data class StudentSubmission(
+            val id: String,
             val solution: String,
             @Serializable(with = DateSerializer::class)
             val submission_time: Date,
@@ -550,25 +556,26 @@ object ExerciseSummaryPage : EasyPage() {
             paintSubmission(existingSubmission)
         } else {
             debug { "Building submit tab by fetching latest submission" }
-            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest", ReqMethod.GET)
+            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET)
                     .await()
-            when {
-                resp.http200 -> {
-                    val submission = resp.parseTo(StudentSubmission.serializer()).await()
-                    paintSubmission(submission)
-                    if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
-                        paintAutoassInProgress()
-                        pollForAutograde(courseId, courseExerciseId)
-                    }
-                }
-                resp.http204 -> {
-                    getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                            "checkLabel" to Str.submitAndCheckLabel()
-                    ))
-                }
-                else -> {
-                    errorMessage { Str.somethingWentWrong() }
-                    error("Fetching latest submission failed with status ${resp.status}")
+
+            if (!resp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching latest submission failed with status ${resp.status}")
+            }
+
+            val submissionsWrap = resp.parseTo(StudentSubmissions.serializer()).await()
+            val submissions = submissionsWrap.submissions
+            if (submissions.isEmpty()) {
+                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
+                        "checkLabel" to Str.submitAndCheckLabel()
+                ))
+            } else {
+                val submission = submissions[0]
+                paintSubmission(submission)
+                if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                    paintAutoassInProgress()
+                    pollForAutograde(courseId, courseExerciseId)
                 }
             }
         }

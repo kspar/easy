@@ -37,15 +37,18 @@ class StudentAwaitLatestSubmissionController {
     @Value("\${easy.core.service.await-assessment.timeout-steps}")
     private var timeoutSteps: Int = 0
 
-    data class Resp(@JsonProperty("solution") val solution: String,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("submission_time") val submissionTime: DateTime,
-                    @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
-                    @JsonProperty("grade_auto") val gradeAuto: Int?,
-                    @JsonProperty("feedback_auto") val feedbackAuto: String?,
-                    @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-                    @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
+    data class Resp(
+            @JsonProperty("id") val submissionId: String,
+            @JsonProperty("solution") val solution: String,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("submission_time") val submissionTime: DateTime,
+            @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
+            @JsonProperty("grade_auto") val gradeAuto: Int?,
+            @JsonProperty("feedback_auto") val feedbackAuto: String?,
+            @JsonProperty("grade_teacher") val gradeTeacher: Int?,
+            @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
+    // TODO: only student should have access
     @Secured("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/await")
     fun controller(@PathVariable("courseId") courseIdStr: String,
@@ -113,6 +116,7 @@ private fun selectLatestStudentSubmission(courseId: Long,
             val autoAssessment = lastAutoAssessment(lastSubmission.id)
 
             StudentAwaitLatestSubmissionController.Resp(
+                    lastSubmission.id.toString(),
                     lastSubmission.solution,
                     lastSubmission.time,
                     lastSubmission.autogradeStatus,
