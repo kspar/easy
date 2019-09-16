@@ -418,6 +418,74 @@ object ExerciseSummaryPage : EasyPage() {
             }
         }
 
+        suspend fun toggleSubmissionsBox() {
+            if (getElemByIdOrNull("all-submissions-wrap") == null) {
+                // Box is not visible yet
+                debug { "Open all submissions" }
+                // TODO: placeholder with all-submissions-wrap
+                getElemById("all-submissions-link").innerHTML = "Laen esitusi..."
+
+                val submissionResp =
+                        fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
+                                ReqMethod.GET).await()
+
+                if (!submissionResp.http200) {
+                    errorMessage { Str.somethingWentWrong() }
+                    error("Fetching all student submissions failed with status ${submissionResp.status}")
+                }
+
+                val submissionsWrap = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
+                var submissionNumber = submissionsWrap.count
+                val submissions = submissionsWrap.submissions.map {
+
+                    val submissionMap = mutableMapOf<String, Any?>(
+                            "autoLabel" to Str.gradedAutomatically(),
+                            "teacherLabel" to Str.gradedByTeacher(),
+                            "missingLabel" to Str.notGradedYet(),
+                            "number" to submissionNumber--,
+                            "time" to it.created_at.toEstonianString()
+                    )
+
+                    val validGrade = when {
+                        it.grade_teacher != null -> {
+                            submissionMap["points"] = it.grade_teacher.toString()
+                            submissionMap["evalTeacher"] = true
+                            it.grade_teacher
+                        }
+                        it.grade_auto != null -> {
+                            submissionMap["points"] = it.grade_auto.toString()
+                            submissionMap["evalAuto"] = true
+                            it.grade_auto
+                        }
+                        else -> {
+                            submissionMap["evalMissing"] = true
+                            null
+                        }
+                    }
+
+                    when {
+                        validGrade == null -> Unit
+                        validGrade >= threshold -> submissionMap["completed"] = true
+                        else -> submissionMap["started"] = true
+                    }
+
+                    submissionMap.toJsObj()
+                }.toTypedArray()
+
+                getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
+                        "submissions" to submissions
+                ))
+
+                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
+
+            } else {
+                // Box is visible at the moment
+                debug { "Close all submissions" }
+                getElemById("all-submissions-section").clear()
+                getElemById("all-submissions-link").textContent = Str.allSubmissionsLink()
+            }
+        }
+
 
         getElemById("tab-student").textContent = "$givenName ${familyName[0]}"
 
@@ -466,6 +534,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "readOnly" to true))
 
             getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(submission.id) }
+            getElemById("all-submissions-link").onVanillaClick(true) { MainScope().launch { toggleSubmissionsBox() } }
         }
     }
 
