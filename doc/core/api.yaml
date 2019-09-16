@@ -659,22 +659,6 @@ paths:
               - students
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}:
-    parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/StudentId'
-    get:
-      summary: Get this student's latest submission for this exercise.
-      tags:
-        - teacher
-      responses:
-        300:
-          description: Submission.
-          schema:
-            $ref: '#/definitions/TeacherSubmission'
-
-
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments:
     parameters:
       - $ref: '#/parameters/CourseId'
@@ -1236,28 +1220,6 @@ definitions:
         type: integer
       completed_count:
         type: integer
-
-  TeacherSubmission:
-    properties:
-      id:
-        type: string
-      solution:
-        type: string
-      created_at:
-        type: string
-        format: date-time
-      grade_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: integer
-      feedback_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: string
-      grade_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: integer
-      feedback_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: string
 
 
 

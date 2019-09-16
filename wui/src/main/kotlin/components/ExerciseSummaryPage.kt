@@ -102,6 +102,12 @@ object ExerciseSummaryPage : EasyPage() {
     )
 
     @Serializable
+    data class TeacherSubmissions(
+            val submissions: List<TeacherSubmission>,
+            val count: Int
+    )
+
+    @Serializable
     data class TeacherSubmission(
             val id: String,
             val solution: String,
@@ -415,7 +421,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         MainScope().launch {
             val submissionResp =
-                    fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students/$studentId",
+                    fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId?limit=1",
                             ReqMethod.GET).await()
 
             if (!submissionResp.http200) {
@@ -423,15 +429,14 @@ object ExerciseSummaryPage : EasyPage() {
                 error("Fetching student submission failed with status ${submissionResp.status}")
             }
 
-            val submission = submissionResp.parseTo(TeacherSubmission.serializer()).await()
-
-            val submissionCount = 4 // TODO
+            val submissions = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
+            val submission = submissions.submissions[0]
 
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", mapOf(
                     "allSubmissionsLink" to Str.allSubmissionsLink(),
                     "latestSubmissionLabel" to Str.latestSubmissionSuffix(),
                     "submissionLabel" to Str.submissionHeading(),
-                    "submissionCount" to submissionCount,
+                    "submissionCount" to submissions.count,
                     "timeLabel" to Str.submissionTimeLabel(),
                     "time" to submission.created_at.toEstonianString(),
                     "addGradeLink" to Str.addAssessmentLink(),
