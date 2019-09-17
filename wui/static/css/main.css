@@ -311,7 +311,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .all-submissions-wrap {
-    max-height: 50vh;
+    max-height: 35vh;
     overflow: auto;
 }
 
