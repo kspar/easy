@@ -4,6 +4,7 @@ import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IdTable
 import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.Table
 
 
 // EMS
@@ -132,4 +133,11 @@ object Executor : LongIdTable("executor") {
 object AutoExerciseExecutor : LongIdTable("auto_exercise_executor") {
     val autoExercise = reference("auto_exercise_id", AutoExercise)
     val executor = reference("executor_id", Executor)
+}
+
+object SubmissionDraft : Table("submission_draft") {
+    val courseExercise = reference("course_exercise_id", CourseExercise).primaryKey()
+    val student = reference("student_id", Student).primaryKey()
+    val createdAt = datetime("created_at")
+    val solution = text("solution")
 }
