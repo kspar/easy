@@ -5,16 +5,13 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.Student
 import core.db.SubmissionDraft
+import core.db.insertOrUpdate
 import core.ems.service.access.assertIsVisibleExerciseOnCourse
 import core.ems.service.access.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.statements.StatementType
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -49,21 +46,13 @@ class StudentSubmitDraftController {
 
 private fun insertOrUpdateSubmissionDraft(courseExId: Long, submission: String, studentId: String) {
     return transaction {
-        val time = DateTime.now()
-        SubmissionDraft.insertIgnore {
+        SubmissionDraft.insertOrUpdate(listOf(SubmissionDraft.courseExercise, SubmissionDraft.student),
+                listOf(SubmissionDraft.courseExercise, SubmissionDraft.student)) {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
             it[student] = EntityID(studentId, Student)
-            it[createdAt] = time
+            it[createdAt] = DateTime.now()
             it[solution] = submission
         }
-
-        SubmissionDraft.update {
-            it[courseExercise] = EntityID(courseExId, CourseExercise)
-            it[student] = EntityID(studentId, Student)
-            it[createdAt] = time
-            it[solution] = submission
-        }
-
     }
 }
 
