@@ -405,8 +405,7 @@ object ExerciseSummaryPage : EasyPage() {
                     val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
-                        toggleAddGradeBox(submissionId)
-                        getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(grade, feedback)
+                        buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
                         buildTeacherStudents(courseId, courseExerciseId, threshold)
                     }
                 }
@@ -462,105 +461,106 @@ object ExerciseSummaryPage : EasyPage() {
             }
         }
 
-        suspend fun toggleSubmissionsBox() {
-            if (getElemByIdOrNull("all-submissions-wrap") == null) {
-                // Box is not visible yet
-                debug { "Open all submissions" }
-                getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions-placeholder", mapOf(
-                        "text" to Str.loadingAllSubmissions()
-                ))
-                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
+        suspend fun paintSubmissionBox() {
+            getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions-placeholder", mapOf(
+                    "text" to Str.loadingAllSubmissions()
+            ))
 
-                val submissionResp =
-                        fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
-                                ReqMethod.GET).await()
+            val submissionResp =
+                    fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
+                            ReqMethod.GET).await()
 
-                if (!submissionResp.http200) {
-                    errorMessage { Str.somethingWentWrong() }
-                    error("Fetching all student submissions failed with status ${submissionResp.status}")
-                }
+            if (!submissionResp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching all student submissions failed with status ${submissionResp.status}")
+            }
 
-                val submissionsWrap = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
+            val submissionsWrap = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
 
-                data class SubData(val number: Int, val isLast: Boolean, val time: Date, val solution: String,
-                                   val gradeAuto: Int?, val feedbackAuto: String?, val gradeTeacher: Int?, val feedbackTeacher: String?)
+            data class SubData(val number: Int, val isLast: Boolean, val time: Date, val solution: String,
+                               val gradeAuto: Int?, val feedbackAuto: String?, val gradeTeacher: Int?, val feedbackTeacher: String?)
 
-                val submissionIdMap = mutableMapOf<String, SubData>()
-                var submissionNumber = submissionsWrap.count
-                val submissions = submissionsWrap.submissions.map {
+            val submissionIdMap = mutableMapOf<String, SubData>()
+            var submissionNumber = submissionsWrap.count
+            val submissions = submissionsWrap.submissions.map {
 
-                    submissionIdMap[it.id] = SubData(submissionNumber, submissionNumber == submissionsWrap.count,
-                            it.created_at, it.solution, it.grade_auto, it.feedback_auto, it.grade_teacher, it.feedback_teacher)
+                submissionIdMap[it.id] = SubData(submissionNumber, submissionNumber == submissionsWrap.count,
+                        it.created_at, it.solution, it.grade_auto, it.feedback_auto, it.grade_teacher, it.feedback_teacher)
 
-                    val submissionMap = mutableMapOf<String, Any?>(
-                            "autoLabel" to Str.gradedAutomatically(),
-                            "teacherLabel" to Str.gradedByTeacher(),
-                            "missingLabel" to Str.notGradedYet(),
-                            "id" to it.id,
-                            "number" to submissionNumber--,
-                            "time" to it.created_at.toEstonianString()
-                    )
+                val submissionMap = mutableMapOf<String, Any?>(
+                        "autoLabel" to Str.gradedAutomatically(),
+                        "teacherLabel" to Str.gradedByTeacher(),
+                        "missingLabel" to Str.notGradedYet(),
+                        "id" to it.id,
+                        "number" to submissionNumber--,
+                        "time" to it.created_at.toEstonianString()
+                )
 
-                    val validGrade = when {
-                        it.grade_teacher != null -> {
-                            submissionMap["points"] = it.grade_teacher.toString()
-                            submissionMap["evalTeacher"] = true
-                            it.grade_teacher
-                        }
-                        it.grade_auto != null -> {
-                            submissionMap["points"] = it.grade_auto.toString()
-                            submissionMap["evalAuto"] = true
-                            it.grade_auto
-                        }
-                        else -> {
-                            submissionMap["evalMissing"] = true
-                            null
-                        }
+                val validGrade = when {
+                    it.grade_teacher != null -> {
+                        submissionMap["points"] = it.grade_teacher.toString()
+                        submissionMap["evalTeacher"] = true
+                        it.grade_teacher
                     }
-
-                    when {
-                        validGrade == null -> Unit
-                        validGrade >= threshold -> submissionMap["completed"] = true
-                        else -> submissionMap["started"] = true
+                    it.grade_auto != null -> {
+                        submissionMap["points"] = it.grade_auto.toString()
+                        submissionMap["evalAuto"] = true
+                        it.grade_auto
                     }
-
-                    submissionMap.toJsObj()
-                }.toTypedArray()
-
-                val selectedSubId = getElemBySelector("[data-active-sub]")?.getAttribute("data-active-sub")
-                debug { "Selected submission: $selectedSubId" }
-
-                getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
-                        "submissions" to submissions
-                ))
-
-                if (selectedSubId != null) {
-                    refreshSubListLinks(selectedSubId)
-                } else {
-                    warn { "Active submission id is null" }
-                }
-
-                getNodelistBySelector("[data-sub-id]").asList().forEach {
-                    if (it is Element) {
-                        val id = it.getAttribute("data-sub-id")
-                                ?: error("No data-sub-id found on submission item")
-                        val sub = submissionIdMap[id] ?: error("No submission $id found in idMap")
-
-                        it.onVanillaClick(true) {
-                            debug { "Painting submission $id" }
-                            paintSubmission(id, sub.number, sub.time, sub.solution, sub.isLast,
-                                    sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher )
-                            refreshSubListLinks(id)
-                        }
-                    } else {
-                        error("Submission item is not an Element")
+                    else -> {
+                        submissionMap["evalMissing"] = true
+                        null
                     }
                 }
 
-                Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+                when {
+                    validGrade == null -> Unit
+                    validGrade >= threshold -> submissionMap["completed"] = true
+                    else -> submissionMap["started"] = true
+                }
 
+                submissionMap.toJsObj()
+            }.toTypedArray()
+
+            val selectedSubId = getElemBySelector("[data-active-sub]")?.getAttribute("data-active-sub")
+            debug { "Selected submission: $selectedSubId" }
+
+            getElemById("all-submissions-section").innerHTML = tmRender("tm-teach-exercise-all-submissions", mapOf(
+                    "submissions" to submissions
+            ))
+
+            if (selectedSubId != null) {
+                refreshSubListLinks(selectedSubId)
             } else {
-                // Box is visible at the moment
+                warn { "Active submission id is null" }
+            }
+
+            getNodelistBySelector("[data-sub-id]").asList().forEach {
+                if (it is Element) {
+                    val id = it.getAttribute("data-sub-id")
+                            ?: error("No data-sub-id found on submission item")
+                    val sub = submissionIdMap[id] ?: error("No submission $id found in idMap")
+
+                    it.onVanillaClick(true) {
+                        debug { "Painting submission $id" }
+                        paintSubmission(id, sub.number, sub.time, sub.solution, sub.isLast,
+                                sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher )
+                        refreshSubListLinks(id)
+                    }
+                } else {
+                    error("Submission item is not an Element")
+                }
+            }
+
+            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        }
+
+        suspend fun toggleSubmissionsBox() {
+            if (!isSubmissionBoxVisible()) {
+                debug { "Open all submissions" }
+                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
+                paintSubmissionBox()
+            } else {
                 debug { "Close all submissions" }
                 getElemById("all-submissions-section").clear()
                 getElemById("all-submissions-link").textContent = Str.allSubmissionsLink()
@@ -602,6 +602,8 @@ object ExerciseSummaryPage : EasyPage() {
             getElemById("all-submissions-link").onVanillaClick(true) { MainScope().launch { toggleSubmissionsBox() } }
         }
     }
+
+    private fun isSubmissionBoxVisible() = getElemByIdOrNull("all-submissions-wrap") != null
 
     private fun refreshSubListLinks(selectedSubmissionid: String) {
         getNodelistBySelector("[data-sub-id]").asList().filterIsInstance<Element>().forEach {
