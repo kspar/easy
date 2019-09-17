@@ -117,7 +117,8 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="auto_exercise_id" type="bigint">
-                <constraints references="automatic_exercise(id)" foreignKeyName="fk_auto_exercise_executor_auto_exercise"
+                <constraints references="automatic_exercise(id)"
+                             foreignKeyName="fk_auto_exercise_executor_auto_exercise"
                              nullable="false"/>
             </column>
             <column name="executor_id" type="bigint">
@@ -149,6 +150,30 @@
     <changeSet id="030919-1" author="priit">
         <addDefaultValue tableName="management_notification" columnName="id"
                          defaultValueSequenceNext="management_notification_id_seq"/>
+    </changeSet>
+
+    <changeSet id="140919-1" author="priit">
+        <createTable tableName="submission_draft">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_submission_draft_course_exercise"
+                             nullable="false"/>
+            </column>
+
+            <column name="student_id" type="text">
+                <constraints primaryKey="true" references="student(username)"
+                             foreignKeyName="fk_submission_draft_student"
+                             nullable="false"/>
+            </column>
+
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
 
 </databaseChangeLog>
