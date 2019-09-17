@@ -98,10 +98,14 @@ abstract class TranslatableStrings {
     abstract fun latestSubmissionSuffix(): String
     abstract fun allSubmissionsLink(): String
     abstract fun loadingAllSubmissions(): String
+    abstract fun oldSubmissionNote(): String
+    abstract fun toLatestSubmissionLink(): String
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun oldSubmissionNote()="See on vana esitus."
+    override fun toLatestSubmissionLink()="Vaata viimast esitust."
     override fun loadingAllSubmissions()= "Laen esitusi..."
     override fun submissionHeading()= "Esitus"
     override fun latestSubmissionSuffix()="(viimane esitus)"

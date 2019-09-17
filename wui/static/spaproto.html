@@ -187,7 +187,9 @@
 </script>
 
 <script id="tm-teach-exercise-student-submission-sub" type="text/x-handlebars-template">
-    <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3><span class="last-submission-label">{{latestSubmissionLabel}}</span>
+    <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3>
+    {{#isLatest}}<span class="last-submission-label">{{latestSubmissionLabel}}</span>{{/isLatest}}
+    {{^isLatest}}<div><span class="note warn"><i class="material-icons warn">info_outline</i>{{notLatestSubmissionLabel}} <a id="last-submission-link" href="#!">{{notLatestSubmissionLink}}</a></span></div>{{/isLatest}}
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>

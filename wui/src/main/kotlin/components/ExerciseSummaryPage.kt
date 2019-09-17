@@ -355,7 +355,7 @@ object ExerciseSummaryPage : EasyPage() {
                         ?: error("No data-family-name found on student item")
 
                 it.onVanillaClick(true) {
-                    buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName)
+                    buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName, false)
                 }
 
             } else {
@@ -369,7 +369,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun buildStudentTab(courseId: String, courseExerciseId: String, threshold: Int,
-                                studentId: String, givenName: String, familyName: String) {
+                                studentId: String, givenName: String, familyName: String, isAllSubsOpen: Boolean) {
 
         suspend fun addAssessment(grade: Int, feedback: String, submissionId: String) {
             val assMap: MutableMap<String, Any> = mutableMapOf("grade" to grade)
@@ -428,8 +428,10 @@ object ExerciseSummaryPage : EasyPage() {
                     "id" to id,
                     "submissionLabel" to Str.submissionHeading(),
                     "submissionNo" to number,
-                    "latestSubmissionLabel" to if (isLast) Str.latestSubmissionSuffix() else null,
-                    // TODO: not last message
+                    "latestSubmissionLabel" to Str.latestSubmissionSuffix(),
+                    "notLatestSubmissionLabel" to Str.oldSubmissionNote(),
+                    "notLatestSubmissionLink" to Str.toLatestSubmissionLink(),
+                    "isLatest" to isLast,
                     "timeLabel" to Str.submissionTimeLabel(),
                     "time" to time.toEstonianString(),
                     "addGradeLink" to Str.addAssessmentLink(),
@@ -453,6 +455,11 @@ object ExerciseSummaryPage : EasyPage() {
                     "readOnly" to true))
 
             getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(id) }
+
+            getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
+                val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null
+                buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isAllSubsBoxOpen)
+            }
         }
 
         suspend fun toggleSubmissionsBox() {
@@ -586,7 +593,11 @@ object ExerciseSummaryPage : EasyPage() {
             ))
             paintSubmission(submission.id, submissions.count, submission.created_at, submission.solution, true,
                     submission.grade_auto, submission.feedback_auto, submission.grade_teacher, submission.feedback_teacher)
-            refreshSubListLinks(submission.id)
+
+            if (isAllSubsOpen) {
+                toggleSubmissionsBox()
+                refreshSubListLinks(submission.id)
+            }
 
             getElemById("all-submissions-link").onVanillaClick(true) { MainScope().launch { toggleSubmissionsBox() } }
         }

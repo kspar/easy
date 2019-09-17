@@ -493,6 +493,32 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
+/** Notes **/
+
+.note {
+    display: inline-flex;
+    padding: 2px 5px;
+    margin-bottom: 1rem;
+}
+
+.note :not(:first-child) {
+    margin-left: 0.5rem;
+}
+
+.note.warn {
+    background-color: #fbf7e5;
+    border: 1px solid #f9eaa9;
+}
+
+.note .material-icons {
+    margin-right: 10px;
+}
+
+.material-icons.warn {
+    color: #da8403;
+}
+
+
 /** Form elements **/
 
 .input-field input[type=number],
