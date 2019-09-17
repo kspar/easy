@@ -454,7 +454,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "viewportMargin" to 100,
                     "readOnly" to true))
 
-            getElemById("add-grade-link").onVanillaClick(true) { toggleAddGradeBox(id) }
+            getElemByIdOrNull("add-grade-link")?.onVanillaClick(true) { toggleAddGradeBox(id) }
 
             getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
                 val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null

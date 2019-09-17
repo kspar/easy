@@ -193,10 +193,10 @@
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
-
+    {{#isLatest}}
     <a id="add-grade-link" class="toggle-link" href="#!">{{addGradeLink}}</a>
     <div id="add-grade-section"></div>
-
+    {{/isLatest}}
     <div class="editor-wrapper no-cursor">
         <form>
             <textarea id="student-submission">{{solution}}</textarea>
