@@ -4,6 +4,7 @@ html {
     font-family: 'Roboto', sans-serif;
     font-size: 62.5%;
     height: 100%;
+    color: #333;
 }
 
 body {
@@ -148,16 +149,16 @@ nav.crumb-wrap {
 }
 
 nav.crumb-wrap .breadcrumb {
-    color: rgb(128, 128, 128);
-    font-size: 1.5rem;
+    color: #777;
+    font-size: 1.4rem;
 }
 
 nav.crumb-wrap .breadcrumb:last-child {
-    color: rgb(0, 0, 0);
+    color: #222;
 }
 
 nav.crumb-wrap .breadcrumb:before {
-    color: rgba(128, 128, 128, 0.7);
+    color: #aaa;
 }
 
 
@@ -253,7 +254,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .collection-item.inactive {
-    color: #999;
+    color: #aaa;
 }
 
 #exercise-card .collection-item.inactive:hover {
@@ -417,7 +418,6 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #participants-container #add-students-wrap {
-    padding: 2rem;
     border: 1px solid #ddd;
     background-color: #eee;
 }
