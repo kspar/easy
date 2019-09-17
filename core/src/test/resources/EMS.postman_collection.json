@@ -2603,8 +2603,8 @@
 					{
 						"key": "Content-Type",
 						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
+						"value": "application/json",
+						"type": "text"
 					},
 					{
 						"key": "oidc_claim_easy_role",
@@ -2634,7 +2634,12 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"solution\": \"string\"\r\n}"
+					"raw": "{\r\n  \"solution\": \"string\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/draft",
@@ -2670,9 +2675,6 @@
 					}
 				}
 			],
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
 				"auth": {
 					"type": "noauth"
@@ -2682,8 +2684,8 @@
 					{
 						"key": "Content-Type",
 						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
+						"value": "application/json",
+						"type": "text"
 					},
 					{
 						"key": "oidc_claim_easy_role",
@@ -2711,10 +2713,6 @@
 						"value": "fp"
 					}
 				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n  \"solution\": \"string\"\r\n}"
-				},
 				"url": {
 					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/draft",
 					"host": [
