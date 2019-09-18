@@ -258,13 +258,13 @@
 
 <script id="tm-teach-exercise-summary" type="text/x-handlebars-template">
     <div>
-        {{#softDeadline}}<p><span class="subheading">{{softDeadlineLabel}}: </span>{{softDeadline}}</p>{{/softDeadline}}
-        {{#hardDeadline}}<p><span class="subheading">{{hardDeadlineLabel}}: </span>{{hardDeadline}}</p>{{/hardDeadline}}
-        {{#graderType}}<p><span class="subheading">{{graderTypeLabel}}: </span>{{graderType}}</p>{{/graderType}}
-        {{#threshold}}<p><span class="subheading">{{thresholdLabel}}: </span>{{threshold}}%</p>{{/threshold}}
-        {{#studentVisible}}<p><span class="subheading">{{studentVisibleLabel}}: </span>{{studentVisible}}</p>{{/studentVisible}}
-        {{#assStudentVisible}}<p><span class="subheading">{{assStudentVisibleLabel}}: </span>{{assStudentVisible}}</p>{{/assStudentVisible}}
-        {{#lastModified}}<p><span class="subheading">{{lastModifiedLabel}}: </span>{{lastModified}}</p>{{/lastModified}}
+        {{#softDeadline}}<p class="ex-info-item"><span class="subheading">{{softDeadlineLabel}}:</span>{{softDeadline}}</p>{{/softDeadline}}
+        {{#hardDeadline}}<p class="ex-info-item"><span class="subheading">{{hardDeadlineLabel}}:</span>{{hardDeadline}}</p>{{/hardDeadline}}
+        {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
+        {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
+        {{#studentVisible}}<p class="ex-info-item"><span class="subheading">{{studentVisibleLabel}}:</span>{{studentVisible}}</p>{{/studentVisible}}
+        {{#assStudentVisible}}<p class="ex-info-item"><span class="subheading">{{assStudentVisibleLabel}}:</span>{{assStudentVisible}}</p>{{/assStudentVisible}}
+        {{#lastModified}}<p class="ex-info-item"><span class="subheading">{{lastModifiedLabel}}:</span>{{lastModified}}</p>{{/lastModified}}
     </div>
     <div>
         <h2>{{exerciseTitle}}</h2>
@@ -307,7 +307,7 @@
 </script>
 
 <script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
-    {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>{{/time}}
+    {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}:</span>{{time}}</p>{{/time}}
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
     <div id="submit-editor-wrap" class="editor-wrapper">
@@ -320,9 +320,9 @@
 
 <script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
     <div>
-        {{#deadline}}<p><span class="subheading">{{deadlineLabel}}: </span>{{deadline}}</p>{{/deadline}}
-        {{#graderType}}<p><span class="subheading">{{graderTypeLabel}}: </span>{{graderType}}</p>{{/graderType}}
-        {{#threshold}}<p><span class="subheading">{{thresholdLabel}}: </span>{{threshold}}%</p>{{/threshold}}
+        {{#deadline}}<p class="ex-info-item"><span class="subheading">{{deadlineLabel}}:</span>{{deadline}}</p>{{/deadline}}
+        {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
+        {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
     </div>
     <div>
         <h2>{{title}}</h2>

@@ -243,9 +243,15 @@ nav.crumb-wrap .breadcrumb:before {
     }
 }
 
+#exercise-card .ex-info-item {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 #exercise-card .subheading {
     color: #4DAB54;
     font-weight: 500;
+    margin-right: 0.5rem;
 }
 
 #exercise-card h2 {
