@@ -349,10 +349,10 @@ nav.crumb-wrap .breadcrumb:before {
 #exercise-card .time {
     font-size: 0.8em;
     margin: 0 1rem;
+    flex-shrink: 1;
 }
 
 #exercise-card .grade {
-    text-align: right;
     font-size: 0.8em;
 }
 
@@ -599,11 +599,18 @@ nav.crumb-wrap .breadcrumb:before {
 
 .toggle-link {
     display: block;
+    padding-bottom: 0.5rem;
 }
 
 .toggleable-wrap {
-    padding: 2rem;
+    padding: 0.5rem;
     border: 1px solid #eee;
+}
+
+@media only screen and (min-width: 601px) {
+    .toggleable-wrap {
+        padding: 2rem;
+    }
 }
 
 
@@ -611,12 +618,9 @@ nav.crumb-wrap .breadcrumb:before {
 
 .note {
     display: inline-flex;
+    align-items: center;
     padding: 2px 5px;
     margin-bottom: 1rem;
-}
-
-.note :not(:first-child) {
-    margin-left: 0.5rem;
 }
 
 .note.warn {
@@ -630,6 +634,12 @@ nav.crumb-wrap .breadcrumb:before {
 
 .material-icons.warn {
     color: #da8403;
+}
+
+.note > .content {
+    display: flex;
+    flex-wrap: wrap;
+    white-space: pre-wrap;
 }
 
 
@@ -720,6 +730,7 @@ div.divided-collection {
     margin-right: -20px;
 }
 
+/* TODO: rm */
 .bb.sm {
     font-size: 1rem;
 }

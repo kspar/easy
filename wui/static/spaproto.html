@@ -151,19 +151,21 @@
     <div id="all-submissions-wrap" class="toggleable-wrap all-submissions-wrap">
         <div class="collection divided-collection">
             {{#submissions}}
-            <a class="collection-item sm row bb-wrap" href="#!" data-sub-id="{{id}}">
-                <span class="col s2">#{{number}}</span>
-                <span class="col s7" style="text-align: center">{{time}}</span>
-                <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
-                    <span>{{points}}{{^points}}-{{/points}}/100</span
-                    >{{#evalAuto
-                }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                {{/evalAuto}}{{#evalTeacher
-                }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                {{/evalTeacher}}{{#evalMissing
-                }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                {{/evalMissing}}
-                </span>
+            <a class="collection-item sm bb-wrap" href="#!" data-sub-id="{{id}}">
+                <div class="submission-item">
+                    <span style="flex-shrink: 0;">#{{number}}</span>
+                    <span class="time truncate">{{time}}</span>
+                    <span class="grade">
+                        <span>{{points}}{{^points}}-{{/points}}/100</span
+                        >{{#evalAuto
+                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        {{/evalAuto}}{{#evalTeacher
+                        }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                        {{/evalTeacher}}{{#evalMissing
+                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        {{/evalMissing}}
+                    </span>
+                </div>
                 <div class="bb sm">
                     {{#completed}}
                     <span class="bb-item sm bb-green"></span>
@@ -189,7 +191,12 @@
 <script id="tm-teach-exercise-student-submission-sub" type="text/x-handlebars-template">
     <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3>
     {{#isLatest}}<span class="last-submission-label">{{latestSubmissionLabel}}</span>{{/isLatest}}
-    {{^isLatest}}<div><span class="note warn"><i class="material-icons warn">info_outline</i>{{notLatestSubmissionLabel}} <a id="last-submission-link" href="#!">{{notLatestSubmissionLink}}</a></span></div>{{/isLatest}}
+    {{^isLatest}}
+    <div><span class="note warn">
+        <i class="material-icons warn">info_outline</i>
+        <span class="content"><span>{{notLatestSubmissionLabel}} </span><a id="last-submission-link" href="#!">{{notLatestSubmissionLink}}</a></span>
+    </span></div>
+    {{/isLatest}}
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
@@ -215,16 +222,16 @@
             <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
                 <div class="submission-item">
                     <span class="truncate" style="flex-shrink: 0.3;">{{givenName}} {{familyName}}</span>
-                    <span class="time truncate" style="flex-shrink: 1;">{{time}}</span>
-                    <span class="grade" style="flex-shrink: 0;">
+                    <span class="time truncate">{{time}}</span>
+                    <span class="grade">
                        <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
                        >{{#evalAuto
-                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}{{#evalTeacher
-                    }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                    {{/evalTeacher}}{{#evalMissing
-                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                    {{/evalMissing}}
+                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        {{/evalAuto}}{{#evalTeacher
+                        }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                        {{/evalTeacher}}{{#evalMissing
+                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        {{/evalMissing}}
                     </span>
                 </div>
                 <div class="bb">
