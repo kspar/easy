@@ -724,15 +724,11 @@ div.divided-collection {
 
 .bb {
     line-height: 0;
+    font-size: 0;
     white-space: nowrap;
     overflow: hidden;
     margin-left: -20px;
     margin-right: -20px;
-}
-
-/* TODO: rm */
-.bb.sm {
-    font-size: 1rem;
 }
 
 .bb-item {
