@@ -435,9 +435,11 @@
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
         <div class="teacher-course-wrapper">
-            <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+            <a class="collection-item course-item row" href="/courses/{{id}}/exercises">
+                <span class="col xs9 s7 m9">{{title}}</span>
+            </a>
             <a class="btn-flat waves-effect waves-green course-add-students" href="/courses/{{id}}/participants">
-                <i class="material-icons left">group</i>
+                <i class="material-icons">group</i>
                 <span class="course-student-count">{{count}} {{students}}</span>
             </a>
         </div>
