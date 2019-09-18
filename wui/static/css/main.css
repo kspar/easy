@@ -122,19 +122,29 @@ nav.nav-center ul li a.nav-link {
 /** Container **/
 
 div.container {
-    width: 95%;
     position: relative;
+    width: 95%;
+    max-width: 541px;
+}
+
+@media only screen and (min-width: 601px) {
+    div.container {
+        width: 90%;
+        max-width: 795px;
+    }
 }
 
 @media only screen and (min-width: 993px) {
     div.container {
-        width: 75%;
+        width: 80%;
+        max-width: 900px;
     }
 }
 
-@media only screen and (min-width: 1200px) {
+@media only screen and (min-width: 1500px) {
     div.container {
         width: 60%;
+        max-width: unset;
     }
 }
 
