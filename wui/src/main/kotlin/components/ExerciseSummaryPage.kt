@@ -29,6 +29,7 @@ import onVanillaClick
 import org.w3c.dom.*
 import parseTo
 import queries.BasicCourseInfo
+import successMessage
 import tmRender
 import toEstonianString
 import toJsObj
@@ -408,6 +409,7 @@ object ExerciseSummaryPage : EasyPage() {
                     val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
+                        successMessage { Str.assessmentAddedMsg() }
                         buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
                         buildTeacherStudents(courseId, courseExerciseId, threshold)
                     }

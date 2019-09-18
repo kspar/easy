@@ -34,13 +34,28 @@ fun debugFunStart(funName: String): FunLog? {
 fun errorMessage(msgProvider: () -> String) {
     val msg = msgProvider()
     debug { "Showing error message: $msg" }
-    val toastHtml = tmRender("tm-error-message", mapOf(
+    val toastHtml = tmRender("tm-message", mapOf(
+            "icon" to "error_outline",
             "error" to msg,
             "dismiss" to Str.errorDismiss()
     ))
     Materialize.toast(objOf(
             "html" to toastHtml,
             "displayLength" to 15_000
+    ))
+}
+
+fun successMessage(msgProvider: () -> String) {
+    val msg = msgProvider()
+    debug { "Showing success message: $msg" }
+    val toastHtml = tmRender("tm-message", mapOf(
+            "icon" to "check",
+            "error" to msg,
+            "dismiss" to Str.errorDismiss()
+    ))
+    Materialize.toast(objOf(
+            "html" to toastHtml,
+            "displayLength" to 5_000
     ))
 }
 

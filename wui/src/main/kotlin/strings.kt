@@ -91,6 +91,7 @@ abstract class TranslatableStrings {
     abstract fun addAssessmentFeedbackLabel(): String
     abstract fun addAssessmentGradeValidErr(): String
     abstract fun addAssessmentButtonLabel(): String
+    abstract fun assessmentAddedMsg(): String
     abstract fun submissionTimeLabel(): String
     abstract fun submitAndCheckLabel(): String
     abstract fun lastSubmTimeLabel(): String
@@ -104,22 +105,23 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
-    override fun oldSubmissionNote()="See on vana esitus."
-    override fun toLatestSubmissionLink()="Vaata viimast esitust."
-    override fun loadingAllSubmissions()= "Laen esitusi..."
-    override fun submissionHeading()= "Esitus"
-    override fun latestSubmissionSuffix()="(viimane esitus)"
-    override fun allSubmissionsLink()="► Vaata kõiki esitusi"
+    override fun assessmentAddedMsg() = "Hinnang lisatud."
+    override fun oldSubmissionNote() = "See on vana esitus."
+    override fun toLatestSubmissionLink() = "Vaata viimast esitust."
+    override fun loadingAllSubmissions() = "Laen esitusi..."
+    override fun submissionHeading() = "Esitus"
+    override fun latestSubmissionSuffix() = "(viimane esitus)"
+    override fun allSubmissionsLink() = "► Vaata kõiki esitusi"
     override fun tabSubmitLabel() = "Esitamine"
-    override fun submitAndCheckLabel()="Esita ja kontrolli"
-    override fun lastSubmTimeLabel()="Viimase esituse aeg"
+    override fun submitAndCheckLabel() = "Esita ja kontrolli"
+    override fun lastSubmTimeLabel() = "Viimase esituse aeg"
     override fun noCoursesLabel() = "Sind ei ole veel ühelegi kursusele lisatud."
     override fun softDeadlineLabel() = "Tähtaeg"
-    override fun hardDeadlineLabel()="Sulgemise aeg"
-    override fun graderTypeLabel()="Hindamine"
-    override fun thresholdLabel()="Lävend"
-    override fun studentVisibleLabel()="Õpilastele nähtav"
-    override fun assStudentVisibleLabel()="Hinnangud õpilastele nähtavad"
+    override fun hardDeadlineLabel() = "Sulgemise aeg"
+    override fun graderTypeLabel() = "Hindamine"
+    override fun thresholdLabel() = "Lävend"
+    override fun studentVisibleLabel() = "Õpilastele nähtav"
+    override fun assStudentVisibleLabel() = "Hinnangud õpilastele nähtavad"
     override fun lastModifiedLabel() = "Viimati muudetud"
     override fun submissionTimeLabel() = "Esitamise aeg"
     override fun yes() = "jah"

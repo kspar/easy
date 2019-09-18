@@ -86,8 +86,8 @@
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 </script>
 
-<script id="tm-error-message" type="text/x-handlebars-template">
-    <i class="material-icons" style="margin-right: 10px;">error_outline</i>
+<script id="tm-message" type="text/x-handlebars-template">
+    <i class="material-icons" style="margin-right: 10px;">{{icon}}</i>
     <span class="student-toast">{{error}}</span>
     <button onClick="M.Toast.dismissAll();" class="btn-flat toast-action">{{dismiss}}</button>
 </script>
