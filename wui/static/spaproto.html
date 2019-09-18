@@ -212,11 +212,11 @@
 <script id="tm-teach-exercise-students" type="text/x-handlebars-template">
     <div class="collection divided-collection">
         {{#students}}
-            <a class="collection-item bb-wrap row {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
-                <div class="row">
-                    <span class="col s6">{{givenName}} {{familyName}}</span>
-                    <span class="col s4 time">{{time}}</span>
-                    <span class="col s2 grade">
+            <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
+                <div class="submission-item">
+                    <span class="truncate" style="flex-shrink: 0.3;">{{givenName}} {{familyName}}</span>
+                    <span class="time truncate" style="flex-shrink: 1;">{{time}}</span>
+                    <span class="grade" style="flex-shrink: 0;">
                        <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
                        >{{#evalAuto
                     }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
@@ -225,7 +225,7 @@
                     {{/evalTeacher}}{{#evalMissing
                     }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
                     {{/evalMissing}}
-                </span>
+                    </span>
                 </div>
                 <div class="bb">
                     {{#completed}}

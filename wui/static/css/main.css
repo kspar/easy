@@ -318,6 +318,16 @@ nav.crumb-wrap .breadcrumb:before {
     color: #469c45;
 }
 
+#exercise-card .submission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+#exercise-card .submission-item > * {
+    flex-shrink: 0;
+}
+
 #exercise-card .collection-item .row {
     margin-bottom: 0;
 }
@@ -337,12 +347,13 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .time {
-    font-size: 1.9rem;
+    font-size: 0.8em;
+    margin: 0 1rem;
 }
 
 #exercise-card .grade {
     text-align: right;
-    font-size: 1.9rem;
+    font-size: 0.8em;
 }
 
 #exercise-card .eval-logo-teacher {
@@ -652,7 +663,7 @@ textarea:focus + label {
 
 div.divided-collection a.collection-item {
     font-size: 1.8rem;
-    line-height: 4rem;
+    line-height: 3rem;
     color: #333;
     padding: 1rem 2rem;
     margin-bottom: 1rem;
@@ -705,15 +716,12 @@ div.divided-collection {
     line-height: 0;
     white-space: nowrap;
     overflow: hidden;
+    margin-left: -20px;
+    margin-right: -20px;
 }
 
 .bb.sm {
     font-size: 1rem;
-}
-
-div.divided-collection a.collection-item .bb {
-    margin-left: -20px;
-    margin-right: -20px;
 }
 
 .bb-item {
