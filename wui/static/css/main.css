@@ -213,8 +213,9 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#exercise-card #tabs-wrap {
-    text-align: center;
+#exercise-card .tabs {
+    display: flex;
+    justify-content: center;
 }
 
 #exercise-card .tabs .tab {
@@ -574,11 +575,11 @@ nav.crumb-wrap .breadcrumb:before {
 /** General **/
 
 .display-none {
-    display: none;
+    display: none !important;
 }
 
 .flex {
-    display: flex;
+    display: flex !important;
 }
 
 

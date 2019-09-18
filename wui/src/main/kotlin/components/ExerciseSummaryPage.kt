@@ -574,12 +574,14 @@ object ExerciseSummaryPage : EasyPage() {
 
 
         val studentTab = getElemById("tab-student")
-        studentTab.textContent = "$givenName ${familyName[0]}"
+        studentTab.removeClass("display-none")
+        val studentTabLink = studentTab.firstElementChild
+        studentTabLink?.textContent = "$givenName ${familyName[0]}"
 
         val tabs = Materialize.Tabs.getInstance(getElemById("tabs"))
         tabs.select("student")
         tabs.updateTabIndicator()
-        studentTab.focus()
+        studentTabLink?.focus()
 
         MainScope().launch {
             val submissionResp =
