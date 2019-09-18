@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
+import libheaders.focus
 import objOf
 import onVanillaClick
 import org.w3c.dom.*
@@ -546,7 +547,7 @@ object ExerciseSummaryPage : EasyPage() {
                     it.onVanillaClick(true) {
                         debug { "Painting submission $id" }
                         paintSubmission(id, sub.number, sub.time, sub.solution, sub.isLast,
-                                sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher )
+                                sub.gradeAuto, sub.feedbackAuto, sub.gradeTeacher, sub.feedbackTeacher)
                         refreshSubListLinks(id)
                     }
                 } else {
@@ -570,11 +571,13 @@ object ExerciseSummaryPage : EasyPage() {
         }
 
 
-        getElemById("tab-student").textContent = "$givenName ${familyName[0]}"
+        val studentTab = getElemById("tab-student")
+        studentTab.textContent = "$givenName ${familyName[0]}"
 
         val tabs = Materialize.Tabs.getInstance(getElemById("tabs"))
         tabs.select("student")
         tabs.updateTabIndicator()
+        studentTab.focus()
 
         MainScope().launch {
             val submissionResp =
