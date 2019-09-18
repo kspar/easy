@@ -425,11 +425,11 @@
 </script>
 
 <script id="tm-teach-course-list" type="text/x-handlebars-template">
-    <div class="title-wrap">
-        <h3 class="title no-crumb">{{title}}</h3>
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{title}}</h3>
         {{#addCourse}}
         <a class="waves-effect waves-light btn title-button" href="/courses/new">
-            <i class="material-icons left">add</i>{{newCourse}}</a>
+            <i class="material-icons">add</i><span class="text">{{newCourse}}</span></a>
         {{/addCourse}}
     </div>
     <div id="courses-list" class="collection divided-collection">
@@ -457,8 +457,8 @@
 </script>
 
 <script id="tm-stud-course-list" type="text/x-handlebars-template">
-    <div class="title-wrap">
-        <h3 class="title no-crumb">{{title}}</h3>
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{title}}</h3>
     </div>
 
     <div id="courses-list" class="collection divided-collection">

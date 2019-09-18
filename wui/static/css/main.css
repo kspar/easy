@@ -190,10 +190,6 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-
-
-
-
 /** Exercise page **/
 
 #exercise-card #tabs-wrap {
@@ -671,20 +667,35 @@ div.divided-collection a.collection-item .bb {
 h3.title {
     margin-bottom: 2rem;
     margin-top: 1.5rem;
+    font-size: 2.5rem;
 }
 
-h3.no-crumb {
-    margin-top: 5rem;
+@media only screen and (min-width: 600px) {
+    h3.title {
+        font-size: 2.9rem;
+    }
 }
 
-div.title-wrap {
-    position: relative;
+.title-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.title-button {
-    position: absolute;
-    right: 0;
-    bottom: 0;
+.title-wrap.no-crumb {
+    margin-top: 3.5rem;
+}
+
+.title-button > .text {
+    margin-left: 1rem;
+    vertical-align: middle;
+    display: none;
+}
+
+@media only screen and (min-width: 400px) {
+    .title-button > .text {
+        display: initial;
+    }
 }
 
 div.title-wrap > .title-button > i.material-icons {
