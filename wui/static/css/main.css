@@ -409,13 +409,24 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercises page **/
 
+#exercises-list .exercise-item {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex-grow: 1;
+}
+
+#exercises-list .exercise-item > * {
+    margin: 0 1rem;
+}
+
 #exercises-list .deadline {
-    font-size: 1.9rem;
+    font-size: 0.8em;
 }
 
 #exercises-list .grade {
     text-align: right;
-    font-size: 1.9rem;
+    font-size: 0.8em;
 }
 
 #exercises-list .eval-logo-auto {
@@ -609,7 +620,7 @@ div.divided-collection a.collection-item {
     padding: 1rem 2rem;
     margin-bottom: 1rem;
     border-bottom: none;
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1),
+    box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
     0 2px 1px -2px rgba(0, 0, 0, 0.09),
     0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }

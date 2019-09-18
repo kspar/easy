@@ -362,10 +362,10 @@
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
-        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}} row" href="{{href}}">
-            <div class="row">
-                <span class="col s6">{{title}}</span>
-                <span class="col s6 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
+        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}}" href="{{href}}">
+            <div class="exercise-item" style="align-items: baseline;">
+                <span>{{title}}</span>
+                <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
             </div>
             {{#studentsExist}}
             <div class="bb">
@@ -390,19 +390,21 @@
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
-        <a class="collection-item bb-wrap row" href="{{href}}">
-            <div class="row">
-                <span class="col s6">{{title}}</span>
-                <span class="col s4 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
-                <span class="col s2 grade">
-                   <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                   >{{#evalAuto
-                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}{{#evalTeacher
-                    }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                    {{/evalTeacher}}{{#evalMissing
-                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                    {{/evalMissing}}
+        <a class="collection-item bb-wrap" href="{{href}}">
+            <div class="exercise-item">
+                <span>{{title}}</span>
+                <span class="exercise-item">
+                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
+                    <span class="grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        {{/evalAuto}}{{#evalTeacher
+                        }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                        {{/evalTeacher}}{{#evalMissing
+                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        {{/evalMissing}}
+                    </span>
                 </span>
             </div>
             <div class="bb">
