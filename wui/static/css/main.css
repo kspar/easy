@@ -72,6 +72,16 @@ nav.nav-center ul li a.nav-link {
     margin-right: 10px;
 }
 
+#profile-name {
+    display: none;
+}
+
+@media only screen and (min-width: 993px) {
+    #profile-name {
+        display: inline-block;
+    }
+}
+
 .dropdown-content li > a {
     color: #000;
     font-size: 1.5rem;
