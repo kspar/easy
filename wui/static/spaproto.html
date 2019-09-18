@@ -124,13 +124,13 @@
 <script id="tm-teach-exercise-add-grade" type="text/x-handlebars-template">
     <div id="add-grade-wrap" class="toggleable-wrap">
         <div class="row">
-            <div class="input-field col s8">
+            <div class="input-field col xs12 s10 m8">
                 <textarea id="feedback" class="materialize-textarea"></textarea>
                 <label for="feedback">{{feedbackLabel}}</label>
             </div>
         </div>
         <div class="row">
-            <div class="input-field col s4">
+            <div class="input-field col xs6 s5 m4">
                 <input id="grade" type="number" min="0" max="100" class="validate">
                 <label for="grade">{{gradeLabel}}</label>
                 <span class="helper-text" data-error="{{gradeValidationError}}"></span>
