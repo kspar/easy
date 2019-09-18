@@ -264,6 +264,10 @@ nav.crumb-wrap .breadcrumb:before {
     font-size: 2.3rem;
 }
 
+#exercise-card #exercise-text {
+    overflow: auto;
+}
+
 #exercise-card pre.feedback {
     font-size: 1.4rem;
     white-space: normal;
