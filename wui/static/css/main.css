@@ -170,6 +170,7 @@ nav.crumb-wrap {
     margin: 1rem;
     height: unset;
     min-height: 5rem;
+    width: unset;
 }
 
 nav.crumb-wrap .breadcrumb {
