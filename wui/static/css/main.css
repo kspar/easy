@@ -120,14 +120,21 @@ nav.nav-center ul li a.nav-link {
 
 /** Container **/
 
+div.container {
+    width: 95%;
+    position: relative;
+}
+
 @media only screen and (min-width: 993px) {
     div.container {
-        width: 62%;
+        width: 75%;
     }
 }
 
-div.container {
-    position: relative;
+@media only screen and (min-width: 1200px) {
+    div.container {
+        width: 60%;
+    }
 }
 
 #content-container {
@@ -146,20 +153,44 @@ div.sidenav-container {
 nav.crumb-wrap {
     background: none;
     box-shadow: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 1rem;
+    height: unset;
+    min-height: 5rem;
 }
 
 nav.crumb-wrap .breadcrumb {
     color: #777;
     font-size: 1.4rem;
+    line-height: 3rem;
 }
-
 nav.crumb-wrap .breadcrumb:last-child {
     color: #222;
 }
 
-nav.crumb-wrap .breadcrumb:before {
+nav.crumb-wrap .breadcrumb:after {
+    content: '\E5CC';
     color: #aaa;
+    vertical-align: top;
+    display: inline-block;
+    font-family: 'Material Icons';
+    font-size: 2.2rem;
+    margin: 0 1rem 0 1rem;
+    -webkit-font-smoothing: antialiased;
 }
+nav.crumb-wrap .breadcrumb:last-child:after {
+    display: none;
+}
+
+nav.crumb-wrap .breadcrumb:before {
+    display: none;
+}
+
+
+
+
 
 
 /** Exercise page **/
