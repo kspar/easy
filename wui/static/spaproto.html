@@ -257,7 +257,7 @@
 </script>
 
 <script id="tm-teach-exercise-summary" type="text/x-handlebars-template">
-    <div class="exercise-info">
+    <div>
         {{#softDeadline}}<p><span class="subheading">{{softDeadlineLabel}}: </span>{{softDeadline}}</p>{{/softDeadline}}
         {{#hardDeadline}}<p><span class="subheading">{{hardDeadlineLabel}}: </span>{{hardDeadline}}</p>{{/hardDeadline}}
         {{#graderType}}<p><span class="subheading">{{graderTypeLabel}}: </span>{{graderType}}</p>{{/graderType}}
@@ -319,7 +319,7 @@
 </script>
 
 <script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
-    <div class="exercise-info">
+    <div>
         {{#deadline}}<p><span class="subheading">{{deadlineLabel}}: </span>{{deadline}}</p>{{/deadline}}
         {{#graderType}}<p><span class="subheading">{{graderTypeLabel}}: </span>{{graderType}}</p>{{/graderType}}
         {{#threshold}}<p><span class="subheading">{{thresholdLabel}}: </span>{{threshold}}%</p>{{/threshold}}

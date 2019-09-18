@@ -233,7 +233,14 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .card-content {
+    padding: 1.3rem;
     border-top: 1px solid #e2e2e2;
+}
+
+@media only screen and (min-width: 601px) {
+    #exercise-card .card-content {
+        padding: 2.4rem;
+    }
 }
 
 #exercise-card .subheading {
@@ -246,12 +253,14 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card pre.feedback {
-    white-space: pre-wrap;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    white-space: normal;
 }
 
 #exercise-card pre.auto-feedback {
     background-color: #f5f5f5;
+    white-space: pre;
+    overflow: auto;
 }
 
 #exercise-card .grade-number {
@@ -276,6 +285,11 @@ nav.crumb-wrap .breadcrumb:before {
 #exercise-card #submission-info,
 #exercise-card .assessment {
     margin-bottom: 3rem;
+}
+
+#exercise-card #submission-info {
+    display: flex;
+    flex-wrap: wrap;
 }
 
 #exercise-card #grade:focus {
@@ -457,8 +471,14 @@ nav.crumb-wrap .breadcrumb:before {
 .editor-wrapper {
     margin-top: 3rem;
     margin-bottom: 3rem;
-    padding: 1rem;
+    padding: 0.3rem;
     background-color: #eee;
+}
+
+@media only screen and (min-width: 601px) {
+    .editor-wrapper {
+        padding: 1rem;
+    }
 }
 
 .CodeMirror {
