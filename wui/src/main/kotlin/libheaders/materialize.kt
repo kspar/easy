@@ -9,6 +9,7 @@ external object Materialize {
     val Tooltip: MTooltip
     val Tabs: MTabs
     val Toast: MToast
+    val Materialbox: MMaterialbox
 
     fun toast(options: dynamic)
 }
@@ -42,4 +43,8 @@ external class MTabsInstance {
 
 external class MToast {
     fun dismissAll()
+}
+
+external class MMaterialbox {
+    fun init(elements: dynamic, options: dynamic = definedExternally)
 }

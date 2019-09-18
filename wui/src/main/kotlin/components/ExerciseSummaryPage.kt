@@ -239,6 +239,8 @@ object ExerciseSummaryPage : EasyPage() {
                 "exerciseText" to exercise.text_html
         ))
 
+        initExerciseImages()
+
         fl?.end()
         return exercise
     }
@@ -671,6 +673,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "title" to exercise.effective_title,
                     "text" to exercise.text_html
             ))
+            initExerciseImages()
         }
 
 
@@ -742,6 +745,10 @@ object ExerciseSummaryPage : EasyPage() {
                 pollForAutograde(courseId, courseExerciseId)
             }
         }
+    }
+
+    private fun initExerciseImages() {
+        Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
     }
 
     private fun paintAutoassInProgress() {
