@@ -4,6 +4,7 @@ html {
     font-family: 'Roboto', sans-serif;
     font-size: 62.5%;
     height: 100%;
+    color: #333;
 }
 
 body {
@@ -13,6 +14,7 @@ body {
     -o-background-size: cover;
     background-size: cover;
     min-height: 100%;
+    min-width: 320px;
 }
 
 
@@ -119,14 +121,31 @@ nav.nav-center ul li a.nav-link {
 
 /** Container **/
 
-@media only screen and (min-width: 993px) {
+div.container {
+    position: relative;
+    width: 95%;
+    max-width: 541px;
+}
+
+@media only screen and (min-width: 601px) {
     div.container {
-        width: 62%;
+        width: 90%;
+        max-width: 795px;
     }
 }
 
-div.container {
-    position: relative;
+@media only screen and (min-width: 993px) {
+    div.container {
+        width: 80%;
+        max-width: 900px;
+    }
+}
+
+@media only screen and (min-width: 1500px) {
+    div.container {
+        width: 60%;
+        max-width: unset;
+    }
 }
 
 #content-container {
@@ -145,19 +164,40 @@ div.sidenav-container {
 nav.crumb-wrap {
     background: none;
     box-shadow: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 1rem;
+    height: unset;
+    min-height: 5rem;
+    width: unset;
 }
 
 nav.crumb-wrap .breadcrumb {
-    color: rgb(128, 128, 128);
-    font-size: 1.5rem;
+    color: #777;
+    font-size: 1.4rem;
+    line-height: 3rem;
+}
+nav.crumb-wrap .breadcrumb:last-child {
+    color: #222;
 }
 
-nav.crumb-wrap .breadcrumb:last-child {
-    color: rgb(0, 0, 0);
+nav.crumb-wrap .breadcrumb:after {
+    content: '\E5CC';
+    color: #aaa;
+    vertical-align: top;
+    display: inline-block;
+    font-family: 'Material Icons';
+    font-size: 2.2rem;
+    margin: 0 1rem 0 1rem;
+    -webkit-font-smoothing: antialiased;
+}
+nav.crumb-wrap .breadcrumb:last-child:after {
+    display: none;
 }
 
 nav.crumb-wrap .breadcrumb:before {
-    color: rgba(128, 128, 128, 0.7);
+    display: none;
 }
 
 
@@ -238,11 +278,6 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 3rem;
 }
 
-#exercise-card #add-grade-wrap {
-    padding: 2rem;
-    border: 1px solid #eee;
-}
-
 #exercise-card #grade:focus {
     border-bottom: 1px solid #469c45;
     -webkit-box-shadow: 0 1px 0 0 #469c45;
@@ -258,7 +293,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .collection-item.inactive {
-    color: #999;
+    color: #aaa;
 }
 
 #exercise-card .collection-item.inactive:hover {
@@ -314,6 +349,19 @@ nav.crumb-wrap .breadcrumb:before {
     font-size: 2rem;
 }
 
+#exercise-card .all-submissions-wrap {
+    max-height: 35vh;
+    overflow: auto;
+}
+
+#exercise-card .eval-logo-auto.sm {
+    width: 22px;
+}
+
+#exercise-card .eval-logo-missing.sm {
+    width: 22px;
+}
+
 
 /** Courses page **/
 
@@ -321,17 +369,34 @@ nav.crumb-wrap .breadcrumb:before {
     position: relative;
 }
 
+#courses-list a.course-add-students {
+    position: absolute;
+    top: 11px;
+    right: 5px;
+    color: #4cab54;
+    text-transform: none;
+}
+
 #courses-list span.course-student-count {
     font-size: 1.9rem;
     color: #333;
+    margin-left: 1rem;
+    display: none;
 }
 
-#courses-list a.course-add-students {
-    position: absolute;
-    top: 19px;
-    right: 20px;
-    color: #4cab54;
-    text-transform: none;
+@media only screen and (min-width: 400px) {
+    #courses-list span.course-student-count {
+        display: initial;
+    }
+    #courses-list a.course-add-students {
+        right: 20px;
+    }
+}
+
+@media only screen and (min-width: 600px) {
+    #courses-list a.course-add-students {
+        top: 18px;
+    }
 }
 
 #courses-list a.course-add-students:hover {
@@ -345,13 +410,24 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercises page **/
 
+#exercises-list .exercise-item {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex-grow: 1;
+}
+
+#exercises-list .exercise-item > * {
+    margin: 0 1rem;
+}
+
 #exercises-list .deadline {
-    font-size: 1.9rem;
+    font-size: 0.8em;
 }
 
 #exercises-list .grade {
     text-align: right;
-    font-size: 1.9rem;
+    font-size: 0.8em;
 }
 
 #exercises-list .eval-logo-auto {
@@ -409,7 +485,6 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #participants-container #add-students-wrap {
-    padding: 2rem;
     border: 1px solid #ddd;
     background-color: #eee;
 }
@@ -445,6 +520,10 @@ nav.crumb-wrap .breadcrumb:before {
     display: none;
 }
 
+.flex {
+    display: flex;
+}
+
 
 /** General animations **/
 
@@ -473,6 +552,37 @@ nav.crumb-wrap .breadcrumb:before {
 
 .toggle-link {
     display: block;
+}
+
+.toggleable-wrap {
+    padding: 2rem;
+    border: 1px solid #eee;
+}
+
+
+/** Notes **/
+
+.note {
+    display: inline-flex;
+    padding: 2px 5px;
+    margin-bottom: 1rem;
+}
+
+.note :not(:first-child) {
+    margin-left: 0.5rem;
+}
+
+.note.warn {
+    background-color: #fbf7e5;
+    border: 1px solid #f9eaa9;
+}
+
+.note .material-icons {
+    margin-right: 10px;
+}
+
+.material-icons.warn {
+    color: #da8403;
 }
 
 
@@ -505,15 +615,32 @@ textarea:focus + label {
 /** Divided collection **/
 
 div.divided-collection a.collection-item {
-    font-size: 2.1rem;
-    line-height: 5rem;
+    font-size: 1.8rem;
+    line-height: 4rem;
     color: #333;
-    padding: 10px 20px;
+    padding: 1rem 2rem;
     margin-bottom: 1rem;
     border-bottom: none;
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1),
+    box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
     0 2px 1px -2px rgba(0, 0, 0, 0.09),
     0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+@media only screen and (min-width: 600px) {
+    div.divided-collection a.collection-item {
+        font-size: 2.1rem;
+        line-height: 5rem;
+    }
+}
+
+.divided-collection .collection-item.sm {
+    padding-top: 0;
+    line-height: 4.5rem;
+    font-size: 1.6rem;
+}
+
+div.divided-collection a.collection-item:last-child {
+    margin-bottom: 0;
 }
 
 .divided-collection a.collection-item:not(.active):hover {
@@ -524,7 +651,11 @@ div.divided-collection {
     border: none;
     overflow: unset;
     position: relative;
-    margin-top: 2rem;
+}
+
+.divided-collection .collection-item.sm .content {
+    display: flex;
+    justify-content: space-between;
 }
 
 
@@ -540,6 +671,10 @@ div.divided-collection {
     overflow: hidden;
 }
 
+.bb.sm {
+    font-size: 1rem;
+}
+
 div.divided-collection a.collection-item .bb {
     margin-left: -20px;
     margin-right: -20px;
@@ -549,6 +684,11 @@ div.divided-collection a.collection-item .bb {
     display: inline-block;
     height: 20px;
     width: 100%;
+}
+
+.bb-item.sm {
+    border-width: 3px;
+    height: 0;
 }
 
 .bb-green {
@@ -571,22 +711,37 @@ div.divided-collection a.collection-item .bb {
 /** Page title **/
 
 h3.title {
-    margin-bottom: 0;
+    margin-bottom: 2rem;
     margin-top: 1.5rem;
+    font-size: 2.5rem;
 }
 
-h3.no-crumb {
-    margin-top: 5rem;
+@media only screen and (min-width: 600px) {
+    h3.title {
+        font-size: 2.9rem;
+    }
 }
 
-div.title-wrap {
-    position: relative;
+.title-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.title-button {
-    position: absolute;
-    right: 0;
-    bottom: 0;
+.title-wrap.no-crumb {
+    margin-top: 3.5rem;
+}
+
+.title-button > .text {
+    margin-left: 1rem;
+    vertical-align: middle;
+    display: none;
+}
+
+@media only screen and (min-width: 400px) {
+    .title-button > .text {
+        display: initial;
+    }
 }
 
 div.title-wrap > .title-button > i.material-icons {
@@ -807,5 +962,47 @@ i.material-icons {
     /* @formatter:off */
     0% {background-color: #a8a8a8; box-shadow: none;}1.2%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}1.59%{background-color: #a8a8a8; box-shadow: none;}1.99%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}2.39%{background-color: #a8a8a8; box-shadow: none;}3.59%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}3.98%{background-color: #a8a8a8; box-shadow: none;}5.18%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}6.37%{background-color: #a8a8a8; box-shadow: none;}7.57%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}7.97%{background-color: #a8a8a8; box-shadow: none;}9.16%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}9.56%{background-color: #a8a8a8; box-shadow: none;}10.76%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}11.95%{background-color: #a8a8a8; box-shadow: none;}12.35%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}12.75%{background-color: #a8a8a8; box-shadow: none;}13.15%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}13.55%{background-color: #a8a8a8; box-shadow: none;}14.74%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}15.94%{background-color: #a8a8a8; box-shadow: none;}16.33%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}16.73%{background-color: #a8a8a8; box-shadow: none;}17.93%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}18.33%{background-color: #a8a8a8; box-shadow: none;}19.52%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}19.92%{background-color: #a8a8a8; box-shadow: none;}21.12%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}21.51%{background-color: #a8a8a8; box-shadow: none;}22.71%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}23.11%{background-color: #a8a8a8; box-shadow: none;}23.51%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}24.7%{background-color: #a8a8a8; box-shadow: none;}25.1%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}25.5%{background-color: #a8a8a8; box-shadow: none;}26.69%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}27.09%{background-color: #a8a8a8; box-shadow: none;}27.49%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}28.69%{background-color: #a8a8a8; box-shadow: none;}29.08%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}31.87%{background-color: #a8a8a8; box-shadow: none;}32.27%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}32.67%{background-color: #a8a8a8; box-shadow: none;}33.86%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}36.65%{background-color: #a8a8a8; box-shadow: none;}37.05%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}37.45%{background-color: #a8a8a8; box-shadow: none;}38.65%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}39.04%{background-color: #a8a8a8; box-shadow: none;}40.24%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}41.43%{background-color: #a8a8a8; box-shadow: none;}41.83%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}42.23%{background-color: #a8a8a8; box-shadow: none;}42.63%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}43.82%{background-color: #a8a8a8; box-shadow: none;}45.02%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}45.42%{background-color: #a8a8a8; box-shadow: none;}46.61%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}47.01%{background-color: #a8a8a8; box-shadow: none;}47.41%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}47.81%{background-color: #a8a8a8; box-shadow: none;}48.21%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}49.4%{background-color: #a8a8a8; box-shadow: none;}49.8%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}50.2%{background-color: #a8a8a8; box-shadow: none;}51.39%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}52.59%{background-color: #a8a8a8; box-shadow: none;}52.99%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}53.39%{background-color: #a8a8a8; box-shadow: none;}54.58%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}54.98%{background-color: #a8a8a8; box-shadow: none;}55.38%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}56.57%{background-color: #a8a8a8; box-shadow: none;}57.77%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}58.17%{background-color: #a8a8a8; box-shadow: none;}58.57%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}58.96%{background-color: #a8a8a8; box-shadow: none;}59.36%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}60.56%{background-color: #a8a8a8; box-shadow: none;}61.75%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}62.15%{background-color: #a8a8a8; box-shadow: none;}63.35%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}63.75%{background-color: #a8a8a8; box-shadow: none;}64.14%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}64.54%{background-color: #a8a8a8; box-shadow: none;}64.94%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}65.34%{background-color: #a8a8a8; box-shadow: none;}66.53%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}66.93%{background-color: #a8a8a8; box-shadow: none;}68.13%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}70.92%{background-color: #a8a8a8; box-shadow: none;}71.31%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}71.71%{background-color: #a8a8a8; box-shadow: none;}72.11%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}72.51%{background-color: #a8a8a8; box-shadow: none;}72.91%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}73.31%{background-color: #a8a8a8; box-shadow: none;}73.71%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}74.9%{background-color: #a8a8a8; box-shadow: none;}75.3%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}75.7%{background-color: #a8a8a8; box-shadow: none;}76.89%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}78.09%{background-color: #a8a8a8; box-shadow: none;}78.49%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}78.88%{background-color: #a8a8a8; box-shadow: none;}80.08%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}80.48%{background-color: #a8a8a8; box-shadow: none;}80.88%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}82.07%{background-color: #a8a8a8; box-shadow: none;}82.47%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}82.87%{background-color: #a8a8a8; box-shadow: none;}84.06%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}84.46%{background-color: #a8a8a8; box-shadow: none;}84.86%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}86.06%{background-color: #a8a8a8; box-shadow: none;}87.25%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}87.65%{background-color: #a8a8a8; box-shadow: none;}88.05%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}88.45%{background-color: #a8a8a8; box-shadow: none;}89.64%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}90.04%{background-color: #a8a8a8; box-shadow: none;}91.24%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}92.43%{background-color: #a8a8a8; box-shadow: none;}93.63%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}94.02%{background-color: #a8a8a8; box-shadow: none;}94.42%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}94.82%{background-color: #a8a8a8; box-shadow: none;}96.02%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}96.41%{background-color: #a8a8a8; box-shadow: none;}96.81%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}97.21%{background-color: #a8a8a8; box-shadow: none;}98.41%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}98.8%{background-color: #a8a8a8; box-shadow: none;}100.0%{background-color: #fbff00; box-shadow:0 0 10px 10px rgba(255, 255, 190, 0.8);}
     /* @formatter:on */
+}
+
+
+/** XS-screen addon **/
+
+@media only screen and (max-width: 399px) {
+    .row .col.xs1 {
+        width: 8.3333333333%;
+    }
+    .row .col.xs2 {
+        width: 16.6666666667%;
+    }
+    .row .col.xs3 {
+        width: 25%;
+    }
+    .row .col.xs4 {
+        width: 33.3333333333%;
+    }
+    .row .col.xs5 {
+        width: 41.6666666667%;
+    }
+    .row .col.xs6 {
+        width: 50%;
+    }
+    .row .col.xs7 {
+        width: 58.3333333333%;
+    }
+    .row .col.xs8 {
+        width: 66.6666666667%;
+    }
+    .row .col.xs9 {
+        width: 75%;
+    }
+    .row .col.xs10 {
+        width: 83.3333333333%;
+    }
+    .row .col.xs11 {
+        width: 91.6666666667%;
+    }
+    .row .col.xs12 {
+        width: 100%;
+    }
 }
 

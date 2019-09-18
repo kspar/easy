@@ -240,11 +240,11 @@ object ExercisesPage : EasyPage() {
                         when (ex.graded_by) {
                             GraderType.AUTO -> {
                                 exMap["evalAuto"] = true
-                                exMap["points"] = ex.grade ?: error("Grader type is set but no grade found")
+                                exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
                             }
                             GraderType.TEACHER -> {
                                 exMap["evalTeacher"] = true
-                                exMap["points"] = ex.grade ?: error("Grader type is set but no grade found")
+                                exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
                             }
                             null -> {
                                 if (ex.status != ExerciseStatus.UNSTARTED)

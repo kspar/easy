@@ -1,16 +1,15 @@
-
 // Kotlin/JS plugin resolution
 pluginManagement {
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == "kotlin2js") {
-                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
             }
             if (requested.id.id == "kotlin-dce-js") {
-                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
             }
             if (requested.id.id == "kotlinx-serialization") {
-                useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
+                useModule("org.jetbrains.kotlin:kotlin-serialization:${kotlinVersion}")
             }
         }
     }

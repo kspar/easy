@@ -37,16 +37,18 @@ class StudentAwaitLatestSubmissionController {
     @Value("\${easy.core.service.await-assessment.timeout-steps}")
     private var timeoutSteps: Int = 0
 
-    data class Resp(@JsonProperty("solution") val solution: String,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("submission_time") val submissionTime: DateTime,
-                    @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
-                    @JsonProperty("grade_auto") val gradeAuto: Int?,
-                    @JsonProperty("feedback_auto") val feedbackAuto: String?,
-                    @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-                    @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
+    data class Resp(
+            @JsonProperty("id") val submissionId: String,
+            @JsonProperty("solution") val solution: String,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("submission_time") val submissionTime: DateTime,
+            @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
+            @JsonProperty("grade_auto") val gradeAuto: Int?,
+            @JsonProperty("feedback_auto") val feedbackAuto: String?,
+            @JsonProperty("grade_teacher") val gradeTeacher: Int?,
+            @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
-    @Secured("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN")
+    @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/await")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExerciseIdStr: String,
@@ -113,13 +115,14 @@ private fun selectLatestStudentSubmission(courseId: Long,
             val autoAssessment = lastAutoAssessment(lastSubmission.id)
 
             StudentAwaitLatestSubmissionController.Resp(
+                    lastSubmission.id.toString(),
                     lastSubmission.solution,
                     lastSubmission.time,
                     lastSubmission.autogradeStatus,
-                    autoAssessment?.grade,
-                    autoAssessment?.feedback,
-                    teacherAssessment?.grade,
-                    teacherAssessment?.feedback
+                    autoAssessment?.first,
+                    autoAssessment?.second,
+                    teacherAssessment?.first,
+                    teacherAssessment?.second
             )
         }
 
@@ -141,18 +144,18 @@ private fun selectLatestStudentSubmission(courseId: Long,
     }
 }
 
-private fun lastAutoAssessment(submissionId: Long): AssessmentSummary? {
+private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? {
     return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
             .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
-            .map { AssessmentSummary(it[AutomaticAssessment.grade], it[AutomaticAssessment.feedback]) }
+            .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }
             .firstOrNull()
 }
 
-private fun lastTeacherAssessment(submissionId: Long): AssessmentSummary? {
+private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? {
     return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
             .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
-            .map { AssessmentSummary(it[TeacherAssessment.grade], it[TeacherAssessment.feedback]) }
+            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }
             .firstOrNull()
 }

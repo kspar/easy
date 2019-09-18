@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+</head>
+<body>
+
+<div id="nav-wrap">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="#!" class="brand-logo left">
+                <img class="logo-img" src="img/main-logo.svg" alt="Lahendus"/>
+                <span class="logo-text">LAHENDUS</span>
+            </a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="#!">Minu kursused</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+
+
+<div id="content-container" class="container">
+
+    <div id="submit-editor-wrap" class="editor-wrapper">
+        <div style="position: absolute; top: 20px; right: 20px; z-index: 100; "><i class="material-icons sync">loop</i>
+        </div>
+        <textarea id="submission"></textarea>
+    </div>
+
+
+    <span id="widget" style="background-color: beige; display: block; ">wut</span>
+</div>
+
+
+<style>
+    .sync {
+        animation: r 1s infinite;
+        transform: rotate(90deg);
+    }
+
+    @keyframes r {
+        /*0% {*/
+        /*    transform: rotate(90deg);*/
+        /*}*/
+        100% {
+            transform: rotate(-270deg);
+        }
+    }
+
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+
+<script>
+
+    const cm = CodeMirror.fromTextArea(document.getElementById("submission"), {
+        mode: "python",
+        lineNumbers: true,
+        autoRefresh: true,
+        viewportMargin: 100
+    });
+
+    const widget = document.getElementById("widget");
+
+    cm.addLineWidget(0, widget);
+
+
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {});
+</script>
+</body>
+</html>

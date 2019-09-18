@@ -122,7 +122,7 @@
 </script>
 
 <script id="tm-teach-exercise-add-grade" type="text/x-handlebars-template">
-    <div id="add-grade-wrap">
+    <div id="add-grade-wrap" class="toggleable-wrap">
         <div class="row">
             <div class="input-field col s8">
                 <textarea id="feedback" class="materialize-textarea"></textarea>
@@ -140,21 +140,73 @@
     </div>
 </script>
 
-<script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
-    <a id="all-submissions-link" class="toggle-link" href="#!">{{allSubmissionsLink}} ({{submissionCount}})</a>
-    <h3 class="submission-title">{{submissionLabel}} #{{submissionCount}}</h3><span class="last-submission-label">{{latestSubmissionLabel}}</span>
+<script id="tm-teach-exercise-all-submissions-placeholder" type="text/x-handlebars-template">
+    <div id="all-submissions-wrap" class="toggleable-wrap all-submissions-wrap">
+        <!-- TODO: placeholder -->
+        {{text}}
+    </div>
+</script>
+
+<script id="tm-teach-exercise-all-submissions" type="text/x-handlebars-template">
+    <div id="all-submissions-wrap" class="toggleable-wrap all-submissions-wrap">
+        <div class="collection divided-collection">
+            {{#submissions}}
+            <a class="collection-item sm row bb-wrap" href="#!" data-sub-id="{{id}}">
+                <span class="col s2">#{{number}}</span>
+                <span class="col s7" style="text-align: center">{{time}}</span>
+                <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
+                    <span>{{points}}{{^points}}-{{/points}}/100</span
+                    >{{#evalAuto
+                }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                {{/evalAuto}}{{#evalTeacher
+                }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                {{/evalTeacher}}{{#evalMissing
+                }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                {{/evalMissing}}
+                </span>
+                <div class="bb sm">
+                    {{#completed}}
+                    <span class="bb-item sm bb-green"></span>
+                    {{/completed}}
+                    {{#started}}
+                    <span class="bb-item sm bb-yellow"></span>
+                    {{/started}}
+                    {{#evalMissing}}
+                    <span class="bb-item sm bb-blue"></span>
+                    {{/evalMissing}}
+                </div>
+            </a>
+            {{/submissions}}
+        </div>
+    </div>
+</script>
+
+<script id="tm-teach-exercise-student-submission-all" type="text/x-handlebars-template">
+    <a id="all-submissions-link" class="toggle-link" href="#!">{{allSubmissionsLink}}</a>
+    <div id="all-submissions-section"></div>
+</script>
+
+<script id="tm-teach-exercise-student-submission-sub" type="text/x-handlebars-template">
+    <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3>
+    {{#isLatest}}<span class="last-submission-label">{{latestSubmissionLabel}}</span>{{/isLatest}}
+    {{^isLatest}}<div><span class="note warn"><i class="material-icons warn">info_outline</i>{{notLatestSubmissionLabel}} <a id="last-submission-link" href="#!">{{notLatestSubmissionLink}}</a></span></div>{{/isLatest}}
     <p id="submission-info"><span class="subheading">{{timeLabel}}: </span>{{time}}</p>
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
-
-    <a id="add-grade-link" class="toggle-link" href="#!">{{{addGradeLink}}}</a>
+    {{#isLatest}}
+    <a id="add-grade-link" class="toggle-link" href="#!">{{addGradeLink}}</a>
     <div id="add-grade-section"></div>
-
+    {{/isLatest}}
     <div class="editor-wrapper no-cursor">
         <form>
             <textarea id="student-submission">{{solution}}</textarea>
         </form>
     </div>
+</script>
+
+<script id="tm-teach-exercise-student-submission" type="text/x-handlebars-template">
+    <div id="all-submissions-part"></div>
+    <div id="submission-part"></div>
 </script>
 
 <script id="tm-teach-exercise-students" type="text/x-handlebars-template">
@@ -221,9 +273,9 @@
 </script>
 
 <script id="tm-exercise-crumbs" type="text/x-handlebars-template">
-    <a href="{{coursesHref}}" class="breadcrumb">{{coursesLabel}}</a>
-    <a href="{{courseHref}}" class="breadcrumb">{{courseTitle}}</a>
-    <a class="breadcrumb">{{exerciseTitle}}</a>
+    <a href="{{coursesHref}}" class="breadcrumb truncate">{{coursesLabel}}</a>
+    <a href="{{courseHref}}" class="breadcrumb truncate">{{courseTitle}}</a>
+    <a class="breadcrumb truncate">{{exerciseTitle}}</a>
 </script>
 
 <script id="tm-teach-exercise" type="text/x-handlebars-template">
@@ -302,18 +354,18 @@
 
 <script id="tm-teach-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
-        <a class="breadcrumb">{{title}}</a>
+        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
+        <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
         <h3 class="title">{{title}}</h3>
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
-        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}} row" href="{{href}}">
-            <div class="row">
-                <span class="col s6">{{title}}</span>
-                <span class="col s6 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
+        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}}" href="{{href}}">
+            <div class="exercise-item" style="align-items: baseline;">
+                <span>{{title}}</span>
+                <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
             </div>
             {{#studentsExist}}
             <div class="bb">
@@ -330,27 +382,29 @@
 
 <script id="tm-stud-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb">{{courses}}</a>
-        <a class="breadcrumb">{{title}}</a>
+        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
+        <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
         <h3 class="title">{{title}}</h3>
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
-        <a class="collection-item bb-wrap row" href="{{href}}">
-            <div class="row">
-                <span class="col s6">{{title}}</span>
-                <span class="col s4 deadline"><span class="tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span></span>
-                <span class="col s2 grade">
-                   <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                   >{{#evalAuto
-                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}{{#evalTeacher
-                    }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                    {{/evalTeacher}}{{#evalMissing
-                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                    {{/evalMissing}}
+        <a class="collection-item bb-wrap" href="{{href}}">
+            <div class="exercise-item">
+                <span>{{title}}</span>
+                <span class="exercise-item">
+                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
+                    <span class="grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        {{/evalAuto}}{{#evalTeacher
+                        }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                        {{/evalTeacher}}{{#evalMissing
+                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        {{/evalMissing}}
+                    </span>
                 </span>
             </div>
             <div class="bb">
@@ -373,19 +427,21 @@
 </script>
 
 <script id="tm-teach-course-list" type="text/x-handlebars-template">
-    <div class="title-wrap">
-        <h3 class="title no-crumb">{{title}}</h3>
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{title}}</h3>
         {{#addCourse}}
         <a class="waves-effect waves-light btn title-button" href="/courses/new">
-            <i class="material-icons left">add</i>{{newCourse}}</a>
+            <i class="material-icons">add</i><span class="text">{{newCourse}}</span></a>
         {{/addCourse}}
     </div>
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
         <div class="teacher-course-wrapper">
-            <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+            <a class="collection-item course-item row" href="/courses/{{id}}/exercises">
+                <span class="col xs9 s7 m9">{{title}}</span>
+            </a>
             <a class="btn-flat waves-effect waves-green course-add-students" href="/courses/{{id}}/participants">
-                <i class="material-icons left">group</i>
+                <i class="material-icons">group</i>
                 <span class="course-student-count">{{count}} {{students}}</span>
             </a>
         </div>
@@ -405,8 +461,8 @@
 </script>
 
 <script id="tm-stud-course-list" type="text/x-handlebars-template">
-    <div class="title-wrap">
-        <h3 class="title no-crumb">{{title}}</h3>
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{title}}</h3>
     </div>
 
     <div id="courses-list" class="collection divided-collection">
@@ -430,9 +486,9 @@
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">
         <nav class="crumb-wrap">
-            <a href="/courses" class="breadcrumb">{{myCoursesLabel}}</a>
-            <a href="{{courseHref}}" class="breadcrumb">{{title}}</a>
-            <a class="breadcrumb">{{participantsLabel}}</a>
+            <a href="/courses" class="breadcrumb truncate">{{myCoursesLabel}}</a>
+            <a href="{{courseHref}}" class="breadcrumb truncate">{{title}}</a>
+            <a class="breadcrumb truncate">{{participantsLabel}}</a>
         </nav>
         <div class="title-wrap">
             <h3 class="title">{{title}}</h3>
@@ -496,7 +552,7 @@
 </script>
 
 <script id="tm-teach-participants-add" type="text/x-handlebars-template">
-    <div id="add-students-wrap">
+    <div id="add-students-wrap" class="toggleable-wrap">
         <div id="add-students-help">{{addStudentsHelp}}
         </div>
         <div id="new-students-form-wrap" class="row">

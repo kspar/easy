@@ -24,6 +24,8 @@
 
 #exercise-text img {
     display: block;
+    max-width: 100%;
+    height: auto;
 }
 
 #exercise-text .program-example {

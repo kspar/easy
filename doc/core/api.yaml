@@ -188,19 +188,57 @@ paths:
             $ref: '#/definitions/StudentExerciseDetails'
 
 
-  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest:
+  /student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all:
     parameters:
       - $ref: '#/parameters/CourseId'
       - $ref: '#/parameters/CourseExerciseId'
     get:
-      summary: Get the latest submission's details to the specified course exercise.
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
+      summary: Get submissions to this course exercise.
       tags:
         - student
       responses:
         200:
-          description: Latest submission to this exercise.
+          description: Submissions.
           schema:
-            $ref: '#/definitions/Submission'
+            properties:
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    solution:
+                      type: string
+                    submission_time:
+                      type: string
+                      format: date-time
+                    autograde_status:
+                      $ref: '#/definitions/AutogradeStatus'
+                    grade_auto:
+                      description: Exists if the submission has been automatically graded.
+                      type: integer
+                    feedback_auto:
+                      description: Exists if the submission has been automatically graded.
+                      type: string
+                    grade_teacher:
+                      description: Exists if the submission has been graded by a teacher.
+                      type: integer
+                    feedback_teacher:
+                      description: Exists if the submission has been graded by a teacher.
+                      type: string
+                  required:
+                    - id
+                    - solution
+                    - submission_time
+                    - autograde_status
+              count:
+                type: integer
+            required:
+              - submissions
+              - count
 
 
   /student/courses/{courseId}/exercises/{courseExerciseId}/draft:
@@ -244,7 +282,33 @@ paths:
         200:
           description: Latest submission to this exercise.
           schema:
-            $ref: '#/definitions/Submission'
+            properties:
+              id:
+                type: string
+              solution:
+                type: string
+              submission_time:
+                type: string
+                format: date-time
+              autograde_status:
+                $ref: '#/definitions/AutogradeStatus'
+              grade_auto:
+                description: Exists if the submission has been automatically graded.
+                type: integer
+              feedback_auto:
+                description: Exists if the submission has been automatically graded.
+                type: string
+              grade_teacher:
+                description: Exists if the submission has been graded by a teacher.
+                type: integer
+              feedback_teacher:
+                description: Exists if the submission has been graded by a teacher.
+                type: string
+            required:
+              - id
+              - solution
+              - submission_time
+              - autograde_status
 
 
   /student/courses/{courseId}/exercises/{courseExerciseId}/submissions:
@@ -659,22 +723,6 @@ paths:
               - students
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students/{studentId}:
-    parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-      - $ref: '#/parameters/StudentId'
-    get:
-      summary: Get this student's latest submission for this exercise.
-      tags:
-        - teacher
-      responses:
-        300:
-          description: Submission.
-          schema:
-            $ref: '#/definitions/TeacherSubmission'
-
-
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments:
     parameters:
       - $ref: '#/parameters/CourseId'
@@ -706,6 +754,9 @@ paths:
       - $ref: '#/parameters/CourseExerciseId'
       - $ref: '#/parameters/StudentId'
     get:
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
       summary: Get this student's all submissions for this exercise.
       tags:
         - teacher
@@ -741,6 +792,11 @@ paths:
                     - id
                     - solution
                     - created_at
+              count:
+                type: integer
+            required:
+              - submissions
+              - count
 
 
   /courses/{courseId}/participants:
@@ -1165,31 +1221,6 @@ definitions:
       - grader_type
       - threshold
 
-  Submission:
-    properties:
-      # TODO: serial needed for what?
-      #      serial:
-      #        type: integer
-      solution:
-        type: string
-      submission_time:
-        type: string
-        format: date-time
-      autograde_status:
-        $ref: '#/definitions/AutogradeStatus'
-      grade_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: integer
-      feedback_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: string
-      grade_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: integer
-      feedback_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: string
-
   SubmissionDraft:
     properties:
       solution:
@@ -1228,28 +1259,6 @@ definitions:
         type: integer
       completed_count:
         type: integer
-
-  TeacherSubmission:
-    properties:
-      id:
-        type: string
-      solution:
-        type: string
-      created_at:
-        type: string
-        format: date-time
-      grade_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: integer
-      feedback_auto:
-        description: Optional, exists if the submission has been automatically graded.
-        type: string
-      grade_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: integer
-      feedback_teacher:
-        description: Optional, exists if the submission has been graded by a teacher.
-        type: string
 
 
 

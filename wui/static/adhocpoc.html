@@ -156,9 +156,67 @@
             </div>
 
             <div id="student">
-                <a href="#!" style="display:block;">► Vaata kõiki esitusi (4)</a>
-                <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; display:inline-block;">Esitus #4</h4>
-                <span style="margin-left:1rem;">(viimane esitus)</span>
+                <a id="all-submissions-link" class="toggle-link" href="#!">► Vaata kõiki esitusi (4)</a>
+                <div class="toggleable-wrap all-submissions-wrap" id="all-submissions-wrap">
+                    <div class="collection divided-collection">
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#2</span>
+                            <span class="col s7" style="text-align: center">18. jaanuar 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
+                                <span>0/100</span><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item sm bb-green"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                <h3 class="submission-title">Esitus #4</h3><span class="last-submission-label">(viimane esitus)</span>
+                <div><span class="note warn"><i class="material-icons warn">info_outline</i>See on vana esitus. <a href="#!">Vaata viimast esitust.</a></span></div>
                 <p id="submission-info">
                     <span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
                 <div id="submission-auto">
@@ -172,8 +230,8 @@
                     <div>Hinne: <span class="grade-number">66</span>/100</div>
                 </div>
 
-                <a id="add-grade-link" href="#!">Lisa hinnang</a>
-                <div id="add-grade-wrap">
+                <a class="toggle-link" id="add-grade-link" href="#!">Lisa hinnang</a>
+                <div class="toggleable-wrap" id="add-grade-wrap">
                     <div class="row">
                         <div class="input-field col s8">
                             <textarea id="feedback" class="materialize-textarea"></textarea>
