@@ -399,6 +399,35 @@ paths:
           description: Teachers' accesses removed.
 
 
+  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess/draft:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+    get:
+      summary: Get the latest teacher submission's draft to the specified course exercise.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Get the latest teacher submission draft of this exercise.
+          schema:
+            $ref: '#/definitions/SubmissionDraft'
+    post:
+      summary: Upload new teacher submission's draft to the specified course exercise.
+      tags:
+        - teacher
+      parameters:
+        - name: submission
+          in: body
+          schema:
+            properties:
+              solution:
+                type: string
+      responses:
+        200:
+          description: Submission draft uploaded.
+
+
   /teacher/courses:
     get:
       summary: Get summaries of courses the authenticated teacher has access to.
