@@ -148,3 +148,8 @@ object TestingDraft : Table("testing_draft") {
     val createdAt = datetime("created_at")
     val solution = text("solution")
 }
+
+object SystemConfiguration : Table("system_configuration") {
+    val key = text("key").primaryKey()
+    val value = text("value")
+}
