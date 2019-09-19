@@ -176,4 +176,29 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="190919-1" author="priit">
+        <createTable tableName="testing_draft">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_testing_draft_course_exercise"
+                             nullable="false"/>
+            </column>
+
+            <column name="teacher_id" type="text">
+                <constraints primaryKey="true" references="teacher(username)"
+                             foreignKeyName="fk_testing_draft_teacher"
+                             nullable="false"/>
+            </column>
+
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+
 </databaseChangeLog>
