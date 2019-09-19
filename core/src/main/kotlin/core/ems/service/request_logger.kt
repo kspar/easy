@@ -71,8 +71,9 @@ class CachingRequestBodyFilter : GenericFilterBean() {
         val requestBody: String = getRequestBody(wrappedRequest).take(500).replace(Regex("[\n\r]"), "")
         val responseBody: String = getResponseBody(wrappedResponse).take(500).replace(Regex("[\n\r]"), "")
 
-        val startTime = req.getAttribute("startTime") as Long
-        val endTime = req.getAttribute("endTime") as Long
+        // Set attributes to 0 if request method not supported
+        val startTime = (req.getAttribute("startTime")?:0.toLong()) as Long
+        val endTime = (req.getAttribute("endTime")?:0.toLong()) as Long
         val executeTime = endTime - startTime
 
         log.trace { "${executeTime}ms::$user::$role::$ip::$method::$statusCode::${path}::[${requestBody}]->[${responseBody}]" }
