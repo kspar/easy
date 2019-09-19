@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "ba5f03ba-fe68-410f-9c6e-35d89266f63f",
+		"_postman_id": "62aa6187-4651-4b04-baa2-9badb563bf1e",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -3794,6 +3794,161 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: submit draft: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"solution\": \"string\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"autoassess",
+						"draft"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: read draft: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"teacher",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"autoassess",
+						"draft"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"event": [
@@ -3817,5 +3972,6 @@
 				]
 			}
 		}
-	]
+	],
+	"protocolProfileBehavior": {}
 }
