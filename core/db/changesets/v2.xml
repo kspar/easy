@@ -200,5 +200,18 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="190919-2" author="priit">
+        <createTable tableName="system_configuration">
+            <column name="key" type="text">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+
+            <column name="value" type="text">
+                <constraints nullable="true"/>
+            </column>
+
+        </createTable>
+    </changeSet>
 
 </databaseChangeLog>
