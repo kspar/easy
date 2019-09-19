@@ -24,6 +24,31 @@ tags:
 
 paths:
 
+  /management/log:
+    post:
+      summary: Report new log.
+      tags:
+        - common
+      parameters:
+        - name: notification
+          in: body
+          schema:
+            properties:
+              client_id:
+                type: string
+              log_level:
+                $ref: '#/definitions/LogLevel'
+              log_message:
+                type: string
+            required:
+              - client_id
+              - log_level
+              - log_message
+      responses:
+        200:
+          description: Log reported.
+
+
   /account/checkin:
     post:
       summary: "Update account data in easy:core.
@@ -1324,3 +1349,12 @@ definitions:
       - IN_PROGRESS
       - COMPLETED
       - FAILED
+
+  LogLevel:
+    type: string
+    description: "Urgency level of the log that is reported to the server."
+    enum:
+      - DEBUG
+      - INFO
+      - WARN
+      - ERROR
