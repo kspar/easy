@@ -213,9 +213,8 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#exercise-card .tabs {
-    display: flex;
-    justify-content: center;
+#exercise-card #tabs-wrap {
+    text-align: center;
 }
 
 #exercise-card .tabs .tab {
