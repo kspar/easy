@@ -141,3 +141,10 @@ object SubmissionDraft : Table("submission_draft") {
     val createdAt = datetime("created_at")
     val solution = text("solution")
 }
+
+object TestingDraft : Table("testing_draft") {
+    val courseExercise = reference("course_exercise_id", CourseExercise).primaryKey()
+    val teacher = reference("teacher_id", Teacher).primaryKey()
+    val createdAt = datetime("created_at")
+    val solution = text("solution")
+}
