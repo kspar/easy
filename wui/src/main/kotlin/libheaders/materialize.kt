@@ -32,8 +32,8 @@ external class MTooltipInstance {
 }
 
 external object MTabs {
-    fun init(elements: dynamic, options: dynamic = definedExternally)
-    fun getInstance(element: Element): MTabsInstance
+    fun init(elements: dynamic, options: dynamic = definedExternally): MTabsInstance?
+    fun getInstance(element: Element): MTabsInstance?
 }
 
 external class MTabsInstance {
