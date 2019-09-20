@@ -48,9 +48,9 @@ class ReportLogController {
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {
 
         // In some cases, we want to send email based on log level (must be configurable). (minimal log level)
-        val currentEmailLogLevel = getProp(EMAIL_LOG_LEVEL.propKey)
+        val emailLevel = getProp(EMAIL_LOG_LEVEL.propKey)
         // In some cases, we want to send email based on regular expression that matches the client_id.
-        val currentEmailLogExpression = getProp(NO_MAIL_CLIENT_REGEX.propKey)
+        val noLogIfMatch = getProp(NO_MAIL_CLIENT_REGEX.propKey)
 
 
 
