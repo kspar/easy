@@ -8,16 +8,15 @@
     <link rel="stylesheet" href="css/pace.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
     <link rel="stylesheet" href="css/main.css"/>
     <link rel="stylesheet" href="css/exercise.css"/>
-
 </head>
 <style>
     .loading-exercise-line {
         height: 1.7rem;
-        margin: 2rem;
+        margin-bottom: 2rem;
         background: rgb(219, 219, 219);
         animation: pulse 1.5s linear infinite alternate;
         border-radius: 0.5rem;
@@ -64,11 +63,11 @@
     .loading-exercise-collection .item:nth-child(8){
         animation-delay: 0.5s;
         width: 60%;
+        margin-bottom: 0;
     }
 
     .loading-exercise-collection{
         border: none;
-        margin-top: 5rem;
     }
 
     @keyframes pulse {
@@ -86,6 +85,7 @@
     }
 
 </style>
+
 <body>
 
 <div id="nav-wrap">
@@ -111,18 +111,36 @@
     <li><a href="https://idp.lahendus.ut.ee/auth/realms/master/account">Konto andmed</a></li>
     <li><a id="logout-link">Logi välja</a></li>
 </ul>
+<div id="content-container" class="container">
+    <nav id="crumbs" class="crumb-wrap">
+        <a href="/courses" class="breadcrumb truncate">Minu kursused</a>
+        <a href="/courses/1/exercises" class="breadcrumb truncate">Lennundus ja aeronautiline hüdraulika</a>
+        <a class="breadcrumb truncate">Auto ülesanne</a>
+    </nav>
+    <div id="exercise-card" class="card">
+        <div id="tabs-wrap">
+            <ul id="tabs" class="tabs">
+                <li class="tab"><a class="active" href="#exercise">Ülesanne</a></li>
+                <li class="tab"><a href="#testing">Katsetamine</a></li>
+                <li class="tab"><a href="#students">Esitused</a></li>
+                <li id="tab-student" class="tab display-none"><a href="#student"></a></li>
+                <li class="indicator" style="left: 358px; right: 660px;"></li></ul>
+        </div>
+        <div class="card-content">
+            <div id="exercise" class="active">
+                <div class="collection loading-exercise-collection">
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                    <div class="loading-exercise-line item"></div>
+                </div>
 
-
-<div id="container" class="container">
-    <div class="collection loading-exercise-collection">
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
-        <div class="loading-exercise-line item"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -130,10 +148,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
-<div id="date"></div> <!-- Temporary, for automatic generation time -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+
+<script>
+
+    const cm = CodeMirror.fromTextArea(document.getElementById("submission"), {
+        mode: "python",
+        lineNumbers: true,
+        autoRefresh: true,
+        viewportMargin: 100
+    });
+
+    const widget = document.getElementById("widget");
+
+    cm.addLineWidget(0, widget);
+
+
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {});
+</script>
 
 </body>
 </html>
