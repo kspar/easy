@@ -5,6 +5,7 @@ import DateSerializer
 import PageName
 import ReqMethod
 import Role
+import StopObservationException
 import Str
 import debug
 import debugFunStart
@@ -25,6 +26,7 @@ import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
 import objOf
+import observeValueChange
 import onVanillaClick
 import org.w3c.dom.*
 import parseTo
@@ -710,6 +712,22 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private suspend fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) {
+
+        suspend fun saveSubmissionDraft(solution: String) {
+            debug { "Saving submission draft" }
+            // State to syncing
+            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST, mapOf(
+                    "solution" to solution
+            )).await()
+            if (!resp.http200) {
+                warn { "Failed to save draft with status ${resp.status}" }
+                // State to error
+                return
+            }
+            debug { "Draft saved" }
+            // State to synced
+        }
+
         if (existingSubmission != null) {
             debug { "Building submit tab using an existing submission" }
             paintSubmission(existingSubmission)
@@ -752,7 +770,21 @@ object ExerciseSummaryPage : EasyPage() {
                 pollForAutograde(courseId, courseExerciseId)
             }
         }
+
+        MainScope().launch {
+            observeValueChange(3000, 1000,
+                    valueProvider = {
+                        getElemByIdOrNull("submission") ?: throw StopObservationException()
+                        editor.getValue()
+                    },
+                    action = { saveSubmissionDraft(it) },
+                    idleCallback = {
+                        debug { "Draft unsaved" }
+                        // State to unsynced
+                    })
+        }
     }
+
 
     private fun initExerciseImages() {
         Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
