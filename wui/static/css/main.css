@@ -188,6 +188,7 @@ nav.crumb-wrap .breadcrumb {
     font-size: 1.4rem;
     line-height: 3rem;
 }
+
 nav.crumb-wrap .breadcrumb:last-child {
     color: #222;
 }
@@ -202,6 +203,7 @@ nav.crumb-wrap .breadcrumb:after {
     margin: 0 1rem 0 1rem;
     -webkit-font-smoothing: antialiased;
 }
+
 nav.crumb-wrap .breadcrumb:last-child:after {
     display: none;
 }
@@ -439,6 +441,7 @@ nav.crumb-wrap .breadcrumb:before {
     #courses-list span.course-student-count {
         display: initial;
     }
+
     #courses-list a.course-add-students {
         right: 20px;
     }
@@ -508,15 +511,50 @@ nav.crumb-wrap .breadcrumb:before {
 .editor-wrapper {
     margin-top: 3rem;
     margin-bottom: 3rem;
-    padding: 0.3rem;
+    padding: 0 0.3rem 0.3rem 0.3rem;
     background-color: #eee;
 }
 
 @media only screen and (min-width: 601px) {
     .editor-wrapper {
-        padding: 1rem;
+        padding: 0 1rem 1rem 1rem;
     }
 }
+
+.editor-top {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: #999;
+}
+
+.editor-top > * {
+    padding: 0 0.75rem;
+}
+
+.editor-top a {
+    color: #999;
+    transition: .3s ease-out;
+}
+
+.editor-top a:hover {
+    color: #555;
+}
+
+.editor-top #sync-indicator {
+    line-height: 0;
+}
+.editor-top .preloader-wrapper {
+    width: 20px;
+    height: 20px;
+    margin: 0 2px;
+}
+.editor-top .circle-clipper .circle {
+    border-width: 1px;
+    border-color: #999;
+}
+
 
 .CodeMirror {
     font-size: 1.9rem;
@@ -1038,36 +1076,47 @@ i.material-icons {
     .row .col.xs1 {
         width: 8.3333333333%;
     }
+
     .row .col.xs2 {
         width: 16.6666666667%;
     }
+
     .row .col.xs3 {
         width: 25%;
     }
+
     .row .col.xs4 {
         width: 33.3333333333%;
     }
+
     .row .col.xs5 {
         width: 41.6666666667%;
     }
+
     .row .col.xs6 {
         width: 50%;
     }
+
     .row .col.xs7 {
         width: 58.3333333333%;
     }
+
     .row .col.xs8 {
         width: 66.6666666667%;
     }
+
     .row .col.xs9 {
         width: 75%;
     }
+
     .row .col.xs10 {
         width: 83.3333333333%;
     }
+
     .row .col.xs11 {
         width: 91.6666666667%;
     }
+
     .row .col.xs12 {
         width: 100%;
     }

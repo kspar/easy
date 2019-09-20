@@ -715,18 +715,19 @@ object ExerciseSummaryPage : EasyPage() {
 
         suspend fun saveSubmissionDraft(solution: String) {
             debug { "Saving submission draft" }
-            // State to syncing
+            getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-loading")
             val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST, mapOf(
                     "solution" to solution
             )).await()
             if (!resp.http200) {
                 warn { "Failed to save draft with status ${resp.status}" }
-                // State to error
+                getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-fail")
                 return
             }
             debug { "Draft saved" }
-            // State to synced
+            getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-done")
         }
+
 
         if (existingSubmission != null) {
             debug { "Building submit tab using an existing submission" }
@@ -771,6 +772,7 @@ object ExerciseSummaryPage : EasyPage() {
             }
         }
 
+        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-done")
         MainScope().launch {
             observeValueChange(3000, 1000,
                     valueProvider = {
@@ -780,7 +782,7 @@ object ExerciseSummaryPage : EasyPage() {
                     action = { saveSubmissionDraft(it) },
                     idleCallback = {
                         debug { "Draft unsaved" }
-                        // State to unsynced
+                        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-unsynced")
                     })
         }
     }
