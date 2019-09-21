@@ -5,7 +5,6 @@ import DateSerializer
 import PageName
 import ReqMethod
 import Role
-import StopObservationException
 import Str
 import debug
 import debugFunStart
@@ -795,14 +794,12 @@ object ExerciseSummaryPage : EasyPage() {
         paintSyncDone()
         MainScope().launch {
             observeValueChange(3000, 1000,
-                    valueProvider = {
-                        getElemByIdOrNull("submission") ?: throw StopObservationException()
-                        editor.getValue()
-                    },
+                    valueProvider = { editor.getValue() },
                     action = {
                         saveSubmissionDraft(it)
                         paintDraft(it, latestSubmissionSolution)
                     },
+                    continuationConditionProvider = { getElemByIdOrNull("submission") != null },
                     idleCallback = {
                         debug { "Draft unsaved" }
                         paintSyncUnsynced()
