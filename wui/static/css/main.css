@@ -523,14 +523,14 @@ nav.crumb-wrap .breadcrumb:before {
 
 .editor-top {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 1rem;
+    padding: .5rem 1rem;
     color: #999;
 }
 
-.editor-top > * {
-    padding: 0 0.75rem;
+.editor-top .top-item {
+    padding: 0 .75rem;
 }
 
 .editor-top a {
@@ -542,14 +542,32 @@ nav.crumb-wrap .breadcrumb:before {
     color: #555;
 }
 
+.editor-top .left-side {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.editor-top .right-side {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.editor-top #editor-top-text {
+    font-size: 1.2rem;
+}
+
 .editor-top #sync-indicator {
     line-height: 0;
 }
+
 .editor-top .preloader-wrapper {
     width: 20px;
     height: 20px;
-    margin: 0 2px;
+    margin: 2px 2px;
 }
+
 .editor-top .circle-clipper .circle {
     border-width: 1px;
     border-color: #999;

@@ -314,11 +314,11 @@
 </script>
 
 <script id="tm-stud-restore-latest-sub-link" type="text/x-handlebars-template">
-    <a href="#!"><i class="material-icons">restore</i></a>
+    <a id="restore-latest-sub-btn" class="tooltipped" href="#!" data-tooltip="{{label}}" data-position="bottom"><i class="material-icons">restore</i></a>
 </script>
 
 <script id="tm-stud-sub-sync-loading" type="text/x-handlebars-template">
-    <div class="preloader-wrapper active">
+    <div class="preloader-wrapper active tooltipped" data-tooltip="{{label}}" data-position="bottom">
         <div class="spinner-layer">
             <div class="circle-clipper left">
                 <div class="circle"></div>
@@ -333,13 +333,13 @@
     </div>
 </script>
 <script id="tm-stud-sub-sync-done" type="text/x-handlebars-template">
-    <i class="material-icons">cloud_done</i>
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">cloud_done</i>
 </script>
 <script id="tm-stud-sub-sync-fail" type="text/x-handlebars-template">
-    <i class="material-icons">sync_problem</i>
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">sync_problem</i>
 </script>
 <script id="tm-stud-sub-sync-unsynced" type="text/x-handlebars-template">
-    <i class="material-icons">more_horiz</i>
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">more_horiz</i>
 </script>
 
 <script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
@@ -348,10 +348,15 @@
     <div id="assessment-teacher" class="assessment"></div>
     <div id="submit-editor-wrap" class="editor-wrapper">
         <div class="editor-top">
-            <div id="restore-latest-sub-btn"></div>
-            <div id="sync-indicator"></div>
+            <div class="left-side">
+                <div id="editor-top-text" class="top-item"></div>
+            </div>
+            <div class="right-side">
+                <div id="restore-latest-sub" class="top-item"></div>
+                <div id="sync-indicator" class="top-item"></div>
+            </div>
         </div>
-        <textarea id="submission">{{solution}}</textarea>
+        <textarea id="submission"></textarea>
     </div>
     <div class="center">
         <button id="submit-button" class="waves-effect waves-light btn">{{checkLabel}}</button>
