@@ -269,5 +269,51 @@
         <dropColumn tableName="admin" columnName="given_name"/>
         <dropColumn tableName="admin" columnName="family_name"/>
     </changeSet>
+    
+    <changeSet id="220919-2" author="kspar">
+        <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_access_student"/>
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
+        <dropUniqueConstraint tableName="student" constraintName="uniq_student_id"/>
+        <addForeignKeyConstraint baseTableName="student_course_access" baseColumnNames="student_id"
+                                 constraintName="fk_student_course_access_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission" baseColumnNames="student_id"
+                                 constraintName="fk_submission_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission_draft" baseColumnNames="student_id"
+                                 constraintName="fk_submission_draft_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+
+        <dropForeignKeyConstraint baseTableName="testing_draft" constraintName="fk_testing_draft_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_course_access" constraintName="fk_teacher_course_access_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
+        <dropUniqueConstraint tableName="teacher" constraintName="uniq_teacher_id"/>
+        <addForeignKeyConstraint baseTableName="testing_draft" baseColumnNames="teacher_id"
+                                 constraintName="fk_testing_draft_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_access" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_course_access_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_assessment_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise_version" baseColumnNames="author_id"
+                                 constraintName="fk_exercise_version_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise" baseColumnNames="owned_by_id"
+                                 constraintName="fk_exercise_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+    </changeSet>
 
 </databaseChangeLog>
