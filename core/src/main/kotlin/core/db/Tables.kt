@@ -7,8 +7,6 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
 
-// EMS
-
 object Teacher : IdTable<String>("teacher") {
     override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
     val createdAt = datetime("created_at")
@@ -106,9 +104,6 @@ object Admin : IdTable<String>("admin") {
 object ManagementNotification : LongIdTable("management_notification") {
     val message = text("message")
 }
-
-
-// AAS
 
 object AutoExercise : LongIdTable("automatic_exercise") {
     val gradingScript = text("grading_script")
