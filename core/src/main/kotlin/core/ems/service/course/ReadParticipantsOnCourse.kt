@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Student
-import core.db.StudentCourseAccess
-import core.db.Teacher
-import core.db.TeacherCourseAccess
+import core.db.*
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -89,15 +86,15 @@ class ReadParticipantsOnCourseController {
 
 private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsOnCourseResponse> {
     return transaction {
-        (Student innerJoin StudentCourseAccess)
-                .slice(Student.id, Student.email, Student.givenName, Student.familyName, StudentCourseAccess.course)
+        (Account innerJoin Student innerJoin StudentCourseAccess)
+                .slice(Student.id, Account.email, Account.givenName, Account.familyName)
                 .select { StudentCourseAccess.course eq courseId }
                 .map {
                     ReadParticipantsOnCourseController.StudentsOnCourseResponse(
                             it[Student.id].value,
-                            it[Student.email],
-                            it[Student.givenName],
-                            it[Student.familyName]
+                            it[Account.email],
+                            it[Account.givenName],
+                            it[Account.familyName]
                     )
                 }
     }
@@ -105,15 +102,15 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
 
 private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.TeachersOnCourseResponse> {
     return transaction {
-        (Teacher innerJoin TeacherCourseAccess)
-                .slice(Teacher.id, Teacher.email, Teacher.givenName, Teacher.familyName, TeacherCourseAccess.course)
+        (Account innerJoin Teacher innerJoin TeacherCourseAccess)
+                .slice(Teacher.id, Account.email, Account.givenName, Account.familyName)
                 .select { TeacherCourseAccess.course eq courseId }
                 .map {
                     ReadParticipantsOnCourseController.TeachersOnCourseResponse(
                             it[Teacher.id].value,
-                            it[Teacher.email],
-                            it[Teacher.givenName],
-                            it[Teacher.familyName]
+                            it[Account.email],
+                            it[Account.givenName],
+                            it[Account.familyName]
                     )
                 }
     }

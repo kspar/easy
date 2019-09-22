@@ -2,6 +2,7 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
+import core.db.Account
 import core.db.Course
 import core.db.Student
 import core.db.StudentCourseAccess
@@ -55,9 +56,11 @@ private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToC
                     val studentWithId = Student.select { Student.id eq studentIdOrEmail }.count()
 
                     if (studentWithId == 0) {
-                        val studentId = Student.slice(Student.id)
-                                .select { Student.email.lowerCase() eq studentIdOrEmail }
-                                .map { it[Student.id].value }.firstOrNull()
+                        val studentId = (Student innerJoin Account)
+                                .slice(Student.id)
+                                .select { Account.email.lowerCase() eq studentIdOrEmail }
+                                .map { it[Student.id].value }
+                                .firstOrNull()
                         studentId ?: throw InvalidRequestException("Student not found: $studentIdOrEmail",
                                 ReqError.STUDENT_NOT_FOUND, "missing_student" to studentIdOrEmail)
                     } else {
