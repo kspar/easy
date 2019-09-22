@@ -1,0 +1,8 @@
+
+
+= Release notes: v2.1.1
+
+
+* Fixed a bug where the code editor top bar was missing for teachers in the exercise testing tab & student's submission tab.
+
+https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.1.1%20[Related issues]
