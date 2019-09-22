@@ -6,6 +6,7 @@ import PageName
 import ReqMethod
 import Role
 import Str
+import compareTo
 import debug
 import debugFunStart
 import errorMessage
@@ -951,7 +952,3 @@ object ExerciseSummaryPage : EasyPage() {
         }
     }
 }
-
-private operator fun Date.compareTo(other: Date): Int =
-        (this.getTime() - other.getTime()).toInt()
-
