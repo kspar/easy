@@ -205,9 +205,8 @@
     <div id="add-grade-section"></div>
     {{/isLatest}}
     <div class="editor-wrapper no-cursor">
-        <form>
-            <textarea id="student-submission">{{solution}}</textarea>
-        </form>
+        <div class="editor-top"></div>
+        <textarea id="student-submission">{{solution}}</textarea>
     </div>
 </script>
 
@@ -256,6 +255,7 @@
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
     <div id="testing-assessment" class="assessment"></div>
     <div class="editor-wrapper">
+        <div class="editor-top"></div>
         <textarea id="testing-submission"></textarea>
     </div>
     <div class="center">
