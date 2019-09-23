@@ -73,7 +73,6 @@ object TeacherCourseAccess : LongIdTable("teacher_course_access") {
 }
 
 
-
 object StudentCourseAccess : LongIdTable("student_course_access") {
     val student = reference("student_id", Student)
     val course = reference("course_id", Course)
@@ -101,7 +100,6 @@ object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val grade = integer("grade")
     val feedback = text("feedback").nullable()
 }
-
 
 
 object ManagementNotification : LongIdTable("management_notification") {
@@ -147,7 +145,15 @@ object TestingDraft : Table("testing_draft") {
     val solution = text("solution")
 }
 
-object SystemConfiguration : Table("system_configuration") {
-    val key = text("key").primaryKey()
+object SystemConfiguration : IdTable<String>("system_configuration") {
+    override val id: Column<EntityID<String>> = text("key").primaryKey().entityId()
     val value = text("value")
+}
+
+object LogReport : LongIdTable("log_report") {
+    val userId = reference("user_id", Account)
+    val logTime = datetime("log_time")
+    val logLevel = text("log_level")
+    val logMessage = text("log_message")
+    val clientId = text("client_id")
 }
