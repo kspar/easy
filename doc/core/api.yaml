@@ -279,6 +279,8 @@ paths:
           description: Get the latest submission draft of this exercise.
           schema:
             $ref: '#/definitions/SubmissionDraft'
+        204:
+          description: No draft is available for the specified course exercise.
     post:
       summary: Upload new submission's draft to the specified course exercise.
       tags:
@@ -1282,6 +1284,9 @@ definitions:
       created_at:
         type: string
         format: date-time
+    required:
+      - solution
+      - created_at
 
   TeacherCourse:
     properties:
