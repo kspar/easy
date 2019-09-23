@@ -100,9 +100,9 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
         val autoGradeAlias = AutomaticAssessment.grade.alias("auto_grade")
         val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("valid_grade")
 
-        val subQuery = (StudentCourseAccess innerJoin Student leftJoin
+        val subQuery = (StudentCourseAccess innerJoin Student innerJoin Account leftJoin
                 (Submission innerJoin CourseExercise leftJoin AutomaticAssessment leftJoin TeacherAssessment))
-                .slice(distinctStudentId, Student.givenName, Student.familyName, Submission.createdAt,
+                .slice(distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
                         autoGradeAlias, TeacherAssessment.grade, validGradeAlias)
                 .select {
                     // CourseExercise.id & CourseExercise.course are null when the student has no submission
@@ -119,21 +119,21 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
         queryWords.forEach {
             subQuery.andWhere {
                 (Student.id like "%$it%") or
-                        (Student.givenName.lowerCase() like "%$it%") or
-                        (Student.familyName.lowerCase() like "%$it%")
+                        (Account.givenName.lowerCase() like "%$it%") or
+                        (Account.familyName.lowerCase() like "%$it%")
             }
         }
 
         val subTable = subQuery.alias("t")
         val wrapQuery = subTable
                 // Slice is needed because aliased columns are not included by default
-                .slice(subTable[distinctStudentId], subTable[Student.givenName], subTable[Student.familyName],
+                .slice(subTable[distinctStudentId], subTable[Account.givenName], subTable[Account.familyName],
                         subTable[Submission.createdAt], subTable[TeacherAssessment.grade], subTable[autoGradeAlias],
                         subTable[validGradeAlias])
                 .selectAll()
 
         when (orderBy) {
-            OrderBy.FAMILY_NAME -> wrapQuery.orderBy(subTable[Student.familyName] to order)
+            OrderBy.FAMILY_NAME -> wrapQuery.orderBy(subTable[Account.familyName] to order)
             OrderBy.SUBMISSION_TIME -> wrapQuery.orderBy(
                     subTable[Submission.createdAt].isNull() to order.complement(),
                     subTable[Submission.createdAt] to order)
@@ -168,8 +168,8 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
 
                     TeacherReadSubmissionSummariesController.StudentsResp(
                             it[subTable[distinctStudentId]].value,
-                            it[subTable[Student.givenName]],
-                            it[subTable[Student.familyName]],
+                            it[subTable[Account.givenName]],
+                            it[subTable[Account.familyName]],
                             it[subTable[Submission.createdAt]],
                             validGradePair?.first,
                             validGradePair?.second

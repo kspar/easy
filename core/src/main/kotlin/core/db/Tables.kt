@@ -7,14 +7,27 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
 
-// EMS
-
-object Teacher : IdTable<String>("teacher") {
+object Account : IdTable<String>("account") {
     override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
     val createdAt = datetime("created_at")
     val email = text("email")
     val givenName = text("given_name")
     val familyName = text("family_name")
+}
+
+object Student : IdTable<String>("student") {
+    override val id: Column<EntityID<String>> = reference("username", Account).primaryKey()
+    val createdAt = datetime("created_at")
+}
+
+object Teacher : IdTable<String>("teacher") {
+    override val id: Column<EntityID<String>> = reference("username", Account).primaryKey()
+    val createdAt = datetime("created_at")
+}
+
+object Admin : IdTable<String>("admin") {
+    override val id: Column<EntityID<String>> = reference("username", Account).primaryKey()
+    val createdAt = datetime("created_at")
 }
 
 object Exercise : LongIdTable("exercise") {
@@ -59,13 +72,7 @@ object TeacherCourseAccess : LongIdTable("teacher_course_access") {
     val course = reference("course_id", Course)
 }
 
-object Student : IdTable<String>("student") {
-    override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
-    val createdAt = datetime("created_at")
-    val email = text("email")
-    val givenName = text("given_name")
-    val familyName = text("family_name")
-}
+
 
 object StudentCourseAccess : LongIdTable("student_course_access") {
     val student = reference("student_id", Student)
@@ -95,20 +102,11 @@ object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val feedback = text("feedback").nullable()
 }
 
-object Admin : IdTable<String>("admin") {
-    override val id: Column<EntityID<String>> = text("username").primaryKey().entityId()
-    val createdAt = datetime("created_at")
-    val email = text("email")
-    val givenName = text("given_name")
-    val familyName = text("family_name")
-}
+
 
 object ManagementNotification : LongIdTable("management_notification") {
     val message = text("message")
 }
-
-
-// AAS
 
 object AutoExercise : LongIdTable("automatic_exercise") {
     val gradingScript = text("grading_script")

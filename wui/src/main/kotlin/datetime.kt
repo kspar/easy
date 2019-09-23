@@ -19,3 +19,7 @@ fun Date.toEstonianString(): String {
     val paddedMins = d.getMinutes().toString().padStart(2, '0')
     return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
 }
+
+operator fun Date.compareTo(other: Date): Int =
+        (this.getTime() - other.getTime()).toInt()
+

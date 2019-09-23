@@ -10,6 +10,7 @@ external object CodeMirror {
 
 external class CodeMirrorInstance {
     fun getValue(): String
+    fun setValue(value: String)
     fun setOption(key: String, value: Any?)
 }
 

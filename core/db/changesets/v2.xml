@@ -214,4 +214,106 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="220919-1" author="kspar">
+        <createTable tableName="account">
+            <column name="username" type="text">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Data migration -->
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT a.username, a.created_at, a.email, a.given_name, a.family_name FROM admin a;
+        </sql>
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT t.username, t.created_at, t.email, t.given_name, t.family_name FROM teacher t
+            ON CONFLICT DO NOTHING;
+        </sql>
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT s.username, s.created_at, s.email, s.given_name, s.family_name FROM student s
+            ON CONFLICT DO NOTHING;
+        </sql>
+
+        <addForeignKeyConstraint baseTableName="student" baseColumnNames="username" constraintName="fk_student_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="student" columnName="email"/>
+        <dropColumn tableName="student" columnName="given_name"/>
+        <dropColumn tableName="student" columnName="family_name"/>
+        <addForeignKeyConstraint baseTableName="teacher" baseColumnNames="username" constraintName="fk_teacher_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="teacher" columnName="email"/>
+        <dropColumn tableName="teacher" columnName="given_name"/>
+        <dropColumn tableName="teacher" columnName="family_name"/>
+        <addForeignKeyConstraint baseTableName="admin" baseColumnNames="username" constraintName="fk_admin_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="admin" columnName="email"/>
+        <dropColumn tableName="admin" columnName="given_name"/>
+        <dropColumn tableName="admin" columnName="family_name"/>
+    </changeSet>
+    
+    <changeSet id="220919-2" author="kspar">
+        <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_access_student"/>
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
+        <dropUniqueConstraint tableName="student" constraintName="uniq_student_id"/>
+        <addForeignKeyConstraint baseTableName="student_course_access" baseColumnNames="student_id"
+                                 constraintName="fk_student_course_access_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission" baseColumnNames="student_id"
+                                 constraintName="fk_submission_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission_draft" baseColumnNames="student_id"
+                                 constraintName="fk_submission_draft_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+
+        <dropForeignKeyConstraint baseTableName="testing_draft" constraintName="fk_testing_draft_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_course_access" constraintName="fk_teacher_course_access_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
+        <dropUniqueConstraint tableName="teacher" constraintName="uniq_teacher_id"/>
+        <addForeignKeyConstraint baseTableName="testing_draft" baseColumnNames="teacher_id"
+                                 constraintName="fk_testing_draft_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_access" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_course_access_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_assessment_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise_version" baseColumnNames="author_id"
+                                 constraintName="fk_exercise_version_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise" baseColumnNames="owned_by_id"
+                                 constraintName="fk_exercise_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -102,7 +102,7 @@
 
 <script id="tm-loading-placeholders" type="text/x-handlebars-template">
     <div class="collection loading-collection">
-        <div class="loading-item"></div>
+        <div class="loading-item title"></div>
         <div class="loading-item"></div>
         <div class="loading-item"></div>
         <div class="loading-item"></div>
@@ -205,9 +205,8 @@
     <div id="add-grade-section"></div>
     {{/isLatest}}
     <div class="editor-wrapper no-cursor">
-        <form>
-            <textarea id="student-submission">{{solution}}</textarea>
-        </form>
+        <div class="editor-top"></div>
+        <textarea id="student-submission">{{solution}}</textarea>
     </div>
 </script>
 
@@ -256,6 +255,7 @@
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
     <div id="testing-assessment" class="assessment"></div>
     <div class="editor-wrapper">
+        <div class="editor-top"></div>
         <textarea id="testing-submission"></textarea>
     </div>
     <div class="center">
@@ -313,12 +313,50 @@
     </div>
 </script>
 
+<script id="tm-stud-restore-latest-sub-link" type="text/x-handlebars-template">
+    <a id="restore-latest-sub-btn" class="tooltipped" href="#!" data-tooltip="{{label}}" data-position="bottom"><i class="material-icons">restore</i></a>
+</script>
+
+<script id="tm-stud-sub-sync-loading" type="text/x-handlebars-template">
+    <div class="preloader-wrapper active tooltipped" data-tooltip="{{label}}" data-position="bottom">
+        <div class="spinner-layer">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+    </div>
+</script>
+<script id="tm-stud-sub-sync-done" type="text/x-handlebars-template">
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">cloud_done</i>
+</script>
+<script id="tm-stud-sub-sync-fail" type="text/x-handlebars-template">
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">sync_problem</i>
+</script>
+<script id="tm-stud-sub-sync-unsynced" type="text/x-handlebars-template">
+    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">more_horiz</i>
+</script>
+
 <script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
     {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}:</span>{{time}}</p>{{/time}}
     <div id="assessment-auto" class="assessment"></div>
     <div id="assessment-teacher" class="assessment"></div>
     <div id="submit-editor-wrap" class="editor-wrapper">
-        <textarea id="submission">{{solution}}</textarea>
+        <div class="editor-top">
+            <div class="left-side">
+                <div id="editor-top-text" class="top-item"></div>
+            </div>
+            <div class="right-side">
+                <div id="restore-latest-sub" class="top-item"></div>
+                <div id="sync-indicator" class="top-item"></div>
+            </div>
+        </div>
+        <textarea id="submission"></textarea>
     </div>
     <div class="center">
         <button id="submit-button" class="waves-effect waves-light btn">{{checkLabel}}</button>

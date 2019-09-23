@@ -1,0 +1,19 @@
+
+
+= Release notes: v2.1
+
+
+* Unsubmitted code is now automatically saved as a submission draft for students. (EZ-1099, EZ-1143)
+* Teachers can now view all submissions made by students. (EZ-1017)
+* Fixed many cosmetic issues on smaller screens. (EZ-1133, EZ-1072)
+* Added a full-page loading animation & improved the loading progress bar. (EZ-1069)
+* Added a lightbox feature for all images in exercise descriptions.
+* Adding students & teachers to a course by email is now case-insensitive. (EZ-1112)
+* A success message is now shown when a new assessment is added.
+* Switching between teacher/admin and student roles now persists over page reloads using browser local storage. (EZ-1009)
+* Fixed a bug where "-" was rendered in addition to the grade in the student exercise list if the actual result was 0 points. (EZ-1141)
+* Fixed a bug where an additional empty tab was rendered for teachers on the exercise page.
+* Removed excessive output logging from some GET services. (EZ-1120)
+* All requests/responses are now logged and timed on TRACE level. (EZ-1095)
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.1%20[here].

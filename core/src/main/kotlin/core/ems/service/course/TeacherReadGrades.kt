@@ -79,13 +79,14 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     return transaction {
         val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords)
         val studentCount = studentsQuery.count()
-        val students = studentsQuery.limit(limit ?: studentCount, offset ?: 0)
+        val students = studentsQuery
+                .limit(limit ?: studentCount, offset ?: 0)
                 .map {
                     TeacherReadGradesController.StudentsResp(
                             it[Student.id].value,
-                            it[Student.givenName],
-                            it[Student.familyName],
-                            it[Student.email]
+                            it[Account.givenName],
+                            it[Account.familyName],
+                            it[Account.email]
                     )
                 }
 
@@ -95,16 +96,16 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
 }
 
 private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>): Query {
-    val query = (Student innerJoin StudentCourseAccess)
-            .slice(Student.id, Student.email, Student.givenName, Student.familyName)
+    val query = (Account innerJoin Student innerJoin StudentCourseAccess)
+            .slice(Student.id, Account.email, Account.givenName, Account.familyName)
             .select { StudentCourseAccess.course eq courseId }
 
     queryWords.forEach {
         query.andWhere {
             (Student.id like "%$it%") or
-                    (Student.email.lowerCase() like "%$it%") or
-                    (Student.givenName.lowerCase() like "%$it%") or
-                    (Student.familyName.lowerCase() like "%$it%")
+                    (Account.email.lowerCase() like "%$it%") or
+                    (Account.givenName.lowerCase() like "%$it%") or
+                    (Account.familyName.lowerCase() like "%$it%")
         }
     }
     return query

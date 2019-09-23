@@ -6,6 +6,7 @@ import PageName
 import ReqMethod
 import Role
 import Str
+import compareTo
 import debug
 import debugFunStart
 import errorMessage
@@ -17,6 +18,7 @@ import getElemByIdOrNull
 import getElemBySelector
 import getNodelistBySelector
 import http200
+import http204
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -25,6 +27,7 @@ import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
 import objOf
+import observeValueChange
 import onVanillaClick
 import org.w3c.dom.*
 import parseTo
@@ -160,6 +163,13 @@ object ExerciseSummaryPage : EasyPage() {
             val feedback_teacher: String?
     )
 
+    @Serializable
+    data class StudentDraft(
+            val solution: String,
+            @Serializable(with = DateSerializer::class)
+            val created_at: Date
+    )
+
 
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
@@ -195,7 +205,7 @@ object ExerciseSummaryPage : EasyPage() {
         buildTeacherTesting(courseId, courseExerciseId)
         buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.threshold)
 
-        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        initTooltips()
         fl?.end()
     }
 
@@ -367,7 +377,7 @@ object ExerciseSummaryPage : EasyPage() {
             }
         }
 
-        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+        initTooltips()
 
         fl?.end()
     }
@@ -557,7 +567,7 @@ object ExerciseSummaryPage : EasyPage() {
                 }
             }
 
-            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+            initTooltips()
         }
 
         suspend fun toggleSubmissionsBox() {
@@ -710,11 +720,32 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private suspend fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) {
+
+        suspend fun saveSubmissionDraft(solution: String) {
+            debug { "Saving submission draft" }
+            paintSyncLoading()
+            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST, mapOf(
+                    "solution" to solution
+            )).await()
+            if (!resp.http200) {
+                warn { "Failed to save draft with status ${resp.status}" }
+                paintSyncFail()
+                return
+            }
+            debug { "Draft saved" }
+            paintSyncDone()
+        }
+
+
+        var latestSubmissionSolution: String? = null
+
         if (existingSubmission != null) {
             debug { "Building submit tab using an existing submission" }
-            paintSubmission(existingSubmission)
+            paintSubmission(existingSubmission, null)
+            latestSubmissionSolution = existingSubmission.solution
         } else {
             debug { "Building submit tab by fetching latest submission" }
+            val draftPromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET)
             val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET)
                     .await()
 
@@ -725,17 +756,25 @@ object ExerciseSummaryPage : EasyPage() {
 
             val submissionsWrap = resp.parseTo(StudentSubmissions.serializer()).await()
             val submissions = submissionsWrap.submissions
-            if (submissions.isEmpty()) {
-                getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
-                        "checkLabel" to Str.submitAndCheckLabel()
-                ))
-            } else {
-                val submission = submissions[0]
-                paintSubmission(submission)
-                if (submission.autograde_status == AutogradeStatus.IN_PROGRESS) {
-                    paintAutoassInProgress()
-                    pollForAutograde(courseId, courseExerciseId)
+
+            val draftResp = draftPromise.await()
+
+            val draft = when {
+                draftResp.http200 -> draftResp.parseTo(StudentDraft.serializer()).await()
+                draftResp.http204 -> null
+                else -> {
+                    errorMessage { Str.somethingWentWrong() }
+                    error("Fetching draft failed with status ${draftResp.status}")
                 }
+            }
+
+            val submission = submissions.getOrNull(0)
+            paintSubmission(submission, draft)
+            latestSubmissionSolution = submission?.solution
+
+            if (submission?.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                paintAutoassInProgress()
+                pollForAutograde(courseId, courseExerciseId)
             }
         }
 
@@ -752,10 +791,21 @@ object ExerciseSummaryPage : EasyPage() {
                 pollForAutograde(courseId, courseExerciseId)
             }
         }
-    }
 
-    private fun initExerciseImages() {
-        Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
+        paintSyncDone()
+        MainScope().launch {
+            observeValueChange(3000, 1000,
+                    valueProvider = { editor.getValue() },
+                    action = {
+                        saveSubmissionDraft(it)
+                        paintDraft(it, latestSubmissionSolution)
+                    },
+                    continuationConditionProvider = { getElemByIdOrNull("submission") != null },
+                    idleCallback = {
+                        debug { "Draft unsaved" }
+                        paintSyncUnsynced()
+                    })
+        }
     }
 
     private fun paintAutoassInProgress() {
@@ -774,19 +824,69 @@ object ExerciseSummaryPage : EasyPage() {
         ))
     }
 
-    private fun paintSubmission(submission: StudentSubmission) {
+    private fun paintSubmission(submission: StudentSubmission?, draft: StudentDraft?) {
+        debug { "draft: $draft, submission: $submission" }
         getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
                 "timeLabel" to Str.lastSubmTimeLabel(),
-                "time" to submission.submission_time.toEstonianString(),
-                "solution" to submission.solution,
-                "checkLabel" to Str.submitAndCheckLabel()
+                "checkLabel" to Str.submitAndCheckLabel(),
+                "time" to submission?.submission_time?.toEstonianString()
         ))
-        if (submission.grade_auto != null) {
+
+        if (submission?.grade_auto != null) {
             getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
         }
-        if (submission.grade_teacher != null) {
+        if (submission?.grade_teacher != null) {
             getElemById("assessment-teacher").innerHTML = renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
         }
+
+        when {
+            submission == null && draft != null -> {
+                paintDraft(draft.solution, null)
+            }
+            submission != null && draft == null -> {
+                paintLatestSubmission(submission.solution)
+            }
+            submission != null && draft != null -> {
+                when {
+                    submission.solution == draft.solution || submission.submission_time >= draft.created_at -> {
+                        paintLatestSubmission(submission.solution)
+                    }
+                    else -> {
+                        paintDraft(draft.solution, submission.solution)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun paintDraft(solution: String, submissionSolution: String?) {
+        getElemById("submission").textContent = solution
+        paintDraftState(solution, submissionSolution)
+    }
+
+    private fun paintDraftState(draftSolution: String, submissionSolution: String?) {
+        getElemById("editor-top-text").textContent = "Mustand (esitamata)"
+        if (submissionSolution != null && draftSolution != submissionSolution) {
+            getElemById("restore-latest-sub").innerHTML = tmRender("tm-stud-restore-latest-sub-link", mapOf(
+                    "label" to "Taasta viimane esitus"
+            ))
+            initTooltips()
+            getElemById("restore-latest-sub-btn").onVanillaClick(true) {
+                debug { "Restoring latest sub" }
+                paintLatestSubmission(submissionSolution)
+            }
+        }
+    }
+
+    private fun paintLatestSubmission(solution: String) {
+        getElemById("submission").textContent = solution
+        getElemById("submit-editor-wrap").getElementsByClassName("CodeMirror")[0]?.CodeMirror?.setValue(solution)
+        paintLatestSubmissionState()
+    }
+
+    private fun paintLatestSubmissionState() {
+        getElemById("editor-top-text").textContent = "Viimane esitus"
+        getElemById("restore-latest-sub").clear()
     }
 
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
@@ -803,6 +903,42 @@ object ExerciseSummaryPage : EasyPage() {
                         buildSubmit(courseId, courseExerciseId, submission)
                     }
                 }
+    }
+
+    private fun paintSyncDone() {
+        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-done", mapOf(
+                "label" to "Mustand salvestatud"
+        ))
+        initTooltips()
+    }
+
+    private fun paintSyncLoading() {
+        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-loading", mapOf(
+                "label" to "Salvestan mustandit..."
+        ))
+        initTooltips()
+    }
+
+    private fun paintSyncUnsynced() {
+        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-unsynced", mapOf(
+                "label" to "Mustand salvestamata"
+        ))
+        initTooltips()
+    }
+
+    private fun paintSyncFail() {
+        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-fail", mapOf(
+                "label" to "Mustandi salvestamine ebaõnnestus"
+        ))
+        initTooltips()
+    }
+
+    private fun initExerciseImages() {
+        Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
+    }
+
+    private fun initTooltips() {
+        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 
     data class PathIds(val courseId: String, val exerciseId: String)
