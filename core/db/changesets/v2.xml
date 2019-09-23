@@ -316,4 +316,37 @@
                                  referencedColumnNames="username"/>
     </changeSet>
 
+    <changeSet id="230919-1" author="priit">
+        <createTable tableName="log_report">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="user_id" type="text">
+                <constraints primaryKey="true" references="account(username)"
+                             foreignKeyName="fk_account_log_report"
+                             nullable="false"/>
+            </column>
+
+            <column name="log_time" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="log_level" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="log_message" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="client_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="report_log_id_seq" startValue="1" incrementBy="1"/>
+        <addDefaultValue tableName="log_report" columnName="id"
+                         defaultValueSequenceNext="report_log_id_seq"/>
+    </changeSet>
+
 </databaseChangeLog>
