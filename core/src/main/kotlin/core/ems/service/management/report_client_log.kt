@@ -109,7 +109,7 @@ fun notifyAdmin(dto: Req, caller: EasyUser, dtoLogLevel: LogLevel, mailService: 
         WARN.paramValue -> if (dtoLogLevel == ERROR || dtoLogLevel == WARN) sendLogEmail(dto, caller, mailService)
         ERROR.paramValue -> if (dtoLogLevel == ERROR) sendLogEmail(dto, caller, mailService)
         else -> log.warn {
-            ("Invalid email log level defined in the database. Expected: 'DEBUG', 'INFO', 'WARN', 'ERROR', but got ${dto.logLevel}")
+            ("Invalid email log level defined in the database. Expected: 'DEBUG', 'INFO', 'WARN', 'ERROR', but got ${dto.logLevel}.")
         }
     }
 }
@@ -121,5 +121,7 @@ fun sendLogEmail(dto: Req, caller: EasyUser, mailService: SendMailService) {
                     CALLER ID: ${caller.id}
                     CLIENT ID: ${dto.clientId}
                     MESSAGE: ${dto.logMessage}"""
+
+    log.debug { "Sending client log: $message" }
     mailService.sendSystemNotification(message, id)
 }
