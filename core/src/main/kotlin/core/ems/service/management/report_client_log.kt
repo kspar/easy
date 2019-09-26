@@ -54,7 +54,6 @@ class ReportLogController(private val mailService: SendMailService) {
         NO_MAIL_CLIENT_REGEX("rcl_no_mail_client_regex")
     }
 
-
     @Async
     @PostMapping("/management/log")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {
@@ -100,22 +99,27 @@ fun notifyAdmin(dto: Req, caller: EasyUser, dtoLogLevel: LogLevel, mailService: 
     val noLogIfMatch = getProp(NO_MAIL_CLIENT_REGEX.propKey)
 
     // In some cases, we want to send email based on regular expression that matches the client_id.
-    if (!Regex(noLogIfMatch ?: ".*").matches(dto.clientId)) return
+    if (noLogIfMatch != null && Regex(noLogIfMatch).matches(dto.clientId)) return
 
     // In some cases, we want to send email based on log dtoLogLevel (must be configurable). (minimal log dtoLogLevel)
     when (emailLogLevel) {
-        DEBUG.paramValue -> sendLogEmail(dto, caller, mailService)
         null -> sendLogEmail(dto, caller, mailService)
+        DEBUG.paramValue -> sendLogEmail(dto, caller, mailService)
         INFO.paramValue -> if (dtoLogLevel != DEBUG) sendLogEmail(dto, caller, mailService)
         WARN.paramValue -> if (dtoLogLevel == ERROR || dtoLogLevel == WARN) sendLogEmail(dto, caller, mailService)
         ERROR.paramValue -> if (dtoLogLevel == ERROR) sendLogEmail(dto, caller, mailService)
-        //TODO: new exception? What should be done in here?
-        else -> throw RuntimeException("Invalid log dtoLogLevel ${dto.logLevel}")
+        else -> log.warn {
+            ("Invalid email log level defined in the database. Expected: 'DEBUG', 'INFO', 'WARN', 'ERROR', but got ${dto.logLevel}")
+        }
     }
 }
 
 fun sendLogEmail(dto: Req, caller: EasyUser, mailService: SendMailService) {
     val id = UUID.randomUUID().toString()
-    val message = "$id::${DateTime.now()}::${dto.logLevel}::${caller.id}::${dto.clientId}::${dto.logMessage}"
+    val message = """LOG TIME: $${DateTime.now()} 
+                    LOG LEVEL: ${dto.logLevel}
+                    CALLER ID: ${caller.id}
+                    CLIENT ID: ${dto.clientId}
+                    MESSAGE: ${dto.logMessage}"""
     mailService.sendSystemNotification(message, id)
 }
