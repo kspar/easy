@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+</head>
+<body>
+
+<div id="nav-wrap">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="#!" class="brand-logo left">
+                <img class="logo-img" src="img/main-logo.svg" alt="Lahendus"/>
+                <span class="logo-text">LAHENDUS</span>
+            </a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="#!">Minu kursused</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+
+
+<div id="content-container" class="container">
+
+    <div class="card">
+        <div class="card-content">
+            <div class="grade-table-wrap">
+                <div class="pre-table-wrap"><div class="pagination-wrap">pagination</div></div>
+                <table class="highlight colored truncated-ex">
+                    <thead><tr>
+                        <th style="min-width: 18rem; width: 18rem;"></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.1 Bla bla blabla bla bla bla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><i class="material-icons">arrow_downward</i><span class="text">1.2 Bla bla blabla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.3 Bla bla blabla bla bla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                        <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                    </tr></thead>
+
+                    <tbody>
+                    <tr>
+                        <td class="student truncate">Kuslap Ants-Mets Kuusik</td>
+                        <td class="finished">100</td>
+                        <td class="unfinished">0</td>
+                        <td class="unstarted">-</td>
+                        <td class="ungraded">⋯</td>
+                        <td>100</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td class="student truncate">Mari Maasikas</td>
+                        <td>0</td>
+                        <td>99</td>
+                        <td>100</td>
+                        <td>11</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td class="student truncate">Jüri-Jaanus Juurikas</td>
+                        <td>100</td>
+                        <td>99</td>
+                        <td>100</td>
+                        <td>100</td>
+                        <td>100</td>
+                        <td>100</td>
+                        <td>100</td>
+                        <td>100</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="post-table-wrap"><div class="pagination-wrap">pagination</div></div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<style>
+    .grade-table-wrap {
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+
+    .grade-table-wrap .pre-table-wrap,
+    .grade-table-wrap .post-table-wrap {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .grade-table-wrap table > tbody > tr {
+        border-bottom: 1px solid #ddd;
+    }
+
+    .grade-table-wrap table > thead > tr > th {
+        font-weight: 500;
+    }
+
+    .grade-table-wrap table.truncated-ex > thead > tr > th .wrap {
+        display: flex;
+    }
+
+    .grade-table-wrap table.truncated-ex > thead > tr > th .text {
+        width: 7rem;
+        display: inline-block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .grade-table-wrap table > thead > tr > th,
+    .grade-table-wrap table > tbody > tr > td {
+        padding: 1rem 1rem;
+    }
+
+    .grade-table-wrap table > tbody > tr > td:first-child {
+        text-align: right;
+        font-weight: 500;
+    }
+    .grade-table-wrap table > tbody > tr > td {
+        text-align: center;
+    }
+    .grade-table-wrap table > tbody > tr > td.student {
+        position: fixed;
+        background-color: #fff;
+        width: 18rem;
+    }
+
+    .grade-table-wrap table.colored > tbody > tr > td.finished {
+        background-color: #d3ffd6;
+    }
+    .grade-table-wrap table.colored > tbody > tr > td.unfinished {
+        background-color: #fffdc0;
+    }
+    .grade-table-wrap table.colored > tbody > tr > td.unstarted {
+        background-color: #eee;
+    }
+    .grade-table-wrap table.colored > tbody > tr > td.ungraded {
+        background-color: #c0e8ff;
+    }
+
+
+    .grade-table-wrap table > thead > tr > th:not(:last-child),
+    .grade-table-wrap table > tbody > tr > td:not(:last-child){
+        border-right: 1px solid #ddd;
+    }
+
+
+    a.uncolored {
+        color: inherit;
+    }
+
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+
+<script>
+
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {});
+</script>
+</body>
+</html>
