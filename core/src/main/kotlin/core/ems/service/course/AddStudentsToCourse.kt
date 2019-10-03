@@ -62,7 +62,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToC
                                 .map { it[Student.id].value }
                                 .firstOrNull()
                         studentId ?: throw InvalidRequestException("Student not found: $studentIdOrEmail",
-                                ReqError.STUDENT_NOT_FOUND, "missing_student" to studentIdOrEmail)
+                                ReqError.STUDENT_NOT_FOUND, "missing_student" to studentIdOrEmail, notify = false)
                     } else {
                         studentIdOrEmail
                     }

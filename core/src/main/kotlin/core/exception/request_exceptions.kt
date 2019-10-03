@@ -4,7 +4,8 @@ package core.exception
 class InvalidRequestException(
         override val message: String,
         val code: ReqError? = null,
-        vararg val attributes: Pair<String, String>
+        vararg val attributes: Pair<String, String>,
+        val notify: Boolean = true
 ) : RuntimeException(message)
 
 

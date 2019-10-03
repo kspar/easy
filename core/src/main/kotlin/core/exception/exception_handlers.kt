@@ -61,7 +61,9 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         log.warn("Invalid request, message: ${ex.message}, id: $id")
         log.warn("Request info: ${request.getDescription(true)}")
 
-        mailService.sendSystemNotification(ex.stackTraceString, id)
+        if (ex.notify) {
+            mailService.sendSystemNotification(ex.stackTraceString, id)
+        }
 
         // Remove after migrating all IREs to use code
         if (ex.code != null) {
