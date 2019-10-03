@@ -41,7 +41,7 @@ class UpdateAccountController {
     fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
 
         val account = AccountData(
-                caller.id.toLowerCase(),
+                caller.id,
                 dto.email.toLowerCase(),
                 correctNameCapitalisation(dto.firstName),
                 correctNameCapitalisation(dto.lastName))
