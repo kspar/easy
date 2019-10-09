@@ -76,6 +76,10 @@ class CachingRequestBodyFilter : GenericFilterBean() {
         val endTime = (req.getAttribute("endTime")?:0.toLong()) as Long
         val executeTime = endTime - startTime
 
+        // Add extra 'close' as they might be opened by some other method internally and left unclosed
+        wrappedRequest.inputStream.close()
+        wrappedResponse.contentInputStream.close()
+
         log.trace { "${executeTime}ms::$user::$role::$ip::$method::$statusCode::${path}::[${requestBody}]->[${responseBody}]" }
     }
 
