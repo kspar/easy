@@ -86,7 +86,7 @@ private fun selectStudentExercises(courseId: Long, studentId: String): StudentRe
                                                 Submission.courseExercise eq ex.courseExId and
                                                         (Submission.student eq studentId)
                                             }
-                                            .orderBy(Submission.createdAt to false)
+                                            .orderBy(Submission.createdAt, SortOrder.DESC)
                                             .limit(1)
                                             .map {
                                                 SubmissionPartial(
