@@ -6,9 +6,13 @@ import core.db.Account
 import core.db.AutoGradeStatus
 import core.db.Submission
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.StdOutSqlLogger
+import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,7 +24,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class StatisticsController {
+class StatisticsController(private val statisticsService: StatisticsService) {
 
     data class Req(@JsonProperty("in_auto_assessing")
                    @field:Min(0) val inAutoAssessing: Int,
@@ -39,14 +43,30 @@ class StatisticsController {
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: Req?, caller: EasyUser): Resp {
         log.debug { "${caller.id} is querying statistics." }
-        return Resp(selectSubmissionsInAutoAssessmentCount(), selectSubmissionCount(), selectTotalUserCount())
+        return Resp(statisticsService.selectSubmissionsInAutoAssessmentCount(),
+                statisticsService.selectSubmissionCount(),
+                statisticsService.selectTotalUserCount())
     }
 }
 
-fun selectSubmissionCount() = transaction { Submission.selectAll().count() }
 
-fun selectTotalUserCount() = transaction { Account.selectAll().count() }
+@Service
+class StatisticsService {
+    @Cacheable("submissions")
+    fun selectSubmissionCount() = transaction {
+        addLogger(StdOutSqlLogger)
+        Submission.selectAll().count()
+    }
 
-fun selectSubmissionsInAutoAssessmentCount() = transaction {
-    Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
+    @Cacheable("users")
+    fun selectTotalUserCount() = transaction {
+        addLogger(StdOutSqlLogger)
+        Account.selectAll().count()
+    }
+
+    @Cacheable("autoassessment")
+    fun selectSubmissionsInAutoAssessmentCount() = transaction {
+        addLogger(StdOutSqlLogger)
+        Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
+    }
 }
