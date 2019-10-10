@@ -39,7 +39,7 @@ class StatisticsController {
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: Req?, caller: EasyUser): Resp {
         log.debug { "${caller.id} is querying statistics." }
-        return Resp(-1, -1, -1)
+        return Resp(selectSubmissionsInAutoAssessmentCount(), selectSubmissionCount(), selectTotalUserCount())
     }
 }
 
@@ -47,8 +47,6 @@ fun selectSubmissionCount() = transaction { Submission.selectAll().count() }
 
 fun selectTotalUserCount() = transaction { Account.selectAll().count() }
 
-fun selectSubmissionsInAutoAssessmentCount() {
-    transaction {
-        Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
-    }
+fun selectSubmissionsInAutoAssessmentCount() = transaction {
+    Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
 }
