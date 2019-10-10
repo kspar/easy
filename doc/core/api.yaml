@@ -146,6 +146,40 @@ paths:
           description: Notification deleted
 
 
+  /statistics/common:
+    post:
+      summary: "Returns number of submission that are currently being autoassessed, total number of submissions in all
+       courses and total number of users. Expects client to upload current known values."
+      tags:
+        - common
+      parameters:
+        - name: statistics
+          in: body
+          schema:
+            properties:
+              in_auto_assessing:
+                type: integer
+              total_submissions:
+                type: integer
+              total_users:
+                type: integer
+      responses:
+        200:
+          description: Returns up-to-date statistics.
+          schema:
+            properties:
+              in_auto_assessing:
+                type: integer
+              total_submissions:
+                type: integer
+              total_users:
+                type: integer
+            required:
+              - in_auto_assessing
+              - total_submissions
+              - total_users
+
+
   /student/courses:
     get:
       summary: Get summaries of courses the authenticated student has access to.
