@@ -920,6 +920,10 @@ div.title-wrap > .title-button > i.material-icons {
     animation-delay: 0.7s;
 }
 
+.loading-collection :nth-child(4) {
+    animation-delay: 0.9s;
+}
+
 
 /** Empty placeholders **/
 
