@@ -6,8 +6,6 @@ import core.db.Account
 import core.db.AutoGradeStatus
 import core.db.Submission
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.StdOutSqlLogger
-import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -52,21 +50,19 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 
 @Service
 class StatisticsService {
+
     @Cacheable("submissions")
     fun selectSubmissionCount() = transaction {
-        addLogger(StdOutSqlLogger)
         Submission.selectAll().count()
     }
 
     @Cacheable("users")
     fun selectTotalUserCount() = transaction {
-        addLogger(StdOutSqlLogger)
         Account.selectAll().count()
     }
 
     @Cacheable("autoassessment")
     fun selectSubmissionsInAutoAssessmentCount() = transaction {
-        addLogger(StdOutSqlLogger)
         Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.autoAssess
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.CacheInvalidator
 import core.ems.service.access.assertIsVisibleExerciseOnCourse
 import core.ems.service.access.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -29,6 +30,9 @@ class StudentSubmitCont {
     @Autowired
     lateinit var some: StupidComponentForAsync
 
+    @Autowired
+    lateinit var cacheInvalidator: CacheInvalidator
+
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
     @Secured("ROLE_STUDENT")
@@ -51,12 +55,12 @@ class StudentSubmitCont {
         when (selectGraderType(courseExId)) {
             GraderType.TEACHER -> {
                 log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
-                insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE)
+                insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE, cacheInvalidator)
             }
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
-                val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS)
-                some.autoAssessAsync(courseExId, solution, submissionId)
+                val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cacheInvalidator)
+                some.autoAssessAsync(courseExId, solution, submissionId, cacheInvalidator)
             }
         }
     }
@@ -68,21 +72,21 @@ class StudentSubmitCont {
 class StupidComponentForAsync {
     // Must be in DIFFERENT Spring Component for Async than the caller
     @Async
-    fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long) {
+    fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, cacheInvalidator: CacheInvalidator) {
         try {
             val autoExerciseId = selectAutoExId(courseExId)
             if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId)
+                insertAutoAssFailed(submissionId, cacheInvalidator)
                 throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
             }
 
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
             val autoAss = autoAssess(autoExerciseId, solution)
             log.debug { "Finished autoassessment" }
-            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId)
+            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cacheInvalidator)
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId)
+            insertAutoAssFailed(submissionId, cacheInvalidator)
         }
     }
 }
@@ -108,8 +112,8 @@ private fun selectAutoExId(courseExId: Long): EntityID<Long>? {
     }
 }
 
-private fun insertSubmission(courseExId: Long, submission: String, studentId: String, autoAss: AutoGradeStatus): Long {
-    return transaction {
+private fun insertSubmission(courseExId: Long, submission: String, studentId: String, autoAss: AutoGradeStatus, cacheInvalidator: CacheInvalidator): Long {
+    val id = transaction {
         Submission.insertAndGetId {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
             it[student] = EntityID(studentId, Student)
@@ -118,9 +122,12 @@ private fun insertSubmission(courseExId: Long, submission: String, studentId: St
             it[autoGradeStatus] = autoAss
         }.value
     }
+
+    cacheInvalidator.invalidateSubmissionCache()
+    return id
 }
 
-private fun insertAutoAssessment(newGrade: Int, newFeedback: String?, submissionId: Long) {
+private fun insertAutoAssessment(newGrade: Int, newFeedback: String?, submissionId: Long, cacheInvalidator: CacheInvalidator) {
     transaction {
         AutomaticAssessment.insert {
             it[submission] = EntityID(submissionId, Submission)
@@ -132,13 +139,17 @@ private fun insertAutoAssessment(newGrade: Int, newFeedback: String?, submission
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
         }
+
+        cacheInvalidator.invalidateAutoAssessmentCountCache()
     }
 }
 
-private fun insertAutoAssFailed(submissionId: Long) {
+private fun insertAutoAssFailed(submissionId: Long, cacheInvalidator: CacheInvalidator) {
     transaction {
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.FAILED
         }
     }
+
+    cacheInvalidator.invalidateAutoAssessmentCountCache()
 }

@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.CacheInvalidator
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -23,6 +25,9 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class UpdateAccountController {
+
+    @Autowired
+    lateinit var cacheInvalidator: CacheInvalidator
 
     data class PersonalDataBody(@JsonProperty("email", required = true)
                                 @field:NotBlank @field:Size(max = 254) val email: String,
@@ -47,7 +52,7 @@ class UpdateAccountController {
                 correctNameCapitalisation(dto.lastName))
 
         log.debug { "Update personal data for $account" }
-        updateAccount(account)
+        updateAccount(account, cacheInvalidator)
 
         if (caller.isStudent()) {
             log.debug { "Update student ${caller.id}" }
@@ -78,7 +83,7 @@ private fun correctNameCapitalisation(name: String) =
                     }
                 }
 
-private fun updateAccount(accountData: AccountData) {
+private fun updateAccount(accountData: AccountData, cacheInvalidator: CacheInvalidator) {
     transaction {
         Account.insertOrUpdate(Account.id, listOf(Account.id, Account.createdAt)) {
             it[id] = EntityID(accountData.username, Account)
@@ -88,6 +93,8 @@ private fun updateAccount(accountData: AccountData) {
             it[createdAt] = DateTime.now()
         }
     }
+
+    cacheInvalidator.invalidateTotalUserCache()
 }
 
 private fun updateStudent(student: AccountData) {
