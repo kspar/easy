@@ -624,6 +624,92 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
+/** Grade table page **/
+
+.grade-table-wrap {
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.grades-wrap .pre-table-wrap,
+.grades-wrap .post-table-wrap {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.grade-table-wrap table > tbody > tr {
+    border-bottom: 1px solid #ddd;
+}
+
+.grade-table-wrap table > thead > tr > th {
+    font-weight: 500;
+}
+.grade-table-wrap table > thead > tr > th.header-spacer {
+    min-width: 12rem;
+    width: 12rem;
+}
+@media only screen and (min-width: 400px) {
+    .grade-table-wrap table > thead > tr > th.header-spacer {
+        min-width: 18rem;
+        width: 18rem;
+    }
+}
+
+.grade-table-wrap table.truncated-ex > thead > tr > th .wrap {
+    display: flex;
+}
+
+.grade-table-wrap table.truncated-ex > thead > tr > th .text {
+    width: 7rem;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grade-table-wrap table > thead > tr > th,
+.grade-table-wrap table > tbody > tr > td {
+    padding: 1rem 1rem;
+}
+
+.grade-table-wrap table > tbody > tr > td:first-child {
+    text-align: right;
+    font-weight: 500;
+}
+.grade-table-wrap table > tbody > tr > td {
+    text-align: center;
+}
+
+.grade-table-wrap table > tbody > tr > td.student {
+    position: absolute;
+    background-color: #fff;
+    width: 12rem;
+}
+@media only screen and (min-width: 400px) {
+    .grade-table-wrap table > tbody > tr > td.student {
+        width: 18rem;
+    }
+}
+
+.grade-table-wrap table.colored > tbody > tr > td.finished {
+    background-color: #daf1da;
+}
+.grade-table-wrap table.colored > tbody > tr > td.unfinished {
+    background-color: #fff1cc;
+}
+.grade-table-wrap table.colored > tbody > tr > td.unstarted {
+    background-color: #f6f6f6;
+}
+.grade-table-wrap table.colored > tbody > tr > td.ungraded {
+    background-color: #cde6fe;
+}
+
+.grade-table-wrap table > thead > tr > th:not(:last-child),
+.grade-table-wrap table > tbody > tr > td:not(:last-child){
+    border-right: 1px solid #ddd;
+}
+
+
 /** Common **/
 
 
@@ -683,6 +769,10 @@ nav.crumb-wrap .breadcrumb:before {
     .toggleable-wrap {
         padding: 2rem;
     }
+}
+
+a.uncolored {
+    color: inherit;
 }
 
 

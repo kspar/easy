@@ -154,6 +154,8 @@ object ExercisesPage : EasyPage() {
             getContainer().innerHTML = tmRender("tm-teach-exercises-list", mapOf(
                     "courses" to Str.myCourses(),
                     "coursesHref" to "/courses",
+                    "courseId" to courseId,
+                    "gradesLabel" to Str.gradesLabel(),
                     "title" to courseTitle,
                     "exercises" to exerciseArray
             ))

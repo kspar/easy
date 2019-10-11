@@ -404,6 +404,9 @@
     </nav>
     <div class="title-wrap">
         <h3 class="title">{{title}}</h3>
+        <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
+            <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
+        </a>
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
@@ -608,6 +611,45 @@
             <div class="col s4"></div>
         </div>
         <button id="add-students-button" class="waves-effect waves-light btn">{{addButtonLabel}}</button>
+    </div>
+</script>
+
+<script id="tm-teach-gradetable" type="text/x-handlebars-template">
+    <nav class="crumb-wrap">
+        <a href="/courses" class="breadcrumb truncate">{{myCoursesLabel}}</a>
+        <a href="{{courseHref}}" class="breadcrumb truncate">{{title}}</a>
+        <a class="breadcrumb truncate">{{gradesLabel}}</a>
+    </nav>
+    <div class="title-wrap">
+        <h3 class="title">{{title}}</h3>
+    </div>
+    <div class="card">
+        <div class="card-content">
+            <div class="grades-wrap">
+                <div class="pre-table-wrap"><!-- TODO --></div>
+                <div class="grade-table-wrap">
+                    <table class="colored truncated-ex">
+                        <thead><tr>
+                            <th class="header-spacer"></th>
+                            {{#exercises}}
+                            <th><a class="wrap uncolored"><span class="text">{{exerciseTitle}}</span></a></th>
+                            {{/exercises}}
+                        </tr></thead>
+                        <tbody>
+                        {{#students}}
+                        <tr>
+                            <td class="student truncate">{{name}}</td>
+                            {{#grades}}
+                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}</td>
+                            {{/grades}}
+                        </tr>
+                        {{/students}}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="post-table-wrap"><!-- TODO --></div>
+            </div>
+        </div>
     </div>
 </script>
 

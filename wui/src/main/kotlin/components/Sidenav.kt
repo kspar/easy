@@ -24,7 +24,7 @@ object Sidenav {
                         "newExercise" to Str.newExercise(),
                         "addExistingExercise" to Str.addExistingExercise(),
                         "participants" to Str.participants(),
-                        "grades" to Str.grades()
+                        "grades" to Str.gradesLabel()
                 ))
         getElemById("sidenav-wrap").innerHTML = sidenavHtml
 

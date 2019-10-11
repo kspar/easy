@@ -35,7 +35,7 @@ abstract class TranslatableStrings {
     abstract fun newExercise(): String
     abstract fun addExistingExercise(): String
     abstract fun participants(): String
-    abstract fun grades(): String
+    abstract fun gradesLabel(): String
 
 
     // Courses page
@@ -147,7 +147,7 @@ private object EstStrings : TranslatableStrings() {
     override fun newExercise() = "Uus ülesanne"
     override fun addExistingExercise() = "Lisa olemasolev ülesanne"
     override fun participants() = "Osalejad"
-    override fun grades() = "Hinded"
+    override fun gradesLabel() = "Hinded"
     override fun coursesTitle() = "Minu kursused"
     override fun myCourses() = "Minu kursused"
     override fun deadlineLabel() = "Tähtaeg"

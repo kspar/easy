@@ -8,7 +8,7 @@ import spa.setupLinkInterception
 
 
 private val PAGES = listOf(
-        CoursesPage, ExercisesPage, ExerciseSummaryPage, AddCoursePage, ParticipantsPage)
+        CoursesPage, ExercisesPage, ExerciseSummaryPage, AddCoursePage, ParticipantsPage, GradeTablePage)
 
 
 fun main() {
