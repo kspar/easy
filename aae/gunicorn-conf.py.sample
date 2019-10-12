@@ -1,3 +1,5 @@
 
 bind = 'ip:port'
 workers = 30
+timeout = 60
+graceful_timeout = 60
