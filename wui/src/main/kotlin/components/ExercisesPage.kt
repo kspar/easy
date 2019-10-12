@@ -111,8 +111,6 @@ object ExercisesPage : EasyPage() {
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(TeacherExercises.serializer()).await()
 
-            debug { "Exercises: $exercises" }
-
             val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }
                     .map { ex ->
@@ -207,8 +205,6 @@ object ExercisesPage : EasyPage() {
 
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()
-
-            debug { "Exercises: $exercises" }
 
             val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }
