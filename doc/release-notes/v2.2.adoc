@@ -1,0 +1,15 @@
+
+
+= Release notes: v2.2
+
+* Added a basic grade table.
+* Fixed a bug where usernames beginning with non-ascii characters were not usable if they became mangled by third-party software. (EZ-1176)
+* Migrated away from deprecated orderBy in exposed. (EZ-1063)
+* Stopped sending system notifications if a student didn't exist when trying to add them to a course. (EZ-1173)
+* Fixed courses loading animation. (EZ-1186)
+* Attempt to fix a memory leak by disabling request trace logging. (EZ-1183)
+* Optimised some database constraints & indices. (EZ-1170)
+* Updated several dependencies.
+* Optimised client-side & server-side logging.
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.2%20[here].
