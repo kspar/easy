@@ -802,7 +802,6 @@ object ExerciseSummaryPage : EasyPage() {
                     },
                     continuationConditionProvider = { getElemByIdOrNull("submission") != null },
                     idleCallback = {
-                        debug { "Draft unsaved" }
                         paintSyncUnsynced()
                     })
         }
@@ -825,7 +824,6 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun paintSubmission(submission: StudentSubmission?, draft: StudentDraft?) {
-        debug { "draft: $draft, submission: $submission" }
         getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
                 "timeLabel" to Str.lastSubmTimeLabel(),
                 "checkLabel" to Str.submitAndCheckLabel(),
