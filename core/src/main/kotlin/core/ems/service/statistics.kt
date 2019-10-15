@@ -96,7 +96,7 @@ class StatisticsService() {
     }
 
     @Scheduled(fixedDelay = 1000)
-    fun scheduleFixedDelayTask() {
+    fun queryChangesStatistics() {
         val newResp = createResp()
 
         if (newResp != resp) {
