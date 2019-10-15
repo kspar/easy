@@ -46,9 +46,12 @@ class StatisticsController(private val statisticsService: StatisticsService) {
         return resp
     }
 
+    /**
+     * Submit request to deferred handling.
+     */
     private fun deferredHandling(resp: DeferredResult<ReqResp>) {
         ForkJoinPool.commonPool().submit {
-            statisticsService.addRequest(resp)
+            statisticsService.addRequestToMemory(resp)
             while (!resp.hasResult()) {
                 Thread.sleep(100)
             }
@@ -69,7 +72,7 @@ class StatisticsService {
     }
 
     @Synchronized
-    fun addRequest(req: DeferredResult<StatisticsController.ReqResp>) {
+    fun addRequestToMemory(req: DeferredResult<StatisticsController.ReqResp>) {
         requests.add(req)
     }
 
