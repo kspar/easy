@@ -10,13 +10,15 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.async.DeferredResult
+import java.util.concurrent.ForkJoinPool
 import javax.validation.Valid
-import javax.validation.constraints.Min
 
 private val log = KotlinLogging.logger {}
 
@@ -24,32 +26,59 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StatisticsController(private val statisticsService: StatisticsService) {
 
-    data class Req(@JsonProperty("in_auto_assessing")
-                   @field:Min(0) val inAutoAssessing: Int,
 
-                   @JsonProperty("total_submissions")
-                   @field:Min(0) val totalSubmissions: Int,
+    data class ReqResp(@JsonProperty("in_auto_assessing") val inAutoAssessing: Int,
+                       @JsonProperty("total_submissions") val totalSubmissions: Int,
+                       @JsonProperty("total_users") val totalUsers: Int)
 
-                   @JsonProperty("total_users")
-                   @field:Min(0) val totalUsers: Int)
-
-
-    data class Resp(@JsonProperty("in_auto_assessing") val inAutoAssessing: Int,
-                    @JsonProperty("total_submissions") val totalSubmissions: Int,
-                    @JsonProperty("total_users") val totalUsers: Int)
 
     @PostMapping("/statistics/common")
-    fun controller(@Valid @RequestBody dto: Req?, caller: EasyUser): Resp {
+    fun controller(@Valid @RequestBody dto: ReqResp?, caller: EasyUser): DeferredResult<ReqResp> {
         log.debug { "${caller.id} is querying statistics." }
-        return Resp(statisticsService.selectSubmissionsInAutoAssessmentCount(),
-                statisticsService.selectSubmissionCount(),
-                statisticsService.selectTotalUserCount())
+        val resp = DeferredResult<ReqResp>()
+
+        when (dto) {
+            null -> resp.setResult(statisticsService.createResp())
+
+            statisticsService.resp -> {
+                ForkJoinPool.commonPool().submit {
+                    log.debug { "Deferred" }
+                    statisticsService.addRequest(resp)
+                    while (!resp.hasResult()) {
+                        Thread.sleep(100)
+                    }
+                }
+            }
+            else -> resp.setResult(statisticsService.createResp())
+        }
+
+        return resp
     }
+
 }
 
 
 @Service
-class StatisticsService {
+class StatisticsService() {
+    lateinit var resp: StatisticsController.ReqResp
+    private var requests = mutableSetOf<DeferredResult<StatisticsController.ReqResp>>()
+
+    init {
+        this.resp = createResp()
+        notifyAndClearRequests(resp)
+    }
+
+    @Synchronized
+    fun addRequest(req: DeferredResult<StatisticsController.ReqResp>) {
+        requests.add(req)
+    }
+
+    @Synchronized
+    fun notifyAndClearRequests(resp: StatisticsController.ReqResp) {
+        requests.map { it.setResult(resp) }
+        requests.clear()
+    }
+
 
     @Cacheable("submissions")
     fun selectSubmissionCount() = transaction {
@@ -65,4 +94,23 @@ class StatisticsService {
     fun selectSubmissionsInAutoAssessmentCount() = transaction {
         Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
     }
+
+    @Scheduled(fixedDelay = 1000)
+    fun scheduleFixedDelayTask() {
+        val newResp = createResp()
+
+        if (newResp != resp) {
+            notifyAndClearRequests(newResp)
+            resp = newResp
+            log.debug { "Updated public statistics deferred responses." }
+        }
+
+    }
+
+    fun createResp(): StatisticsController.ReqResp {
+        return StatisticsController.ReqResp(selectSubmissionsInAutoAssessmentCount(),
+                selectSubmissionCount(),
+                selectTotalUserCount())
+    }
+
 }
