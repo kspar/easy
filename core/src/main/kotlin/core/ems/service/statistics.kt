@@ -65,6 +65,7 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 class StatisticsService {
     lateinit var resp: StatisticsController.ReqResp
     private var requests = mutableSetOf<DeferredResult<StatisticsController.ReqResp>>()
+    private var count = 0
 
     init {
         this.resp = createResp()
@@ -98,16 +99,19 @@ class StatisticsService {
         Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
     }
 
-    @Scheduled(fixedDelay = 1000)
-    fun queryChangesStatistics() {
+    @Scheduled(fixedDelay = 5000)
+    fun queryChangesInStatistics() {
         val newResp = createResp()
 
-        if (newResp != resp) {
+        // Push response to clients if there is change in statistics or server has checked 3 times for changes.
+        if (newResp != resp || count == 3) {
             notifyAndClearRequests(newResp)
             resp = newResp
+            count = 0
             log.debug { "Updated public statistics deferred responses." }
         }
 
+        count++
     }
 
     fun createResp(): StatisticsController.ReqResp {
