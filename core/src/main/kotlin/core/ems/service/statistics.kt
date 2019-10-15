@@ -59,7 +59,7 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 
 
 @Service
-class StatisticsService() {
+class StatisticsService {
     lateinit var resp: StatisticsController.ReqResp
     private var requests = mutableSetOf<DeferredResult<StatisticsController.ReqResp>>()
 
