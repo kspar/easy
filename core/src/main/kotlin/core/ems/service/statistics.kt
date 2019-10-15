@@ -39,20 +39,20 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 
         when (dto) {
             null -> resp.setResult(statisticsService.createResp())
-
-            statisticsService.resp -> {
-                ForkJoinPool.commonPool().submit {
-                    log.debug { "Deferred" }
-                    statisticsService.addRequest(resp)
-                    while (!resp.hasResult()) {
-                        Thread.sleep(100)
-                    }
-                }
-            }
+            statisticsService.resp -> deferredHandling(resp)
             else -> resp.setResult(statisticsService.createResp())
         }
 
         return resp
+    }
+
+    private fun deferredHandling(resp: DeferredResult<ReqResp>) {
+        ForkJoinPool.commonPool().submit {
+            statisticsService.addRequest(resp)
+            while (!resp.hasResult()) {
+                Thread.sleep(100)
+            }
+        }
     }
 
 }
