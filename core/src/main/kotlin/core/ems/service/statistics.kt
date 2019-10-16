@@ -38,9 +38,9 @@ class StatisticsController(private val statisticsService: StatisticsService) {
         val resp = DeferredResult<ReqResp>()
 
         when (dto) {
-            null -> resp.setResult(statisticsService.createResp())
+            null -> resp.setResult(statisticsService.resp)
             statisticsService.resp -> deferredHandling(resp)
-            else -> resp.setResult(statisticsService.createResp())
+            else -> resp.setResult(statisticsService.resp)
         }
 
         return resp
