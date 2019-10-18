@@ -36,7 +36,7 @@ class TeacherReadGradesController {
                              @JsonProperty("effective_title") val effectiveTitle: String,
                              @JsonProperty("grade_threshold") val gradeThreshold: Int,
                              @JsonProperty("student_visible") val studentVisible: Boolean,
-                             @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp?>?)
+                             @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp>)
 
     data class GradeResp(@JsonProperty("student_id") val studentId: String,
                          @JsonProperty("grade") val grade: Int,
