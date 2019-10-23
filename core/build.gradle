@@ -74,6 +74,9 @@ dependencies {
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // Asciidoc
+    implementation 'org.asciidoctor:asciidoctorj:2.1.0'
 }
 
 
