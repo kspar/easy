@@ -30,7 +30,9 @@ class AsciiController {
         val asciidoctor = create()
 
         val options = Options()
-        options.setAttributes(Attributes())
+        val attributes = Attributes()
+        attributes.setSourceHighlighter("coderay")
+        options.setAttributes(attributes)
 
         val html = asciidoctor.convert(dto.content, options)
 
