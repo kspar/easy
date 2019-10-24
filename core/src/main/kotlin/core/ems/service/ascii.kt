@@ -27,11 +27,14 @@ class AsciiController {
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
         log.debug { "${caller.id} is testing asciidoc: ${dto.content}." }
 
-        val attributes = Attributes()
-        val options = Options()
-        options.setAttributes(attributes)
-
         val asciidoctor = create()
-        return ReqResp(asciidoctor.convert(dto.content, options))
+
+        val options = Options()
+        options.setAttributes(Attributes())
+
+        val html = asciidoctor.convert(dto.content, options)
+
+        asciidoctor.shutdown()
+        return ReqResp(html)
     }
 }
