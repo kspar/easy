@@ -25,10 +25,11 @@ class AsciiController {
 
     @PostMapping("/test/ascii")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
-        log.debug { "${caller.id} is testing asciidoc." }
+        log.debug { "${caller.id} is testing asciidoc: ${dto.content}." }
 
         val attributes = Attributes()
-        val options = Options(mapOf(Pair("attributes", attributes)))
+        val options = Options()
+        options.setAttributes(attributes)
 
         val asciidoctor = create()
         return ReqResp(asciidoctor.convert(dto.content, options))
