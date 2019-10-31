@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -32,6 +33,7 @@ class StatisticsController(private val statisticsService: StatisticsService) {
                        @JsonProperty("total_users") val totalUsers: Int)
 
 
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: ReqResp?, caller: EasyUser): DeferredResult<ReqResp> {
         log.debug { "${caller.id} is querying statistics." }
