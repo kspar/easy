@@ -180,6 +180,31 @@ paths:
               - total_users
 
 
+  /preview/adoc:
+    post:
+      summary: "Convert AsciiDoc content to HTML5"
+      tags:
+        - common
+      parameters:
+        - name: preview
+          in: body
+          schema:
+            properties:
+              content:
+                type: string
+            required:
+              - content
+      responses:
+        200:
+          description: Returns markdown converted to HTML5.
+          schema:
+            properties:
+              content:
+                type: string
+            required:
+              - content
+
+
   /student/courses:
     get:
       summary: Get summaries of courses the authenticated student has access to.
