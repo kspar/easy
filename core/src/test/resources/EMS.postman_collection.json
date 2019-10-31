@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "4f264887-925e-45f3-888c-3f6679f440bf",
+		"_postman_id": "eaa3ea1a-cdce-481e-ae90-84ae6d0e734f",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -4099,6 +4099,78 @@
 					"path": [
 						"statistics",
 						"common"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: student: post: ascii preview: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"content\": \"[source,python]\\n----\\nimport asd\\nprint('hello')\\n----.\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/preview/adoc",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"preview",
+						"adoc"
 					]
 				}
 			},
