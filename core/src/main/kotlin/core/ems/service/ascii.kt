@@ -23,7 +23,7 @@ class AsciiController {
     data class ReqResp(@JsonProperty("content") val content: String)
 
 
-    @PostMapping("/test/ascii")
+    @PostMapping("/preview/adoc")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
         log.debug { "${caller.id} is testing asciidoc: ${dto.content}." }
 
