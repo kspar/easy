@@ -4161,7 +4161,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"content\": \"[source,python]\\n----\\nimport asd\\nprint('hello')\\n----.\"\r\n}"
+					"raw": "{\r\n  \"content\": \"[source,python]\\n----\\nimport asd\\nprint('hello')\\n----\\n.\"\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/preview/adoc",
