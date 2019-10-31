@@ -3,9 +3,11 @@ package core.ems.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import mu.KotlinLogging
-import org.asciidoctor.Asciidoctor.Factory.create
+import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
+import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -17,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AsciiController {
+class AdocPreviewController(private val asciiService: AsciiService) {
 
 
     data class ReqResp(@JsonProperty("content") val content: String)
@@ -25,18 +27,31 @@ class AsciiController {
 
     @PostMapping("/preview/adoc")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
-        log.debug { "${caller.id} is testing asciidoc: ${dto.content}." }
+        log.debug { "${caller.id} is testing asciidoc with content: ${dto.content}." }
 
-        val asciidoctor = create()
+        return ReqResp(asciiService.adocToHtml(dto.content))
+    }
+}
 
-        val options = Options()
+
+// Annotated as component for automatic Spring initialization on start-up for fast first-time service access
+@Component
+object AsciiWrapper {
+    private val doctor = Asciidoctor.Factory.create()
+
+    fun getAsciiDoctor(): Asciidoctor = doctor
+}
+
+
+@Service
+class AsciiService {
+    fun adocToHtml(content: String): String {
         val attributes = Attributes()
         attributes.setSourceHighlighter("highlightjs")
+
+        val options = Options()
         options.setAttributes(attributes)
 
-        val html = asciidoctor.convert(dto.content, options)
-
-        asciidoctor.shutdown()
-        return ReqResp(html)
+        return AsciiWrapper.getAsciiDoctor().convert(content, options)
     }
 }
