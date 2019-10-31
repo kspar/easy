@@ -6,6 +6,7 @@ import mu.KotlinLogging
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
+import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
@@ -24,7 +25,7 @@ class AdocPreviewController(private val asciiService: AsciiService) {
 
     data class ReqResp(@JsonProperty("content") val content: String)
 
-
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
     @PostMapping("/preview/adoc")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
         log.debug { "${caller.id} is testing asciidoc with content: ${dto.content}." }
