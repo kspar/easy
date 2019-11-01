@@ -1095,6 +1095,8 @@ paths:
                 type: string
               text_html:
                 type: string
+              text_adoc:
+                type: string
               public:
                 type: boolean
               grader_type:
