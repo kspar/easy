@@ -47,6 +47,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val aasId = text("aas_id").nullable()
     val title = text("title")
     val textHtml = text("text_html").nullable()
+    val textAdoc = text("text_adoc").nullable()
 }
 
 object Course : LongIdTable("course") {

@@ -30,7 +30,8 @@ private val log = KotlinLogging.logger {}
 class CreateExerciseCont {
 
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-                   @JsonProperty("text_html", required = true) @field:Size(max = 300000) val textHtml: String,
+                   @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
+                   @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
                    @JsonProperty("public", required = true) val public: Boolean,
                    @JsonProperty("grader_type", required = true) val graderType: GraderType,
                    @JsonProperty("grading_script", required = false) val gradingScript: String?,
@@ -83,6 +84,7 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
             it[graderType] = req.graderType
             it[title] = req.title
             it[textHtml] = req.textHtml
+            it[textAdoc] = req.textAdoc
             it[autoExerciseId] = newAutoExerciseId
         }
 

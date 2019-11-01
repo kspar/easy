@@ -1026,6 +1026,8 @@ paths:
                 type: string
               text_html:
                 type: string
+              text_adoc:
+                type: string
               public:
                 type: boolean
               grader_type:
@@ -1066,7 +1068,6 @@ paths:
                     - executor_id
             required:
               - title
-              - text_html
               - public
               - grader_type
       responses:

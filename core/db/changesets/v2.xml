@@ -349,4 +349,14 @@
                          defaultValueSequenceNext="report_log_id_seq"/>
     </changeSet>
 
+    <changeSet id="011119-1" author="priit">
+
+        <addColumn tableName="exercise_version">
+            <column name="text_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+    </changeSet>
+
 </databaseChangeLog>

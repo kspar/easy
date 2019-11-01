@@ -1212,7 +1212,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/exercises",
@@ -1288,7 +1288,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string2\",\r\n  \"text_html\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"title\": \"string2\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/exercises",
