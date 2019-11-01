@@ -664,7 +664,11 @@ paths:
                 type: string
               instructions_html:
                 type: string
+              instructions_adoc:
+                type: string
               text_html:
+                type: string
+              text_adoc:
                 type: string
               soft_deadline:
                 type: string

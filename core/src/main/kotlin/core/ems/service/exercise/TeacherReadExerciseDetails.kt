@@ -32,7 +32,9 @@ class TeacherReadExDetailsCont {
     data class Resp(@JsonProperty("title") val title: String,
                     @JsonProperty("title_alias") val titleAlias: String?,
                     @JsonProperty("instructions_html") val instructionsHtml: String?,
-                    @JsonProperty("text_html") val text: String?,
+                    @JsonProperty("instructions_adoc") val instructionsAdoc: String?,
+                    @JsonProperty("text_html") val textHtml: String?,
+                    @JsonProperty("text_adoc") val textAdoc: String?,
                     @JsonSerialize(using = DateTimeSerializer::class)
                     @JsonProperty("soft_deadline") val softDeadline: DateTime?,
                     @JsonSerialize(using = DateTimeSerializer::class)
@@ -84,10 +86,11 @@ private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): Teach
                         CourseExercise.studentVisible,
                         CourseExercise.assessmentsStudentVisible,
                         CourseExercise.instructionsHtml,
+                        CourseExercise.instructionsAdoc,
                         CourseExercise.titleAlias,
-
                         ExerciseVer.title,
                         ExerciseVer.textHtml,
+                        ExerciseVer.textAdoc,
                         ExerciseVer.graderType,
                         ExerciseVer.validFrom,
                         ExerciseVer.autoExerciseId
@@ -111,7 +114,9 @@ private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): Teach
                             it[ExerciseVer.title],
                             it[CourseExercise.titleAlias],
                             it[CourseExercise.instructionsHtml],
+                            it[CourseExercise.instructionsAdoc],
                             it[ExerciseVer.textHtml],
+                            it[ExerciseVer.textAdoc],
                             it[CourseExercise.softDeadline],
                             it[CourseExercise.hardDeadline],
                             it[ExerciseVer.graderType],
