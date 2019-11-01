@@ -1643,7 +1643,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"exercise_id\": \"1\",\r\n  \"threshold\": 0,\r\n  \r\n  \"student_visible\": true,\r\n  \"assessments_student_visible\": true,\r\n  \"instructions_html\": \"string\",\r\n  \"title_alias\": \"string\"\r\n}"
+					"raw": "{\r\n  \"exercise_id\": \"1\",\r\n  \"threshold\": 0,\r\n  \"student_visible\": true,\r\n  \"assessments_student_visible\": true,\r\n  \"instructions_html\": \"string\",\r\n  \"instructions_adoc\": \"string\",\r\n  \"title_alias\": \"string\"\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/teacher/courses/1/exercises",

@@ -269,7 +269,7 @@
         <dropColumn tableName="admin" columnName="given_name"/>
         <dropColumn tableName="admin" columnName="family_name"/>
     </changeSet>
-    
+
     <changeSet id="220919-2" author="kspar">
         <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_access_student"/>
         <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
@@ -350,13 +350,19 @@
     </changeSet>
 
     <changeSet id="011119-1" author="priit">
-
         <addColumn tableName="exercise_version">
             <column name="text_adoc" type="text">
                 <constraints nullable="true"/>
             </column>
         </addColumn>
+    </changeSet>
 
+    <changeSet id="011119-2" author="priit">
+        <addColumn tableName="course_exercise">
+            <column name="instructions_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
     </changeSet>
 
 </databaseChangeLog>

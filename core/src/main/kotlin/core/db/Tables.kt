@@ -65,6 +65,7 @@ object CourseExercise : LongIdTable("course_exercise") {
     val studentVisible = bool("student_visible")
     val assessmentsStudentVisible = bool("assessments_student_visible")
     val instructionsHtml = text("instructions_html").nullable()
+    val instructionsAdoc = text("instructions_adoc").nullable()
     val titleAlias = text("title_alias").nullable()
 }
 

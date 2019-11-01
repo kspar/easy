@@ -40,6 +40,7 @@ class TeacherCreateCourseExerciseController {
                    @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
                    @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
                    @JsonProperty("instructions_html", required = false) @field:Size(max = 300000) val instructionsHtml: String?,
+                   @JsonProperty("instructions_adoc", required = false) @field:Size(max = 300000) val instructionsAdoc: String?,
                    @JsonProperty("title_alias", required = false) @field:Size(max = 100) val titleAlias: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -113,6 +114,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[studentVisible] = body.studentVisible
             it[assessmentsStudentVisible] = body.assStudentVisible
             it[instructionsHtml] = body.instructionsHtml
+            it[instructionsAdoc] = body.instructionsAdoc
             it[titleAlias] = body.titleAlias
         }
     }
