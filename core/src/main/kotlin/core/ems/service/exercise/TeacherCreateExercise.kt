@@ -7,6 +7,7 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
 import core.db.Teacher
+import core.ems.service.AsciiService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -27,7 +28,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateExerciseCont {
+class CreateExerciseCont(private val asciiService: AsciiService) {
 
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
                    @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
@@ -53,12 +54,16 @@ class CreateExerciseCont {
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
         log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
-        return Resp(insertExercise(caller.id, dto).toString())
+
+        return when (dto.textAdoc) {
+            null -> Resp(insertExercise(caller.id, dto, dto.textHtml).toString())
+            else -> Resp(insertExercise(caller.id, dto, asciiService.adocToHtml(dto.textAdoc)).toString())
+        }
     }
 }
 
 
-private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
+private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req, html: String?): Long {
     val teacherId = EntityID(ownerId, Teacher)
 
     return transaction {
@@ -83,7 +88,7 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req): Long {
             it[validFrom] = DateTime.now()
             it[graderType] = req.graderType
             it[title] = req.title
-            it[textHtml] = req.textHtml
+            it[textHtml] = html
             it[textAdoc] = req.textAdoc
             it[autoExerciseId] = newAutoExerciseId
         }

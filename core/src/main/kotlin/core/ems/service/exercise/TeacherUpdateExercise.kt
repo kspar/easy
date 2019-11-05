@@ -7,6 +7,7 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
 import core.db.Teacher
+import core.ems.service.AsciiService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -26,7 +27,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateExerciseCont {
+class UpdateExerciseCont(private val asciiService: AsciiService) {
 
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
                    @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
@@ -55,12 +56,15 @@ class UpdateExerciseCont {
         log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
-        updateExercise(exerciseId, caller.id, dto)
+        when (dto.textAdoc) {
+            null -> updateExercise(exerciseId, caller.id, dto, dto.textHtml)
+            else -> updateExercise(exerciseId, caller.id, dto, asciiService.adocToHtml(dto.textAdoc))
+        }
     }
 }
 
 
-private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerciseCont.Req) {
+private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerciseCont.Req, html: String?) {
 
     val now = DateTime.now()
 
@@ -95,7 +99,7 @@ private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerci
             it[previous] = EntityID(lastVersionId, ExerciseVer)
             it[graderType] = req.graderType
             it[title] = req.title
-            it[textHtml] = req.textHtml
+            it[textHtml] = html
             it[textAdoc] = req.textAdoc
             it[autoExerciseId] = newAutoExerciseId
         }

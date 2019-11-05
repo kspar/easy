@@ -6,6 +6,7 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseExercise
 import core.db.Exercise
+import core.ems.service.AsciiService
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -29,7 +30,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherCreateCourseExerciseController {
+class TeacherCreateCourseExerciseController(private val asciiService: AsciiService) {
 
     data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100) val exerciseId: String,
                    @JsonProperty("threshold", required = true) @field:PositiveOrZero val threshold: Int,
@@ -39,7 +40,6 @@ class TeacherCreateCourseExerciseController {
                    @JsonProperty("hard_deadline", required = false) val hardDeadline: DateTime?,
                    @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
                    @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
-                   @JsonProperty("instructions_html", required = false) @field:Size(max = 300000) val instructionsHtml: String?,
                    @JsonProperty("instructions_adoc", required = false) @field:Size(max = 300000) val instructionsAdoc: String?,
                    @JsonProperty("title_alias", required = false) @field:Size(max = 100) val titleAlias: String?)
 
@@ -64,7 +64,10 @@ class TeacherCreateCourseExerciseController {
             throw InvalidRequestException("Exercise $exerciseId is already on course $courseId")
         }
 
-        insertCourseExercise(courseId, body)
+        when (body.instructionsAdoc) {
+            null -> insertCourseExercise(courseId, body, null)
+            else -> insertCourseExercise(courseId, body, asciiService.adocToHtml(body.instructionsAdoc))
+        }
     }
 }
 
@@ -85,7 +88,7 @@ private fun isCoursePresent(courseId: Long): Boolean {
     }
 }
 
-private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.Req) {
+private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.Req, html: String?) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
     transaction {
         val orderIdxMaxColumn = CourseExercise.orderIdx.max()
@@ -103,7 +106,6 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             null -> 0
             else -> currentMaxOrderIdx + 1
         }
-
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)
             it[exercise] = EntityID(exerciseId, Exercise)
@@ -113,7 +115,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[orderIdx] = orderIndex
             it[studentVisible] = body.studentVisible
             it[assessmentsStudentVisible] = body.assStudentVisible
-            it[instructionsHtml] = body.instructionsHtml
+            it[instructionsHtml] = html
             it[instructionsAdoc] = body.instructionsAdoc
             it[titleAlias] = body.titleAlias
         }
