@@ -7,7 +7,6 @@ import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
 import org.springframework.security.access.annotation.Secured
-import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -35,17 +34,11 @@ class AdocPreviewController(private val asciiService: AsciiService) {
 }
 
 
-// Annotated as component for automatic Spring initialization on start-up for fast first-time service access
-@Component
-object AsciiWrapper {
+// Annotated as service for automatic Spring initialization on start-up for fast first-time service access
+@Service
+object AsciiService {
     private val doctor = Asciidoctor.Factory.create()
 
-    fun getAsciiDoctor(): Asciidoctor = doctor
-}
-
-
-@Service
-class AsciiService {
     fun adocToHtml(content: String): String {
         val attributes = Attributes()
         attributes.setSourceHighlighter("highlightjs")
@@ -53,6 +46,6 @@ class AsciiService {
         val options = Options()
         options.setAttributes(attributes)
 
-        return AsciiWrapper.getAsciiDoctor().convert(content, options)
+        return doctor.convert(content, options)
     }
 }
