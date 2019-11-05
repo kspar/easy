@@ -36,7 +36,7 @@ class AdocPreviewController(private val asciiService: AsciiService) {
 
 // Annotated as service for automatic Spring initialization on start-up for fast first-time service access
 @Service
-object AsciiService {
+class AsciiService {
     private val doctor = Asciidoctor.Factory.create()
 
     fun adocToHtml(content: String): String {
