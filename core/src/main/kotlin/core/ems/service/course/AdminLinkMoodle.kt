@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.security.access.annotation.Secured
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
@@ -55,11 +56,13 @@ class AdminLinkMoodleCourseController {
         checkIfCourseExists(courseId)
         assertUserHasAccessToCourse(caller, courseId)
         val students = queryStudents(dto.moodleCourseShortName)
-        // TODO 0: wait for content-type update
+        log.debug { students }
+        // TODO 0: fix encoding issue
         // TODO 1: update db
         // TODO 2: insert pending access students
         // TODO 3: insert non-pending access students
         // TODO 4: create and update tests
+        // TODO 5: Document API
     }
 }
 
@@ -79,16 +82,12 @@ private fun queryStudents(moodleShortName: String): MoodleResponse {
 
     log.info { "Connecting Moodle for course linking..." }
 
-    // TODO: wait for correct content type
     val template = RestTemplate()
     val headers = HttpHeaders()
-    // headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+    headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
     val map = LinkedMultiValueMap<String, String>()
     map.add("shortname", moodleShortName)
     val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-    // val responseEntity = template.postForEntity(moodleUrl, request, String::class.java)
-    // val objectMapper = ObjectMapper()
-    // val resp = objectMapper.readValue(responseEntity.body, MoodleResponse::class.java)
     val responseEntity = template.postForEntity(moodleUrl, request, MoodleResponse::class.java)
 
 
