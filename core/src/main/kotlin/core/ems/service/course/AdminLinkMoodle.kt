@@ -57,7 +57,6 @@ class AdminLinkMoodleCourseController {
         assertUserHasAccessToCourse(caller, courseId)
         val students = queryStudents(dto.moodleCourseShortName)
         log.debug { students }
-        // TODO 0: fix encoding issue
         // TODO 1: update db
         // TODO 2: insert pending access students
         // TODO 3: insert non-pending access students
