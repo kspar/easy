@@ -33,17 +33,17 @@ class AdminLinkMoodleCourseController {
                    val moodleCourseShortName: String)
 
 
-    data class MoodleStudent(@JsonProperty("username") val username: String,
-                             @JsonProperty("firstname") val firstname: String,
-                             @JsonProperty("lastname") val lastname: String,
-                             @JsonProperty("email") val email: String,
-                             @JsonProperty("groups", required = false) val groups: List<MoodleGroup?>?)
+    data class MoodleRespStudent(@JsonProperty("username") val username: String,
+                                 @JsonProperty("firstname") val firstname: String,
+                                 @JsonProperty("lastname") val lastname: String,
+                                 @JsonProperty("email") val email: String,
+                                 @JsonProperty("groups", required = false) val groups: List<MoodleRespGroup?>?)
 
-    data class MoodleGroup(@JsonProperty("id") val id: String,
-                           @JsonProperty("name") val name: String)
+    data class MoodleRespGroup(@JsonProperty("id") val id: String,
+                               @JsonProperty("name") val name: String)
 
     data class MoodleResponse(@JsonProperty("students")
-                              val students: List<MoodleStudent>)
+                              val students: List<MoodleRespStudent>)
 
 
     @Secured("ROLE_ADMIN")
@@ -78,17 +78,16 @@ private fun checkIfCourseExists(courseId: Long) {
 private fun queryStudents(moodleShortName: String): MoodleResponse {
     //TODO ?: from properties
     val moodleUrl = "https://moodledev.ut.ee/local/lahendus/get_course_users.php"
+    log.info { "Connecting Moodle ($moodleUrl) for course linking..." }
 
-    log.info { "Connecting Moodle for course linking..." }
-
-    val template = RestTemplate()
     val headers = HttpHeaders()
     headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+
     val map = LinkedMultiValueMap<String, String>()
     map.add("shortname", moodleShortName)
-    val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-    val responseEntity = template.postForEntity(moodleUrl, request, MoodleResponse::class.java)
 
+    val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
+    val responseEntity = RestTemplate().postForEntity(moodleUrl, request, MoodleResponse::class.java)
 
     if (responseEntity.statusCode.isError) {
         log.error { "Moodle linking error ${responseEntity.statusCodeValue} with request $request" }
