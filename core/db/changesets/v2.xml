@@ -159,17 +159,14 @@
                              foreignKeyName="fk_submission_draft_course_exercise"
                              nullable="false"/>
             </column>
-
             <column name="student_id" type="text">
                 <constraints primaryKey="true" references="student(username)"
                              foreignKeyName="fk_submission_draft_student"
                              nullable="false"/>
             </column>
-
             <column name="created_at" type="timestamp">
                 <constraints nullable="false"/>
             </column>
-
             <column name="solution" type="text">
                 <constraints nullable="false"/>
             </column>
@@ -183,17 +180,14 @@
                              foreignKeyName="fk_testing_draft_course_exercise"
                              nullable="false"/>
             </column>
-
             <column name="teacher_id" type="text">
                 <constraints primaryKey="true" references="teacher(username)"
                              foreignKeyName="fk_testing_draft_teacher"
                              nullable="false"/>
             </column>
-
             <column name="created_at" type="timestamp">
                 <constraints nullable="false"/>
             </column>
-
             <column name="solution" type="text">
                 <constraints nullable="false"/>
             </column>
@@ -206,11 +200,9 @@
                 <constraints primaryKey="true"
                              nullable="false"/>
             </column>
-
             <column name="value" type="text">
                 <constraints nullable="true"/>
             </column>
-
         </createTable>
     </changeSet>
 
@@ -271,7 +263,8 @@
     </changeSet>
 
     <changeSet id="220919-2" author="kspar">
-        <dropForeignKeyConstraint baseTableName="student_course_access" constraintName="fk_student_course_access_student"/>
+        <dropForeignKeyConstraint baseTableName="student_course_access"
+                                  constraintName="fk_student_course_access_student"/>
         <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
         <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
         <dropUniqueConstraint tableName="student" constraintName="uniq_student_id"/>
@@ -289,7 +282,8 @@
                                  referencedColumnNames="username"/>
 
         <dropForeignKeyConstraint baseTableName="testing_draft" constraintName="fk_testing_draft_teacher"/>
-        <dropForeignKeyConstraint baseTableName="teacher_course_access" constraintName="fk_teacher_course_access_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_course_access"
+                                  constraintName="fk_teacher_course_access_teacher"/>
         <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
         <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
         <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
@@ -321,25 +315,20 @@
             <column name="id" type="bigserial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-
             <column name="user_id" type="text">
                 <constraints primaryKey="true" references="account(username)"
                              foreignKeyName="fk_account_log_report"
                              nullable="false"/>
             </column>
-
             <column name="log_time" type="timestamp">
                 <constraints nullable="false"/>
             </column>
-
             <column name="log_level" type="text">
                 <constraints nullable="false"/>
             </column>
-
             <column name="log_message" type="text">
                 <constraints nullable="false"/>
             </column>
-
             <column name="client_id" type="text">
                 <constraints nullable="false"/>
             </column>
@@ -363,6 +352,35 @@
                 <constraints nullable="true"/>
             </column>
         </addColumn>
+    </changeSet>
+
+    <changeSet id="131119-1" author="priit">
+        <addColumn tableName="course">
+            <column name="moodle_short_name" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student">
+            <column name="moodle_username" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <createTable tableName="student_moodle_pending_access">
+            <column name="course_id" type="bigint">
+                <constraints primaryKey="true" references="course(id)"
+                             foreignKeyName="fk_pending_access_course_id"
+                             nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ut_username" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="ut_username" constraintName="uniq_ut_username"/>
     </changeSet>
 
 </databaseChangeLog>

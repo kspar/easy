@@ -1000,6 +1000,32 @@ paths:
                 type: string
 
 
+  /courses/{courseId}/moodle:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+    post:
+      summary: One-way link Moodle course students (add access, add pending access and remove student access)
+      tags:
+        - admin
+      parameters:
+        - name: Moodle course info
+          in: body
+          schema:
+            properties:
+              moodle_short_name:
+                type: string
+      responses:
+        200:
+          description: Number of student access added, pending and removed.
+          schema:
+            properties:
+              students_added:
+                type: integer
+              pending_students_added:
+                type: integer
+              student_access_removed:
+                type: integer
+
 
   /teacher/courses/{courseId}/students/{studentId}:
     delete:

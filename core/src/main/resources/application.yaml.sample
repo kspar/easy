@@ -28,6 +28,9 @@ easy:
         from: "<from-address>"
         to: "<to-address>"
     service:
+      moodle:
+        sync:
+          url: "<url>"
       await-assessment:
         sleep-start-ms: 1000
         sleep-step-ms: 150

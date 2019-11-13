@@ -3,14 +3,19 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.ems.service.access.assertUserHasAccessToCourse
+import core.db.Student
+import core.db.StudentCourseAccess
+import core.db.StudentMoodlePendingAccess
+import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.course.AdminLinkMoodleCourseController.MoodleResponse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -29,9 +34,15 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AdminLinkMoodleCourseController {
 
-    data class Req(@JsonProperty("moodle_course_id", required = true) @field:NotBlank @field:Size(max = 500)
-                   val moodleCourseShortName: String)
+    @Value("\${easy.core.service.moodle.sync.url}")
+    private lateinit var moodleSyncUrl: String
 
+    data class Req(@JsonProperty("moodle_short_name", required = true) @field:NotBlank @field:Size(max = 500)
+                   val moodleShortName: String)
+
+    data class Resp(@JsonProperty("students_added") val studentsAdded: Int,
+                    @JsonProperty("pending_students_added") val pendingStudentsAdded: Int,
+                    @JsonProperty("student_access_removed") val studentAccessRemoved: Int)
 
     data class MoodleRespStudent(@JsonProperty("username") val username: String,
                                  @JsonProperty("firstname") val firstname: String,
@@ -47,21 +58,79 @@ class AdminLinkMoodleCourseController {
 
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/admin/courses/{courseIdStr}/moodle")
-    fun controller(@PathVariable courseIdStr: String, @Valid @RequestBody dto: Req, caller: EasyUser) {
-        log.debug { "${caller.id} is one-way linking Moodle course '${dto.moodleCourseShortName}' with '$courseIdStr'" }
+    @PostMapping("/courses/{courseId}/moodle")
+    fun controller(@PathVariable("courseId") courseIdStr: String, @Valid @RequestBody dto: Req, caller: EasyUser): Resp {
+        log.debug { "${caller.id} is one-way linking Moodle course '${dto.moodleShortName}' with '$courseIdStr'" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         checkIfCourseExists(courseId)
-        assertUserHasAccessToCourse(caller, courseId)
-        val students = queryStudents(dto.moodleCourseShortName)
-        log.debug { students }
-        // TODO 1: update db
-        // TODO 2: insert pending access students
-        // TODO 3: insert non-pending access students
-        // TODO 4: create and update tests
-        // TODO 5: Document API
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        val students = queryStudents(dto.moodleShortName, moodleSyncUrl)
+        return syncCourse(students, courseId, dto.moodleShortName)
+    }
+}
+
+
+private fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCourseShortName: String): AdminLinkMoodleCourseController.Resp {
+    return transaction {
+        // Link course info
+        Course.update({ Course.id eq courseId }) {
+            it[moodleShortName] = moodleCourseShortName
+        }
+
+        // Filter out Moodle students who have Easy account
+        val accountExists =
+                moodleResponse.students.mapNotNull {
+                    (Student innerJoin StudentCourseAccess)
+                            .slice(Student.id)
+                            .select {
+                                (Student.moodleUsername eq it.username) and
+                                        (StudentCourseAccess.student eq it.username) and
+                                        (StudentCourseAccess.course eq courseId)
+                            }
+                            .map { it[Student.id].value }
+                            .firstOrNull()
+                }
+
+        // Filter Moodle users who have no Easy account
+        val noAccountExists = moodleResponse.students
+                .filter { Student.select { Student.moodleUsername eq it.username }.count() == 0 }
+
+        log.debug { "Granting access to Moodle students with accounts (the rest already have access): $accountExists" }
+        log.debug { "Setting pending access to Moodle students with no accounts: $noAccountExists" }
+        log.debug { "Removing student access for students who are not anymore on the Moodle course." }
+
+        // Add access to course for users with Moodle and Easy account
+        val studentsAdded = StudentCourseAccess.batchInsert(accountExists) {
+            this[StudentCourseAccess.student] = EntityID(it, Student)
+            this[StudentCourseAccess.course] = EntityID(courseId, Course)
+        }.count()
+
+        // Remove previous pending access
+        StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
+
+        // Create pending access for Moodle students without Easy account
+        val pendingStudentsAdded = StudentMoodlePendingAccess.batchInsert(noAccountExists) {
+            this[StudentMoodlePendingAccess.course] = EntityID(courseId, Course)
+            this[StudentMoodlePendingAccess.utUsername] = it.username
+        }.count()
+
+        // Revoke student access for course if not anymore present in the Moodle
+        val studentAccessRemoved = (Student innerJoin StudentCourseAccess)
+                .slice(Student.id)
+                .select { (StudentCourseAccess.course eq courseId) }
+                .mapNotNull { it[Student.id].value }
+                .filter { !accountExists.contains(it) }
+                .map {
+                    StudentCourseAccess.deleteWhere {
+                        (StudentCourseAccess.student eq it) and
+                                (StudentCourseAccess.course eq courseId)
+                    }
+                }
+                .sum()
+
+        AdminLinkMoodleCourseController.Resp(studentsAdded, pendingStudentsAdded, studentAccessRemoved)
     }
 }
 
@@ -75,10 +144,8 @@ private fun checkIfCourseExists(courseId: Long) {
 }
 
 
-private fun queryStudents(moodleShortName: String): MoodleResponse {
-    //TODO ?: from properties
-    val moodleUrl = "https://moodledev.ut.ee/local/lahendus/get_course_users.php"
-    log.info { "Connecting Moodle ($moodleUrl) for course linking..." }
+private fun queryStudents(moodleShortName: String, moodleSyncUrl: String): MoodleResponse {
+    log.info { "Connecting Moodle ($moodleSyncUrl) for course linking..." }
 
     val headers = HttpHeaders()
     headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
@@ -87,14 +154,14 @@ private fun queryStudents(moodleShortName: String): MoodleResponse {
     map.add("shortname", moodleShortName)
 
     val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-    val responseEntity = RestTemplate().postForEntity(moodleUrl, request, MoodleResponse::class.java)
+    val responseEntity = RestTemplate().postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
 
-    if (responseEntity.statusCode.isError) {
+    if (responseEntity.statusCode.value() != 200) {
         log.error { "Moodle linking error ${responseEntity.statusCodeValue} with request $request" }
         throw InvalidRequestException("Course linking with Moodle failed due to error code in response.",
                 ReqError.MOODLE_LINKING_ERROR,
                 "Moodle response" to responseEntity.statusCodeValue.toString(),
-                notify = false)
+                notify = true)
     }
 
     val response = responseEntity.body
@@ -103,7 +170,7 @@ private fun queryStudents(moodleShortName: String): MoodleResponse {
         throw InvalidRequestException("Course linking with Moodle failed due to Moodle empty response body.",
                 ReqError.MOODLE_EMPTY_RESPONSE,
                 "Moodle response" to responseEntity.statusCodeValue.toString(),
-                notify = false)
+                notify = true)
     }
     return response
 }

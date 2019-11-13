@@ -18,6 +18,7 @@ object Account : IdTable<String>("account") {
 object Student : IdTable<String>("student") {
     override val id: Column<EntityID<String>> = reference("username", Account).primaryKey()
     val createdAt = datetime("created_at")
+    val moodleUsername = text("moodle_username").nullable()
 }
 
 object Teacher : IdTable<String>("teacher") {
@@ -53,6 +54,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
 object Course : LongIdTable("course") {
     val createdAt = datetime("created_at")
     val title = text("title")
+    val moodleShortName = text("moodle_short_name").nullable()
 }
 
 object CourseExercise : LongIdTable("course_exercise") {
@@ -79,6 +81,14 @@ object StudentCourseAccess : LongIdTable("student_course_access") {
     val student = reference("student_id", Student)
     val course = reference("course_id", Course)
 }
+
+
+object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
+    val course = reference("course_id", Course).primaryKey()
+    val utUsername = text("ut_username").primaryKey()
+    val email = text("email").nullable()
+}
+
 
 object Submission : LongIdTable("submission") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
