@@ -86,7 +86,6 @@ private fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCou
                             .slice(Student.id)
                             .select {
                                 (Student.moodleUsername eq it.username) and
-                                        (StudentCourseAccess.student eq it.username) and
                                         (StudentCourseAccess.course eq courseId)
                             }
                             .map { it[Student.id].value }
