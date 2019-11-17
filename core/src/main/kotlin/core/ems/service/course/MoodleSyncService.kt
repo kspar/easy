@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
@@ -147,11 +148,10 @@ class MoodleSyncService {
     }
 
     // TODO: cron job once a day (from properties?). For every Moodle course apply queryStudents and syncCourse
-    //@Scheduled(fixedDelay = 5000)
+    @Scheduled(cron = "\${easy.core.service.moodle.sync.cron}")
     fun syncMoodle() {
-
+        log.debug { "TESTING SYNC" }
         //val students = queryStudents(dto.moodleShortName, moodleSyncUrl)
         //syncCourse(students, courseId, dto.moodleShortName)
-
     }
 }

@@ -31,6 +31,7 @@ easy:
       moodle:
         sync:
           url: "<url>"
+          cron: "<cron>"
       await-assessment:
         sleep-start-ms: 1000
         sleep-step-ms: 150
