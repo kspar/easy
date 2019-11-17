@@ -79,29 +79,40 @@ private fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCou
             it[moodleShortName] = moodleCourseShortName
         }
 
-        // Filter out Moodle students who have Easy account
-        val accountExists =
+        val easyAccountExistsNoAccess =
                 moodleResponse.students.mapNotNull {
-                    (Student innerJoin StudentCourseAccess)
-                            .slice(Student.id)
+                    Student.slice(Student.id)
                             .select {
-                                (Student.moodleUsername eq it.username) and
-                                        (StudentCourseAccess.course eq courseId)
+                                (Student.moodleUsername eq it.username)
                             }
                             .map { it[Student.id].value }
                             .firstOrNull()
                 }
 
+        val courseAccessExists =
+                moodleResponse.students.mapNotNull {
+                    (Student innerJoin StudentCourseAccess)
+                            .slice(Student.id)
+                            .select {
+                                (Student.moodleUsername eq it.username)
+                            }
+                            .map { it[Student.id].value }
+                            .firstOrNull()
+                }
+
+
+        val easyAccountNoAccess = easyAccountExistsNoAccess.toSet() subtract courseAccessExists.toSet()
+
         // Filter Moodle users who have no Easy account
         val noAccountExists = moodleResponse.students
                 .filter { Student.select { Student.moodleUsername eq it.username }.count() == 0 }
 
-        log.debug { "Granting access to Moodle students with accounts (the rest already have access): $accountExists" }
+        log.debug { "Granting access to Moodle students with accounts (the rest already have access): $easyAccountNoAccess" }
         log.debug { "Setting pending access to Moodle students with no accounts: $noAccountExists" }
         log.debug { "Removing student access for students who are not anymore on the Moodle course." }
 
         // Add access to course for users with Moodle and Easy account
-        val studentsAdded = StudentCourseAccess.batchInsert(accountExists) {
+        val studentsAdded = StudentCourseAccess.batchInsert(easyAccountNoAccess) {
             this[StudentCourseAccess.student] = EntityID(it, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }.count()
@@ -116,11 +127,11 @@ private fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCou
         }.count()
 
         // Revoke student access for course if not anymore present in the Moodle
-        val studentAccessRemoved = (Student innerJoin StudentCourseAccess)
-                .slice(Student.id)
+        val studentAccessRemoved = StudentCourseAccess
+                .slice(StudentCourseAccess.student)
                 .select { (StudentCourseAccess.course eq courseId) }
-                .mapNotNull { it[Student.id].value }
-                .filter { !accountExists.contains(it) }
+                .map { it[StudentCourseAccess.student].value }
+                .filter { !(easyAccountNoAccess union courseAccessExists).contains(it) }
                 .map {
                     StudentCourseAccess.deleteWhere {
                         (StudentCourseAccess.student eq it) and
@@ -142,7 +153,7 @@ private fun checkIfCourseExists(courseId: Long) {
     }
 }
 
-
+// TODO: cron job once a day (from properties?). For every Moodle course apply queryStudents and syncCourse
 private fun queryStudents(moodleShortName: String, moodleSyncUrl: String): MoodleResponse {
     log.info { "Connecting Moodle ($moodleSyncUrl) for course linking..." }
 
