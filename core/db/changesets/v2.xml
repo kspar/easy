@@ -345,7 +345,6 @@
             </column>
         </addColumn>
     </changeSet>
-
     <changeSet id="011119-2" author="priit">
         <addColumn tableName="course_exercise">
             <column name="instructions_adoc" type="text">
@@ -360,13 +359,11 @@
                 <constraints nullable="true"/>
             </column>
         </addColumn>
-
         <addColumn tableName="student">
             <column name="moodle_username" type="text">
                 <constraints nullable="true"/>
             </column>
         </addColumn>
-
         <createTable tableName="student_moodle_pending_access">
             <column name="course_id" type="bigint">
                 <constraints primaryKey="true" references="course(id)"
@@ -381,6 +378,24 @@
             </column>
         </createTable>
         <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="ut_username" constraintName="uniq_ut_username"/>
+    </changeSet>
+
+    <changeSet id="181119-1" author="priit">
+        <createTable tableName="student_pending_access">
+            <column name="course_id" type="bigint">
+                <constraints primaryKey="true" references="course(id)"
+                             foreignKeyName="fk_pending_access_course_id"
+                             nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="student_pending_access" columnNames="email" constraintName="uniq_email"/>
+        <dropColumn tableName="student_moodle_pending_access" columnName="email"/>
     </changeSet>
 
 </databaseChangeLog>

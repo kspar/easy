@@ -76,19 +76,21 @@ object TeacherCourseAccess : LongIdTable("teacher_course_access") {
     val course = reference("course_id", Course)
 }
 
-
 object StudentCourseAccess : LongIdTable("student_course_access") {
     val student = reference("student_id", Student)
     val course = reference("course_id", Course)
 }
 
-
 object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
     val course = reference("course_id", Course).primaryKey()
     val utUsername = text("ut_username").primaryKey()
-    val email = text("email").nullable()
 }
 
+object StudentPendingAccess : Table("student_pending_access") {
+    val course = reference("course_id", Course).primaryKey()
+    val email = text("email").primaryKey()
+    val validFrom = datetime("valid_from")
+}
 
 object Submission : LongIdTable("submission") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
