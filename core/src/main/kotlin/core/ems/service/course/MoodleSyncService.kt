@@ -42,6 +42,8 @@ class MoodleSyncService {
     data class MoodleResponse(@JsonProperty("students")
                               val students: List<MoodleRespStudent>)
 
+    data class MoodleCron(val courseId: Long, val moodleShortName: String)
+
 
     fun queryStudents(moodleShortName: String): MoodleResponse {
         log.info { "Connecting Moodle ($moodleSyncUrl) for course linking..." }
@@ -147,11 +149,18 @@ class MoodleSyncService {
         }
     }
 
-    // TODO: cron job once a day (from properties?). For every Moodle course apply queryStudents and syncCourse
+
     @Scheduled(cron = "\${easy.core.service.moodle.sync.cron}")
     fun syncMoodle() {
-        log.debug { "TESTING SYNC" }
-        //val students = queryStudents(dto.moodleShortName, moodleSyncUrl)
-        //syncCourse(students, courseId, dto.moodleShortName)
+        transaction {
+            Course.select {
+                Course.moodleShortName.isNotNull()
+            }.mapNotNull {
+                MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
+            }.forEach {
+                log.debug { "Cron syncing ${it.moodleShortName} with course ${it.courseId}." }
+                syncCourse(queryStudents(it.moodleShortName), it.courseId, it.moodleShortName)
+            }
+        }
     }
 }
