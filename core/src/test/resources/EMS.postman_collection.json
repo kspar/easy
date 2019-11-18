@@ -1791,7 +1791,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"students\": [\r\n    {\r\n      \"student_id_or_email\": \"fp\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"students\": [\r\n    {\r\n      \"student_id_or_email\": \"fp\"\r\n    },\r\n    {\r\n      \"student_id_or_email\": \"sk\"\r\n    },\r\n    {\r\n      \"student_id_or_email\": \"pp\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/students",

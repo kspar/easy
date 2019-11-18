@@ -2,14 +2,9 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Account
-import core.db.Course
-import core.db.Student
-import core.db.StudentCourseAccess
+import core.db.*
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
-import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
@@ -17,6 +12,7 @@ import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -31,28 +27,33 @@ class AddStudentsToCourseController {
 
     data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentIdReq>)
 
+    data class Resp(@JsonProperty("pending_accesses_added") val pendingAccessesAdded: Int)
+
     data class StudentIdReq(@JsonProperty("student_id_or_email") @field:NotBlank @field:Size(max = 100) val studentIdOrEmail: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/students")
     fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @RequestBody @Valid body: Req, caller: EasyUser) {
+                   @RequestBody @Valid body: Req, caller: EasyUser): Resp {
 
         log.debug { "Adding access to course $courseIdStr to students $body" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        insertStudentCourseAccesses(courseId, body)
+        return Resp(insertStudentCourseAccesses(courseId, body))
     }
 }
 
 
-private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req) {
+private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req): Int {
+    val time = DateTime.now()
+    var pendingAccessAdded = 0
+
     transaction {
         val studentIds = students.studentIds
                 .map { it.studentIdOrEmail.toLowerCase() }
-                .map { studentIdOrEmail ->
+                .mapNotNull { studentIdOrEmail ->
                     val studentWithId = Student.select { Student.id eq studentIdOrEmail }.count()
 
                     if (studentWithId == 0) {
@@ -61,8 +62,21 @@ private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToC
                                 .select { Account.email.lowerCase() eq studentIdOrEmail }
                                 .map { it[Student.id].value }
                                 .firstOrNull()
-                        studentId ?: throw InvalidRequestException("Student not found: $studentIdOrEmail",
-                                ReqError.STUDENT_NOT_FOUND, "missing_student" to studentIdOrEmail, notify = false)
+
+                        when (studentId) {
+                            null -> {
+                                StudentPendingAccess.insertOrUpdate(listOf(StudentPendingAccess.course, StudentPendingAccess.email),
+                                        listOf(StudentPendingAccess.course, StudentPendingAccess.email)) {
+                                    it[course] = EntityID(courseId, Course)
+                                    it[email] = studentIdOrEmail
+                                    it[validFrom] = time
+                                }
+                                pendingAccessAdded++
+                                null
+                            }
+                            else -> studentId
+                        }
+
                     } else {
                         studentIdOrEmail
                     }
@@ -75,10 +89,13 @@ private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToC
         }.distinct()
 
         log.debug { "Granting access to students (the rest already have access): $studentsWithoutAccess" }
+        log.debug { "Added pending access to $pendingAccessAdded students" }
 
         StudentCourseAccess.batchInsert(studentsWithoutAccess) {
             this[StudentCourseAccess.student] = EntityID(it, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }
+
     }
+    return pendingAccessAdded
 }

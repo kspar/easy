@@ -983,21 +983,11 @@ paths:
       responses:
         200:
           description: Students added.
-        400:
-          description: One of the students not found by id or email.
           schema:
             properties:
-              id:
-                type: string
-              code:
-                type: string
-                description: Contains the code STUDENT_NOT_FOUND.
-              attrs:
-                properties:
-                  missing_student:
-                    type: string
-              log_msg:
-                type: string
+              pending_accesses_added:
+                type: integer
+                description: Number of students added with pending access.
 
 
   /courses/{courseId}/moodle:
