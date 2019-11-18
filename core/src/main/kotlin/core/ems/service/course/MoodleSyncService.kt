@@ -158,7 +158,7 @@ class MoodleSyncService {
             }.mapNotNull {
                 MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
             }.forEach {
-                log.debug { "Cron syncing ${it.moodleShortName} with course ${it.courseId}." }
+                log.debug { "Cron Moodle syncing ${it.moodleShortName} with course ${it.courseId}." }
                 syncCourse(queryStudents(it.moodleShortName), it.courseId, it.moodleShortName)
             }
         }
