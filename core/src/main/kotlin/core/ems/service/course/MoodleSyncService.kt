@@ -154,7 +154,7 @@ class MoodleSyncService {
     fun syncMoodle() {
         transaction {
             Course.select {
-                Course.moodleShortName.isNotNull()
+                Course.moodleShortName.isNotNull() and (Course.moodleShortName neq "")
             }.mapNotNull {
                 MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
             }.forEach {
