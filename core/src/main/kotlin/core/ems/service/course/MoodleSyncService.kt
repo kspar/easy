@@ -154,6 +154,7 @@ class MoodleSyncService {
     fun syncMoodle() {
         transaction {
             Course.select {
+                log.debug { "Checking for courses for Moodle syncing..." }
                 Course.moodleShortName.isNotNull() and (Course.moodleShortName neq "")
             }.mapNotNull {
                 MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
