@@ -920,7 +920,7 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
     get:
-      summary: Get all participants who are registered to this course.
+      summary: Get all participants (including pending access) who are registered to this course.
       parameters:
         - in: query
           name: role
@@ -935,6 +935,8 @@ paths:
           description: Participants in this course.
           schema:
             properties:
+              moodle_short_name:
+                type: string
               students:
                 type: array
                 items:
@@ -959,6 +961,22 @@ paths:
                       type: string
                     family_name:
                       type: string
+              student_pending_access:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                    valid_from:
+                      type: string
+                      format: date-time
+              student_moodle_pending_access:
+                type: array
+                items:
+                  properties:
+                    ut_username:
+                      type: string
+
 
 
   /courses/{courseId}/students:
