@@ -99,10 +99,55 @@ private fun updateAccount(accountData: AccountData, cacheInvalidator: CacheInval
 
 private fun updateStudent(student: AccountData) {
     transaction {
-        addLogger(StdOutSqlLogger)
-        Student.insertIgnore {
+        val studentId = Student.insertIgnoreAndGetId {
             it[id] = EntityID(student.username, Student)
             it[createdAt] = DateTime.now()
+        }!!.value
+
+
+        val otherCoursePendingIds = Join(Student, StudentPendingAccess,
+                onColumn = Student.id,
+                otherColumn = StudentPendingAccess.email,
+                joinType = JoinType.INNER,
+                additionalConstraint = { Student.id eq studentId })
+                .slice(StudentPendingAccess.course)
+                .selectAll()
+                .mapNotNull { it[StudentPendingAccess.course].value }
+                .toSet()
+
+
+        val moodlePendingQuery = Join(Student, StudentMoodlePendingAccess,
+                onColumn = Student.id,
+                otherColumn = StudentMoodlePendingAccess.utUsername,
+                joinType = JoinType.INNER,
+                additionalConstraint = { Student.id eq studentId })
+                .slice(StudentMoodlePendingAccess.course, StudentMoodlePendingAccess.utUsername)
+
+
+        val utUsrname = moodlePendingQuery
+                .selectAll()
+                .mapNotNull { it[StudentMoodlePendingAccess.utUsername] }
+                .firstOrNull()
+
+
+        val moodleCourseIdsToAddAccess = when (utUsrname) {
+            null -> emptySet()
+            else -> {
+                Student.insertOrUpdate(Student.id, listOf(Student.createdAt)) {
+                    it[id] = EntityID(student.username, Student)
+                    it[createdAt] = DateTime.now()
+                    it[moodleUsername] = utUsrname
+                }
+                moodlePendingQuery.selectAll().mapNotNull { it[StudentMoodlePendingAccess.course].value }.toSet()
+            }
+        }
+
+
+        for (course in (moodleCourseIdsToAddAccess union otherCoursePendingIds)) {
+            StudentCourseAccess.insertIgnore {
+                it[StudentCourseAccess.student] = EntityID(studentId, Student)
+                it[StudentCourseAccess.course] = EntityID(course, Course)
+            }
         }
     }
 }
