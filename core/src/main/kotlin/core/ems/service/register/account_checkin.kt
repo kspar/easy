@@ -116,29 +116,22 @@ private fun updateStudent(student: AccountData) {
                 .toSet()
 
 
-        val moodlePendingQuery = Join(Student, StudentMoodlePendingAccess,
+        val moodleCourseIdsToAddAccess = Join(Student, StudentMoodlePendingAccess,
                 onColumn = Student.id,
                 otherColumn = StudentMoodlePendingAccess.utUsername,
                 joinType = JoinType.INNER,
                 additionalConstraint = { Student.id eq studentId })
                 .slice(StudentMoodlePendingAccess.course, StudentMoodlePendingAccess.utUsername)
-
-
-        val utUsrname = moodlePendingQuery
                 .selectAll()
-                .mapNotNull { it[StudentMoodlePendingAccess.utUsername] }
-                .firstOrNull()
+                .mapNotNull { it[StudentMoodlePendingAccess.course].value }
+                .toSet()
 
 
-        val moodleCourseIdsToAddAccess = when (utUsrname) {
-            null -> emptySet()
-            else -> {
-                Student.insertOrUpdate(Student.id, listOf(Student.createdAt)) {
-                    it[id] = EntityID(student.username, Student)
-                    it[createdAt] = DateTime.now()
-                    it[moodleUsername] = utUsrname
-                }
-                moodlePendingQuery.selectAll().mapNotNull { it[StudentMoodlePendingAccess.course].value }.toSet()
+        if (moodleCourseIdsToAddAccess.isNotEmpty()) {
+            Student.insertOrUpdate(Student.id, listOf(Student.createdAt)) {
+                it[id] = EntityID(student.username, Student)
+                it[createdAt] = DateTime.now()
+                it[moodleUsername] = student.username
             }
         }
 
