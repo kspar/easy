@@ -121,7 +121,7 @@ private fun updateStudent(student: AccountData) {
                 otherColumn = StudentMoodlePendingAccess.utUsername,
                 joinType = JoinType.INNER,
                 additionalConstraint = { Student.id eq studentId })
-                .slice(StudentMoodlePendingAccess.course, StudentMoodlePendingAccess.utUsername)
+                .slice(StudentMoodlePendingAccess.course)
                 .selectAll()
                 .mapNotNull { it[StudentMoodlePendingAccess.course].value }
                 .toSet()
