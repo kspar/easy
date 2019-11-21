@@ -112,7 +112,7 @@ object GradeTablePage : EasyPage() {
                 }
             }
 
-            val students = gradeTable.students.map { student ->
+            val students = gradeTable.students.sortedBy { it.family_name }.map { student ->
                 val grades = gradesMap.getValue(student.student_id).map {
                     objOf(
                             "grade" to it.grade,
