@@ -7,10 +7,7 @@ import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.lowerCase
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -25,11 +22,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddStudentsToCourseController {
 
-    data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentIdReq>)
+    data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentEmailsReq>)
 
-    data class Resp(@JsonProperty("pending_accesses_added") val pendingAccessesAdded: Int)
+    data class StudentEmailsReq(@JsonProperty("student_email") @field:NotBlank @field:Size(max = 100) val studentEmail: String)
 
-    data class StudentIdReq(@JsonProperty("student_id_or_email") @field:NotBlank @field:Size(max = 100) val studentIdOrEmail: String)
+    data class Resp(@JsonProperty("accesses_added") val accessesAdded: Int,
+                    @JsonProperty("pending_accesses_added_updated") val pendingAccessesAddedUpdated: Int)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/students")
@@ -41,63 +39,60 @@ class AddStudentsToCourseController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return Resp(insertStudentCourseAccesses(courseId, body))
+        return insertStudentCourseAccesses(courseId, body)
     }
 }
 
 
-private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req): Int {
+private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req): AddStudentsToCourseController.Resp {
     val time = DateTime.now()
-    //TODO: how many added, how many pending
-    //TODO: not username, add only by email
-    var pendingAccessAdded = 0
 
-    transaction {
-        val studentIds = students.studentIds
-                .map { it.studentIdOrEmail.toLowerCase() }
-                .mapNotNull { studentIdOrEmail ->
-                    val studentWithId = Student.select { Student.id eq studentIdOrEmail }.count()
-
-                    if (studentWithId == 0) {
-                        val studentId = (Student innerJoin Account)
-                                .slice(Student.id)
-                                .select { Account.email.lowerCase() eq studentIdOrEmail }
-                                .map { it[Student.id].value }
-                                .firstOrNull()
-
-                        when (studentId) {
-                            null -> {
-                                StudentPendingAccess.insertOrUpdate(listOf(StudentPendingAccess.course, StudentPendingAccess.email),
-                                        listOf(StudentPendingAccess.course, StudentPendingAccess.email)) {
-                                    it[course] = EntityID(courseId, Course)
-                                    it[email] = studentIdOrEmail
-                                    it[validFrom] = time
-                                }
-                                pendingAccessAdded++
-                                null
-                            }
-                            else -> studentId
-                        }
-
-                    } else {
-                        studentIdOrEmail
-                    }
+    return transaction {
+        val studentIdsWithAccount = students.studentIds
+                .mapNotNull {
+                    (Student innerJoin Account)
+                            .slice(Student.id)
+                            .select { Account.email.lowerCase() eq it.studentEmail.toLowerCase() }
+                            .map { it[Student.id].value }
+                            .firstOrNull()
                 }
 
-        val studentsWithoutAccess = studentIds.filter {
+        val studentEmailsNoAccount = students.studentIds
+                .mapNotNull {
+                    val id = (Student innerJoin Account)
+                            .slice(Student.id)
+                            .select { Account.email.lowerCase() eq it.studentEmail.toLowerCase() }
+                            .map { it[Student.id].value }
+                            .firstOrNull()
+                    if (id != null) null else it.studentEmail.toLowerCase()
+                }
+
+
+        val studentsAccessAddable = studentIdsWithAccount.filter {
             StudentCourseAccess.select {
                 StudentCourseAccess.student eq it and (StudentCourseAccess.course eq courseId)
             }.count() == 0
         }.distinct()
 
-        log.debug { "Granting access to students (the rest already have access): $studentsWithoutAccess" }
-        log.debug { "Added pending access to $pendingAccessAdded students" }
+        log.debug { "Granting access to students (the rest already have access): $studentsAccessAddable" }
+        log.debug { "Granting pending access to students: $studentEmailsNoAccount" }
 
-        StudentCourseAccess.batchInsert(studentsWithoutAccess) {
+        StudentCourseAccess.batchInsert(studentsAccessAddable) {
             this[StudentCourseAccess.student] = EntityID(it, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
         }
 
+        StudentPendingAccess.deleteWhere {
+            StudentPendingAccess.course eq courseId and
+                    (StudentPendingAccess.email inList studentEmailsNoAccount)
+        }
+
+        StudentPendingAccess.batchInsert(studentEmailsNoAccount, ignore = true) {
+            this[StudentPendingAccess.course] = EntityID(courseId, Course)
+            this[StudentPendingAccess.email] = it
+            this[StudentPendingAccess.validFrom] = time
+        }
+
+        AddStudentsToCourseController.Resp(studentsAccessAddable.size, studentEmailsNoAccount.size)
     }
-    return pendingAccessAdded
 }

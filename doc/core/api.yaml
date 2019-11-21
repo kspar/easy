@@ -996,16 +996,19 @@ paths:
                 type: array
                 items:
                   properties:
-                    student_id_or_email:
+                    student_email:
                       type: string
       responses:
         200:
           description: Students added.
           schema:
             properties:
-              pending_accesses_added:
+              accesses_added:
                 type: integer
-                description: Number of students added with pending access.
+                description: Number of students with access added.
+              pending_accesses_added_updated:
+                type: integer
+                description: Number of students added (or updated) with pending access.
 
 
   /courses/{courseId}/moodle:

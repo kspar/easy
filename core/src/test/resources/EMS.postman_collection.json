@@ -79,7 +79,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: admin: post: update account student: success",
+			"name": "EMS: student: post: update account student: success",
 			"event": [
 				{
 					"listen": "test",
@@ -131,6 +131,11 @@
 						"key": "oidc_claim_preferred_username",
 						"type": "text",
 						"value": "fp"
+					},
+					{
+						"key": "oidc_claim_ut_username",
+						"value": "",
+						"type": "text"
 					}
 				],
 				"body": {
@@ -1791,7 +1796,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"students\": [\r\n    {\r\n      \"student_id_or_email\": \"fp\"\r\n    },\r\n    {\r\n      \"student_id_or_email\": \"sk\"\r\n    },\r\n    {\r\n      \"student_id_or_email\": \"pp\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"students\": [\r\n    {\r\n      \"student_email\": \"foo@bar.com\"\r\n    },\r\n    {\r\n      \"student_email\": \"sk\"\r\n    },\r\n    {\r\n      \"student_email\": \"pp\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/students",
