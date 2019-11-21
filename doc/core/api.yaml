@@ -990,7 +990,7 @@ paths:
         - name: students
           in: body
           schema:
-            description: Student ids or emails.
+            description: Student emails.
             properties:
               students:
                 type: array
