@@ -13,12 +13,12 @@ object Account : IdTable<String>("account") {
     val email = text("email")
     val givenName = text("given_name")
     val familyName = text("family_name")
+    val moodleUsername = text("moodle_username").nullable()
 }
 
 object Student : IdTable<String>("student") {
     override val id: Column<EntityID<String>> = reference("username", Account).primaryKey()
     val createdAt = datetime("created_at")
-    val moodleUsername = text("moodle_username").nullable()
 }
 
 object Teacher : IdTable<String>("teacher") {
@@ -83,7 +83,7 @@ object StudentCourseAccess : LongIdTable("student_course_access") {
 
 object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
     val course = reference("course_id", Course).primaryKey()
-    val utUsername = text("ut_username").primaryKey()
+    val moodleUsername = text("moodle_username").primaryKey()
 }
 
 object StudentPendingAccess : Table("student_pending_access") {

@@ -48,6 +48,8 @@ class AddStudentsToCourseController {
 
 private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req): Int {
     val time = DateTime.now()
+    //TODO: how many added, how many pending
+    //TODO: not username, add only by email
     var pendingAccessAdded = 0
 
     transaction {

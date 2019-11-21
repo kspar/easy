@@ -1,10 +1,7 @@
 package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.db.Course
-import core.db.Student
-import core.db.StudentCourseAccess
-import core.db.StudentMoodlePendingAccess
+import core.db.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
@@ -84,33 +81,35 @@ class MoodleSyncService {
                 it[moodleShortName] = moodleCourseShortName
             }
 
-            val easyAccountExistsNoAccess =
+            // Get Account ids of the users who have easy account
+            val easyAccountExists =
                     moodleResponse.students.mapNotNull {
-                        Student.slice(Student.id)
+                        Account.slice(Account.id)
                                 .select {
-                                    (Student.moodleUsername eq it.username)
+                                    (Account.moodleUsername eq it.username)
                                 }
-                                .map { it[Student.id].value }
+                                .map { it[Account.id].value }
                                 .firstOrNull()
-                    }
+                    }.toSet()
 
+            // Users who have easy account and have access to this course
             val courseAccessExists =
                     moodleResponse.students.mapNotNull {
-                        (Student innerJoin StudentCourseAccess)
-                                .slice(Student.id)
+                        (Account innerJoin Student innerJoin StudentCourseAccess)
+                                .slice(Account.id)
                                 .select {
-                                    (Student.moodleUsername eq it.username)
+                                    (Account.moodleUsername eq it.username) and (StudentCourseAccess.course eq courseId)
                                 }
-                                .map { it[Student.id].value }
+                                .map { it[Account.id].value }
                                 .firstOrNull()
-                    }
+                    }.toSet()
 
+            // Users who have easy account but no access
+            val easyAccountNoAccess = easyAccountExists subtract courseAccessExists
 
-            val easyAccountNoAccess = easyAccountExistsNoAccess.toSet() subtract courseAccessExists.toSet()
-
-            // Filter Moodle users who have no Easy account
+            // Users who have no easy account
             val noAccountExists = moodleResponse.students
-                    .filter { Student.select { Student.moodleUsername eq it.username }.count() == 0 }
+                    .filter { Account.select { Account.moodleUsername eq it.username }.count() == 0 }
 
             log.debug { "Granting access to Moodle students with accounts (the rest already have access): $easyAccountNoAccess" }
             log.debug { "Setting pending access to Moodle students with no accounts: $noAccountExists" }
@@ -128,22 +127,23 @@ class MoodleSyncService {
             // Create pending access for Moodle students without Easy account
             val pendingStudentsAdded = StudentMoodlePendingAccess.batchInsert(noAccountExists) {
                 this[StudentMoodlePendingAccess.course] = EntityID(courseId, Course)
-                this[StudentMoodlePendingAccess.utUsername] = it.username
+                this[StudentMoodlePendingAccess.moodleUsername] = it.username
             }.count()
 
+            val usersWhoShouldHaveAccess = easyAccountNoAccess union courseAccessExists
             // Revoke student access for course if not anymore present in the Moodle
             val studentAccessRemoved = StudentCourseAccess
                     .slice(StudentCourseAccess.student)
-                    .select { (StudentCourseAccess.course eq courseId) }
+                    .select { (StudentCourseAccess.course eq courseId and
+                            (StudentCourseAccess.student notInList usersWhoShouldHaveAccess) ) }
                     .map { it[StudentCourseAccess.student].value }
-                    .filter { !(easyAccountNoAccess union courseAccessExists).contains(it) }
                     .map {
                         StudentCourseAccess.deleteWhere {
                             (StudentCourseAccess.student eq it) and
                                     (StudentCourseAccess.course eq courseId)
                         }
                     }
-                    .sum()
+                    .size
 
             AdminLinkMoodleCourseController.Resp(studentsAdded, pendingStudentsAdded, studentAccessRemoved)
         }

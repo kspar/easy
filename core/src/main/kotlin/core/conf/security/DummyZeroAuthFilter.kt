@@ -13,6 +13,7 @@ class DummyZeroAuthFilter : OncePerRequestFilter() {
         const val EMAIL = "ford@prefect.btl5"
         const val GIVEN_NAME = "Ford"
         const val FAMILY_NAME = "Prefect"
+        const val MOODLE_USERNAME = "ford"
         val ROLES = setOf(
                 EasyGrantedAuthority(EasyRole.STUDENT),
                 EasyGrantedAuthority(EasyRole.TEACHER),
@@ -20,7 +21,7 @@ class DummyZeroAuthFilter : OncePerRequestFilter() {
     }
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-        val user = EasyUser(USERNAME, EMAIL, GIVEN_NAME, FAMILY_NAME, ROLES)
+        val user = EasyUser(USERNAME, EMAIL, GIVEN_NAME, FAMILY_NAME, ROLES, MOODLE_USERNAME)
         SecurityContextHolder.getContext().authentication = user
         filterChain.doFilter(request, response)
     }

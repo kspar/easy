@@ -377,7 +377,8 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
         </createTable>
-        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="ut_username" constraintName="uniq_ut_username"/>
+        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="ut_username"
+                             constraintName="uniq_ut_username"/>
     </changeSet>
 
     <changeSet id="181119-1" author="priit">
@@ -397,5 +398,20 @@
         <addUniqueConstraint tableName="student_pending_access" columnNames="email" constraintName="uniq_email"/>
         <dropColumn tableName="student_moodle_pending_access" columnName="email"/>
     </changeSet>
+
+    <changeSet id="211119-1" author="priit">
+        <dropColumn tableName="student" columnName="moodle_username"/>
+        <addColumn tableName="account">
+            <column name="moodle_username" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="211119-2" author="priit">
+        <renameColumn tableName="student_moodle_pending_access" newColumnName="moodle_username"
+                      oldColumnName="ut_username"/>
+    </changeSet>
+
 
 </databaseChangeLog>

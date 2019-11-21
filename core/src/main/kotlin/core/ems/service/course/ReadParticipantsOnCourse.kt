@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.db.StudentMoodlePendingAccess.utUsername
+import core.db.StudentMoodlePendingAccess.moodleUsername
 import core.db.StudentPendingAccess.email
 import core.db.StudentPendingAccess.validFrom
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
@@ -146,7 +146,7 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadPartic
                 .select { StudentMoodlePendingAccess.course eq courseId }
                 .map {
                     ReadParticipantsOnCourseController.StudentMoodlePendingAccessOnCourseResponse(
-                            it[utUsername]
+                            it[moodleUsername]
                     )
                 }
     }

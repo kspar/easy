@@ -47,16 +47,24 @@ class UpdateAccountController {
 
         val account = AccountData(
                 caller.id,
+                caller.moodleUsername,
                 dto.email.toLowerCase(),
                 correctNameCapitalisation(dto.firstName),
                 correctNameCapitalisation(dto.lastName))
 
         log.debug { "Update personal data for $account" }
-        updateAccount(account, cacheInvalidator)
+        val isChanged = updateAccount(account)
+
+        if (isChanged) {
+            cacheInvalidator.invalidateTotalUserCache()
+        }
 
         if (caller.isStudent()) {
             log.debug { "Update student ${caller.id}" }
             updateStudent(account)
+            if (isChanged) {
+                updateStudentCourseAccesses(account)
+            }
         }
         if (caller.isTeacher()) {
             log.debug { "Update teacher ${caller.id}" }
@@ -73,7 +81,7 @@ class UpdateAccountController {
     }
 }
 
-data class AccountData(val username: String, val email: String, val givenName: String, val familyName: String)
+data class AccountData(val username: String, val moodleUsername: String?, val email: String, val givenName: String, val familyName: String)
 
 private fun correctNameCapitalisation(name: String) =
         name.split(Regex(" +"))
@@ -83,64 +91,32 @@ private fun correctNameCapitalisation(name: String) =
                     }
                 }
 
-private fun updateAccount(accountData: AccountData, cacheInvalidator: CacheInvalidator) {
-    transaction {
+private fun updateAccount(accountData: AccountData): Boolean {
+    return transaction {
+        val isChanged = Account.select {
+            (Account.id eq accountData.username) and
+                    (Account.email eq accountData.email) and
+                    (Account.moodleUsername eq accountData.moodleUsername)
+        }.count() != 1
+
         Account.insertOrUpdate(Account.id, listOf(Account.id, Account.createdAt)) {
             it[id] = EntityID(accountData.username, Account)
             it[email] = accountData.email
+            it[moodleUsername] = accountData.moodleUsername
             it[givenName] = accountData.givenName
             it[familyName] = accountData.familyName
             it[createdAt] = DateTime.now()
         }
-    }
 
-    cacheInvalidator.invalidateTotalUserCache()
+        isChanged
+    }
 }
 
 private fun updateStudent(student: AccountData) {
     transaction {
-        val studentId = Student.insertIgnoreAndGetId {
+        Student.insertIgnore {
             it[id] = EntityID(student.username, Student)
             it[createdAt] = DateTime.now()
-        }!!.value
-
-
-        val otherCoursePendingIds = Join(Student, StudentPendingAccess,
-                onColumn = Student.id,
-                otherColumn = StudentPendingAccess.email,
-                joinType = JoinType.INNER,
-                additionalConstraint = { Student.id eq studentId })
-                .slice(StudentPendingAccess.course)
-                .selectAll()
-                .mapNotNull { it[StudentPendingAccess.course].value }
-                .toSet()
-
-
-        val moodleCourseIdsToAddAccess = Join(Student, StudentMoodlePendingAccess,
-                onColumn = Student.id,
-                otherColumn = StudentMoodlePendingAccess.utUsername,
-                joinType = JoinType.INNER,
-                additionalConstraint = { Student.id eq studentId })
-                .slice(StudentMoodlePendingAccess.course)
-                .selectAll()
-                .mapNotNull { it[StudentMoodlePendingAccess.course].value }
-                .toSet()
-
-
-        if (moodleCourseIdsToAddAccess.isNotEmpty()) {
-            Student.insertOrUpdate(Student.id, listOf(Student.createdAt)) {
-                it[id] = EntityID(student.username, Student)
-                it[createdAt] = DateTime.now()
-                it[moodleUsername] = student.username
-            }
-        }
-
-
-        for (course in (moodleCourseIdsToAddAccess union otherCoursePendingIds)) {
-            StudentCourseAccess.insertIgnore {
-                it[StudentCourseAccess.student] = EntityID(studentId, Student)
-                it[StudentCourseAccess.course] = EntityID(course, Course)
-            }
         }
     }
 }
@@ -173,6 +149,57 @@ private fun selectMessages(): UpdateAccountController.Resp {
                                     it[ManagementNotification.message]
                             )
                         })
+    }
+}
+
+private fun updateStudentCourseAccesses(accountData: AccountData) {
+    log.debug { "Updating student course accesses" }
+    transaction {
+        val nonMoodleCoursePendingIds = (
+                Join(Account innerJoin Student, StudentPendingAccess,
+                        onColumn = Account.email,
+                        otherColumn = StudentPendingAccess.email,
+                        joinType = JoinType.INNER))
+                .slice(StudentPendingAccess.course)
+                .select { Account.id eq accountData.username }
+                .mapNotNull { it[StudentPendingAccess.course].value }
+
+        for (course in nonMoodleCoursePendingIds) {
+            StudentCourseAccess.insertIgnore {
+                it[StudentCourseAccess.student] = EntityID(accountData.username, Student)
+                it[StudentCourseAccess.course] = EntityID(course, Course)
+            }
+        }
+
+        StudentPendingAccess.deleteWhere {
+            StudentPendingAccess.email eq accountData.email and
+                    (StudentPendingAccess.course inList nonMoodleCoursePendingIds)
+        }
+
+        if (accountData.moodleUsername != null) {
+            log.debug { "Updating student Moodle course accesses" }
+
+            val moodleCoursePendingIds = (
+                    Join(Account innerJoin Student, StudentMoodlePendingAccess,
+                            onColumn = Account.moodleUsername,
+                            otherColumn = StudentMoodlePendingAccess.moodleUsername,
+                            joinType = JoinType.INNER))
+                    .slice(StudentMoodlePendingAccess.course)
+                    .select { Account.id eq accountData.username }
+                    .mapNotNull { it[StudentMoodlePendingAccess.course].value }
+
+            for (course in moodleCoursePendingIds) {
+                StudentCourseAccess.insertIgnore {
+                    it[StudentCourseAccess.student] = EntityID(accountData.username, Student)
+                    it[StudentCourseAccess.course] = EntityID(course, Course)
+                }
+            }
+
+            StudentMoodlePendingAccess.deleteWhere {
+                StudentMoodlePendingAccess.moodleUsername eq accountData.moodleUsername and
+                        (StudentMoodlePendingAccess.course inList moodleCoursePendingIds)
+            }
+        }
     }
 }
 
