@@ -413,5 +413,11 @@
                       oldColumnName="ut_username"/>
     </changeSet>
 
+    <changeSet id="251119-1" author="priit">
+        <dropColumn tableName="student_course_access" columnName="id"/>
+        <dropColumn tableName="teacher_course_access" columnName="id"/>
+        <addPrimaryKey columnNames="course_id, student_id" tableName="student_course_access"/>
+        <addPrimaryKey columnNames="course_id, teacher_id" tableName="teacher_course_access"/>
+    </changeSet>
 
 </databaseChangeLog>

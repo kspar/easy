@@ -71,14 +71,14 @@ object CourseExercise : LongIdTable("course_exercise") {
     val titleAlias = text("title_alias").nullable()
 }
 
-object TeacherCourseAccess : LongIdTable("teacher_course_access") {
-    val teacher = reference("teacher_id", Teacher)
-    val course = reference("course_id", Course)
+object TeacherCourseAccess : Table("teacher_course_access") {
+    val teacher = reference("teacher_id", Teacher).primaryKey()
+    val course = reference("course_id", Course).primaryKey()
 }
 
-object StudentCourseAccess : LongIdTable("student_course_access") {
-    val student = reference("student_id", Student)
-    val course = reference("course_id", Course)
+object StudentCourseAccess : Table("student_course_access") {
+    val student = reference("student_id", Student).primaryKey()
+    val course = reference("course_id", Course).primaryKey()
 }
 
 object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
