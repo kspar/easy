@@ -29,6 +29,7 @@ easy:
         to: "<to-address>"
     service:
       moodle:
+        grade: "<url>"
         sync:
           url: "<url>"
           cron: "<cron>"
