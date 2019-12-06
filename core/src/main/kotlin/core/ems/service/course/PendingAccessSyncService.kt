@@ -19,12 +19,14 @@ class PendingAccessSyncService {
 
     data class Update(val studentId: String, val studentEmail: String, val course: Long)
 
-    @Scheduled(cron = "\${easy.core.service.pending.sync.cron}")
+    @Scheduled(cron = "\${easy.core.pending-access.clean.cron}")
     fun syncAccesses() {
         val timePoint = DateTime.now().minusDays(SysConf.getProp("delete_before_days")?.toInt() ?: 14)
 
         transaction {
             log.debug { "Cron updating pending accesses." }
+
+            // TODO: why add new accesses here? They should be added in the checkin service
             val accountExists =
                     Join(Account innerJoin Student, StudentPendingAccess,
                             onColumn = Account.email,

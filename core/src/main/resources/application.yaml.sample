@@ -28,15 +28,18 @@ easy:
         from: "<from-address>"
         to: "<to-address>"
     service:
-      moodle:
-        grade: "<url>"
-        sync:
-          url: "<url>"
-          cron: "<cron>"
-      pending:
-        sync:
-          cron: "<cron>"
       await-assessment:
         sleep-start-ms: 1000
         sleep-step-ms: 150
         timeout-steps: 20
+
+    moodle-sync:
+      users:
+        url: "<url>"
+        cron: "0 5 4 * * *"
+      grades:
+        url: "<url>"
+
+    pending-access:
+      clean:
+        cron: "0 5 3 * * *"

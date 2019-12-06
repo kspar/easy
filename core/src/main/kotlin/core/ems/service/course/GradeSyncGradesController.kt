@@ -34,8 +34,9 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class GradeSyncService {
-    @Value("\${easy.core.service.moodle.grade}")
+class GradeSyncGradesController {
+
+    @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
 
     data class MoodleReq(@JsonProperty("shortname") val shortname: String,
@@ -51,8 +52,8 @@ class GradeSyncService {
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/courses/{courseId}/sync/grades")
-    fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): String {
+    @PostMapping("/courses/{courseId}/moodlesync/grades")
+    fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser) {
 
         log.debug { "Syncing grades for course $courseIdStr with Moodle" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -67,7 +68,7 @@ class GradeSyncService {
             throw InvalidRequestException("Course $courseId is not linked with Moodle")
         }
 
-        return syncGrades(courseId, moodleGradeUrl)
+        syncGrades(courseId, moodleGradeUrl)
     }
 }
 
@@ -75,9 +76,7 @@ class GradeSyncService {
 private fun isMoodleLinked(courseId: Long): Boolean {
     return transaction {
         Course.select {
-            (Course.id eq courseId) and
-                    (Course.moodleShortName.isNotNull()) and
-                    (Course.moodleShortName neq "")
+            Course.id eq courseId and Course.moodleShortName.isNotNull()
         }.count() > 0
     }
 }
@@ -92,106 +91,88 @@ private fun isCoursePresent(courseId: Long): Boolean {
 }
 
 
-fun syncGrades(courseId: Long, url: String): String {
-    log.debug { "Connecting Moodle for grade sync..." }
-
-    val testData = selectGradesResponse(courseId)
-    log.debug { "Syncing grades: $testData" }
+private fun syncGrades(courseId: Long, url: String) {
+    // TODO: probably need to split between different requests e.g. 200 grades per request
+    val data = selectGradesResponse(courseId)
 
     val headers = HttpHeaders()
     headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
-
     val map: MultiValueMap<String, String> = LinkedMultiValueMap()
-    map.add("data", jacksonObjectMapper().writeValueAsString(testData))
-
+    map.add("data", jacksonObjectMapper().writeValueAsString(data))
     val request = HttpEntity(map, headers)
 
     val responseEntity: ResponseEntity<String> = RestTemplate().postForEntity(url, request, String::class.java)
 
-
     if (responseEntity.statusCode.value() != 200) {
-        log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with request $request" }
+        log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with data $data" }
         throw InvalidRequestException("Grade syncing with Moodle failed due to error code in response.",
                 ReqError.MOODLE_GRADE_SYNC_ERROR,
-                "Moodle response" to responseEntity.statusCodeValue.toString(),
                 notify = true)
     }
 
-    val response = responseEntity.body
-
-    if (response == null) {
-        log.error { "Moodle returned empty response with request $request" }
-        throw InvalidRequestException("Course grade syncing with Moodle failed due to Moodle empty response body.",
-                ReqError.MOODLE_EMPTY_RESPONSE,
-                "Moodle response" to responseEntity.statusCodeValue.toString(),
-                notify = true)
-    }
-
-    log.debug { "Grade sync response: $response" }
-    return response
+    log.debug { "Grades sync response: ${responseEntity.body}" }
 }
 
-private fun selectGradesResponse(courseId: Long): GradeSyncService.MoodleReq {
+
+private fun selectGradesResponse(courseId: Long): GradeSyncGradesController.MoodleReq {
     return transaction {
-        val shortname = Course
-                .slice(Course.moodleShortName)
+        val shortname = Course.slice(Course.moodleShortName)
                 .select {
                     Course.id eq courseId
                 }.map { it[Course.moodleShortName] }
                 .requireNoNulls()
-                .first()
+                .single()
 
         val exercises = selectExercisesOnCourse(courseId)
-        GradeSyncService.MoodleReq(shortname, exercises)
+        GradeSyncGradesController.MoodleReq(shortname, exercises)
     }
 }
 
 
-private fun selectExercisesOnCourse(courseId: Long): List<GradeSyncService.MoodleReqExercise> {
+private fun selectExercisesOnCourse(courseId: Long): List<GradeSyncGradesController.MoodleReqExercise> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias)
+                .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId)
                 .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .mapNotNull { ex ->
+                .map { ex ->
 
+                    val grades =
+                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
+                                    .mapNotNull {
+                                        selectLatestGradeForSubmission(it)
+                                    }
 
-                    val grades = selectLatestSubmissionsForExercise(
-                            ex[CourseExercise.id].value)
-                            .mapNotNull {
-                                selectLatestGradeForSubmission(it)
-                            }
-
-                    if (grades.isEmpty()) {
-                        null
-                    } else {
-                        GradeSyncService.MoodleReqExercise(
-                                ex[CourseExercise.id].value.toString(),
-                                ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                                grades
-                        )
-                    }
+                    GradeSyncGradesController.MoodleReqExercise(
+                            ex[CourseExercise.id].value.toString(),
+                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                            grades
+                    )
                 }
     }
 }
 
-fun selectLatestGradeForSubmission(submissionId: Long): GradeSyncService.MoodleReqGrade? {
-    val studentId = Submission
-            .select { Submission.id eq submissionId }
-            .map { it[Submission.student] }
-            .first().value
 
-    val studentUsername = Account
-            .select { Account.id eq studentId }
-            .map { it[Account.moodleUsername] }
-            .requireNoNulls()
-            .first()
+private fun selectLatestGradeForSubmission(submissionId: Long): GradeSyncGradesController.MoodleReqGrade? {
+    val moodleUsername = (Submission innerJoin Student innerJoin Account)
+            .slice(Account.moodleUsername, Account.id)
+            .select { Submission.id eq submissionId }
+            .map {
+                val moodleUsername = it[Account.moodleUsername]
+                if (moodleUsername != null) {
+                    moodleUsername
+                } else {
+                    log.warn { "Unable to sync grades to Moodle for student ${it[Account.id]} because they have no Moodle username" }
+                    return@selectLatestGradeForSubmission null
+                }
+            }
+            .single()
 
     val teacherGrade = TeacherAssessment
             .slice(TeacherAssessment.grade)
             .select { TeacherAssessment.submission eq submissionId }
             .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
-            .map { assessment -> GradeSyncService.MoodleReqGrade(studentUsername, assessment[TeacherAssessment.grade]) }
+            .map { assessment -> GradeSyncGradesController.MoodleReqGrade(moodleUsername, assessment[TeacherAssessment.grade]) }
             .firstOrNull()
 
     if (teacherGrade != null)
@@ -203,7 +184,7 @@ fun selectLatestGradeForSubmission(submissionId: Long): GradeSyncService.MoodleR
             .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { assessment ->
-                GradeSyncService.MoodleReqGrade(studentUsername, assessment[AutomaticAssessment.grade])
+                GradeSyncGradesController.MoodleReqGrade(moodleUsername, assessment[AutomaticAssessment.grade])
             }
             .firstOrNull()
 }

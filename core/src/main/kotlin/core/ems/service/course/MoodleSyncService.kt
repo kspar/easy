@@ -24,7 +24,7 @@ private val log = KotlinLogging.logger {}
 
 @Service
 class MoodleSyncService {
-    @Value("\${easy.core.service.moodle.sync.url}")
+    @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
 
     data class MoodleRespStudent(@JsonProperty("username") val username: String,
@@ -150,7 +150,7 @@ class MoodleSyncService {
     }
 
 
-    @Scheduled(cron = "\${easy.core.service.moodle.sync.cron}")
+    @Scheduled(cron = "\${easy.core.moodle-sync.users.cron}")
     fun syncMoodle() {
         transaction {
             Course.select {
