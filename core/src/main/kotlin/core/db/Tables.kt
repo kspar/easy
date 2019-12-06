@@ -69,6 +69,7 @@ object CourseExercise : LongIdTable("course_exercise") {
     val instructionsHtml = text("instructions_html").nullable()
     val instructionsAdoc = text("instructions_adoc").nullable()
     val titleAlias = text("title_alias").nullable()
+    val moodleExId = text("moodle_exercise_id").nullable()
 }
 
 object TeacherCourseAccess : Table("teacher_course_access") {

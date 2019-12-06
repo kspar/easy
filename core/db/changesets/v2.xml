@@ -420,4 +420,12 @@
         <addPrimaryKey columnNames="course_id, teacher_id" tableName="teacher_course_access"/>
     </changeSet>
 
+    <changeSet id="061219-1" author="kspar">
+        <addColumn tableName="course_exercise">
+            <column name="moodle_exercise_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

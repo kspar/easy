@@ -143,7 +143,7 @@ private fun selectExercisesOnCourse(courseId: Long): List<GradeSyncGradesControl
                                     }
 
                     GradeSyncGradesController.MoodleReqExercise(
-                            ex[CourseExercise.id].value.toString(),
+                            ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             grades
                     )
