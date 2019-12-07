@@ -70,7 +70,8 @@ def _run_in_container(source_dir, max_run_time_sec, max_mem_MB, logger, request_
     logger.debug('Built image {} ({})'.format(image_id, request_id))
 
     # Create and run container
-    container = docker_client.containers.run(image_id, detach=True, mem_limit='{}m'.format(max_mem_MB))
+    container = docker_client.containers.run(image_id, detach=True, mem_limit='{}m'.format(max_mem_MB),
+                                             network_mode='host')
     logger.debug("Started container {} ({})".format(container.short_id, request_id))
     start_time = time()
     i = 0
