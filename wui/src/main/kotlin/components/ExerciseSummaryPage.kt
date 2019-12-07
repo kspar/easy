@@ -50,7 +50,9 @@ object ExerciseSummaryPage : EasyPage() {
             val title: String,
             val title_alias: String?,
             val instructions_html: String?,
+            val instructions_adoc: String?,
             val text_html: String?,
+            val text_adoc: String?,
             @Serializable(with = DateSerializer::class)
             val hard_deadline: Date?,
             @Serializable(with = DateSerializer::class)
