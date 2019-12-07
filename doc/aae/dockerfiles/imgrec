@@ -1,0 +1,9 @@
+FROM pygrader
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y xvfb \
+    && apt-get install -y ghostscript \
+    && pip3 install Pillow \
+    && pip3 install requests
+
