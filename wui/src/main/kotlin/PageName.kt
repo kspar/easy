@@ -4,5 +4,6 @@ enum class PageName {
     EXERCISE_SUMMARY,
     ADD_COURSE,
     PARTICIPANTS,
-    GRADE_TABLE
+    GRADE_TABLE,
+    NEW_EXERCISE
 }
