@@ -26,6 +26,7 @@ import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
+import libheaders.highlightCode
 import objOf
 import observeValueChange
 import onVanillaClick
@@ -254,6 +255,7 @@ object ExerciseSummaryPage : EasyPage() {
         ))
 
         initExerciseImages()
+        highlightExerciseCode()
 
         fl?.end()
         return exercise
@@ -693,6 +695,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "text" to exercise.text_html
             ))
             initExerciseImages()
+            highlightExerciseCode()
         }
 
 
@@ -939,6 +942,10 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+    }
+
+    private fun highlightExerciseCode() {
+        getNodelistBySelector("pre.highlightjs.highlight code.hljs").highlightCode()
     }
 
     data class PathIds(val courseId: String, val exerciseId: String)
