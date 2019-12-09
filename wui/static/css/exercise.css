@@ -10,7 +10,7 @@
 }
 
 #exercise-text code {
-    background-color: #eeeeee;
+    background-color: #f6f6f6;
 }
 
 #exercise-text img {
@@ -22,13 +22,35 @@
 /* ADOC rules */
 
 #exercise-text .codehl.run {
-    display: inline-block;
-    margin-top: 1rem;
-    color: #999;
+    display: inline-block !important;
+    margin-top: 1rem !important;
+    color: #999 !important;
+}
+
+#exercise-text .codehl.run * {
+    color: #999 !important;
 }
 
 #exercise-text .codehl.input {
-    color: #0000ff;
+    color: #0000ff !important;
+}
+#exercise-text .codehl.input * {
+    color: #0000ff !important;
+}
+
+#exercise-text ul {
+    /* Waiting for revert support... */
+    padding-left: 4rem !important;
+    list-style-type: unset !important;
+}
+
+#exercise-text ul > li {
+    list-style-type: unset !important;
+}
+
+/* Collapsible outline */
+#exercise-text details > summary:focus {
+    outline: none;
 }
 
 
