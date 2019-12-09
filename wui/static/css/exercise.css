@@ -13,11 +13,16 @@
     background-color: #f6f6f6;
 }
 
+#exercise-text pre {
+    margin: 0;
+}
+
 #exercise-text img {
     display: block;
     max-width: 100%;
     height: auto;
 }
+
 
 /* ADOC rules */
 
@@ -31,9 +36,7 @@
     color: #999 !important;
 }
 
-#exercise-text .codehl.input {
-    color: #0000ff !important;
-}
+#exercise-text .codehl.input,
 #exercise-text .codehl.input * {
     color: #0000ff !important;
 }
@@ -48,9 +51,18 @@
     list-style-type: unset !important;
 }
 
-/* Collapsible outline */
-#exercise-text details > summary:focus {
+#exercise-text details > summary {
     outline: none;
+    cursor: pointer;
+}
+
+#exercise-text details > summary:hover {
+    color: #039be5;
+}
+
+#exercise-text details > .content {
+    border-top: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
 }
 
 
