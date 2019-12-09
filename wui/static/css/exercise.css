@@ -1,4 +1,3 @@
-
 /* Note: all rules should be applied only to #exercise-text children */
 
 #exercise-text {
@@ -10,14 +9,6 @@
     margin-bottom: 1rem;
 }
 
-#exercise-text .italic {
-    font-style: italic;
-}
-
-#exercise-text .bold {
-    font-weight: bold;
-}
-
 #exercise-text code {
     background-color: #eeeeee;
 }
@@ -26,6 +17,29 @@
     display: block;
     max-width: 100%;
     height: auto;
+}
+
+/* ADOC rules */
+
+#exercise-text .codehl.run {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #999;
+}
+
+#exercise-text .codehl.input {
+    color: #0000ff;
+}
+
+
+/* Legacy pure-HTML rules */
+
+#exercise-text .italic {
+    font-style: italic;
+}
+
+#exercise-text .bold {
+    font-weight: bold;
 }
 
 #exercise-text .program-example {
