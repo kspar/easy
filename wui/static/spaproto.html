@@ -653,12 +653,29 @@
     </div>
 </script>
 
+<script id="tm-teach-new-exercise" type="text/x-handlebars-template">
+    <div class="editor-wrapper">
+        <textarea id="text-adoc"></textarea>
+    </div>
+    <div id="status"></div>
+    <div id="exercise-text">
+        <div id="text-preview" style="border: 1px solid #ccc"></div>
+    </div>
+    <div class="editor-wrapper no-cursor">
+        <textarea id="text-html"></textarea>
+    </div>
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/mode/loadmode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/default.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
 <script src="/static/js/kotlin.js"></script>
 <script src="/static/js/kotlinx-coroutines-core.js"></script>
 <script src="/static/js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>

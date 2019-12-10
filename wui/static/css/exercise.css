@@ -1,4 +1,3 @@
-
 /* Note: all rules should be applied only to #exercise-text children */
 
 #exercise-text {
@@ -10,22 +9,71 @@
     margin-bottom: 1rem;
 }
 
-#exercise-text .italic {
-    font-style: italic;
-}
-
-#exercise-text .bold {
-    font-weight: bold;
-}
-
 #exercise-text code {
-    background-color: #eeeeee;
+    background-color: #f6f6f6;
+}
+
+#exercise-text pre {
+    margin: 0;
 }
 
 #exercise-text img {
     display: block;
     max-width: 100%;
     height: auto;
+}
+
+
+/* ADOC rules */
+
+#exercise-text .codehl.run {
+    display: inline-block !important;
+    margin-top: 1rem !important;
+    color: #999 !important;
+}
+
+#exercise-text .codehl.run * {
+    color: #999 !important;
+}
+
+#exercise-text .codehl.input,
+#exercise-text .codehl.input * {
+    color: #0000ff !important;
+}
+
+#exercise-text ul {
+    /* Waiting for revert support... */
+    padding-left: 4rem !important;
+    list-style-type: unset !important;
+}
+
+#exercise-text ul > li {
+    list-style-type: unset !important;
+}
+
+#exercise-text details > summary {
+    outline: none;
+    cursor: pointer;
+}
+
+#exercise-text details > summary:hover {
+    color: #039be5;
+}
+
+#exercise-text details > .content {
+    border-top: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+}
+
+
+/* Legacy pure-HTML rules */
+
+#exercise-text .italic {
+    font-style: italic;
+}
+
+#exercise-text .bold {
+    font-weight: bold;
 }
 
 #exercise-text .program-example {
