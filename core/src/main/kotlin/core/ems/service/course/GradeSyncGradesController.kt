@@ -92,25 +92,30 @@ private fun isCoursePresent(courseId: Long): Boolean {
 
 
 private fun syncGrades(courseId: Long, url: String) {
-    // TODO: probably need to split between different requests e.g. 200 grades per request
     val data = selectGradesResponse(courseId)
 
-    val headers = HttpHeaders()
-    headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
-    val map: MultiValueMap<String, String> = LinkedMultiValueMap()
-    map.add("data", jacksonObjectMapper().writeValueAsString(data))
-    val request = HttpEntity(map, headers)
+    data.exercises.map { (idnumber, title, grades) ->
+        grades.chunked(200) {
+            GradeSyncGradesController.MoodleReqExercise(idnumber, title, it)
+        }.forEach {
+            val headers = HttpHeaders()
+            headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+            val map: MultiValueMap<String, String> = LinkedMultiValueMap()
+            map.add("data", jacksonObjectMapper().writeValueAsString(it))
+            val request = HttpEntity(map, headers)
 
-    val responseEntity: ResponseEntity<String> = RestTemplate().postForEntity(url, request, String::class.java)
+            val responseEntity: ResponseEntity<String> = RestTemplate().postForEntity(url, request, String::class.java)
 
-    if (responseEntity.statusCode.value() != 200) {
-        log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with data $data" }
-        throw InvalidRequestException("Grade syncing with Moodle failed due to error code in response.",
-                ReqError.MOODLE_GRADE_SYNC_ERROR,
-                notify = true)
+            if (responseEntity.statusCode.value() != 200) {
+                log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with data $it" }
+                throw InvalidRequestException("Grade syncing with Moodle failed due to error code in response.",
+                        ReqError.MOODLE_GRADE_SYNC_ERROR,
+                        notify = true)
+            }
+            log.debug { "Grades sync response: ${responseEntity.body}" }
+        }
     }
 
-    log.debug { "Grades sync response: ${responseEntity.body}" }
 }
 
 
