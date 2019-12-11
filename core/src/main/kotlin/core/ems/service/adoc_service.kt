@@ -20,7 +20,7 @@ class AsciiService {
         attributes.setAttribute("nur", "</span>")
         attributes.setAttribute("in", "<span class=\"codehl input\">")
         attributes.setAttribute("ni", "</span>")
-        attributes.setAttribute("nohl", "</span class=\"codehl nohl\">")
+        attributes.setAttribute("nohl", "<span class=\"codehl nohl\">")
         attributes.setAttribute("lhon", "</span>")
 
         val options = Options()
