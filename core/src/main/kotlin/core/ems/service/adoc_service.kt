@@ -20,6 +20,8 @@ class AsciiService {
         attributes.setAttribute("nur", "pass:[</span>]")
         attributes.setAttribute("in", "pass:[<span class=\"codehl input\">]")
         attributes.setAttribute("ni", "pass:[</span>]")
+        attributes.setAttribute("nohl", "pass:[</span class=\"codehl nohl\">]")
+        attributes.setAttribute("lhon", "pass:[</span>]")
 
         val options = Options()
         options.setAttributes(attributes)
