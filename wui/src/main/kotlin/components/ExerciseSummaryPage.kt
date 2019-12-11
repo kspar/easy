@@ -23,10 +23,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import libheaders.CodeMirror
-import libheaders.Materialize
-import libheaders.focus
-import libheaders.highlightCode
+import libheaders.*
 import objOf
 import observeValueChange
 import onVanillaClick
@@ -256,6 +253,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         initExerciseImages()
         highlightExerciseCode()
+        MathJax.typeset()
 
         fl?.end()
         return exercise
@@ -696,6 +694,7 @@ object ExerciseSummaryPage : EasyPage() {
             ))
             initExerciseImages()
             highlightExerciseCode()
+            MathJax.typeset()
         }
 
 
