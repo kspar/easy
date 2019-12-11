@@ -282,6 +282,7 @@ object ExerciseSummaryPage : EasyPage() {
         ))
         val editor = CodeMirror.fromTextArea(getElemById("testing-submission"),
                 objOf("mode" to "python",
+                        "theme" to "idea",
                         "lineNumbers" to true,
                         "autoRefresh" to true,
                         "viewportMargin" to 100))
@@ -465,6 +466,7 @@ object ExerciseSummaryPage : EasyPage() {
 
             CodeMirror.fromTextArea(getElemById("student-submission"), objOf(
                     "mode" to "python",
+                    "theme" to "idea",
                     "lineNumbers" to true,
                     "autoRefresh" to true,
                     "viewportMargin" to 100,
@@ -784,6 +786,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val editor = CodeMirror.fromTextArea(getElemById("submission"),
                 objOf("mode" to "python",
+                        "theme" to "idea",
                         "lineNumbers" to true,
                         "autoRefresh" to true,
                         "viewportMargin" to 100))
