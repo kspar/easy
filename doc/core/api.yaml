@@ -740,6 +740,29 @@ paths:
           description: Removed.
 
 
+  /courses/{courseId}/exercises/{courseExerciseId}/reorder:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+
+    post:
+      summary: Shift exercises on the course such that this exercise will be on the given position.
+      tags:
+        - teacher
+      parameters:
+        - name: index
+          in: body
+          schema:
+            properties:
+              new_index:
+                type: integer
+            required:
+              - new_index
+      responses:
+        200:
+          description: Reordered.
+
+
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess:
     parameters:
       - $ref: '#/parameters/CourseId'
