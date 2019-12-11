@@ -11,6 +11,8 @@
 
 #exercise-text code {
     background-color: #f6f6f6;
+    color: #333;
+    font-style: normal;
 }
 
 #exercise-text pre {
@@ -63,6 +65,13 @@
 #exercise-text details > .content {
     border-top: 1px solid #bbb;
     border-bottom: 1px solid #bbb;
+}
+
+#exercise-text .listingblock > .title {
+    margin-top: 2rem;
+    font-style: italic;
+    color: #438242;
+    font-size: 0.95em;
 }
 
 
