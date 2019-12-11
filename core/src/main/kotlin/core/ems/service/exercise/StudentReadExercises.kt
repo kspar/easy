@@ -54,7 +54,7 @@ enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
 private fun selectStudentExercises(courseId: Long, studentId: String): StudentReadExercisesController.Resp {
 
     data class ExercisePartial(val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
-                               val orderingIndex: Int, val titleAlias: String?)
+                               val titleAlias: String?)
 
     data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
@@ -75,10 +75,9 @@ private fun selectStudentExercises(courseId: Long, studentId: String): StudentRe
                                     it[ExerciseVer.title],
                                     it[CourseExercise.softDeadline],
                                     it[CourseExercise.gradeThreshold],
-                                    it[CourseExercise.orderIdx],
                                     it[CourseExercise.titleAlias]
                             )
-                        }.map { ex ->
+                        }.mapIndexed { i, ex ->
 
                             val lastSub =
                                     Submission
@@ -129,7 +128,7 @@ private fun selectStudentExercises(courseId: Long, studentId: String): StudentRe
                                     status,
                                     grade,
                                     gradedBy,
-                                    ex.orderingIndex
+                                    i
                             )
                         }
         )

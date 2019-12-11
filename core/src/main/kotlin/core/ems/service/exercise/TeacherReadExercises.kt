@@ -69,14 +69,13 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): TeacherReadCourseExe
                         .slice(CourseExercise.id,
                                 CourseExercise.gradeThreshold,
                                 CourseExercise.softDeadline,
-                                CourseExercise.orderIdx,
                                 ExerciseVer.graderType,
                                 ExerciseVer.title,
                                 ExerciseVer.validTo,
                                 CourseExercise.titleAlias)
                         .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
                         .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                        .map { ex ->
+                        .mapIndexed { i, ex ->
 
                             val latestSubmissionIds = selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
                             val latestGrades = latestSubmissionIds.map { selectLatestGradeForSubmission(it) }
@@ -100,13 +99,12 @@ private fun selectTeacherExercisesOnCourse(courseId: Long): TeacherReadCourseExe
                                     ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                                     ex[CourseExercise.softDeadline],
                                     ex[ExerciseVer.graderType],
-                                    ex[CourseExercise.orderIdx],
+                                    i,
                                     unstartedCount,
                                     ungradedCount,
                                     startedCount,
                                     completedCount
                             )
-
                         })
     }
 }
