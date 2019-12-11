@@ -17,14 +17,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AdocPreviewController(private val asciiService: AsciiService) {
 
-
     data class ReqResp(@JsonProperty("content") val content: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
     @PostMapping("/preview/adoc")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
-        log.debug { "${caller.id} is testing asciidoc with content: ${dto.content}." }
-
+        log.debug { "Preview adoc by ${caller.id}" }
         return ReqResp(asciiService.adocToHtml(dto.content))
     }
 }
