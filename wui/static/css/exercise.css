@@ -43,6 +43,12 @@
     color: #0000ff !important;
 }
 
+#exercise-text .codehl.nohl,
+#exercise-text .codehl.nohl * {
+    color: #333 !important;
+    font-weight: normal;
+}
+
 #exercise-text ul {
     /* Waiting for revert support... */
     padding-left: 4rem !important;
