@@ -16,12 +16,12 @@ class AsciiService {
         attributes.setSourceHighlighter("highlightjs")
 
         // Custom easy attributes for code highlighting
-        attributes.setAttribute("run", "pass:[<span class=\"codehl run\">]")
-        attributes.setAttribute("nur", "pass:[</span>]")
-        attributes.setAttribute("in", "pass:[<span class=\"codehl input\">]")
-        attributes.setAttribute("ni", "pass:[</span>]")
-        attributes.setAttribute("nohl", "pass:[</span class=\"codehl nohl\">]")
-        attributes.setAttribute("lhon", "pass:[</span>]")
+        attributes.setAttribute("run", "<span class=\"codehl run\">")
+        attributes.setAttribute("nur", "</span>")
+        attributes.setAttribute("in", "<span class=\"codehl input\">")
+        attributes.setAttribute("ni", "</span>")
+        attributes.setAttribute("nohl", "</span class=\"codehl nohl\">")
+        attributes.setAttribute("lhon", "</span>")
 
         val options = Options()
         options.setAttributes(attributes)
