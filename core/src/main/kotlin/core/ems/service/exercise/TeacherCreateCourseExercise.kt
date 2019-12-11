@@ -7,6 +7,7 @@ import core.db.Course
 import core.db.CourseExercise
 import core.db.Exercise
 import core.ems.service.AsciiService
+import core.ems.service.IDX_STEP
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -94,18 +95,16 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
         val orderIdxMaxColumn = CourseExercise.orderIdx.max()
 
         val currentMaxOrderIdx = CourseExercise
-                .slice(CourseExercise.course, orderIdxMaxColumn)
+                .slice(orderIdxMaxColumn)
                 .select {
                     CourseExercise.course eq courseId
-                }.groupBy(CourseExercise.course)
-                .limit(1)
+                }
+                .groupBy(CourseExercise.course)
                 .map { it[orderIdxMaxColumn] }
-                .firstOrNull()
+                .singleOrNull()
 
-        val orderIndex = when (currentMaxOrderIdx) {
-            null -> 0
-            else -> currentMaxOrderIdx + 1
-        }
+        val orderIndex = (currentMaxOrderIdx ?: 0) + IDX_STEP
+
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)
             it[exercise] = EntityID(exerciseId, Exercise)
