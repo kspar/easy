@@ -77,7 +77,7 @@ object NewExercisePage : EasyPage() {
 
             val statusElement = getElemByIdAs<HTMLDivElement>("status")
             statusElement.innerText = "Up to date"
-            val previewElement = getElemById("text-preview")
+            val previewElement = getElemById("exercise-text")
             previewElement.innerHTML = savedHtml
             highlightCode()
             MathJax.typeset()
