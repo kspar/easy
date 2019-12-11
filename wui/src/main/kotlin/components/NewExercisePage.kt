@@ -18,6 +18,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
+import libheaders.MathJax
 import libheaders.highlightCode
 import objOf
 import observeValueChange
@@ -79,6 +80,7 @@ object NewExercisePage : EasyPage() {
             val previewElement = getElemById("text-preview")
             previewElement.innerHTML = savedHtml
             highlightCode()
+            MathJax.typeset()
 
             MainScope().launch {
                 observeValueChange(2000, 1000,
@@ -89,6 +91,7 @@ object NewExercisePage : EasyPage() {
                             val html = adocToHtml(it)
                             previewElement.innerHTML = html
                             highlightCode()
+                            MathJax.typeset()
                             outEditor.setValue(html)
                             localStorage["new-exercise-adoc"] = it
                             localStorage["new-exercise-html"] = html
