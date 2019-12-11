@@ -30,7 +30,7 @@ class TeacherReadLatestTestingDraftController {
                     @JsonSerialize(using = DateTimeSerializer::class)
                     @JsonProperty("created_at") val submissionTime: DateTime)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess/draft")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @PathVariable("courseExerciseId") courseExerciseIdStr: String,
