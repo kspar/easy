@@ -53,6 +53,7 @@
     font-weight: normal;
 }
 
+/* Fix Materialize lists */
 #exercise-text ul {
     /* Waiting for revert support... */
     padding-left: 4rem !important;
@@ -61,6 +62,14 @@
 
 #exercise-text ul > li {
     list-style-type: unset !important;
+}
+
+#exercise-text ul ul {
+    list-style-type: circle !important;
+}
+
+#exercise-text ul ul ul {
+    list-style-type: square !important;
 }
 
 #exercise-text details > summary {
