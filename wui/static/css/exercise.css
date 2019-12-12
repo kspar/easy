@@ -93,6 +93,10 @@
     font-size: 0.95em;
 }
 
+#exercise-text .small {
+    font-size: 0.83em;
+}
+
 
 /* Legacy pure-HTML rules */
 
