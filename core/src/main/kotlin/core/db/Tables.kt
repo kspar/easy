@@ -57,6 +57,11 @@ object Course : LongIdTable("course") {
     val moodleShortName = text("moodle_short_name").nullable()
 }
 
+object Group : LongIdTable("group") {
+    val name = text("name")
+    val course = reference("course_id", Course)
+}
+
 object CourseExercise : LongIdTable("course_exercise") {
     val course = reference("course_id", Course)
     val exercise = reference("exercise_id", Exercise)
@@ -77,9 +82,21 @@ object TeacherCourseAccess : Table("teacher_course_access") {
     val course = reference("course_id", Course).primaryKey()
 }
 
+object TeacherGroupAccess : Table("teacher_group_access") {
+    val teacher = reference("teacher_id", TeacherCourseAccess.teacher).primaryKey()
+    val course = reference("course_id", TeacherCourseAccess.course).primaryKey()
+    val group = reference("group_id", Group).primaryKey()
+}
+
 object StudentCourseAccess : Table("student_course_access") {
     val student = reference("student_id", Student).primaryKey()
     val course = reference("course_id", Course).primaryKey()
+}
+
+object StudentGroupAccess : Table("student_group_access") {
+    val student = reference("student_id", StudentCourseAccess.student).primaryKey()
+    val course = reference("course_id", StudentCourseAccess.course).primaryKey()
+    val group = reference("group_id", Group).primaryKey()
 }
 
 object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
@@ -87,10 +104,22 @@ object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
     val moodleUsername = text("moodle_username").primaryKey()
 }
 
+object StudentMoodlePendingGroup : Table("student_moodle_pending_group_access") {
+    val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
+    val course = reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
+    val group = reference("group_id", Group).primaryKey()
+}
+
 object StudentPendingAccess : Table("student_pending_access") {
     val course = reference("course_id", Course).primaryKey()
     val email = text("email").primaryKey()
     val validFrom = datetime("valid_from")
+}
+
+object StudentPendingGroup : Table("student_pending_group_access") {
+    val email = reference("email", StudentPendingAccess.email).primaryKey()
+    val course = reference("course_id", StudentPendingAccess.course).primaryKey()
+    val group = reference("group_id", Group).primaryKey()
 }
 
 object Submission : LongIdTable("submission") {

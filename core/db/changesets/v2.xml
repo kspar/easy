@@ -433,5 +433,91 @@
         <dropUniqueConstraint tableName="student_moodle_pending_access" constraintName="uniq_ut_username"/>
     </changeSet>
 
+    <changeSet id="121219-2" author="kspar">
+        <createTable tableName="group">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" references="course(id)"
+                             foreignKeyName="fk_group_course"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="teacher_group_access">
+            <column name="teacher_id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_teacher_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="teacher_group_access"
+                                 baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access"/>
+
+        <createTable tableName="student_group_access">
+            <column name="student_id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_group_access"
+                                 baseColumnNames="student_id, course_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="student_id, course_id"
+                                 constraintName="fk_student_group_access_student_course_access"/>
+
+        <createTable tableName="student_pending_group_access">
+            <column name="email" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_pending_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_pending_group_access"
+                                 baseColumnNames="email, course_id"
+                                 referencedTableName="student_pending_access"
+                                 referencedColumnNames="email, course_id"
+                                 constraintName="fk_student_pending_group_access_student_pending_access"/>
+
+        <createTable tableName="student_moodle_pending_group_access">
+            <column name="moodle_username" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_moodle_pending_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                 baseColumnNames="moodle_username, course_id"
+                                 referencedTableName="student_moodle_pending_access"
+                                 referencedColumnNames="moodle_username, course_id"
+                                 constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
+    </changeSet>
 
 </databaseChangeLog>
