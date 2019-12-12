@@ -428,4 +428,10 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="121219-1" author="kspar">
+        <dropUniqueConstraint tableName="student_pending_access" constraintName="uniq_email"/>
+        <dropUniqueConstraint tableName="student_moodle_pending_access" constraintName="uniq_ut_username"/>
+    </changeSet>
+
+
 </databaseChangeLog>
