@@ -3,6 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.GradeService
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -24,7 +25,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController {
+class TeacherAssessController(val gradeService: GradeService) {
 
     data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
                    @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?)
@@ -50,6 +51,7 @@ class TeacherAssessController {
         }
 
         insertTeacherAssessment(callerId, submissionId, assessment)
+        gradeService.syncSingleGradeToMoodle(submissionId)
     }
 }
 
