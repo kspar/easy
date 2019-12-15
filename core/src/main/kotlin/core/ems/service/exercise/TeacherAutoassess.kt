@@ -6,7 +6,6 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
-import core.ems.service.GradeService
 import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -24,7 +23,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassController(val gradeService: GradeService) {
+class TeacherAutoassController {
 
     data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
@@ -52,7 +51,6 @@ class TeacherAutoassController(val gradeService: GradeService) {
                 ?: throw InvalidRequestException("Autoassessment not found for exercise $courseExId on course $courseId")
 
         val aaResult = autoAssess(aaId, dto.solution)
-        gradeService.syncCourseGradesToMoodle(courseId)
         return Resp(aaResult.grade, aaResult.feedback)
     }
 }
