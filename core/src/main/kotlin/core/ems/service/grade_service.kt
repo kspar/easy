@@ -90,7 +90,7 @@ class GradeService {
     /**
      * Send grade request to Moodle. Excepts response body from Moodle to contain 'done'.
      */
-    fun sendMoodleGradeRequest(req: MoodleReq) {
+    private fun sendMoodleGradeRequest(req: MoodleReq) {
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         val map: MultiValueMap<String, String> = LinkedMultiValueMap()
