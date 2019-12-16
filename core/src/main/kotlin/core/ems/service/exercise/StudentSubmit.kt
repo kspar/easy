@@ -5,6 +5,7 @@ import core.aas.autoAssess
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.CacheInvalidator
+import core.ems.service.GradeService
 import core.ems.service.access.assertIsVisibleExerciseOnCourse
 import core.ems.service.access.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -64,12 +65,10 @@ class StudentSubmitCont {
             }
         }
     }
-
-
 }
 
 @Component
-class StupidComponentForAsync {
+class StupidComponentForAsync(val gradeService: GradeService) {
     // Must be in DIFFERENT Spring Component for Async than the caller
     @Async
     fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, cacheInvalidator: CacheInvalidator) {
@@ -87,7 +86,9 @@ class StupidComponentForAsync {
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
             insertAutoAssFailed(submissionId, cacheInvalidator)
+            return
         }
+        gradeService.syncSingleGradeToMoodle(submissionId)
     }
 }
 
