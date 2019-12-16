@@ -15,6 +15,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
@@ -43,8 +44,9 @@ class GradeService {
 
 
     /**
-     * Sync single submission grade to Moodle. If the submission has no link with the Moodle, then nothing is done.
+     * Sync single submission grade to Moodle. If the submission has no link with the Moodle, then nothing is done. Is asynchronous.
      */
+    @Async
     fun syncSingleGradeToMoodle(submissionId: Long) {
         transaction {
             (Submission innerJoin CourseExercise innerJoin Course)
@@ -115,13 +117,15 @@ class GradeService {
                     notify = true)
         }
 
-        if (responseEntity.body == null || !responseEntity.body!!.contains("done")) {
+        val body = responseEntity.body
+        if (body == null || !body.contains("done")) {
+            //TODO: maybe some other exception. This exception is meant for client, but currently it is in the private method.
             log.error { "Moodle grade syncing error. Grade syncing with Moodle failed due to response body from Moodle did not contain 'done': ${responseEntity.body}. Data: $req" }
             throw InvalidRequestException("Grade syncing with Moodle failed due to response body from Moodle did not contain 'done'.",
                     ReqError.MOODLE_GRADE_SYNC_ERROR,
                     notify = true)
         }
-        log.debug { "Grades sync response: ${responseEntity.body}" }
+        log.debug { "Grades sync response: $body" }
     }
 
 
