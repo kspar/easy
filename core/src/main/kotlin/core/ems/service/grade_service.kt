@@ -86,17 +86,6 @@ class GradeService {
         }
     }
 
-    /**
-     * Helper function to generate grade batches of 200.
-     */
-    private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> {
-        return exercises.flatMap {
-            it.grades.chunked(200) { grades ->
-                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.title, it.title, grades)))
-            }
-        }
-    }
-
 
     /**
      * Send grade request to Moodle. Excepts response body from Moodle to contain 'done'.
@@ -125,6 +114,18 @@ class GradeService {
                     notify = true)
         }
         log.debug { "Grades sync response: $body" }
+    }
+
+
+    /**
+     * Helper function to generate grade batches of 200.
+     */
+    private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> {
+        return exercises.flatMap {
+            it.grades.chunked(200) { grades ->
+                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.title, it.title, grades)))
+            }
+        }
     }
 
 
