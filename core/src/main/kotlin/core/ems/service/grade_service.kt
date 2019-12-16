@@ -58,7 +58,7 @@ class GradeService {
                         val shortname = selectCourseShortName(this[Course.id].value)
 
                         if (!shortname.isNullOrBlank() && singleExercise.grades.isNotEmpty()) {
-                            sendMoodleRequest(MoodleReq(shortname, listOf(singleExercise)))
+                            sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
                         }
                     }
         }
@@ -81,7 +81,7 @@ class GradeService {
 
             batches.forEach {
                 log.debug { "Sending grade batch: $it" }
-                sendMoodleRequest(it)
+                sendMoodleGradeRequest(it)
             }
         }
     }
@@ -101,7 +101,7 @@ class GradeService {
     /**
      * Send grade request to Moodle. Excepts response body from Moodle to contain 'done'.
      */
-    private fun sendMoodleRequest(req: MoodleReq) {
+    fun sendMoodleGradeRequest(req: MoodleReq) {
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         val map: MultiValueMap<String, String> = LinkedMultiValueMap()
@@ -119,7 +119,6 @@ class GradeService {
 
         val body = responseEntity.body
         if (body == null || !body.contains("done")) {
-            //TODO: maybe some other exception. This exception is meant for client, but currently it is in the private method.
             log.error { "Moodle grade syncing error. Grade syncing with Moodle failed due to response body from Moodle did not contain 'done': ${responseEntity.body}. Data: $req" }
             throw InvalidRequestException("Grade syncing with Moodle failed due to response body from Moodle did not contain 'done'.",
                     ReqError.MOODLE_GRADE_SYNC_ERROR,
