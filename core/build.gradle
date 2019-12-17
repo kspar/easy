@@ -61,11 +61,11 @@ dependencies {
     implementation 'io.github.microutils:kotlin-logging:1.7.6'
 
     // Database
-    implementation 'org.jetbrains.exposed:exposed:0.17.5'
+    implementation 'org.jetbrains.exposed:exposed:0.17.7'
     implementation 'com.zaxxer:HikariCP:3.4.1'
-    implementation "org.postgresql:postgresql:42.2.8"
+    implementation "org.postgresql:postgresql:42.2.9"
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
-    liquibaseRuntime 'org.postgresql:postgresql:42.2.8'
+    liquibaseRuntime 'org.postgresql:postgresql:42.2.9'
     // After updating Spring Boot to 2.2.2 liquibase-core has a missing logback-classic dep.
     // Maybe not required with future releases:
     // https://stackoverflow.com/questions/50487054/cant-run-liquibase-with-command-line
