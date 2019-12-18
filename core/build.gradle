@@ -81,6 +81,9 @@ dependencies {
 
     // Asciidoc
     implementation 'org.asciidoctor:asciidoctorj:2.1.0'
+
+    // Jsoup for Asciidoctor HTML output customisation
+    implementation 'org.jsoup:jsoup:1.12.1'
 }
 
 
