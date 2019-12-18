@@ -110,7 +110,6 @@ class StatisticsService {
             notifyAndClearRequests(newResp)
             resp = newResp
             count = 0
-            log.debug { "Pushed public statistics update to clients." }
         }
 
         count++
