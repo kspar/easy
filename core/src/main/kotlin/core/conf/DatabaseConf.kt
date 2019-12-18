@@ -1,6 +1,7 @@
 package core.conf
 
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.context.annotation.Bean
@@ -22,5 +23,6 @@ class DatabaseInit(val dataSource: DataSource) {
     @PostConstruct
     fun init() {
         Database.connect(dataSource)
+        TransactionManager.manager.defaultRepetitionAttempts = 6
     }
 }
