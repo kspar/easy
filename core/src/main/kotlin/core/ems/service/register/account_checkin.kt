@@ -29,9 +29,7 @@ class UpdateAccountController {
     @Autowired
     lateinit var cacheInvalidator: CacheInvalidator
 
-    data class PersonalDataBody(@JsonProperty("email", required = true)
-                                @field:NotBlank @field:Size(max = 254) val email: String,
-                                @JsonProperty("first_name", required = true)
+    data class PersonalDataBody(@JsonProperty("first_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val firstName: String,
                                 @JsonProperty("last_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val lastName: String)
@@ -48,7 +46,7 @@ class UpdateAccountController {
         val account = AccountData(
                 caller.id,
                 caller.moodleUsername,
-                dto.email.toLowerCase(),
+                caller.email.toLowerCase(),
                 correctNameCapitalisation(dto.firstName),
                 correctNameCapitalisation(dto.lastName))
 
