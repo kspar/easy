@@ -15,7 +15,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AdocPreviewController(private val asciiService: AsciiService) {
+class AdocPreviewController(private val adocService: AdocService) {
 
     data class ReqResp(@JsonProperty("content") val content: String)
 
@@ -23,6 +23,6 @@ class AdocPreviewController(private val asciiService: AsciiService) {
     @PostMapping("/preview/adoc")
     fun controller(@Valid @RequestBody dto: ReqResp, caller: EasyUser): ReqResp {
         log.debug { "Preview adoc by ${caller.id}" }
-        return ReqResp(asciiService.adocToHtml(dto.content))
+        return ReqResp(adocService.adocToHtml(dto.content))
     }
 }

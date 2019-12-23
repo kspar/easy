@@ -7,7 +7,7 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
 import core.db.Teacher
-import core.ems.service.AsciiService
+import core.ems.service.AdocService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -28,7 +28,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateExerciseCont(private val asciiService: AsciiService) {
+class CreateExerciseCont(private val adocService: AdocService) {
 
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
                    @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
@@ -57,7 +57,7 @@ class CreateExerciseCont(private val asciiService: AsciiService) {
 
         return when (dto.textAdoc) {
             null -> Resp(insertExercise(caller.id, dto, dto.textHtml).toString())
-            else -> Resp(insertExercise(caller.id, dto, asciiService.adocToHtml(dto.textAdoc)).toString())
+            else -> Resp(insertExercise(caller.id, dto, adocService.adocToHtml(dto.textAdoc)).toString())
         }
     }
 }

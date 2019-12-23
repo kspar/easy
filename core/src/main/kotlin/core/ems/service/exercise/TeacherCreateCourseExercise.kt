@@ -6,7 +6,7 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseExercise
 import core.db.Exercise
-import core.ems.service.AsciiService
+import core.ems.service.AdocService
 import core.ems.service.IDX_STEP
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -31,7 +31,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherCreateCourseExerciseController(private val asciiService: AsciiService) {
+class TeacherCreateCourseExerciseController(private val adocService: AdocService) {
 
     data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100) val exerciseId: String,
                    @JsonProperty("threshold", required = true) @field:PositiveOrZero val threshold: Int,
@@ -67,7 +67,7 @@ class TeacherCreateCourseExerciseController(private val asciiService: AsciiServi
 
         when (body.instructionsAdoc) {
             null -> insertCourseExercise(courseId, body, null)
-            else -> insertCourseExercise(courseId, body, asciiService.adocToHtml(body.instructionsAdoc))
+            else -> insertCourseExercise(courseId, body, adocService.adocToHtml(body.instructionsAdoc))
         }
     }
 }

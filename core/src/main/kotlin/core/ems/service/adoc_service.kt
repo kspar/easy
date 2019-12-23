@@ -14,7 +14,7 @@ private val log = KotlinLogging.logger {}
 
 // Annotated as service for automatic Spring initialization on start-up for fast first-time service access
 @Service
-class AsciiService {
+class AdocService {
     private val doctor = Asciidoctor.Factory.create()
     private val options = Options()
 
@@ -43,16 +43,12 @@ class AsciiService {
 
 class LinkExternaliserProcessor : Postprocessor() {
     override fun process(document: Document?, output: String?): String {
-        val t0 = System.currentTimeMillis()
-
         val jdoc = Jsoup.parse(output, "UTF-8")
         jdoc.getElementsByTag("a").forEach {
-            it.attr("target", "_blank").attr("rel", "noopener noreferrer")
+            it.attr("target", "_blank")
+                    .attr("rel", "noopener noreferrer")
         }
-        val html = jdoc.body().html()
-
-        log.debug { "Postprocessing took ${System.currentTimeMillis() - t0} ms" }
-        return html
+        return jdoc.body().html()
     }
 }
 
