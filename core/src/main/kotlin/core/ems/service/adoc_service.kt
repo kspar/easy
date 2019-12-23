@@ -22,7 +22,7 @@ class AsciiService {
         val attributes = Attributes()
         attributes.setSourceHighlighter("highlightjs")
 
-        // Custom easy attributes for code highlighting
+        // TODO: remove after all exercises have migrated to EasyCode
         attributes.setAttribute("run", "<span class=\"codehl run\">")
         attributes.setAttribute("nur", "</span>")
         attributes.setAttribute("in", "<span class=\"codehl input\">")
@@ -31,7 +31,9 @@ class AsciiService {
         attributes.setAttribute("lhon", "</span>")
         options.setAttributes(attributes)
 
-        doctor.javaExtensionRegistry().postprocessor(LinkExternaliserProcessor())
+        doctor.javaExtensionRegistry()
+                .postprocessor(LinkExternaliserProcessor())
+                .postprocessor(EasyCodeProcessor())
     }
 
     fun adocToHtml(content: String): String {
@@ -51,5 +53,36 @@ class LinkExternaliserProcessor : Postprocessor() {
 
         log.debug { "Postprocessing took ${System.currentTimeMillis() - t0} ms" }
         return html
+    }
+}
+
+class EasyCodeProcessor : Postprocessor() {
+    private enum class CodeAttr(val id: String, val outputProducer: (String) -> (String)) {
+        RUN("run", { "<span class=\"codehl run\">$it</span>" }),
+        INPUT("in", { "<span class=\"codehl input\">$it</span>" }),
+        NO_HIGHLIGHT("nohl", { "<span class=\"codehl nohl\">$it</span>" })
+    }
+
+    private val regex: Regex;
+
+    init {
+        val attrStr = CodeAttr.values().joinToString("|") { it.id }
+        regex = Regex("\\\$($attrStr)\\[(.+?)(?<!\\\\)]")
+    }
+
+    override fun process(document: Document?, output: String): String {
+        return output.replace(regex) {
+            val attrTag = it.groupValues[1]
+            val value = it.groupValues[2].replace("\\]", "]")
+
+            val attr = CodeAttr.values().find { it.id == attrTag }
+
+            if (attr == null) {
+                log.error { "No attribute found for tag $attrTag" }
+                it.value
+            } else {
+                attr.outputProducer.invoke(value)
+            }
+        }
     }
 }
