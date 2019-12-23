@@ -6,6 +6,17 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 
+fun getUsernameByEmail(email: String): String? {
+    return transaction {
+        Account.slice(Account.id)
+                .select {
+                    Account.email eq email
+                }.map {
+                    it[Account.id].value
+                }.singleOrNull()
+    }
+}
+
 fun teacherExists(username: String): Boolean {
     return transaction {
         Teacher.select {

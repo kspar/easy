@@ -6,11 +6,12 @@ import core.db.Course
 import core.db.Teacher
 import core.db.TeacherCourseAccess
 import core.ems.service.access.canTeacherAccessCourse
-import core.ems.service.accountExists
 import core.ems.service.assertCourseExists
+import core.ems.service.getUsernameByEmail
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.teacherExists
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.batchInsert
@@ -29,9 +30,9 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddTeachersToCourse {
 
-    data class Req(@JsonProperty("teachers") @field:Valid val teacherIds: List<TeacherIdReq>)
+    data class Req(@JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>)
 
-    data class TeacherIdReq(@JsonProperty("teacher_id") @field:NotBlank @field:Size(max = 100) val teacherId: String)
+    data class TeacherReq(@JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
@@ -49,27 +50,26 @@ class AddTeachersToCourse {
 
 
 private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToCourse.Req) {
-
     transaction {
-        teachers.teacherIds.forEach {
-            if (!teacherExists(it.teacherId)) {
-                if (accountExists(it.teacherId)) {
-                    log.debug { "No teacher entity found for user ${it.teacherId}, creating it" }
-                    insertTeacher(it.teacherId)
-                } else {
-                    throw InvalidRequestException("Account ${it.teacherId} not found")
+        val teachersWithoutAccess =
+                teachers.teachers.map {
+                    val username = getUsernameByEmail(it.email)
+                            ?: throw InvalidRequestException("Account with email ${it.email} not found",
+                                    ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email)
+
+                    if (!teacherExists(username)) {
+                        log.debug { "No teacher entity found for account $username (email: ${it.email}), creating it" }
+                        insertTeacher(username)
+                    }
+                    username
+                }.filter {
+                    !canTeacherAccessCourse(it, courseId)
                 }
-            }
-        }
 
-        val teachersWithoutAccess = teachers.teacherIds.filter {
-            !canTeacherAccessCourse(it.teacherId, courseId)
-        }
+        log.debug { "Granting access to teachers (the rest already have access): $teachersWithoutAccess" }
 
-        log.debug { "Granting access to teacher (the rest already have access): $teachersWithoutAccess" }
-
-        TeacherCourseAccess.batchInsert(teachersWithoutAccess) { teacher ->
-            this[TeacherCourseAccess.teacher] = EntityID(teacher.teacherId, Teacher)
+        TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
+            this[TeacherCourseAccess.teacher] = EntityID(it, Teacher)
             this[TeacherCourseAccess.course] = EntityID(courseId, Course)
         }
     }
