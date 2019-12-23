@@ -65,14 +65,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
             mailService.sendSystemNotification(ex.stackTraceString, id)
         }
 
-        // Remove after migrating all IREs to use code
-        if (ex.code != null) {
-            val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
-            return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
-        } else {
-            return ResponseEntity(HttpStatus.BAD_REQUEST)
-        }
-
+        val resp = RequestErrorResponse(id, ex.code?.errorCodeStr, mapOf(*ex.attributes), ex.message)
+        return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(value = [Exception::class])
