@@ -5,14 +5,18 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.Teacher
 import core.db.TeacherCourseAccess
+import core.ems.service.access.canTeacherAccessCourse
+import core.ems.service.accountExists
+import core.ems.service.assertCourseExists
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.teacherExists
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -37,6 +41,7 @@ class AddTeachersToCourse {
 
         log.debug { "Adding access to course $courseIdStr to teachers $teachers" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
+        assertCourseExists(courseId)
 
         insertTeacherCourseAccesses(courseId, teachers)
     }
@@ -46,19 +51,19 @@ class AddTeachersToCourse {
 private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToCourse.Req) {
 
     transaction {
-        teachers.teacherIds.forEach { teacher ->
-            val teacherExists =
-                    Teacher.select { Teacher.id eq teacher.teacherId }
-                            .count() == 1
-            if (!teacherExists) {
-                throw InvalidRequestException("Teacher not found: $teacher")
+        teachers.teacherIds.forEach {
+            if (!teacherExists(it.teacherId)) {
+                if (accountExists(it.teacherId)) {
+                    log.debug { "No teacher entity found for user ${it.teacherId}, creating it" }
+                    insertTeacher(it.teacherId)
+                } else {
+                    throw InvalidRequestException("Account ${it.teacherId} not found")
+                }
             }
         }
 
         val teachersWithoutAccess = teachers.teacherIds.filter {
-            TeacherCourseAccess.select {
-                TeacherCourseAccess.teacher eq it.teacherId and (TeacherCourseAccess.course eq courseId)
-            }.count() == 0
+            !canTeacherAccessCourse(it.teacherId, courseId)
         }
 
         log.debug { "Granting access to teacher (the rest already have access): $teachersWithoutAccess" }
@@ -67,5 +72,12 @@ private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToC
             this[TeacherCourseAccess.teacher] = EntityID(teacher.teacherId, Teacher)
             this[TeacherCourseAccess.course] = EntityID(courseId, Course)
         }
+    }
+}
+
+private fun insertTeacher(teacherId: String) {
+    Teacher.insert {
+        it[id] = EntityID(teacherId, Teacher)
+        it[createdAt] = DateTime.now()
     }
 }
