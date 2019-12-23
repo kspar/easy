@@ -446,16 +446,16 @@ paths:
       tags:
         - admin
       parameters:
-        - name: teacher
+        - name: teachers
           in: body
-          description: Teacher ids.
+          description: Teacher emails.
           schema:
             properties:
               teachers:
                 type: array
                 items:
                   properties:
-                    teacher_id:
+                    email:
                       type: string
       responses:
         200:
