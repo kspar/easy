@@ -8,7 +8,7 @@ import core.db.CourseExercise
 import core.db.Exercise
 import core.ems.service.AsciiService
 import core.ems.service.IDX_STEP
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer

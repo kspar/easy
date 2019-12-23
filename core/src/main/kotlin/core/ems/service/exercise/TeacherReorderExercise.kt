@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.ems.service.IDX_STEP
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.normaliseCourseExIndices
 import core.exception.InvalidRequestException

@@ -3,7 +3,7 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.ems.service.access.assertUserHasAccessToCourse
+import core.ems.service.assertUserHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select

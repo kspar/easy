@@ -6,8 +6,8 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.CacheInvalidator
 import core.ems.service.GradeService
-import core.ems.service.access.assertIsVisibleExerciseOnCourse
-import core.ems.service.access.assertStudentHasAccessToCourse
+import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID

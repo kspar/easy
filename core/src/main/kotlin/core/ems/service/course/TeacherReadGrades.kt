@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException

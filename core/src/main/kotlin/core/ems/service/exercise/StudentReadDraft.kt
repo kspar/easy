@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.SubmissionDraft
-import core.ems.service.access.assertStudentHasAccessToCourse
+import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging

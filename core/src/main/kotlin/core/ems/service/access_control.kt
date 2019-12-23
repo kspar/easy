@@ -1,4 +1,4 @@
-package core.ems.service.access
+package core.ems.service
 
 import core.conf.security.EasyUser
 import core.db.CourseExercise

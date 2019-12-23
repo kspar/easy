@@ -7,7 +7,7 @@ import core.db.AutomaticAssessment
 import core.db.CourseExercise
 import core.db.Submission
 import core.db.TeacherAssessment
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging

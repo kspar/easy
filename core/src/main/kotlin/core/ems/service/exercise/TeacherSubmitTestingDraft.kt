@@ -6,7 +6,7 @@ import core.db.CourseExercise
 import core.db.Teacher
 import core.db.TestingDraft
 import core.db.insertOrUpdate
-import core.ems.service.access.assertTeacherHasAccessToCourse
+import core.ems.service.assertTeacherHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID

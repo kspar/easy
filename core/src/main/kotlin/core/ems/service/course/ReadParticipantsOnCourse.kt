@@ -9,7 +9,7 @@ import core.db.*
 import core.db.StudentMoodlePendingAccess.moodleUsername
 import core.db.StudentPendingAccess.email
 import core.db.StudentPendingAccess.validFrom
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer

@@ -2,7 +2,7 @@ package core.ems.service.course
 
 import core.conf.security.EasyUser
 import core.db.StudentCourseAccess
-import core.ems.service.access.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and

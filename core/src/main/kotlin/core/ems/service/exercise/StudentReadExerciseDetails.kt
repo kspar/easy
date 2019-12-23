@@ -7,7 +7,7 @@ import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
-import core.ems.service.access.assertStudentHasAccessToCourse
+import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
