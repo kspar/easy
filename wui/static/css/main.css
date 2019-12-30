@@ -280,6 +280,10 @@ nav.crumb-wrap .breadcrumb:before {
     overflow: auto;
 }
 
+#exercise-card .aa-files-wrap {
+    margin-top: 1rem;
+}
+
 #exercise-card pre.feedback {
     font-size: 1.4rem;
     white-space: normal;
@@ -525,6 +529,7 @@ nav.crumb-wrap .breadcrumb:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    overflow-x: auto;
     padding: .5rem 1rem;
     color: #999;
 }
@@ -573,9 +578,28 @@ nav.crumb-wrap .breadcrumb:before {
     border-color: #999;
 }
 
+.editor-top .editor-tab {
+    border: 1px solid #ccc;
+    -webkit-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
+    -moz-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
+    box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
+}
+
+.editor-top .editor-tab.active {
+    color: #555;
+    cursor: default;
+    -webkit-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+    -moz-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+    box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+}
+
+.editor-top .editor-tab:not(:last-child) {
+    margin-right: 10px;
+}
+
 
 .CodeMirror {
-    font-size: 1.9rem;
+    font-size: 1.6rem;
     height: auto;
 }
 

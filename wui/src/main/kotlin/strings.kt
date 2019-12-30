@@ -101,6 +101,7 @@ abstract class TranslatableStrings {
     abstract fun loadingAllSubmissions(): String
     abstract fun oldSubmissionNote(): String
     abstract fun toLatestSubmissionLink(): String
+    abstract fun aaTitle(): String
 }
 
 
@@ -175,4 +176,5 @@ private object EstStrings : TranslatableStrings() {
     override fun addAssessmentFeedbackLabel() = "Tagasiside"
     override fun addAssessmentGradeValidErr() = "Hinne peab olema arv 0 ja 100 vahel."
     override fun addAssessmentButtonLabel() = "Lisa hinnang"
+    override fun aaTitle() = "Automaatkontroll"
 }

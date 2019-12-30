@@ -17,6 +17,9 @@ fun getMain(): Element =
 fun getNodelistBySelector(selector: String): NodeList =
         document.querySelectorAll(selector)
 
+fun getElemsBySelector(selector: String): List<Element> =
+        getNodelistBySelector(selector).asList().mapNotNull { it as? Element }
+
 fun getElemBySelector(selector: String): Element? =
         document.querySelector(selector)
 

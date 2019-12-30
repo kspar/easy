@@ -38,30 +38,46 @@
 
 <div id="content-container" class="container">
 
-    <div id="submit-editor-wrap" class="editor-wrapper">
-        <div style="position: absolute; top: 20px; right: 20px; z-index: 100; "><i class="material-icons sync">loop</i>
+    <div id="exercise-card" class="card">
+        <div class="card-content">
+            <div id="exercise">
+                <div class="editor-wrapper">
+                    <div class="editor-top">
+                        <div class="left-side">
+                            <a  class="top-item editor-tab active">evaluate.sh</a>
+                            <a id="abc" href="#!" class="top-item editor-tab">tester.py</a>
+                            <a href="#!" class="top-item editor-tab">rattad.py</a>
+                        </div>
+                    </div>
+                    <textarea id="aa-files"></textarea>
+                </div>
+            </div>
         </div>
-        <textarea id="submission"></textarea>
     </div>
 
 
-    <span id="widget" style="background-color: beige; display: block; ">wut</span>
+
 </div>
 
 
 <style>
-    .sync {
-        animation: r 1s infinite;
-        transform: rotate(90deg);
+    .editor-top .editor-tab {
+        border: 1px solid #ccc;
+        -webkit-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
+        -moz-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
+        box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
     }
 
-    @keyframes r {
-        /*0% {*/
-        /*    transform: rotate(90deg);*/
-        /*}*/
-        100% {
-            transform: rotate(-270deg);
-        }
+    .editor-top .editor-tab.active {
+        color: #555;
+        cursor: default;
+        -webkit-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+        -moz-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+        box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
+    }
+
+    .editor-top .editor-tab:not(:last-child) {
+        margin-right: 10px;
     }
 
 </style>
@@ -72,23 +88,34 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/theme/idea.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/mode/loadmode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
+<script>MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};</script>
+<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <script>
 
-    const cm = CodeMirror.fromTextArea(document.getElementById("submission"), {
+    const cm = CodeMirror.fromTextArea(document.getElementById("aa-files"), {
         mode: "python",
         lineNumbers: true,
         autoRefresh: true,
         viewportMargin: 100
     });
 
-    const widget = document.getElementById("widget");
+    cm.setValue("eval");
 
-    cm.addLineWidget(0, widget);
+    let otherDoc = CodeMirror.Doc("tester");
+
+    const tester = document.getElementById("abc");
+    tester.onclick = () => {
+        otherDoc = cm.swapDoc(otherDoc);
+    }
 
 
-    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {});
 </script>
 </body>
 </html>

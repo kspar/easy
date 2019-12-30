@@ -264,19 +264,28 @@
 </script>
 
 <script id="tm-teach-exercise-summary" type="text/x-handlebars-template">
-    <div>
-        {{#softDeadline}}<p class="ex-info-item"><span class="subheading">{{softDeadlineLabel}}:</span>{{softDeadline}}</p>{{/softDeadline}}
-        {{#hardDeadline}}<p class="ex-info-item"><span class="subheading">{{hardDeadlineLabel}}:</span>{{hardDeadline}}</p>{{/hardDeadline}}
-        {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
-        {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
-        {{#studentVisible}}<p class="ex-info-item"><span class="subheading">{{studentVisibleLabel}}:</span>{{studentVisible}}</p>{{/studentVisible}}
-        {{#assStudentVisible}}<p class="ex-info-item"><span class="subheading">{{assStudentVisibleLabel}}:</span>{{assStudentVisible}}</p>{{/assStudentVisible}}
-        {{#lastModified}}<p class="ex-info-item"><span class="subheading">{{lastModifiedLabel}}:</span>{{lastModified}}</p>{{/lastModified}}
-    </div>
-    <div>
-        <h2>{{exerciseTitle}}</h2>
-        <div id="exercise-text">{{{exerciseText}}}</div>
-    </div>
+    {{#softDeadline}}<p class="ex-info-item"><span class="subheading">{{softDeadlineLabel}}:</span>{{softDeadline}}</p>{{/softDeadline}}
+    {{#hardDeadline}}<p class="ex-info-item"><span class="subheading">{{hardDeadlineLabel}}:</span>{{hardDeadline}}</p>{{/hardDeadline}}
+    {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
+    {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
+    {{#studentVisible}}<p class="ex-info-item"><span class="subheading">{{studentVisibleLabel}}:</span>{{studentVisible}}</p>{{/studentVisible}}
+    {{#assStudentVisible}}<p class="ex-info-item"><span class="subheading">{{assStudentVisibleLabel}}:</span>{{assStudentVisible}}</p>{{/assStudentVisible}}
+    {{#lastModified}}<p class="ex-info-item"><span class="subheading">{{lastModifiedLabel}}:</span>{{lastModified}}</p>{{/lastModified}}
+    <h2>{{exerciseTitle}}</h2>
+    <div id="exercise-text">{{{exerciseText}}}</div>
+    {{#aaTitle}}
+        <h4>{{aaTitle}}</h4>
+        <div class="editor-wrapper no-cursor aa-files-wrap">
+            <div class="editor-top">
+                <div class="left-side">
+                    {{#aaFiles}}
+                        <a href="#!" class="top-item editor-tab" data-file-idx="{{fileIdx}}">{{fileName}}</a>
+                    {{/aaFiles}}
+                </div>
+            </div>
+            <textarea id="aa-files"></textarea>
+        </div>
+    {{/aaTitle}}
 </script>
 
 <script id="tm-exercise-crumbs" type="text/x-handlebars-template">

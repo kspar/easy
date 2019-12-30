@@ -16,6 +16,7 @@ import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
 import getElemBySelector
+import getElemsBySelector
 import getNodelistBySelector
 import http200
 import http204
@@ -232,7 +233,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "exerciseTitle" to (exercise.title_alias ?: exercise.title)
         ))
 
-        getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", mapOf(
+        val exerciseMap = mutableMapOf<String, Any?>(
                 "softDeadlineLabel" to Str.softDeadlineLabel(),
                 "hardDeadlineLabel" to Str.hardDeadlineLabel(),
                 "graderTypeLabel" to Str.graderTypeLabel(),
@@ -249,15 +250,70 @@ object ExerciseSummaryPage : EasyPage() {
                 "lastModified" to exercise.last_modified.toEstonianString(),
                 "exerciseTitle" to (exercise.title_alias ?: exercise.title),
                 "exerciseText" to exercise.text_html
-        ))
+        )
+
+        val aaFiles =
+                if (exercise.grading_script != null) {
+                    val assetFiles = exercise.assets ?: emptyList()
+                    val aaFiles = listOf(AutoAsset("evaluate.sh", exercise.grading_script)) + assetFiles
+                    exerciseMap["aaTitle"] = Str.aaTitle()
+                    exerciseMap["aaFiles"] = aaFiles.mapIndexed { i, file ->
+                        objOf("fileName" to file.file_name,
+                                "fileIdx" to i)
+                    }.toTypedArray()
+
+                    aaFiles
+                } else null
+
+        getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", exerciseMap)
 
         initExerciseImages()
         highlightExerciseCode()
+
+        if (aaFiles != null) {
+            initAaFileEditor(aaFiles)
+        }
+
         MathJax.typeset()
 
         fl?.end()
         return exercise
     }
+
+    private fun initAaFileEditor(aaFiles: List<AutoAsset>) {
+        val docs = aaFiles.mapIndexed { i, file ->
+            val mode = if (i == 0) "shell" else "python"
+            CodeMirror.Doc(file.file_content, mode)
+        }
+
+        val editor = CodeMirror.fromTextArea(getElemById("aa-files"),
+                objOf("mode" to "python",
+                        "theme" to "idea",
+                        "lineNumbers" to true,
+                        "autoRefresh" to true,
+                        "viewportMargin" to 100,
+                        "readOnly" to true))
+
+        CodeMirror.autoLoadMode(editor, "shell")
+
+        val aaLinks = getElemsBySelector("a[data-file-idx]")
+
+        aaLinks.map { link ->
+            val fileIdx = link.getAttribute("data-file-idx")!!.toInt()
+            link.onVanillaClick(true) {
+                aaLinks.forEach {
+                    it.removeClass("active")
+                    it.setAttribute("href", "#!")
+                }
+                link.addClass("active")
+                link.removeAttribute("href")
+                editor.swapDoc(docs[fileIdx])
+            }
+        }
+
+        (aaLinks[0] as HTMLAnchorElement).click()
+    }
+
 
     private fun buildTeacherTesting(courseId: String, courseExerciseId: String) {
 
