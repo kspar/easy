@@ -52,8 +52,6 @@ object NewExercisePage : EasyPage() {
 
             getContainer().innerHTML = tmRender("tm-teach-new-exercise")
 
-            CodeMirror.modeURL = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/%N/%N.min.js"
-
             val savedAdoc = localStorage["new-exercise-adoc"] ?: ""
             val savedHtml = localStorage["new-exercise-html"] ?: ""
 

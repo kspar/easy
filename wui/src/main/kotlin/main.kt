@@ -2,6 +2,7 @@ import components.*
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import libheaders.CodeMirror
 import spa.PageManager
 import spa.setupHistoryNavInterception
 import spa.setupLinkInterception
@@ -21,6 +22,7 @@ fun main() {
         updateAccountData()
         PageManager.registerPages(PAGES)
         buildStatics()
+        initApplication()
         PageManager.updatePage()
     }
 
@@ -65,4 +67,8 @@ private suspend fun initAuthentication() {
     Auth.initialize().await()
 
     funLog?.end()
+}
+
+private fun initApplication() {
+    CodeMirror.modeURL = AppProperties.CM_MODE_URL_TEMPLATE
 }
