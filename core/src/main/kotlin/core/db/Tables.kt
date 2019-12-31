@@ -201,3 +201,38 @@ object LogReport : LongIdTable("log_report") {
     val logMessage = text("log_message")
     val clientId = text("client_id")
 }
+
+object Article : LongIdTable("article") {
+    val owner = reference("owner_id", Admin)
+    val createdAt = datetime("created_at")
+    val public = bool("public")
+}
+
+object ArticleVersion : LongIdTable("article_version") {
+    val article = reference("article_id", Article)
+    val previous = reference("previous_id", ArticleVersion).nullable()
+    val author = reference("author_id", Admin)
+    val validFrom = datetime("valid_from")
+    val validTo = datetime("valid_to").nullable()
+    val title = text("title")
+    val textHtml = text("text_html").nullable()
+    val textAdoc = text("text_adoc").nullable()
+}
+
+object ArticleAlias : Table("article_alias") {
+    val alias = text("alias").primaryKey().entityId()
+    val article = reference("article_id", Article)
+    val createdAt = datetime("created_at")
+    val owner = reference("created_by_id", Admin)
+}
+
+object StoredFile : Table("stored_file") {
+    val id = text("alias").primaryKey().entityId()
+    val exercise = reference("exercise_id", Exercise).nullable()
+    val article = reference("article_id", Article).nullable()
+    val type = text("type")
+    val filename = text("filename")
+    val data = blob("data")
+    val createdAt = datetime("created_at")
+    val owner = reference("created_by_id", Teacher)
+}
