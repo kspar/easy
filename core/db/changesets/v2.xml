@@ -592,4 +592,33 @@
                                  constraintName="fk_article_version_admin"/>
     </changeSet>
 
+    <changeSet id="311219-3" author="priit">
+        <createTable tableName="article_alias">
+            <column name="alias" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article_alias"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_alias_article"/>
+
+
+        <addForeignKeyConstraint baseTableName="article_alias"
+                                 baseColumnNames="created_by_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_alias_admin"/>
+    </changeSet>
+
 </databaseChangeLog>
