@@ -669,4 +669,9 @@
                                  constraintName="fk_stored_file_teacher"/>
     </changeSet>
 
+    <changeSet id="311219-5" author="priit">
+        <createSequence sequenceName="article_id_seq" startValue="1" incrementBy="1"/>
+        <createSequence sequenceName="article_version_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
 </databaseChangeLog>
