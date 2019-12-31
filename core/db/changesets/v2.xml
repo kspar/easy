@@ -542,4 +542,54 @@
                                  constraintName="fk_article_admin"/>
     </changeSet>
 
+    <changeSet id="311219-2" author="priit">
+        <createTable tableName="article_version">
+            <column name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="author_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="valid_to" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="title" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="text_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="text_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_version_article"/>
+
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="previous_id"
+                                 referencedTableName="article_version"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_version_article_version"/>
+
+
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="author_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_version_admin"/>
+    </changeSet>
+
 </databaseChangeLog>
