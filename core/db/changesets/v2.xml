@@ -520,4 +520,26 @@
                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
     </changeSet>
 
+    <changeSet id="311219-1" author="priit">
+        <createTable tableName="article">
+            <column name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="owner_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article"
+                                 baseColumnNames="owner_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_admin"/>
+    </changeSet>
+
 </databaseChangeLog>
