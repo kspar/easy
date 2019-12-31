@@ -621,4 +621,52 @@
                                  constraintName="fk_article_alias_admin"/>
     </changeSet>
 
+    <changeSet id="311219-4" author="priit">
+        <createTable tableName="stored_file">
+            <column name="id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="type" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="exercise_id"
+                                 referencedTableName="exercise"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_stored_file_exercise"/>
+
+
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_stored_file_article"/>
+
+
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="created_by_id"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_stored_file_teacher"/>
+    </changeSet>
+
 </databaseChangeLog>
