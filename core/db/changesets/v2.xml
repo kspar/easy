@@ -674,4 +674,13 @@
         <createSequence sequenceName="article_version_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
 
+    <changeSet id="311219-6" author="priit">
+        <dropColumn tableName="article_version" columnName="valid_from"/>
+        <addColumn tableName="article_version">
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>
