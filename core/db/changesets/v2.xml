@@ -683,4 +683,10 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="010120-1" author="kspar">
+        <createSequence sequenceName="seq_group_id" startValue="1" incrementBy="1"/>
+        <addDefaultValue tableName="group" columnName="id"
+                         defaultValueSequenceNext="seq_group_id"/>
+    </changeSet>
+
 </databaseChangeLog>
