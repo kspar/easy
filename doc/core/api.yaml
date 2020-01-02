@@ -1016,8 +1016,14 @@ paths:
                 type: array
                 items:
                   properties:
-                    student_email:
+                    email:
                       type: string
+                    groups:
+                      type: array
+                      items:
+                        properties:
+                          id:
+                            type: string
       responses:
         200:
           description: Students added.

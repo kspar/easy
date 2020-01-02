@@ -29,10 +29,10 @@ class AddStudentsToCourseController {
     data class Req(@JsonProperty("students") @field:Valid val students: List<StudentEmailReq>)
 
     data class StudentEmailReq(
-            @JsonProperty("student_email") @field:NotBlank @field:Size(max = 100) val studentEmail: String,
+            @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val studentEmail: String,
             @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList())
 
-    data class GroupReq(@JsonProperty("group_id") @field:NotBlank @field:Size(max = 100) val groupId: String)
+    data class GroupReq(@JsonProperty("id") @field:NotBlank @field:Size(max = 100) val groupId: String)
 
     data class Resp(@JsonProperty("accesses_added") val accessesAdded: Int,
                     @JsonProperty("pending_accesses_added_updated") val pendingAccessesAddedUpdated: Int)
