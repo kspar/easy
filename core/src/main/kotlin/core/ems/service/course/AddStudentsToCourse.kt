@@ -3,11 +3,15 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.fillParameters
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -22,9 +26,13 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddStudentsToCourseController {
 
-    data class Req(@JsonProperty("students") @field:Valid val studentIds: List<StudentEmailsReq>)
+    data class Req(@JsonProperty("students") @field:Valid val students: List<StudentEmailReq>)
 
-    data class StudentEmailsReq(@JsonProperty("student_email") @field:NotBlank @field:Size(max = 100) val studentEmail: String)
+    data class StudentEmailReq(
+            @JsonProperty("student_email") @field:NotBlank @field:Size(max = 100) val studentEmail: String,
+            @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList())
+
+    data class GroupReq(@JsonProperty("group_id") @field:NotBlank @field:Size(max = 100) val groupId: String)
 
     data class Resp(@JsonProperty("accesses_added") val accessesAdded: Int,
                     @JsonProperty("pending_accesses_added_updated") val pendingAccessesAddedUpdated: Int)
@@ -39,60 +47,117 @@ class AddStudentsToCourseController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return insertStudentCourseAccesses(courseId, body)
+        val students = body.students.map {
+            StudentNoAccount(
+                    it.studentEmail.toLowerCase(),
+                    it.groups.map {
+                        it.groupId.idToLongOrInvalidReq()
+                    }.toSet()
+            )
+        }.distinctBy { it.email }
+
+        students.flatMap { it.groups }
+                .toSet()
+                .forEach {
+                    assertGroupExistsOnCourse(it, courseId)
+                    assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, it)
+                }
+
+        return insertStudentCourseAccesses(courseId, students)
     }
 }
 
+private data class StudentWithAccount(val id: String, val email: String, val groups: Set<Long>)
+private data class StudentNoAccount(val email: String, val groups: Set<Long>)
 
-private fun insertStudentCourseAccesses(courseId: Long, students: AddStudentsToCourseController.Req): AddStudentsToCourseController.Resp {
-    val time = DateTime.now()
+private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNoAccount>):
+        AddStudentsToCourseController.Resp {
+
+    val now = DateTime.now()
 
     return transaction {
-        val studentIdsWithAccount = students.studentIds
-                .mapNotNull {
-                    (Student innerJoin Account)
-                            .slice(Student.id)
-                            .select { Account.email.lowerCase() eq it.studentEmail.toLowerCase() }
-                            .map { it[Student.id].value }
-                            .firstOrNull()
-                }
+        val studentsWithAccount = mutableSetOf<StudentWithAccount>()
+        val studentsNoAccount = mutableSetOf<StudentNoAccount>()
 
-        val studentEmailsNoAccount = students.studentIds
-                .mapNotNull {
-                    val id = (Student innerJoin Account)
-                            .slice(Student.id)
-                            .select { Account.email.lowerCase() eq it.studentEmail.toLowerCase() }
-                            .map { it[Student.id].value }
-                            .firstOrNull()
-                    if (id != null) null else it.studentEmail.toLowerCase()
-                }
+        students.forEach {
+            val studentId = (Student innerJoin Account)
+                    .slice(Student.id)
+                    .select { Account.email.lowerCase() eq it.email }
+                    .map { it[Student.id].value }
+                    .singleOrNull()
 
+            if (studentId != null) {
+                studentsWithAccount.add(StudentWithAccount(studentId, it.email, it.groups))
+            } else {
+                studentsNoAccount.add(StudentNoAccount(it.email, it.groups))
+            }
+        }
 
-        val studentsAccessAddable = studentIdsWithAccount.filter {
+        val newStudentsWithAccount = studentsWithAccount.filter {
             StudentCourseAccess.select {
-                StudentCourseAccess.student eq it and (StudentCourseAccess.course eq courseId)
+                StudentCourseAccess.student eq it.id and (StudentCourseAccess.course eq courseId)
             }.count() == 0
-        }.distinct()
+        }
 
-        log.debug { "Granting access to students (the rest already have access): $studentsAccessAddable" }
-        log.debug { "Granting pending access to students: $studentEmailsNoAccount" }
+        log.debug { "Granting access to students (the rest already have access): $newStudentsWithAccount" }
+        log.debug { "Granting pending access to students: $studentsNoAccount" }
 
-        StudentCourseAccess.batchInsert(studentsAccessAddable) {
-            this[StudentCourseAccess.student] = EntityID(it, Student)
+        StudentCourseAccess.batchInsert(newStudentsWithAccount) {
+            this[StudentCourseAccess.student] = EntityID(it.id, Student)
             this[StudentCourseAccess.course] = EntityID(courseId, Course)
+        }
+
+        newStudentsWithAccount.forEach { student ->
+            StudentGroupAccess.batchInsert(student.groups) {
+                this[StudentGroupAccess.student] = EntityID(student.id, Student)
+                this[StudentGroupAccess.course] = EntityID(courseId, Course)
+                this[StudentGroupAccess.group] = EntityID(it, Group)
+            }
+        }
+
+        // Delete & create pending accesses to reset validFrom
+        // TODO: use upsert instead?
+        StudentPendingGroup.deleteWhere {
+            StudentPendingGroup.course eq courseId and
+                    (StudentPendingGroup.email inList studentsNoAccount.map { it.email })
         }
 
         StudentPendingAccess.deleteWhere {
             StudentPendingAccess.course eq courseId and
-                    (StudentPendingAccess.email inList studentEmailsNoAccount)
+                    (StudentPendingAccess.email inList studentsNoAccount.map { it.email })
         }
-
-        StudentPendingAccess.batchInsert(studentEmailsNoAccount, ignore = true) {
+        // TODO: why ignore = true?
+        StudentPendingAccess.batchInsert(studentsNoAccount, ignore = true) {
             this[StudentPendingAccess.course] = EntityID(courseId, Course)
-            this[StudentPendingAccess.email] = it
-            this[StudentPendingAccess.validFrom] = time
+            this[StudentPendingAccess.email] = it.email
+            this[StudentPendingAccess.validFrom] = now
         }
 
-        AddStudentsToCourseController.Resp(studentsAccessAddable.size, studentEmailsNoAccount.size)
+        studentsNoAccount.forEach { student ->
+            //            StudentPendingGroup.batchInsert(student.groups, ignore = true) {
+//                this[StudentPendingGroup.email] = student.email
+//                this[StudentPendingGroup.course] = EntityID(courseId, Course)
+//                this[StudentPendingGroup.group] = EntityID(it, Group)
+//            }
+
+            // https://github.com/JetBrains/Exposed/issues/639
+            // WHOML (Worst Hack Of My Life)
+            // TODO: fix
+            if (student.groups.isNotEmpty()) {
+                val placeholders = student.groups.joinToString { "(?, ?, ?)" }
+                val values = student.groups.flatMap {
+                    listOf(TextColumnType() to student.email,
+                            LongColumnType() to courseId,
+                            LongColumnType() to it)
+                }
+
+                val sql = "insert into student_pending_group_access (email, course_id, group_id) VALUES $placeholders;"
+                val s = TransactionManager.current().connection.prepareStatement(sql)
+                s.fillParameters(values)
+                s.executeUpdate()
+            }
+        }
+
+        AddStudentsToCourseController.Resp(newStudentsWithAccount.size, studentsNoAccount.size)
     }
 }

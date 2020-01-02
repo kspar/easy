@@ -4,6 +4,7 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.StudentCourseAccess
 import core.db.TeacherCourseAccess
+import core.db.TeacherGroupAccess
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -43,6 +44,42 @@ fun canTeacherOrAdminAccessCourse(user: EasyUser, courseId: Long): Boolean =
                 false
             }
         }
+
+fun assertTeacherOrAdminHasAccessToCourseGroup(user: EasyUser, courseId: Long, groupId: Long) {
+    if (!canTeacherOrAdminAccessCourseGroup(user, courseId, groupId)) {
+        throw ForbiddenException("Teacher or admin ${user.id} does not have access to group $groupId on course $courseId")
+    }
+}
+
+fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean =
+        when {
+            user.isAdmin() -> true
+            user.isTeacher() -> canTeacherAccessCourseGroup(user, courseId, groupId)
+            else -> {
+                log.warn { "User ${user.id} is not admin or teacher" }
+                false
+            }
+        }
+
+fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean {
+    return transaction {
+        val hasGroups = TeacherGroupAccess
+                .select {
+                    TeacherGroupAccess.course eq courseId and
+                            (TeacherGroupAccess.teacher eq user.id)
+                }.count() > 0
+
+        if (!hasGroups) {
+            true
+        } else {
+            TeacherGroupAccess.select {
+                TeacherGroupAccess.course eq courseId and
+                        (TeacherGroupAccess.teacher eq user.id) and
+                        (TeacherGroupAccess.group eq groupId)
+            }.count() > 0
+        }
+    }
+}
 
 fun assertTeacherHasAccessToCourse(teacherId: String, courseId: Long) {
     if (!canTeacherAccessCourse(teacherId, courseId)) {
