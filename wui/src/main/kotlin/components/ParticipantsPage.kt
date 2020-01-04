@@ -80,18 +80,6 @@ object ParticipantsPage : EasyPage() {
             val name: String
     )
 
-    @Serializable
-    data class NewStudent(
-            val email: String,
-            // TODO: serialisation works incorrectly with emptyList() - investigate/report
-            val groups: List<NewGroup> = mutableListOf()
-    )
-
-    @Serializable
-    data class NewGroup(
-            val id: String
-    )
-
 
     override val pageName: Any
         get() = PageName.PARTICIPANTS
@@ -101,14 +89,12 @@ object ParticipantsPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
 
-        suspend fun postNewStudents(studentIds: List<String>, courseId: String) {
-            debug { "Posting new students: $studentIds" }
+        suspend fun postNewStudents(emails: List<String>, courseId: String) {
+            debug { "Posting new students: $emails" }
 
-            val newStudents = studentIds.map {
-                NewStudent(it)
+            val newStudents = emails.map {
+                mapOf("email" to it, "groups" to emptyList<Nothing>())
             }
-
-            debug { newStudents.toString() }
 
             val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
                     "students" to newStudents)).await()
@@ -132,11 +118,11 @@ object ParticipantsPage : EasyPage() {
 
                 getElemById("add-students-button").onVanillaClick(true) {
                     MainScope().launch {
-                        val ids = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
+                        val emails = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
                                 .split(" ", "\n")
                                 .filter { it.isNotBlank() }
 
-                        postNewStudents(ids, courseId)
+                        postNewStudents(emails, courseId)
                         build(null)
                     }
                 }
