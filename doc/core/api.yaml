@@ -973,6 +973,8 @@ paths:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
+                    moodle_username:
+                      type: string
                   required:
                     - id
                     - email

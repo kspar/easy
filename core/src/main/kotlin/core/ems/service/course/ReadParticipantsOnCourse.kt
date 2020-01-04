@@ -31,7 +31,8 @@ class ReadParticipantsOnCourseController {
                             @JsonProperty("email") val email: String,
                             @JsonProperty("given_name") val givenName: String,
                             @JsonProperty("family_name") val familyName: String,
-                            @JsonProperty("groups") val groups: List<GroupResp>)
+                            @JsonProperty("groups") val groups: List<GroupResp>,
+                            @JsonProperty("moodle_username") val moodleUsername: String? = null)
 
     data class TeachersResp(@JsonProperty("id") val id: String,
                             @JsonProperty("email") val email: String,
@@ -112,12 +113,14 @@ class ReadParticipantsOnCourseController {
 
 
 private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsResp> {
-    data class StudentOnCourse(val id: String, val email: String, val givenName: String, val familyName: String)
+    data class StudentOnCourse(val id: String, val email: String, val givenName: String, val familyName: String,
+                               val moodleUsername: String?)
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
         (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess leftJoin Group)
-                .slice(Account.id, Account.email, Account.givenName, Account.familyName, Group.id, Group.name)
+                .slice(Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
+                        Group.id, Group.name)
                 .select { StudentCourseAccess.course eq courseId }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
@@ -126,7 +129,8 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
                                     it[Account.id].value,
                                     it[Account.email],
                                     it[Account.givenName],
-                                    it[Account.familyName]
+                                    it[Account.familyName],
+                                    it[Account.moodleUsername]
                             ),
                             if (groupId == null) null else
                                 StudentGroup(
@@ -144,7 +148,8 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
                             student.familyName,
                             groups.filterNotNull().map {
                                 ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
-                            }
+                            },
+                            student.moodleUsername
                     )
                 }
     }
