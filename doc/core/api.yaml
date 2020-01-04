@@ -969,6 +969,10 @@ paths:
                       type: string
                     family_name:
                       type: string
+                    groups:
+                      type: array
+                      items:
+                        $ref: '#/definitions/Group'
               teachers:
                 type: array
                 items:
@@ -981,7 +985,11 @@ paths:
                       type: string
                     family_name:
                       type: string
-              student_pending_access:
+                    groups:
+                      type: array
+                      items:
+                        $ref: '#/definitions/Group'
+              students_pending:
                 type: array
                 items:
                   properties:
@@ -990,13 +998,20 @@ paths:
                     valid_from:
                       type: string
                       format: date-time
-              student_moodle_pending_access:
+                    groups:
+                      type: array
+                      items:
+                        $ref: '#/definitions/Group'
+              students_moodle_pending:
                 type: array
                 items:
                   properties:
                     ut_username:
                       type: string
-
+                    groups:
+                      type: array
+                      items:
+                        $ref: '#/definitions/Group'
 
 
   /courses/{courseId}/students:
@@ -1368,6 +1383,13 @@ parameters:
 
 
 definitions:
+
+  Group:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
 
   StudentCourse:
     properties:
