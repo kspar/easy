@@ -973,6 +973,12 @@ paths:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
+                  required:
+                    - id
+                    - email
+                    - given_name
+                    - family_name
+                    - groups
               teachers:
                 type: array
                 items:
@@ -989,6 +995,12 @@ paths:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
+                  required:
+                    - id
+                    - email
+                    - given_name
+                    - family_name
+                    - groups
               students_pending:
                 type: array
                 items:
@@ -1002,6 +1014,10 @@ paths:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
+                  required:
+                    - email
+                    - valid_from
+                    - groups
               students_moodle_pending:
                 type: array
                 items:
@@ -1012,6 +1028,9 @@ paths:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
+                  required:
+                    - ut_username
+                    - groups
 
 
   /courses/{courseId}/students:
@@ -1390,6 +1409,9 @@ definitions:
         type: string
       name:
         type: string
+    required:
+      - id
+      - name
 
   StudentCourse:
     properties:
