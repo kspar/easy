@@ -264,13 +264,13 @@
 </script>
 
 <script id="tm-teach-exercise-summary" type="text/x-handlebars-template">
-    {{#softDeadline}}<p class="ex-info-item"><span class="subheading">{{softDeadlineLabel}}:</span>{{softDeadline}}</p>{{/softDeadline}}
-    {{#hardDeadline}}<p class="ex-info-item"><span class="subheading">{{hardDeadlineLabel}}:</span>{{hardDeadline}}</p>{{/hardDeadline}}
-    {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
-    {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
-    {{#studentVisible}}<p class="ex-info-item"><span class="subheading">{{studentVisibleLabel}}:</span>{{studentVisible}}</p>{{/studentVisible}}
-    {{#assStudentVisible}}<p class="ex-info-item"><span class="subheading">{{assStudentVisibleLabel}}:</span>{{assStudentVisible}}</p>{{/assStudentVisible}}
-    {{#lastModified}}<p class="ex-info-item"><span class="subheading">{{lastModifiedLabel}}:</span>{{lastModified}}</p>{{/lastModified}}
+    {{#softDeadline}}<p class="subheading-item"><span class="subheading">{{softDeadlineLabel}}:</span>{{softDeadline}}</p>{{/softDeadline}}
+    {{#hardDeadline}}<p class="subheading-item"><span class="subheading">{{hardDeadlineLabel}}:</span>{{hardDeadline}}</p>{{/hardDeadline}}
+    {{#graderType}}<p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
+    {{#threshold}}<p class="subheading-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
+    {{#studentVisible}}<p class="subheading-item"><span class="subheading">{{studentVisibleLabel}}:</span>{{studentVisible}}</p>{{/studentVisible}}
+    {{#assStudentVisible}}<p class="subheading-item"><span class="subheading">{{assStudentVisibleLabel}}:</span>{{assStudentVisible}}</p>{{/assStudentVisible}}
+    {{#lastModified}}<p class="subheading-item"><span class="subheading">{{lastModifiedLabel}}:</span>{{lastModified}}</p>{{/lastModified}}
     <h2>{{exerciseTitle}}</h2>
     <div id="exercise-text">{{{exerciseText}}}</div>
     {{#aaTitle}}
@@ -374,9 +374,9 @@
 
 <script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
     <div>
-        {{#deadline}}<p class="ex-info-item"><span class="subheading">{{deadlineLabel}}:</span>{{deadline}}</p>{{/deadline}}
-        {{#graderType}}<p class="ex-info-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
-        {{#threshold}}<p class="ex-info-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
+        {{#deadline}}<p class="subheading-item"><span class="subheading">{{deadlineLabel}}:</span>{{deadline}}</p>{{/deadline}}
+        {{#graderType}}<p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
+        {{#threshold}}<p class="subheading-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
     </div>
     <div>
         <h2>{{title}}</h2>
@@ -561,6 +561,7 @@
                         <th>{{nameLabel}}</th>
                         <th>{{usernameLabel}}</th>
                         <th>{{emailLabel}}</th>
+                        <th>{{groupLabel}}</th>
                     </tr>
                     </thead>
 
@@ -570,6 +571,7 @@
                         <td>{{name}}</td>
                         <td>{{username}}</td>
                         <td>{{email}}</td>
+                        <th>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</th>
                     </tr>
                     {{/teachers}}
                     </tbody>
@@ -579,8 +581,13 @@
 
         <h4 class="subsection">{{studentsLabel}}</h4>
 
-        <a id="add-students-link" class="toggle-link" href="#!">{{{addStudentsLink}}}</a>
-        <div id="add-students-section"></div>
+        {{#isMoodleSynced}}
+            <p class="subheading-item"><span class="subheading">{{moodleShortnameLabel}}:</span>{{moodleShortname}}</p>
+        {{/isMoodleSynced}}
+        {{^isMoodleSynced}}
+            <a id="add-students-link" class="toggle-link" href="#!">{{{addStudentsLink}}}</a>
+            <div id="add-students-section"></div>
+        {{/isMoodleSynced}}
 
         <div class="card">
             <div class="card-content">
@@ -589,16 +596,20 @@
                     <tr>
                         <th>{{nameLabel}}</th>
                         <th>{{usernameLabel}}</th>
+                        {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
                         <th>{{emailLabel}}</th>
+                        <th>{{groupLabel}}</th>
                     </tr>
                     </thead>
 
                     <tbody>
                     {{#students}}
-                    <tr>
-                        <td>{{name}}</td>
-                        <td>{{username}}</td>
-                        <td>{{email}}</td>
+                    <tr {{#isPending}}class="pending-row"{{/isPending}}>
+                        <td>{{#name}}{{name}}{{/name}}{{^name}}-{{/name}}</td>
+                        <td>{{#username}}{{username}}{{/username}}{{^username}}-{{/username}}</td>
+                        {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/isPending}}{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
+                        <td>{{#email}}{{email}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/isPending}}{{/email}}{{^email}}-{{/email}}</td>
+                        <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
                     </tr>
                     {{/students}}
                     </tbody>
@@ -614,7 +625,7 @@
         </div>
         <div id="new-students-form-wrap" class="row">
             <div class="input-field col s8">
-                <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;maasikas"></textarea>
+                <textarea id="new-students-field" class="materialize-textarea" placeholder="oskar@ohakas.ee &#x0a;mari@maasikas.com"></textarea>
                 <label for="new-students-field" class="active">{{addStudentsFieldLabel}}</label>
             </div>
             <div class="col s4"></div>

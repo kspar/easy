@@ -1,6 +1,7 @@
 package components
 
 import Auth
+import DateSerializer
 import PageName
 import ReqMethod
 import Role
@@ -12,12 +13,13 @@ import getContainer
 import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
+import getNodelistBySelector
 import http200
-import http400
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import libheaders.Materialize
 import objOf
 import onVanillaClick
 import org.w3c.dom.HTMLTextAreaElement
@@ -26,40 +28,70 @@ import queries.BasicCourseInfo
 import tmRender
 import kotlin.browser.window
 import kotlin.dom.clear
+import kotlin.js.Date
 
 object ParticipantsPage : EasyPage() {
 
     @Serializable
     data class Participants(
-            val students: List<Participant>,
-            val teachers: List<Participant>
+            val moodle_short_name: String? = null,
+            val students: List<Student> = emptyList(),
+            val teachers: List<Teacher> = emptyList(),
+            val students_pending: List<PendingStudent> = emptyList(),
+            val students_moodle_pending: List<PendingMoodleStudent> = emptyList()
     )
 
     @Serializable
-    data class Participant(
+    data class Teacher(
             val id: String,
             val email: String,
             val given_name: String,
-            val family_name: String
+            val family_name: String,
+            val groups: List<Group>
+    )
+
+    @Serializable
+    data class Student(
+            val id: String,
+            val email: String,
+            val given_name: String,
+            val family_name: String,
+            val groups: List<Group>,
+            val moodle_username: String? = null
+    )
+
+    @Serializable
+    data class PendingStudent(
+            val email: String,
+            @Serializable(with = DateSerializer::class)
+            val valid_from: Date,
+            val groups: List<Group>
+    )
+
+    @Serializable
+    data class PendingMoodleStudent(
+            val ut_username: String,
+            val groups: List<Group>
+    )
+
+    @Serializable
+    data class Group(
+            val id: String,
+            val name: String
     )
 
     @Serializable
     data class NewStudent(
-            val student_id_or_email: String
+            val email: String,
+            // TODO: serialisation works incorrectly with emptyList() - investigate/report
+            val groups: List<NewGroup> = mutableListOf()
     )
 
     @Serializable
-    data class NoStudentFound(
-            val id: String,
-            val code: String,
-            val attrs: MissingStudent,
-            val log_msg: String
+    data class NewGroup(
+            val id: String
     )
 
-    @Serializable
-    data class MissingStudent(
-            val missing_student: String
-    )
 
     override val pageName: Any
         get() = PageName.PARTICIPANTS
@@ -76,22 +108,15 @@ object ParticipantsPage : EasyPage() {
                 NewStudent(it)
             }
 
+            debug { newStudents.toString() }
+
             val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
                     "students" to newStudents)).await()
 
-            if (resp.http200)
-                return
-
-            if (resp.http400) {
-                val noStudentBody = resp.parseTo(NoStudentFound.serializer()).await()
-                if (noStudentBody.code == "STUDENT_NOT_FOUND") {
-                    errorMessage { "Ei leidnud kasutajanime/emailiga õpilast: ${noStudentBody.attrs.missing_student}" }
-                    error(noStudentBody.log_msg)
-                }
+            if (!resp.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Adding students failed with status ${resp.status}: ${resp.text().await()}")
             }
-
-            errorMessage { Str.somethingWentWrong() }
-            error("Adding students failed with status ${resp.status}")
         }
 
         fun toggleAddStudents(courseId: String) {
@@ -99,8 +124,9 @@ object ParticipantsPage : EasyPage() {
                 // Box not visible
                 debug { "Open add students box" }
                 getElemById("add-students-section").innerHTML = tmRender("tm-teach-participants-add", mapOf(
-                        "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate kasutajanimed või meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
-                        "addStudentsFieldLabel" to "Õpilaste nimekiri",
+                        "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega. " +
+                                "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja registreerimise hetkel.",
+                        "addStudentsFieldLabel" to "Õpilaste meiliaadressid",
                         "addButtonLabel" to "Lisa"
                 ))
 
@@ -125,13 +151,13 @@ object ParticipantsPage : EasyPage() {
             }
         }
 
+
         if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
             errorMessage { Str.noPermissionForPage() }
             error("User is not admin nor teacher")
         }
 
         val courseId = extractSanitizedCourseId(window.location.pathname)
-        debug { "Course ID: $courseId" }
 
         MainScope().launch {
             val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET)
@@ -146,13 +172,27 @@ object ParticipantsPage : EasyPage() {
             }
 
             val participants = resp.parseTo(Participants.serializer()).await()
-            debug { "$participants" }
 
-            val students = participants.students.map {
+            val isMoodleSynced = participants.moodle_short_name != null
+
+            val studentRows = participants.students_pending.map {
+                StudentRow(null, null, it.email, it.groups.joinToString { it.name }, true)
+            } + participants.students_moodle_pending.map {
+                StudentRow(null, null, null, it.groups.joinToString { it.name }, true,
+                        it.ut_username)
+            } + participants.students.sortedBy { it.family_name }.map {
+                StudentRow("${it.given_name} ${it.family_name}", it.id, it.email, it.groups.joinToString { it.name }, false,
+                        it.moodle_username)
+            }
+
+            val students = studentRows.map {
                 objOf(
-                        "name" to "${it.given_name} ${it.family_name}",
-                        "username" to it.id,
-                        "email" to it.email
+                        "name" to (it.name ?: ""),
+                        "username" to (it.username ?: ""),
+                        "email" to (it.email ?: ""),
+                        "group" to it.groups,
+                        "isPending" to it.isPending,
+                        "moodleUsername" to (it.moodleUsername ?: "")
                 )
             }.toTypedArray()
 
@@ -160,7 +200,8 @@ object ParticipantsPage : EasyPage() {
                 objOf(
                         "name" to "${it.given_name} ${it.family_name}",
                         "username" to it.id,
-                        "email" to it.email
+                        "email" to it.email,
+                        "group" to it.groups.joinToString()
                 )
             }.toTypedArray()
 
@@ -173,14 +214,32 @@ object ParticipantsPage : EasyPage() {
                     "nameLabel" to "Nimi",
                     "usernameLabel" to "Kasutajanimi",
                     "emailLabel" to "Email",
+                    "groupLabel" to "Rühm",
+                    "pendingTooltip" to "Selle meiliaadressiga kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
                     "studentsLabel" to "Õpilased",
                     "addStudentsLink" to "&#9658; Lisa õpilasi",
+                    "isMoodleSynced" to isMoodleSynced,
+                    "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
+                    "moodleShortname" to participants.moodle_short_name,
+                    "moodleUsernameLabel" to "UT kasutajanimi",
+                    "moodlePendingTooltip" to "Selle UT kasutajanimega kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
                     "students" to students,
                     "teachers" to teachers
             ))
 
-            getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
+            if (!isMoodleSynced) {
+                getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
+            }
+
+            initTooltips()
         }
+    }
+
+    data class StudentRow(val name: String?, val username: String?, val email: String?, val groups: String,
+                          val isPending: Boolean, val moodleUsername: String? = null)
+
+    private fun initTooltips() {
+        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 
     private fun extractSanitizedCourseId(path: String): String {

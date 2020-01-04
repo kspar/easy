@@ -17,6 +17,17 @@ body {
     min-width: 320px;
 }
 
+.subheading-item {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.subheading {
+    color: #4DAB54;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
 
 /** Navbar **/
 
@@ -259,17 +270,6 @@ nav.crumb-wrap .breadcrumb:before {
     #exercise-card .card-content {
         padding: 2.4rem;
     }
-}
-
-#exercise-card .ex-info-item {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-#exercise-card .subheading {
-    color: #4DAB54;
-    font-weight: 500;
-    margin-right: 0.5rem;
 }
 
 #exercise-card h2 {
@@ -647,6 +647,14 @@ nav.crumb-wrap .breadcrumb:before {
     font-weight: 500;
 }
 
+#participants-container .pending-row {
+    background-color: #fff1cc;
+}
+
+#participants-container .pending-icon {
+    margin-left: 5px;
+    font-size: 1.3em;
+}
 
 /** Grade table page **/
 
