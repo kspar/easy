@@ -7,7 +7,7 @@ fun sleep(timeMs: Int) =
         Promise<Unit> { resolve, _ -> window.setTimeout(resolve, timeMs) }
 
 
-suspend fun <T> observeValueChange(idleThresholdMs: Int, pollTimeMs: Int,
+suspend fun <T> observeValueChange(idleThresholdMs: Int, pollTimeMs: Int, doActionFirst: Boolean = false,
                                    valueProvider: suspend () -> T,
                                    action: suspend (T) -> Unit,
                                    continuationConditionProvider: suspend () -> Boolean,
@@ -16,6 +16,12 @@ suspend fun <T> observeValueChange(idleThresholdMs: Int, pollTimeMs: Int,
     var lastValue: T = valueProvider.invoke()
     var idleForMs = 0
     var actionDone = true
+
+    // Start with action
+    if (doActionFirst) {
+        val currentValue = valueProvider.invoke()
+        action.invoke(currentValue)
+    }
 
     while (true) {
         sleep(pollTimeMs).await()
