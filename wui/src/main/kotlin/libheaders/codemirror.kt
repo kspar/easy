@@ -9,7 +9,10 @@ external object CodeMirror {
     fun autoLoadMode(editor: CodeMirrorInstance, mode: String)
 
     @JsName("Doc")
-    class Doc(value: String, mode: String)
+    class Doc(value: String, mode: dynamic) {
+        fun getValue(): String
+        fun setValue(value: String)
+    }
 }
 
 external class CodeMirrorInstance {

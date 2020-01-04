@@ -688,6 +688,33 @@
     </div>
 </script>
 
+<script id="tm-modify-global-exercise" type="text/x-handlebars-template">
+    <div id="exercise-card" class="card">
+        <div class="card-content">
+            <h2>{{title}}</h2>
+            <p>{{onCoursesLabel}}:</p>
+            {{#onCourses}}
+                <p>{{title}}</p>
+            {{/onCourses}}
+            <div class="editor-wrapper">
+                <div class="editor-top">
+                    <div class="left-side">
+                        <a id="tab-adoc" class="top-item editor-tab active">adoc</a>
+                        <a id="tab-html" href="#!" class="top-item editor-tab">html</a>
+                    </div>
+                </div>
+                <textarea id="text-editor"></textarea>
+            </div>
+            <div class="center">
+                <button id="update-submit" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+            </div>
+            <p id="status"></p>
+            <h4>{{previewLabel}}</h4>
+            <div id="exercise-text"></div>
+        </div>
+    </div>
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>

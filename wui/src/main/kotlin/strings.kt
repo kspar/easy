@@ -16,6 +16,9 @@ abstract class TranslatableStrings {
     abstract fun gradedByTeacher(): String
     abstract fun notGradedYet(): String
     abstract fun closeToggleLink(): String
+    abstract fun doSave(): String
+    abstract fun saving(): String
+
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
 
@@ -65,7 +68,7 @@ abstract class TranslatableStrings {
     abstract fun unstartedLabel(): String
 
 
-    // Exercise page
+    // Course exercise page
 
     abstract fun tabExerciseLabel(): String
     abstract fun tabTestingLabel(): String
@@ -102,10 +105,25 @@ abstract class TranslatableStrings {
     abstract fun oldSubmissionNote(): String
     abstract fun toLatestSubmissionLink(): String
     abstract fun aaTitle(): String
+
+
+    // Exercise page
+    abstract fun usedOnCoursesLabel(): String
+    abstract fun previewLabel(): String
+    abstract fun exerciseSaved(): String
+
+
+
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun usedOnCoursesLabel() = "Kasutusel kursustel"
+    override fun previewLabel() = "Eelvaade"
+    override fun doSave() = "Salvesta"
+    override fun saving() = "Salvestan..."
+    override fun exerciseSaved() = "Ülesanne uuendatud"
+
     override fun assessmentAddedMsg() = "Hinnang lisatud."
     override fun oldSubmissionNote() = "See on vana esitus."
     override fun toLatestSubmissionLink() = "Vaata viimast esitust."

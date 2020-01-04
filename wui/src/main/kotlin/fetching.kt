@@ -7,7 +7,8 @@ import kotlin.js.Promise
 
 enum class ReqMethod {
     GET,
-    POST
+    POST,
+    PUT
 }
 
 
@@ -26,7 +27,7 @@ fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
 
 
 fun fetchEms(path: String, method: ReqMethod,
-             data: Map<String, Any>? = null,
+             data: Map<String, Any?>? = null,
              headers: Map<String, String> = emptyMap()): Promise<Response> =
 
         Promise { resolve, reject ->

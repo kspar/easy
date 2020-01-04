@@ -5,5 +5,6 @@ enum class PageName {
     ADD_COURSE,
     PARTICIPANTS,
     GRADE_TABLE,
-    NEW_EXERCISE
+    NEW_EXERCISE,
+    EXERCISE
 }
