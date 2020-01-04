@@ -47,7 +47,7 @@ class UpdateExerciseCont(private val adocService: AdocService) {
     data class ReqExecutor(@JsonProperty("executor_id", required = true) @field:Size(max = 100) val executorId: String)
 
 
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
+    @Secured("ROLE_ADMIN")
     @PutMapping("/exercises/{exerciseId}")
     fun controller(@PathVariable("exerciseId") exIdString: String,
                    @Valid @RequestBody dto: Req,

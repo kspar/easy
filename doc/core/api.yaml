@@ -1202,7 +1202,7 @@ paths:
     put:
       summary: Modify exercise.
       tags:
-        - teacher
+        - admin
       parameters:
         - name: exercise
           in: body
