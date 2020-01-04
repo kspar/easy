@@ -40,45 +40,59 @@
 
     <div id="exercise-card" class="card">
         <div class="card-content">
-            <div id="exercise">
-                <div class="editor-wrapper">
-                    <div class="editor-top">
-                        <div class="left-side">
-                            <a  class="top-item editor-tab active">evaluate.sh</a>
-                            <a id="abc" href="#!" class="top-item editor-tab">tester.py</a>
-                            <a href="#!" class="top-item editor-tab">rattad.py</a>
-                        </div>
+            <h2>Auto ülesanne</h2>
+
+            <div class="editor-wrapper">
+                <div class="editor-top">
+                    <div class="left-side">
+                        <a class="top-item editor-tab active">adoc</a>
+                        <a href="#!" class="top-item editor-tab">html</a>
                     </div>
-                    <textarea id="aa-files"></textarea>
                 </div>
+                <textarea id="text-editor"></textarea>
+            </div>
+            <div id="status"></div>
+
+            <h4>Eelvaade</h4>
+            <div id="exercise-text">
+                <div>
+                    <p>Koostada programm, mis küsib kasutajalt astme aluse (täisarv) ja astendaja (täisarv) (just selles
+                        järjekorras) ning arvutab ja väljastab ekraanile astme.</p>
+                    <p>Näiteks kui kasutaja sisestab vastustena 2 ja 4, siis väljastatakse 16, sest 2<sup>4</sup> = 16.
+                        Astme alus
+                        on siin 2, astendaja 4 ja aste 16.</p>
+                    <p>Näide programmi tööst:</p>
+                    <div class="material-placeholder"><img
+                            src="https://courses.cs.ut.ee/2018/eprogalused/uploads/Main/yl1.3.png"></div>
+                    <p>Kui olete juba hulk aega proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis
+                        võib-olla
+                        saate abi <a href="https://progtugi.cs.ut.ee/#/ts/5873e29b60c97b8f355bafa5/">murelahendajalt</a>.
+                        Püütud on
+                        tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>
+                </div>
+            </div>
+
+
+            <h4>Automaatkontroll</h4>
+            <div class="editor-wrapper">
+                <div class="editor-top">
+                    <div class="left-side">
+                        <a class="top-item editor-tab active">evaluate.sh</a>
+                        <a id="abc" href="#!" class="top-item editor-tab">tester.py</a>
+                        <a href="#!" class="top-item editor-tab">rattad.py</a>
+                    </div>
+                </div>
+                <textarea id="aa-files"></textarea>
             </div>
         </div>
     </div>
-
 
 
 </div>
 
 
 <style>
-    .editor-top .editor-tab {
-        border: 1px solid #ccc;
-        -webkit-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
-        -moz-box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
-        box-shadow: 2px 3px 8px -2px rgba(0,0,0,0.15);
-    }
 
-    .editor-top .editor-tab.active {
-        color: #555;
-        cursor: default;
-        -webkit-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
-        -moz-box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
-        box-shadow: inset 2px 3px 8px -2px rgba(0,0,0,0.15);
-    }
-
-    .editor-top .editor-tab:not(:last-child) {
-        margin-right: 10px;
-    }
 
 </style>
 
@@ -108,12 +122,12 @@
 
     cm.setValue("eval");
 
-    let otherDoc = CodeMirror.Doc("tester");
-
-    const tester = document.getElementById("abc");
-    tester.onclick = () => {
-        otherDoc = cm.swapDoc(otherDoc);
-    }
+    const textEditor = CodeMirror.fromTextArea(document.getElementById("text-editor"), {
+        mode: "adoc",
+        lineNumbers: true,
+        autoRefresh: true,
+        viewportMargin: 100
+    });
 
 
 </script>
