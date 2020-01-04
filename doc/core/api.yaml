@@ -1058,6 +1058,10 @@ paths:
                         properties:
                           id:
                             type: string
+                        required:
+                          - id
+                  required:
+                    - email
       responses:
         200:
           description: Students added.
