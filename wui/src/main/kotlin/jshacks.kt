@@ -6,10 +6,18 @@
 @JsName("Object")
 external class JsObject
 
+@Suppress("UNCHECKED_CAST")
 fun Map<String, Any?>.toJsObj(): dynamic {
     val jsObject: dynamic = JsObject()
     this.forEach {
-        jsObject[it.key] = it.value
+        // Hope that nested lists have & maps are Map<String, Any?>
+        val jsValue =
+                when (val value = it.value) {
+                    is List<*> -> value.map { (it as Map<String, Any?>).toJsObj() }.toTypedArray()
+                    is Map<*, *> -> (value as Map<String, Any?>).toJsObj()
+                    else -> value
+                }
+        jsObject[it.key] = jsValue
     }
     return jsObject
 }
