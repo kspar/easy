@@ -13,7 +13,7 @@ private val log = KotlinLogging.logger {}
 class PreAuthHeaderFilter : OncePerRequestFilter() {
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
         val username = getOptionalHeader("oidc_claim_preferred_username", request)
-        val moodleUsername = getOptionalHeader("oidc_claim_ut_username", request)
+        val moodleUsername = getOptionalHeader("oidc_claim_ut_uid", request)
         val email = getOptionalHeader("oidc_claim_email", request)
         val givenName = getOptionalHeader("oidc_claim_given_name", request)
         val familyName = getOptionalHeader("oidc_claim_family_name", request)
