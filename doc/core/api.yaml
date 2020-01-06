@@ -24,9 +24,9 @@ tags:
 
 paths:
 
-  /static/article/initial:
+  /articles:
     post:
-      summary: Create initial new article.
+      summary: Create new article.
       tags:
         - admin
       parameters:
@@ -36,75 +36,115 @@ paths:
             properties:
               public:
                 type: boolean
+              title:
+                type: string
+              text_adoc:
+                type: string
             required:
               - public
+              - title
       responses:
         200:
           description: Article created.
-
-
-  /static/article/{articleId}/version:
-    get:
-      summary: Get latest article version.
-      tags:
-        - admin
-      parameters:
-        - $ref: '#/parameters/ArticleId'
-      responses:
-        200:
-          description: Get current article version.
           schema:
             properties:
+              id:
+                type: string
+            required:
+              - id
+
+
+  /articles/{articleId}:
+    parameters:
+      - $ref: '#/parameters/ArticleId'
+
+    get:
+      summary: Get article by ID or alias.
+      tags:
+        - common
+      responses:
+        200:
+          description: Article.
+          schema:
+            properties:
+              id:
+                type: string
               title:
                 type: string
-              valid_from:
+              created_at:
                 type: string
                 format: date-time
-              valid_to:
+              last_modified:
                 type: string
                 format: date-time
+              owner:
+                $ref: '#/definitions/User'
+              author:
+                $ref: '#/definitions/User'
               text_html:
                 type: string
               text_adoc:
                 type: string
               public:
+                description: Whether the article is visible to non-admins. Returned only to admins.
                 type: boolean
-    post:
-      summary: Create new article version.
+              aliases:
+                description: Returned only to admins.
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    created_by:
+                      type: string
+                  required:
+                    - id
+                    - created_at
+                    - created_by
+            required:
+              - id
+              - title
+              - created_at
+              - last_modified
+              - owner
+              - author
+
+    put:
+      summary: Update article.
       tags:
         - admin
       parameters:
-        - $ref: '#/parameters/ArticleId'
         - name: article
           in: body
           schema:
             properties:
+              public:
+                type: boolean
               title:
-                type: string
-              valid_to:
-                type: string
-                format: date-time
-              text_html:
                 type: string
               text_adoc:
                 type: string
-              public:
-                type: boolean
             required:
               - public
+              - title
       responses:
         200:
-          description: Article version updated.
+          description: Article updated.
 
 
-  /static/article/alias/{articleId}:
+  /articles/{articleId}/aliases:
+    parameters:
+      - $ref: '#/parameters/ArticleId'
+
     post:
       summary: Create new article alias.
       tags:
         - admin
       parameters:
-        - $ref: '#/parameters/ArticleId'
-        - name: article
+        - name: alias
           in: body
           schema:
             properties:
@@ -115,71 +155,148 @@ paths:
       responses:
         200:
           description: Article alias created.
+
+
+  /articles/{articleId}/aliases/{aliasId}:
+    parameters:
+      - $ref: '#/parameters/ArticleId'
+      - $ref: '#/parameters/AliasId'
+
     delete:
-      summary: Delete article alias
-      parameters:
-        - name: article
-          in: body
-          schema:
-            properties:
-              alias:
-                type: string
-            required:
-              - allias
+      summary: Delete article alias.
+      tags:
+        - admin
       responses:
         200:
           description: Article alias deleted.
 
 
-  /static/upload/article/{articleId}:
-    post:
-      summary: Upload a new file for the existing article.
+  /article-aliases:
+    get:
+      summary: Get all article aliases.
       tags:
         - admin
+      responses:
+        200:
+          description: Aliases grouped by articles.
+          schema:
+            properties:
+              articles:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    title:
+                      type: string
+                    aliases:
+                      type: array
+                      items:
+                        properties:
+                          id:
+                            type: string
+                          created_at:
+                            type: string
+                            format: date-time
+                          created_by:
+                            type: string
+                        required:
+                          - id
+                          - created_at
+                          - created_by
+                  required:
+                    - id
+                    - title
+                    - aliases
+            required:
+              - articles
+
+
+  /files:
+    post:
+      summary: Upload a new file.
+      tags:
+        - teacher
       parameters:
-        - $ref: '#/parameters/ArticleId'
         - name: file
           in: body
           schema:
             properties:
-              article_id:
-                type: string
-              exercise_id:
+              filename:
                 type: string
               data:
+                description: Base64-encoded bytes of the file.
                 type: string
-                format: byte
-      responses:
-        200:
-          description: File uploaded.
-
-
-  /static/storage/{fileId}:
-    get:
-      summary: Get stored file.
-      tags:
-        - common
-      parameters:
-        - $ref: '#/parameters/FileId'
+            required:
+              - filename
+              - data
       responses:
         200:
           description: File uploaded.
           schema:
             properties:
-              article_id:
+              id:
                 type: string
-              exercise_id:
-                type: string
-              filename:
-                type: string
-              type:
-                type: string
-              created_at:
-                type: string
-                format: date-time
-              data:
-                type: string
-                format: byte
+            required:
+              - id
+
+
+  /files/metadata:
+    get:
+      summary: Get metadata for all stored files.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Metadata.
+          schema:
+            properties:
+              files:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    article_id:
+                      type: string
+                    exercise_id:
+                      type: string
+                    filename:
+                      type: string
+                    type:
+                      description: MIME type of the file.
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    created_by:
+                      type: string
+                  required:
+                    - id
+                    - filename
+                    - type
+                    - created_at
+                    - created_by
+            required:
+              - files
+
+
+  /resource/{fileId}:
+    get:
+      summary: Get stored file as a resource. Note that the MIME type is determined at upload time and can be arbitrary.
+      tags:
+        - common
+      parameters:
+        - $ref: '#/parameters/FileId'
+      produces:
+        - 'text/*'
+        - 'image/*'
+        - 'application/*'
+      responses:
+        200:
+          description: File as a resource.
+          schema:
+            type: file
 
 
   /management/log:
@@ -1558,6 +1675,12 @@ parameters:
     required: true
     type: string
 
+  AliasId:
+    name: aliasId
+    in: path
+    required: true
+    type: string
+
   FileId:
     name: fileId
     in: path
@@ -1578,6 +1701,19 @@ parameters:
 
 
 definitions:
+
+  User:
+    properties:
+      id:
+        type: string
+      given_name:
+        type: string
+      family_name:
+        type: string
+    required:
+      - id
+      - given_name
+      - family_name
 
   Group:
     properties:
