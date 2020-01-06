@@ -24,6 +24,165 @@ tags:
 
 paths:
 
+  /static/article/initial:
+    post:
+      summary: Create initial new article.
+      tags:
+        - admin
+      parameters:
+        - name: article
+          in: body
+          schema:
+            properties:
+              public:
+                type: boolean
+            required:
+              - public
+      responses:
+        200:
+          description: Article created.
+
+
+  /static/article/{articleId}/version:
+    get:
+      summary: Get latest article version.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/ArticleId'
+      responses:
+        200:
+          description: Get current article version.
+          schema:
+            properties:
+              title:
+                type: string
+              valid_from:
+                type: string
+                format: date-time
+              valid_to:
+                type: string
+                format: date-time
+              text_html:
+                type: string
+              text_adoc:
+                type: string
+              public:
+                type: boolean
+    post:
+      summary: Create new article version.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/ArticleId'
+        - name: article
+          in: body
+          schema:
+            properties:
+              title:
+                type: string
+              valid_to:
+                type: string
+                format: date-time
+              text_html:
+                type: string
+              text_adoc:
+                type: string
+              public:
+                type: boolean
+            required:
+              - public
+      responses:
+        200:
+          description: Article version updated.
+
+
+  /static/article/alias/{articleId}:
+    post:
+      summary: Create new article alias.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/ArticleId'
+        - name: article
+          in: body
+          schema:
+            properties:
+              alias:
+                type: string
+            required:
+              - alias
+      responses:
+        200:
+          description: Article alias created.
+    delete:
+      summary: Delete article alias
+      parameters:
+        - name: article
+          in: body
+          schema:
+            properties:
+              alias:
+                type: string
+            required:
+              - allias
+      responses:
+        200:
+          description: Article alias deleted.
+
+
+  /static/upload/article/{articleId}:
+    post:
+      summary: Upload a new file for the existing article.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/ArticleId'
+        - name: file
+          in: body
+          schema:
+            properties:
+              data:
+                type: object
+      responses:
+        200:
+          description: File uploaded.
+
+
+  /static/upload/exercise/{exerciseId}:
+    post:
+      summary: Upload a new file for the existing exercise.
+      tags:
+        - admin
+      parameters:
+        - $ref: '#/parameters/ExerciseId'
+        - name: file
+          in: body
+          schema:
+            properties:
+              data:
+                type: object
+      responses:
+        200:
+          description: File uploaded.
+
+
+  /static/storage/{fileId}:
+    get:
+      summary: Get stored file.
+      tags:
+        - common
+      parameters:
+        - $ref: '#/parameters/FileId'
+      responses:
+        200:
+          description: File uploaded.
+          schema:
+            properties:
+              data:
+                type: object
+
+
   /management/log:
     post:
       summary: Report new log.
@@ -1390,6 +1549,18 @@ parameters:
 
   NotificationId:
     name: notificationId
+    in: path
+    required: true
+    type: string
+
+  ArticleId:
+    name: articleId
+    in: path
+    required: true
+    type: string
+
+  FileId:
+    name: fileId
     in: path
     required: true
     type: string
