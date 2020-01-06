@@ -54,12 +54,20 @@ class GradeService {
                     .select { Submission.id eq submissionId }
                     .single()
                     .apply {
-                        val singleExercise = selectSingleCourseExerciseSubmission(this[Course.id].value, this[CourseExercise.id].value, submissionId)
                         val shortname = selectCourseShortName(this[Course.id].value)
 
-                        if (!shortname.isNullOrBlank() && singleExercise.grades.isNotEmpty()) {
-                            sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
+                        if (!shortname.isNullOrBlank()) {
+                            val singleExercise = selectSingleCourseExerciseSubmission(
+                                    this[Course.id].value,
+                                    this[CourseExercise.id].value,
+                                    submissionId)
+
+                            if (singleExercise.grades.isNotEmpty()) {
+                                sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
+                            }
                         }
+
+                        log.debug { "Skipping Moodle grade sync due to empty course shortname or for no existing grades to sync." }
                     }
         }
     }
