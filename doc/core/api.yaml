@@ -142,26 +142,13 @@ paths:
           in: body
           schema:
             properties:
+              article_id:
+                type: string
+              exercise_id:
+                type: string
               data:
-                type: object
-      responses:
-        200:
-          description: File uploaded.
-
-
-  /static/upload/exercise/{exerciseId}:
-    post:
-      summary: Upload a new file for the existing exercise.
-      tags:
-        - admin
-      parameters:
-        - $ref: '#/parameters/ExerciseId'
-        - name: file
-          in: body
-          schema:
-            properties:
-              data:
-                type: object
+                type: string
+                format: byte
       responses:
         200:
           description: File uploaded.
@@ -179,8 +166,20 @@ paths:
           description: File uploaded.
           schema:
             properties:
+              article_id:
+                type: string
+              exercise_id:
+                type: string
+              filename:
+                type: string
+              type:
+                type: string
+              created_at:
+                type: string
+                format: date-time
               data:
-                type: object
+                type: string
+                format: byte
 
 
   /management/log:
