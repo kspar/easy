@@ -689,4 +689,9 @@
                          defaultValueSequenceNext="seq_group_id"/>
     </changeSet>
 
+    <changeSet id="070120-1" author="priit">
+        <addDefaultValue tableName="article" columnName="id" defaultValueSequenceNext="article_id_seq"/>
+        <addDefaultValue tableName="article_version" columnName="id" defaultValueSequenceNext="article_version_id_seq"/>
+    </changeSet>
+
 </databaseChangeLog>
