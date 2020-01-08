@@ -131,7 +131,7 @@ class GradeService {
     private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> {
         return exercises.flatMap {
             it.grades.chunked(200) { grades ->
-                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.title, it.title, grades)))
+                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, grades)))
             }
         }
     }
