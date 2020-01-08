@@ -36,6 +36,8 @@ class UpdateArticleController(private val adocService: AdocService) {
     @PutMapping("/articles/{articleId}")
     fun controller(@Valid @RequestBody req: Req, @PathVariable("articleId") articleIdString: String, caller: EasyUser) {
 
+        //TODO: articleIdString can be also a alias
+
         log.debug { "Update article '$articleIdString' by ${caller.id}" }
 
         val articleId = articleIdString.idToLongOrInvalidReq()

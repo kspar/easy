@@ -219,8 +219,8 @@ object ArticleVersion : LongIdTable("article_version") {
     val textAdoc = text("text_adoc").nullable()
 }
 
-object ArticleAlias : Table("article_alias") {
-    val alias = text("alias").primaryKey().entityId()
+object ArticleAlias : IdTable<String>("article_alias") {
+    override val id: Column<EntityID<String>> = text("alias").primaryKey().entityId()
     val article = reference("article_id", Article)
     val createdAt = datetime("created_at")
     val owner = reference("created_by_id", Admin)
