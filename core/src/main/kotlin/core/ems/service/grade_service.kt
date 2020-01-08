@@ -64,10 +64,14 @@ class GradeService {
 
                             if (singleExercise.grades.isNotEmpty()) {
                                 sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
+                            } else {
+                                log.debug { "Skipping Moodle grade sync due to no existing grades to sync." }
                             }
-                        }
 
-                        log.debug { "Skipping Moodle grade sync due to empty course shortname or for no existing grades to sync." }
+
+                        } else {
+                            log.debug { "Skipping Moodle grade sync due to empty course shortname." }
+                        }
                     }
         }
     }
