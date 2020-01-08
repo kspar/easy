@@ -57,6 +57,8 @@ class ReadArticleDetailsController {
     @GetMapping("/articles/{articleId}")
     fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp? {
 
+        //TODO: articleIdString can be also a alias
+
         log.debug { "Getting article $articleIdString details for ${caller.id}" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
@@ -124,12 +126,12 @@ private fun selectAccount(accountId: String): ReadArticleDetailsController.RespU
 
 private fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsController.RespAlias> {
     return transaction {
-        ArticleAlias.slice(ArticleAlias.alias, ArticleAlias.createdAt, ArticleAlias.owner)
+        ArticleAlias.slice(ArticleAlias.id, ArticleAlias.createdAt, ArticleAlias.owner)
                 .select {
                     ArticleAlias.article eq articleId
                 }.map {
                     ReadArticleDetailsController.RespAlias(
-                            it[ArticleAlias.alias].value,
+                            it[ArticleAlias.id].value,
                             it[ArticleAlias.createdAt],
                             it[ArticleAlias.owner].value
                     )
