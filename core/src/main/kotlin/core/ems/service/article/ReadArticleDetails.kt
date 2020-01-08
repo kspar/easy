@@ -1,5 +1,6 @@
 package core.ems.service.article
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
@@ -8,6 +9,7 @@ import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -36,8 +38,10 @@ class ReadArticleDetailsController {
                     @JsonProperty("author") val author: RespUser,
                     @JsonProperty("text_html") val textHtml: String?,
                     @JsonProperty("text_adoc") val textAdoc: String?,
-                    @JsonProperty("public") val public: Boolean?, //TODO: only for admins
-                    @JsonProperty("aliases") val assets: List<RespAlias>?) //TODO: only for admins
+                    @JsonInclude(JsonInclude.Include.NON_NULL)
+                    @JsonProperty("public") val public: Boolean?,
+                    @JsonInclude(JsonInclude.Include.NON_NULL)
+                    @JsonProperty("aliases") val assets: List<RespAlias>?)
 
     data class RespAlias(@JsonProperty("id") val id: String,
                          @JsonSerialize(using = DateTimeSerializer::class)
@@ -53,14 +57,54 @@ class ReadArticleDetailsController {
     @GetMapping("/articles/{articleId}")
     fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp? {
 
-        log.debug { "Getting article details for ${caller.id}" }
+        log.debug { "Getting article $articleIdString details for ${caller.id}" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
-        //TODO: if is present?
+        if (!articleExists(articleId)) {
+            throw InvalidRequestException("No article with id $articleId found")
+        }
+
         return selectLatestArticleVersion(articleId, caller.isAdmin())
     }
 }
 
+private fun articleExists(articleId: Long): Boolean {
+    return transaction {
+        Article.select { Article.id eq articleId }.count() == 1
+    }
+}
+
+private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp? {
+    return transaction {
+        (Article innerJoin ArticleVersion)
+                .slice(Article.id,
+                        ArticleVersion.title,
+                        Article.createdAt,
+                        ArticleVersion.validFrom,
+                        Article.owner,
+                        ArticleVersion.author,
+                        ArticleVersion.textHtml,
+                        ArticleVersion.textAdoc,
+                        Article.public)
+                .select {
+                    Article.id eq articleId
+                }
+                .orderBy(ArticleVersion.validFrom, SortOrder.DESC)
+                .map {
+                    ReadArticleDetailsController.Resp(
+                            it[Article.id].value.toString(),
+                            it[ArticleVersion.title],
+                            it[Article.createdAt],
+                            it[ArticleVersion.validFrom],
+                            selectAccount(it[Article.owner].value),
+                            selectAccount(it[ArticleVersion.author].value),
+                            it[ArticleVersion.textHtml],
+                            it[ArticleVersion.textAdoc],
+                            if (isAdmin) it[Article.public] else null,
+                            if (isAdmin) selectArticleAliases(it[Article.id].value) else null)
+                }.firstOrNull()
+    }
+}
 
 private fun selectAccount(accountId: String): ReadArticleDetailsController.RespUser {
     return transaction {
@@ -90,29 +134,5 @@ private fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsContro
                             it[ArticleAlias.owner].value
                     )
                 }
-    }
-}
-
-private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp? {
-    return transaction {
-        //TODO: add slice
-        (Article innerJoin ArticleVersion)
-                .select {
-                    Article.id eq articleId
-                }
-                .orderBy(ArticleVersion.validFrom, SortOrder.DESC)
-                .map {
-                    ReadArticleDetailsController.Resp(
-                            it[Article.id].value.toString(),
-                            it[ArticleVersion.title],
-                            it[Article.createdAt],
-                            it[ArticleVersion.validFrom],
-                            selectAccount(it[Article.owner].value),
-                            selectAccount(it[ArticleVersion.author].value),
-                            it[ArticleVersion.textHtml],
-                            it[ArticleVersion.textAdoc],
-                            it[Article.public], // TODO: only if admin
-                            selectArticleAliases(it[Article.id].value)) //TODO: only if admins
-                }.firstOrNull()
     }
 }
