@@ -4754,10 +4754,6 @@
 						"value": "fp"
 					}
 				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n  \"alias\": \"string\"\r\n}"
-				},
 				"url": {
 					"raw": "{{EMSBASE}}/articles/1/aliases/string",
 					"host": [
