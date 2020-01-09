@@ -226,8 +226,8 @@ object ArticleAlias : IdTable<String>("article_alias") {
     val owner = reference("created_by_id", Admin)
 }
 
-object StoredFile : Table("stored_file") {
-    val id = text("alias").primaryKey().entityId()
+object StoredFile : IdTable<String>("stored_file") {
+    override val id: Column<EntityID<String>> = text("id").primaryKey().entityId()
     val exercise = reference("exercise_id", Exercise).nullable()
     val article = reference("article_id", Article).nullable()
     val type = text("type")
