@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
+import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -40,9 +41,7 @@ class CreateArticleAliasController {
         log.debug { "${caller.id} is creating alias for the article $articleIdString" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
-        if (!articleExists(articleId)) {
-            throw InvalidRequestException("No article with id $articleId found")
-        }
+        assertArticleExists(articleId)
 
         insertAlias(caller.id, articleId, req.alias)
     }
@@ -65,11 +64,4 @@ private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
         }
     }
 }
-
-private fun articleExists(articleId: Long): Boolean {
-    return transaction {
-        Article.select { Article.id eq articleId }.count() == 1
-    }
-}
-
 

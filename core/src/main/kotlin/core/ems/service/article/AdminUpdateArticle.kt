@@ -6,8 +6,8 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
 import core.ems.service.AdocService
+import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SortOrder
@@ -42,10 +42,7 @@ class UpdateArticleController(private val adocService: AdocService) {
 
         val articleId = articleIdString.idToLongOrInvalidReq()
 
-        if (!articleExists(articleId)) {
-            throw InvalidRequestException("No article with id $articleId found")
-        }
-
+        assertArticleExists(articleId)
 
         when (req.textAdoc) {
             null -> updateArticle(caller.id, articleId, req, null).toString()
@@ -86,13 +83,4 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
         }
     }
 }
-
-private fun articleExists(articleId: Long): Boolean {
-    return transaction {
-        Article.select { Article.id eq articleId }.count() == 1
-    }
-}
-
-
-
 

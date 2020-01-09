@@ -8,8 +8,8 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
+import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -62,19 +62,12 @@ class ReadArticleDetailsController {
         log.debug { "Getting article $articleIdString details for ${caller.id}" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
-        if (!articleExists(articleId)) {
-            throw InvalidRequestException("No article with id $articleId found")
-        }
+        assertArticleExists(articleId)
 
         return selectLatestArticleVersion(articleId, caller.isAdmin())
     }
 }
 
-private fun articleExists(articleId: Long): Boolean {
-    return transaction {
-        Article.select { Article.id eq articleId }.count() == 1
-    }
-}
 
 private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp? {
     return transaction {
