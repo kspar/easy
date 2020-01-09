@@ -5,11 +5,11 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
-import core.db.insertOrUpdate
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -53,7 +53,11 @@ private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
     val admin = EntityID(createdBy, Admin)
 
     transaction {
-        ArticleAlias.insertOrUpdate(listOf(ArticleAlias.id), listOf(ArticleAlias.owner, ArticleAlias.createdAt)) {
+        if (ArticleAlias.select { ArticleAlias.id eq alias }.count() != 0) {
+            throw InvalidRequestException("Article alias '$alias' is already in use.")
+        }
+
+        ArticleAlias.insert {
             it[id] = EntityID(alias, ArticleAlias)
             it[owner] = admin
             it[article] = EntityID(articleId, Article)
