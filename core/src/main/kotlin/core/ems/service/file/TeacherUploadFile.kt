@@ -29,7 +29,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UploadStoredFiledController {
 
-    data class Req(@JsonProperty("filename", required = true) @field:NotBlank @field:Size(max = 259) val filename: String,
+    data class Req(@JsonProperty("filename", required = true)
+                   @field:NotBlank
+                   @field:Size(max = 259)
+                   val filename: String,
+                   @field:NotBlank
+                   @field:Size(max = 1375000000) // Approx 1 GB
                    @JsonProperty("data", required = true) val data: String)
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -39,8 +44,6 @@ class UploadStoredFiledController {
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
         log.debug { "${caller.id} is uploading a file." }
-
-        //TODO: limit base64? Yes, but how? Probably by size at some point.
         return Resp(insertStoredFile(caller.id, dto))
     }
 }
