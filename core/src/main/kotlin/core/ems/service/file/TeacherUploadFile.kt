@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.security.MessageDigest
 import java.util.*
 import javax.sql.rowset.serial.SerialBlob
 import javax.validation.Valid
@@ -49,7 +50,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
     return transaction {
 
         val time = DateTime.now()
-        val hash = "someHASH" + time //TODO: gen hash
+        val hash = hashString(req.data, "SHA-256") + time.toInstant().millis
         val content = Base64.getDecoder().decode(req.data)
         val mimeType: String = Tika().detect(content)
 
@@ -64,3 +65,10 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
     }
 }
 
+// https://gist.github.com/lovubuntu/164b6b9021f5ba54cefc67f60f7a1a25
+private fun hashString(input: String, algorithm: String): String {
+    return MessageDigest
+            .getInstance(algorithm)
+            .digest(input.toByteArray())
+            .fold("", { str, it -> str + "%02x".format(it) })
+}
