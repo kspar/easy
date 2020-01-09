@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Account
 import core.db.StoredFile
 import mu.KotlinLogging
+import org.apache.tika.Tika
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -19,6 +20,7 @@ import javax.sql.rowset.serial.SerialBlob
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
+
 
 private val log = KotlinLogging.logger {}
 
@@ -45,23 +47,20 @@ class UploadStoredFiledController {
 
 private fun insertStoredFile(creator: String, req: UploadStoredFiledController.Req): String {
     return transaction {
-        val time = DateTime.now()
-        // TODO: detect it:
-        val detectedType = "todo"
-        //TODO: gen hash
-        val hash = "someHASH" + time
 
+        val time = DateTime.now()
+        val hash = "someHASH" + time //TODO: gen hash
         val content = Base64.getDecoder().decode(req.data)
+        val mimeType: String = Tika().detect(content)
 
         StoredFile.insertAndGetId {
             it[id] = EntityID(hash, StoredFile)
-            it[type] = detectedType
+            it[type] = mimeType
             it[data] = SerialBlob(content)
             it[filename] = req.filename
             it[createdAt] = time
             it[owner] = EntityID(creator, Account)
         }.value
-
     }
 }
 

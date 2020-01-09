@@ -84,6 +84,9 @@ dependencies {
 
     // Jsoup for Asciidoctor HTML output customisation
     implementation 'org.jsoup:jsoup:1.12.1'
+
+    // StoredFile type detection
+    implementation 'org.apache.tika:tika-core:1.23'
 }
 
 
