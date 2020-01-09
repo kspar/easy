@@ -5,8 +5,8 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
+import core.ems.service.aliasToIdOrIdToLong
 import core.ems.service.assertArticleExists
-import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -37,9 +37,8 @@ class CreateArticleAliasController {
     @PostMapping("/articles/{articleId}/aliases")
     fun controller(@Valid @RequestBody req: Req, @PathVariable("articleId") articleIdString: String, caller: EasyUser) {
 
-
         log.debug { "${caller.id} is creating alias for the article $articleIdString" }
-        val articleId = articleIdString.idToLongOrInvalidReq()
+        val articleId = aliasToIdOrIdToLong(articleIdString)
 
         assertArticleExists(articleId)
 

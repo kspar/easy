@@ -3,9 +3,9 @@ package core.ems.service.article
 import core.conf.security.EasyUser
 import core.db.Article
 import core.db.ArticleAlias
+import core.ems.service.aliasToIdOrIdToLong
 import core.ems.service.assertArticleAliasExists
 import core.ems.service.assertArticleExists
-import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
@@ -29,9 +29,8 @@ class DeleteArticleAliasController {
                    @PathVariable("aliasId") alias: String,
                    caller: EasyUser) {
 
-
         log.debug { "${caller.id} is deleting alias '$alias' for the article $articleIdString" }
-        val articleId = articleIdString.idToLongOrInvalidReq()
+        val articleId = aliasToIdOrIdToLong(articleIdString)
 
         assertArticleExists(articleId)
         assertArticleAliasExists(articleId, alias)

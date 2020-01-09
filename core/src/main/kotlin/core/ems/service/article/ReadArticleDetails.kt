@@ -8,8 +8,8 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
+import core.ems.service.aliasToIdOrIdToLong
 import core.ems.service.assertArticleExists
-import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -55,12 +55,10 @@ class ReadArticleDetailsController {
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/articles/{articleId}")
-    fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp? {
-
-        //TODO: articleIdString can be also a alias
+    fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp {
 
         log.debug { "Getting article $articleIdString details for ${caller.id}" }
-        val articleId = articleIdString.idToLongOrInvalidReq()
+        val articleId = aliasToIdOrIdToLong(articleIdString)
 
         assertArticleExists(articleId)
 
@@ -69,7 +67,7 @@ class ReadArticleDetailsController {
 }
 
 
-private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp? {
+private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp {
     return transaction {
         (Article innerJoin ArticleVersion)
                 .slice(Article.id,
@@ -97,7 +95,7 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                             it[ArticleVersion.textAdoc],
                             if (isAdmin) it[Article.public] else null,
                             if (isAdmin) selectArticleAliases(it[Article.id].value) else null)
-                }.firstOrNull()
+                }.first()
     }
 }
 
