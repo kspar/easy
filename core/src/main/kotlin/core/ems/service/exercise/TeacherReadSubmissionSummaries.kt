@@ -100,15 +100,15 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
         val autoGradeAlias = AutomaticAssessment.grade.alias("auto_grade")
         val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("valid_grade")
 
-        val subQuery = (StudentCourseAccess innerJoin Student innerJoin Account leftJoin
-                (Submission innerJoin CourseExercise leftJoin AutomaticAssessment leftJoin TeacherAssessment))
+        val subQuery = (
+                Join(StudentCourseAccess, CourseExercise, onColumn = StudentCourseAccess.course, otherColumn = CourseExercise.course)
+                        innerJoin Student innerJoin Account leftJoin
+                        (Submission leftJoin AutomaticAssessment leftJoin TeacherAssessment))
                 .slice(distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
                         autoGradeAlias, TeacherAssessment.grade, validGradeAlias)
                 .select {
-                    // CourseExercise.id & CourseExercise.course are null when the student has no submission
-                    (CourseExercise.id eq courseExId or CourseExercise.id.isNull()) and
-                            (CourseExercise.course eq courseId or CourseExercise.course.isNull()) and
-                            (StudentCourseAccess.course eq courseId)
+                    (CourseExercise.id eq courseExId) and
+                            (CourseExercise.course eq courseId)
                 }
                 // These ORDER BY clauses are for selecting correct first rows in DISTINCT groups
                 .orderBy(distinctStudentId to SortOrder.ASC,
