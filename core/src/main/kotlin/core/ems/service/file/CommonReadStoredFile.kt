@@ -7,6 +7,7 @@ import core.db.StoredFile.type
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -21,6 +22,7 @@ private val log = KotlinLogging.logger {}
 class ReadStoredFileController {
 
 
+    @Secured("ROLE_ADMIN", "ROLE_TEACHER", "ROLE_STUDENT")
     @GetMapping("/resource/{fileId}")
     fun controller(@PathVariable("fileId") fileIdString: String,
                    caller: EasyUser,
