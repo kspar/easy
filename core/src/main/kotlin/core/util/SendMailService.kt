@@ -31,7 +31,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         val time = Instant.now().toString()
         log.info("Sending notification $id ($time) from $fromAddress to $toSysAddress")
 
-        val bodyText = "$time\n$id\n\n$message"
+        val bodyText = "$message\n\n$id\n$time"
 
         val mailMessage = SimpleMailMessage()
         mailMessage.setSubject("Easy:core system notification $id")
