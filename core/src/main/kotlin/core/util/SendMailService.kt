@@ -7,6 +7,7 @@ import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.time.Instant
+import java.util.*
 
 private val log = KotlinLogging.logger {}
 
@@ -21,7 +22,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     private var enabled: Boolean = true
 
     @Async
-    fun sendSystemNotification(message: String, id: String) {
+    fun sendSystemNotification(message: String, id: String = UUID.randomUUID().toString()) {
         if (!enabled) {
             log.info { "System notifications disabled, ignoring" }
             return

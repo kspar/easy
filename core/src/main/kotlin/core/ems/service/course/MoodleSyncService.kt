@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -28,6 +30,9 @@ data class MoodleSyncedStudents(val syncedStudents: Int, val syncedPendingStuden
 class MoodleSyncService {
     @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
+
+    @Autowired
+    private lateinit var mailService: SendMailService
 
     data class MoodleRespStudent(@JsonProperty("username") val username: String,
                                  @JsonProperty("firstname") val firstname: String,
@@ -121,6 +126,8 @@ class MoodleSyncService {
                                 .also {
                                     if (it.size > 1) {
                                         log.warn { "Several accounts found with Moodle username ${moodleStudent.username}: $it" }
+                                        mailService.sendSystemNotification(
+                                                "Several accounts with Moodle username ${moodleStudent.username} found on course $courseId: $it")
                                     }
                                 }
                     }
