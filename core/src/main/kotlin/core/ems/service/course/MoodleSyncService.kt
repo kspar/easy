@@ -22,6 +22,8 @@ import org.springframework.web.client.RestTemplate
 private val log = KotlinLogging.logger {}
 
 
+data class MoodleSyncedStudents(val syncedStudents: Int, val syncedPendingStudents: Int)
+
 @Service
 class MoodleSyncService {
     @Value("\${easy.core.moodle-sync.users.url}")
@@ -31,7 +33,7 @@ class MoodleSyncService {
                                  @JsonProperty("firstname") val firstname: String,
                                  @JsonProperty("lastname") val lastname: String,
                                  @JsonProperty("email") val email: String,
-                                 @JsonProperty("groups", required = false) val groups: List<MoodleRespGroup?>?)
+                                 @JsonProperty("groups", required = false) val groups: List<MoodleRespGroup>?)
 
     data class MoodleRespGroup(@JsonProperty("id") val id: String,
                                @JsonProperty("name") val name: String)
@@ -73,90 +75,117 @@ class MoodleSyncService {
         return response
     }
 
+    fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCourseShortName: String): MoodleSyncedStudents {
+        data class MoodleGroup(val id: String, val name: String)
+        data class NewAccess(val username: String, val moodleUsername: String, val groups: List<MoodleGroup>)
+        data class NewPendingAccess(val moodleUsername: String, val groups: List<MoodleGroup>)
 
-    fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCourseShortName: String): AdminLinkMoodleCourseController.Resp {
+        val courseEntity = EntityID(courseId, Course)
+
         return transaction {
-            // Link course info
             Course.update({ Course.id eq courseId }) {
                 it[moodleShortName] = moodleCourseShortName
             }
 
-            // Get Account ids of the users who have easy account
-            val easyAccountExists =
-                    moodleResponse.students.mapNotNull {
+
+            // Insert groups or get their IDs
+            val moodleGroups = moodleResponse.students
+                    .mapNotNull { it.groups }
+                    .flatten()
+                    .map { it.name }
+
+            val groupNamesToIds = moodleGroups.map { moodleGroupName ->
+                val groupId = Group.select { Group.course eq courseId and (Group.name eq moodleGroupName) }
+                        .map { it[Group.id] }
+                        .singleOrNull()
+                        ?: Group.insertAndGetId {
+                            it[name] = moodleGroupName
+                            it[course] = courseEntity
+                        }
+                moodleGroupName to groupId
+            }.toMap()
+
+
+            // Partition users by whether they have an Easy account
+            val newAccesses =
+                    moodleResponse.students.flatMap { moodleStudent ->
                         Account.slice(Account.id)
-                                .select {
-                                    (Account.moodleUsername eq it.username)
+                                .select { Account.moodleUsername eq moodleStudent.username }
+                                .map {
+                                    NewAccess(
+                                            it[Account.id].value,
+                                            moodleStudent.username,
+                                            moodleStudent.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
+                                    )
                                 }
-                                .map { it[Account.id].value }
-                                .firstOrNull()
-                    }.toSet()
-
-            // Users who have easy account and have access to this course
-            val courseAccessExists =
-                    moodleResponse.students.mapNotNull {
-                        (Account innerJoin Student innerJoin StudentCourseAccess)
-                                .slice(Account.id)
-                                .select {
-                                    (Account.moodleUsername eq it.username) and (StudentCourseAccess.course eq courseId)
+                                .also {
+                                    if (it.size > 1) {
+                                        log.warn { "Several accounts found with Moodle username ${moodleStudent.username}: $it" }
+                                    }
                                 }
-                                .map { it[Account.id].value }
-                                .firstOrNull()
-                    }.toSet()
+                    }
+            log.debug { "Giving access to students: $newAccesses" }
 
-            // Users who have easy account but no access
-            val easyAccountNoAccess = easyAccountExists subtract courseAccessExists
+            val newPendingAccesses = moodleResponse.students
+                    .filter { moodleStudent ->
+                        newAccesses.none { it.moodleUsername == moodleStudent.username }
+                    }.map {
+                        NewPendingAccess(
+                                it.username,
+                                it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
+                        )
+                    }
+            log.debug { "Giving pending access to students: $newPendingAccesses" }
 
-            // Users who have no easy account
-            val noAccountExists = moodleResponse.students
-                    .filter { Account.select { Account.moodleUsername eq it.username }.count() == 0 }
 
-            log.debug { "Granting access to Moodle students with accounts (the rest already have access): $easyAccountNoAccess" }
-            log.debug { "Setting pending access to Moodle students with no accounts: $noAccountExists" }
-            log.debug { "Removing student access for students who are not anymore on the Moodle course." }
+            // Remove & insert all accesses
+            StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
-            // Add access to course for users with Moodle and Easy account
-            val studentsAdded = StudentCourseAccess.batchInsert(easyAccountNoAccess) {
-                this[StudentCourseAccess.student] = EntityID(it, Student)
-                this[StudentCourseAccess.course] = EntityID(courseId, Course)
-            }.count()
+            newAccesses.forEach { newAccess ->
+                val accessId = StudentCourseAccess.insertAndGetId {
+                    it[student] = EntityID(newAccess.username, Student)
+                    it[course] = courseEntity
+                }
+                StudentGroupAccess.batchInsert(newAccess.groups) {
+                    this[StudentGroupAccess.student] = newAccess.username
+                    this[StudentGroupAccess.course] = courseId
+                    this[StudentGroupAccess.group] = groupNamesToIds.getValue(it.name)
+                    this[StudentGroupAccess.courseAccess] = accessId
+                }
+            }
 
-            // Remove previous pending access
+
+            // Remove & insert all pending accesses
             StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
 
-            // Create pending access for Moodle students without Easy account
-            val pendingStudentsAdded = StudentMoodlePendingAccess.batchInsert(noAccountExists) {
-                this[StudentMoodlePendingAccess.course] = EntityID(courseId, Course)
-                this[StudentMoodlePendingAccess.moodleUsername] = it.username
-            }.count()
+            newPendingAccesses.forEach { newPendingAccess ->
+                val accessId = StudentMoodlePendingAccess.insertAndGetId {
+                    it[moodleUsername] = newPendingAccess.moodleUsername
+                    it[course] = courseEntity
+                }
+                StudentMoodlePendingGroup.batchInsert(newPendingAccess.groups) {
+                    this[StudentMoodlePendingGroup.moodleUsername] = newPendingAccess.moodleUsername
+                    this[StudentMoodlePendingGroup.course] = courseId
+                    this[StudentMoodlePendingGroup.group] = groupNamesToIds.getValue(it.name)
+                    this[StudentMoodlePendingGroup.pendingAccess] = accessId
+                }
+            }
 
-            val usersWhoShouldHaveAccess = easyAccountNoAccess union courseAccessExists
-            // Revoke student access for course if not anymore present in the Moodle
-            val studentAccessRemoved = StudentCourseAccess
-                    .slice(StudentCourseAccess.student)
-                    .select { (StudentCourseAccess.course eq courseId and
-                            (StudentCourseAccess.student notInList usersWhoShouldHaveAccess) ) }
-                    .map { it[StudentCourseAccess.student].value }
-                    .map {
-                        StudentCourseAccess.deleteWhere {
-                            (StudentCourseAccess.student eq it) and
-                                    (StudentCourseAccess.course eq courseId)
-                        }
-                    }
-                    .size
-
-            AdminLinkMoodleCourseController.Resp(studentsAdded, pendingStudentsAdded, studentAccessRemoved)
+            val syncedStudentsCount = newAccesses.size
+            val syncedPendingStudentsCount = newPendingAccesses.size
+            log.debug { "Synced $syncedStudentsCount students and $syncedPendingStudentsCount pending students" }
+            MoodleSyncedStudents(newAccesses.size, newPendingAccesses.size)
         }
     }
 
 
     @Scheduled(cron = "\${easy.core.moodle-sync.users.cron}")
     fun syncMoodle() {
+        log.debug { "Checking for courses for Moodle syncing..." }
         transaction {
             Course.select {
-                log.debug { "Checking for courses for Moodle syncing..." }
                 Course.moodleShortName.isNotNull() and (Course.moodleShortName neq "")
-            }.mapNotNull {
+            }.map {
                 MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
             }.forEach {
                 log.debug { "Cron Moodle syncing ${it.moodleShortName} with course ${it.courseId}." }

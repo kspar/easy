@@ -10,8 +10,6 @@ import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.fillParameters
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -74,6 +72,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
         AddStudentsToCourseController.Resp {
 
     val now = DateTime.now()
+    val courseEntity = EntityID(courseId, Course)
 
     return transaction {
         val studentsWithAccount = mutableSetOf<StudentWithAccount>()
@@ -102,59 +101,35 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
         log.debug { "Granting access to students (the rest already have access): $newStudentsWithAccount" }
         log.debug { "Granting pending access to students: $studentsNoAccount" }
 
-        StudentCourseAccess.batchInsert(newStudentsWithAccount) {
-            this[StudentCourseAccess.student] = EntityID(it.id, Student)
-            this[StudentCourseAccess.course] = EntityID(courseId, Course)
-        }
-
-        newStudentsWithAccount.forEach { student ->
-            StudentGroupAccess.batchInsert(student.groups) {
-                this[StudentGroupAccess.student] = EntityID(student.id, Student)
-                this[StudentGroupAccess.course] = EntityID(courseId, Course)
+        newStudentsWithAccount.forEach { newStudent ->
+            val accessId = StudentCourseAccess.insertAndGetId {
+                it[course] = courseEntity
+                it[student] = EntityID(newStudent.id, Student)
+            }
+            StudentGroupAccess.batchInsert(newStudent.groups) {
+                this[StudentGroupAccess.student] = newStudent.id
+                this[StudentGroupAccess.course] = courseId
                 this[StudentGroupAccess.group] = EntityID(it, Group)
+                this[StudentGroupAccess.courseAccess] = accessId
             }
         }
 
-        // Delete & create pending accesses to reset validFrom
-        // TODO: use upsert instead?
-        StudentPendingGroup.deleteWhere {
-            StudentPendingGroup.course eq courseId and
-                    (StudentPendingGroup.email inList studentsNoAccount.map { it.email })
-        }
-
+        // Delete & create pending accesses to update validFrom & groups
         StudentPendingAccess.deleteWhere {
             StudentPendingAccess.course eq courseId and
                     (StudentPendingAccess.email inList studentsNoAccount.map { it.email })
         }
-        // TODO: why ignore = true?
-        StudentPendingAccess.batchInsert(studentsNoAccount, ignore = true) {
-            this[StudentPendingAccess.course] = EntityID(courseId, Course)
-            this[StudentPendingAccess.email] = it.email
-            this[StudentPendingAccess.validFrom] = now
-        }
-
-        studentsNoAccount.forEach { student ->
-            //            StudentPendingGroup.batchInsert(student.groups, ignore = true) {
-//                this[StudentPendingGroup.email] = student.email
-//                this[StudentPendingGroup.course] = EntityID(courseId, Course)
-//                this[StudentPendingGroup.group] = EntityID(it, Group)
-//            }
-
-            // https://github.com/JetBrains/Exposed/issues/639
-            // WHOML (Worst Hack Of My Life)
-            // TODO: fix
-            if (student.groups.isNotEmpty()) {
-                val placeholders = student.groups.joinToString { "(?, ?, ?)" }
-                val values = student.groups.flatMap {
-                    listOf(TextColumnType() to student.email,
-                            LongColumnType() to courseId,
-                            LongColumnType() to it)
-                }
-
-                val sql = "insert into student_pending_group_access (email, course_id, group_id) VALUES $placeholders;"
-                val s = TransactionManager.current().connection.prepareStatement(sql)
-                s.fillParameters(values)
-                s.executeUpdate()
+        studentsNoAccount.forEach { pendingStudent ->
+            val accessId = StudentPendingAccess.insertAndGetId {
+                it[course] = courseEntity
+                it[email] = pendingStudent.email
+                it[validFrom] = now
+            }
+            StudentPendingGroup.batchInsert(pendingStudent.groups) {
+                this[StudentPendingGroup.email] = pendingStudent.email
+                this[StudentPendingGroup.course] = courseId
+                this[StudentPendingGroup.group] = EntityID(it, Group)
+                this[StudentPendingGroup.pendingAccess] = accessId
             }
         }
 

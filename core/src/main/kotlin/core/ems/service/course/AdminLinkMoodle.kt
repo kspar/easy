@@ -25,9 +25,8 @@ class AdminLinkMoodleCourseController(val moodleSyncService: MoodleSyncService) 
     data class Req(@JsonProperty("moodle_short_name", required = true) @field:NotBlank @field:Size(max = 500)
                    val moodleShortName: String)
 
-    data class Resp(@JsonProperty("students_added") val studentsAdded: Int,
-                    @JsonProperty("pending_students_added") val pendingStudentsAdded: Int,
-                    @JsonProperty("student_access_removed") val studentAccessRemoved: Int)
+    data class Resp(@JsonProperty("students_synced") val studentsSynced: Int,
+                    @JsonProperty("pending_students_synced") val pendingStudentsSynced: Int)
 
 
     @Secured("ROLE_ADMIN")
@@ -39,8 +38,10 @@ class AdminLinkMoodleCourseController(val moodleSyncService: MoodleSyncService) 
 
         checkIfCourseExists(courseId)
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        // TODO: add Course.moodle_sync_students: Boolean
         val students = moodleSyncService.queryStudents(dto.moodleShortName)
-        return moodleSyncService.syncCourse(students, courseId, dto.moodleShortName)
+        val syncedStudents = moodleSyncService.syncCourse(students, courseId, dto.moodleShortName)
+        return Resp(syncedStudents.syncedStudents, syncedStudents.syncedPendingStudents)
     }
 }
 

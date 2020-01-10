@@ -88,37 +88,46 @@ object TeacherGroupAccess : Table("teacher_group_access") {
     val group = reference("group_id", Group).primaryKey()
 }
 
-object StudentCourseAccess : Table("student_course_access") {
-    val student = reference("student_id", Student).primaryKey()
-    val course = reference("course_id", Course).primaryKey()
+object StudentCourseAccess : LongIdTable("student_course_access") {
+    // Should not have ID but composite key
+    val student = reference("student_id", Student)//.primaryKey()
+    val course = reference("course_id", Course)//.primaryKey()
 }
 
 object StudentGroupAccess : Table("student_group_access") {
-    val student = reference("student_id", StudentCourseAccess.student).primaryKey()
-    val course = reference("course_id", StudentCourseAccess.course).primaryKey()
+    // Should not refer to StudentCourseAccess.id but to its composite key
+    val student = text("student_id") //reference("student_id", StudentCourseAccess.student).primaryKey()
+    val course = long("course_id") //reference("course_id", StudentCourseAccess.course).primaryKey()
+    val courseAccess = reference("student_course_access_id", StudentCourseAccess).primaryKey()
     val group = reference("group_id", Group).primaryKey()
 }
 
-object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
-    val course = reference("course_id", Course).primaryKey()
-    val moodleUsername = text("moodle_username").primaryKey()
+object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access") {
+    // Should not have ID but composite key
+    val course = reference("course_id", Course)//.primaryKey()
+    val moodleUsername = text("moodle_username")//.primaryKey()
 }
 
 object StudentMoodlePendingGroup : Table("student_moodle_pending_group_access") {
-    val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
-    val course = reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
+    // Should not refer to StudentMoodlePendingAccess.id but to its composite key
+    val moodleUsername = text("moodle_username") //reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
+    val course = long("course_id") //reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
+    val pendingAccess = reference("student_moodle_pending_access_id", StudentMoodlePendingAccess).primaryKey()
     val group = reference("group_id", Group).primaryKey()
 }
 
-object StudentPendingAccess : Table("student_pending_access") {
-    val course = reference("course_id", Course).primaryKey()
-    val email = text("email").primaryKey()
+object StudentPendingAccess : LongIdTable("student_pending_access") {
+    // Should not have ID but composite key
+    val course = reference("course_id", Course)//.primaryKey()
+    val email = text("email")//.primaryKey()
     val validFrom = datetime("valid_from")
 }
 
 object StudentPendingGroup : Table("student_pending_group_access") {
-    val email = reference("email", StudentPendingAccess.email).primaryKey()
-    val course = reference("course_id", StudentPendingAccess.course).primaryKey()
+    // Should not refer to StudentPendingAccess.id but to its composite key
+    val email = text("email") //reference("email", StudentPendingAccess.email).primaryKey()
+    val course = long("course_id") //reference("course_id", StudentPendingAccess.course).primaryKey()
+    val pendingAccess = reference("student_pending_access_id", StudentPendingAccess).primaryKey()
     val group = reference("group_id", Group).primaryKey()
 }
 

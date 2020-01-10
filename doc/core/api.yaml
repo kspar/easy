@@ -1371,11 +1371,9 @@ paths:
           description: Number of student access added, pending and removed.
           schema:
             properties:
-              students_added:
+              students_synced:
                 type: integer
-              pending_students_added:
-                type: integer
-              student_access_removed:
+              pending_students_synced:
                 type: integer
 
 

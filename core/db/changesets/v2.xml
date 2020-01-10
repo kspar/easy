@@ -694,4 +694,83 @@
         <addDefaultValue tableName="article_version" columnName="id" defaultValueSequenceNext="article_version_id_seq"/>
     </changeSet>
 
+    <changeSet id="090120-1" author="kspar">
+        <!-- Hack to bypass exposed's problems with references to composite PKs: https://github.com/JetBrains/Exposed/issues/639
+        Replace composite keys of student_course_access, student_pending_access, student_moodle_pending_access
+        and references to them by their respective groups with IDs. However, keep the columns themselves so it would be
+        easier to migrate back. -->
+
+        <dropUniqueConstraint tableName="student_group_access" constraintName="student_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_group_access" constraintName="fk_student_group_access_student_course_access"/>
+
+        <dropUniqueConstraint tableName="student_course_access" constraintName="student_course_access_pkey"/>
+        <addUniqueConstraint tableName="student_course_access" columnNames="course_id, student_id"/>
+        <addColumn tableName="student_course_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_group_access">
+            <column name="student_course_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_group_access" baseColumnNames="student_course_access_id"
+                                 referencedTableName="student_course_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_group_access_student_course_access"/>
+        <addPrimaryKey tableName="student_group_access" columnNames="student_course_access_id, group_id"/>
+
+
+
+        <dropUniqueConstraint tableName="student_pending_group_access" constraintName="student_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_pending_group_access" constraintName="fk_student_pending_group_access_student_pending_access"/>
+
+        <dropUniqueConstraint tableName="student_pending_access" constraintName="student_pending_access_pkey"/>
+        <addUniqueConstraint tableName="student_pending_access" columnNames="course_id, email"/>
+        <addColumn tableName="student_pending_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_pending_group_access">
+            <column name="student_pending_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_pending_group_access" baseColumnNames="student_pending_access_id"
+                                 referencedTableName="student_pending_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_pending_group_access_student_pending_access"/>
+        <addPrimaryKey tableName="student_pending_group_access" columnNames="student_pending_access_id, group_id"/>
+
+
+
+        <dropUniqueConstraint tableName="student_moodle_pending_group_access" constraintName="student_moodle_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_moodle_pending_group_access" constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
+
+        <dropUniqueConstraint tableName="student_moodle_pending_access" constraintName="student_moodle_pending_access_pkey"/>
+        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="course_id, moodle_username"/>
+        <addColumn tableName="student_moodle_pending_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_moodle_pending_group_access">
+            <column name="student_moodle_pending_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access" baseColumnNames="student_moodle_pending_access_id"
+                                 referencedTableName="student_moodle_pending_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_group_access" columnNames="student_moodle_pending_access_id, group_id"/>
+    </changeSet>
+
+
+
 </databaseChangeLog>
