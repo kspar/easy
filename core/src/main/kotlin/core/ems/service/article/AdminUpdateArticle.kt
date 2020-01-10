@@ -6,8 +6,8 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
 import core.ems.service.AdocService
-import core.ems.service.aliasToIdOrIdToLong
 import core.ems.service.assertArticleExists
+import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SortOrder
@@ -37,7 +37,7 @@ class UpdateArticleController(private val adocService: AdocService) {
     fun controller(@Valid @RequestBody req: Req, @PathVariable("articleId") articleIdString: String, caller: EasyUser) {
 
         log.debug { "Update article '$articleIdString' by ${caller.id}" }
-        val articleId = aliasToIdOrIdToLong(articleIdString)
+        val articleId = articleIdString.idToLongOrInvalidReq()
 
         assertArticleExists(articleId)
 
