@@ -53,7 +53,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
     return transaction {
 
         val time = DateTime.now()
-        val hash = hashString(req.data, "SHA-256") + time.toInstant().millis
+        val hash = hashString(req.data + time.toInstant().millis, "SHA-256", 20)
         val content = Base64.getDecoder().decode(req.data)
         val mimeType: String = Tika().detect(content)
 
@@ -69,9 +69,10 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
 }
 
 // https://gist.github.com/lovubuntu/164b6b9021f5ba54cefc67f60f7a1a25
-private fun hashString(input: String, algorithm: String): String {
+private fun hashString(input: String, algorithm: String, n: Int): String {
     return MessageDigest
             .getInstance(algorithm)
             .digest(input.toByteArray())
+            .take(n)
             .fold("", { str, it -> str + "%02x".format(it) })
 }
