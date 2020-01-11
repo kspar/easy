@@ -100,8 +100,6 @@ object CoursesPage : EasyPage() {
                                 )
                             }.toTypedArray()))
 
-            debug { "Rendered courses html: $coursesHtml" }
-
             getContainer().innerHTML = coursesHtml
 
             val newState = State(coursesHtml, Role.STUDENT)
