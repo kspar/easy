@@ -7,6 +7,7 @@ import ReqMethod
 import Role
 import Str
 import compareTo
+import createQueryString
 import debug
 import debugFunStart
 import errorMessage
@@ -27,6 +28,7 @@ import kotlinx.serialization.Serializable
 import libheaders.*
 import objOf
 import observeValueChange
+import onChange
 import onVanillaClick
 import org.w3c.dom.*
 import parseTo
@@ -90,6 +92,17 @@ object ExerciseSummaryPage : EasyPage() {
     data class AutoassResult(
             val grade: Int,
             val feedback: String?
+    )
+
+    @Serializable
+    data class Groups(
+            val groups: List<Group>
+    )
+
+    @Serializable
+    data class Group(
+            val id: String,
+            val name: String
     )
 
     @Serializable
@@ -367,10 +380,55 @@ object ExerciseSummaryPage : EasyPage() {
         fl?.end()
     }
 
+
     private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, threshold: Int) {
         val fl = debugFunStart("buildTeacherStudents")
+        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students")
+        buildTeacherStudentsFrame(courseId, courseExerciseId, threshold)
+        buildTeacherStudentsList(courseId, courseExerciseId, threshold)
+        fl?.end()
+    }
 
-        val studentsPromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students", ReqMethod.GET)
+    private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, threshold: Int) {
+        fetchEms("/courses/$courseId/groups", ReqMethod.GET).then {
+            if (!it.http200) {
+                errorMessage { Str.somethingWentWrong() }
+                error("Fetching groups failed with status ${it.status}")
+            }
+            it.parseTo(Groups.serializer())
+        }.then {
+            val groups = it.groups
+            debug { "Groups available: $groups" }
+            if (groups.isNotEmpty()) {
+                val map = mapOf("groupLabel" to "Rühm",
+                        "allLabel" to "Kõik rühmad",
+                        "manyGroups" to (groups.size > 1),
+                        "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) })
+
+                getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", map)
+                initSelectFields()
+                val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
+                groupSelect.onChange {
+                    MainScope().launch {
+                        val group = groupSelect.value
+                        debug { "Selected group $group" }
+                        buildTeacherStudentsList(courseId, courseExerciseId, threshold, group)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initSelectFields() {
+        Materialize.FormSelect.init(getNodelistBySelector("select"), objOf("coverTrigger" to false))
+    }
+
+    private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, threshold: Int,
+                                                 groupId: String? = null) {
+
+        val q = createQueryString("group" to groupId)
+        val studentsPromise = fetchEms(
+                "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET)
         val studentsResp = studentsPromise.await()
         if (!studentsResp.http200) {
             errorMessage { Str.somethingWentWrong() }
@@ -413,7 +471,7 @@ object ExerciseSummaryPage : EasyPage() {
             studentMap.toJsObj()
         }.toTypedArray()
 
-        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students", mapOf(
+        getElemById("students-list").innerHTML = tmRender("tm-teach-exercise-students-list", mapOf(
                 "students" to studentArray,
                 "autoLabel" to Str.gradedAutomatically(),
                 "teacherLabel" to Str.gradedByTeacher(),
@@ -434,9 +492,8 @@ object ExerciseSummaryPage : EasyPage() {
         }
 
         initTooltips()
-
-        fl?.end()
     }
+
 
     private fun buildStudentTab(courseId: String, courseExerciseId: String, threshold: Int,
                                 studentId: String, givenName: String, familyName: String, isAllSubsOpen: Boolean) {

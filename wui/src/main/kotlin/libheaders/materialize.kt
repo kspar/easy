@@ -10,6 +10,7 @@ external object Materialize {
     val Tabs: MTabs
     val Toast: MToast
     val Materialbox: MMaterialbox
+    val FormSelect: MFormSelect
 
     fun toast(options: dynamic)
 }
@@ -47,4 +48,13 @@ external class MToast {
 
 external class MMaterialbox {
     fun init(elements: dynamic, options: dynamic = definedExternally)
+}
+
+external class MFormSelectInstance {
+    val el: Element
+    fun getSelectedValues(): dynamic
+}
+
+external class MFormSelect {
+    fun init(elements: dynamic, options: dynamic = definedExternally) : MFormSelectInstance
 }

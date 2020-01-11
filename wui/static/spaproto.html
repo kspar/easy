@@ -216,6 +216,27 @@
 </script>
 
 <script id="tm-teach-exercise-students" type="text/x-handlebars-template">
+    <div id="students-frame"></div>
+    <div id="students-list"></div>
+</script>
+
+<script id="tm-teach-exercise-students-frame" type="text/x-handlebars-template">
+    {{#groupLabel}}
+        <div class="input-field group-select-wrap">
+            <select id="group-select" {{^manyGroups}}disabled{{/manyGroups}}>
+                {{#manyGroups}}
+                    <option value="">{{allLabel}}</option>
+                {{/manyGroups}}
+                {{#groups}}
+                    <option value="{{id}}">{{name}}</option>
+                {{/groups}}
+            </select>
+            <label>{{groupLabel}}</label>
+        </div>
+    {{/groupLabel}}
+</script>
+
+<script id="tm-teach-exercise-students-list" type="text/x-handlebars-template">
     <div class="collection divided-collection">
         {{#students}}
             <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">

@@ -93,7 +93,8 @@ nav.nav-center ul li a.nav-link {
     }
 }
 
-.dropdown-content li > a {
+.dropdown-content li > a,
+.dropdown-content li > span {
     color: #000;
     font-size: 1.5rem;
 }
@@ -339,6 +340,11 @@ nav.crumb-wrap .breadcrumb:before {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+}
+
+#exercise-card .group-select-wrap {
+    width: fit-content;
+    margin-bottom: 2rem;
 }
 
 #exercise-card .submission-item > * {
@@ -845,9 +851,9 @@ a.uncolored {
 
 /** Form elements **/
 
-.input-field input[type=number],
-.input-field textarea {
-    height: 3.5rem;
+input,
+textarea {
+    height: 4rem !important;
 }
 
 .input-field label {
@@ -864,9 +870,24 @@ textarea + label {
     font-size: 1.6rem !important;
 }
 
-textarea:focus + label {
+*:focus + label {
     color: #469c45 !important;
 }
+
+.select-wrapper + label {
+    font-size: 1.3rem
+}
+
+.select-wrapper input.select-dropdown:focus {
+    border-bottom: 1px solid #469c45 !important;
+}
+
+/* Not sure about this */
+/*.select-dropdown.dropdown-content li.selected,*/
+/*body.keyboard-focused .select-dropdown.dropdown-content li:focus {*/
+/*    background-color: rgba(70, 156, 69, 0.1);*/
+/*}*/
+
 
 
 /** Divided collection **/

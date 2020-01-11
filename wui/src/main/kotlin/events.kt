@@ -1,5 +1,5 @@
-import org.w3c.dom.Element
 import org.w3c.dom.Node
+import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 
 fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit) {
@@ -20,5 +20,11 @@ fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit)
 
             f(event)
         }
+    })
+}
+
+fun Node.onChange(f: (event: Event) -> Unit) {
+    this.addEventListener("change", { event ->
+        f(event)
     })
 }
