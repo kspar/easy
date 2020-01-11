@@ -855,6 +855,24 @@ paths:
           description: Exercise added.
 
 
+  /courses/{courseId}/groups:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+    get:
+      summary: Get all groups on this course that the caller has access to.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Groups.
+          schema:
+            properties:
+              groups:
+                type: array
+                items:
+                  $ref: '#/definitions/Group'
+
+
   /courses/teacher/{courseId}/grades:
     parameters:
       - $ref: '#/parameters/CourseId'
