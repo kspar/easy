@@ -106,7 +106,8 @@ object ExerciseSummaryPage : EasyPage() {
             @Serializable(with = DateSerializer::class)
             val submission_time: Date?,
             val grade: Int?,
-            val graded_by: GraderType?
+            val graded_by: GraderType?,
+            val groups: String? = null
     )
 
     @Serializable
