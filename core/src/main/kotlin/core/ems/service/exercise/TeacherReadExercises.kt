@@ -5,14 +5,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.selectLatestGradeForSubmission
-import core.ems.service.selectLatestSubmissionsForExercise
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -52,59 +49,94 @@ class TeacherReadCourseExercisesController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectTeacherExercisesOnCourse(courseId)
+        return Resp(selectTeacherExercisesOnCourse(courseId, caller.id))
     }
 }
 
 
-private fun selectTeacherExercisesOnCourse(courseId: Long): TeacherReadCourseExercisesController.Resp {
+private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String):
+        List<TeacherReadCourseExercisesController.CourseExerciseResp> {
 
     return transaction {
-        val studentCount = StudentCourseAccess.select {
-            StudentCourseAccess.course eq courseId
-        }.count()
 
-        TeacherReadCourseExercisesController.Resp(
-                (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                        .slice(CourseExercise.id,
-                                CourseExercise.gradeThreshold,
-                                CourseExercise.softDeadline,
-                                ExerciseVer.graderType,
-                                ExerciseVer.title,
-                                ExerciseVer.validTo,
-                                CourseExercise.titleAlias)
-                        .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                        .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                        .mapIndexed { i, ex ->
+        val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
 
-                            val latestSubmissionIds = selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
-                            val latestGrades = latestSubmissionIds.map { selectLatestGradeForSubmission(it) }
+        val studentQuery = (StudentCourseAccess leftJoin StudentGroupAccess)
+                .slice(StudentCourseAccess.student)
+                .select { StudentCourseAccess.course eq courseId }
+                .withDistinct()
 
-                            val gradeThreshold = ex[CourseExercise.gradeThreshold]
+        if (restrictedGroups.isNotEmpty()) {
+            studentQuery.andWhere {
+                StudentGroupAccess.group inList restrictedGroups or
+                        (StudentGroupAccess.group.isNull())
+            }
+        }
 
-                            val unstartedCount = studentCount - latestSubmissionIds.size
-                            val ungradedCount = latestGrades.count { it == null }
-                            val startedCount = latestGrades.count { it != null && it < gradeThreshold }
-                            val completedCount = latestGrades.count { it != null && it >= gradeThreshold }
+        val studentCount = studentQuery.count()
 
-                            // Sanity check
-                            if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
-                                log.warn {
-                                    "Student grade sanity check failed. unstarted: $unstartedCount, ungraded: $ungradedCount, " +
-                                            "started: $startedCount, completed: $completedCount, students in course: $studentCount"
-                                }
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline,
+                        ExerciseVer.graderType, ExerciseVer.title, CourseExercise.titleAlias)
+                .select {
+                    CourseExercise.course eq courseId and
+                            ExerciseVer.validTo.isNull()
+                }
+                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                .mapIndexed { i, ex ->
 
-                            TeacherReadCourseExercisesController.CourseExerciseResp(
-                                    ex[CourseExercise.id].value.toString(),
-                                    ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                                    ex[CourseExercise.softDeadline],
-                                    ex[ExerciseVer.graderType],
-                                    i,
-                                    unstartedCount,
-                                    ungradedCount,
-                                    startedCount,
-                                    completedCount
-                            )
-                        })
+                    val ceId = ex[CourseExercise.id]
+
+                    val distinctStudentId = StudentCourseAccess.student.distinctOn().alias("studentId")
+                    val validGrade = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("validGrade")
+
+                    val query = (Join(Submission, StudentCourseAccess leftJoin StudentGroupAccess,
+                            onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
+                            leftJoin AutomaticAssessment leftJoin TeacherAssessment)
+                            .slice(distinctStudentId, validGrade)
+                            .select { Submission.courseExercise eq ceId }
+                            .orderBy(distinctStudentId to SortOrder.ASC,
+                                    Submission.createdAt to SortOrder.DESC,
+                                    AutomaticAssessment.createdAt to SortOrder.DESC,
+                                    TeacherAssessment.createdAt to SortOrder.DESC)
+
+                    if (restrictedGroups.isNotEmpty()) {
+                        query.andWhere {
+                            StudentGroupAccess.group inList restrictedGroups or
+                                    (StudentGroupAccess.group.isNull())
+                        }
+                    }
+
+                    val latestSubmissionGrades = query.map {
+                        val validGrade: Int? = it[validGrade]
+                        validGrade
+                    }
+
+                    val gradeThreshold = ex[CourseExercise.gradeThreshold]
+
+                    val unstartedCount = studentCount - latestSubmissionGrades.size
+                    val ungradedCount = latestSubmissionGrades.count { it == null }
+                    val startedCount = latestSubmissionGrades.count { it != null && it < gradeThreshold }
+                    val completedCount = latestSubmissionGrades.count { it != null && it >= gradeThreshold }
+
+                    // Sanity check
+                    if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
+                        log.warn {
+                            "Student grade sanity check failed. unstarted: $unstartedCount, ungraded: $ungradedCount, " +
+                                    "started: $startedCount, completed: $completedCount, students in course: $studentCount"
+                        }
+
+                    TeacherReadCourseExercisesController.CourseExerciseResp(
+                            ex[CourseExercise.id].value.toString(),
+                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                            ex[CourseExercise.softDeadline],
+                            ex[ExerciseVer.graderType],
+                            i,
+                            unstartedCount,
+                            ungradedCount,
+                            startedCount,
+                            completedCount
+                    )
+                }
     }
 }
