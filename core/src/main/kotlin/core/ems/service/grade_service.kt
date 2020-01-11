@@ -177,8 +177,10 @@ class GradeService {
     private fun selectExercisesOnCourse(courseId: Long): List<MoodleReqExercise> {
         return transaction {
             (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                    .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId)
+                    .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId,
+                            CourseExercise.orderIdx)
                     .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+                    .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                     .map { ex ->
 
                         val grades =
