@@ -12,6 +12,7 @@ from containers import grade_submission, RunStatus
 # TODO: move to conf file
 TIME_EXCEEDED_MESSAGE = "Programmi kontrollimine ületas lubatud käivitusaega."
 MEM_EXCEEDED_MESSAGE = "Programmi kontrollimine ületas lubatud mälumahtu."
+SOMETHING_FAILED_MESSAGE = "Automaatkontrollimise käigus tekkis ootamatu viga. Tõenäoliselt on esitatud lahenduses midagi valesti."
 
 app = Flask(__name__)
 app.logger.setLevel("DEBUG")
@@ -86,7 +87,11 @@ def post_grade():
                                           content["max_time_sec"], content["max_mem_mb"], app.logger, request_time)
 
     if status == RunStatus.SUCCESS:
-        assessment = parse_assessment_output(raw_output)
+        try:
+            assessment = parse_assessment_output(raw_output)
+        except Exception as e:
+            app.logger.error(e)
+            assessment = (0, SOMETHING_FAILED_MESSAGE)
     elif status == RunStatus.TIME_EXCEEDED:
         assessment = (0, TIME_EXCEEDED_MESSAGE)
     elif status == RunStatus.MEM_EXCEEDED:
