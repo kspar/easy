@@ -363,6 +363,11 @@ nav.crumb-wrap .breadcrumb:before {
     margin-left: 10px;
 }
 
+#exercise-card .groups {
+    font-size: 0.8em;
+    margin-left: 1rem;
+}
+
 #exercise-card .time {
     font-size: 0.8em;
     margin: 0 1rem;
@@ -881,7 +886,7 @@ div.divided-collection a.collection-item {
 @media only screen and (min-width: 600px) {
     div.divided-collection a.collection-item {
         font-size: 2.1rem;
-        line-height: 5rem;
+        line-height: 4rem;
     }
 }
 

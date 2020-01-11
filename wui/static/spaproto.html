@@ -220,7 +220,7 @@
         {{#students}}
             <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
                 <div class="submission-item">
-                    <span class="truncate" style="flex-shrink: 0.3;">{{givenName}} {{familyName}}</span>
+                    <span class="truncate" style="flex-shrink: 0.3;">{{givenName}} {{familyName}}{{#groups}}<span class="groups">({{groups}})</span>{{/groups}}</span>
                     <span class="time truncate">{{time}}</span>
                     <span class="grade">
                        <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span

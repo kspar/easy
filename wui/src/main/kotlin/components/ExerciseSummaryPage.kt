@@ -384,6 +384,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "id" to student.student_id,
                     "givenName" to student.given_name,
                     "familyName" to student.family_name,
+                    "groups" to student.groups,
                     "time" to student.submission_time?.toEstonianString(),
                     "points" to student.grade?.toString()
             )
@@ -419,21 +420,16 @@ object ExerciseSummaryPage : EasyPage() {
                 "missingLabel" to Str.notGradedYet()
         ))
 
-        getNodelistBySelector("[data-student-id]").asList().forEach {
-            if (it is Element) {
-                val id = it.getAttribute("data-student-id")
-                        ?: error("No data-student-id found on student item")
-                val givenName = it.getAttribute("data-given-name")
-                        ?: error("No data-given-name found on student item")
-                val familyName = it.getAttribute("data-family-name")
-                        ?: error("No data-family-name found on student item")
+        getElemsBySelector("[data-student-id]").forEach {
+            val id = it.getAttribute("data-student-id")
+                    ?: error("No data-student-id found on student item")
+            val givenName = it.getAttribute("data-given-name")
+                    ?: error("No data-given-name found on student item")
+            val familyName = it.getAttribute("data-family-name")
+                    ?: error("No data-family-name found on student item")
 
-                it.onVanillaClick(true) {
-                    buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName, false)
-                }
-
-            } else {
-                error("Student item is not an Element")
+            it.onVanillaClick(true) {
+                buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName, false)
             }
         }
 
