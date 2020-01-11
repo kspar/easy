@@ -351,6 +351,10 @@ nav.crumb-wrap .breadcrumb:before {
     flex-shrink: 0;
 }
 
+#exercise-card .collection-item {
+    line-height: 4rem;
+}
+
 #exercise-card .collection-item .row {
     margin-bottom: 0;
 }
@@ -907,7 +911,7 @@ div.divided-collection a.collection-item {
 @media only screen and (min-width: 600px) {
     div.divided-collection a.collection-item {
         font-size: 2.1rem;
-        line-height: 4rem;
+        line-height: 5rem;
     }
 }
 
