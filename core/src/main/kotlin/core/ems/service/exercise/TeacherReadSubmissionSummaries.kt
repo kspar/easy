@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -46,7 +47,8 @@ class TeacherReadSubmissionSummariesController {
                             @JsonSerialize(using = DateTimeSerializer::class)
                             @JsonProperty("submission_time") val submissionTime: DateTime?,
                             @JsonProperty("grade") val grade: Int?,
-                            @JsonProperty("graded_by") val gradedBy: GraderType?)
+                            @JsonProperty("graded_by") val gradedBy: GraderType?,
+                            @JsonProperty("groups") val groups: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
@@ -57,13 +59,17 @@ class TeacherReadSubmissionSummariesController {
                    @RequestParam("order", required = false) orderString: String?,
                    @RequestParam("limit", required = false) limitStr: String?,
                    @RequestParam("offset", required = false) offsetStr: String?,
+                   @RequestParam("group", required = false) groupIdStr: String?,
                    caller: EasyUser): Resp {
 
         log.debug {
             "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString " +
-                    "on course $courseIdString (search string: '$searchString', orderby: $orderByString, order: $orderString)"
+                    "on course $courseIdString (search string: '$searchString', " +
+                    "orderby: $orderByString, order: $orderString, group: $groupIdStr)"
         }
         val courseId = courseIdString.idToLongOrInvalidReq()
+        val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
+        val groupId = groupIdStr?.idToLongOrInvalidReq()
 
         val orderBy = when (orderByString) {
             "name" -> OrderBy.FAMILY_NAME
@@ -81,40 +87,67 @@ class TeacherReadSubmissionSummariesController {
         }
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        if (groupId != null) assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
 
         val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
-        return selectTeacherSubmissionSummaries(courseId, courseExerciseIdString.idToLongOrInvalidReq(),
+        return selectTeacherSubmissionSummaries(caller.id, courseId, courseExId, groupId,
                 queryWords, orderBy, order, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull())
     }
 }
 
-private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, queryWords: List<String>,
-                                             orderBy: OrderBy, order: SortOrder, offset: Int?, limit: Int?):
-        TeacherReadSubmissionSummariesController.Resp {
+private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, courseExId: Long, groupId: Long?,
+                                             queryWords: List<String>, orderBy: OrderBy, order: SortOrder,
+                                             offset: Int?, limit: Int?): TeacherReadSubmissionSummariesController.Resp {
     return transaction {
 
-        // Alias is needed on distinctOn for some reason
-        val distinctStudentId = Student.id.distinctOn().alias("student_id")
+        // Aliases are needed on all of these
+        val distinctStudentId = Student.id.distinctOn().alias("studentId")
         // Prevent teacher and auto grade name clash
-        val autoGradeAlias = AutomaticAssessment.grade.alias("auto_grade")
-        val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("valid_grade")
+        val autoGradeAlias = AutomaticAssessment.grade.alias("autoGrade")
+        val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("validGrade")
+        val groupsString = GroupConcat(Group.name, ", ", false).alias("groupsString")
 
         val subQuery = (
-                Join(StudentCourseAccess, CourseExercise, onColumn = StudentCourseAccess.course, otherColumn = CourseExercise.course)
-                        innerJoin Student innerJoin Account leftJoin
+                Join(StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group), CourseExercise,
+                        onColumn = StudentCourseAccess.course, otherColumn = CourseExercise.course) innerJoin
+                        Student innerJoin Account leftJoin
                         (Submission leftJoin AutomaticAssessment leftJoin TeacherAssessment))
                 .slice(distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
-                        autoGradeAlias, TeacherAssessment.grade, validGradeAlias)
+                        autoGradeAlias, TeacherAssessment.grade, validGradeAlias, groupsString)
                 .select {
                     (CourseExercise.id eq courseExId) and
                             (CourseExercise.course eq courseId)
                 }
+                // Grouping for groupsString since there can be many groups
+                .groupBy(distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
+                        autoGradeAlias, TeacherAssessment.grade, validGradeAlias, AutomaticAssessment.createdAt,
+                        TeacherAssessment.createdAt)
                 // These ORDER BY clauses are for selecting correct first rows in DISTINCT groups
                 .orderBy(distinctStudentId to SortOrder.ASC,
                         Submission.createdAt to SortOrder.DESC,
                         AutomaticAssessment.createdAt to SortOrder.DESC,
                         TeacherAssessment.createdAt to SortOrder.DESC)
+
+        when {
+            groupId != null -> subQuery.andWhere { StudentGroupAccess.group eq groupId }
+            else -> {
+                val restrictedGroups = TeacherGroupAccess
+                        .slice(TeacherGroupAccess.group)
+                        .select {
+                            TeacherGroupAccess.course eq courseId and
+                                    (TeacherGroupAccess.teacher eq callerId)
+                        }.map { it[TeacherGroupAccess.group] }
+
+                log.trace { "Restricted groups: $restrictedGroups" }
+                if (restrictedGroups.isNotEmpty()) {
+                    subQuery.andWhere {
+                        StudentGroupAccess.group inList restrictedGroups or
+                                (StudentGroupAccess.group.isNull())
+                    }
+                }
+            }
+        }
 
         queryWords.forEach {
             subQuery.andWhere {
@@ -129,7 +162,7 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
                 // Slice is needed because aliased columns are not included by default
                 .slice(subTable[distinctStudentId], subTable[Account.givenName], subTable[Account.familyName],
                         subTable[Submission.createdAt], subTable[TeacherAssessment.grade], subTable[autoGradeAlias],
-                        subTable[validGradeAlias])
+                        subTable[validGradeAlias], subTable[groupsString])
                 .selectAll()
 
         when (orderBy) {
@@ -172,7 +205,8 @@ private fun selectTeacherSubmissionSummaries(courseId: Long, courseExId: Long, q
                             it[subTable[Account.familyName]],
                             it[subTable[Submission.createdAt]],
                             validGradePair?.first,
-                            validGradePair?.second
+                            validGradePair?.second,
+                            it[subTable[groupsString]]
                     )
                 }
 

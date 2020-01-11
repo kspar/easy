@@ -1070,6 +1070,10 @@ paths:
       summary: Get latest submission summaries for this exercise of all students in this course.
       parameters:
         - in: query
+          name: group
+          type: string
+          description: Group ID. If given, return only students who are in this group.
+        - in: query
           name: search
           type: string
           description: Search string that is matched on student names and username.
@@ -1126,6 +1130,8 @@ paths:
                       description: Exists if the student has an assessment on the latest submission (together with graded_by).
                     graded_by:
                       $ref: '#/definitions/GraderType'
+                    groups:
+                      type: string
                   required:
                     - student_id
                     - given_name
