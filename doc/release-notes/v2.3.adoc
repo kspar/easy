@@ -1,0 +1,21 @@
+
+
+= Release notes: v2.3
+
+* Exercise texts are now in asciidoc by default. (EZ-1171, EZ-1202)
+* Many improvements/addons to the Asciidoctor compiler: links open in a new window by default (EZ-1217), syntax highlighting (EZ-1200), "easyCode" postprocessor for custom syntax highlighting, MathJax integration for LaTeX typesetting (EZ-1210),
+* University of Tartu authentication integration using a token claim ut_uid. (EZ-1074)
+* Moodle integration for syncing users (Moodle -> easy) and grades (easy -> Moodle). (EZ-1207)
+* Student pending course accesses for both normal and Moodle-synced courses. (EZ-1113)
+* Groups for teachers and students (partially completed). Grouped teachers can only see students who are in their own group or ungrouped. (EZ-1211)
+* Teachers can now see automatic assessment files below the exercise text. (EZ-1216)
+* Fixed a bug where some students were not shown to teachers in the submissions tab of the exercise page if they had no submissions. (EZ-1208)
+* Fixed a bug where the executor would return an error if the grading script failed to produce output in the correct format, now it returns 0 points with a special message. (EZ-1218)
+* A teacher entity is now automatically created if an existing account is added to a course as a teacher but it has no teacher entity. (EZ-1206)
+* Optimised loading exercises for teachers.
+* Optimised course exercise indices to allow reordering by only updating the moving exercise. Added periodic index normalisation. (EZ-1209)
+* Updated several dependencies.
+* Optimised logging.
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.3%20[here].
