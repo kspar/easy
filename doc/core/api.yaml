@@ -297,6 +297,8 @@ paths:
           description: File as a resource.
           schema:
             type: file
+        404:
+          description: File not found.
 
 
   /management/log:
