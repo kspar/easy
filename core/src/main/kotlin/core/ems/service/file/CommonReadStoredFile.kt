@@ -3,6 +3,7 @@ package core.ems.service.file
 import core.conf.security.EasyUser
 import core.db.StoredFile
 import core.db.StoredFile.data
+import core.db.StoredFile.filename
 import core.db.StoredFile.type
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
@@ -33,6 +34,7 @@ class ReadStoredFileController {
 
         if (storedFile != null) {
             response.contentType = storedFile.type
+            response.setHeader("Content-disposition", """inline; filename="${storedFile.name}"""");
             response.outputStream.write(storedFile.blob.getBytes(1, storedFile.blob.length().toInt()))
             // Recommended to free.
             storedFile.blob.free()
@@ -42,13 +44,13 @@ class ReadStoredFileController {
     }
 }
 
-data class TempStoredFile(val type: String, val blob: Blob)
+data class TempStoredFile(val type: String, val name: String, val blob: Blob)
 
 private fun selectFile(fileIdString: String): TempStoredFile? {
     return transaction {
-        StoredFile.slice(type, data)
+        StoredFile.slice(type, data, filename)
                 .select { StoredFile.id eq fileIdString }
-                .map { TempStoredFile(it[type], it[data]) }
+                .map { TempStoredFile(it[type], it[filename], it[data]) }
                 .firstOrNull()
     }
 }
