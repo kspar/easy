@@ -187,7 +187,7 @@ object ParticipantsPage : EasyPage() {
                         "name" to "${it.given_name} ${it.family_name}",
                         "username" to it.id,
                         "email" to it.email,
-                        "group" to it.groups.joinToString()
+                        "group" to it.groups.joinToString { it.name }
                 )
             }.toTypedArray()
 
