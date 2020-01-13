@@ -39,7 +39,7 @@ class UploadStoredFiledController {
 
     data class Resp(@JsonProperty("id") val id: String)
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_ADMIN", "ROLE_TEACHER")
     @PostMapping("/files")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
