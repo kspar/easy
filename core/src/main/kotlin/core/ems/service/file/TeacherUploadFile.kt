@@ -2,8 +2,8 @@ package core.ems.service.file
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Account
 import core.db.StoredFile
+import core.db.Teacher
 import mu.KotlinLogging
 import org.apache.tika.Tika
 import org.jetbrains.exposed.dao.EntityID
@@ -63,7 +63,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
             it[data] = SerialBlob(content)
             it[filename] = req.filename
             it[createdAt] = time
-            it[owner] = EntityID(creator, Account)
+            it[owner] = EntityID(creator, Teacher)
         }.value
     }
 }
