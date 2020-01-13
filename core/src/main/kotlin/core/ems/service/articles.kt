@@ -35,12 +35,3 @@ private fun articleAliasExists(articleId: Long, alias: String): Boolean {
         }.count() != 0
     }
 }
-
-fun aliasToIdOrIdToLong(articleIdString: String): Long {
-    return transaction {
-        ArticleAlias.slice(ArticleAlias.article)
-                .select { ArticleAlias.id eq EntityID(articleIdString, ArticleAlias) }
-                .map { it[ArticleAlias.article].value }
-                .firstOrNull() ?: articleIdString.idToLongOrInvalidReq()
-    }
-}

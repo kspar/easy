@@ -8,10 +8,11 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
-import core.ems.service.aliasToIdOrIdToLong
 import core.ems.service.assertArticleExists
+import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
+import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -127,5 +128,14 @@ private fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsContro
                             it[ArticleAlias.owner].value
                     )
                 }
+    }
+}
+
+private fun aliasToIdOrIdToLong(articleIdString: String): Long {
+    return transaction {
+        ArticleAlias.slice(ArticleAlias.article)
+                .select { ArticleAlias.id eq EntityID(articleIdString, ArticleAlias) }
+                .map { it[ArticleAlias.article].value }
+                .firstOrNull() ?: articleIdString.idToLongOrInvalidReq()
     }
 }
