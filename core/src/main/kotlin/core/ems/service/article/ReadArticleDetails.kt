@@ -8,8 +8,9 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
-import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -61,8 +62,6 @@ class ReadArticleDetailsController {
         log.debug { "Getting article $articleIdString details for ${caller.id}" }
         val articleId = aliasToIdOrIdToLong(articleIdString)
 
-        assertArticleExists(articleId)
-
         return selectLatestArticleVersion(articleId, caller.isAdmin())
     }
 }
@@ -96,7 +95,8 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                             it[ArticleVersion.textAdoc],
                             if (isAdmin) it[Article.public] else null,
                             if (isAdmin) selectArticleAliases(it[Article.id].value) else null)
-                }.first()
+                }.firstOrNull()
+                ?: throw InvalidRequestException("No article with id $articleId found", ReqError.ARTICLE_NOT_FOUND)
     }
 }
 
