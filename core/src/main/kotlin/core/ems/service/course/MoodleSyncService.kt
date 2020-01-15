@@ -115,8 +115,10 @@ class MoodleSyncService {
             val newAccesses =
                     moodleResponse.students.flatMap { moodleStudent ->
                         Account.slice(Account.id)
-                                .select { Account.moodleUsername eq moodleStudent.username or
-                                        (Account.email eq moodleStudent.email) }
+                                .select {
+                                    Account.moodleUsername eq moodleStudent.username or
+                                            (Account.email eq moodleStudent.email)
+                                }
                                 .map {
                                     NewAccess(
                                             it[Account.id].value,
