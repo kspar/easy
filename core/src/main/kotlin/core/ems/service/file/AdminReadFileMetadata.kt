@@ -37,7 +37,7 @@ class ReadFileMetadataController {
             @JsonProperty("exercise_id") val exerciseId: String,
             @JsonProperty("filename") val filename: String,
             @JsonProperty("type") val type: String,
-            @JsonProperty("size_bytes") val sizeBytes: Int,
+            @JsonProperty("size_bytes") val sizeBytes: Long,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("created_at") val createdAt: DateTime,
             @JsonProperty("created_by") val createdBy: String

@@ -781,4 +781,14 @@
     </changeSet>
 
 
+    <changeSet id="150120-2" author="priit">
+        <dropColumn tableName="stored_file" columnName="size_bytes"/>
+        <addColumn tableName="stored_file">
+            <column name="size_bytes" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+
 </databaseChangeLog>
