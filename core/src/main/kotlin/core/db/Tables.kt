@@ -240,6 +240,7 @@ object StoredFile : IdTable<String>("stored_file") {
     val exercise = reference("exercise_id", Exercise).nullable()
     val article = reference("article_id", Article).nullable()
     val type = text("type")
+    val sizeBytes = integer("size_bytes")
     val filename = text("filename")
     val data = blob("data")
     val createdAt = datetime("created_at")

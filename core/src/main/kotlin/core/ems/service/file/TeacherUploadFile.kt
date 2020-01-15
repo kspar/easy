@@ -63,6 +63,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
             it[data] = SerialBlob(content)
             it[filename] = req.filename
             it[createdAt] = time
+            it[sizeBytes] = content.size
             it[owner] = EntityID(creator, Teacher)
         }.value
     }
