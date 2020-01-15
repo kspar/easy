@@ -83,7 +83,7 @@ class MoodleSyncService {
     fun syncCourse(moodleResponse: MoodleResponse, courseId: Long, moodleCourseShortName: String): MoodleSyncedStudents {
         data class MoodleGroup(val id: String, val name: String)
         data class NewAccess(val username: String, val moodleUsername: String, val groups: List<MoodleGroup>)
-        data class NewPendingAccess(val moodleUsername: String, val groups: List<MoodleGroup>)
+        data class NewPendingAccess(val email: String, val moodleUsername: String, val groups: List<MoodleGroup>)
 
         val courseEntity = EntityID(courseId, Course)
 
@@ -115,7 +115,8 @@ class MoodleSyncService {
             val newAccesses =
                     moodleResponse.students.flatMap { moodleStudent ->
                         Account.slice(Account.id)
-                                .select { Account.moodleUsername eq moodleStudent.username }
+                                .select { Account.moodleUsername eq moodleStudent.username or
+                                        (Account.email eq moodleStudent.email) }
                                 .map {
                                     NewAccess(
                                             it[Account.id].value,
@@ -125,9 +126,9 @@ class MoodleSyncService {
                                 }
                                 .also {
                                     if (it.size > 1) {
-                                        log.warn { "Several accounts found with Moodle username ${moodleStudent.username}: $it" }
+                                        log.warn { "Several accounts found with Moodle username ${moodleStudent.username} or email ${moodleStudent.email}: $it" }
                                         mailService.sendSystemNotification(
-                                                "Several accounts with Moodle username ${moodleStudent.username} found on course $courseId: $it")
+                                                "Several accounts with Moodle username ${moodleStudent.username} or email ${moodleStudent.email} found on course $courseId: $it")
                                     }
                                 }
                     }
@@ -138,6 +139,7 @@ class MoodleSyncService {
                         newAccesses.none { it.moodleUsername == moodleStudent.username }
                     }.map {
                         NewPendingAccess(
+                                it.email,
                                 it.username,
                                 it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                         )
@@ -149,6 +151,9 @@ class MoodleSyncService {
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
             newAccesses.forEach { newAccess ->
+                Account.update({ Account.id eq newAccess.username }) {
+                    it[moodleUsername] = newAccess.moodleUsername
+                }
                 val accessId = StudentCourseAccess.insertAndGetId {
                     it[student] = EntityID(newAccess.username, Student)
                     it[course] = courseEntity
@@ -169,6 +174,7 @@ class MoodleSyncService {
                 val accessId = StudentMoodlePendingAccess.insertAndGetId {
                     it[moodleUsername] = newPendingAccess.moodleUsername
                     it[course] = courseEntity
+                    it[email] = newPendingAccess.email
                 }
                 StudentMoodlePendingGroup.batchInsert(newPendingAccess.groups) {
                     this[StudentMoodlePendingGroup.moodleUsername] = newPendingAccess.moodleUsername

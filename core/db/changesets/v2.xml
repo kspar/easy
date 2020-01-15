@@ -790,5 +790,13 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="150120-3" author="kspar">
+        <addColumn tableName="student_moodle_pending_access">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>

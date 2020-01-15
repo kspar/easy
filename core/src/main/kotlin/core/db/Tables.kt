@@ -106,6 +106,7 @@ object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access")
     // Should not have ID but composite key
     val course = reference("course_id", Course)//.primaryKey()
     val moodleUsername = text("moodle_username")//.primaryKey()
+    val email = text("email")
 }
 
 object StudentMoodlePendingGroup : Table("student_moodle_pending_group_access") {
