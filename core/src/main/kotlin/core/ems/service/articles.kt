@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 fun assertArticleExists(articleId: Long) {
     if (!articleExists(articleId)) {
-        throw InvalidRequestException("No article with id $articleId found")
+        throw InvalidRequestException("No article with id $articleId found", ReqError.ARTICLE_NOT_FOUND)
     }
 }
 
