@@ -615,6 +615,7 @@
                 <table class="responsive-table highlight">
                     <thead>
                     <tr>
+                        <th>{{numberLabel}}</th>
                         <th>{{nameLabel}}</th>
                         <th>{{usernameLabel}}</th>
                         {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
@@ -626,6 +627,7 @@
                     <tbody>
                     {{#students}}
                     <tr {{#isPending}}class="pending-row"{{/isPending}}>
+                        <td>{{#number}}{{number}}.{{/number}}{{^number}}-{{/number}}</td>
                         <td>{{#name}}{{name}}{{/name}}{{^name}}-{{/name}}</td>
                         <td>{{#username}}{{username}}{{/username}}{{^username}}-{{/username}}</td>
                         {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/isPending}}{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}

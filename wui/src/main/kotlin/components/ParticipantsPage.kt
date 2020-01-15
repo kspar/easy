@@ -163,17 +163,26 @@ object ParticipantsPage : EasyPage() {
             val isMoodleSynced = participants.moodle_short_name != null
 
             val studentRows = participants.students_pending.map {
-                StudentRow(null, null, it.email, it.groups.joinToString { it.name }, true)
-            } + participants.students_moodle_pending.map {
-                StudentRow(null, null, it.email, it.groups.joinToString { it.name }, true,
-                        it.ut_username)
-            } + participants.students.sortedBy { it.family_name }.map {
-                StudentRow("${it.given_name} ${it.family_name}", it.id, it.email, it.groups.joinToString { it.name }, false,
-                        it.moodle_username)
-            }
+                StudentRow(null, null, null,null, null, it.email, it.groups.joinToString { it.name }, true)
+            }.sortedWith(compareBy(StudentRow::groups, StudentRow::email)) +
+
+                    participants.students_moodle_pending.map {
+                        StudentRow(null, null, null, null, null, it.email, it.groups.joinToString { it.name }, true,
+                                it.ut_username)
+                    }.sortedWith(compareBy(StudentRow::groups, StudentRow::moodleUsername)) +
+
+                    // Need to map twice because we need the groups string
+                    participants.students.map {s ->
+                        StudentRow(null, s.given_name, s.family_name, "${s.given_name} ${s.family_name}", s.id, s.email, s.groups.joinToString { it.name }, false,
+                                s.moodle_username)
+                    }.sortedWith(compareBy(StudentRow::groups, StudentRow::familyName, StudentRow::givenName))
+                            .mapIndexed { i, s ->
+                                StudentRow((i + 1).toString(), s.givenName, s.familyName, s.name, s.username, s.email, s.groups, s.isPending, s.moodleUsername)
+                            }
 
             val students = studentRows.map {
                 objOf(
+                        "number" to it.number.orEmpty(),
                         "name" to it.name.orEmpty(),
                         "username" to it.username.orEmpty(),
                         "email" to it.email.orEmpty(),
@@ -198,6 +207,7 @@ object ParticipantsPage : EasyPage() {
                     "courseHref" to "/courses/$courseId/exercises",
                     "participantsLabel" to "Osalejad",
                     "teachersLabel" to "Õpetajad",
+                    "numberLabel" to "Jrk",
                     "nameLabel" to "Nimi",
                     "usernameLabel" to "Kasutajanimi",
                     "emailLabel" to "Email",
@@ -222,8 +232,9 @@ object ParticipantsPage : EasyPage() {
         }
     }
 
-    data class StudentRow(val name: String?, val username: String?, val email: String?, val groups: String,
-                          val isPending: Boolean, val moodleUsername: String? = null)
+    data class StudentRow(val number: String?, val givenName: String?, val familyName: String?,
+                          val name: String?, val username: String?, val email: String?,
+                          val groups: String, val isPending: Boolean, val moodleUsername: String? = null)
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
