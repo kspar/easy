@@ -71,6 +71,7 @@ object ParticipantsPage : EasyPage() {
     @Serializable
     data class PendingMoodleStudent(
             val ut_username: String,
+            val email: String,
             val groups: List<Group>
     )
 
@@ -164,7 +165,7 @@ object ParticipantsPage : EasyPage() {
             val studentRows = participants.students_pending.map {
                 StudentRow(null, null, it.email, it.groups.joinToString { it.name }, true)
             } + participants.students_moodle_pending.map {
-                StudentRow(null, null, null, it.groups.joinToString { it.name }, true,
+                StudentRow(null, null, it.email, it.groups.joinToString { it.name }, true,
                         it.ut_username)
             } + participants.students.sortedBy { it.family_name }.map {
                 StudentRow("${it.given_name} ${it.family_name}", it.id, it.email, it.groups.joinToString { it.name }, false,
@@ -173,12 +174,12 @@ object ParticipantsPage : EasyPage() {
 
             val students = studentRows.map {
                 objOf(
-                        "name" to (it.name ?: ""),
-                        "username" to (it.username ?: ""),
-                        "email" to (it.email ?: ""),
+                        "name" to it.name.orEmpty(),
+                        "username" to it.username.orEmpty(),
+                        "email" to it.email.orEmpty(),
                         "group" to it.groups,
                         "isPending" to it.isPending,
-                        "moodleUsername" to (it.moodleUsername ?: "")
+                        "moodleUsername" to it.moodleUsername.orEmpty()
                 )
             }.toTypedArray()
 

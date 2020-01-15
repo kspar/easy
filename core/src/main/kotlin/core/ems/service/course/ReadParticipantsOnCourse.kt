@@ -46,6 +46,7 @@ class ReadParticipantsOnCourseController {
                                   @JsonProperty("groups") val groups: List<GroupResp>)
 
     data class StudentMoodlePendingResp(@JsonProperty("ut_username") val utUsername: String,
+                                        @JsonProperty("email") val email: String,
                                         @JsonProperty("groups") val groups: List<GroupResp>)
 
 
@@ -115,6 +116,7 @@ class ReadParticipantsOnCourseController {
 private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsResp> {
     data class StudentOnCourse(val id: String, val email: String, val givenName: String, val familyName: String,
                                val moodleUsername: String?)
+
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
@@ -191,18 +193,19 @@ private fun selectStudentsPendingOnCourse(courseId: Long): List<ReadParticipants
 }
 
 private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentMoodlePendingResp> {
-    data class PendingStudent(val moodleUsername: String)
+    data class PendingStudent(val moodleUsername: String, val email: String)
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
         (StudentMoodlePendingAccess leftJoin StudentMoodlePendingGroup leftJoin Group)
-                .slice(StudentMoodlePendingAccess.moodleUsername, Group.id, Group.name)
+                .slice(StudentMoodlePendingAccess.moodleUsername, StudentMoodlePendingAccess.email, Group.id, Group.name)
                 .select { StudentMoodlePendingAccess.course eq courseId }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
                     Pair(
                             PendingStudent(
-                                    it[StudentMoodlePendingAccess.moodleUsername]
+                                    it[StudentMoodlePendingAccess.moodleUsername],
+                                    it[StudentMoodlePendingAccess.email]
                             ),
                             if (groupId == null) null else
                                 StudentGroup(
@@ -215,6 +218,7 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadPartic
                 .map { (student, groups) ->
                     ReadParticipantsOnCourseController.StudentMoodlePendingResp(
                             student.moodleUsername,
+                            student.email,
                             groups.filterNotNull().map {
                                 ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
                             }
