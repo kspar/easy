@@ -10,6 +10,7 @@ import core.db.StoredFile.exercise
 import core.db.StoredFile.filename
 import core.db.StoredFile.id
 import core.db.StoredFile.owner
+import core.db.StoredFile.sizeBytes
 import core.db.StoredFile.type
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -36,6 +37,7 @@ class ReadFileMetadataController {
             @JsonProperty("exercise_id") val exerciseId: String,
             @JsonProperty("filename") val filename: String,
             @JsonProperty("type") val type: String,
+            @JsonProperty("size_bytes") val sizeBytes: Int,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("created_at") val createdAt: DateTime,
             @JsonProperty("created_by") val createdBy: String
@@ -54,7 +56,7 @@ class ReadFileMetadataController {
 private fun selectMetadata(): ReadFileMetadataController.Resp {
     return transaction {
         ReadFileMetadataController.Resp(
-                StoredFile.slice(id, article, exercise, filename, type, createdAt, owner)
+                StoredFile.slice(id, article, exercise, filename, type, sizeBytes, createdAt, owner)
                         .selectAll().map {
                             ReadFileMetadataController.RespFile(
                                     it[id].value,
@@ -62,6 +64,7 @@ private fun selectMetadata(): ReadFileMetadataController.Resp {
                                     it[exercise]?.value.toString(),
                                     it[filename],
                                     it[type],
+                                    it[sizeBytes],
                                     it[createdAt],
                                     it[owner].value
                             )

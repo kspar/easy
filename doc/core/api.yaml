@@ -266,6 +266,8 @@ paths:
                     type:
                       description: MIME type of the file.
                       type: string
+                    size_bytes:
+                      type: integer
                     created_at:
                       type: string
                       format: date-time
@@ -275,6 +277,7 @@ paths:
                     - id
                     - filename
                     - type
+                    - size_bytes
                     - created_at
                     - created_by
             required:
