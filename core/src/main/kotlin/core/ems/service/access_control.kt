@@ -21,13 +21,15 @@ fun assertUserHasAccessToCourse(user: EasyUser, courseId: Long) {
     }
 }
 
-fun canUserAccessCourse(user: EasyUser, courseId: Long): Boolean =
-        when {
-            user.isAdmin() -> true
-            user.isTeacher() -> canTeacherAccessCourse(user.id, courseId)
-            user.isStudent() -> canStudentAccessCourse(user.id, courseId)
-            else -> throw IllegalStateException("User has no mapped roles: $user")
-        }
+fun canUserAccessCourse(user: EasyUser, courseId: Long): Boolean {
+    if (user.isAdmin()) {
+        return true
+    }
+    if (user.isTeacher() && canTeacherAccessCourse(user.id, courseId)) {
+        return true
+    }
+    return user.isStudent() && canStudentAccessCourse(user.id, courseId)
+}
 
 fun assertTeacherOrAdminHasAccessToCourse(user: EasyUser, courseId: Long) {
     if (!canTeacherOrAdminAccessCourse(user, courseId)) {
