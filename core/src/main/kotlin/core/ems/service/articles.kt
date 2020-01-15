@@ -3,6 +3,7 @@ package core.ems.service
 import core.db.Article
 import core.db.ArticleAlias
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
@@ -17,7 +18,8 @@ fun assertArticleExists(articleId: Long) {
 
 fun assertArticleAliasExists(articleId: Long, alias: String) {
     if (!articleAliasExists(articleId, alias)) {
-        throw InvalidRequestException("Article alias '$alias' does not exist or is not connected with article '$articleId'")
+        throw InvalidRequestException("Article alias '$alias' does not exist or is not connected with article '$articleId'",
+                ReqError.ARTICLE_NOT_FOUND)
     }
 }
 
