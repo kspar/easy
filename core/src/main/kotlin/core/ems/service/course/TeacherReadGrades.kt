@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
@@ -63,7 +64,9 @@ class TeacherReadGradesController {
 
         val queryWords = search.trim().toLowerCase().split(Regex(" +"))
 
-        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords)
+        val restrictedGroups = getTeacherRestrictedGroups(courseId, caller.id)
+
+        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords, restrictedGroups)
     }
 }
 
@@ -75,9 +78,10 @@ private fun isCoursePresent(courseId: Long): Boolean {
     }
 }
 
-private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>,
+                                 restrictedGroups: List<Long>): TeacherReadGradesController.Resp {
     return transaction {
-        val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords)
+        val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords, restrictedGroups)
         val studentCount = studentsQuery.count()
         val students = studentsQuery
                 .limit(limit ?: studentCount, offset ?: 0)
@@ -95,10 +99,18 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     }
 }
 
-private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>): Query {
-    val query = (Account innerJoin Student innerJoin StudentCourseAccess)
+private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>, restrictedGroups: List<Long>): Query {
+    val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess)
             .slice(Student.id, Account.email, Account.givenName, Account.familyName)
             .select { StudentCourseAccess.course eq courseId }
+            .withDistinct()
+
+    if (restrictedGroups.isNotEmpty()) {
+        query.andWhere {
+            StudentGroupAccess.group inList restrictedGroups or
+                    (StudentGroupAccess.group.isNull())
+        }
+    }
 
     queryWords.forEach {
         query.andWhere {
@@ -108,6 +120,7 @@ private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>
                     (Account.familyName.lowerCase() like "%$it%")
         }
     }
+
     return query
 }
 
