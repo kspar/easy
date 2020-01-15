@@ -772,5 +772,13 @@
     </changeSet>
 
 
+    <changeSet id="150120-1" author="priit">
+        <addColumn tableName="stored_file">
+        <column name="size_bytes" type="integer">
+            <constraints nullable="false"/>
+        </column>
+    </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>
