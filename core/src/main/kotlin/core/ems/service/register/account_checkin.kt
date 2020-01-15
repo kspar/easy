@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.db.Account.email
+import core.db.Account.familyName
+import core.db.Account.givenName
+import core.db.Account.id
+import core.db.Account.moodleUsername
 import core.ems.service.CacheInvalidator
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
@@ -90,23 +95,48 @@ private fun correctNameCapitalisation(name: String) =
                 }
 
 private fun updateAccount(accountData: AccountData): Boolean {
+    data class Acc(val id: String, val email: String, val moodleUsername: String?, val givenName: String, val familyName: String)
+
     return transaction {
-        val isChanged = Account.select {
-            (Account.id eq accountData.username) and
-                    (Account.email eq accountData.email) and
-                    (Account.moodleUsername eq accountData.moodleUsername)
-        }.count() != 1
 
-        Account.insertOrUpdate(Account.id, listOf(Account.id, Account.createdAt)) {
-            it[id] = EntityID(accountData.username, Account)
-            it[email] = accountData.email
-            it[moodleUsername] = accountData.moodleUsername
-            it[givenName] = accountData.givenName
-            it[familyName] = accountData.familyName
-            it[createdAt] = DateTime.now()
+        val oldAccount = Account.select { Account.id eq accountData.username }
+                .map {
+                    Acc(
+                            it[id].value,
+                            it[email],
+                            it[moodleUsername],
+                            it[givenName],
+                            it[familyName]
+                    )
+                }.singleOrNull()
+
+        if (oldAccount == null) {
+            Account.insert {
+                it[id] = EntityID(accountData.username, Account)
+                it[email] = accountData.email
+                it[moodleUsername] = accountData.moodleUsername
+                it[givenName] = accountData.givenName
+                it[familyName] = accountData.familyName
+                it[createdAt] = DateTime.now()
+            }
+            true
+
+        } else {
+
+            val isChanged = oldAccount.email != accountData.email ||
+                    accountData.moodleUsername != null && accountData.moodleUsername != oldAccount.moodleUsername
+
+            Account.update({ Account.id eq accountData.username }) {
+                it[email] = accountData.email
+                if (accountData.moodleUsername != null) {
+                    it[moodleUsername] = accountData.moodleUsername
+                }
+                it[givenName] = accountData.givenName
+                it[familyName] = accountData.familyName
+            }
+
+            isChanged
         }
-
-        isChanged
     }
 }
 
