@@ -11,7 +11,9 @@ import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -66,7 +68,15 @@ class ReadArticleDetailsController {
 
 private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp {
     return transaction {
-        ((Article innerJoin (Account innerJoin Admin)) innerJoin ArticleVersion)
+        val authorAlias = Account.alias("account1")
+        val adminAlias = Admin.alias("admin1")
+
+        ((Article innerJoin (Account innerJoin Admin)) innerJoin (
+
+                ArticleVersion.join(adminAlias, JoinType.INNER, adminAlias[Admin.id], ArticleVersion.author).join(authorAlias, JoinType.INNER, authorAlias[Account.id], adminAlias[Admin.id])
+
+
+                ))
                 .slice(Article.id,
                         ArticleVersion.title,
                         Article.createdAt,
@@ -78,7 +88,10 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                         Article.public,
                         Account.id,
                         Account.givenName,
-                        Account.familyName)
+                        Account.familyName,
+                        authorAlias[Account.id],
+                        authorAlias[Account.givenName],
+                        authorAlias[Account.familyName])
                 .select {
                     Article.id eq articleId
                 }
@@ -95,7 +108,11 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                                     it[Account.givenName],
                                     it[Account.familyName]
                             ),
-                            selectAccount(it[ArticleVersion.author].value),
+                            ReadArticleDetailsController.RespUser(
+                                    it[authorAlias[Account.id]].value,
+                                    it[authorAlias[Account.givenName]],
+                                    it[authorAlias[Account.familyName]]
+                            ),
                             it[ArticleVersion.textHtml],
                             it[ArticleVersion.textAdoc],
                             if (isAdmin) it[Article.public] else null,
@@ -104,22 +121,6 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                 ?: throw InvalidRequestException("No article with id $articleId found", ReqError.ARTICLE_NOT_FOUND)
     }
 }
-
-private fun selectAccount(accountId: String): ReadArticleDetailsController.RespUser {
-    return transaction {
-        Account.slice(Account.id, Account.givenName, Account.familyName)
-                .select {
-                    Account.id eq accountId
-                }.map {
-                    ReadArticleDetailsController.RespUser(
-                            it[Account.id].value,
-                            it[Account.givenName],
-                            it[Account.familyName]
-                    )
-                }.first()
-    }
-}
-
 
 private fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsController.RespAlias> {
     return transaction {
