@@ -74,8 +74,8 @@ private fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolea
                 .firstOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
 
 
-        val authorAlias = Account.alias("account1")
-        val adminAlias = Admin.alias("admin1")
+        val authorAlias = Account.alias("author_account_1")
+        val adminAlias = Admin.alias("author_admin_1")
 
         Article.innerJoin(Account innerJoin Admin)
                 .innerJoin(ArticleVersion
