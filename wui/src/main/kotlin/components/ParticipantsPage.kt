@@ -22,10 +22,13 @@ import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import objOf
 import onVanillaClick
+import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
 import parseTo
 import queries.BasicCourseInfo
+import successMessage
 import tmRender
+import warn
 import kotlin.browser.window
 import kotlin.dom.clear
 import kotlin.js.Date
@@ -218,6 +221,7 @@ object ParticipantsPage : EasyPage() {
                     "isMoodleSynced" to isMoodleSynced,
                     "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
                     "moodleShortname" to participants.moodle_short_name,
+                    "syncStudentsLabel" to "Lae õpilased Moodle'ist",
                     "moodleUsernameLabel" to "UT kasutajanimi",
                     "moodlePendingTooltip" to "Selle UT kasutajanimega kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
                     "students" to students,
@@ -226,6 +230,25 @@ object ParticipantsPage : EasyPage() {
 
             if (!isMoodleSynced) {
                 getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
+            }
+
+            if (isMoodleSynced) {
+                val syncBtn = getElemByIdAs<HTMLButtonElement>("sync-students-button")
+                syncBtn.onVanillaClick(true) {
+                    MainScope().launch {
+                        syncBtn.disabled = true
+                        val r = fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
+                                mapOf("moodle_short_name" to participants.moodle_short_name)).await()
+                        if (r.http200) {
+                            successMessage { "Õpilased edukalt sünkroniseeritud" }
+                            build(null)
+                        } else {
+                            errorMessage { Str.somethingWentWrong() }
+                            warn { "Syncing students from Moodle failed with status ${r.status}" }
+                        }
+                        syncBtn.disabled = false
+                    }
+                }
             }
 
             initTooltips()
