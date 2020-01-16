@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.Account
-import core.db.Article
-import core.db.ArticleAlias
-import core.db.ArticleVersion
+import core.db.*
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -69,7 +66,7 @@ class ReadArticleDetailsController {
 
 private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp {
     return transaction {
-        (Article innerJoin ArticleVersion)
+        ((Article innerJoin (Account innerJoin Admin)) innerJoin ArticleVersion)
                 .slice(Article.id,
                         ArticleVersion.title,
                         Article.createdAt,
@@ -78,7 +75,10 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                         ArticleVersion.author,
                         ArticleVersion.textHtml,
                         ArticleVersion.textAdoc,
-                        Article.public)
+                        Article.public,
+                        Account.id,
+                        Account.givenName,
+                        Account.familyName)
                 .select {
                     Article.id eq articleId
                 }
@@ -89,7 +89,12 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
                             it[ArticleVersion.title],
                             it[Article.createdAt],
                             it[ArticleVersion.validFrom],
-                            selectAccount(it[Article.owner].value),
+
+                            ReadArticleDetailsController.RespUser(
+                                    it[Account.id].value,
+                                    it[Account.givenName],
+                                    it[Account.familyName]
+                            ),
                             selectAccount(it[ArticleVersion.author].value),
                             it[ArticleVersion.textHtml],
                             it[ArticleVersion.textAdoc],
