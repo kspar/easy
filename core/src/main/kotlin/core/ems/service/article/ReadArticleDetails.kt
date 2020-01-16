@@ -11,9 +11,9 @@ import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.alias
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -71,12 +71,10 @@ private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadA
         val authorAlias = Account.alias("account1")
         val adminAlias = Admin.alias("admin1")
 
-        ((Article innerJoin (Account innerJoin Admin)) innerJoin (
-
-                ArticleVersion.join(adminAlias, JoinType.INNER, adminAlias[Admin.id], ArticleVersion.author).join(authorAlias, JoinType.INNER, authorAlias[Account.id], adminAlias[Admin.id])
-
-
-                ))
+        Article.innerJoin(Account innerJoin Admin)
+                .innerJoin(ArticleVersion
+                        .innerJoin(adminAlias, { adminAlias[Admin.id] }, { ArticleVersion.author })
+                        .innerJoin(authorAlias, { authorAlias[Account.id] }, { adminAlias[Admin.id] }))
                 .slice(Article.id,
                         ArticleVersion.title,
                         Article.createdAt,
