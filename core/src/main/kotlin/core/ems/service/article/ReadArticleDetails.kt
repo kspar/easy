@@ -59,15 +59,21 @@ class ReadArticleDetailsController {
     fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp {
 
         log.debug { "Getting article $articleIdString details for ${caller.id}" }
-        val articleId = aliasToIdOrIdToLong(articleIdString)
 
-        return selectLatestArticleVersion(articleId, caller.isAdmin())
+        return selectLatestArticleVersion(articleIdString, caller.isAdmin())
     }
 }
 
 
-private fun selectLatestArticleVersion(articleId: Long, isAdmin: Boolean): ReadArticleDetailsController.Resp {
+private fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp {
     return transaction {
+
+        val articleId = ArticleAlias.slice(ArticleAlias.article)
+                .select { ArticleAlias.id eq EntityID(articleIdOrAlias, ArticleAlias) }
+                .map { it[ArticleAlias.article].value }
+                .firstOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
+
+
         val authorAlias = Account.alias("account1")
         val adminAlias = Admin.alias("admin1")
 
@@ -132,14 +138,5 @@ private fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsContro
                             it[ArticleAlias.owner].value
                     )
                 }
-    }
-}
-
-private fun aliasToIdOrIdToLong(articleIdString: String): Long {
-    return transaction {
-        ArticleAlias.slice(ArticleAlias.article)
-                .select { ArticleAlias.id eq EntityID(articleIdString, ArticleAlias) }
-                .map { it[ArticleAlias.article].value }
-                .firstOrNull() ?: articleIdString.idToLongOrInvalidReq()
     }
 }
