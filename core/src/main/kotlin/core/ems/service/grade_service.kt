@@ -64,13 +64,11 @@ class GradeService {
 
                             if (singleExercise.grades.isNotEmpty()) {
                                 sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
+                                val grade = singleExercise.grades[0]
+                                log.debug { "Moodle synced grade ${grade.grade} for ${grade.username} to exercise ${singleExercise.idnumber} on course $shortname" }
                             } else {
-                                log.debug { "Skipping Moodle grade sync due to no existing grades to sync." }
+                                log.warn { "Skipping Moodle grade sync due to no existing grades to sync." }
                             }
-
-
-                        } else {
-                            log.debug { "Skipping Moodle grade sync due to empty course shortname." }
                         }
                     }
         }
@@ -125,7 +123,6 @@ class GradeService {
                     ReqError.MOODLE_GRADE_SYNC_ERROR,
                     notify = true)
         }
-        log.debug { "Grades sync response: $body" }
     }
 
 
