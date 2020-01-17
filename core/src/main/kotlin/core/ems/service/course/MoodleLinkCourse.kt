@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AdminLinkMoodleCourseController(val moodleSyncService: MoodleSyncService) {
+class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
 
 
     data class Req(@JsonProperty("moodle_short_name", required = true) @field:NotBlank @field:Size(max = 500)
@@ -29,7 +29,7 @@ class AdminLinkMoodleCourseController(val moodleSyncService: MoodleSyncService) 
                     @JsonProperty("pending_students_synced") val pendingStudentsSynced: Int)
 
 
-    @Secured("ROLE_ADMIN")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/moodle")
     fun controller(@PathVariable("courseId") courseIdStr: String, @Valid @RequestBody dto: Req, caller: EasyUser): Resp {
         log.debug { "${caller.id} is one-way linking Moodle course '${dto.moodleShortName}' with '$courseIdStr'" }
