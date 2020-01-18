@@ -114,6 +114,7 @@ class MoodleSyncService {
                                     Account.moodleUsername eq moodleStudent.username or
                                             (Account.email eq moodleStudent.email)
                                 }
+                                .withDistinct()
                                 .map {
                                     NewAccess(
                                             it[Account.id].value,
