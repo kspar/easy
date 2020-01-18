@@ -798,5 +798,16 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="180120-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="moodle_sync_students" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moodle_sync_grades" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>

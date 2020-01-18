@@ -55,6 +55,8 @@ object Course : LongIdTable("course") {
     val createdAt = datetime("created_at")
     val title = text("title")
     val moodleShortName = text("moodle_short_name").nullable()
+    val moodleSyncStudents = bool("moodle_sync_students")
+    val moodleSyncGrades = bool("moodle_sync_grades")
 }
 
 object Group : LongIdTable("group") {

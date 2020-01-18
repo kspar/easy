@@ -55,6 +55,7 @@ class GradeService {
                     .single()
                     .apply {
                         val shortname = selectCourseShortName(this[Course.id].value)
+                        // TODO: respect Course.syncGrades
 
                         if (!shortname.isNullOrBlank()) {
                             val singleExercise = selectSingleCourseExerciseSubmission(

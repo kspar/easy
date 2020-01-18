@@ -88,11 +88,6 @@ class MoodleSyncService {
         val courseEntity = EntityID(courseId, Course)
 
         return transaction {
-            Course.update({ Course.id eq courseId }) {
-                it[moodleShortName] = moodleCourseShortName
-            }
-
-
             // Insert groups or get their IDs
             val moodleGroups = moodleResponse.students
                     .mapNotNull { it.groups }
@@ -199,7 +194,9 @@ class MoodleSyncService {
         log.debug { "Checking for courses for Moodle syncing..." }
         transaction {
             Course.select {
-                Course.moodleShortName.isNotNull() and (Course.moodleShortName neq "")
+                Course.moodleShortName.isNotNull() and
+                        (Course.moodleShortName neq "") and
+                        Course.moodleSyncStudents
             }.map {
                 MoodleCron(it[Course.id].value, it[Course.moodleShortName]!!)
             }.forEach {
