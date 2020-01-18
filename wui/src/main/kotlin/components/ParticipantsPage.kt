@@ -167,6 +167,7 @@ object ParticipantsPage : EasyPage() {
 
             val isMoodleSynced = participants.moodle_short_name != null
             val studentsSynced = participants.moodle_students_synced ?: false
+            val gradesSynced = participants.moodle_grades_synced ?: false
 
             val studentRows = participants.students_pending.map {
                 StudentRow(null, null, null,null, null, it.email, it.groups.joinToString { it.name }, true)
@@ -242,7 +243,11 @@ object ParticipantsPage : EasyPage() {
                     MainScope().launch {
                         syncBtn.disabled = true
                         val r = fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
-                                mapOf("moodle_short_name" to participants.moodle_short_name)).await()
+                                mapOf(
+                                        "moodle_short_name" to participants.moodle_short_name,
+                                        "sync_students" to studentsSynced,
+                                        "sync_grades" to gradesSynced
+                                )).await()
                         if (r.http200) {
                             successMessage { "Õpilased edukalt sünkroniseeritud" }
                             build(null)
