@@ -38,6 +38,8 @@ object ParticipantsPage : EasyPage() {
     @Serializable
     data class Participants(
             val moodle_short_name: String? = null,
+            val moodle_students_synced: Boolean? = null,
+            val moodle_grades_synced: Boolean? = null,
             val students: List<Student> = emptyList(),
             val teachers: List<Teacher> = emptyList(),
             val students_pending: List<PendingStudent> = emptyList(),
@@ -164,6 +166,7 @@ object ParticipantsPage : EasyPage() {
             val participants = resp.parseTo(Participants.serializer()).await()
 
             val isMoodleSynced = participants.moodle_short_name != null
+            val studentsSynced = participants.moodle_students_synced ?: false
 
             val studentRows = participants.students_pending.map {
                 StudentRow(null, null, null,null, null, it.email, it.groups.joinToString { it.name }, true)
@@ -219,6 +222,7 @@ object ParticipantsPage : EasyPage() {
                     "studentsLabel" to "Õpilased",
                     "addStudentsLink" to "&#9658; Lisa õpilasi",
                     "isMoodleSynced" to isMoodleSynced,
+                    "studentsSynced" to studentsSynced,
                     "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
                     "moodleShortname" to participants.moodle_short_name,
                     "syncStudentsLabel" to "Lae õpilased Moodle'ist",
@@ -228,11 +232,11 @@ object ParticipantsPage : EasyPage() {
                     "teachers" to teachers
             ))
 
-            if (!isMoodleSynced) {
+            if (!studentsSynced) {
                 getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
             }
 
-            if (isMoodleSynced) {
+            if (studentsSynced) {
                 val syncBtn = getElemByIdAs<HTMLButtonElement>("sync-students-button")
                 syncBtn.onVanillaClick(true) {
                     MainScope().launch {

@@ -604,12 +604,14 @@
 
         {{#isMoodleSynced}}
             <p class="subheading-item"><span class="subheading">{{moodleShortnameLabel}}:</span>{{moodleShortname}}</p>
-            <button id="sync-students-button" class="waves-effect waves-light btn">{{syncStudentsLabel}}</button>
         {{/isMoodleSynced}}
-        {{^isMoodleSynced}}
+        {{#studentsSynced}}
+            <button id="sync-students-button" class="waves-effect waves-light btn">{{syncStudentsLabel}}</button>
+        {{/studentsSynced}}
+        {{^studentsSynced}}
             <a id="add-students-link" class="toggle-link" href="#!">{{{addStudentsLink}}}</a>
             <div id="add-students-section"></div>
-        {{/isMoodleSynced}}
+        {{/studentsSynced}}
 
         <div class="card">
             <div class="card-content">

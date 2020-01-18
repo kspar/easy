@@ -53,6 +53,12 @@ class ReadParticipantsOnCourseController {
     data class Resp(@JsonProperty("moodle_short_name")
                     @JsonInclude(Include.NON_EMPTY)
                     val moodleShortName: String?,
+                    @JsonProperty("moodle_students_synced")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val moodleStudentsSynced: Boolean?,
+                    @JsonProperty("moodle_grades_synced")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val moodleGradesSynced: Boolean?,
                     @JsonProperty("students")
                     @JsonInclude(Include.NON_EMPTY)
                     val students: List<StudentsResp>?,
@@ -87,25 +93,28 @@ class ReadParticipantsOnCourseController {
 
         // TODO: restrict to my groups
 
-        val shortName = selectMoodleShortName(courseId)
+        val moodleState = selectMoodleState(courseId)
+        val shortname = moodleState?.shortname
+        val syncStudents = moodleState?.syncStudents
+        val syncGrades = moodleState?.syncGrades
 
         when (roleReq) {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
-                return Resp(shortName, null, teachers, null, null)
+                return Resp(shortname, syncStudents, syncGrades, null, teachers, null, null)
             }
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId)
                 val studentsPending = selectStudentsPendingOnCourse(courseId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId)
-                return Resp(shortName, students, null, studentsPending, studentsMoodle)
+                return Resp(shortname, syncStudents, syncGrades, students, null, studentsPending, studentsMoodle)
             }
             Role.ALL.paramValue, null -> {
                 val students = selectStudentsOnCourse(courseId)
                 val teachers = selectTeachersOnCourse(courseId)
                 val studentsPending = selectStudentsPendingOnCourse(courseId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId)
-                return Resp(shortName, students, teachers, studentsPending, studentsMoodle)
+                return Resp(shortname, syncStudents, syncGrades, students, teachers, studentsPending, studentsMoodle)
             }
             else -> throw InvalidRequestException("Invalid parameter $roleReq")
         }
@@ -266,11 +275,22 @@ private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCours
     }
 }
 
-private fun selectMoodleShortName(courseId: Long): String? {
+data class CourseMoodleState(val shortname: String, val syncStudents: Boolean, val syncGrades: Boolean)
+
+private fun selectMoodleState(courseId: Long): CourseMoodleState? {
     return transaction {
-        Course.slice(Course.moodleShortName)
+        Course.slice(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
                 .select { Course.id eq courseId }
-                .map { it[Course.moodleShortName] }
-                .singleOrNull()
+                .map {
+                    val shortname = it[Course.moodleShortName]
+                    if (shortname != null) {
+                        CourseMoodleState(
+                                shortname,
+                                it[Course.moodleSyncStudents],
+                                it[Course.moodleSyncGrades]
+                        )
+                    } else null
+                }
+                .single()
     }
 }
