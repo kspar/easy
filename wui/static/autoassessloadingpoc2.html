@@ -213,22 +213,22 @@
     }
 
     .auto-robots-wrap .robot-row:nth-child(1) > :nth-child(1) {
-        animation: appear 500ms 1s forwards,
+        animation: appear 500ms 1s forwards, disappear 500ms 7s forwards,
         eating-direction 4s 2600ms forwards linear;
     }
 
     .auto-robots-wrap .robot-row:nth-child(2) > :nth-child(2) {
-        animation: appear 500ms 1400ms forwards,
+        animation: appear 500ms 1400ms forwards, disappear 500ms 7400ms forwards,
         eating-direction-middle 4s 2600ms forwards linear;
     }
 
     .auto-robots-wrap .robot-row:nth-child(3) > :nth-child(1) {
-        animation: appear 500ms 1800ms forwards,
+        animation: appear 500ms 1800ms forwards, disappear 500ms 7800ms forwards,
         eating-direction 4s 2600ms forwards linear;
     }
 
     .auto-robots-wrap .robot-row:nth-child(4) > :nth-child(2) {
-        animation: appear 500ms 2200ms forwards,
+        animation: appear 500ms 2200ms forwards, disappear 500ms 8200ms forwards,
         eating-direction-middle 4s 2600ms forwards linear;
     }
 
@@ -293,6 +293,16 @@
     @keyframes appear {
         100% {
             opacity: 1;
+        }
+
+    }
+
+    @keyframes disappear {
+        0% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
         }
 
     }
