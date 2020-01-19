@@ -177,14 +177,11 @@ object ExercisesPage : EasyPage() {
                 .map { it.first to max(it.second, 0.01) }.toMap()
 
         val overCorrection = correctedShares.values.sum() - 1
-        debug { "Overcorrection: $overCorrection" }
 
         // Account for overcorrection by subtracting the total overcorrection from all shares respecting each share,
         // also add 0.1% according to the shares to compensate for inaccurate browser floating-point width calculations
         val backcorrectedShares = correctedShares
                 .map { it.key to it.value - it.value * 0.97 * overCorrection + 0.001 / correctedShares.size }.toMap()
-        val backCorrected = backcorrectedShares.values.sum() - 1
-        debug { "Error after backcorrection: $backCorrected" }
 
         return StudentShares(backcorrectedShares["completed"] ?: 0.0,
                 backcorrectedShares["started"] ?: 0.0,
