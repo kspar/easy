@@ -214,6 +214,8 @@ object ExerciseSummaryPage : EasyPage() {
 
         Materialize.Tabs.init(getElemById("tabs"))
 
+        getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
+
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
         val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
@@ -818,6 +820,8 @@ object ExerciseSummaryPage : EasyPage() {
         ))
 
         Materialize.Tabs.init(getElemById("tabs"))
+
+        getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
 
         buildExerciseAndCrumbs()
         buildSubmit(courseId, courseExerciseId)
