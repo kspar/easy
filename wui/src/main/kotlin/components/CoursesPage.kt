@@ -62,7 +62,8 @@ object CoursesPage : EasyPage() {
 
     override fun clear() {
         super.clear()
-        getContainer().innerHTML = tmRender("tm-loading-placeholders", emptyMap())
+        getContainer().innerHTML = tmRender("tm-loading-placeholders",
+                mapOf("marginTopRem" to 4, "titleWidthRem" to 20))
     }
 
 

@@ -73,6 +73,11 @@ object ExercisesPage : EasyPage() {
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/exercises/?$")
 
+    override fun clear() {
+        super.clear()
+        getContainer().innerHTML = tmRender("tm-loading-placeholders",
+                mapOf("marginTopRem" to 6, "titleWidthRem" to 30))
+    }
 
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("ExercisesPage.build")

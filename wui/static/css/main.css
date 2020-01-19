@@ -1029,7 +1029,6 @@ div.title-wrap > .title-button > i.material-icons {
 
 .loading-collection {
     border: none;
-    margin-top: 4rem;
 }
 
 @keyframes pulse {
@@ -1046,34 +1045,34 @@ div.title-wrap > .title-button > i.material-icons {
     }
 }
 
-.loading-item {
+.loading-collection .item {
     height: 6rem;
     margin: 2rem;
     background: rgb(214, 214, 214);
-    animation: pulse 1.5s linear infinite alternate;
+    animation: pulse 1s linear infinite alternate;
     border-radius: 0.5rem;
     opacity: 0.3;
 }
 
-.loading-collection .loading-item.title {
+.loading-collection .item.title {
     width: 20%;
     height: 3.7rem;
     margin-bottom: 2.5rem;
 }
 
-.loading-collection :nth-child(1) {
+.loading-collection .item:nth-child(1) {
     animation-delay: 0.2s;
 }
 
-.loading-collection :nth-child(2) {
+.loading-collection .item:nth-child(2) {
     animation-delay: 0.5s;
 }
 
-.loading-collection :nth-child(3) {
+.loading-collection .item:nth-child(3) {
     animation-delay: 0.7s;
 }
 
-.loading-collection :nth-child(4) {
+.loading-collection .item:nth-child(4) {
     animation-delay: 0.9s;
 }
 
