@@ -109,10 +109,11 @@ class MoodleSyncService {
             // Partition users by whether they have an Easy account
             val newAccesses =
                     moodleResponse.students.flatMap { moodleStudent ->
+                        val moodleEmail = moodleStudent.email.toLowerCase()
                         Account.slice(Account.id)
                                 .select {
                                     Account.moodleUsername eq moodleStudent.username or
-                                            (Account.email eq moodleStudent.email)
+                                            (Account.email eq moodleEmail)
                                 }
                                 .withDistinct()
                                 .map {
@@ -124,9 +125,9 @@ class MoodleSyncService {
                                 }
                                 .also {
                                     if (it.size > 1) {
-                                        log.warn { "Several accounts found with Moodle username ${moodleStudent.username} or email ${moodleStudent.email}: $it" }
+                                        log.warn { "Several accounts found with Moodle username ${moodleStudent.username} or email $moodleEmail: $it" }
                                         mailService.sendSystemNotification(
-                                                "Several accounts with Moodle username ${moodleStudent.username} or email ${moodleStudent.email} found on course $courseId: $it")
+                                                "Several accounts with Moodle username ${moodleStudent.username} or email $moodleEmail found on course $courseId: $it")
                                     }
                                 }
                     }
@@ -137,7 +138,7 @@ class MoodleSyncService {
                         newAccesses.none { it.moodleUsername == moodleStudent.username }
                     }.map {
                         NewPendingAccess(
-                                it.email,
+                                it.email.toLowerCase(),
                                 it.username,
                                 it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                         )
