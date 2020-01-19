@@ -94,7 +94,8 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String):
                             onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
                             leftJoin AutomaticAssessment leftJoin TeacherAssessment)
                             .slice(distinctStudentId, validGrade)
-                            .select { Submission.courseExercise eq ceId }
+                            .select { Submission.courseExercise eq ceId and
+                                    (StudentCourseAccess.course eq courseId) }
                             .orderBy(distinctStudentId to SortOrder.ASC,
                                     Submission.createdAt to SortOrder.DESC,
                                     AutomaticAssessment.createdAt to SortOrder.DESC,
