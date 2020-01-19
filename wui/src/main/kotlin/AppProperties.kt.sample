@@ -8,4 +8,7 @@ object AppProperties {
     const val LOG_WARN_ENABLED = true
 
     const val CM_MODE_URL_TEMPLATE = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/%N/%N.min.js"
+
+    const val MATHJAX_SRC = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+    const val MATHJAX_CONF = "MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};"
 }

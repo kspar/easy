@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
-import libheaders.MathJax
 import libheaders.highlightCode
 import objOf
 import observeValueChange
@@ -168,7 +167,7 @@ object ExercisePage : EasyPage() {
                         val html = adocToHtml(it)
                         previewElement.innerHTML = html
                         highlightCode()
-                        MathJax.typeset()
+                        MathJax.formatPageIfNeeded(html)
                         htmlDoc.setValue(html)
                         statusElement.textContent = "Up-to-date"
                     },

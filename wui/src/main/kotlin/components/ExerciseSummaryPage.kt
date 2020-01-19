@@ -288,7 +288,7 @@ object ExerciseSummaryPage : EasyPage() {
             initAaFileEditor(aaFiles)
         }
 
-        MathJax.typeset()
+        MathJax.formatPageIfNeeded(exercise.instructions_html.orEmpty(), exercise.text_html.orEmpty())
 
         fl?.end()
         return exercise
@@ -806,7 +806,7 @@ object ExerciseSummaryPage : EasyPage() {
             ))
             initExerciseImages()
             highlightExerciseCode()
-            MathJax.typeset()
+            MathJax.formatPageIfNeeded(exercise.text_html.orEmpty())
         }
 
 

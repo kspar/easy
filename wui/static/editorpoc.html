@@ -42,6 +42,9 @@
         <div class="card-content">
             <h2>Auto ülesanne</h2>
 
+            <p>\(\sqrt{1+4}\)</p>
+
+
             <div class="editor-wrapper">
                 <div class="editor-top">
                     <div class="left-side">
@@ -108,10 +111,36 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
 <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
 <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
-<script>MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};</script>
-<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<!--<script>MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};</script>-->
+<!--<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
 
 <script>
+
+    function formatPageIfNeeded(newContent) {
+        // If newContent contains formulas: .match(/(?:\$|\\\(|\\\[|\\begin\{.*?})/) or something (https://docs.mathjax.org/en/latest/web/typeset.html#typeset-async)
+        // If !window.MathJax (find better function or something)
+        // Load mathjax
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'; // AppProperties.MATHJAX_SRC
+        document.head.appendChild(script);
+        // This will autoformat on load
+
+        // Else
+        MathJax.typeset()
+    }
+
+    console.log(window["MathJax"]);
+
+    window.setTimeout(() => {
+        window.MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'; // AppProperties.MATHJAX_SRC
+        document.head.appendChild(script);
+
+        console.log(window["MathJax"]);
+    }, 5000);
+
+
 
     const cm = CodeMirror.fromTextArea(document.getElementById("aa-files"), {
         mode: "python",
