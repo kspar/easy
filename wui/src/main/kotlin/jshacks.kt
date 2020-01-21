@@ -22,10 +22,10 @@ fun Map<String, Any?>.toJsObj(): dynamic {
     return jsObject
 }
 
-fun objOf(pair: Pair<String, Any>): dynamic =
+fun objOf(pair: Pair<String, Any?>): dynamic =
         mapOf(pair).toJsObj()
 
-fun objOf(vararg pairs: Pair<String, Any>): dynamic =
+fun objOf(vararg pairs: Pair<String, Any?>): dynamic =
         mapOf(*pairs).toJsObj()
 
 

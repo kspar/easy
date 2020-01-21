@@ -1,5 +1,7 @@
 package spa
 
+import AbortController
+import AbortSignal
 import debugFunStart
 import kotlin.browser.window
 
@@ -7,24 +9,26 @@ object PageManager {
 
     // No need for thread-safety, JS runs single-threaded
     private var pages: List<Page> = emptyList()
-    private var previousPage: Page? = null
+    private var currentPage: Page? = null
 
-    fun registerPages(newPages: List<Page>) {
-        pages += newPages
-    }
+    private var abortControllers = mutableListOf<AbortController>()
+
 
     fun updatePage(pageState: String? = null) {
         val funLog = debugFunStart("updatePage")
 
+        abortControllers.forEach { it.abort() }
+        abortControllers.clear()
+
         val path = window.location.pathname
         val newPage = pageFromPath(path)
 
-        previousPage?.destruct()
+        currentPage?.destruct()
 
         newPage.clear()
         newPage.build(pageState)
 
-        previousPage = newPage
+        currentPage = newPage
 
         funLog?.end()
     }
@@ -32,6 +36,15 @@ object PageManager {
     fun navigateTo(path: String) {
         window.history.pushState(null, "", path)
         updatePage()
+    }
+
+    fun getNavCancelSignal(): AbortSignal =
+            AbortController().also {
+                abortControllers.add(it)
+            }.signal
+
+    fun registerPages(newPages: List<Page>) {
+        pages += newPages
     }
 
     private fun pageFromPath(path: String): Page {

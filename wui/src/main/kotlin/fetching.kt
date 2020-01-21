@@ -1,6 +1,6 @@
 import kotlinx.serialization.DeserializationStrategy
-import org.w3c.fetch.RequestInit
 import org.w3c.fetch.Response
+import spa.PageManager
 import kotlin.browser.window
 import kotlin.js.Promise
 
@@ -42,14 +42,17 @@ fun fetchEms(path: String, method: ReqMethod,
                         val jsonData = if (data == null) null else JSON.stringify(dynamicToAny(data.toJsObj()))
 
                         window.fetch(AppProperties.EMS_ROOT + path,
-                                RequestInit(
-                                        method.name,
-                                        combinedHeaders.toJsObj(),
-                                        jsonData))
+                                objOf(
+                                        "method" to method.name,
+                                        "headers" to combinedHeaders,
+                                        "body" to jsonData,
+                                        "signal" to PageManager.getNavCancelSignal()
+                                ))
                                 .then(resolve)
+                                // TODO: check if error is AbortError -> just log
                                 .catch(reject)
                     }
-                    .catch { reject }
+                    .catch(reject)
         }
 
 
@@ -68,3 +71,11 @@ fun createQueryString(vararg params: Pair<String, String?>): String {
 
 
 external fun encodeURIComponent(str: String): String
+
+external class AbortController {
+    val signal: AbortSignal
+
+    fun abort()
+}
+
+external class AbortSignal
