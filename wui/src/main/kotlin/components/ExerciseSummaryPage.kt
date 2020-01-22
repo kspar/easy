@@ -826,6 +826,7 @@ object ExerciseSummaryPage : EasyPage() {
         Materialize.Tabs.init(getElemById("tabs"))
 
         getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
+        getElemById("submit").innerHTML = tmRender("tm-loading-submission")
 
         buildExerciseAndCrumbs()
         buildSubmit(courseId, courseExerciseId)
