@@ -1246,6 +1246,11 @@ div.title-wrap > .title-button > i.material-icons {
 
 i.material-icons {
     vertical-align: middle;
+    cursor: default;
+}
+
+a i.material-icons {
+    cursor: inherit;
 }
 
 
