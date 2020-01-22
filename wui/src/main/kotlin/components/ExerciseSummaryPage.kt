@@ -2,6 +2,7 @@ package components
 
 import Auth
 import DateSerializer
+import MathJax
 import PageName
 import ReqMethod
 import Role
@@ -25,7 +26,10 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import libheaders.*
+import libheaders.CodeMirror
+import libheaders.Materialize
+import libheaders.focus
+import libheaders.highlightCode
 import objOf
 import observeValueChange
 import onChange
@@ -774,7 +778,7 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun buildStudentExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
 
-        suspend fun buildExerciseAndCrumbs() {
+        fun buildExerciseAndCrumbs() = MainScope().launch {
             val exercisePromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId",
                     ReqMethod.GET)
 
@@ -839,7 +843,7 @@ object ExerciseSummaryPage : EasyPage() {
         debug { "Submitted" }
     }
 
-    private suspend fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) {
+    private fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) = MainScope().launch {
 
         suspend fun saveSubmissionDraft(solution: String) {
             debug { "Saving submission draft" }
@@ -857,7 +861,7 @@ object ExerciseSummaryPage : EasyPage() {
         }
 
 
-        var latestSubmissionSolution: String? = null
+        val latestSubmissionSolution: String?
 
         if (existingSubmission != null) {
             debug { "Building submit tab using an existing submission" }
