@@ -355,35 +355,6 @@
     </div>
 </script>
 
-<script id="tm-stud-restore-latest-sub-link" type="text/x-handlebars-template">
-    <a id="restore-latest-sub-btn" class="tooltipped" href="#!" data-tooltip="{{label}}" data-position="bottom"><i class="material-icons">restore</i></a>
-</script>
-
-<script id="tm-stud-sub-sync-loading" type="text/x-handlebars-template">
-    <div class="preloader-wrapper active tooltipped" data-tooltip="{{label}}" data-position="bottom">
-        <div class="spinner-layer">
-            <div class="circle-clipper left">
-                <div class="circle"></div>
-            </div>
-            <div class="gap-patch">
-                <div class="circle"></div>
-            </div>
-            <div class="circle-clipper right">
-                <div class="circle"></div>
-            </div>
-        </div>
-    </div>
-</script>
-<script id="tm-stud-sub-sync-done" type="text/x-handlebars-template">
-    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">cloud_done</i>
-</script>
-<script id="tm-stud-sub-sync-fail" type="text/x-handlebars-template">
-    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">sync_problem</i>
-</script>
-<script id="tm-stud-sub-sync-unsynced" type="text/x-handlebars-template">
-    <i class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom">more_horiz</i>
-</script>
-
 <script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
     {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}:</span>{{time}}</p>{{/time}}
     <div id="assessment-auto" class="assessment"></div>
@@ -394,8 +365,21 @@
                 <div id="editor-top-text" class="top-item"></div>
             </div>
             <div class="right-side">
-                <div id="restore-latest-sub" class="top-item"></div>
-                <div id="sync-indicator" class="top-item"></div>
+                <div class="top-item">
+                    <a id="restore-latest-sub-btn" class="tooltipped" href="#!" data-tooltip="{{restoreLabel}}" data-position="bottom"><i class="material-icons">restore</i></a>
+                </div>
+                <div id="sync-indicator" class="top-item">
+                    <i id="sync-done" class="icon material-icons tooltipped" data-tooltip="{{doneLabel}}" data-position="bottom">cloud_done</i>
+                    <i id="sync-undone" class="icon material-icons tooltipped" data-tooltip="{{undoneLabel}}" data-position="bottom">more_horiz</i>
+                    <i id="sync-fail" class="icon material-icons tooltipped" data-tooltip="{{failLabel}}" data-position="bottom">sync_problem</i>
+                    <div id="sync-loading" class="icon preloader-wrapper active tooltipped" data-tooltip="{{syncingLabel}}" data-position="bottom">
+                        <div class="spinner-layer">
+                            <div class="circle-clipper left"><div class="circle"></div></div>
+                            <div class="gap-patch"><div class="circle"></div></div>
+                            <div class="circle-clipper right"><div class="circle"></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <textarea id="submission"></textarea>

@@ -30,6 +30,7 @@ import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
 import libheaders.highlightCode
+import moveClass
 import objOf
 import observeValueChange
 import onChange
@@ -953,8 +954,14 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("submit").innerHTML = tmRender("tm-stud-exercise-submit", mapOf(
                 "timeLabel" to Str.lastSubmTimeLabel(),
                 "checkLabel" to Str.submitAndCheckLabel(),
+                "doneLabel" to "Mustand salvestatud",
+                "undoneLabel" to "Mustand salvestamata",
+                "failLabel" to "Mustandi salvestamine ebaõnnestus",
+                "syncingLabel" to "Salvestan mustandit...",
+                "restoreLabel" to "Taasta viimane esitus",
                 "time" to submission?.submission_time?.toEstonianString()
         ))
+        initTooltips()
 
         if (submission?.grade_auto != null) {
             getElemById("assessment-auto").innerHTML = renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
@@ -991,11 +998,9 @@ object ExerciseSummaryPage : EasyPage() {
     private fun paintDraftState(draftSolution: String, submissionSolution: String?) {
         getElemById("editor-top-text").textContent = "Mustand (esitamata)"
         if (submissionSolution != null && draftSolution != submissionSolution) {
-            getElemById("restore-latest-sub").innerHTML = tmRender("tm-stud-restore-latest-sub-link", mapOf(
-                    "label" to "Taasta viimane esitus"
-            ))
-            initTooltips()
-            getElemById("restore-latest-sub-btn").onVanillaClick(true) {
+            val restoreBtn = getElemById("restore-latest-sub-btn")
+            restoreBtn.addClass("visible")
+            restoreBtn.onVanillaClick(true) {
                 debug { "Restoring latest sub" }
                 paintLatestSubmission(submissionSolution)
             }
@@ -1010,7 +1015,7 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun paintLatestSubmissionState() {
         getElemById("editor-top-text").textContent = "Viimane esitus"
-        getElemById("restore-latest-sub").clear()
+        getElemById("restore-latest-sub-btn").removeClass("visible")
     }
 
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
@@ -1030,31 +1035,19 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun paintSyncDone() {
-        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-done", mapOf(
-                "label" to "Mustand salvestatud"
-        ))
-        initTooltips()
-    }
-
-    private fun paintSyncLoading() {
-        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-loading", mapOf(
-                "label" to "Salvestan mustandit..."
-        ))
-        initTooltips()
+        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-done"), "visible")
     }
 
     private fun paintSyncUnsynced() {
-        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-unsynced", mapOf(
-                "label" to "Mustand salvestamata"
-        ))
-        initTooltips()
+        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-undone"), "visible")
+    }
+
+    private fun paintSyncLoading() {
+        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-loading"), "visible")
     }
 
     private fun paintSyncFail() {
-        getElemById("sync-indicator").innerHTML = tmRender("tm-stud-sub-sync-fail", mapOf(
-                "label" to "Mustandi salvestamine ebaõnnestus"
-        ))
-        initTooltips()
+        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-fail"), "visible")
     }
 
     private fun initExerciseImages() {

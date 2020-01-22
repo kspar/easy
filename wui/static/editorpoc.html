@@ -51,54 +51,48 @@
                         <a class="top-item editor-tab active">adoc</a>
                         <a href="#!" class="top-item editor-tab">html</a>
                     </div>
+                    <div class="right-side">
+                        <div id="restore-latest-sub" class="top-item">
+                            <a id="restore-latest-sub-btn" onclick="f()" class="tooltipped" href="#!" data-tooltip="{{label}}" data-position="bottom"><i class="material-icons">restore</i></a>
+                        </div>
+                        <div id="sync-indicator" class="top-item" style="width: 24px; height: 24px">
+                            <i id="dn" class="material-icons tooltipped" data-tooltip="{{asd}}" data-position="bottom" >cloud_done</i>
+<!--                            <i id="icn" class="material-icons tooltipped" data-tooltip="{{label}}" data-position="bottom" >more_horiz</i>-->
+                            <div id="icn" class="preloader-wrapper active tooltipped" data-tooltip="{{label}}" data-position="bottom">
+                                <div class="spinner-layer">
+                                    <div class="circle-clipper left">
+                                        <div class="circle"></div>
+                                    </div>
+                                    <div class="gap-patch">
+                                        <div class="circle"></div>
+                                    </div>
+                                    <div class="circle-clipper right">
+                                        <div class="circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <textarea id="text-editor"></textarea>
             </div>
-            <div id="status"></div>
-
-            <h4>Eelvaade</h4>
-            <div id="exercise-text">
-                <div>
-                    <p>Koostada programm, mis küsib kasutajalt astme aluse (täisarv) ja astendaja (täisarv) (just selles
-                        järjekorras) ning arvutab ja väljastab ekraanile astme.</p>
-                    <p>Näiteks kui kasutaja sisestab vastustena 2 ja 4, siis väljastatakse 16, sest 2<sup>4</sup> = 16.
-                        Astme alus
-                        on siin 2, astendaja 4 ja aste 16.</p>
-                    <p>Näide programmi tööst:</p>
-                    <div class="material-placeholder"><img
-                            src="https://courses.cs.ut.ee/2018/eprogalused/uploads/Main/yl1.3.png"></div>
-                    <p>Kui olete juba hulk aega proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis
-                        võib-olla
-                        saate abi <a href="https://progtugi.cs.ut.ee/#/ts/5873e29b60c97b8f355bafa5/">murelahendajalt</a>.
-                        Püütud on
-                        tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>
-                </div>
-            </div>
-
-
-            <h4>Automaatkontroll</h4>
-            <div class="editor-wrapper">
-                <div class="editor-top">
-                    <div class="left-side">
-                        <a class="top-item editor-tab active">evaluate.sh</a>
-                        <a id="abc" href="#!" class="top-item editor-tab">tester.py</a>
-                        <a href="#!" class="top-item editor-tab">rattad.py</a>
-                    </div>
-                </div>
-                <textarea id="aa-files"></textarea>
-            </div>
         </div>
     </div>
-
-
 </div>
 
 
 <style>
+    #dn,
+    #icn {
+        transition: opacity .5s ease-in-out;
+        position: absolute;
+    }
 
-
+    .hdn {
+        visibility: hidden;
+        opacity: 0;
+    }
 </style>
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
@@ -111,45 +105,28 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
 <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
 <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
-<!--<script>MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};</script>-->
-<!--<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
 
 <script>
 
-    function formatPageIfNeeded(newContent) {
-        // If newContent contains formulas: .match(/(?:\$|\\\(|\\\[|\\begin\{.*?})/) or something (https://docs.mathjax.org/en/latest/web/typeset.html#typeset-async)
-        // If !window.MathJax (find better function or something)
-        // Load mathjax
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'; // AppProperties.MATHJAX_SRC
-        document.head.appendChild(script);
-        // This will autoformat on load
+    let i = 0;
 
-        // Else
-        MathJax.typeset()
+    function f() {
+        const a = document.getElementById("dn");
+        const b = document.getElementById("icn");
+        let hide;
+        let unhide;
+        if (i % 2 === 0) {
+            hide = a;
+            unhide = b;
+        } else {
+            hide = b;
+            unhide = a;
+        }
+        hide.classList.add("hdn");
+        unhide.classList.remove("hdn");
+        i++;
     }
 
-    console.log(window["MathJax"]);
-
-    window.setTimeout(() => {
-        window.MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'; // AppProperties.MATHJAX_SRC
-        document.head.appendChild(script);
-
-        console.log(window["MathJax"]);
-    }, 5000);
-
-
-
-    const cm = CodeMirror.fromTextArea(document.getElementById("aa-files"), {
-        mode: "python",
-        lineNumbers: true,
-        autoRefresh: true,
-        viewportMargin: 100
-    });
-
-    cm.setValue("eval");
 
     const textEditor = CodeMirror.fromTextArea(document.getElementById("text-editor"), {
         mode: "adoc",
@@ -157,6 +134,9 @@
         autoRefresh: true,
         viewportMargin: 100
     });
+
+    var elems = document.querySelectorAll('.tooltipped');
+    var instances = M.Tooltip.init(elems);
 
 
 </script>

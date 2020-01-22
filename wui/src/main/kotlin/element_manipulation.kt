@@ -1,5 +1,7 @@
 import org.w3c.dom.*
 import kotlin.browser.document
+import kotlin.dom.addClass
+import kotlin.dom.removeClass
 
 
 fun getContainer(): HTMLDivElement =
@@ -40,3 +42,19 @@ inline fun <reified T : Element> getElemByIdAs(id: String): T =
         getElemByIdAsOrNull(id)
                 ?: throw RuntimeException("No element with id $id and type ${T::class.js.name}")
 
+
+fun moveClass(allElements: List<Element>, selectedElement: Element, vararg classes: String) {
+    partitionElementsWithAction(allElements, listOf(selectedElement),
+            inactiveAction = {
+                it.removeClass(*classes)
+            },
+            activeAction = {
+                it.addClass(*classes)
+            })
+}
+
+fun partitionElementsWithAction(allElements: List<Element>, selectedElements: List<Element>,
+                                inactiveAction: (e: Element) -> Unit, activeAction: (e: Element) -> Unit) {
+    allElements.forEach(inactiveAction)
+    selectedElements.forEach(activeAction)
+}

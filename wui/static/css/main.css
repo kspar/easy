@@ -286,6 +286,17 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 1rem;
 }
 
+#exercise-card #restore-latest-sub-btn {
+    transition: opacity .5s ease-in-out;
+    visibility: hidden;
+    opacity: 0;
+}
+
+#exercise-card #restore-latest-sub-btn.visible {
+    visibility: inherit;
+    opacity: inherit;
+}
+
 #exercise-card pre.feedback {
     font-size: 1.4rem;
     white-space: normal;
@@ -551,7 +562,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 .editor-top .top-item {
-    padding: 0 .75rem;
+    margin: 0 .75rem;
 }
 
 .editor-top a {
@@ -581,6 +592,20 @@ nav.crumb-wrap .breadcrumb:before {
 
 .editor-top #sync-indicator {
     line-height: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.editor-top #sync-indicator .icon {
+    position: absolute;
+    transition: opacity .5s ease-in-out;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.editor-top #sync-indicator .icon.visible {
+    visibility: inherit;
+    opacity: inherit;
 }
 
 .editor-top .preloader-wrapper {
