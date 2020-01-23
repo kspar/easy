@@ -1303,6 +1303,10 @@ button i.material-icons {
     min-width: 20rem;
 }
 
+.toast .msg {
+    white-space: pre-wrap;
+}
+
 
 /** Tooltip **/
 
