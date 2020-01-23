@@ -48,9 +48,8 @@ fun userMessage(msgProvider: () -> String, type: MsgType) {
     val btnId = "toast${Random.Default.nextInt()}"
     val toastHtml = tmRender("tm-message", mapOf(
             "btnId" to btnId,
-            "error" to msg,
-            "icon" to type.iconId,
-            "dismiss" to Str.toastDismiss()
+            "msg" to msg,
+            "icon" to type.iconId
     ))
     val toast = Materialize.toast(objOf(
             "html" to toastHtml,

@@ -1274,7 +1274,8 @@ i.material-icons {
     cursor: default;
 }
 
-a i.material-icons {
+a i.material-icons,
+button i.material-icons {
     cursor: inherit;
 }
 
@@ -1282,23 +1283,24 @@ a i.material-icons {
 /** Toast **/
 
 #toast-container {
-    top: 58px;
-    left: 50%;
-    right: unset;
-    transform: translateX(-50%);
+    max-width: 35%;
+    bottom: 2rem;
+    right: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
 }
 
-
-.toast:first-child {
-    margin-top: 0;
-}
-
-.toast .btn-flat {
-    min-width: 100px;
+.toast i.material-icons.dismiss {
+    font-size: 2.5rem;
+    color: #888;
 }
 
 .toast {
     font-size: 1.6rem;
+    background-color: #333;
+    min-width: 20rem;
 }
 
 

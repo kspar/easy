@@ -8,7 +8,6 @@ abstract class TranslatableStrings {
 
     abstract fun noPermissionForPage(): String
     abstract fun somethingWentWrong(): String
-    abstract fun toastDismiss(): String
     abstract fun yes(): String
     abstract fun no(): String
     abstract fun myCourses(): String
@@ -145,7 +144,6 @@ private object EstStrings : TranslatableStrings() {
     override fun submissionTimeLabel() = "Esitamise aeg"
     override fun yes() = "jah"
     override fun no() = "ei"
-    override fun toastDismiss() = "Sain aru"
     override fun topMenuCourses() = "Minu kursused"
     override fun noPermissionForPage() = "Teil puudub õigus selle lehe vaatamiseks."
     override fun newCourseLink() = "Uus kursus"
