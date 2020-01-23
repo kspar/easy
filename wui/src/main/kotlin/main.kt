@@ -52,11 +52,8 @@ private suspend fun updateAccountData() {
 
     val personalData = mapOf("email" to email, "first_name" to firstName, "last_name" to lastName)
 
-    val resp = fetchEms("/account/checkin", ReqMethod.POST, personalData).await()
-    if (resp.http200)
-        debug { "Account data updated" }
-    else
-        warn { "Updating account data failed with status ${resp.status}" }
+    fetchEms("/account/checkin", ReqMethod.POST, personalData, successChecker = { it.http200 }).await()
+    debug { "Account data updated" }
 
     funLog?.end()
 }
