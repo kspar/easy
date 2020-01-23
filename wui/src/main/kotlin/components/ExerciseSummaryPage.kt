@@ -706,6 +706,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val studentTab = getElemById("tab-student")
         studentTab.removeClass("display-none")
+        getElemById("student").clear()
         val studentTabLink = studentTab.firstElementChild
         studentTabLink?.textContent = "$givenName ${familyName[0]}"
 
