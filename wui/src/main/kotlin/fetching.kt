@@ -36,8 +36,8 @@ fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
 fun fetchEms(path: String, method: ReqMethod,
              data: Map<String, Any?>? = null,
              headers: Map<String, String> = emptyMap(),
-             // TODO: default successChecker is a temp hack before refactoring every call
-             successChecker: (Response) -> Boolean = { r: Response -> true },
+        // TODO: default successChecker is a temp hack before refactoring every call
+             successChecker: (Response) -> Boolean = { warn { "Using default success checker" }; true },
              vararg errorHandlers: (ErrorBody?, Response) -> Boolean = emptyArray()): Promise<Response> =
 
         Promise { resolve, reject ->
