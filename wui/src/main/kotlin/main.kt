@@ -50,7 +50,7 @@ private suspend fun updateAccountData() {
 
     debug { "Updating account data to [email: $email, first name: $firstName, last name: $lastName]" }
 
-    val personalData = mapOf("email" to email, "first_name" to firstName, "last_name" to lastName)
+    val personalData = mapOf("first_name" to firstName, "last_name" to lastName)
 
     fetchEms("/account/checkin", ReqMethod.POST, personalData, successChecker = { it.http200 }).await()
     debug { "Account data updated" }
