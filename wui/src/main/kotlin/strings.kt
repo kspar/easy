@@ -104,6 +104,7 @@ abstract class TranslatableStrings {
     abstract fun oldSubmissionNote(): String
     abstract fun toLatestSubmissionLink(): String
     abstract fun aaTitle(): String
+    abstract fun submitSuccessMsg(): String
 
 
     // Exercise page
@@ -193,4 +194,5 @@ private object EstStrings : TranslatableStrings() {
     override fun addAssessmentGradeValidErr() = "Hinne peab olema arv 0 ja 100 vahel."
     override fun addAssessmentButtonLabel() = "Lisa hinnang"
     override fun aaTitle() = "Automaatkontroll"
+    override fun submitSuccessMsg() = "Lahendus esitatud"
 }

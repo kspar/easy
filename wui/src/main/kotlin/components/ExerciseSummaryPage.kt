@@ -844,6 +844,7 @@ object ExerciseSummaryPage : EasyPage() {
             error("Submitting failed with status ${resp.status}")
         }
         debug { "Submitted" }
+        successMessage { Str.submitSuccessMsg() }
     }
 
     private fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) = MainScope().launch {
@@ -900,6 +901,7 @@ object ExerciseSummaryPage : EasyPage() {
             latestSubmissionSolution = submission?.solution
 
             if (submission?.autograde_status == AutogradeStatus.IN_PROGRESS) {
+                disableEditSubmit()
                 paintAutoassInProgress()
                 pollForAutograde(courseId, courseExerciseId)
             }
@@ -914,8 +916,9 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("submit-button").onVanillaClick(true) {
             MainScope().launch {
-                paintAutoassInProgress()
+                disableEditSubmit()
                 postSolution(courseId, courseExerciseId, editor.getValue())
+                paintAutoassInProgress()
                 pollForAutograde(courseId, courseExerciseId)
             }
         }
@@ -935,7 +938,7 @@ object ExerciseSummaryPage : EasyPage() {
         }
     }
 
-    private fun paintAutoassInProgress() {
+    private fun disableEditSubmit() {
         val editorWrap = getElemById("submit-editor-wrap")
         val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
         val editor = editorWrap.getElementsByClassName("CodeMirror")[0]?.CodeMirror
@@ -943,6 +946,9 @@ object ExerciseSummaryPage : EasyPage() {
         submitButton.textContent = Str.autoAssessing()
         editor?.setOption("readOnly", true)
         editorWrap.addClass("no-cursor")
+    }
+
+    private fun paintAutoassInProgress() {
         getElemById("assessment-auto").innerHTML = tmRender("tm-exercise-auto-feedback", mapOf(
                 "autoLabel" to Str.autoAssessmentLabel(),
                 "autoGradeLabel" to Str.autoGradeLabel(),
