@@ -7,6 +7,7 @@ import core.db.TeacherCourseAccess
 import core.db.TeacherGroupAccess
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
@@ -17,7 +18,7 @@ private val log = KotlinLogging.logger {}
 
 fun assertUserHasAccessToCourse(user: EasyUser, courseId: Long) {
     if (!canUserAccessCourse(user, courseId)) {
-        throw ForbiddenException("User ${user.id} does not have access to course $courseId")
+        throw ForbiddenException("User ${user.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
     }
 }
 
@@ -33,7 +34,7 @@ fun canUserAccessCourse(user: EasyUser, courseId: Long): Boolean {
 
 fun assertTeacherOrAdminHasAccessToCourse(user: EasyUser, courseId: Long) {
     if (!canTeacherOrAdminAccessCourse(user, courseId)) {
-        throw ForbiddenException("Teacher or admin ${user.id} does not have access to course $courseId")
+        throw ForbiddenException("Teacher or admin ${user.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
     }
 }
 
@@ -49,7 +50,7 @@ fun canTeacherOrAdminAccessCourse(user: EasyUser, courseId: Long): Boolean =
 
 fun assertTeacherOrAdminHasAccessToCourseGroup(user: EasyUser, courseId: Long, groupId: Long) {
     if (!canTeacherOrAdminAccessCourseGroup(user, courseId, groupId)) {
-        throw ForbiddenException("Teacher or admin ${user.id} does not have access to group $groupId on course $courseId")
+        throw ForbiddenException("Teacher or admin ${user.id} does not have access to group $groupId on course $courseId", ReqError.NO_GROUP_ACCESS)
     }
 }
 
@@ -85,7 +86,7 @@ fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): 
 
 fun assertTeacherHasAccessToCourse(teacherId: String, courseId: Long) {
     if (!canTeacherAccessCourse(teacherId, courseId)) {
-        throw ForbiddenException("Teacher $teacherId does not have access to course $courseId")
+        throw ForbiddenException("Teacher $teacherId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
     }
 }
 
@@ -102,7 +103,7 @@ fun canTeacherAccessCourse(teacherId: String, courseId: Long): Boolean {
 
 fun assertStudentHasAccessToCourse(studentId: String, courseId: Long) {
     if (!canStudentAccessCourse(studentId, courseId)) {
-        throw ForbiddenException("Student $studentId does not have access to course $courseId")
+        throw ForbiddenException("Student $studentId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
     }
 }
 
