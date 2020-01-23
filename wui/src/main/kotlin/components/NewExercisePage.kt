@@ -1,6 +1,5 @@
 package components
 
-import Auth
 import MathJax
 import PageName
 import ReqMethod
@@ -43,13 +42,11 @@ object NewExercisePage : EasyPage() {
     override fun pathMatches(path: String) =
             path.matches("^/exercises/new/?$")
 
+    override val allowedRoles: List<Role>
+        get() = listOf(Role.TEACHER, Role.ADMIN)
+
     override fun build(pageStateStr: String?) {
         MainScope().launch {
-            if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
-                errorMessage { Str.noPermissionForPage() }
-                error("User is not admin nor teacher")
-            }
-
             getContainer().innerHTML = tmRender("tm-teach-new-exercise")
 
             val savedAdoc = localStorage["new-exercise-adoc"] ?: ""

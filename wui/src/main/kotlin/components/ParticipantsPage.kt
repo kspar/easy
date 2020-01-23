@@ -1,6 +1,5 @@
 package components
 
-import Auth
 import DateSerializer
 import PageName
 import ReqMethod
@@ -90,6 +89,9 @@ object ParticipantsPage : EasyPage() {
     override val pageName: Any
         get() = PageName.PARTICIPANTS
 
+    override val allowedRoles: List<Role>
+        get() = listOf(Role.TEACHER, Role.ADMIN)
+
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses/\\w+/participants/?$")
 
@@ -143,12 +145,6 @@ object ParticipantsPage : EasyPage() {
             }
         }
 
-
-        if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
-            errorMessage { Str.noPermissionForPage() }
-            error("User is not admin nor teacher")
-        }
-
         val courseId = extractSanitizedCourseId(window.location.pathname)
 
         MainScope().launch {
@@ -170,7 +166,7 @@ object ParticipantsPage : EasyPage() {
             val gradesSynced = participants.moodle_grades_synced ?: false
 
             val studentRows = participants.students_pending.map {
-                StudentRow(null, null, null,null, null, it.email, it.groups.joinToString { it.name }, true)
+                StudentRow(null, null, null, null, null, it.email, it.groups.joinToString { it.name }, true)
             }.sortedWith(compareBy(StudentRow::groups, StudentRow::email)) +
 
                     participants.students_moodle_pending.map {
@@ -179,7 +175,7 @@ object ParticipantsPage : EasyPage() {
                     }.sortedWith(compareBy(StudentRow::groups, StudentRow::moodleUsername)) +
 
                     // Need to map twice because we need the groups string
-                    participants.students.map {s ->
+                    participants.students.map { s ->
                         StudentRow(null, s.given_name, s.family_name, "${s.given_name} ${s.family_name}", s.id, s.email, s.groups.joinToString { it.name }, false,
                                 s.moodle_username)
                     }.sortedWith(compareBy(StudentRow::groups, StudentRow::familyName, StudentRow::givenName))

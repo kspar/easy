@@ -132,6 +132,22 @@
     </div>
 </script>
 
+<script id="tm-error-page" type="text/x-handlebars-template">
+    <!-- TODO: sad robot -->
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{title}}</h3>
+    </div>
+    <div class="missing-content-wrap">
+        <div class="antennaball"></div>
+        <div class="antenna"></div>
+        <div class="robot">
+            <div class="robot-eye"></div>
+            <div class="robot-eye"></div>
+        </div>
+        <p class="text">{{msg}}</p>
+    </div>
+</script>
+
 <script id="tm-exercise-auto-feedback" type="text/x-handlebars-template">
     <h4>{{autoLabel}}</h4>
     <pre class="feedback auto-feedback">{{feedback}}</pre>

@@ -37,6 +37,14 @@ abstract class Page {
     open fun clear() {}
 
     /**
+     * Check if navigation to this page is allowed. Can check for example user's role and any other internal state.
+     * Should throw an exception if the checks fail - no navigation is performed in that case.
+     * Called before [clear].
+     * The default implementation does not perform any checks.
+     */
+    open fun assertAuthorisation() {}
+
+    /**
      * Destruct built page. Called when navigating away from this page.
      * The default implementation does nothing.
      */

@@ -6,7 +6,8 @@ abstract class TranslatableStrings {
 
     // General
 
-    abstract fun noPermissionForPage(): String
+    abstract fun noPermissionForPageTitle(): String
+    abstract fun noPermissionForPageMsg(): String
     abstract fun somethingWentWrong(): String
     abstract fun yes(): String
     abstract fun no(): String
@@ -146,7 +147,7 @@ private object EstStrings : TranslatableStrings() {
     override fun yes() = "jah"
     override fun no() = "ei"
     override fun topMenuCourses() = "Minu kursused"
-    override fun noPermissionForPage() = "Teil puudub õigus selle lehe vaatamiseks."
+    override fun noPermissionForPageMsg() = "Sul puudub õigus selle lehe vaatamiseks. :("
     override fun newCourseLink() = "Uus kursus"
     override fun coursesStudents() = "õpilast"
     override fun coursesStudent() = "õpilane"
@@ -195,4 +196,5 @@ private object EstStrings : TranslatableStrings() {
     override fun addAssessmentButtonLabel() = "Lisa hinnang"
     override fun aaTitle() = "Automaatkontroll"
     override fun submitSuccessMsg() = "Lahendus esitatud"
+    override fun noPermissionForPageTitle() = "Ligipääs puudub"
 }

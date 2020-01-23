@@ -24,11 +24,11 @@ object PageManager {
         val newPage = pageFromPath(path)
 
         currentPage?.destruct()
+        currentPage = newPage
 
+        newPage.assertAuthorisation()
         newPage.clear()
         newPage.build(pageState)
-
-        currentPage = newPage
 
         funLog?.end()
     }

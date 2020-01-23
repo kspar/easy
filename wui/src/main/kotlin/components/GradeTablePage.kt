@@ -1,6 +1,5 @@
 package components
 
-import Auth
 import PageName
 import ReqMethod
 import Role
@@ -64,15 +63,13 @@ object GradeTablePage : EasyPage() {
     override val pageName: Any
         get() = PageName.GRADE_TABLE
 
+    override val allowedRoles: List<Role>
+        get() = listOf(Role.TEACHER, Role.ADMIN)
+
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/grades/?$")
 
     override fun build(pageStateStr: String?) {
-        if (Auth.activeRole != Role.ADMIN && Auth.activeRole != Role.TEACHER) {
-            errorMessage { Str.noPermissionForPage() }
-            error("User is not admin nor teacher")
-        }
-
         val courseId = extractSanitizedCourseId(window.location.pathname)
 
         MainScope().launch {

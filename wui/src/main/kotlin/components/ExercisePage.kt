@@ -1,12 +1,11 @@
 package components
 
-import Auth
 import DateSerializer
+import MathJax
 import PageName
 import ReqMethod
 import Role
 import Str
-import debug
 import errorMessage
 import fetchEms
 import getContainer
@@ -93,17 +92,14 @@ object ExercisePage : EasyPage() {
     override val pageName: Any
         get() = PageName.EXERCISE
 
+    override val allowedRoles: List<Role>
+        get() = listOf(Role.ADMIN)
+
     override fun pathMatches(path: String): Boolean =
             path.matches("^/exercises/\\w+/details/?$")
 
     override fun build(pageStateStr: String?) {
         val exerciseId = extractSanitizedExerciseId(window.location.pathname)
-        debug { exerciseId }
-
-        if (Auth.activeRole != Role.ADMIN) {
-            errorMessage { Str.noPermissionForPage() }
-            error("User is not admin")
-        }
 
         MainScope().launch {
 
