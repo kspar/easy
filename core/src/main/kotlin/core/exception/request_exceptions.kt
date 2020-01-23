@@ -18,6 +18,6 @@ class AwaitTimeoutException(
 
 class ForbiddenException(
         override val message: String,
-        val code: ReqError? = null,
+        val code: ReqError,
         vararg val attributes: Pair<String, String>
 ) : RuntimeException(message)

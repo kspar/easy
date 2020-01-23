@@ -45,13 +45,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
 
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
-        // Remove after migrating all FEs to use code
-        if (ex.code != null) {
-            val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
-            return ResponseEntity(resp, HttpStatus.FORBIDDEN)
-        } else {
-            return ResponseEntity(HttpStatus.FORBIDDEN)
-        }
+        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
+        return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
 
     @ExceptionHandler(value = [InvalidRequestException::class])
