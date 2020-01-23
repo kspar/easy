@@ -1,5 +1,6 @@
 import libheaders.Materialize
 import kotlin.js.Date
+import kotlin.random.Random
 
 private const val DEBUG_PREFIX = "[DEBUG]"
 private const val WARN_PREFIX = "[WARN]"
@@ -36,32 +37,33 @@ fun debugFunStart(funName: String): FunLog? {
     return null
 }
 
-fun errorMessage(msgProvider: () -> String) {
+
+fun errorMessage(msgProvider: () -> String) = userMessage(msgProvider, MsgType.ERROR)
+
+fun successMessage(msgProvider: () -> String) = userMessage(msgProvider, MsgType.SUCCESS)
+
+fun userMessage(msgProvider: () -> String, type: MsgType) {
     val msg = msgProvider()
-    debug { "Showing error message: $msg" }
+    debug { "Showing ${type.name} message: $msg" }
+    val btnId = "toast${Random.Default.nextInt()}"
     val toastHtml = tmRender("tm-message", mapOf(
-            "icon" to "error_outline",
+            "btnId" to btnId,
             "error" to msg,
-            "dismiss" to Str.errorDismiss()
+            "icon" to type.iconId,
+            "dismiss" to Str.toastDismiss()
     ))
-    Materialize.toast(objOf(
+    val toast = Materialize.toast(objOf(
             "html" to toastHtml,
-            "displayLength" to 15_000
+            "displayLength" to type.visibleTimeMs
     ))
+    getElemById(btnId).onVanillaClick(true) {
+        toast.dismiss()
+    }
 }
 
-fun successMessage(msgProvider: () -> String) {
-    val msg = msgProvider()
-    debug { "Showing success message: $msg" }
-    val toastHtml = tmRender("tm-message", mapOf(
-            "icon" to "check",
-            "error" to msg,
-            "dismiss" to Str.errorDismiss()
-    ))
-    Materialize.toast(objOf(
-            "html" to toastHtml,
-            "displayLength" to 5_000
-    ))
+enum class MsgType(val iconId: String, val visibleTimeMs: Int) {
+    ERROR("error_outline", 15_000),
+    SUCCESS("check", 5_000)
 }
 
 

@@ -12,7 +12,7 @@ external object Materialize {
     val Materialbox: MMaterialbox
     val FormSelect: MFormSelect
 
-    fun toast(options: dynamic)
+    fun toast(options: dynamic): MToastInstance
 }
 
 external object MDropdown {
@@ -44,6 +44,10 @@ external class MTabsInstance {
 
 external class MToast {
     fun dismissAll()
+}
+
+external class MToastInstance {
+    fun dismiss()
 }
 
 external class MMaterialbox {
