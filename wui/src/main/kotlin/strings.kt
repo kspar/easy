@@ -6,6 +6,8 @@ abstract class TranslatableStrings {
 
     // General
 
+    abstract fun notFoundPageTitle(): String
+    abstract fun notFoundPageMsg(): String
     abstract fun noPermissionForPageTitle(): String
     abstract fun noPermissionForPageMsg(): String
     abstract fun noCourseAccessPageTitle(): String
@@ -201,4 +203,6 @@ private object EstStrings : TranslatableStrings() {
     override fun noPermissionForPageTitle() = "Ligipääs puudub"
     override fun noCourseAccessPageTitle() = "Ligipääs kursusele puudub"
     override fun noCourseAccessPageMsg() = "Sul puudub ligipääs sellele kursusele. :("
+    override fun notFoundPageTitle() = "Lehte ei leitud"
+    override fun notFoundPageMsg() = "Siin pole midagi kasulikku näha. :("
 }

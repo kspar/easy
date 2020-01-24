@@ -1,8 +1,11 @@
 package spa
 
+import Str
+import debugFunStart
+import getContainer
 import queries.AbortController
 import queries.AbortSignal
-import debugFunStart
+import tmRender
 import kotlin.browser.window
 
 object PageManager {
@@ -52,9 +55,19 @@ object PageManager {
         val matchingCount = matchingPages.size
         return when {
             matchingCount == 1 -> matchingPages.single()
-            matchingCount < 1 -> error("Path $path did not match any pages")
+            matchingCount < 1 -> {
+                handlePageNotFound()
+                error("Path $path did not match any pages")
+            }
             else -> error("Path $path matched several pages: ${matchingPages.map { it.pageName }}")
         }
+    }
+
+    private fun handlePageNotFound() {
+        getContainer().innerHTML = tmRender("tm-error-page", mapOf(
+                "title" to Str.notFoundPageTitle(),
+                "msg" to Str.notFoundPageMsg()
+        ))
     }
 
 }
