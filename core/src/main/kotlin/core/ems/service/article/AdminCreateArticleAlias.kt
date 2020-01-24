@@ -49,16 +49,14 @@ class CreateArticleAliasController {
 
 
 private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
-    val admin = EntityID(createdBy, Admin)
-
     transaction {
-        if (ArticleAlias.select { ArticleAlias.id eq alias }.count() != 0) {
+        if (ArticleAlias.select { ArticleAlias.id eq alias }.count() > 0) {
             throw InvalidRequestException("Article alias '$alias' is already in use.", ReqError.ARTICLE_ALIAS_IN_USE)
         }
 
         ArticleAlias.insert {
             it[id] = EntityID(alias, ArticleAlias)
-            it[owner] = admin
+            it[owner] = EntityID(createdBy, Admin)
             it[article] = EntityID(articleId, Article)
             it[createdAt] = DateTime.now()
         }
