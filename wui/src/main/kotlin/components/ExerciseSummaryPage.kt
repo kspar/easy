@@ -4,15 +4,12 @@ import Auth
 import DateSerializer
 import MathJax
 import PageName
-import queries.ReqMethod
 import Role
 import Str
 import compareTo
-import queries.createQueryString
 import debug
 import debugFunStart
 import errorMessage
-import queries.fetchEms
 import getContainer
 import getElemById
 import getElemByIdAs
@@ -20,8 +17,6 @@ import getElemByIdOrNull
 import getElemBySelector
 import getElemsBySelector
 import getNodelistBySelector
-import queries.http200
-import queries.http204
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -36,8 +31,7 @@ import observeValueChange
 import onChange
 import onVanillaClick
 import org.w3c.dom.*
-import queries.parseTo
-import queries.BasicCourseInfo
+import queries.*
 import successMessage
 import tmRender
 import toEstonianString

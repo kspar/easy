@@ -63,7 +63,6 @@ fun fetchEms(path: String, method: ReqMethod,
                                                 }
                                                 .then { errorBody: ErrorBody? ->
                                                     if (errorHandlers.none { resp.clone().it(errorBody) }) {
-                                                        debug { "Calling default error handler" }
                                                         ErrorHandlers.defaultMsg(resp, errorBody)
                                                     }
                                                 }

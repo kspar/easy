@@ -1,20 +1,16 @@
 package components
 
 import PageName
-import queries.ReqMethod
 import Role
 import Str
 import errorMessage
-import queries.fetchEms
 import getContainer
-import queries.http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
-import queries.parseTo
-import queries.BasicCourseInfo
+import queries.*
 import tmRender
 import kotlin.browser.window
 
