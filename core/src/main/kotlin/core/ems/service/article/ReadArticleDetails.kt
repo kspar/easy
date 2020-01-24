@@ -10,9 +10,8 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.alias
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -69,10 +68,9 @@ private fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolea
     return transaction {
 
         val articleId = ArticleAlias.slice(ArticleAlias.article)
-                .select { ArticleAlias.id eq EntityID(articleIdOrAlias, ArticleAlias) }
+                .select { ArticleAlias.id eq articleIdOrAlias }
                 .map { it[ArticleAlias.article].value }
-                .firstOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
-
+                .singleOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
 
         val authorAlias = Account.alias("author_account_1")
         val adminAlias = Admin.alias("author_admin_1")
@@ -97,9 +95,8 @@ private fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolea
                         authorAlias[Account.givenName],
                         authorAlias[Account.familyName])
                 .select {
-                    Article.id eq articleId
+                    Article.id eq articleId and ArticleVersion.validTo.isNull()
                 }
-                .orderBy(ArticleVersion.validFrom, SortOrder.DESC)
                 .map {
                     ReadArticleDetailsController.Resp(
                             it[Article.id].value.toString(),
@@ -121,7 +118,7 @@ private fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolea
                             it[ArticleVersion.textAdoc],
                             if (isAdmin) it[Article.public] else null,
                             if (isAdmin) selectArticleAliases(it[Article.id].value) else null)
-                }.firstOrNull()
+                }.singleOrNull()
                 ?: throw InvalidRequestException("No article with id $articleId found", ReqError.ARTICLE_NOT_FOUND)
     }
 }
