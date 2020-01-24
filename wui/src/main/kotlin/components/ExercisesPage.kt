@@ -100,7 +100,7 @@ object ExercisesPage : EasyPage() {
     private fun buildTeacherExercises(courseId: String) {
         MainScope().launch {
             val exercisesPromise = fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.GET,
-                    successChecker = { it.http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage))
+                    successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage))
             val courseInfoPromise = BasicCourseInfo.get(courseId)
             val exercisesResp = exercisesPromise.await()
 
@@ -189,7 +189,7 @@ object ExercisesPage : EasyPage() {
         MainScope().launch {
             val courseInfoPromise = BasicCourseInfo.get(courseId)
             val exercisesResp = fetchEms("/student/courses/$courseId/exercises", ReqMethod.GET,
-                    successChecker = { it.http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)).await()
+                    successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)).await()
 
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()

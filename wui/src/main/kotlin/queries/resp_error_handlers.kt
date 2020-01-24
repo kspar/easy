@@ -9,13 +9,13 @@ import org.w3c.fetch.Response
 import tmRender
 
 
-typealias RespErrorHandler = (ErrorBody?, Response) -> Boolean
-typealias RespSuccessChecker = (Response) -> Boolean
+typealias RespSuccessChecker = Response.() -> Boolean
+typealias RespErrorHandler = Response.(ErrorBody?) -> Boolean
 
 
 object ErrorHandlers {
 
-    val noCourseAccessPage: RespErrorHandler = { errorBody, _ ->
+    val noCourseAccessPage: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             debug { "Error handled by no course access page handler" }
             getContainer().innerHTML = tmRender("tm-error-page", mapOf(
@@ -25,11 +25,11 @@ object ErrorHandlers {
         }
     }
 
-    val defaultMsg: RespErrorHandler = { errorBody, resp ->
+    val defaultMsg: RespErrorHandler = { errorBody ->
         debug { "Error handled by default message handler" }
-        val status = resp.status
+        val status = this.status
         if (errorBody == null) {
-            resp.text().then { body ->
+            this.text().then { body ->
                 errorMessage {
                     """Midagi läks valesti, palun proovi hiljem uuesti. 
                     |Server tagastas ootamatu vastuse:
