@@ -3,8 +3,6 @@ package components
 import MathJax
 import PageName
 import Role
-import Str
-import errorMessage
 import getContainer
 import getElemById
 import getElemByIdAs
@@ -105,12 +103,8 @@ object NewExercisePage : EasyPage() {
     }
 
     private suspend fun adocToHtml(adoc: String): String {
-        val resp = fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc)).await()
-        if (!resp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Fetching preview failed with status ${resp.status}")
-        }
-
-        return resp.parseTo(HtmlPreview.serializer()).await().content
+        return fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc),
+                successChecker = { http200 }).await()
+                .parseTo(HtmlPreview.serializer()).await().content
     }
 }
