@@ -1,13 +1,11 @@
 package core.ems.service.article
 
 import core.conf.security.EasyUser
-import core.db.Article
 import core.db.ArticleAlias
 import core.ems.service.assertArticleAliasExists
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -43,7 +41,7 @@ class DeleteArticleAliasController {
 private fun deleteAlias(articleId: Long, alias: String) {
     transaction {
         ArticleAlias.deleteWhere {
-            (ArticleAlias.id eq alias) and (ArticleAlias.article eq EntityID(articleId, Article))
+            (ArticleAlias.id eq alias) and (ArticleAlias.article eq articleId)
         }
     }
 }

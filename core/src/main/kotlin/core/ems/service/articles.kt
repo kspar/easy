@@ -4,7 +4,6 @@ import core.db.Article
 import core.db.ArticleAlias
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -33,7 +32,7 @@ private fun articleExists(articleId: Long): Boolean {
 private fun articleAliasExists(articleId: Long, alias: String): Boolean {
     return transaction {
         ArticleAlias.select {
-            (ArticleAlias.id eq alias) and (ArticleAlias.article eq EntityID(articleId, Article))
-        }.count() != 0
+            (ArticleAlias.id eq alias) and (ArticleAlias.article eq articleId)
+        }.count() == 1
     }
 }
