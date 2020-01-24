@@ -3,9 +3,7 @@ package components
 import DateSerializer
 import PageName
 import Role
-import Str
 import debug
-import errorMessage
 import getContainer
 import getElemById
 import getElemByIdAs
@@ -23,7 +21,6 @@ import org.w3c.dom.HTMLTextAreaElement
 import queries.*
 import successMessage
 import tmRender
-import warn
 import kotlin.browser.window
 import kotlin.dom.clear
 import kotlin.js.Date
@@ -100,13 +97,8 @@ object ParticipantsPage : EasyPage() {
                 mapOf("email" to it, "groups" to emptyList<Nothing>())
             }
 
-            val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
-                    "students" to newStudents)).await()
-
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Adding students failed with status ${resp.status}: ${resp.text().await()}")
-            }
+            fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
+                    "students" to newStudents), successChecker = { http200 }).await()
         }
 
         fun toggleAddStudents(courseId: String) {
@@ -144,18 +136,12 @@ object ParticipantsPage : EasyPage() {
         val courseId = extractSanitizedCourseId(window.location.pathname)
 
         MainScope().launch {
-            val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET)
-            val courseInfoPromise = BasicCourseInfo.get(courseId)
+            val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET,
+                    successChecker = { http200 })
+            val courseTitle = BasicCourseInfo.get(courseId).await().title
 
-            val resp = participantsPromise.await()
-            val courseTitle = courseInfoPromise.await().title
-
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching participants failed with status ${resp.status}")
-            }
-
-            val participants = resp.parseTo(Participants.serializer()).await()
+            val participants = participantsPromise.await()
+                    .parseTo(Participants.serializer()).await()
 
             val isMoodleSynced = participants.moodle_short_name != null
             val studentsSynced = participants.moodle_students_synced ?: false
@@ -234,20 +220,14 @@ object ParticipantsPage : EasyPage() {
                 syncBtn.onVanillaClick(true) {
                     MainScope().launch {
                         syncBtn.disabled = true
-                        val r = fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
+                        fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
                                 mapOf(
                                         "moodle_short_name" to participants.moodle_short_name,
                                         "sync_students" to studentsSynced,
                                         "sync_grades" to gradesSynced
-                                )).await()
-                        if (r.http200) {
-                            successMessage { "Õpilased edukalt sünkroniseeritud" }
-                            build(null)
-                        } else {
-                            errorMessage { Str.somethingWentWrong() }
-                            warn { "Syncing students from Moodle failed with status ${r.status}" }
-                        }
-                        syncBtn.disabled = false
+                                ), successChecker = { http200 }).await()
+                        successMessage { "Õpilased edukalt sünkroniseeritud" }
+                        build(null)
                     }
                 }
             }
