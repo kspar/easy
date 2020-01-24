@@ -5,7 +5,6 @@ import MathJax
 import PageName
 import Role
 import Str
-import errorMessage
 import getContainer
 import getElemById
 import getElemByIdAs
@@ -29,7 +28,6 @@ import queries.http200
 import queries.parseTo
 import successMessage
 import tmRender
-import warn
 import kotlin.browser.window
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
@@ -103,13 +101,8 @@ object ExercisePage : EasyPage() {
 
         MainScope().launch {
 
-            val resp = fetchEms("/exercises/$exerciseId", ReqMethod.GET).await()
-
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching exercise failed with status ${resp.status}")
-            }
-
+            val resp = fetchEms("/exercises/$exerciseId", ReqMethod.GET,
+                    successChecker = { http200 }).await()
             val exercise = resp.parseTo(Exercise.serializer()).await()
 
             getContainer().innerHTML = tmRender("tm-modify-global-exercise", mapOf(
@@ -189,11 +182,7 @@ object ExercisePage : EasyPage() {
                     "executors" to it.executors?.map { mapOf("executor_id" to it.id) }
             )
         }
-        val resp = fetchEms("/exercises/$exerciseId", ReqMethod.PUT, body).await()
-        if (!resp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            warn("Updating exercise failed with status ${resp.status}: ${resp.text().await()}")
-        }
+        fetchEms("/exercises/$exerciseId", ReqMethod.PUT, body, successChecker = { http200 }).await()
     }
 
     private fun switchTextEditorTab(activeTab: HTMLAnchorElement, inactiveTab: HTMLAnchorElement,
@@ -211,11 +200,8 @@ object ExercisePage : EasyPage() {
     }
 
     private suspend fun adocToHtml(adoc: String): String {
-        val resp = fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc)).await()
-        if (!resp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Fetching preview failed with status ${resp.status}")
-        }
+        val resp = fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc),
+                successChecker = { http200 }).await()
         return resp.parseTo(HtmlPreview.serializer()).await().content
     }
 
