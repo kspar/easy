@@ -3,23 +3,18 @@ package components
 import Auth
 import DateSerializer
 import PageName
-import ReqMethod
 import Role
 import Str
 import debug
 import debugFunStart
-import errorMessage
-import fetchEms
 import getContainer
 import getNodelistBySelector
-import http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
-import parseTo
-import queries.BasicCourseInfo
+import queries.*
 import tmRender
 import toEstonianString
 import toJsObj
@@ -104,14 +99,10 @@ object ExercisesPage : EasyPage() {
 
     private fun buildTeacherExercises(courseId: String) {
         MainScope().launch {
-            val exercisesPromise = fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.GET)
+            val exercisesPromise = fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.GET,
+                    successChecker = { it.http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage))
             val courseInfoPromise = BasicCourseInfo.get(courseId)
-
             val exercisesResp = exercisesPromise.await()
-            if (!exercisesResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching exercises failed with status ${exercisesResp.status}")
-            }
 
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(TeacherExercises.serializer()).await()
@@ -197,13 +188,8 @@ object ExercisesPage : EasyPage() {
     private fun buildStudentExercises(courseId: String) {
         MainScope().launch {
             val courseInfoPromise = BasicCourseInfo.get(courseId)
-            val exercisesPromise = fetchEms("/student/courses/$courseId/exercises", ReqMethod.GET)
-
-            val exercisesResp = exercisesPromise.await()
-            if (!exercisesResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching exercises failed with status ${exercisesResp.status}")
-            }
+            val exercisesResp = fetchEms("/student/courses/$courseId/exercises", ReqMethod.GET,
+                    successChecker = { it.http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)).await()
 
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()

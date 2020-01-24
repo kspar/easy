@@ -1,23 +1,22 @@
 package components
 
 import PageName
-import ReqMethod
+import queries.ReqMethod
 import Role
 import Str
 import debug
 import debugFunStart
-import errorMessage
-import fetchEms
+import queries.fetchEms
 import getContainer
 import getElemByIdAs
-import http200
+import queries.http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
-import parseTo
+import queries.parseTo
 import spa.PageManager.navigateTo
 import tmRender
 
@@ -48,12 +47,8 @@ object AddCoursePage : EasyPage() {
             debug { "Got new course title: $title" }
 
             MainScope().launch {
-                val resp = fetchEms("/admin/courses", ReqMethod.POST, mapOf("title" to title)).await()
-
-                if (!resp.http200) {
-                    errorMessage { Str.courseCreationFailed() }
-                    error("Creation of new course failed")
-                }
+                val resp = fetchEms("/admin/courses", ReqMethod.POST, mapOf("title" to title),
+                        successChecker = { it.http200 }).await()
 
                 val course: AdminCourse = resp.parseTo(AdminCourse.serializer()).await()
                 val courseID = course.id

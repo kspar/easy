@@ -1,7 +1,7 @@
 package spa
 
-import AbortController
-import AbortSignal
+import queries.AbortController
+import queries.AbortSignal
 import debugFunStart
 import kotlin.browser.window
 

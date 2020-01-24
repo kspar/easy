@@ -1,19 +1,19 @@
 package components
 
 import PageName
-import ReqMethod
+import queries.ReqMethod
 import Role
 import Str
 import errorMessage
-import fetchEms
+import queries.fetchEms
 import getContainer
-import http200
+import queries.http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
-import parseTo
+import queries.parseTo
 import queries.BasicCourseInfo
 import tmRender
 import kotlin.browser.window

@@ -1,19 +1,19 @@
+package queries
+
+import AppProperties
+import Auth
+import debug
+import dynamicToAny
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import objOf
 import org.w3c.fetch.Response
+import parseTo
 import spa.PageManager
+import toJsObj
+import warn
 import kotlin.browser.window
 import kotlin.js.Promise
-
-
-@Serializable
-data class ErrorBody(
-        val id: String,
-        val code: String? = null,
-        val attrs: Map<String, String>,
-        val log_msg: String
-)
 
 enum class ReqMethod {
     GET,
@@ -21,24 +21,12 @@ enum class ReqMethod {
     PUT
 }
 
-
-val Response.http200: Boolean
-    get() = status == 200.toShort()
-
-val Response.http204: Boolean
-    get() = status == 204.toShort()
-
-
-fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
-        text().then { it.parseTo(deserializer) }
-
-
 fun fetchEms(path: String, method: ReqMethod,
              data: Map<String, Any?>? = null,
              headers: Map<String, String> = emptyMap(),
         // TODO: default successChecker is a temp hack before refactoring every call
-             successChecker: (Response) -> Boolean = { warn { "Using default success checker" }; true },
-             vararg errorHandlers: (ErrorBody?, Response) -> Boolean = emptyArray()): Promise<Response> =
+             successChecker: RespSuccessChecker = { warn { "Using default success checker" }; true },
+             errorHandlers: List<RespErrorHandler> = emptyList()): Promise<Response> =
 
         Promise { resolve, reject ->
             Auth.makeSureTokenIsValid()
@@ -76,7 +64,7 @@ fun fetchEms(path: String, method: ReqMethod,
                                                 .then { errorBody: ErrorBody? ->
                                                     if (errorHandlers.none { it(errorBody, resp.clone()) }) {
                                                         debug { "Calling default error handler" }
-                                                        defaultRespErrorHandler(errorBody, resp.clone())
+                                                        ErrorHandlers.defaultMsg(errorBody, resp.clone())
                                                     }
                                                 }
 
@@ -92,33 +80,14 @@ fun fetchEms(path: String, method: ReqMethod,
         }
 
 
-class HandledResponseError : Exception()
+val Response.http200: Boolean
+    get() = status == 200.toShort()
 
-fun defaultRespErrorHandler(errorBody: ErrorBody?, resp: Response) {
-    val status = resp.status
-    if (errorBody == null) {
-        resp.text().then { body ->
-            errorMessage {
-                """Midagi läks valesti, palun proovi hiljem uuesti. 
-                    |Server tagastas ootamatu vastuse:
-                    |HTTP staatus: $status
-                    |Vastus: ${body.truncate(150)}
-                """.trimMargin()
-            }
-        }.catch {
-            errorMessage { "Midagi läks valesti, palun proovi hiljem uuesti. Server tagastas ootamatu vastuse HTTP staatusega $status." }
-        }
-    } else {
-        errorMessage {
-            """Midagi läks valesti, palun proovi hiljem uuesti. 
-                |Server tagastas vea:
-                |HTTP staatus: $status
-                |Kood: ${errorBody.code}
-                |Sõnum: ${errorBody.log_msg}
-            """.trimMargin()
-        }
-    }
-}
+val Response.http204: Boolean
+    get() = status == 204.toShort()
+
+fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
+        text().then { it.parseTo(deserializer) }
 
 
 fun createQueryString(vararg params: Pair<String, String?>): String {

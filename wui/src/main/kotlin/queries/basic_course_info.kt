@@ -1,14 +1,10 @@
 package queries
 
 import CourseInfoCache
-import ReqMethod
 import Str
 import debug
 import errorMessage
-import fetchEms
-import http200
 import kotlinx.serialization.Serializable
-import parseTo
 import kotlin.js.Promise
 
 

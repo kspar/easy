@@ -2,18 +2,18 @@ package components
 
 import DateSerializer
 import PageName
-import ReqMethod
+import queries.ReqMethod
 import Role
 import Str
 import debug
 import errorMessage
-import fetchEms
+import queries.fetchEms
 import getContainer
 import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
 import getNodelistBySelector
-import http200
+import queries.http200
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -23,7 +23,7 @@ import objOf
 import onVanillaClick
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
-import parseTo
+import queries.parseTo
 import queries.BasicCourseInfo
 import successMessage
 import tmRender
