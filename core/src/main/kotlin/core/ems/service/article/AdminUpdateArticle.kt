@@ -41,10 +41,8 @@ class UpdateArticleController(private val adocService: AdocService) {
 
         assertArticleExists(articleId)
 
-        when (req.textAdoc) {
-            null -> updateArticle(caller.id, articleId, req, null).toString()
-            else -> updateArticle(caller.id, articleId, req, adocService.adocToHtml(req.textAdoc)).toString()
-        }
+        val html = req.textAdoc?.let { adocService.adocToHtml(it) }
+        updateArticle(caller.id, articleId, req, html)
     }
 }
 
