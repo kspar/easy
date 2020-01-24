@@ -9,7 +9,6 @@ import Str
 import compareTo
 import debug
 import debugFunStart
-import errorMessage
 import getContainer
 import getElemById
 import getElemByIdAs
@@ -228,17 +227,12 @@ object ExerciseSummaryPage : EasyPage() {
     private suspend fun buildTeacherSummaryAndCrumbs(courseId: String, courseExerciseId: String): TeacherExercise {
         val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
 
-        val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET)
+        val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
+                successChecker = { http200 })
 
         val courseTitle = BasicCourseInfo.get(courseId).await().title
-
-        val exerciseResp = exercisePromise.await()
-        if (!exerciseResp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Fetching exercises failed with status ${exerciseResp.status}")
-        }
-
-        val exercise = exerciseResp.parseTo(TeacherExercise.serializer()).await()
+        val exercise = exercisePromise.await()
+                .parseTo(TeacherExercise.serializer()).await()
 
         getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                 "coursesLabel" to Str.myCourses(),
@@ -334,14 +328,9 @@ object ExerciseSummaryPage : EasyPage() {
 
         suspend fun postSolution(solution: String): AutoassResult {
             debug { "Posting submission ${solution.substring(0, 15)}..." }
-            val resp = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/autoassess",
-                    ReqMethod.POST, mapOf("solution" to solution))
-                    .await()
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Autoassessing failed with status ${resp.status}")
-            }
-            val result = resp.parseTo(AutoassResult.serializer()).await()
+            val result = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/autoassess",
+                    ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }).await()
+                    .parseTo(AutoassResult.serializer()).await()
             debug { "Received result, grade: ${result.grade}" }
             return result
         }
@@ -391,11 +380,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, threshold: Int) {
-        fetchEms("/courses/$courseId/groups", ReqMethod.GET).then {
-            if (!it.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching groups failed with status ${it.status}")
-            }
+        fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 }).then {
             it.parseTo(Groups.serializer())
         }.then {
             val groups = it.groups
@@ -428,15 +413,10 @@ object ExerciseSummaryPage : EasyPage() {
                                                  groupId: String? = null) {
 
         val q = createQueryString("group" to groupId)
-        val studentsPromise = fetchEms(
-                "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET)
-        val studentsResp = studentsPromise.await()
-        if (!studentsResp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Fetching student submissions failed with status ${studentsResp.status}")
-        }
-
-        val teacherStudents = studentsResp.parseTo(TeacherStudents.serializer()).await()
+        val teacherStudents = fetchEms(
+                "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET,
+                successChecker = { http200 }).await()
+                .parseTo(TeacherStudents.serializer()).await()
 
         val studentArray = teacherStudents.students.map { student ->
             val studentMap = mutableMapOf<String, Any?>(
@@ -506,15 +486,8 @@ object ExerciseSummaryPage : EasyPage() {
 
             debug { "Posting assessment $assMap" }
 
-            val assResp = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/$submissionId/assessments",
-                    ReqMethod.POST,
-                    assMap)
-                    .await()
-
-            if (!assResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Posting assessment failed with status ${assResp.status}")
-            }
+            fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/$submissionId/assessments",
+                    ReqMethod.POST, assMap, successChecker = { http200 }).await()
         }
 
         fun toggleAddGradeBox(submissionId: String) {
@@ -596,16 +569,10 @@ object ExerciseSummaryPage : EasyPage() {
                     "text" to Str.loadingAllSubmissions()
             ))
 
-            val submissionResp =
+            val submissionsWrap =
                     fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId",
-                            ReqMethod.GET).await()
-
-            if (!submissionResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching all student submissions failed with status ${submissionResp.status}")
-            }
-
-            val submissionsWrap = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
+                            ReqMethod.GET, successChecker = { http200 }).await()
+                            .parseTo(TeacherSubmissions.serializer()).await()
 
             data class SubData(val number: Int, val isLast: Boolean, val time: Date, val solution: String,
                                val gradeAuto: Int?, val feedbackAuto: String?, val gradeTeacher: Int?, val feedbackTeacher: String?)
@@ -710,16 +677,11 @@ object ExerciseSummaryPage : EasyPage() {
         studentTabLink?.focus()
 
         MainScope().launch {
-            val submissionResp =
+            val submissions =
                     fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/all/students/$studentId?limit=1",
-                            ReqMethod.GET).await()
+                            ReqMethod.GET, successChecker = { http200 }).await()
+                            .parseTo(TeacherSubmissions.serializer()).await()
 
-            if (!submissionResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching student submission failed with status ${submissionResp.status}")
-            }
-
-            val submissions = submissionResp.parseTo(TeacherSubmissions.serializer()).await()
             val submission = submissions.submissions[0]
 
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", emptyMap())
@@ -776,17 +738,10 @@ object ExerciseSummaryPage : EasyPage() {
 
         fun buildExerciseAndCrumbs() = MainScope().launch {
             val exercisePromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId",
-                    ReqMethod.GET)
+                    ReqMethod.GET, successChecker = { http200 })
 
             val courseTitle = BasicCourseInfo.get(courseId).await().title
-
-            val exerciseResp = exercisePromise.await()
-            if (!exerciseResp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching exercises failed with status ${exerciseResp.status}")
-            }
-
-            val exercise = exerciseResp.parseTo(StudentExercise.serializer()).await()
+            val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
 
             getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                     "coursesLabel" to Str.myCourses(),
@@ -831,12 +786,8 @@ object ExerciseSummaryPage : EasyPage() {
 
     private suspend fun postSolution(courseId: String, courseExerciseId: String, solution: String) {
         debug { "Posting submission ${solution.substring(0, 15)}..." }
-        val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions",
-                ReqMethod.POST, mapOf("solution" to solution)).await()
-        if (!resp.http200) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Submitting failed with status ${resp.status}")
-        }
+        fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions", ReqMethod.POST,
+                mapOf("solution" to solution), successChecker = { http200 }).await()
         debug { "Submitted" }
         successMessage { Str.submitSuccessMsg() }
     }
@@ -846,14 +797,14 @@ object ExerciseSummaryPage : EasyPage() {
         suspend fun saveSubmissionDraft(solution: String) {
             debug { "Saving submission draft" }
             paintSyncLoading()
-            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST, mapOf(
-                    "solution" to solution
-            )).await()
-            if (!resp.http200) {
-                warn { "Failed to save draft with status ${resp.status}" }
-                paintSyncFail()
-                return
-            }
+            fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST,
+                    mapOf("solution" to solution), successChecker = { http200 },
+                    errorHandler = {
+                        handleAlways {
+                            warn { "Failed to save draft with status $status" }
+                            paintSyncFail()
+                        }
+                    }).await()
             debug { "Draft saved" }
             paintSyncDone()
         }
@@ -867,30 +818,17 @@ object ExerciseSummaryPage : EasyPage() {
             latestSubmissionSolution = existingSubmission.solution
         } else {
             debug { "Building submit tab by fetching latest submission" }
-            val draftPromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET)
-            val resp = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET)
-                    .await()
+            val draftPromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET,
+                    successChecker = { http200 or http204 })
 
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching latest submission failed with status ${resp.status}")
-            }
-
-            val submissionsWrap = resp.parseTo(StudentSubmissions.serializer()).await()
-            val submissions = submissionsWrap.submissions
+            val submission = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET,
+                    successChecker = { http200 }).await()
+                    .parseTo(StudentSubmissions.serializer()).await()
+                    .submissions.getOrNull(0)
 
             val draftResp = draftPromise.await()
+            val draft = if (draftResp.http200) draftResp.parseTo(StudentDraft.serializer()).await() else null
 
-            val draft = when {
-                draftResp.http200 -> draftResp.parseTo(StudentDraft.serializer()).await()
-                draftResp.http204 -> null
-                else -> {
-                    errorMessage { Str.somethingWentWrong() }
-                    error("Fetching draft failed with status ${draftResp.status}")
-                }
-            }
-
-            val submission = submissions.getOrNull(0)
             paintSubmission(submission, draft)
             latestSubmissionSolution = submission?.solution
 
@@ -1021,17 +959,14 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
         debug { "Starting long poll for autoassessment" }
-        fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET)
+        fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET,
+                successChecker = { http200 })
                 .then {
-                    MainScope().launch {
-                        if (!it.http200) {
-                            errorMessage { Str.somethingWentWrong() }
-                            error("Polling failed with status ${it.status}")
-                        }
-                        val submission = it.parseTo(StudentSubmission.serializer()).await()
-                        debug { "Finished long poll, rebuilding" }
-                        buildSubmit(courseId, courseExerciseId, submission)
-                    }
+                    it.parseTo(StudentSubmission.serializer())
+                }
+                .then {
+                    debug { "Finished long poll, rebuilding" }
+                    buildSubmit(courseId, courseExerciseId, it)
                 }
     }
 

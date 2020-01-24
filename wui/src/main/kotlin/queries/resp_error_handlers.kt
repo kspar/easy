@@ -77,3 +77,6 @@ fun ErrorBody?.handleByCode(respError: RespError, errorHandler: (ErrorBody) -> U
             errorHandler(this)
             true
         } else false
+
+fun Response.handleAlways(errorHandler: (Response) -> Unit): Boolean =
+        true.also { errorHandler(this) }
