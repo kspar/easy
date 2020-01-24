@@ -1,9 +1,7 @@
 package queries
 
 import CourseInfoCache
-import Str
 import debug
-import errorMessage
 import kotlinx.serialization.Serializable
 import kotlin.js.Promise
 
@@ -23,12 +21,8 @@ object BasicCourseInfo {
         }
 
         debug { "Course info cache miss for course $courseId" }
-        return fetchEms("/courses/$courseId/basic", ReqMethod.GET)
+        return fetchEms("/courses/$courseId/basic", ReqMethod.GET, successChecker = { http200 })
                 .then {
-                    if (!it.http200) {
-                        errorMessage { Str.somethingWentWrong() }
-                        error("Fetching course info failed with status ${it.status}")
-                    }
                     it.parseTo(CourseInfoResp.serializer())
                 }.then {
                     val courseInfo = CourseInfo(courseId, it.title)

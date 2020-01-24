@@ -30,8 +30,7 @@ fun fetchEms(path: String, method: ReqMethod, data: Map<String, Any?>? = null, h
 fun fetchEms(path: String, method: ReqMethod,
              data: Map<String, Any?>? = null,
              headers: Map<String, String> = emptyMap(),
-        // TODO: default successChecker is a temp hack before refactoring every call
-             successChecker: RespSuccessChecker = { warn { "Using default success checker" }; true },
+             successChecker: RespSuccessChecker,
              errorHandlers: List<RespErrorHandler> = emptyList()): Promise<Response> =
 
         Promise { resolve, reject ->
