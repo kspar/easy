@@ -8,7 +8,6 @@ import Role
 import Str
 import debug
 import debugFunStart
-import errorMessage
 import getContainer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -76,11 +75,8 @@ object CoursesPage : EasyPage() {
         MainScope().launch {
             val funLogFetch = debugFunStart("CoursesPage.buildStudentCourses.asyncFetchBuild")
 
-            val resp = fetchEms("/student/courses", ReqMethod.GET).await()
-            if (!resp.http200) {
-                errorMessage { Str.fetchingCoursesFailed() }
-                error("Fetching student courses failed with status ${resp.status}")
-            }
+            val resp = fetchEms("/student/courses", ReqMethod.GET,
+                    successChecker = { http200 }).await()
             val courses = resp.parseTo(StudentCourses.serializer()).await()
 
             // Populate course info cache
@@ -123,11 +119,8 @@ object CoursesPage : EasyPage() {
 
             val isAdmin = activeRole == Role.ADMIN
 
-            val resp = fetchEms("/teacher/courses", ReqMethod.GET).await()
-            if (!resp.http200) {
-                errorMessage { Str.fetchingCoursesFailed() }
-                error("Fetching teacher courses failed with status ${resp.status}")
-            }
+            val resp = fetchEms("/teacher/courses", ReqMethod.GET,
+                    successChecker = { http200 }).await()
             val courses = resp.parseTo(TeacherCourses.serializer()).await()
 
             // Populate course info cache
