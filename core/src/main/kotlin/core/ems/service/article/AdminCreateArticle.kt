@@ -39,10 +39,8 @@ class CreateArticleController(private val adocService: AdocService) {
 
         log.debug { "Create article '${dto.title}' by ${caller.id}" }
 
-        return when (dto.textAdoc) {
-            null -> Resp(insertArticle(caller.id, dto, null).toString())
-            else -> Resp(insertArticle(caller.id, dto, adocService.adocToHtml(dto.textAdoc)).toString())
-        }
+        val html = dto.textAdoc?.let { adocService.adocToHtml(it) }
+        return Resp(insertArticle(caller.id, dto, html).toString())
     }
 }
 
