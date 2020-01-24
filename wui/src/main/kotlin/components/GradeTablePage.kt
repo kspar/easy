@@ -3,7 +3,6 @@ package components
 import PageName
 import Role
 import Str
-import errorMessage
 import getContainer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -69,18 +68,12 @@ object GradeTablePage : EasyPage() {
         val courseId = extractSanitizedCourseId(window.location.pathname)
 
         MainScope().launch {
-            val gradesPromise = fetchEms("/courses/teacher/$courseId/grades", ReqMethod.GET)
-            val courseInfoPromise = BasicCourseInfo.get(courseId)
+            val gradesPromise = fetchEms("/courses/teacher/$courseId/grades", ReqMethod.GET,
+                    successChecker = { http200 })
+            val courseTitle = BasicCourseInfo.get(courseId).await().title
 
-            val resp = gradesPromise.await()
-            val courseTitle = courseInfoPromise.await().title
-
-            if (!resp.http200) {
-                errorMessage { Str.somethingWentWrong() }
-                error("Fetching grades failed with status ${resp.status}")
-            }
-
-            val gradeTable = resp.parseTo(GradeTable.serializer()).await()
+            val gradeTable = gradesPromise.await()
+                    .parseTo(GradeTable.serializer()).await()
 
             val exercises = gradeTable.exercises.map {
                 objOf("exerciseTitle" to it.effective_title)
