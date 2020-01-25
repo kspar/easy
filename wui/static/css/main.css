@@ -1310,6 +1310,20 @@ div.title-wrap > .title-button > i.material-icons {
     transform: rotate(20deg) translate(1px, 3px);
 }
 
+.missing-content-wrap .dead-eye {
+    height: 14px;
+    width: 14px;
+    transform: translateY(-2px);
+}
+
+.missing-content-wrap .dead-eye:after {
+    font-size: 28px;
+    color: #fff;
+    line-height: 1px;
+    text-align: center;
+    content: '\d7';
+}
+
 
 /** Icon **/
 
