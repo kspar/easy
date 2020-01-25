@@ -56,7 +56,6 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
             it[public] = req.public
         }
 
-
         val lastVersionId = ArticleVersion
                 .select { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
                 .map { it[ArticleVersion.id].value }
