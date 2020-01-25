@@ -31,7 +31,7 @@ class CreateArticleAliasController {
     data class Req(@JsonProperty("alias", required = true)
                    @field:NotBlank
                    @field:Size(max = 100)
-                   @field:Pattern(regexp = "(\\w)+")
+                   @field:Pattern(regexp = "\\w*[a-zA-Z]\\w*")
                    val alias: String)
 
     @Secured("ROLE_ADMIN")
