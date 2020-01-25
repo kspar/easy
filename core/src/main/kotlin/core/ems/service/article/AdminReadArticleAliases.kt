@@ -9,9 +9,7 @@ import core.db.ArticleAlias
 import core.db.ArticleVersion
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -50,13 +48,16 @@ class ReadArticleAliasesController {
 private fun selectAliases(): ReadArticleAliasesController.Resp {
     return transaction {
         ReadArticleAliasesController.Resp(
-                (Article innerJoin ArticleVersion).slice(Article.id).selectAll().map {
-                    ReadArticleAliasesController.ArticleResp(
-                            it[Article.id].value.toString(),
-                            selectLatestArticleTitle(it[Article.id].value),
-                            selectArticleAliases(it[Article.id].value)
-                    )
-                })
+                (Article innerJoin ArticleVersion)
+                        .slice(Article.id, ArticleVersion.title)
+                        .select { ArticleVersion.validTo.isNull() }
+                        .map {
+                            ReadArticleAliasesController.ArticleResp(
+                                    it[Article.id].value.toString(),
+                                    it[ArticleVersion.title],
+                                    selectArticleAliases(it[Article.id].value)
+                            )
+                        })
     }
 }
 
@@ -75,16 +76,3 @@ private fun selectArticleAliases(articleId: Long): List<ReadArticleAliasesContro
     }
 }
 
-private fun selectLatestArticleTitle(articleId: Long): String {
-    return transaction {
-        (Article innerJoin ArticleVersion)
-                .slice(ArticleVersion.title)
-                .select {
-                    Article.id eq articleId
-                }
-                .orderBy(ArticleVersion.validFrom, SortOrder.DESC)
-                .map {
-                    it[ArticleVersion.title]
-                }.first()
-    }
-}
