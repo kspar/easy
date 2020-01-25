@@ -49,17 +49,13 @@ class UpdateExerciseCont(private val adocService: AdocService) {
 
     @Secured("ROLE_ADMIN")
     @PutMapping("/exercises/{exerciseId}")
-    fun controller(@PathVariable("exerciseId") exIdString: String,
-                   @Valid @RequestBody dto: Req,
-                   caller: EasyUser) {
+    fun controller(@PathVariable("exerciseId") exIdString: String, @Valid @RequestBody req: Req, caller: EasyUser) {
 
         log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
-        when (dto.textAdoc) {
-            null -> updateExercise(exerciseId, caller.id, dto, dto.textHtml)
-            else -> updateExercise(exerciseId, caller.id, dto, adocService.adocToHtml(dto.textAdoc))
-        }
+        val html = req.textAdoc?.let { adocService.adocToHtml(it) }
+        updateExercise(exerciseId, caller.id, req, html)
     }
 }
 
