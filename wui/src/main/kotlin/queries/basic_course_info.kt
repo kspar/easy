@@ -21,7 +21,8 @@ object BasicCourseInfo {
         }
 
         debug { "Course info cache miss for course $courseId" }
-        return fetchEms("/courses/$courseId/basic", ReqMethod.GET, successChecker = { http200 })
+        return fetchEms("/courses/$courseId/basic", ReqMethod.GET, successChecker = { http200 },
+                errorHandler = ErrorHandlers.noCourseAccessPage)
                 .then {
                     it.parseTo(CourseInfoResp.serializer())
                 }.then {

@@ -137,7 +137,7 @@ object ParticipantsPage : EasyPage() {
 
         MainScope().launch {
             val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET,
-                    successChecker = { http200 })
+                    successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
             val courseTitle = BasicCourseInfo.get(courseId).await().title
 
             val participants = participantsPromise.await()

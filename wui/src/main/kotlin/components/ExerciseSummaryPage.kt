@@ -228,7 +228,7 @@ object ExerciseSummaryPage : EasyPage() {
         val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
 
         val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
-                successChecker = { http200 })
+                successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
 
         val courseTitle = BasicCourseInfo.get(courseId).await().title
         val exercise = exercisePromise.await()
@@ -380,7 +380,8 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, threshold: Int) {
-        fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 }).then {
+        fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
+                errorHandler = ErrorHandlers.noCourseAccessPage).then {
             it.parseTo(Groups.serializer())
         }.then {
             val groups = it.groups
@@ -415,7 +416,7 @@ object ExerciseSummaryPage : EasyPage() {
         val q = createQueryString("group" to groupId)
         val teacherStudents = fetchEms(
                 "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET,
-                successChecker = { http200 }).await()
+                successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage).await()
                 .parseTo(TeacherStudents.serializer()).await()
 
         val studentArray = teacherStudents.students.map { student ->
@@ -738,7 +739,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         fun buildExerciseAndCrumbs() = MainScope().launch {
             val exercisePromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId",
-                    ReqMethod.GET, successChecker = { http200 })
+                    ReqMethod.GET, successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
 
             val courseTitle = BasicCourseInfo.get(courseId).await().title
             val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
@@ -819,10 +820,10 @@ object ExerciseSummaryPage : EasyPage() {
         } else {
             debug { "Building submit tab by fetching latest submission" }
             val draftPromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET,
-                    successChecker = { http200 or http204 })
+                    successChecker = { http200 or http204 }, errorHandler = ErrorHandlers.noCourseAccessPage)
 
             val submission = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET,
-                    successChecker = { http200 }).await()
+                    successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage).await()
                     .parseTo(StudentSubmissions.serializer()).await()
                     .submissions.getOrNull(0)
 
