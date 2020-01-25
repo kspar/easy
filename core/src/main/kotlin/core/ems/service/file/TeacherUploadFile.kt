@@ -34,7 +34,7 @@ class UploadStoredFiledController {
                    @field:Size(max = 259)
                    val filename: String,
                    @field:NotBlank
-                   @field:Size(max = 1375000000) // Approx 1 GB
+                   @field:Size(max = 134640000) // Approx 100,98 MB
                    @JsonProperty("data", required = true) val data: String)
 
     data class Resp(@JsonProperty("id") val id: String)
