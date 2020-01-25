@@ -1,0 +1,26 @@
+
+
+= Release notes: v2.4
+
+Web UI:
+
+* Improved request/response error handling (EZ-1266), added a no course access error page (EZ-1263), a page not found error page (EZ-1268) and a role not allowed error page (EZ-1264).
+* Added loading placeholders to exercises page (EZ-1155), course exercise summary tab (EZ-1156) and student submit tab (EZ-1253).
+* Admin/teacher and student role switching is now more intuitive using radio buttons. (EZ-1269)
+* Exercises page is now saved in the history API. (EZ-1270)
+* Improved the usability and looks of toasts. (EZ-1254 and other unassociated commits)
+* Fixed draft saving indicator cosmetic bugs. (EZ-1165, EZ-1193)
+* Student exercise details and last submission/draft are now loaded in parallel. (EZ-1252)
+* Fixed a bug where async requests continued running when navigating away from the page. (EZ-1198)
+* MathJax is now loaded in the web UI lazily when it's needed. (EZ-1230)
+
+General:
+
+* Moodle user syncing is now based on email rather than username. (EZ-1240)
+* Teachers can now manually resync all users from Moodle. (EZ-1242)
+* Moodle user syncing can now be disabled separately without disabling grades syncing. (EZ-1244)
+* Fixed a bug where teacher exercises statistics were incorrect when a removed student had submissions on this course and accesses to other courses. (EZ-1247)
+* Fixed a bug where course info service didn't work for students who were also teachers. (EZ-1241)
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.4%20[here].
