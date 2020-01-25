@@ -18,7 +18,7 @@ object ErrorHandlers {
     val noCourseAccessPage: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             debug { "Error handled by no course access page handler" }
-            getContainer().innerHTML = tmRender("tm-error-page", mapOf(
+            getContainer().innerHTML = tmRender("tm-no-access-page", mapOf(
                     "title" to Str.noCourseAccessPageTitle(),
                     "msg" to Str.noCourseAccessPageMsg()
             ))

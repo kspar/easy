@@ -1283,6 +1283,33 @@ div.title-wrap > .title-button > i.material-icons {
     color: #828282;
 }
 
+.sad-robot .robot-eye {
+    animation: none;
+    border-radius: 0 0 7px 7px;
+    height: 8px;
+}
+
+.sad-robot .antennaball {
+    transform: translate(7px, 6px);
+}
+
+.sad-robot .antennaball:hover {
+    background-color: #a8a8a8;
+    box-shadow: none;
+}
+
+.sad-robot .antenna {
+    transform: rotate(25deg) translate(3px, 2px);
+}
+
+.sad-robot .robot-eye.left {
+    transform: rotate(-20deg) translate(-1px, 3px);
+}
+
+.sad-robot .robot-eye.right {
+    transform: rotate(20deg) translate(1px, 3px);
+}
+
 
 /** Icon **/
 

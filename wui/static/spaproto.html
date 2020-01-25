@@ -133,17 +133,16 @@
     </div>
 </script>
 
-<script id="tm-error-page" type="text/x-handlebars-template">
-    <!-- TODO: sad robot -->
+<script id="tm-no-access-page" type="text/x-handlebars-template">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{title}}</h3>
     </div>
-    <div class="missing-content-wrap">
+    <div class="missing-content-wrap sad-robot">
         <div class="antennaball"></div>
         <div class="antenna"></div>
         <div class="robot">
-            <div class="robot-eye"></div>
-            <div class="robot-eye"></div>
+            <div class="robot-eye left"></div>
+            <div class="robot-eye right"></div>
         </div>
         <p class="text">{{msg}}</p>
     </div>

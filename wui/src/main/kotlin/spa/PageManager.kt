@@ -64,7 +64,8 @@ object PageManager {
     }
 
     private fun handlePageNotFound() {
-        getContainer().innerHTML = tmRender("tm-error-page", mapOf(
+        // TODO: dead robot
+        getContainer().innerHTML = tmRender("tm-no-access-page", mapOf(
                 "title" to Str.notFoundPageTitle(),
                 "msg" to Str.notFoundPageMsg()
         ))
