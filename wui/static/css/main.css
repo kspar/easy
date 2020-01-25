@@ -99,6 +99,21 @@ nav.nav-center ul li a.nav-link {
     font-size: 1.5rem;
 }
 
+#active-role-label {
+    min-height: 30px;
+    font-size: 1.5rem;
+    line-height: 1.5rem;
+    color: #999;
+    padding: 11px 16px;
+    border-bottom: 1px solid #ddd;
+}
+
+.dropdown-content .role-radio-icon {
+    font-size: 1.6rem;
+    margin-right: .5rem;
+    color: #469c45;
+}
+
 
 /** Sidenav **/
 

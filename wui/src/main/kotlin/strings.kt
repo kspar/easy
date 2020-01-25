@@ -29,10 +29,12 @@ abstract class TranslatableStrings {
     // Navbar
 
     abstract fun topMenuCourses(): String
+    abstract fun activeRoleLabel(): String
+    abstract fun roleListAdmin(): String
+    abstract fun roleListTeacher(): String
+    abstract fun roleListStudent(): String
     abstract fun accountData(): String
     abstract fun logOut(): String
-    abstract fun roleChangeStudent(): String
-    abstract fun roleChangeBack(): String
     abstract fun roleChangeStudentSuffix(): String
 
 
@@ -113,22 +115,25 @@ abstract class TranslatableStrings {
 
 
     // Exercise page
+
     abstract fun usedOnCoursesLabel(): String
     abstract fun previewLabel(): String
     abstract fun exerciseSaved(): String
-
 
 
 }
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun activeRoleLabel() = "Aktiivne roll:"
+    override fun roleListAdmin() = "Admin"
+    override fun roleListTeacher() = "Õpetaja"
+    override fun roleListStudent() = "Õpilane"
     override fun usedOnCoursesLabel() = "Kasutusel kursustel"
     override fun previewLabel() = "Eelvaade"
     override fun doSave() = "Salvesta"
     override fun saving() = "Salvestan..."
     override fun exerciseSaved() = "Ülesanne uuendatud"
-
     override fun assessmentAddedMsg() = "Hinnang lisatud."
     override fun oldSubmissionNote() = "See on vana esitus."
     override fun toLatestSubmissionLink() = "Vaata viimast esitust."
@@ -163,8 +168,6 @@ private object EstStrings : TranslatableStrings() {
     override fun coursesTitleAdmin() = "Kõik kursused"
     override fun accountData() = "Konto andmed"
     override fun logOut() = "Logi välja"
-    override fun roleChangeStudent() = "Digimuutu õpilaseks"
-    override fun roleChangeBack() = "Taasmuutu põhirollile"
     override fun roleChangeStudentSuffix() = " (õpilane)"
     override fun sidenavHeader() = "Kursuse seaded"
     override fun newExercise() = "Uus ülesanne"

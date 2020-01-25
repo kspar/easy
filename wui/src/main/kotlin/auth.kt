@@ -40,12 +40,28 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     fun isTeacher(): Boolean = this.tokenParsed.easy_role.includes("teacher").unsafeCast<Boolean>()
     fun isAdmin(): Boolean = this.tokenParsed.easy_role.includes("admin").unsafeCast<Boolean>()
 
-    fun canToggleRole(): Boolean = (isTeacher() || isAdmin()) && isStudent()
-
     fun isMainRoleActive(): Boolean = getMainRole() == activeRole
     fun isStudentActive(): Boolean = activeRole == Role.STUDENT
     fun isTeacherActive(): Boolean = activeRole == Role.TEACHER
     fun isAdminActive(): Boolean = activeRole == Role.ADMIN
+
+    fun switchRoleToAdmin() {
+        if (!isAdmin()) {
+            errorMessage { Str.somethingWentWrong() }
+            error("Role change to admin but user is not admin")
+        }
+        activeRole = Role.ADMIN
+        localStorage.removeItem("activeRole")
+    }
+
+    fun switchRoleToTeacher() {
+        if (!isTeacher()) {
+            errorMessage { Str.somethingWentWrong() }
+            error("Role change to teacher but user is not teacher")
+        }
+        activeRole = Role.TEACHER
+        localStorage.removeItem("activeRole")
+    }
 
     fun switchRoleToStudent() {
         if (!isStudent()) {
@@ -56,10 +72,6 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         localStorage["activeRole"] = "student"
     }
 
-    fun switchRoleToMain() {
-        activeRole = getMainRole()
-        localStorage.removeItem("activeRole")
-    }
 
     fun initialize(): Promise<Boolean> =
             Promise { resolve, reject ->
