@@ -10,11 +10,12 @@ import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -47,32 +48,30 @@ class UpdateArticleController(private val adocService: AdocService) {
 }
 
 private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleController.Req, html: String?) {
+    val time = DateTime.now()
+
     return transaction {
 
         Article.update({ Article.id eq articleId }) {
             it[public] = req.public
         }
 
-        val currentArticleVersion = (ArticleVersion innerJoin Article)
-                .slice(ArticleVersion.title,
-                        ArticleVersion.id,
-                        ArticleVersion.textAdoc,
-                        ArticleVersion.textHtml,
-                        ArticleVersion.validFrom,
-                        ArticleVersion.validTo)
-                .select {
-                    Article.id eq articleId
-                }
-                .orderBy(ArticleVersion.id, SortOrder.DESC)
+
+        val lastVersionId = ArticleVersion
+                .select { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
+                .map { it[ArticleVersion.id].value }
                 .first()
+
+        ArticleVersion.update({ ArticleVersion.id eq lastVersionId }) {
+            it[validTo] = time
+        }
 
         ArticleVersion.insert {
             it[title] = req.title
             it[textAdoc] = req.textAdoc
             it[textHtml] = html
-            it[previous] = currentArticleVersion[ArticleVersion.id]
-            it[validFrom] = currentArticleVersion[validFrom]
-            it[validTo] = currentArticleVersion[validTo]
+            it[previous] = EntityID(lastVersionId, ArticleVersion)
+            it[validFrom] = time
             it[article] = EntityID(articleId, Article)
             it[author] = EntityID(authorId, Account)
         }
