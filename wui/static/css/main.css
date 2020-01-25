@@ -370,6 +370,7 @@ nav.crumb-wrap .breadcrumb:before {
 
 #exercise-card .group-select-wrap {
     width: fit-content;
+    width: -moz-fit-content;
     margin-bottom: 2rem;
 }
 
