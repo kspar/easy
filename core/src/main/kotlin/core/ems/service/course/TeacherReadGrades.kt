@@ -8,7 +8,6 @@ import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
@@ -142,54 +141,41 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.gradeThreshold],
                             ex[CourseExercise.studentVisible],
-                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value).mapNotNull {
-                                selectLatestGradeForSubmission(it, studentIds)
-                            }
+                            selectLatestGradesForCourseExercise(ex[CourseExercise.id].value, studentIds)
                     )
                 }
     }
 }
 
-fun selectLatestGradeForSubmission(submissionId: Long, studentIds: List<String>): TeacherReadGradesController.GradeResp? {
-    val studentId = Submission
-            .select { Submission.id eq submissionId }
-            .map { it[Submission.student] }
-            .firstOrNull()?.value.toString()
 
-    if (!studentIds.contains(studentId)) return null
-
-    val teacherGrade = TeacherAssessment
-            .slice(TeacherAssessment.submission,
-                    TeacherAssessment.createdAt,
-                    TeacherAssessment.grade,
-                    TeacherAssessment.feedback)
-            .select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { assessment ->
-                TeacherReadGradesController.GradeResp(studentId,
-                        assessment[TeacherAssessment.grade],
-                        GraderType.TEACHER,
-                        assessment[TeacherAssessment.feedback])
-            }
-            .firstOrNull()
-
-    if (teacherGrade != null)
-        return teacherGrade
-
-    return AutomaticAssessment
-            .slice(AutomaticAssessment.submission,
-                    AutomaticAssessment.createdAt,
-                    AutomaticAssessment.grade,
-                    AutomaticAssessment.feedback)
-            .select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { assessment ->
-                TeacherReadGradesController.GradeResp(studentId,
-                        assessment[AutomaticAssessment.grade],
-                        GraderType.AUTO,
-                        assessment[AutomaticAssessment.feedback])
-            }
-            .firstOrNull()
+fun selectLatestGradesForCourseExercise(courseExerciseId: Long, studentIds: List<String>): List<TeacherReadGradesController.GradeResp> {
+    return transaction {
+        (Submission.leftJoin(TeacherAssessment)).leftJoin(AutomaticAssessment)
+                .slice(Submission.id,
+                        Submission.student,
+                        TeacherAssessment.id,
+                        TeacherAssessment.grade,
+                        TeacherAssessment.feedback,
+                        AutomaticAssessment.id,
+                        AutomaticAssessment.grade,
+                        AutomaticAssessment.feedback)
+                .select { Submission.courseExercise eq courseExerciseId and (Submission.student inList studentIds) }
+                .orderBy(Submission.createdAt, SortOrder.DESC)
+                .distinctBy { Submission.student }
+                .mapNotNull {
+                    when {
+                        it[TeacherAssessment.id] != null -> TeacherReadGradesController.GradeResp(
+                                it[Submission.student].value,
+                                it[TeacherAssessment.grade],
+                                GraderType.TEACHER,
+                                it[TeacherAssessment.feedback])
+                        it[AutomaticAssessment.id] != null -> TeacherReadGradesController.GradeResp(
+                                it[Submission.student].value,
+                                it[AutomaticAssessment.grade],
+                                GraderType.AUTO,
+                                it[AutomaticAssessment.feedback])
+                        else -> null
+                    }
+                }
+    }
 }
