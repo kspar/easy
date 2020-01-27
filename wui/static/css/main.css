@@ -99,6 +99,21 @@ nav.nav-center ul li a.nav-link {
     font-size: 1.5rem;
 }
 
+#active-role-label {
+    min-height: 30px;
+    font-size: 1.5rem;
+    line-height: 1.5rem;
+    color: #999;
+    padding: 11px 16px;
+    border-bottom: 1px solid #ddd;
+}
+
+.dropdown-content .role-radio-icon {
+    font-size: 1.6rem;
+    margin-right: .5rem;
+    color: #469c45;
+}
+
 
 /** Sidenav **/
 
@@ -355,6 +370,7 @@ nav.crumb-wrap .breadcrumb:before {
 
 #exercise-card .group-select-wrap {
     width: fit-content;
+    width: -moz-fit-content;
     margin-bottom: 2rem;
 }
 
@@ -1266,6 +1282,47 @@ div.title-wrap > .title-button > i.material-icons {
 .missing-content-wrap .text {
     font-size: 2rem;
     color: #828282;
+}
+
+.sad-robot .robot-eye {
+    animation: none;
+    border-radius: 0 0 7px 7px;
+    height: 8px;
+}
+
+.sad-robot .antennaball {
+    transform: translate(7px, 6px);
+}
+
+.sad-robot .antennaball:hover {
+    background-color: #a8a8a8;
+    box-shadow: none;
+}
+
+.sad-robot .antenna {
+    transform: rotate(25deg) translate(3px, 2px);
+}
+
+.sad-robot .robot-eye.left {
+    transform: rotate(-20deg) translate(-1px, 3px);
+}
+
+.sad-robot .robot-eye.right {
+    transform: rotate(20deg) translate(1px, 3px);
+}
+
+.missing-content-wrap .dead-eye {
+    height: 14px;
+    width: 14px;
+    transform: translateY(-2px);
+}
+
+.missing-content-wrap .dead-eye:after {
+    font-size: 28px;
+    color: #fff;
+    line-height: 1px;
+    text-align: center;
+    content: '\d7';
 }
 
 

@@ -22,6 +22,10 @@ fun Map<String, Any?>.toJsObj(): dynamic {
     return jsObject
 }
 
+fun List<Map<String, Any?>>.toJsObj(): dynamic =
+        this.map { it.toJsObj() }.toTypedArray()
+
+
 fun objOf(pair: Pair<String, Any?>): dynamic =
         mapOf(pair).toJsObj()
 

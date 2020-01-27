@@ -19,7 +19,7 @@ abstract class EasyPage : Page() {
         super.assertAuthorisation()
 
         if (allowedRoles.none { it == Auth.activeRole }) {
-            getContainer().innerHTML = tmRender("tm-error-page", mapOf(
+            getContainer().innerHTML = tmRender("tm-no-access-page", mapOf(
                     "title" to Str.noPermissionForPageTitle(),
                     "msg" to Str.noPermissionForPageMsg()
             ))

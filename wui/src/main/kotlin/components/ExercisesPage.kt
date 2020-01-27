@@ -2,6 +2,7 @@ package components
 
 import Auth
 import DateSerializer
+import JsonUtil
 import PageName
 import Role
 import Str
@@ -14,6 +15,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import parseTo
 import queries.*
 import tmRender
 import toEstonianString
@@ -61,6 +63,9 @@ object ExercisesPage : EasyPage() {
                                val started_count: Int,
                                val completed_count: Int)
 
+    @Serializable
+    data class State(val courseId: String, val role: Role, val exercisesHtml: String)
+
 
     override val pageName: PageName
         get() = PageName.EXERCISES
@@ -78,7 +83,14 @@ object ExercisesPage : EasyPage() {
         val funLog = debugFunStart("ExercisesPage.build")
 
         val courseId = extractSanitizedCourseId(window.location.pathname)
-        debug { "Course ID: $courseId" }
+
+        val pageState = pageStateStr?.parseTo(State.serializer())
+        if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
+            debug { "Got exercises html from state" }
+            getContainer().innerHTML = pageState.exercisesHtml
+            initTooltips()
+            return
+        }
 
         when (Auth.activeRole) {
             Role.STUDENT -> buildStudentExercises(courseId)
@@ -145,7 +157,7 @@ object ExercisesPage : EasyPage() {
                         exMap.toJsObj()
                     }.toTypedArray()
 
-            getContainer().innerHTML = tmRender("tm-teach-exercises-list", mapOf(
+            val exercisesHtml = tmRender("tm-teach-exercises-list", mapOf(
                     "courses" to Str.myCourses(),
                     "coursesHref" to "/courses",
                     "courseId" to courseId,
@@ -154,7 +166,12 @@ object ExercisesPage : EasyPage() {
                     "exercises" to exerciseArray
             ))
 
-            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+            getContainer().innerHTML = exercisesHtml
+
+            val newState = State(courseId, Auth.activeRole, exercisesHtml)
+            updateState(JsonUtil.stringify(State.serializer(), newState))
+
+            initTooltips()
         }
     }
 
@@ -241,14 +258,23 @@ object ExercisesPage : EasyPage() {
                         exMap.toJsObj()
                     }.toTypedArray()
 
-            getContainer().innerHTML = tmRender("tm-stud-exercises-list", mapOf(
+            val exercisesHtml = tmRender("tm-stud-exercises-list", mapOf(
                     "courses" to Str.myCourses(),
                     "coursesHref" to "/courses",
                     "title" to courseTitle,
                     "exercises" to exerciseArray
             ))
 
-            Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
+            getContainer().innerHTML = exercisesHtml
+
+            val newState = State(courseId, Role.STUDENT, exercisesHtml)
+            updateState(JsonUtil.stringify(State.serializer(), newState))
+
+            initTooltips()
         }
+    }
+
+    private fun initTooltips() {
+        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 }

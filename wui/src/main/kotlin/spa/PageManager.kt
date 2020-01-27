@@ -64,10 +64,9 @@ object PageManager {
     }
 
     private fun handlePageNotFound() {
-        getContainer().innerHTML = tmRender("tm-error-page", mapOf(
+        getContainer().innerHTML = tmRender("tm-broken-page", mapOf(
                 "title" to Str.notFoundPageTitle(),
                 "msg" to Str.notFoundPageMsg()
         ))
     }
-
 }

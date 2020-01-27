@@ -69,7 +69,7 @@ object GradeTablePage : EasyPage() {
 
         MainScope().launch {
             val gradesPromise = fetchEms("/courses/teacher/$courseId/grades", ReqMethod.GET,
-                    successChecker = { http200 })
+                    successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
             val courseTitle = BasicCourseInfo.get(courseId).await().title
 
             val gradeTable = gradesPromise.await()
