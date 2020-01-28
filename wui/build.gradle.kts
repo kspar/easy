@@ -24,7 +24,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:0.13.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.13.0")
-    testCompile("junit:junit:4.11")
+    testImplementation("junit:junit:4.11")
     testImplementation("org.jetbrains.kotlin:kotlin-test-js")
 }
 

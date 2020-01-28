@@ -5,7 +5,7 @@ liquibaseProperties.load(new FileInputStream(
 
 buildscript {
     ext {
-        springBootVersion = '2.2.2.RELEASE'
+        springBootVersion = '2.2.4.RELEASE'
         liquibaseVersion = '2.0.1'
     }
     repositories {
@@ -80,7 +80,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     // Asciidoc
-    implementation 'org.asciidoctor:asciidoctorj:2.1.0'
+    implementation 'org.asciidoctor:asciidoctorj:2.2.0'
 
     // Jsoup for Asciidoctor HTML output customisation
     implementation 'org.jsoup:jsoup:1.12.1'
