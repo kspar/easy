@@ -5,10 +5,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -55,11 +55,9 @@ class TeacherReadGradesController {
         log.debug { "Getting grades for ${caller.id} on course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        if (!isCoursePresent(courseId)) {
-            throw InvalidRequestException("Course $courseId does not exist")
-        }
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        assertCourseExists(courseId)
 
         val queryWords = search.trim().toLowerCase().split(Regex(" +"))
 
@@ -69,13 +67,6 @@ class TeacherReadGradesController {
     }
 }
 
-private fun isCoursePresent(courseId: Long): Boolean {
-    return transaction {
-        Course.select {
-            Course.id eq courseId
-        }.count() > 0
-    }
-}
 
 private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>,
                                  restrictedGroups: List<Long>): TeacherReadGradesController.Resp {
