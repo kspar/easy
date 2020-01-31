@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "3b635d7c-ab5d-44ec-9c4a-503313148d52",
+		"_postman_id": "988f6111-0e42-4d5b-9be8-79a6617d39c6",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -5112,6 +5112,81 @@
 					"path": [
 						"resource",
 						"aab7b25dab794b00263ca63ace5cf7d15ac815055464566f86dfc1ba46dc92411578573273803s"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: download submissions: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"courses\": [\r\n    {\r\n      \"id\": \"1\"\r\n    }\r\n  ]\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/export/exercises/1/submissions/latest",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"export",
+						"exercises",
+						"1",
+						"submissions",
+						"latest"
 					]
 				}
 			},
