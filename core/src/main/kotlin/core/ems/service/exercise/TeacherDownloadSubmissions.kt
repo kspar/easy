@@ -35,6 +35,8 @@ class TeacherDownloadSubmissionsController {
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String,
                    @Valid @RequestBody req: Req, caller: EasyUser, response: HttpServletResponse) {
 
+        response.contentType = "application/zip"
+        response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
 
         log.debug { "${caller.id} is downloading submissions for courses: ${req.courses} " }
 
@@ -46,9 +48,6 @@ class TeacherDownloadSubmissionsController {
                     assertTeacherHasAccessToCourse(caller.id, it)
                     selectSubmission(exerciseId, it)
                 }, response.outputStream)
-
-        response.contentType = "application/zip, application/octet-stream"
-        response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
     }
 }
 
