@@ -602,6 +602,31 @@ paths:
               - count
 
 
+  /export/exercises/{exerciseId}/submissions/latest:
+    post:
+      summary: Download submissions.
+      tags:
+        - teacher
+      produces:
+        - 'application/zip'
+      parameters:
+        - name: courses
+          in: body
+          schema:
+            properties:
+              courses:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+      responses:
+        200:
+          description: Zipped file of the submissions as a resource.
+          schema:
+            type: file
+
+
   /student/courses/{courseId}/exercises/{courseExerciseId}/draft:
     parameters:
       - $ref: '#/parameters/CourseId'
