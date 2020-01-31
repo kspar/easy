@@ -42,11 +42,14 @@ class TeacherDownloadSubmissionsController {
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         // Check that 1) courses exists and 2) teacher has access to them
-        writeZipFile(req.courses.map { it.id.idToLongOrInvalidReq() }
-                .flatMap {
+        writeZipFile(
+                req.courses.map {
+                    it.id.idToLongOrInvalidReq()
+                }.flatMap {
                     assertTeacherHasAccessToCourse(caller.id, it)
                     selectSubmission(exerciseId, it, caller.id)
-                }, response.outputStream)
+                },
+                response.outputStream)
     }
 }
 
@@ -56,9 +59,10 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, callerId: String)
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
 
-        Join((Submission innerJoin CourseExercise) innerJoin (Student innerJoin Account),
-                StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group),
-                onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
+        val join1 = Submission innerJoin CourseExercise innerJoin (Student innerJoin Account)
+        val join2 = StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group)
+
+        Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
                 .slice(Submission.solution,
                         Account.givenName,
                         Account.familyName,
