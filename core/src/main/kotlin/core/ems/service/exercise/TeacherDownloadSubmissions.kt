@@ -19,6 +19,7 @@ import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.servlet.http.HttpServletResponse
 import javax.validation.Valid
+import javax.validation.constraints.NotEmpty
 
 private val log = KotlinLogging.logger {}
 
@@ -26,14 +27,16 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherDownloadSubmissionsController {
 
-    data class Req(@JsonProperty("courses", required = true) val courses: List<CourseReq>)
+    data class Req(@JsonProperty("courses", required = true) @field:NotEmpty val courses: List<CourseReq>)
 
     data class CourseReq(@JsonProperty("id", required = true) val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/export/exercises/{exerciseId}/submissions/latest")
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String,
-                   @Valid @RequestBody req: Req, caller: EasyUser, response: HttpServletResponse) {
+                   @Valid @RequestBody req: Req,
+                   caller: EasyUser,
+                   response: HttpServletResponse) {
 
         response.contentType = "application/zip"
         response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
