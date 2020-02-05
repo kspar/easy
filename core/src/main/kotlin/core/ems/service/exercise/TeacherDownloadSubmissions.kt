@@ -23,9 +23,9 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherDownloadSubmissionsController {
 
-    data class Req(@JsonProperty("courses", required = true) @field:NotEmpty val courses: List<CourseReq>)
+    data class Req(@JsonProperty("courses") @field:NotEmpty val courses: List<CourseReq>)
 
-    data class CourseReq(@JsonProperty("id", required = true) val id: String)
+    data class CourseReq(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/export/exercises/{exerciseId}/submissions/latest")
@@ -34,12 +34,12 @@ class TeacherDownloadSubmissionsController {
                    caller: EasyUser,
                    response: HttpServletResponse) {
 
-        response.contentType = "application/zip"
-        response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
-
-        log.debug { "${caller.id} is downloading submissions for courses: ${req.courses} " }
+        log.debug { "${caller.id} is downloading submissions for exercise $exerciseIdStr on courses ${req.courses} " }
 
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
+
+        response.contentType = "application/zip"
+        response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
 
         // Check that 1) courses exists and 2) teacher has access to them
         writeZipFile(
@@ -62,18 +62,25 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, callerId: String)
         val join1 = Submission innerJoin CourseExercise innerJoin (Student innerJoin Account)
         val join2 = StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group)
 
-        Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
+        val query = Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
                 .slice(Submission.solution,
+                        Submission.student,
                         Account.givenName,
                         Account.familyName,
                         Group.name)
                 .select {
                     CourseExercise.exercise eq exerciseId and
-                            (CourseExercise.course eq courseId) and
-                            (StudentGroupAccess.group inList restrictedGroups or StudentGroupAccess.group.isNull())
+                            (CourseExercise.course eq courseId)
                 }
                 .orderBy(Submission.createdAt, SortOrder.DESC)
-                .distinctBy { Submission.student }
+
+        if (restrictedGroups.isNotEmpty()) {
+            query.andWhere {
+                StudentGroupAccess.group inList restrictedGroups or (StudentGroupAccess.group.isNull())
+            }
+        }
+
+        query.distinctBy { it[Submission.student] }
                 .map {
                     Zip(it[Submission.solution],
                             createFileName(it[Account.givenName],
