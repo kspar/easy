@@ -152,7 +152,7 @@ fun selectLatestGradesForCourseExercise(courseExerciseId: Long, studentIds: List
                         AutomaticAssessment.feedback)
                 .select { Submission.courseExercise eq courseExerciseId and (Submission.student inList studentIds) }
                 .orderBy(Submission.createdAt, SortOrder.DESC)
-                .distinctBy { Submission.student }
+                .distinctBy { it[Submission.student] }
                 .mapNotNull {
                     when {
                         it[TeacherAssessment.id] != null -> TeacherReadGradesController.GradeResp(
