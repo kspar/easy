@@ -5,15 +5,11 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.Teacher
 import core.db.TeacherCourseAccess
-import core.ems.service.canTeacherAccessCourse
-import core.ems.service.assertCourseExists
-import core.ems.service.getUsernameByEmail
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.teacherExists
+import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction

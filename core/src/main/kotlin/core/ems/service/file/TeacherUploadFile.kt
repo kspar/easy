@@ -6,7 +6,7 @@ import core.db.StoredFile
 import core.db.Teacher
 import mu.KotlinLogging
 import org.apache.tika.Tika
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.security.MessageDigest
 import java.util.*
-import javax.sql.rowset.serial.SerialBlob
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
@@ -60,7 +59,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
         StoredFile.insertAndGetId {
             it[id] = EntityID(hash, StoredFile)
             it[type] = mimeType
-            it[data] = SerialBlob(content)
+            it[data] = content
             it[filename] = req.filename
             it[createdAt] = time
             it[sizeBytes] = content.size.toLong()

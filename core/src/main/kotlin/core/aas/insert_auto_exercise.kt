@@ -5,7 +5,7 @@ import core.db.AutoExercise
 import core.db.AutoExerciseExecutor
 import core.db.Executor
 import core.exception.InvalidRequestException
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select

@@ -10,7 +10,7 @@ import core.db.Teacher
 import core.ems.service.AdocService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select

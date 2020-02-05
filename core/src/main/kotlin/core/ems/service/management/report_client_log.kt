@@ -13,7 +13,7 @@ import core.ems.service.management.ReportLogController.Req
 import core.exception.InvalidRequestException
 import core.util.SendMailService
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime

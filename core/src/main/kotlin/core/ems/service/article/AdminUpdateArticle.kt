@@ -9,7 +9,6 @@ import core.ems.service.AdocService
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -69,10 +68,10 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
             it[title] = req.title
             it[textAdoc] = req.textAdoc
             it[textHtml] = html
-            it[previous] = EntityID(lastVersionId, ArticleVersion)
+            it[previous] = org.jetbrains.exposed.dao.id.EntityID(lastVersionId, ArticleVersion)
             it[validFrom] = time
-            it[article] = EntityID(articleId, Article)
-            it[author] = EntityID(authorId, Account)
+            it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
+            it[author] = org.jetbrains.exposed.dao.id.EntityID(authorId, Account)
         }
     }
 }

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.sql.Blob
 import javax.servlet.http.HttpServletResponse
 
 private val log = KotlinLogging.logger {}
@@ -35,16 +34,14 @@ class ReadStoredFileController {
         if (storedFile != null) {
             response.contentType = storedFile.type
             response.setHeader("Content-disposition", """inline; filename="${storedFile.name}"""");
-            response.outputStream.write(storedFile.blob.getBytes(1, storedFile.blob.length().toInt()))
-            // Recommended to free.
-            storedFile.blob.free()
+            response.outputStream.write(storedFile.blob)
         } else {
             response.status = HttpServletResponse.SC_NOT_FOUND
         }
     }
 }
 
-data class TempStoredFile(val type: String, val name: String, val blob: Blob)
+data class TempStoredFile(val type: String, val name: String, val blob: ByteArray)
 
 private fun selectFile(fileIdString: String): TempStoredFile? {
     return transaction {

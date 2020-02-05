@@ -10,7 +10,6 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -55,9 +54,9 @@ private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
         }
 
         ArticleAlias.insert {
-            it[id] = EntityID(alias, ArticleAlias)
-            it[owner] = EntityID(createdBy, Admin)
-            it[article] = EntityID(articleId, Article)
+            it[id] = org.jetbrains.exposed.dao.id.EntityID(alias, ArticleAlias)
+            it[owner] = org.jetbrains.exposed.dao.id.EntityID(createdBy, Admin)
+            it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
             it[createdAt] = DateTime.now()
         }
     }

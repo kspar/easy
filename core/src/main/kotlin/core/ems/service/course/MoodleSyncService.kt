@@ -6,7 +6,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Autowired

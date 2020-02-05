@@ -4,13 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.autoAssess
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.CacheInvalidator
-import core.ems.service.GradeService
-import core.ems.service.assertIsVisibleExerciseOnCourse
-import core.ems.service.assertStudentHasAccessToCourse
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime

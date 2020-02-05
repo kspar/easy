@@ -4,7 +4,7 @@ import core.db.Asset
 import core.db.AutoExercise
 import core.db.AutoExerciseExecutor
 import core.db.Executor
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 

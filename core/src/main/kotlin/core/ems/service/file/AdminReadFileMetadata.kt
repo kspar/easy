@@ -8,7 +8,6 @@ import core.db.StoredFile.article
 import core.db.StoredFile.createdAt
 import core.db.StoredFile.exercise
 import core.db.StoredFile.filename
-import core.db.StoredFile.id
 import core.db.StoredFile.owner
 import core.db.StoredFile.sizeBytes
 import core.db.StoredFile.type
@@ -56,10 +55,10 @@ class ReadFileMetadataController {
 private fun selectMetadata(): ReadFileMetadataController.Resp {
     return transaction {
         ReadFileMetadataController.Resp(
-                StoredFile.slice(id, article, exercise, filename, type, sizeBytes, createdAt, owner)
+                StoredFile.slice(StoredFile.id, article, exercise, filename, type, sizeBytes, createdAt, owner)
                         .selectAll().map {
                             ReadFileMetadataController.RespFile(
-                                    it[id].value,
+                                    it[StoredFile.id].value,
                                     it[article]?.value.toString(),
                                     it[exercise]?.value.toString(),
                                     it[filename],

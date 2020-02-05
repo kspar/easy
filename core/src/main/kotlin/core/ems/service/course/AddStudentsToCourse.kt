@@ -8,7 +8,7 @@ import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime

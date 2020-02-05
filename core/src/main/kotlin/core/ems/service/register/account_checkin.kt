@@ -7,11 +7,10 @@ import core.db.*
 import core.db.Account.email
 import core.db.Account.familyName
 import core.db.Account.givenName
-import core.db.Account.id
 import core.db.Account.moodleUsername
 import core.ems.service.CacheInvalidator
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -102,7 +101,7 @@ private fun updateAccount(accountData: AccountData): Boolean {
         val oldAccount = Account.select { Account.id eq accountData.username }
                 .map {
                     Acc(
-                            it[id].value,
+                            it[Account.id].value,
                             it[email],
                             it[moodleUsername],
                             it[givenName],
