@@ -9,6 +9,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import onVanillaClick
+import spa.CacheableComponent
 import spa.Component
 import kotlin.js.Promise
 
@@ -30,13 +31,13 @@ fun <T> List<Promise<T>>.all(): Promise<List<T>> =
 
 
 class StudentCourseListComp(dstId: String
-) : Component(dstId) {
+) : CacheableComponent<StudentCourseListComp.State>(dstId) {
 
     @Serializable
     data class Course(val title: String)
 
     @Serializable
-    data class State(val courses: List<Course>)
+    data class State(val courses: List<Course>, val itemStates: List<CourseListItemComp.State>)
 
 
     private var listItems: List<CourseListItemComp> = emptyList()
@@ -44,8 +45,16 @@ class StudentCourseListComp(dstId: String
     override val children: List<Component>
         get() = listItems
 
-    fun createFromState(state: State): Promise<*> = doInPromise {
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        val items = state.courses.map {
+            CourseListItemComp(IdGenerator.nextId(), it.title, ::handleChildClick)
+        }
 
+        listItems = items
+
+        listItems.zip(state.itemStates).map { (item, state) ->
+            item.createFromState(state)
+        }.all().await()
     }
 
 
@@ -66,7 +75,7 @@ class StudentCourseListComp(dstId: String
                 listItems = it
             }
 
-            children.map { it.create() }.all().await()
+            listItems.map { it.create() }.all().await()
 
             f1?.end()
         }
@@ -80,6 +89,9 @@ class StudentCourseListComp(dstId: String
         </div>
     """.trimIndent()
 
+    override fun getCacheableState(): State {
+        return State(listItems.map { Course(it.title) }, listItems.map { it.getCacheableState() })
+    }
 
     private fun handleChildClick() {
         debug { "Parent got click" }
@@ -91,10 +103,21 @@ class StudentCourseListComp(dstId: String
 class CourseListItemComp(dstId: String,
                          var title: String,
                          val onClickSomething: () -> Unit
-) : Component(dstId) {
+) : CacheableComponent<CourseListItemComp.State>(dstId) {
+
+    @Serializable
+    data class State(val number: Int)
+
+    private var number: Int = 0
 
     override fun create(): Promise<*> = doInPromise {
+        debug { "List item created without state" }
+        number = 42
+    }
 
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        debug { "List item created from state $state" }
+        number = state.number
     }
 
     override fun render(): String = """<p>course: $title</p>"""
@@ -105,6 +128,11 @@ class CourseListItemComp(dstId: String,
             build()
             onClickSomething()
         }
+    }
+
+    override fun getCacheableState(): State {
+        debug { "Caching number $number" }
+        return State(number)
     }
 }
 
