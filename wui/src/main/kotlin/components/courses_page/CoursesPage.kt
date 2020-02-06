@@ -1,4 +1,4 @@
-package components
+package components.courses_page
 
 import Auth
 import CourseInfoCache
