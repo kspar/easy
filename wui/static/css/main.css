@@ -970,10 +970,6 @@ div.divided-collection a.collection-item {
     font-size: 1.6rem;
 }
 
-div.divided-collection a.collection-item:last-child {
-    margin-bottom: 0;
-}
-
 .divided-collection a.collection-item:not(.active):hover {
     background-color: #e5e5e5;
 }

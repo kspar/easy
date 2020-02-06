@@ -2,12 +2,10 @@ package components.courses_page
 
 import Auth
 import CourseInfoCache
-import JsonUtil
 import PageName
 import Role
 import Str
 import components.EasyPage
-import debug
 import debugFunStart
 import getContainer
 import kotlinx.coroutines.MainScope
@@ -17,19 +15,22 @@ import kotlinx.serialization.Serializable
 import objOf
 import parseTo
 import queries.*
+import stringify
 import tmRender
 
 
 object CoursesPage : EasyPage() {
 
     @Serializable
-    data class State(val coursesHtml: String, val role: Role)
+    data class State(val studentState: StudentState?, val teacherState: TeacherState?)
 
     @Serializable
-    data class StudentCourses(val courses: List<StudentCourse>)
+    data class StudentState(val listState: StudentCourseListComp.State)
 
     @Serializable
-    data class StudentCourse(val id: String, val title: String)
+    data class TeacherState(val listState: StudentCourseListComp.State)
+
+
 
     @Serializable
     data class TeacherCourses(val courses: List<TeacherCourse>)
@@ -38,8 +39,7 @@ object CoursesPage : EasyPage() {
     data class TeacherCourse(val id: String, val title: String, val student_count: Int)
 
 
-    override val pageName: PageName
-        get() = PageName.COURSES
+    override val pageName: PageName = PageName.COURSES
 
     override fun pathMatches(path: String): Boolean =
             path.matches("^/courses/?$")
@@ -47,15 +47,30 @@ object CoursesPage : EasyPage() {
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("CoursesPage.build")
 
-        val pageState = pageStateStr?.parseTo(State.serializer())
+        val state = pageStateStr?.parseTo(State.serializer())
+        val studentState = state?.studentState
+        val teacherState = state?.teacherState
 
         when (Auth.activeRole) {
-            Role.STUDENT -> buildStudentCourses(pageState)
-            Role.TEACHER, Role.ADMIN -> buildTeacherCourses(pageState, Auth.activeRole)
+            Role.STUDENT -> buildStudentCourses2(studentState)
+            Role.TEACHER, Role.ADMIN -> buildTeacherCourses(null, Auth.activeRole)
         }
 
         funLog?.end()
     }
+
+    private fun buildStudentCourses2(state: StudentState?) = MainScope().launch {
+        val lst = StudentCourseListComp("content-container")
+        if (state == null) {
+            lst.create().await()
+        } else {
+            lst.createFromState(state.listState).await()
+        }
+        lst.build()
+        val listState = lst.getCacheableState()
+        updateState(State.serializer().stringify(State(StudentState(listState), null)))
+    }
+
 
     override fun clear() {
         super.clear()
@@ -64,56 +79,9 @@ object CoursesPage : EasyPage() {
     }
 
 
-    private fun buildStudentCourses(pageState: State?) {
-        val funLog = debugFunStart("CoursesPage.buildStudentCourses")
-
-        if (pageState != null && pageState.role == Role.STUDENT) {
-            debug { "Got courses html from state" }
-            getContainer().innerHTML = pageState.coursesHtml
-            return
-        }
-
-        MainScope().launch {
-            val funLogFetch = debugFunStart("CoursesPage.buildStudentCourses.asyncFetchBuild")
-
-            val resp = fetchEms("/student/courses", ReqMethod.GET,
-                    successChecker = { http200 }).await()
-            val courses = resp.parseTo(StudentCourses.serializer()).await()
-
-            // Populate course info cache
-            courses.courses.forEach {
-                CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
-            }
-
-            val coursesHtml = tmRender("tm-stud-course-list",
-                    mapOf("title" to Str.coursesTitle(),
-                            "noCoursesLabel" to Str.noCoursesLabel(),
-                            "courses" to courses.courses.map {
-                                objOf(
-                                        "title" to it.title,
-                                        "id" to it.id
-                                )
-                            }.toTypedArray()))
-
-            getContainer().innerHTML = coursesHtml
-
-            val newState = State(coursesHtml, Role.STUDENT)
-            updateState(JsonUtil.stringify(State.serializer(), newState))
-
-            funLogFetch?.end()
-        }
-
-        funLog?.end()
-    }
 
     private fun buildTeacherCourses(pageState: State?, activeRole: Role) {
         val funLog = debugFunStart("CoursesPage.buildTeacherCourses")
-
-        if (pageState != null && pageState.role == activeRole) {
-            debug { "Got courses html from state" }
-            getContainer().innerHTML = pageState.coursesHtml
-            return
-        }
 
         MainScope().launch {
             val funLogFetch = debugFunStart("CoursesPage.buildTeacherCourses.asyncFetchBuild")
@@ -142,9 +110,6 @@ object CoursesPage : EasyPage() {
                     }.toTypedArray()))
 
             getContainer().innerHTML = html
-
-            val newState = State(html, activeRole)
-            updateState(JsonUtil.stringify(State.serializer(), newState))
 
             funLogFetch?.end()
         }

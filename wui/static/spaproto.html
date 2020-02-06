@@ -42,6 +42,34 @@
 <footer>
 </footer>
 
+<!-- Components -->
+<template id="t-c-stud-courses-list">
+    <div class="title-wrap no-crumb">
+        <h3 class="title">{{pageTitle}}</h3>
+    </div>
+    <div id="courses-list" class="collection divided-collection">
+        {{#courses}}
+            <ez-dst id="{{dstId}}"></ez-dst>
+        {{/courses}}
+    </div>
+    {{^courses}}
+        <div class="missing-content-wrap">
+            <div class="antennaball"></div>
+            <div class="antenna"></div>
+            <div class="robot">
+                <div class="robot-eye"></div>
+                <div class="robot-eye"></div>
+            </div>
+            <p class="text">{{noCoursesLabel}}</p>
+        </div>
+    {{/courses}}
+</template>
+
+<template id="t-c-stud-courses-item">
+    <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
+</template>
+
+
 
 <!-- Templates -->
 <script id="tm-navbar" type="text/x-handlebars-template">
@@ -544,29 +572,6 @@
                 <span class="course-student-count">{{count}} {{students}}</span>
             </a>
         </div>
-        {{/courses}}
-    </div>
-    {{^courses}}
-    <div class="missing-content-wrap">
-        <div class="antennaball"></div>
-        <div class="antenna"></div>
-        <div class="robot">
-            <div class="robot-eye"></div>
-            <div class="robot-eye"></div>
-        </div>
-        <p class="text">{{noCoursesLabel}}</p>
-    </div>
-    {{/courses}}
-</script>
-
-<script id="tm-stud-course-list" type="text/x-handlebars-template">
-    <div class="title-wrap no-crumb">
-        <h3 class="title">{{title}}</h3>
-    </div>
-
-    <div id="courses-list" class="collection divided-collection">
-        {{#courses}}
-        <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
         {{/courses}}
     </div>
     {{^courses}}
