@@ -1,7 +1,6 @@
 package spa
 
 import getElemById
-import kotlinx.serialization.Serializable
 import kotlin.js.Promise
 
 /**
@@ -14,7 +13,6 @@ import kotlin.js.Promise
  *
  * Call [build] to (re-)build this component: render it and its children and then initialise them.
  */
-@Serializable
 abstract class Component(val dstId: String) {
 
     /**
