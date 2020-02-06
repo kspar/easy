@@ -3,31 +3,15 @@ package components.courses_page
 import IdGenerator
 import debug
 import debugFunStart
+import doInPromise
 import getElemById
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import onVanillaClick
 import spa.CacheableComponent
 import spa.Component
+import unionPromise
 import kotlin.js.Promise
-
-
-fun <T> doInPromise(action: suspend () -> T): Promise<T> =
-        Promise { resolve, reject ->
-            MainScope().launch {
-                try {
-                    resolve(action())
-                } catch (e: Throwable) {
-                    reject(e)
-                }
-            }
-        }
-
-
-fun <T> List<Promise<T>>.all(): Promise<List<T>> =
-        Promise.all(this.toTypedArray()).then { it.asList() }
 
 
 class StudentCourseListComp(dstId: String
@@ -54,7 +38,7 @@ class StudentCourseListComp(dstId: String
 
         listItems.zip(state.itemStates).map { (item, state) ->
             item.createFromState(state)
-        }.all().await()
+        }.unionPromise().await()
     }
 
 
@@ -75,7 +59,7 @@ class StudentCourseListComp(dstId: String
                 listItems = it
             }
 
-            listItems.map { it.create() }.all().await()
+            listItems.map { it.create() }.unionPromise().await()
 
             f1?.end()
         }

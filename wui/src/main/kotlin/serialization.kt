@@ -11,6 +11,8 @@ val JsonUtil = Json(JsonConfiguration.Stable)
 fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =
         JsonUtil.parse(deserializer, this)
 
+fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.stringify(this, obj)
+
 
 @Serializer(forClass = Date::class)
 object DateSerializer : KSerializer<Date> {
