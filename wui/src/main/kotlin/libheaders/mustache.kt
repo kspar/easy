@@ -28,8 +28,6 @@ external open class MustacheScanner(string: String) {
 external open class MustacheContext {
     constructor(view: Any, parentContext: MustacheContext)
     constructor(view: Any)
-    open var view: Any = definedExternally
-    open var parentContext: MustacheContext = definedExternally
     open fun push(view: Any): MustacheContext = definedExternally
     open fun lookup(name: String): Any = definedExternally
 }
