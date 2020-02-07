@@ -79,7 +79,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String): Li
                 .mapIndexed { i, ex ->
                     val ceId = ex[CourseExercise.id].value
 
-                    val latestSubmissionValidGrades = selectLatestGradesForCourseExercise(ceId, students).map { it.grade }
+                    val latestSubmissionValidGrades = selectLatestValidGrades(ceId, students).map { it.grade }
 
                     val gradeThreshold = ex[CourseExercise.gradeThreshold]
 

@@ -107,7 +107,7 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.gradeThreshold],
                             ex[CourseExercise.studentVisible],
-                            selectLatestGradesForCourseExercise(ex[CourseExercise.id].value, studentIds)
+                            selectLatestValidGrades(ex[CourseExercise.id].value, studentIds)
                                     .map {
                                         TeacherReadGradesController.GradeResp(
                                                 it.studentId,

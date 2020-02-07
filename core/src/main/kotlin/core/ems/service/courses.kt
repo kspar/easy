@@ -25,7 +25,7 @@ data class Grade(val submissionId: String,
                  val graderType: GraderType?,
                  val feedback: String?)
 
-fun selectLatestGradesForCourseExercise(courseExerciseId: Long, studentIds: List<String>): List<Grade> {
+fun selectLatestValidGrades(courseExerciseId: Long, studentIds: List<String>): List<Grade> {
     return transaction {
         (Submission leftJoin TeacherAssessment leftJoin AutomaticAssessment)
                 .slice(Submission.id,
