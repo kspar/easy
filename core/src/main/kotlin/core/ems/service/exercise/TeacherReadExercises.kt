@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.getTeacherRestrictedGroups
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
+import core.ems.service.exercise.TeacherReadCourseExercisesController.CourseExerciseResp
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -54,71 +55,38 @@ class TeacherReadCourseExercisesController {
 }
 
 
-private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String):
-        List<TeacherReadCourseExercisesController.CourseExerciseResp> {
+private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String): List<CourseExerciseResp> {
 
     return transaction {
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
-
-        val studentQuery = (StudentCourseAccess leftJoin StudentGroupAccess)
-                .slice(StudentCourseAccess.student)
-                .select { StudentCourseAccess.course eq courseId }
-                .withDistinct()
-
-        if (restrictedGroups.isNotEmpty()) {
-            studentQuery.andWhere {
-                StudentGroupAccess.group inList restrictedGroups or
-                        (StudentGroupAccess.group.isNull())
-            }
-        }
+        val studentQuery = selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups)
 
         val studentCount = studentQuery.count()
+        val students = studentQuery.map { it[Student.id].value }
 
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id, CourseExercise.gradeThreshold, CourseExercise.softDeadline,
-                        ExerciseVer.graderType, ExerciseVer.title, CourseExercise.titleAlias)
+                .slice(CourseExercise.id,
+                        CourseExercise.gradeThreshold,
+                        CourseExercise.softDeadline,
+                        ExerciseVer.graderType,
+                        ExerciseVer.title,
+                        CourseExercise.titleAlias)
                 .select {
-                    CourseExercise.course eq courseId and
-                            ExerciseVer.validTo.isNull()
+                    CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
                 }
                 .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                 .mapIndexed { i, ex ->
+                    val ceId = ex[CourseExercise.id].value
 
-                    val ceId = ex[CourseExercise.id]
-
-                    val distinctStudentId = StudentCourseAccess.student.distinctOn().alias("studentId")
-                    val validGrade = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("validGrade")
-
-                    val query = (Join(Submission, StudentCourseAccess leftJoin StudentGroupAccess,
-                            onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
-                            leftJoin AutomaticAssessment leftJoin TeacherAssessment)
-                            .slice(distinctStudentId, validGrade)
-                            .select { Submission.courseExercise eq ceId and
-                                    (StudentCourseAccess.course eq courseId) }
-                            .orderBy(distinctStudentId to SortOrder.ASC,
-                                    Submission.createdAt to SortOrder.DESC,
-                                    AutomaticAssessment.createdAt to SortOrder.DESC,
-                                    TeacherAssessment.createdAt to SortOrder.DESC)
-
-                    if (restrictedGroups.isNotEmpty()) {
-                        query.andWhere {
-                            StudentGroupAccess.group inList restrictedGroups or
-                                    (StudentGroupAccess.group.isNull())
-                        }
-                    }
-
-                    val latestSubmissionGrades = query.map {
-                        val validGrade: Int? = it[validGrade]
-                        validGrade
-                    }
+                    val latestSubmissionValidGrades = selectLatestGradesForCourseExercise(ceId, students).map { it.grade }
 
                     val gradeThreshold = ex[CourseExercise.gradeThreshold]
 
-                    val unstartedCount = studentCount - latestSubmissionGrades.size
-                    val ungradedCount = latestSubmissionGrades.count { it == null }
-                    val startedCount = latestSubmissionGrades.count { it != null && it < gradeThreshold }
-                    val completedCount = latestSubmissionGrades.count { it != null && it >= gradeThreshold }
+                    val unstartedCount = studentCount - latestSubmissionValidGrades.size
+                    val ungradedCount = latestSubmissionValidGrades.count { it == null }
+                    val startedCount = latestSubmissionValidGrades.count { it != null && it < gradeThreshold }
+                    val completedCount = latestSubmissionValidGrades.count { it != null && it >= gradeThreshold }
 
                     // Sanity check
                     if (unstartedCount + ungradedCount + startedCount + completedCount != studentCount)
@@ -127,7 +95,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String):
                                     "started: $startedCount, completed: $completedCount, students in course: $studentCount"
                         }
 
-                    TeacherReadCourseExercisesController.CourseExerciseResp(
+                    CourseExerciseResp(
                             ex[CourseExercise.id].value.toString(),
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.softDeadline],

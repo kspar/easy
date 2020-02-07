@@ -5,12 +5,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertCourseExists
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.getTeacherRestrictedGroups
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -39,8 +38,8 @@ class TeacherReadGradesController {
                              @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp>)
 
     data class GradeResp(@JsonProperty("student_id") val studentId: String,
-                         @JsonProperty("grade") val grade: Int,
-                         @JsonProperty("grader_type") val graderType: GraderType,
+                         @JsonProperty("grade") @JsonInclude(Include.NON_NULL) val grade: Int?,
+                         @JsonProperty("grader_type") @JsonInclude(Include.NON_NULL) val graderType: GraderType?,
                          @JsonProperty("feedback") @JsonInclude(Include.NON_NULL) val feedback: String?)
 
 
@@ -89,30 +88,6 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
     }
 }
 
-private fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>, restrictedGroups: List<Long>): Query {
-    val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess)
-            .slice(Student.id, Account.email, Account.givenName, Account.familyName)
-            .select { StudentCourseAccess.course eq courseId }
-            .withDistinct()
-
-    if (restrictedGroups.isNotEmpty()) {
-        query.andWhere {
-            StudentGroupAccess.group inList restrictedGroups or
-                    (StudentGroupAccess.group.isNull())
-        }
-    }
-
-    queryWords.forEach {
-        query.andWhere {
-            (Student.id like "%$it%") or
-                    (Account.email.lowerCase() like "%$it%") or
-                    (Account.givenName.lowerCase() like "%$it%") or
-                    (Account.familyName.lowerCase() like "%$it%")
-        }
-    }
-
-    return query
-}
 
 private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.ExercisesResp> {
     return transaction {
@@ -133,40 +108,14 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                             ex[CourseExercise.gradeThreshold],
                             ex[CourseExercise.studentVisible],
                             selectLatestGradesForCourseExercise(ex[CourseExercise.id].value, studentIds)
+                                    .map {
+                                        TeacherReadGradesController.GradeResp(
+                                                it.studentId,
+                                                it.grade,
+                                                it.graderType,
+                                                it.feedback)
+                                    }
                     )
-                }
-    }
-}
-
-
-fun selectLatestGradesForCourseExercise(courseExerciseId: Long, studentIds: List<String>): List<TeacherReadGradesController.GradeResp> {
-    return transaction {
-        (Submission.leftJoin(TeacherAssessment)).leftJoin(AutomaticAssessment)
-                .slice(Submission.id,
-                        Submission.student,
-                        TeacherAssessment.id,
-                        TeacherAssessment.grade,
-                        TeacherAssessment.feedback,
-                        AutomaticAssessment.id,
-                        AutomaticAssessment.grade,
-                        AutomaticAssessment.feedback)
-                .select { Submission.courseExercise eq courseExerciseId and (Submission.student inList studentIds) }
-                .orderBy(Submission.createdAt, SortOrder.DESC)
-                .distinctBy { it[Submission.student] }
-                .mapNotNull {
-                    when {
-                        it[TeacherAssessment.id] != null -> TeacherReadGradesController.GradeResp(
-                                it[Submission.student].value,
-                                it[TeacherAssessment.grade],
-                                GraderType.TEACHER,
-                                it[TeacherAssessment.feedback])
-                        it[AutomaticAssessment.id] != null -> TeacherReadGradesController.GradeResp(
-                                it[Submission.student].value,
-                                it[AutomaticAssessment.grade],
-                                GraderType.AUTO,
-                                it[AutomaticAssessment.feedback])
-                        else -> null
-                    }
                 }
     }
 }
