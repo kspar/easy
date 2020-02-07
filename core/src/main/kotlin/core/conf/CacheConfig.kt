@@ -1,8 +1,10 @@
 package core.conf
 
+import com.hazelcast.core.Hazelcast
+import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.spring.cache.HazelcastCacheManager
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -12,7 +14,12 @@ import org.springframework.context.annotation.Configuration
 class CachingConfig {
 
     @Bean
-    fun cacheManager(): CacheManager {
-        return ConcurrentMapCacheManager("submissions", "users", "autoassessment")
+    fun hzInstance(): HazelcastInstance? {
+        return Hazelcast.newHazelcastInstance()
+    }
+
+    @Bean
+    fun cacheManager(hzInstance: HazelcastInstance?): CacheManager? {
+        return HazelcastCacheManager(hzInstance)
     }
 }

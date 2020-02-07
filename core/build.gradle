@@ -55,7 +55,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // Cache
+    implementation 'com.hazelcast:hazelcast-spring'
 
     // Logging
     implementation 'io.github.microutils:kotlin-logging:1.7.6'
