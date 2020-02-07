@@ -3,7 +3,6 @@ package components.courses_page
 import CourseInfoCache
 import IdGenerator
 import Str
-import debug
 import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -18,10 +17,10 @@ class StudentCourseListComp(dstId: String
 ) : CacheableComponent<StudentCourseListComp.State>(dstId) {
 
     @Serializable
-    data class State(val courses: List<Course>)
+    data class State(val courses: List<SCourse>)
 
     @Serializable
-    data class Course(val id: String, val title: String)
+    data class SCourse(val id: String, val title: String)
 
     @Serializable
     data class CoursesDto(val courses: List<CourseDto>)
@@ -42,7 +41,6 @@ class StudentCourseListComp(dstId: String
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
-        debug { "Creating from state" }
         courseItems = state.courses.map { StudentCourseItemComp(IdGenerator.nextId(), it.id, it.title) }
     }
 
@@ -58,13 +56,13 @@ class StudentCourseListComp(dstId: String
         }
     }
 
-    override fun getCacheableState(): State = State(courseItems.map { Course(it.id, it.title) })
+    override fun getCacheableState(): State = State(courseItems.map { SCourse(it.id, it.title) })
 }
 
 
 class StudentCourseItemComp(dstId: String,
                             val id: String,
-                            var title: String
+                            val title: String
 ) : Component(dstId) {
 
     override fun render(): String = tmRender("t-c-stud-courses-item",

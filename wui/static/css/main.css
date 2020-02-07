@@ -465,7 +465,7 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Courses page **/
 
-#courses-list div.teacher-course-wrapper {
+#courses-list .teacher-course-wrapper {
     position: relative;
 }
 

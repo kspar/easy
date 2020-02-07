@@ -1,10 +1,8 @@
 package components.courses_page
 
 import Auth
-import CourseInfoCache
 import PageName
 import Role
-import Str
 import components.EasyPage
 import debugFunStart
 import getContainer
@@ -12,9 +10,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import objOf
 import parseTo
-import queries.*
 import stringify
 import tmRender
 
@@ -28,15 +24,7 @@ object CoursesPage : EasyPage() {
     data class StudentState(val listState: StudentCourseListComp.State)
 
     @Serializable
-    data class TeacherState(val listState: StudentCourseListComp.State)
-
-
-
-    @Serializable
-    data class TeacherCourses(val courses: List<TeacherCourse>)
-
-    @Serializable
-    data class TeacherCourse(val id: String, val title: String, val student_count: Int)
+    data class TeacherState(val listState: TeacherCourseListComp.State)
 
 
     override val pageName: PageName = PageName.COURSES
@@ -45,21 +33,23 @@ object CoursesPage : EasyPage() {
             path.matches("^/courses/?$")
 
     override fun build(pageStateStr: String?) {
-        val funLog = debugFunStart("CoursesPage.build")
+        MainScope().launch {
+            val funLog = debugFunStart("CoursesPage.build")
 
-        val state = pageStateStr?.parseTo(State.serializer())
-        val studentState = state?.studentState
-        val teacherState = state?.teacherState
+            val state = pageStateStr?.parseTo(State.serializer())
+            val studentState = state?.studentState
+            val teacherState = state?.teacherState
 
-        when (Auth.activeRole) {
-            Role.STUDENT -> buildStudentCourses2(studentState)
-            Role.TEACHER, Role.ADMIN -> buildTeacherCourses(null, Auth.activeRole)
+            when (Auth.activeRole) {
+                Role.STUDENT -> buildStudentCourses(studentState)
+                Role.TEACHER, Role.ADMIN -> buildTeacherCourses(teacherState, Auth.activeRole)
+            }
+
+            funLog?.end()
         }
-
-        funLog?.end()
     }
 
-    private fun buildStudentCourses2(state: StudentState?) = MainScope().launch {
+    private suspend fun buildStudentCourses(state: StudentState?) {
         val lst = StudentCourseListComp("content-container")
         if (state == null) {
             lst.create().await()
@@ -71,50 +61,21 @@ object CoursesPage : EasyPage() {
         updateState(State.serializer().stringify(State(StudentState(listState), null)))
     }
 
+    private suspend fun buildTeacherCourses(state: TeacherState?, role: Role) {
+        val lst = TeacherCourseListComp("content-container", role == Role.ADMIN)
+        if (state == null) {
+            lst.create().await()
+        } else {
+            lst.createFromState(state.listState).await()
+        }
+        lst.build()
+        val listState = lst.getCacheableState()
+        updateState(State.serializer().stringify(State(null, TeacherState(listState))))
+    }
 
     override fun clear() {
         super.clear()
         getContainer().innerHTML = tmRender("tm-loading-placeholders",
                 mapOf("marginTopRem" to 4, "titleWidthRem" to 20))
     }
-
-
-
-    private fun buildTeacherCourses(pageState: State?, activeRole: Role) {
-        val funLog = debugFunStart("CoursesPage.buildTeacherCourses")
-
-        MainScope().launch {
-            val funLogFetch = debugFunStart("CoursesPage.buildTeacherCourses.asyncFetchBuild")
-
-            val isAdmin = activeRole == Role.ADMIN
-
-            val resp = fetchEms("/teacher/courses", ReqMethod.GET,
-                    successChecker = { http200 }).await()
-            val courses = resp.parseTo(TeacherCourses.serializer()).await()
-
-            // Populate course info cache
-            courses.courses.forEach {
-                CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
-            }
-
-            val html = tmRender("tm-teach-course-list", mapOf(
-                    "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
-                    "addCourse" to isAdmin,
-                    "newCourse" to Str.newCourseLink(),
-                    "noCoursesLabel" to Str.noCoursesLabel(),
-                    "courses" to courses.courses.map {
-                        objOf("id" to it.id,
-                                "title" to it.title,
-                                "count" to it.student_count,
-                                "students" to if (it.student_count == 1) Str.coursesStudent() else Str.coursesStudents())
-                    }.toTypedArray()))
-
-            getContainer().innerHTML = html
-
-            funLogFetch?.end()
-        }
-
-        funLog?.end()
-    }
-
 }
