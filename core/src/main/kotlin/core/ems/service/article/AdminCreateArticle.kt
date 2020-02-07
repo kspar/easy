@@ -6,12 +6,14 @@ import core.db.Admin
 import core.db.Article
 import core.db.ArticleVersion
 import core.ems.service.AdocService
+import core.ems.service.CacheInvalidator
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -27,6 +29,9 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateArticleController(private val adocService: AdocService) {
 
+    @Autowired
+    lateinit var cacheInvalidator: CacheInvalidator
+
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
                    @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
                    @JsonProperty("public", required = true) val public: Boolean)
@@ -40,7 +45,10 @@ class CreateArticleController(private val adocService: AdocService) {
         log.debug { "Create article '${dto.title}' by ${caller.id}" }
 
         val html = dto.textAdoc?.let { adocService.adocToHtml(it) }
-        return Resp(insertArticle(caller.id, dto, html).toString())
+
+        val articleId = insertArticle(caller.id, dto, html).toString()
+        cacheInvalidator.invalidateArticleCache()
+        return Resp(articleId)
     }
 }
 

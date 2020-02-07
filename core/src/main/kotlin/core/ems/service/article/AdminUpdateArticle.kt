@@ -6,6 +6,7 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
 import core.ems.service.AdocService
+import core.ems.service.CacheInvalidator
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
@@ -15,6 +16,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -26,6 +28,9 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class UpdateArticleController(private val adocService: AdocService) {
+
+    @Autowired
+    lateinit var cacheInvalidator: CacheInvalidator
 
     data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
                    @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
@@ -43,6 +48,7 @@ class UpdateArticleController(private val adocService: AdocService) {
 
         val html = req.textAdoc?.let { adocService.adocToHtml(it) }
         updateArticle(caller.id, articleId, req, html)
+        cacheInvalidator.invalidateArticleCache()
     }
 }
 

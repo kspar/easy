@@ -18,4 +18,7 @@ class CacheInvalidator {
 
     @CacheEvict("users", allEntries = true, beforeInvocation = false)
     fun invalidateTotalUserCache() = log.debug { "Invalidating total number of users cache." }
+
+    @CacheEvict("articles", allEntries = true, beforeInvocation = false)
+    fun invalidateArticleCache() = log.debug { "Invalidating article cache." }
 }

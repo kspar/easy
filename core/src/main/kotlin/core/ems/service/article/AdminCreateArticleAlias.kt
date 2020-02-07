@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
+import core.ems.service.CacheInvalidator
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -14,6 +15,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -26,6 +28,9 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class CreateArticleAliasController {
+
+    @Autowired
+    lateinit var cacheInvalidator: CacheInvalidator
 
     data class Req(@JsonProperty("alias", required = true)
                    @field:NotBlank
@@ -43,6 +48,7 @@ class CreateArticleAliasController {
         assertArticleExists(articleId)
 
         insertAlias(caller.id, articleId, req.alias)
+        cacheInvalidator.invalidateArticleCache()
     }
 }
 
