@@ -31,6 +31,7 @@ dependencies {
 tasks.named<Kotlin2JsCompile>("compileKotlin2Js").get()
         .kotlinOptions {
             sourceMap = SOURCE_MAP_ENABLED
+            sourceMapEmbedSources = if (SOURCE_MAP_ENABLED) "always" else null
         }
 
 tasks.named<KotlinJsDce>("runDceKotlinJs").get()
