@@ -43,6 +43,15 @@
 </footer>
 
 <!-- Components -->
+
+<script id="t-c-breadcrumbs" type="text/x-tm">
+    <nav class="crumb-wrap">
+        {{#crumbs}}
+            <a {{#href}}href="{{href}}"{{/href}} class="breadcrumb truncate">{{label}}</a>
+        {{/crumbs}}
+    </nav>
+</script>
+
 <template id="t-c-stud-courses-list">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{pageTitle}}</h3>
