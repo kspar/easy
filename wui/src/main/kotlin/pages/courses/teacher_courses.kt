@@ -1,4 +1,4 @@
-package components.courses_page
+package pages.courses
 
 import CourseInfoCache
 import IdGenerator

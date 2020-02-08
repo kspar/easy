@@ -1,5 +1,5 @@
-import components.*
-import components.courses_page.CoursesPage
+import pages.*
+import pages.courses.CoursesPage
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch

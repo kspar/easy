@@ -1,4 +1,4 @@
-package components
+package pages
 
 import Auth
 import DateSerializer

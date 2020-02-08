@@ -1,9 +1,9 @@
-package components.courses_page
+package pages.courses
 
 import Auth
 import PageName
 import Role
-import components.EasyPage
+import pages.EasyPage
 import debugFunStart
 import getContainer
 import kotlinx.coroutines.MainScope

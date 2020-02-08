@@ -1,4 +1,4 @@
-package components
+package pages
 
 import DateSerializer
 import PageName
