@@ -4,6 +4,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import libheaders.CodeMirror
+import pages.course_exercises.CourseExercisesPage
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -13,7 +14,7 @@ import spa.setupLinkInterception
 
 
 private val PAGES = listOf(
-        CoursesPage, ExercisesPage, ExerciseSummaryPage, AddCoursePage, ParticipantsPage, GradeTablePage,
+        CoursesPage, CourseExercisesPage, ExerciseSummaryPage, AddCoursePage, ParticipantsPage, GradeTablePage,
         NewExercisePage, ExercisePage)
 
 

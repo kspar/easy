@@ -1,4 +1,4 @@
-package pages
+package pages.course_exercises
 
 import Auth
 import DateSerializer
@@ -15,6 +15,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import pages.EasyPage
 import parseTo
 import queries.*
 import tmRender
@@ -25,7 +26,7 @@ import kotlin.js.Date
 import kotlin.math.max
 
 
-object ExercisesPage : EasyPage() {
+object CourseExercisesPage : EasyPage() {
 
     enum class GraderType {
         AUTO, TEACHER
