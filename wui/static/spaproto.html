@@ -116,6 +116,59 @@
     </div>
 </template>
 
+<script id="t-c-stud-course-exercises" type="text/x-handlebars">
+    <ez-dst id="{{crumbDstId}}"></ez-dst>
+    <div class="title-wrap">
+        <h3 class="title">{{courseTitle}}</h3>
+    </div>
+    <ez-dst id="{{listDstId}}"></ez-dst>
+</script>
+
+<script id="tm-stud-exercises-list" type="text/x-handlebars-template">
+    <nav class="crumb-wrap">
+        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
+        <a class="breadcrumb truncate">{{title}}</a>
+    </nav>
+    <div class="title-wrap">
+        <h3 class="title">{{title}}</h3>
+    </div>
+    <div id="exercises-list" class="collection divided-collection">
+        {{#exercises}}
+            <a class="collection-item bb-wrap" href="{{href}}">
+                <div class="exercise-item">
+                    <span>{{title}}</span>
+                    <span class="exercise-item">
+                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
+                    <span class="grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+                    }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+                    }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+                    }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                    </span>
+                </span>
+                </div>
+                <div class="bb">
+                    {{#completed}}
+                        <span class="bb-item bb-green"></span>
+                    {{/completed}}
+                    {{#started}}
+                        <span class="bb-item bb-yellow"></span>
+                    {{/started}}
+                    {{#evalMissing}}
+                        <span class="bb-item bb-blue"></span>
+                    {{/evalMissing}}
+                    {{#unstarted}}
+                        <span class="bb-item bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+        {{/exercises}}
+    </div>
+</script>
 
 
 <!-- Templates -->
@@ -554,51 +607,7 @@
     </div>
 </script>
 
-<script id="tm-stud-exercises-list" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
-        <a class="breadcrumb truncate">{{title}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
-    </div>
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-        <a class="collection-item bb-wrap" href="{{href}}">
-            <div class="exercise-item">
-                <span>{{title}}</span>
-                <span class="exercise-item">
-                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-                    <span class="grade">
-                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                       >{{#evalAuto
-                        }}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                        {{/evalAuto}}{{#evalTeacher
-                        }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                        {{/evalTeacher}}{{#evalMissing
-                        }}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                        {{/evalMissing}}
-                    </span>
-                </span>
-            </div>
-            <div class="bb">
-                {{#completed}}
-                <span class="bb-item bb-green"></span>
-                {{/completed}}
-                {{#started}}
-                <span class="bb-item bb-yellow"></span>
-                {{/started}}
-                {{#evalMissing}}
-                <span class="bb-item bb-blue"></span>
-                {{/evalMissing}}
-                {{#unstarted}}
-                <span class="bb-item bb-grey"></span>
-                {{/unstarted}}
-            </div>
-        </a>
-        {{/exercises}}
-    </div>
-</script>
+
 
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">

@@ -2,12 +2,14 @@ package pages.course_exercises
 
 import Auth
 import DateSerializer
+import IdGenerator
 import JsonUtil
 import PageName
 import Role
 import Str
 import debug
 import debugFunStart
+import doInPromise
 import getContainer
 import getNodelistBySelector
 import kotlinx.coroutines.MainScope
@@ -15,15 +17,47 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import pages.BreadcrumbsComp
+import pages.Crumb
 import pages.EasyPage
 import parseTo
 import queries.*
+import spa.Component
 import tmRender
 import toEstonianString
 import toJsObj
 import kotlin.browser.window
 import kotlin.js.Date
+import kotlin.js.Promise
 import kotlin.math.max
+
+
+class StudentCourseExercisesComp(
+        private val courseId: String,
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : Component(dstId, parent) {
+
+    private lateinit var courseTitle: String
+
+    private lateinit var crumbs: BreadcrumbsComp
+    private lateinit var exercisesList: StudentCourseExercisesListComp
+
+    override val children: List<Component>
+        get() = listOf(crumbs, exercisesList)
+
+    override fun create(): Promise<*> = doInPromise {
+        courseTitle = BasicCourseInfo.get(courseId).await().title
+        crumbs = BreadcrumbsComp(listOf(Crumb.myCourses, Crumb(courseTitle)), this)
+        exercisesList = StudentCourseExercisesListComp(courseId, this)
+    }
+
+    override fun render(): String = tmRender("t-c-stud-course-exercises",
+            "crumbDstId" to crumbs.dstId,
+            "courseTitle" to courseTitle,
+            "listDstId" to exercisesList.dstId
+    )
+}
 
 
 object CourseExercisesPage : EasyPage() {
@@ -99,6 +133,12 @@ object CourseExercisesPage : EasyPage() {
         }
 
         funLog?.end()
+    }
+
+    private fun buildStudentExercises2(courseId: String) {
+        val c = StudentCourseExercisesComp(courseId, null, "content-container")
+        c.onStateChanged = { debug { "State change detected" } }
+        c.createAndBuild()
     }
 
     private fun extractSanitizedCourseId(path: String): String {
