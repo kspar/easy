@@ -3,17 +3,16 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.GraderType
-import core.db.Teacher
+import core.db.*
 import core.ems.service.AdocService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
@@ -91,6 +90,18 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req, html: S
             it[textHtml] = html
             it[textAdoc] = req.textAdoc
             it[autoExerciseId] = newAutoExerciseId
+        }
+
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[StoredFile.usageConfirmed] = true
+                it[StoredFile.exercise] = exerciseId
+            }
         }
 
         exerciseId.value

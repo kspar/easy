@@ -6,6 +6,7 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseExercise
 import core.db.Exercise
+import core.db.StoredFile
 import core.ems.service.AdocService
 import core.ems.service.IDX_STEP
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
@@ -14,10 +15,7 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -117,6 +115,18 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[instructionsHtml] = html
             it[instructionsAdoc] = body.instructionsAdoc
             it[titleAlias] = body.titleAlias
+        }
+
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[StoredFile.usageConfirmed] = true
+                it[StoredFile.exercise] = EntityID(exerciseId, Exercise)
+            }
         }
     }
 }

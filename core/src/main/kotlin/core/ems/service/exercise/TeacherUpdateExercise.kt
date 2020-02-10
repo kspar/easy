@@ -3,10 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.GraderType
-import core.db.Teacher
+import core.db.*
 import core.ems.service.AdocService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
@@ -98,6 +95,18 @@ private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerci
             it[textHtml] = html
             it[textAdoc] = req.textAdoc
             it[autoExerciseId] = newAutoExerciseId
+        }
+
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[StoredFile.usageConfirmed] = true
+                it[StoredFile.exercise] = EntityID(exerciseId, Exercise)
+            }
         }
     }
 }
