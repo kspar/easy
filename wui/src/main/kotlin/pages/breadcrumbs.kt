@@ -6,7 +6,11 @@ import spa.Component
 import tmRender
 
 
-data class Crumb(val label: String, val href: String? = null)
+data class Crumb(val label: String, val href: String? = null) {
+    companion object {
+        val myCourses = Crumb(Str.myCourses(), "/courses")
+    }
+}
 
 
 class BreadcrumbsComp(
