@@ -1,45 +1,40 @@
 package spa
 
+import doInPromise
 import getElemById
+import kotlinx.coroutines.await
+import unionPromise
 import kotlin.js.Promise
 
 /**
  * An independent part of the app and/or UI that is capable of rendering itself to HTML by implementing the [render] method.
- * A component can also load data via [create] and perform initialisation after rendering via [init].
+ * A component can also load data, perform calculations etc in [create] and perform various tasks after rendering via [postRender].
  * Each component must also be given a destination Element ID [dstId] as a constructor parameter - the component
- * is painted inside the Element with the given ID, overwriting its previous contents.
+ * is painted inside the Element with the given ID, overwriting previous contents.
  * The destination element must exist in the DOM before this component is painted.
- * A component can have children components that are automatically built when building this component.
+ * A component can have children components that are automatically created and built when [createAndBuild]ing this component
+ * and rebuilt when [rebuild]ing this component.
+ * [parent] is this component's parent component in the component tree, should be null if this is the root component.
  *
- * Call [build] to (re-)build this component: render it and its children and then initialise them.
+ * Call [createAndBuild] to create and build this component and its children.
+ * Call [rebuild] to rebuild this component and its children (if its state has changed).
+ *
+ * Components should not directly call any methods other than [createAndBuild] and [rebuild] on themselves.
  */
-abstract class Component(val dstId: String) {
+abstract class Component(val dstId: String,
+                         private val parent: Component?) {
+
+    /**
+     * This component's dependants.
+     */
+    protected open val children: List<Component> = emptyList()
 
     /**
      * Load data, modify state, create children etc. Return a promise that resolves when everything is complete and
      * the component is ready to be rendered.
-     * Avoid performing synchronous tasks.
-     * Should typically be called by the parent component before building.
+     * NB! Avoid performing synchronous tasks.
      */
-    open fun create(): Promise<*> = Promise.Companion.resolve(Unit)
-
-    /**
-     * Paint this component and all of its children components into the DOM.
-     * Initialise this component and all of its children.
-     * Should be typically called after the component is created.
-     */
-    fun build() {
-        paint()
-        children.forEach(Component::paint)
-        init()
-        children.forEach(Component::init)
-    }
-
-
-    /**
-     * This component's dependants. When this component is (re-)built, its children are also (re-)built.
-     */
-    protected open val children: List<Component> = emptyList()
+    protected open fun create(): Promise<*> = Promise.Companion.resolve(Unit)
 
     /**
      * Produce HTML that represents this component's current state. This HTML is inserted into the destination element
@@ -48,9 +43,43 @@ abstract class Component(val dstId: String) {
     protected abstract fun render(): String
 
     /**
-     * Perform UI or other initialisation tasks after the component and all of its children have been painted.
+     * Perform UI initialisation, caching and other tasks after the component has been painted.
      */
-    protected open fun init() {}
+    protected open fun postRender() {}
+
+
+    /**
+     * Callback function invoked when this component's state has changed.
+     * The default implementation calls this component's parent's [onStateChanged] i.e. bubbles the change up.
+     *
+     * The component should call this function whenever changing its state outside of [create].
+     */
+    var onStateChanged: () -> Unit = { parent?.onStateChanged?.invoke() }
+
+    /**
+     * Create and build this component, and then recursively create and build its children in parallel.
+     * Returns a promise that resolves when everything is complete.
+     */
+    fun createAndBuild(): Promise<*> = doInPromise {
+        create().await()
+        buildThis()
+        children.map { it.createAndBuild() }.unionPromise().await()
+    }
+
+    /**
+     * Rebuild this component and its children.
+     */
+    // Might want a recreateChildren: Boolean param in the future... or some other method to recreate children.
+    fun rebuild() {
+        buildThis()
+        children.forEach { it.rebuild() }
+    }
+
+
+    private fun buildThis() {
+        paint()
+        postRender()
+    }
 
     private fun paint() {
         getElemById(dstId).innerHTML = render()

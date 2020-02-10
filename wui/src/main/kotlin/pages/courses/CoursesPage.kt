@@ -3,13 +3,13 @@ package pages.courses
 import Auth
 import PageName
 import Role
-import pages.EasyPage
 import debugFunStart
 import getContainer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import pages.EasyPage
 import parseTo
 import stringify
 import tmRender
@@ -50,27 +50,27 @@ object CoursesPage : EasyPage() {
     }
 
     private suspend fun buildStudentCourses(state: StudentState?) {
-        val lst = StudentCourseListComp("content-container")
+        val lst = StudentCourseListComp(null, "content-container")
         if (state == null) {
-            lst.create().await()
+            lst.createAndBuild().await()
+            val listState = lst.getCacheableState()
+            updateState(State.serializer().stringify(State(StudentState(listState), null)))
         } else {
             lst.createFromState(state.listState).await()
+            lst.rebuild()
         }
-        lst.build()
-        val listState = lst.getCacheableState()
-        updateState(State.serializer().stringify(State(StudentState(listState), null)))
     }
 
     private suspend fun buildTeacherCourses(state: TeacherState?, role: Role) {
-        val lst = TeacherCourseListComp("content-container", role == Role.ADMIN)
+        val lst = TeacherCourseListComp(role == Role.ADMIN, null, "content-container")
         if (state == null) {
-            lst.create().await()
+            lst.createAndBuild().await()
+            val listState = lst.getCacheableState()
+            updateState(State.serializer().stringify(State(null, TeacherState(listState))))
         } else {
             lst.createFromState(state.listState).await()
+            lst.rebuild()
         }
-        lst.build()
-        val listState = lst.getCacheableState()
-        updateState(State.serializer().stringify(State(null, TeacherState(listState))))
     }
 
     override fun clear() {

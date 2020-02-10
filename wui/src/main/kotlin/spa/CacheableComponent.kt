@@ -8,7 +8,7 @@ import kotlin.js.Promise
  * To create this component from a cached state object, the parent component should call [createFromState].
  * @param StateType type of the cacheable state object, must be @Serializable
  */
-abstract class CacheableComponent<StateType>(dstId: String) : Component(dstId) {
+abstract class CacheableComponent<StateType>(dstId: String, parent: Component?) : Component(dstId, parent) {
 
     /**
      * Return a cacheable state object representing this component's current state.

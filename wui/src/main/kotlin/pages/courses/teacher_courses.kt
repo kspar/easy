@@ -12,9 +12,11 @@ import spa.Component
 import tmRender
 import kotlin.js.Promise
 
-class TeacherCourseListComp(dstId: String,
-                            private val isAdmin: Boolean
-) : CacheableComponent<TeacherCourseListComp.State>(dstId) {
+class TeacherCourseListComp(
+        private val isAdmin: Boolean,
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : CacheableComponent<TeacherCourseListComp.State>(dstId, parent) {
 
     @Serializable
     data class State(val courses: List<SCourse>)
@@ -37,11 +39,11 @@ class TeacherCourseListComp(dstId: String,
     override fun create(): Promise<*> = doInPromise {
         courseItems = fetchEms("/teacher/courses", ReqMethod.GET, successChecker = { http200 }).await()
                 .parseTo(CoursesDto.serializer()).await()
-                .courses.map { TeacherCourseItemComp(IdGenerator.nextId(), it.id, it.title, it.student_count) }
+                .courses.map { TeacherCourseItemComp(it.id, it.title, it.student_count, this) }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
-        courseItems = state.courses.map { TeacherCourseItemComp(IdGenerator.nextId(), it.id, it.title, it.studentCount) }
+        courseItems = state.courses.map { TeacherCourseItemComp(it.id, it.title, it.studentCount, this) }
     }
 
     override fun render(): String = tmRender("t-c-teach-courses-list",
@@ -52,7 +54,7 @@ class TeacherCourseListComp(dstId: String,
             "courses" to courseItems.map { mapOf("dstId" to it.dstId) }
     )
 
-    override fun init() {
+    override fun postRender() {
         courseItems.forEach {
             CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
         }
@@ -61,11 +63,13 @@ class TeacherCourseListComp(dstId: String,
     override fun getCacheableState(): State = State(courseItems.map { SCourse(it.id, it.title, it.studentCount) })
 }
 
-class TeacherCourseItemComp(dstId: String,
-                            val id: String,
-                            val title: String,
-                            val studentCount: Int
-) : Component(dstId) {
+class TeacherCourseItemComp(
+        val id: String,
+        val title: String,
+        val studentCount: Int,
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : Component(dstId, parent) {
 
     override fun render(): String = tmRender("t-c-teach-courses-item",
             "id" to id,

@@ -1,18 +1,11 @@
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.promise
 import kotlin.js.Promise
 
 
-fun <T> doInPromise(action: suspend () -> T): Promise<T> =
-        Promise { resolve, reject ->
-            MainScope().launch {
-                try {
-                    resolve(action())
-                } catch (e: Throwable) {
-                    reject(e)
-                }
-            }
-        }
+fun <T> doInPromise(action: suspend () -> T): Promise<T> = MainScope().promise {
+    action()
+}
 
 
 fun <T> Collection<Promise<T>>.unionPromise(): Promise<List<T>> =

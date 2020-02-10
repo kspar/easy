@@ -13,8 +13,10 @@ import tmRender
 import kotlin.js.Promise
 
 
-class StudentCourseListComp(dstId: String
-) : CacheableComponent<StudentCourseListComp.State>(dstId) {
+class StudentCourseListComp(
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : CacheableComponent<StudentCourseListComp.State>(dstId, parent) {
 
     @Serializable
     data class State(val courses: List<SCourse>)
@@ -37,11 +39,11 @@ class StudentCourseListComp(dstId: String
     override fun create(): Promise<*> = doInPromise {
         courseItems = fetchEms("/student/courses", ReqMethod.GET, successChecker = { http200 }).await()
                 .parseTo(CoursesDto.serializer()).await()
-                .courses.map { StudentCourseItemComp(IdGenerator.nextId(), it.id, it.title) }
+                .courses.map { StudentCourseItemComp(it.id, it.title, this) }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
-        courseItems = state.courses.map { StudentCourseItemComp(IdGenerator.nextId(), it.id, it.title) }
+        courseItems = state.courses.map { StudentCourseItemComp(it.id, it.title, this) }
     }
 
     override fun render(): String = tmRender("t-c-stud-courses-list",
@@ -50,7 +52,7 @@ class StudentCourseListComp(dstId: String
             "courses" to courseItems.map { mapOf("dstId" to it.dstId) }
     )
 
-    override fun init() {
+    override fun postRender() {
         courseItems.forEach {
             CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
         }
@@ -60,10 +62,12 @@ class StudentCourseListComp(dstId: String
 }
 
 
-class StudentCourseItemComp(dstId: String,
-                            val id: String,
-                            val title: String
-) : Component(dstId) {
+class StudentCourseItemComp(
+        val id: String,
+        val title: String,
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : Component(dstId, parent) {
 
     override fun render(): String = tmRender("t-c-stud-courses-item",
             "id" to id,
