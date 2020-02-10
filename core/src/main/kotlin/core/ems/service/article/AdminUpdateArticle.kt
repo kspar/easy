@@ -5,11 +5,13 @@ import core.conf.security.EasyUser
 import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
+import core.db.StoredFile
 import core.ems.service.AdocService
 import core.ems.service.CacheInvalidator
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -74,10 +76,22 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
             it[title] = req.title
             it[textAdoc] = req.textAdoc
             it[textHtml] = html
-            it[previous] = org.jetbrains.exposed.dao.id.EntityID(lastVersionId, ArticleVersion)
+            it[previous] = EntityID(lastVersionId, ArticleVersion)
             it[validFrom] = time
-            it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
-            it[author] = org.jetbrains.exposed.dao.id.EntityID(authorId, Account)
+            it[article] = EntityID(articleId, Article)
+            it[author] = EntityID(authorId, Account)
+        }
+
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[StoredFile.usageConfirmed] = true
+                it[StoredFile.article] = EntityID(articleId, Article)
+            }
         }
     }
 }

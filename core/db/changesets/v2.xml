@@ -809,5 +809,12 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="100220-1" author="priit">
+        <addColumn tableName="stored_file">
+            <column name="usage_confirmed" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>

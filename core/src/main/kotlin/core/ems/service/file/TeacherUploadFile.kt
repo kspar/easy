@@ -62,6 +62,7 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
             it[data] = content
             it[filename] = req.filename
             it[createdAt] = time
+            it[usageConfirmed] = false
             it[sizeBytes] = content.size.toLong()
             it[owner] = EntityID(creator, Teacher)
         }.value

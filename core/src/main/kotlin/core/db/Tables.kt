@@ -257,6 +257,7 @@ object StoredFile : IdTable<String>("stored_file") {
     override val primaryKey = PrimaryKey(id)
     val exercise = reference("exercise_id", Exercise).nullable()
     val article = reference("article_id", Article).nullable()
+    val usageConfirmed = bool("usage_confirmed")
     val type = text("type")
     val sizeBytes = long("size_bytes")
     val filename = text("filename")

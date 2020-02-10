@@ -5,13 +5,16 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleVersion
+import core.db.StoredFile
 import core.ems.service.AdocService
 import core.ems.service.CacheInvalidator
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
@@ -74,6 +77,17 @@ private fun insertArticle(ownerId: String, req: CreateArticleController.Req, htm
             it[textAdoc] = req.textAdoc
         }
 
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[StoredFile.usageConfirmed] = true
+                it[StoredFile.article] = articleId
+            }
+        }
         articleId.value
     }
 }
