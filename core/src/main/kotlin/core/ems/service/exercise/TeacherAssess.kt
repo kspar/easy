@@ -3,6 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.CacheInvalidator
 import core.ems.service.GradeService
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -25,7 +26,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController(val gradeService: GradeService) {
+class TeacherAssessController(val gradeService: GradeService, val cacheInvalidator: CacheInvalidator) {
 
     data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
                    @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?)
@@ -50,7 +51,7 @@ class TeacherAssessController(val gradeService: GradeService) {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
-        insertTeacherAssessment(callerId, submissionId, assessment)
+        insertTeacherAssessment(callerId, submissionId, assessment, cacheInvalidator, courseExId)
         gradeService.syncSingleGradeToMoodle(submissionId)
     }
 }
@@ -67,7 +68,7 @@ private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Lon
     }
 }
 
-private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: TeacherAssessController.Req) {
+private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: TeacherAssessController.Req, cacheInvalidator: CacheInvalidator, courseExId: Long) {
     transaction {
         TeacherAssessment.insert {
             it[submission] = EntityID(submissionId, Submission)
@@ -77,4 +78,5 @@ private fun insertTeacherAssessment(teacherId: String, submissionId: Long, asses
             it[feedback] = assessment.feedback
         }
     }
+    cacheInvalidator.invalidateSelectLatestValidGrades(courseExId)
 }

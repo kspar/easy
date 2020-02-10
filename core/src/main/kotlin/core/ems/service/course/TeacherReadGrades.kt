@@ -18,7 +18,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadGradesController {
+class TeacherReadGradesController(val courseService: CourseService) {
 
     data class Resp(@JsonProperty("student_count") val studentCount: Int,
                     @JsonProperty("students")
@@ -62,15 +62,22 @@ class TeacherReadGradesController {
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, caller.id)
 
-        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords, restrictedGroups)
+        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords, restrictedGroups, courseService)
     }
 }
 
 
-private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, queryWords: List<String>,
-                                 restrictedGroups: List<Long>): TeacherReadGradesController.Resp {
+private fun selectGradesResponse(
+        courseId: Long,
+        offset: Int?,
+        limit: Int?,
+        queryWords: List<String>,
+        restrictedGroups: List<Long>,
+        courseService: CourseService
+): TeacherReadGradesController.Resp {
+
     return transaction {
-        val studentsQuery = selectStudentsOnCourseQuery(courseId, queryWords, restrictedGroups)
+        val studentsQuery = courseService.selectStudentsOnCourseQuery(courseId, queryWords, restrictedGroups)
         val studentCount = studentsQuery.count()
         val students = studentsQuery
                 .limit(limit ?: studentCount, offset ?: 0)
@@ -83,13 +90,17 @@ private fun selectGradesResponse(courseId: Long, offset: Int?, limit: Int?, quer
                     )
                 }
 
-        val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId })
+        val exercises = selectExercisesOnCourse(courseId, students.map { it.studentId }, courseService)
         TeacherReadGradesController.Resp(studentCount, students, exercises)
     }
 }
 
 
-private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): List<TeacherReadGradesController.ExercisesResp> {
+private fun selectExercisesOnCourse(
+        courseId: Long,
+        studentIds: List<String>,
+        courseService: CourseService
+): List<TeacherReadGradesController.ExercisesResp> {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                 .slice(CourseExercise.id,
@@ -107,7 +118,7 @@ private fun selectExercisesOnCourse(courseId: Long, studentIds: List<String>): L
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.gradeThreshold],
                             ex[CourseExercise.studentVisible],
-                            selectLatestValidGrades(ex[CourseExercise.id].value, studentIds)
+                            courseService.selectLatestValidGrades(ex[CourseExercise.id].value, studentIds)
                                     .map {
                                         TeacherReadGradesController.GradeResp(
                                                 it.studentId,

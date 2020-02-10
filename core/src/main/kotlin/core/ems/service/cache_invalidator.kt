@@ -1,6 +1,7 @@
 package core.ems.service
 
 import mu.KotlinLogging
+import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Component
 
@@ -8,7 +9,7 @@ private val log = KotlinLogging.logger {}
 
 
 @Component
-class CacheInvalidator {
+class CacheInvalidator(val cacheManager: CacheManager) {
 
     @CacheEvict("submissions", allEntries = true, beforeInvocation = false)
     fun invalidateSubmissionCache() = log.debug { "Invalidating submission cache." }
@@ -21,4 +22,9 @@ class CacheInvalidator {
 
     @CacheEvict("articles", allEntries = true, beforeInvocation = false)
     fun invalidateArticleCache() = log.debug { "Invalidating article cache." }
+
+    fun invalidateSelectLatestValidGrades(courseExerciseId: Long) {
+        log.debug { "Invalidating 'selectLatestValidGrades' cache." }
+        cacheManager.getCache("selectLatestValidGrades")?.evict(courseExerciseId)
+    }
 }

@@ -25,7 +25,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadCourseExercisesController {
+class TeacherReadCourseExercisesController(val courseService: CourseService) {
 
     data class CourseExerciseResp(@JsonProperty("id") val id: String,
                                   @JsonProperty("effective_title") val title: String,
@@ -50,17 +50,17 @@ class TeacherReadCourseExercisesController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return Resp(selectTeacherExercisesOnCourse(courseId, caller.id))
+        return Resp(selectTeacherExercisesOnCourse(courseId, caller.id, courseService))
     }
 }
 
 
-private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String): List<CourseExerciseResp> {
+private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String, courseService: CourseService): List<CourseExerciseResp> {
 
     return transaction {
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
-        val studentQuery = selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups)
+        val studentQuery = courseService.selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups)
 
         val studentCount = studentQuery.count()
         val students = studentQuery.map { it[Student.id].value }
@@ -79,7 +79,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String): Li
                 .mapIndexed { i, ex ->
                     val ceId = ex[CourseExercise.id].value
 
-                    val latestSubmissionValidGrades = selectLatestValidGrades(ceId, students).map { it.grade }
+                    val latestSubmissionValidGrades = courseService.selectLatestValidGrades(ceId, students).map { it.grade }
 
                     val gradeThreshold = ex[CourseExercise.gradeThreshold]
 
