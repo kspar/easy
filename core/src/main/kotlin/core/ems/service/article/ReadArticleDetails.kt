@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.io.Serializable
 
 private val log = KotlinLogging.logger {}
 
@@ -33,16 +34,16 @@ class ReadArticleDetailsController(private val articleService: ArticleService) {
                     @JsonInclude(JsonInclude.Include.NON_NULL)
                     @JsonProperty("public") val public: Boolean?,
                     @JsonInclude(JsonInclude.Include.NON_NULL)
-                    @JsonProperty("aliases") val assets: List<RespAlias>?)
+                    @JsonProperty("aliases") val assets: List<RespAlias>?) : Serializable
 
     data class RespAlias(@JsonProperty("id") val id: String,
                          @JsonSerialize(using = DateTimeSerializer::class)
                          @JsonProperty("created_at") val createdAt: DateTime,
-                         @JsonProperty("created_by") val createdBy: String)
+                         @JsonProperty("created_by") val createdBy: String) : Serializable
 
     data class RespUser(@JsonProperty("id") val id: String,
                         @JsonProperty("given_name") val givenName: String,
-                        @JsonProperty("family_name") val familyName: String)
+                        @JsonProperty("family_name") val familyName: String) : Serializable
 
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
