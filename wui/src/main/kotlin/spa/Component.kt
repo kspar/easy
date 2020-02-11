@@ -47,12 +47,18 @@ abstract class Component(val dstId: String,
      */
     protected open fun postRender() {}
 
+    /**
+     * Produce HTML to be inserted into the destination element before [create]ing this component,
+     * typically indicates loading.
+     */
+    protected open fun renderLoading(): String = ""
+
 
     /**
      * Callback function invoked when this component's state has changed.
-     * The default implementation calls this component's parent's [onStateChanged] i.e. bubbles the change up.
-     *
      * The component should call this function whenever changing its state outside of [create].
+     *
+     * The default implementation calls this component's parent's [onStateChanged] i.e. bubbles the change up.
      */
     var onStateChanged: () -> Unit = { parent?.onStateChanged?.invoke() }
 
@@ -61,6 +67,7 @@ abstract class Component(val dstId: String,
      * Returns a promise that resolves when everything is complete.
      */
     fun createAndBuild(): Promise<*> = doInPromise {
+        paintLoading()
         create().await()
         buildThis()
         children.map { it.createAndBuild() }.unionPromise().await()
@@ -83,5 +90,9 @@ abstract class Component(val dstId: String,
 
     private fun paint() {
         getElemById(dstId).innerHTML = render()
+    }
+
+    private fun paintLoading() {
+        getElemById(dstId).innerHTML = renderLoading()
     }
 }
