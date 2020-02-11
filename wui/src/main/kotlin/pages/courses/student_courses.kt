@@ -13,6 +13,37 @@ import tmRender
 import kotlin.js.Promise
 
 
+class StudentCoursesRootComp(
+        parent: Component?,
+        dstId: String = IdGenerator.nextId()
+) : CacheableComponent<StudentCoursesRootComp.State>(dstId, parent) {
+
+    @Serializable
+    data class State(val coursesState: StudentCourseListComp.State)
+
+    private lateinit var coursesList: StudentCourseListComp
+
+    override val children: List<Component>
+        get() = listOf(coursesList)
+
+    override fun create(): Promise<*> = doInPromise {
+        coursesList = StudentCourseListComp(this)
+    }
+
+    override fun render(): String = tmRender("t-c-stud-courses",
+            "pageTitle" to Str.coursesTitle(),
+            "listDstId" to coursesList.dstId
+    )
+
+    override fun getCacheableState(): State = State(coursesList.getCacheableState())
+
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        coursesList = StudentCourseListComp(this)
+        coursesList.createFromState(state.coursesState)
+    }
+}
+
+
 class StudentCourseListComp(
         parent: Component?,
         dstId: String = IdGenerator.nextId()
@@ -47,9 +78,12 @@ class StudentCourseListComp(
     }
 
     override fun render(): String = tmRender("t-c-stud-courses-list",
-            "pageTitle" to Str.coursesTitle(),
             "noCoursesLabel" to Str.noCoursesLabel(),
             "courses" to courseItems.map { mapOf("dstId" to it.dstId) }
+    )
+
+    override fun renderLoading(): String = tmRender("t-loading-list",
+            "items" to listOf(emptyMap<Nothing, Nothing>(), emptyMap(), emptyMap())
     )
 
     override fun postRender() {
@@ -74,4 +108,3 @@ class StudentCourseItemComp(
             "title" to title
     )
 }
-

@@ -44,6 +44,8 @@
 
 <!-- Components -->
 
+<!-- Common -->
+
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
@@ -52,10 +54,24 @@
     </nav>
 </script>
 
-<script id="t-c-stud-courses-list" type="text/x-handlebars">
+<script id="t-loading-list" type="text/x-handlebars-template">
+    <div class="collection loading-collection loading-list">
+        {{#items}}
+        <div class="item"></div>
+        {{/items}}
+    </div>
+</script>
+
+<!-- Courses page -->
+
+<script id="t-c-stud-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{pageTitle}}</h3>
     </div>
+    <ez-dst id="{{listDstId}}"></ez-dst>
+</script>
+
+<script id="t-c-stud-courses-list" type="text/x-handlebars">
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
             <ez-dst id="{{dstId}}"></ez-dst>
@@ -78,7 +94,7 @@
     <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
 </script>
 
-<script id="t-c-teach-courses-list" type="text/x-handlebars">
+<script id="t-c-teach-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{pageTitle}}</h3>
         {{#canAddCourse}}
@@ -86,6 +102,10 @@
                 <i class="material-icons">add</i><span class="text">{{newCourseLabel}}</span></a>
         {{/canAddCourse}}
     </div>
+    <ez-dst id="{{listDstId}}"></ez-dst>
+</script>
+
+<script id="t-c-teach-courses-list" type="text/x-handlebars">
     <div id="courses-list" class="collection divided-collection">
         {{#courses}}
             <ez-dst id="{{dstId}}"></ez-dst>
@@ -115,6 +135,8 @@
         </a>
     </div>
 </script>
+
+<!-- Course exercises page -->
 
 <script id="t-c-stud-course-exercises" type="text/x-handlebars">
     <ez-dst id="{{crumbDstId}}"></ez-dst>

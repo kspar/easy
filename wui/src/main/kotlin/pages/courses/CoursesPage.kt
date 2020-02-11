@@ -4,7 +4,6 @@ import Auth
 import PageName
 import Role
 import debugFunStart
-import getContainer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -12,7 +11,6 @@ import kotlinx.serialization.Serializable
 import pages.EasyPage
 import parseTo
 import stringify
-import tmRender
 
 
 object CoursesPage : EasyPage() {
@@ -21,10 +19,10 @@ object CoursesPage : EasyPage() {
     data class State(val studentState: StudentState?, val teacherState: TeacherState?)
 
     @Serializable
-    data class StudentState(val listState: StudentCourseListComp.State)
+    data class StudentState(val listState: StudentCoursesRootComp.State)
 
     @Serializable
-    data class TeacherState(val listState: TeacherCourseListComp.State)
+    data class TeacherState(val listState: TeacherCoursesRootComp.State)
 
 
     override val pageName: PageName = PageName.COURSES
@@ -50,32 +48,26 @@ object CoursesPage : EasyPage() {
     }
 
     private suspend fun buildStudentCourses(state: StudentState?) {
-        val lst = StudentCourseListComp(null, "content-container")
+        val root = StudentCoursesRootComp(null, "content-container")
         if (state == null) {
-            lst.createAndBuild().await()
-            val listState = lst.getCacheableState()
-            updateState(State.serializer().stringify(State(StudentState(listState), null)))
+            root.createAndBuild().await()
+            val rootState = root.getCacheableState()
+            updateState(State.serializer().stringify(State(StudentState(rootState), null)))
         } else {
-            lst.createFromState(state.listState).await()
-            lst.rebuild()
+            root.createFromState(state.listState).await()
+            root.rebuild()
         }
     }
 
     private suspend fun buildTeacherCourses(state: TeacherState?, role: Role) {
-        val lst = TeacherCourseListComp(role == Role.ADMIN, null, "content-container")
+        val root = TeacherCoursesRootComp(role == Role.ADMIN, null, "content-container")
         if (state == null) {
-            lst.createAndBuild().await()
-            val listState = lst.getCacheableState()
-            updateState(State.serializer().stringify(State(null, TeacherState(listState))))
+            root.createAndBuild().await()
+            val rootState = root.getCacheableState()
+            updateState(State.serializer().stringify(State(null, TeacherState(rootState))))
         } else {
-            lst.createFromState(state.listState).await()
-            lst.rebuild()
+            root.createFromState(state.listState).await()
+            root.rebuild()
         }
-    }
-
-    override fun clear() {
-        super.clear()
-        getContainer().innerHTML = tmRender("tm-loading-placeholders",
-                mapOf("marginTopRem" to 4, "titleWidthRem" to 20))
     }
 }
