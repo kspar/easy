@@ -44,7 +44,7 @@
 
 <!-- Components -->
 
-<script id="t-c-breadcrumbs" type="text/x-tm">
+<script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
             <a {{#href}}href="{{href}}"{{/href}} class="breadcrumb truncate">{{label}}</a>
@@ -52,7 +52,7 @@
     </nav>
 </script>
 
-<template id="t-c-stud-courses-list">
+<script id="t-c-stud-courses-list" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{pageTitle}}</h3>
     </div>
@@ -72,13 +72,13 @@
             <p class="text">{{noCoursesLabel}}</p>
         </div>
     {{/courses}}
-</template>
+</script>
 
-<template id="t-c-stud-courses-item">
+<script id="t-c-stud-courses-item" type="text/x-handlebars">
     <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
-</template>
+</script>
 
-<template id="t-c-teach-courses-list">
+<script id="t-c-teach-courses-list" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h3 class="title">{{pageTitle}}</h3>
         {{#canAddCourse}}
@@ -102,9 +102,9 @@
             <p class="text">{{noCoursesLabel}}</p>
         </div>
     {{/courses}}
-</template>
+</script>
 
-<template id="t-c-teach-courses-item">
+<script id="t-c-teach-courses-item" type="text/x-handlebars">
     <div class="teacher-course-wrapper">
         <a class="collection-item course-item row" href="/courses/{{id}}/exercises">
             <span class="col xs9 s7 m9">{{title}}</span>
@@ -114,7 +114,7 @@
             <span class="course-student-count">{{count}} {{studentsLabel}}</span>
         </a>
     </div>
-</template>
+</script>
 
 <script id="t-c-stud-course-exercises" type="text/x-handlebars">
     <ez-dst id="{{crumbDstId}}"></ez-dst>
@@ -123,6 +123,8 @@
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
+
+
 
 <script id="tm-stud-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
