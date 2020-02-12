@@ -82,17 +82,20 @@ abstract class Component(val dstId: String,
         children.forEach { it.rebuild() }
     }
 
-
-    private fun buildThis() {
+    protected fun buildThis() {
         paint()
         postRender()
     }
 
-    private fun paint() {
-        getElemById(dstId).innerHTML = render()
+    protected fun paintLoading() {
+        renderLoading().let {
+            if (it.isNotEmpty()) {
+                getElemById(dstId).innerHTML = it
+            }
+        }
     }
 
-    private fun paintLoading() {
-        getElemById(dstId).innerHTML = renderLoading()
+    private fun paint() {
+        getElemById(dstId).innerHTML = render()
     }
 }

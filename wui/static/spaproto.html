@@ -146,6 +146,49 @@
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
 
+<script id="t-c-stud-course-exercises-list" type="text/x-handlebars">
+    <div id="exercises-list" class="collection divided-collection">
+        {{#exercises}}
+            <a class="collection-item bb-wrap" href="{{href}}">
+                <div class="exercise-item">
+                    <span>{{title}}</span>
+                    <span class="exercise-item">
+                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
+                    <span class="grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+}}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+}}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+}}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                    </span>
+                </span>
+                </div>
+                <div class="bb">
+                    {{#completed}}
+                        <span class="bb-item bb-green"></span>
+                    {{/completed}}
+    {{#started}}
+                        <span class="bb-item bb-yellow"></span>
+                    {{/started}}
+    {{#evalMissing}}
+                        <span class="bb-item bb-blue"></span>
+                    {{/evalMissing}}
+    {{#unstarted}}
+                        <span class="bb-item bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+        {{/exercises}}
+    </div>
+</script>
+
+<script id="t-c-stud-course-exercises-item" type="text/x-handlebars">
+
+</script>
+
 
 
 <script id="tm-stud-exercises-list" type="text/x-handlebars-template">
@@ -251,15 +294,6 @@
         <label for="course-title">{{newCourseName}}</label>
     </div>
     <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
-</script>
-
-<script id="tm-loading-placeholders" type="text/x-handlebars-template">
-    <div class="collection loading-collection loading-courses" style="margin-top: {{marginTopRem}}rem;">
-        <div class="item title" style="width: {{titleWidthRem}}rem;"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-    </div>
 </script>
 
 <script id="tm-loading-exercise" type="text/x-handlebars-template">
