@@ -53,6 +53,7 @@ fun setupHistoryNavInterception() {
 }
 
 private fun handleLocalLinkClick(url: String) {
+    PageManager.preNavigate()
     window.history.pushState(null, "", url)
     PageManager.updatePage()
 }

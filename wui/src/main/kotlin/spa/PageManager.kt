@@ -26,7 +26,6 @@ object PageManager {
         val path = window.location.pathname
         val newPage = pageFromPath(path)
 
-        currentPage?.destruct()
         currentPage = newPage
 
         newPage.assertAuthorisation()
@@ -37,6 +36,7 @@ object PageManager {
     }
 
     fun navigateTo(path: String) {
+        preNavigate()
         window.history.pushState(null, "", path)
         updatePage()
     }
@@ -48,6 +48,10 @@ object PageManager {
 
     fun registerPages(newPages: List<Page>) {
         pages += newPages
+    }
+
+    fun preNavigate() {
+        currentPage?.onPreNavigation()
     }
 
     private fun pageFromPath(path: String): Page {

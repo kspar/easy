@@ -51,6 +51,14 @@ abstract class Page {
     open fun destruct() {}
 
     /**
+     * Called *before* navigating away from this page to an internal destination using regular navigation i.e.
+     * links or [PageManager.navigateTo]. Not called when navigating to external sites or using browser history navigation.
+     * Can be useful for caching pages (see [updateState]).
+     * The default implementation does nothing.
+     */
+    open fun onPreNavigation() {}
+
+    /**
      * Update page state in history. The given state string will be later passed to [build] if it's available.
      * This state persists over browser navigation but not refresh.
      */

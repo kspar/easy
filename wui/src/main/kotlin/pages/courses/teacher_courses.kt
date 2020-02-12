@@ -31,6 +31,14 @@ class TeacherCoursesRootComp(
         coursesList = TeacherCourseListComp(this)
     }
 
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        coursesList = TeacherCourseListComp(this)
+    }
+
+    override fun createAndBuildChildrenFromState(state: State): Promise<*> = doInPromise {
+        coursesList.createAndBuildFromState(state.coursesState).await()
+    }
+
     override fun render(): String = tmRender("t-c-teach-courses",
             "pageTitle" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
             "canAddCourse" to isAdmin,
@@ -39,11 +47,6 @@ class TeacherCoursesRootComp(
     )
 
     override fun getCacheableState(): State = State(coursesList.getCacheableState())
-
-    override fun createFromState(state: State): Promise<*> = doInPromise {
-        coursesList = TeacherCourseListComp(this)
-        coursesList.createFromState(state.coursesState)
-    }
 }
 
 

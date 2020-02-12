@@ -30,17 +30,20 @@ class StudentCoursesRootComp(
         coursesList = StudentCourseListComp(this)
     }
 
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        coursesList = StudentCourseListComp(this)
+    }
+
+    override fun createAndBuildChildrenFromState(state: State): Promise<*> = doInPromise {
+        coursesList.createAndBuildFromState(state.coursesState).await()
+    }
+
     override fun render(): String = tmRender("t-c-stud-courses",
             "pageTitle" to Str.coursesTitle(),
             "listDstId" to coursesList.dstId
     )
 
     override fun getCacheableState(): State = State(coursesList.getCacheableState())
-
-    override fun createFromState(state: State): Promise<*> = doInPromise {
-        coursesList = StudentCourseListComp(this)
-        coursesList.createFromState(state.coursesState)
-    }
 }
 
 
