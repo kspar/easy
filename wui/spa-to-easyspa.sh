@@ -9,6 +9,9 @@ sed -i "$s" static/spaproto.html
 # Only html
 scp static/spaproto.html devgate:/var/www/wui/index.html
 
+# Only main CSS file
+#scp static/css/main.css devgate:/var/www/wui/static/css/main.css
+
 # All CSS files
 scp -r static/css/ devgate:/var/www/wui/static
 
