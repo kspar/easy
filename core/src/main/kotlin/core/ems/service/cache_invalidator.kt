@@ -23,6 +23,11 @@ class CacheInvalidator(val cacheManager: CacheManager) {
     @CacheEvict("articles", allEntries = true, beforeInvocation = false)
     fun invalidateArticleCache() = log.debug { "Invalidating article cache." }
 
+    fun invalidateAccountCache(username: String) {
+        log.debug { "Invalidating 'account' cache." }
+        cacheManager.getCache("account")?.evict(username)
+    }
+
     fun invalidateSelectLatestValidGrades(courseExerciseId: Long) {
         log.debug { "Invalidating 'selectLatestValidGrades' cache." }
         cacheManager.getCache("selectLatestValidGrades")?.evict(courseExerciseId)

@@ -4,17 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.db.Account.email
-import core.db.Account.familyName
-import core.db.Account.givenName
-import core.db.Account.moodleUsername
 import core.ems.service.CacheInvalidator
+import core.ems.service.PrivateCachingService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -28,10 +24,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateAccountController {
-
-    @Autowired
-    lateinit var cacheInvalidator: CacheInvalidator
+class UpdateAccountController(val privateCachingService: PrivateCachingService, val cacheInvalidator: CacheInvalidator) {
 
     data class PersonalDataBody(@JsonProperty("first_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val firstName: String,
@@ -55,17 +48,18 @@ class UpdateAccountController {
                 correctNameCapitalisation(dto.lastName))
 
         log.debug { "Update personal data for $account" }
-        val isChanged = updateAccount(account)
+        val isChanged = updateAccount(account, privateCachingService)
 
         if (isChanged) {
             cacheInvalidator.invalidateTotalUserCache()
+            cacheInvalidator.invalidateAccountCache(account.username)
         }
 
         if (caller.isStudent()) {
             log.debug { "Update student ${caller.id}" }
             updateStudent(account)
             if (isChanged) {
-                updateStudentCourseAccesses(account)
+                updateStudentCourseAccesses(account, cacheInvalidator)
             }
         }
         if (caller.isTeacher()) {
@@ -93,21 +87,10 @@ private fun correctNameCapitalisation(name: String) =
                     }
                 }
 
-private fun updateAccount(accountData: AccountData): Boolean {
-    data class Acc(val id: String, val email: String, val moodleUsername: String?, val givenName: String, val familyName: String)
-
+private fun updateAccount(accountData: AccountData, privateCachingService: PrivateCachingService): Boolean {
     return transaction {
 
-        val oldAccount = Account.select { Account.id eq accountData.username }
-                .map {
-                    Acc(
-                            it[Account.id].value,
-                            it[email],
-                            it[moodleUsername],
-                            it[givenName],
-                            it[familyName]
-                    )
-                }.singleOrNull()
+        val oldAccount = privateCachingService.selectAccount(accountData.username)
 
         if (oldAccount == null) {
             Account.insert {
@@ -179,7 +162,7 @@ private fun selectMessages(): UpdateAccountController.Resp {
     }
 }
 
-private fun updateStudentCourseAccesses(accountData: AccountData) {
+private fun updateStudentCourseAccesses(accountData: AccountData, cacheInvalidator: CacheInvalidator) {
     log.debug { "Updating student course accesses" }
 
     val student = EntityID(accountData.username, Student)
@@ -239,6 +222,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
             Account.update({ Account.id eq accountData.username }) {
                 it[moodleUsername] = pendingAccess.moodleUsername
             }
+            // Clear cache for this account
+            cacheInvalidator.invalidateAccountCache(accountData.username)
 
             val accessId = StudentCourseAccess.insertAndGetId {
                 it[StudentCourseAccess.student] = student
