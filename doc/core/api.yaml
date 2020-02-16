@@ -1302,6 +1302,9 @@ paths:
                       type: string
                     family_name:
                       type: string
+                    created_at:
+                      type: string
+                      format: date-time
                     groups:
                       type: array
                       items:
@@ -1326,6 +1329,9 @@ paths:
                       type: string
                     family_name:
                       type: string
+                    created_at:
+                      type: string
+                      format: date-time
                     groups:
                       type: array
                       items:

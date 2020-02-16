@@ -46,6 +46,7 @@ class AddTeachersToCourse {
 
 
 private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToCourse.Req) {
+    val time = DateTime.now()
     transaction {
         val teachersWithoutAccess =
                 teachers.teachers.map {
@@ -67,6 +68,7 @@ private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToC
         TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
             this[TeacherCourseAccess.teacher] = EntityID(it, Teacher)
             this[TeacherCourseAccess.course] = EntityID(courseId, Course)
+            this[TeacherCourseAccess.createdAt] = time
         }
     }
 }

@@ -105,6 +105,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
             val accessId = StudentCourseAccess.insertAndGetId {
                 it[course] = courseEntity
                 it[student] = EntityID(newStudent.id, Student)
+                it[createdAt] = now
             }
             StudentGroupAccess.batchInsert(newStudent.groups) {
                 this[StudentGroupAccess.student] = newStudent.id

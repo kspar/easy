@@ -1192,7 +1192,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1268,7 +1268,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1339,7 +1339,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1410,7 +1410,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1481,7 +1481,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1552,7 +1552,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",

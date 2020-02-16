@@ -817,4 +817,18 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="160220-1" author="priit">
+        <addColumn tableName="student_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="teacher_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>
