@@ -56,17 +56,23 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
         }
 
         if (caller.isStudent()) {
-            log.debug { "Update student ${caller.id}" }
-            updateStudent(account)
+            if (!privateCachingService.studentExists(account.username)) {
+                log.debug { "Update student ${caller.id}" }
+                updateStudent(account)
+            }
             if (isChanged) {
-                updateStudentCourseAccesses(account, cacheInvalidator)
+                log.debug { "Update student course access ${caller.id}" }
+                updateStudentCourseAccesses(account)
+                cacheInvalidator.invalidateAccountCache(account.username)
             }
         }
-        if (caller.isTeacher()) {
+
+        if (caller.isTeacher() && !privateCachingService.teacherExists(account.username)) {
             log.debug { "Update teacher ${caller.id}" }
             updateTeacher(account)
         }
-        if (caller.isAdmin()) {
+
+        if (caller.isAdmin() && !privateCachingService.adminExists(account.username)) {
             log.debug { "Update admin ${caller.id}" }
             updateAdmin(account)
             // Admins should also have a teacher entity to add assessments, exercises etc
@@ -162,7 +168,7 @@ private fun selectMessages(): UpdateAccountController.Resp {
     }
 }
 
-private fun updateStudentCourseAccesses(accountData: AccountData, cacheInvalidator: CacheInvalidator) {
+private fun updateStudentCourseAccesses(accountData: AccountData) {
     log.debug { "Updating student course accesses" }
 
     val student = EntityID(accountData.username, Student)
@@ -222,8 +228,6 @@ private fun updateStudentCourseAccesses(accountData: AccountData, cacheInvalidat
             Account.update({ Account.id eq accountData.username }) {
                 it[moodleUsername] = pendingAccess.moodleUsername
             }
-            // Clear cache for this account
-            cacheInvalidator.invalidateAccountCache(accountData.username)
 
             val accessId = StudentCourseAccess.insertAndGetId {
                 it[StudentCourseAccess.student] = student
@@ -246,7 +250,5 @@ private fun updateStudentCourseAccesses(accountData: AccountData, cacheInvalidat
         StudentMoodlePendingAccess.deleteWhere {
             StudentMoodlePendingAccess.id inList pendingAccesses.map { it.id }
         }
-
     }
 }
-
