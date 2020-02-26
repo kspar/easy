@@ -87,6 +87,8 @@ class ReadParticipantsOnCourseController {
     @GetMapping("/courses/{courseId}/participants")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @RequestParam("role", required = false) roleReq: String?,
+                   @RequestParam("offset", required = false) offsetStr: String?,
+                   @RequestParam("limit", required = false) limitStr: String?,
                    caller: EasyUser): Resp {
 
         log.debug { "Getting participants on course $courseIdStr for ${caller.id} (role: $roleReq)" }
@@ -102,22 +104,25 @@ class ReadParticipantsOnCourseController {
         val syncStudents = moodleState?.syncStudents
         val syncGrades = moodleState?.syncGrades
 
+        val offset = offsetStr?.toIntOrNull()
+        val limit = limitStr?.toIntOrNull()
+
         when (roleReq) {
             Role.TEACHER.paramValue -> {
-                val teachers = selectTeachersOnCourse(courseId)
+                val teachers = selectTeachersOnCourse(courseId, offset, limit)
                 return Resp(shortname, syncStudents, syncGrades, null, teachers, null, null)
             }
             Role.STUDENT.paramValue -> {
-                val students = selectStudentsOnCourse(courseId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId)
-                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId)
+                val students = selectStudentsOnCourse(courseId, offset, limit)
+                val studentsPending = selectStudentsPendingOnCourse(courseId, offset, limit)
+                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
                 return Resp(shortname, syncStudents, syncGrades, students, null, studentsPending, studentsMoodle)
             }
             Role.ALL.paramValue, null -> {
-                val students = selectStudentsOnCourse(courseId)
-                val teachers = selectTeachersOnCourse(courseId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId)
-                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId)
+                val students = selectStudentsOnCourse(courseId, offset, limit)
+                val teachers = selectTeachersOnCourse(courseId, offset, limit)
+                val studentsPending = selectStudentsPendingOnCourse(courseId, offset, limit)
+                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
                 return Resp(shortname, syncStudents, syncGrades, students, teachers, studentsPending, studentsMoodle)
             }
             else -> throw InvalidRequestException("Invalid parameter $roleReq")
@@ -126,7 +131,7 @@ class ReadParticipantsOnCourseController {
 }
 
 
-private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentsResp> {
+private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentsResp> {
     data class StudentOnCourse(val id: String,
                                val email: String,
                                val givenName: String,
@@ -149,6 +154,9 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
                         Group.name
                 )
                 .select { StudentCourseAccess.course eq courseId }
+                .also {
+                    it.limit(limit?: it.count(), offset ?: 0)
+                }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
                     Pair(
@@ -184,7 +192,7 @@ private fun selectStudentsOnCourse(courseId: Long): List<ReadParticipantsOnCours
     }
 }
 
-private fun selectStudentsPendingOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentPendingResp> {
+private fun selectStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentPendingResp> {
     data class PendingStudent(val email: String, val validFrom: DateTime)
     data class StudentGroup(val id: String, val name: String)
 
@@ -195,6 +203,9 @@ private fun selectStudentsPendingOnCourse(courseId: Long): List<ReadParticipants
                         Group.id,
                         Group.name)
                 .select { StudentPendingAccess.course eq courseId }
+                .also {
+                    it.limit(limit?: it.count(), offset ?: 0)
+                }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
                     Pair(
@@ -222,7 +233,7 @@ private fun selectStudentsPendingOnCourse(courseId: Long): List<ReadParticipants
     }
 }
 
-private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.StudentMoodlePendingResp> {
+private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentMoodlePendingResp> {
     data class PendingStudent(val moodleUsername: String, val email: String)
     data class StudentGroup(val id: String, val name: String)
 
@@ -233,6 +244,9 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadPartic
                         Group.id,
                         Group.name)
                 .select { StudentMoodlePendingAccess.course eq courseId }
+                .also {
+                    it.limit(limit?: it.count(), offset ?: 0)
+                }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
                     Pair(
@@ -260,7 +274,7 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<ReadPartic
     }
 }
 
-private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCourseController.TeachersResp> {
+private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.TeachersResp> {
     data class TeacherOnCourse(val id: String,
                                val email: String,
                                val givenName: String,
@@ -280,6 +294,9 @@ private fun selectTeachersOnCourse(courseId: Long): List<ReadParticipantsOnCours
                         Group.name,
                         TeacherCourseAccess.createdAt)
                 .select { TeacherCourseAccess.course eq courseId }
+                .also {
+                    it.limit(limit?: it.count(), offset ?: 0)
+                }
                 .map {
                     val groupId: EntityID<Long>? = it[Group.id]
                     Pair(

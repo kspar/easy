@@ -1271,6 +1271,8 @@ paths:
     get:
       summary: Get all participants (including pending access) who are registered to this course.
       parameters:
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
         - in: query
           name: role
           type: string
