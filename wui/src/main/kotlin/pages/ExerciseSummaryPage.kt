@@ -28,9 +28,11 @@ import moveClass
 import objOf
 import observeValueChange
 import onChange
+import onSingleClickWithDisabled
 import onVanillaClick
 import org.w3c.dom.*
 import queries.*
+import saveAsFile
 import successMessage
 import tmRender
 import toEstonianString
@@ -46,6 +48,7 @@ object ExerciseSummaryPage : EasyPage() {
 
     @Serializable
     data class TeacherExercise(
+            val exercise_id: String,
             val title: String,
             val title_alias: String?,
             val instructions_html: String?,
@@ -218,7 +221,7 @@ object ExerciseSummaryPage : EasyPage() {
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
         val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
         buildTeacherTesting(courseId, courseExerciseId)
-        buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.threshold)
+        buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
         initTooltips()
         fl?.end()
@@ -233,6 +236,8 @@ object ExerciseSummaryPage : EasyPage() {
         val courseTitle = BasicCourseInfo.get(courseId).await().title
         val exercise = exercisePromise.await()
                 .parseTo(TeacherExercise.serializer()).await()
+
+        debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 
         getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                 "coursesLabel" to Str.myCourses(),
@@ -371,15 +376,27 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, threshold: Int) {
+    private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int) {
         val fl = debugFunStart("buildTeacherStudents")
-        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students")
-        buildTeacherStudentsFrame(courseId, courseExerciseId, threshold)
-        buildTeacherStudentsList(courseId, courseExerciseId, threshold)
+        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
+                "exportSubmissionsLabel" to "Lae alla"
+        )
+        buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
+        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold)
+
+        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
+            debug { "Downloading submissions" }
+            val blob = fetchEms("/export/exercises/$exerciseId/submissions/latest", ReqMethod.POST,
+                    mapOf("courses" to listOf(mapOf("id" to courseId))), successChecker = { http200 }).await()
+                    .blob().await()
+            val filename = "esitused-kursus-$courseId-ul-$courseExerciseId.zip"
+            blob.saveAsFile(filename)
+        }
+
         fl?.end()
     }
 
-    private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, threshold: Int) {
+    private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int) {
         fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
                 errorHandler = ErrorHandlers.noCourseAccessPage).then {
             it.parseTo(Groups.serializer())
@@ -399,7 +416,7 @@ object ExerciseSummaryPage : EasyPage() {
                     MainScope().launch {
                         val group = groupSelect.value
                         debug { "Selected group $group" }
-                        buildTeacherStudentsList(courseId, courseExerciseId, threshold, group)
+                        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, group)
                     }
                 }
             }
@@ -410,8 +427,8 @@ object ExerciseSummaryPage : EasyPage() {
         Materialize.FormSelect.init(getNodelistBySelector("select"), objOf("coverTrigger" to false))
     }
 
-    private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, threshold: Int,
-                                                 groupId: String? = null) {
+    private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, exerciseId: String,
+                                                 threshold: Int, groupId: String? = null) {
 
         val q = createQueryString("group" to groupId)
         val teacherStudents = fetchEms(
@@ -469,7 +486,7 @@ object ExerciseSummaryPage : EasyPage() {
                     ?: error("No data-family-name found on student item")
 
             it.onVanillaClick(true) {
-                buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName, false)
+                buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, id, givenName, familyName, false)
             }
         }
 
@@ -477,7 +494,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildStudentTab(courseId: String, courseExerciseId: String, threshold: Int,
+    private fun buildStudentTab(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int,
                                 studentId: String, givenName: String, familyName: String, isAllSubsOpen: Boolean) {
 
         suspend fun addAssessment(grade: Int, feedback: String, submissionId: String) {
@@ -508,8 +525,8 @@ object ExerciseSummaryPage : EasyPage() {
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
                         successMessage { Str.assessmentAddedMsg() }
-                        buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
-                        buildTeacherStudents(courseId, courseExerciseId, threshold)
+                        buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
+                        buildTeacherStudents(courseId, courseExerciseId, exerciseId, threshold)
                     }
                 }
 
@@ -561,7 +578,7 @@ object ExerciseSummaryPage : EasyPage() {
 
             getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
                 val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null
-                buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isAllSubsBoxOpen)
+                buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, studentId, givenName, familyName, isAllSubsBoxOpen)
             }
         }
 

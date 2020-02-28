@@ -1,3 +1,6 @@
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.Node
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
@@ -33,4 +36,18 @@ fun Node.onChange(f: (event: Event) -> Unit) {
     this.addEventListener("change", { event ->
         f(event)
     })
+}
+
+fun HTMLButtonElement.onSingleClickWithDisabled(disabledText: String, f: suspend (event: MouseEvent ) -> Unit) {
+    this.onVanillaClick(true) {
+        val btn = this
+        MainScope().launch {
+            btn.disabled = true
+            val activeText = btn.textContent
+            btn.textContent = disabledText
+            f(it)
+            btn.textContent = activeText
+            btn.disabled = false
+        }
+    }
 }
