@@ -11,4 +11,6 @@ object AppProperties {
 
     const val MATHJAX_SRC = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
     const val MATHJAX_CONF = "MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};"
+
+    const val GRADE_TABLE_ROWS_ON_PAGE = 50
 }

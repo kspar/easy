@@ -19,7 +19,7 @@ import kotlin.math.min
 
 object GradeTablePage : EasyPage() {
 
-    private const val PAGE_STEP: Int = 50
+    private const val PAGE_STEP = AppProperties.GRADE_TABLE_ROWS_ON_PAGE
 
     @Serializable
     data class GradeTable(
