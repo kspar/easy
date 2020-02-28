@@ -80,6 +80,7 @@ private fun selectGradesResponse(
         val studentsQuery = courseService.selectStudentsOnCourseQuery(courseId, queryWords, restrictedGroups)
         val studentCount = studentsQuery.count()
         val students = studentsQuery
+                .orderBy(Account.familyName to SortOrder.ASC, Account.givenName to SortOrder.ASC)
                 .limit(limit ?: studentCount, offset ?: 0)
                 .map {
                     TeacherReadGradesController.StudentsResp(
