@@ -617,6 +617,7 @@ nav.crumb-wrap .breadcrumb:before {
     transition: opacity .5s ease-in-out;
     visibility: hidden;
     opacity: 0;
+    cursor: default;
 }
 
 .editor-top #sync-indicator .icon.visible {
@@ -726,6 +727,14 @@ nav.crumb-wrap .breadcrumb:before {
 .grades-wrap .post-table-wrap {
     display: flex;
     justify-content: flex-end;
+}
+
+.grades-wrap .pre-table-wrap {
+    margin-bottom: 2rem;
+}
+
+.grades-wrap .post-table-wrap {
+    margin-top: 2rem;
 }
 
 .grade-table-wrap table > tbody > tr {
@@ -1330,7 +1339,6 @@ div.title-wrap > .title-button > i.material-icons {
 
 i.material-icons {
     vertical-align: middle;
-    cursor: default;
 }
 
 a i.material-icons,
@@ -1378,6 +1386,31 @@ button i.material-icons {
 
 .waves-effect.waves-green .waves-ripple {
     background-color: #a5c9a4;
+}
+
+
+/** Pagination **/
+
+ez-pagination {
+    display: flex;
+    align-items: flex-end;
+}
+
+ez-pageinfo {
+    font-size: .9em;
+    margin-right: 2rem;
+}
+
+ez-pagebtn {
+    display: inline-block;
+    margin: 0 .2rem;
+    color: rgba(0, 0, 0, 0.54);
+    cursor: pointer;
+}
+
+ez-pagebtn[disabled] {
+    color: rgba(0, 0, 0, .26);
+    cursor: default;
 }
 
 

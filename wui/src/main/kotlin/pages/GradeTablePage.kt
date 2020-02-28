@@ -4,16 +4,22 @@ import PageName
 import Role
 import Str
 import getContainer
+import getElemsByClass
+import isNotNullAndTrue
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
+import onVanillaClick
 import queries.*
 import tmRender
 import kotlin.browser.window
+import kotlin.math.min
 
 object GradeTablePage : EasyPage() {
+
+    private const val PAGE_STEP: Int = 50
 
     @Serializable
     data class GradeTable(
@@ -42,8 +48,8 @@ object GradeTablePage : EasyPage() {
     @Serializable
     data class Grade(
             val student_id: String,
-            val grade: Int,
-            val grader_type: GraderType,
+            val grade: Int? = null,
+            val grader_type: GraderType? = null,
             val feedback: String? = null
     )
 
@@ -66,9 +72,13 @@ object GradeTablePage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         val courseId = extractSanitizedCourseId(window.location.pathname)
+        buildTable(courseId, 0, PAGE_STEP)
+    }
 
+    private fun buildTable(courseId: String, offset: Int, limit: Int) {
         MainScope().launch {
-            val gradesPromise = fetchEms("/courses/teacher/$courseId/grades", ReqMethod.GET,
+            val q = createQueryString("offset" to offset.toString(), "limit" to limit.toString())
+            val gradesPromise = fetchEms("/courses/teacher/$courseId/grades$q", ReqMethod.GET,
                     successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
             val courseTitle = BasicCourseInfo.get(courseId).await().title
 
@@ -86,9 +96,13 @@ object GradeTablePage : EasyPage() {
             val gradesMap = mutableMapOf<String, MutableList<GradeWithInfo>>()
             gradeTable.exercises.forEach { ex ->
                 ex.grades.forEach {
-                    val status = if (it.grade >= ex.grade_threshold) ExerciseStatus.FINISHED else ExerciseStatus.UNFINISHED
+                    val gradeInfo = when {
+                        it.grade == null -> GradeWithInfo("-", ExerciseStatus.UNGRADED)
+                        it.grade >= ex.grade_threshold -> GradeWithInfo(it.grade.toString(), ExerciseStatus.FINISHED)
+                        else -> GradeWithInfo(it.grade.toString(), ExerciseStatus.UNFINISHED)
+                    }
                     gradesMap.getOrPut(it.student_id) { mutableListOf() }
-                            .add(GradeWithInfo(it.grade.toString(), status))
+                            .add(gradeInfo)
                 }
                 // Add "grade missing" grades
                 val missingStudents = allStudents - ex.grades.map { it.student_id }
@@ -103,6 +117,7 @@ object GradeTablePage : EasyPage() {
                     objOf(
                             "grade" to it.grade,
                             "unstarted" to (it.status == ExerciseStatus.UNSTARTED),
+                            "ungraded" to (it.status == ExerciseStatus.UNGRADED),
                             "unfinished" to (it.status == ExerciseStatus.UNFINISHED),
                             "finished" to (it.status == ExerciseStatus.FINISHED)
                     )
@@ -114,23 +129,66 @@ object GradeTablePage : EasyPage() {
                 )
             }.toTypedArray()
 
+            data class PaginationConf(val pageStart: Int, val pageEnd: Int, val pageTotal: Int, val canGoBack: Boolean, val canGoForward: Boolean)
+
+            val paginationConf = if (gradeTable.student_count > PAGE_STEP) {
+                PaginationConf(offset + 1, min(offset + limit, gradeTable.student_count), gradeTable.student_count,
+                        offset != 0, offset + limit < gradeTable.student_count)
+            } else null
+
             getContainer().innerHTML = tmRender("tm-teach-gradetable", mapOf(
                     "myCoursesLabel" to Str.myCourses(),
                     "courseHref" to "/courses/$courseId/exercises",
                     "title" to courseTitle,
                     "gradesLabel" to Str.gradesLabel(),
                     "exercises" to exercises,
-                    "students" to students
+                    "students" to students,
+                    "hasPagination" to (paginationConf != null),
+                    "pageStart" to paginationConf?.pageStart,
+                    "pageEnd" to paginationConf?.pageEnd,
+                    "pageTotal" to paginationConf?.pageTotal,
+                    "pageTotalLabel" to ", kokku ",
+                    "canGoBack" to paginationConf?.canGoBack,
+                    "canGoForward" to paginationConf?.canGoForward
             ))
-        }
-    }
 
-    private fun extractSanitizedCourseId(path: String): String {
-        val match = path.match("^/courses/(\\w+)/grades/?$")
-        if (match != null && match.size == 2) {
-            return match[1]
-        } else {
-            error("Unexpected match on path: ${match?.joinToString()}")
+            if (paginationConf?.canGoBack.isNotNullAndTrue) {
+                getElemsByClass("go-first").onVanillaClick(true) {
+                    buildTable(courseId, 0, PAGE_STEP)
+                }
+                getElemsByClass("go-back").onVanillaClick(true) {
+                    buildTable(courseId, offset - PAGE_STEP, PAGE_STEP)
+                }
+            }
+
+            if (paginationConf?.canGoForward.isNotNullAndTrue) {
+                getElemsByClass("go-forward").onVanillaClick(true) {
+                    buildTable(courseId, offset + PAGE_STEP, PAGE_STEP)
+                }
+                getElemsByClass("go-last").onVanillaClick(true) {
+                    buildTable(courseId, getLastPageOffset(gradeTable.student_count, PAGE_STEP), PAGE_STEP)
+                }
+            }
         }
     }
 }
+
+private fun getLastPageOffset(totalCount: Int, step: Int): Int {
+    val itemsOnLastPageRaw = totalCount % step
+    val itemsOnLastPage = when {
+        itemsOnLastPageRaw == 0 && totalCount == 0 -> 0
+        itemsOnLastPageRaw == 0 -> step
+        else -> itemsOnLastPageRaw
+    }
+    return totalCount - itemsOnLastPage
+}
+
+private fun extractSanitizedCourseId(path: String): String {
+    val match = path.match("^/courses/(\\w+)/grades/?$")
+    if (match != null && match.size == 2) {
+        return match[1]
+    } else {
+        error("Unexpected match on path: ${match?.joinToString()}")
+    }
+}
+

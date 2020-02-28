@@ -23,6 +23,12 @@ fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit)
     })
 }
 
+fun List<Node>.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit) {
+    this.forEach {
+        it.onVanillaClick(preventDefault, f)
+    }
+}
+
 fun Node.onChange(f: (event: Event) -> Unit) {
     this.addEventListener("change", { event ->
         f(event)
