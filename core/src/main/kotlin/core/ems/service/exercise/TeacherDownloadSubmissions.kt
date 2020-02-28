@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
@@ -46,7 +47,7 @@ class TeacherDownloadSubmissionsController {
                 req.courses.map {
                     it.id.idToLongOrInvalidReq()
                 }.flatMap {
-                    assertTeacherHasAccessToCourse(caller.id, it)
+                    assertTeacherOrAdminHasAccessToCourse(caller, it)
                     selectSubmission(exerciseId, it, caller.id)
                 },
                 response.outputStream)
