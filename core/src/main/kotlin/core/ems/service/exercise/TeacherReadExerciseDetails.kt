@@ -29,28 +29,30 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadExDetailsCont {
 
-    data class Resp(@JsonProperty("title") val title: String,
-                    @JsonProperty("title_alias") val titleAlias: String?,
-                    @JsonProperty("instructions_html") val instructionsHtml: String?,
-                    @JsonProperty("instructions_adoc") val instructionsAdoc: String?,
-                    @JsonProperty("text_html") val textHtml: String?,
-                    @JsonProperty("text_adoc") val textAdoc: String?,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
-                    @JsonProperty("grader_type") val grader: GraderType,
-                    @JsonProperty("threshold") val threshold: Int,
-                    @JsonSerialize(using = DateTimeSerializer::class)
-                    @JsonProperty("last_modified") val lastModified: DateTime,
-                    @JsonProperty("student_visible") val studentVisible: Boolean,
-                    @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
-                    @JsonProperty("grading_script") val gradingScript: String?,
-                    @JsonProperty("container_image") val containerImage: String?,
-                    @JsonProperty("max_time_sec") val maxTime: Int?,
-                    @JsonProperty("max_mem_mb") val maxMem: Int?,
-                    @JsonProperty("assets") val assets: List<RespAsset>?,
-                    @JsonProperty("executors") val executors: List<RespExecutor>?)
+    data class Resp(
+            @JsonProperty("exercise_id") val exerciseId: String,
+            @JsonProperty("title") val title: String,
+            @JsonProperty("title_alias") val titleAlias: String?,
+            @JsonProperty("instructions_html") val instructionsHtml: String?,
+            @JsonProperty("instructions_adoc") val instructionsAdoc: String?,
+            @JsonProperty("text_html") val textHtml: String?,
+            @JsonProperty("text_adoc") val textAdoc: String?,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+            @JsonProperty("grader_type") val grader: GraderType,
+            @JsonProperty("threshold") val threshold: Int,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("last_modified") val lastModified: DateTime,
+            @JsonProperty("student_visible") val studentVisible: Boolean,
+            @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
+            @JsonProperty("grading_script") val gradingScript: String?,
+            @JsonProperty("container_image") val containerImage: String?,
+            @JsonProperty("max_time_sec") val maxTime: Int?,
+            @JsonProperty("max_mem_mb") val maxMem: Int?,
+            @JsonProperty("assets") val assets: List<RespAsset>?,
+            @JsonProperty("executors") val executors: List<RespExecutor>?)
 
     data class RespAsset(@JsonProperty("file_name") val fileName: String,
                          @JsonProperty("file_content") val fileContent: String)
@@ -80,7 +82,8 @@ class TeacherReadExDetailsCont {
 private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): TeacherReadExDetailsCont.Resp? {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.softDeadline,
+                .slice(Exercise.id,
+                        CourseExercise.softDeadline,
                         CourseExercise.hardDeadline,
                         CourseExercise.gradeThreshold,
                         CourseExercise.studentVisible,
@@ -111,6 +114,7 @@ private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): Teach
                             } else null
 
                     TeacherReadExDetailsCont.Resp(
+                            it[Exercise.id].value.toString(),
                             it[ExerciseVer.title],
                             it[CourseExercise.titleAlias],
                             it[CourseExercise.instructionsHtml],

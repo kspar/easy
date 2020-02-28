@@ -976,6 +976,8 @@ paths:
           description: Exercise details.
           schema:
             properties:
+              exercise_id:
+                type: string
               title:
                 type: string
               title_alias:
@@ -1043,6 +1045,7 @@ paths:
                     - id
                     - name
             required:
+              - exercise_id
               - title
               - grader_type
               - threshold
