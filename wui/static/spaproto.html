@@ -454,27 +454,40 @@
 
 <script id="tm-teach-exercise-students" type="text/x-handlebars-template">
     <div id="students-frame"></div>
-    <button id="export-submissions-button" class="waves-effect waves-light btn">{{exportSubmissionsLabel}}</button>
     <div id="students-list"></div>
 </script>
 
 <script id="tm-teach-exercise-students-frame" type="text/x-handlebars-template">
-    {{#groupLabel}}
-        <div class="input-field group-select-wrap">
-            <select id="group-select" {{^manyGroups}}disabled{{/manyGroups}}>
-                {{#manyGroups}}
-                    <option value="">{{allLabel}}</option>
-                {{/manyGroups}}
-                {{#groups}}
-                    <option value="{{id}}">{{name}}</option>
-                {{/groups}}
-            </select>
-            <label>{{groupLabel}}</label>
-        </div>
-    {{/groupLabel}}
+    <div style="display: flex; align-items: baseline; {{#groupLabel}}justify-content: space-between;{{/groupLabel}} {{^groupLabel}}justify-content: flex-end;{{/groupLabel}}">
+        {{#groupLabel}}
+            <div class="input-field group-select-wrap">
+                <select id="group-select" {{^manyGroups}}disabled{{/manyGroups}}>
+                    {{#manyGroups}}
+                        <option value="">{{allLabel}}</option>
+                    {{/manyGroups}}
+                    {{#groups}}
+                        <option value="{{id}}">{{name}}</option>
+                    {{/groups}}
+                </select>
+                <label>{{groupLabel}}</label>
+            </div>
+        {{/groupLabel}}
+        <button id="export-submissions-button" class="waves-effect waves-light btn">{{exportSubmissionsLabel}}</button>
+    </div>
 </script>
 
 <script id="tm-teach-exercise-students-list" type="text/x-handlebars-template">
+    {{#hasPagination}}
+        <ez-pagination>
+            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+            <ez-pagenav>
+                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+            ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+            ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+            </ez-pagenav>
+        </ez-pagination>
+    {{/hasPagination}}
     <div class="collection divided-collection">
         {{#students}}
             <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
@@ -509,6 +522,17 @@
             </a>
         {{/students}}
     </div>
+    {{#hasPagination}}
+        <ez-pagination>
+            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+            <ez-pagenav>
+                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+            ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+            ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+            </ez-pagenav>
+        </ez-pagination>
+    {{/hasPagination}}
 </script>
 
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
