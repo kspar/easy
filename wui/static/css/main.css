@@ -1370,11 +1370,16 @@ button i.material-icons {
 #toast-container {
     max-width: 35%;
     bottom: 2rem;
-    right: 3rem;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-end;
+}
+
+@media only screen and (min-width: 993px) {
+    #toast-container {
+        right: 3rem;
+    }
 }
 
 .toast i.material-icons.dismiss {
