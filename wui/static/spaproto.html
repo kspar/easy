@@ -666,8 +666,6 @@
     </div>
 </script>
 
-
-
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">
         <nav class="crumb-wrap">
@@ -723,64 +721,112 @@
         {{/studentsSynced}}
 
         {{#hasActiveStudents}}
-        <h5 class="subsection">{{activeStudentsLabel}}</h5>
-        <div class="card">
-            <div class="card-content">
-                <table class="responsive-table highlight">
-                    <thead>
-                    <tr>
-                        <th>{{numberLabel}}</th>
-                        <th>{{nameLabel}}</th>
-                        <th>{{usernameLabel}}</th>
-                        {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
-                        <th>{{emailLabel}}</th>
-                        <th>{{groupLabel}}</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {{#students}}
-                    <tr>
-                        <td>{{number}}.</td>
-                        <td>{{name}}</td>
-                        <td>{{username}}</td>
-                        {{#isMoodleSynced}}<td>{{moodleUsername}}</td>{{/isMoodleSynced}}
-                        <td>{{email}}</td>
-                        <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
-                    </tr>
-                    {{/students}}
-                    </tbody>
-                </table>
+            <div class="subsection-wrap">
+                <h5 class="subsection">{{activeStudentsLabel}}</h5>
+                {{#studentsPagination}}
+                    <ez-pagination>
+                        <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                        <ez-pagenav>
+                            <ez-pagebtn class="student-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                {{/studentsPagination}}
             </div>
-        </div>
+            <div class="card">
+                <div class="card-content">
+                    <table class="responsive-table highlight">
+                        <thead>
+                        <tr>
+                            <th>{{numberLabel}}</th>
+                            <th>{{nameLabel}}</th>
+                            <th>{{usernameLabel}}</th>
+                            {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
+                            <th>{{emailLabel}}</th>
+                            <th>{{groupLabel}}</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {{#students}}
+                        <tr>
+                            <td>{{number}}.</td>
+                            <td>{{name}}</td>
+                            <td>{{username}}</td>
+                            {{#isMoodleSynced}}<td>{{moodleUsername}}</td>{{/isMoodleSynced}}
+                            <td>{{email}}</td>
+                            <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
+                        </tr>
+                        {{/students}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{#studentsPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="student-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/studentsPagination}}
         {{/hasActiveStudents}}
 
         {{#hasPendingStudents}}
-        <h5 class="subsection">{{pendingStudentsLabel}}</h5>
-        <div class="card">
-            <div class="card-content">
-                <table class="responsive-table highlight">
-                    <thead>
-                    <tr>
-                        <th>{{numberLabel}}</th>
-                        {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
-                        <th>{{emailLabel}}</th>
-                        <th>{{groupLabel}}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {{#pendingStudents}}
-                        <tr>
-                            <td>{{number}}.</td>
-                            {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
-                            <td>{{#email}}{{email}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/email}}{{^email}}-{{/email}}</td>
-                            <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
-                        </tr>
-                    {{/pendingStudents}}
-                    </tbody>
-                </table>
+            <div class="subsection-wrap">
+                <h5 class="subsection">{{pendingStudentsLabel}}</h5>
+                {{#pendingStudentsPagination}}
+                    <ez-pagination>
+                        <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                        <ez-pagenav>
+                            <ez-pagebtn class="pending-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                {{/pendingStudentsPagination}}
             </div>
-        </div>
+            <div class="card">
+                <div class="card-content">
+                    <table class="responsive-table highlight">
+                        <thead>
+                        <tr>
+                            <th>{{numberLabel}}</th>
+                            {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
+                            <th>{{emailLabel}}</th>
+                            <th>{{groupLabel}}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{#pendingStudents}}
+                            <tr>
+                                <td>{{number}}.</td>
+                                {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
+                                <td>{{#email}}{{email}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/email}}{{^email}}-{{/email}}</td>
+                                <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
+                            </tr>
+                        {{/pendingStudents}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{#pendingStudentsPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="pending-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/pendingStudentsPagination}}
         {{/hasPendingStudents}}
     </div>
 </script>

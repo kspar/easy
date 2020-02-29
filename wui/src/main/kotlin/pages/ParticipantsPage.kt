@@ -1,20 +1,24 @@
 package pages
 
+import AppProperties
 import DateSerializer
 import PageName
+import PaginationConf
 import Role
 import debug
 import getContainer
 import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
+import getElemsByClass
+import getLastPageOffset
 import getNodelistBySelector
+import isNotNullAndTrue
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
-import objOf
 import onVanillaClick
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
@@ -24,8 +28,11 @@ import tmRender
 import kotlin.browser.window
 import kotlin.dom.clear
 import kotlin.js.Date
+import kotlin.math.min
 
 object ParticipantsPage : EasyPage() {
+
+    private const val PAGE_STEP = AppProperties.PARTICIPANTS_ROWS_ON_PAGE
 
     @Serializable
     data class Participants(
@@ -97,54 +104,15 @@ object ParticipantsPage : EasyPage() {
             path.matches("^/courses/\\w+/participants/?$")
 
     override fun build(pageStateStr: String?) {
-
-        suspend fun postNewStudents(emails: List<String>, courseId: String) {
-            debug { "Posting new students: $emails" }
-
-            val newStudents = emails.map {
-                mapOf("email" to it, "groups" to emptyList<Nothing>())
-            }
-
-            fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
-                    "students" to newStudents), successChecker = { http200 }).await()
-
-            successMessage { "Õpilased edukalt lisatud" }
-        }
-
-        fun toggleAddStudents(courseId: String) {
-            if (getElemByIdOrNull("add-students-wrap") == null) {
-                // Box not visible
-                debug { "Open add students box" }
-                getElemById("add-students-section").innerHTML = tmRender("tm-teach-participants-add", mapOf(
-                        "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega. " +
-                                "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja registreerimise hetkel.",
-                        "addStudentsFieldLabel" to "Õpilaste meiliaadressid",
-                        "addButtonLabel" to "Lisa"
-                ))
-
-                getElemById("add-students-button").onVanillaClick(true) {
-                    MainScope().launch {
-                        val emails = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
-                                .split(" ", "\n")
-                                .filter { it.isNotBlank() }
-
-                        postNewStudents(emails, courseId)
-                        build(null)
-                    }
-                }
-
-                getElemById("add-students-link").innerHTML = "&#9660; Sulge"
-
-            } else {
-                // Box is visible
-                debug { "Close add students box" }
-                getElemById("add-students-section").clear()
-                getElemById("add-students-link").innerHTML = "&#9658; Lisa õpilasi"
-            }
-        }
-
         val courseId = extractSanitizedCourseId(window.location.pathname)
+        buildParticipants(courseId)
+    }
 
+    data class PendingStudentRow(val moodleUsername: String?, val email: String?, val groups: String)
+    data class ActiveStudentRow(val givenName: String, val familyName: String, val username: String, val moodleUsername: String?, val email: String, val groups: String)
+    data class TeacherRow(val givenName: String, val familyName: String, val username: String, val email: String, val groups: String)
+
+    private fun buildParticipants(courseId: String) {
         MainScope().launch {
             val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET,
                     successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
@@ -157,14 +125,9 @@ object ParticipantsPage : EasyPage() {
             val studentsSynced = participants.moodle_students_synced ?: false
             val gradesSynced = participants.moodle_grades_synced ?: false
 
-            data class PendingStudentRow(val moodleUsername: String?, val email: String?, val groups: String)
-            data class ActiveStudentRow(val givenName: String, val familyName: String, val username: String, val moodleUsername: String?, val email: String, val groups: String)
-            data class TeacherRow(val givenName: String, val familyName: String, val username: String, val email: String, val groups: String)
-
-            val normalPendingRows = participants.students_pending.map {s ->
-                PendingStudentRow( null, s.email, s.groups.joinToString { it.name })
+            val normalPendingRows = participants.students_pending.map { s ->
+                PendingStudentRow(null, s.email, s.groups.joinToString { it.name })
             }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
-
             val moodlePendingRows = participants.students_moodle_pending.map { s ->
                 PendingStudentRow(s.ut_username, s.email, s.groups.joinToString { it.name })
             }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
@@ -179,92 +142,206 @@ object ParticipantsPage : EasyPage() {
                 TeacherRow(t.given_name, t.family_name, t.id, t.email, t.groups.joinToString { it.name })
             }.sortedWith(compareBy(TeacherRow::groups, TeacherRow::familyName, TeacherRow::givenName))
 
-            val pendingStudents = pendingRows.mapIndexed { i, s ->
-                mapOf(
-                        "number" to (i+1),
-                        "moodleUsername" to s.moodleUsername,
-                        "email" to s.email,
-                        "group" to s.groups
-                )
-            }
-
-            val students = activeRows.mapIndexed {i, s ->
-                mapOf(
-                        "number" to (i+1),
-                        "name" to "${s.givenName} ${s.familyName}",
-                        "username" to s.username,
-                        "moodleUsername" to s.moodleUsername,
-                        "email" to s.email,
-                        "group" to s.groups
-                )
-            }
-
-            val teachers = teacherRows.mapIndexed {i, t ->
-                mapOf(
-                        "number" to (i+1),
-                        "name" to "${t.givenName} ${t.familyName}",
-                        "username" to t.username,
-                        "email" to t.email,
-                        "group" to t.groups
-                )
-            }
-
-            getContainer().innerHTML = tmRender("tm-teach-participants", mapOf(
-                    "myCoursesLabel" to "Minu kursused",
-                    "title" to courseTitle,
-                    "courseHref" to "/courses/$courseId/exercises",
-                    "participantsLabel" to "Osalejad",
-                    "teachersLabel" to "Õpetajad",
-                    "numberLabel" to "Jrk",
-                    "nameLabel" to "Nimi",
-                    "usernameLabel" to "Kasutajanimi",
-                    "emailLabel" to "Email",
-                    "groupLabel" to "Rühmad",
-                    "teacherGroupLabel" to "Piiratud rühmad",
-                    "pendingTooltip" to "Selle meiliaadressiga kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
-                    "studentsLabel" to "Õpilased",
-                    "addStudentsLink" to "&#9658; Lisa õpilasi",
-                    "isMoodleSynced" to isMoodleSynced,
-                    "studentsSynced" to studentsSynced,
-                    "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
-                    "moodleShortname" to participants.moodle_short_name,
-                    "syncStudentsLabel" to "Lae õpilased Moodle'ist",
-                    "moodleUsernameLabel" to "UT kasutajanimi",
-                    "moodlePendingTooltip" to "Selle UT kasutajanimega kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
-                    "activeStudentsLabel" to "Aktiivsed",
-                    "pendingStudentsLabel" to "Ootel",
-                    "teachers" to teachers,
-                    "hasActiveStudents" to students.isNotEmpty(),
-                    "students" to students,
-                    "hasPendingStudents" to pendingStudents.isNotEmpty(),
-                    "pendingStudents" to pendingStudents
-            ))
-
-            if (!studentsSynced) {
-                getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
-            }
-
-            if (studentsSynced) {
-                val syncBtn = getElemByIdAs<HTMLButtonElement>("sync-students-button")
-                syncBtn.onVanillaClick(true) {
-                    MainScope().launch {
-                        syncBtn.disabled = true
-                        fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
-                                mapOf(
-                                        "moodle_short_name" to participants.moodle_short_name,
-                                        "sync_students" to studentsSynced,
-                                        "sync_grades" to gradesSynced
-                                ), successChecker = { http200 }).await()
-                        successMessage { "Õpilased edukalt sünkroniseeritud" }
-                        build(null)
-                    }
-                }
-            }
-
-            initTooltips()
+            paintParticipants(courseId, courseTitle, isMoodleSynced, participants.moodle_short_name, studentsSynced, gradesSynced,
+                    teacherRows, activeRows, 0, pendingRows, 0)
         }
     }
 
+    private fun paintParticipants(courseId: String, courseTitle: String, isMoodleSynced: Boolean, moodleShortName: String?,
+                                  studentsSynced: Boolean, gradesSynced: Boolean, teacherRows: List<TeacherRow>,
+                                  studentRows: List<ActiveStudentRow>, studentShowFrom: Int,
+                                  pendingRows: List<PendingStudentRow>, pendingShowFrom: Int) {
+
+        val teachers = teacherRows.mapIndexed { i, t ->
+            mapOf(
+                    "number" to (i + 1),
+                    "name" to "${t.givenName} ${t.familyName}",
+                    "username" to t.username,
+                    "email" to t.email,
+                    "group" to t.groups
+            )
+        }
+
+        val studentRowTotal = studentRows.count()
+        val studentShowTo = min(studentShowFrom + PAGE_STEP, studentRowTotal)
+        val studentPaginationConf = if (studentRowTotal > PAGE_STEP) {
+            PaginationConf(studentShowFrom + 1, studentShowTo, studentRowTotal,
+                    studentShowFrom != 0, studentShowFrom + PAGE_STEP < studentRowTotal)
+        } else null
+        val students = studentRows.subList(studentShowFrom, studentShowTo)
+                .mapIndexed { i, s ->
+                    mapOf(
+                            "number" to (studentShowFrom + i + 1),
+                            "name" to "${s.givenName} ${s.familyName}",
+                            "username" to s.username,
+                            "moodleUsername" to s.moodleUsername,
+                            "email" to s.email,
+                            "group" to s.groups
+                    )
+                }
+
+        val pendingRowTotal = pendingRows.count()
+        val pendingShowTo = min(pendingShowFrom + PAGE_STEP, pendingRowTotal)
+        val pendingPaginationConf = if (pendingRowTotal > PAGE_STEP) {
+            PaginationConf(pendingShowFrom + 1, pendingShowTo, pendingRowTotal,
+                    pendingShowFrom != 0, pendingShowFrom + PAGE_STEP < pendingRowTotal)
+        } else null
+        val pendingStudents = pendingRows.subList(pendingShowFrom, pendingShowTo)
+                .mapIndexed { i, s ->
+                    mapOf(
+                            "number" to (pendingShowFrom + i + 1),
+                            "moodleUsername" to s.moodleUsername,
+                            "email" to s.email,
+                            "group" to s.groups
+                    )
+                }
+
+        getContainer().innerHTML = tmRender("tm-teach-participants", mapOf(
+                "myCoursesLabel" to "Minu kursused",
+                "title" to courseTitle,
+                "courseHref" to "/courses/$courseId/exercises",
+                "participantsLabel" to "Osalejad",
+                "teachersLabel" to "Õpetajad",
+                "numberLabel" to "Jrk",
+                "nameLabel" to "Nimi",
+                "usernameLabel" to "Kasutajanimi",
+                "emailLabel" to "Email",
+                "groupLabel" to "Rühmad",
+                "teacherGroupLabel" to "Piiratud rühmad",
+                "pendingTooltip" to "Selle meiliaadressiga kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
+                "studentsLabel" to "Õpilased",
+                "addStudentsLink" to "&#9658; Lisa õpilasi",
+                "isMoodleSynced" to isMoodleSynced,
+                "studentsSynced" to studentsSynced,
+                "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
+                "moodleShortname" to moodleShortName,
+                "syncStudentsLabel" to "Lae õpilased Moodle'ist",
+                "moodleUsernameLabel" to "UT kasutajanimi",
+                "moodlePendingTooltip" to "Selle UT kasutajanimega kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
+                "activeStudentsLabel" to "Aktiivsed",
+                "pendingStudentsLabel" to "Ootel",
+                "pageTotalLabel" to ", kokku ",
+                "teachers" to teachers,
+                "hasActiveStudents" to students.isNotEmpty(),
+                "studentsPagination" to
+                        studentPaginationConf?.let { mapOf("pageStart" to it.pageStart, "pageEnd" to it.pageEnd, "pageTotal" to it.pageTotal, "canGoBack" to it.canGoBack, "canGoForward" to it.canGoForward) },
+                "students" to students,
+                "hasPendingStudents" to pendingStudents.isNotEmpty(),
+                "pendingStudentsPagination" to
+                        pendingPaginationConf?.let { mapOf("pageStart" to it.pageStart, "pageEnd" to it.pageEnd, "pageTotal" to it.pageTotal, "canGoBack" to it.canGoBack, "canGoForward" to it.canGoForward) },
+                "pendingStudents" to pendingStudents
+        ))
+
+        if (!studentsSynced) {
+            getElemById("add-students-link").onVanillaClick(true) { toggleAddStudents(courseId) }
+        }
+
+        if (studentsSynced) {
+            val syncBtn = getElemByIdAs<HTMLButtonElement>("sync-students-button")
+            syncBtn.onVanillaClick(true) {
+                MainScope().launch {
+                    syncBtn.disabled = true
+                    fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
+                            mapOf(
+                                    "moodle_short_name" to moodleShortName,
+                                    "sync_students" to studentsSynced,
+                                    "sync_grades" to gradesSynced
+                            ), successChecker = { http200 }).await()
+                    successMessage { "Õpilased edukalt sünkroniseeritud" }
+                    build(null)
+                }
+            }
+        }
+
+        if (studentPaginationConf?.canGoBack.isNotNullAndTrue) {
+            getElemsByClass("student-go-first").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, 0, pendingRows, pendingShowFrom)
+            }
+            getElemsByClass("student-go-back").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom - PAGE_STEP, pendingRows, pendingShowFrom)
+            }
+        }
+        if (studentPaginationConf?.canGoForward.isNotNullAndTrue) {
+            getElemsByClass("student-go-forward").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom + PAGE_STEP, pendingRows, pendingShowFrom)
+            }
+            getElemsByClass("student-go-last").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, getLastPageOffset(studentRowTotal, PAGE_STEP), pendingRows, pendingShowFrom)
+            }
+        }
+
+        if (pendingPaginationConf?.canGoBack.isNotNullAndTrue) {
+            getElemsByClass("pending-go-first").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom, pendingRows, 0)
+            }
+            getElemsByClass("pending-go-back").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom, pendingRows, pendingShowFrom - PAGE_STEP)
+            }
+        }
+        if (pendingPaginationConf?.canGoForward.isNotNullAndTrue) {
+            getElemsByClass("pending-go-forward").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom, pendingRows, pendingShowFrom + PAGE_STEP)
+            }
+            getElemsByClass("pending-go-last").onVanillaClick(true) {
+                paintParticipants(courseId, courseTitle, isMoodleSynced, moodleShortName, studentsSynced, gradesSynced,
+                        teacherRows, studentRows, studentShowFrom, pendingRows, getLastPageOffset(pendingRowTotal, PAGE_STEP))
+            }
+        }
+
+        initTooltips()
+    }
+
+    private suspend fun postNewStudents(emails: List<String>, courseId: String) {
+        debug { "Posting new students: $emails" }
+
+        val newStudents = emails.map {
+            mapOf("email" to it, "groups" to emptyList<Nothing>())
+        }
+
+        fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
+                "students" to newStudents), successChecker = { http200 }).await()
+
+        successMessage { "Õpilased edukalt lisatud" }
+    }
+
+    private fun toggleAddStudents(courseId: String) {
+        if (getElemByIdOrNull("add-students-wrap") == null) {
+            // Box not visible
+            debug { "Open add students box" }
+            getElemById("add-students-section").innerHTML = tmRender("tm-teach-participants-add", mapOf(
+                    "addStudentsHelp" to "Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega. " +
+                            "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja registreerimise hetkel.",
+                    "addStudentsFieldLabel" to "Õpilaste meiliaadressid",
+                    "addButtonLabel" to "Lisa"
+            ))
+
+            getElemById("add-students-button").onVanillaClick(true) {
+                MainScope().launch {
+                    val emails = getElemByIdAs<HTMLTextAreaElement>("new-students-field").value
+                            .split(" ", "\n")
+                            .filter { it.isNotBlank() }
+
+                    postNewStudents(emails, courseId)
+                    build(null)
+                }
+            }
+
+            getElemById("add-students-link").innerHTML = "&#9660; Sulge"
+
+        } else {
+            // Box is visible
+            debug { "Close add students box" }
+            getElemById("add-students-section").clear()
+            getElemById("add-students-link").innerHTML = "&#9658; Lisa õpilasi"
+        }
+    }
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
