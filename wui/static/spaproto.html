@@ -686,16 +686,18 @@
                 <table class="responsive-table highlight">
                     <thead>
                     <tr>
+                        <th>{{numberLabel}}</th>
                         <th>{{nameLabel}}</th>
                         <th>{{usernameLabel}}</th>
                         <th>{{emailLabel}}</th>
-                        <th>{{groupLabel}}</th>
+                        <th>{{teacherGroupLabel}}</th>
                     </tr>
                     </thead>
 
                     <tbody>
                     {{#teachers}}
                     <tr>
+                        <td>{{number}}.</td>
                         <td>{{name}}</td>
                         <td>{{username}}</td>
                         <td>{{email}}</td>
@@ -720,6 +722,8 @@
             <div id="add-students-section"></div>
         {{/studentsSynced}}
 
+        {{#hasActiveStudents}}
+        <h5 class="subsection">{{activeStudentsLabel}}</h5>
         <div class="card">
             <div class="card-content">
                 <table class="responsive-table highlight">
@@ -736,12 +740,12 @@
 
                     <tbody>
                     {{#students}}
-                    <tr {{#isPending}}class="pending-row"{{/isPending}}>
-                        <td>{{#number}}{{number}}.{{/number}}{{^number}}-{{/number}}</td>
-                        <td>{{#name}}{{name}}{{/name}}{{^name}}-{{/name}}</td>
-                        <td>{{#username}}{{username}}{{/username}}{{^username}}-{{/username}}</td>
-                        {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/isPending}}{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
-                        <td>{{#email}}{{email}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/isPending}}{{/email}}{{^email}}-{{/email}}</td>
+                    <tr>
+                        <td>{{number}}.</td>
+                        <td>{{name}}</td>
+                        <td>{{username}}</td>
+                        {{#isMoodleSynced}}<td>{{moodleUsername}}</td>{{/isMoodleSynced}}
+                        <td>{{email}}</td>
                         <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
                     </tr>
                     {{/students}}
@@ -749,6 +753,35 @@
                 </table>
             </div>
         </div>
+        {{/hasActiveStudents}}
+
+        {{#hasPendingStudents}}
+        <h5 class="subsection">{{pendingStudentsLabel}}</h5>
+        <div class="card">
+            <div class="card-content">
+                <table class="responsive-table highlight">
+                    <thead>
+                    <tr>
+                        <th>{{numberLabel}}</th>
+                        {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
+                        <th>{{emailLabel}}</th>
+                        <th>{{groupLabel}}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#pendingStudents}}
+                        <tr>
+                            <td>{{number}}.</td>
+                            {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
+                            <td>{{#email}}{{email}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/email}}{{^email}}-{{/email}}</td>
+                            <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
+                        </tr>
+                    {{/pendingStudents}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{/hasPendingStudents}}
     </div>
 </script>
 

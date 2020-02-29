@@ -32,6 +32,10 @@ object ParticipantsPage : EasyPage() {
             val moodle_short_name: String? = null,
             val moodle_students_synced: Boolean? = null,
             val moodle_grades_synced: Boolean? = null,
+            val student_count: Int? = null,
+            val teacher_count: Int? = null,
+            val students_pending_count: Int? = null,
+            val students_moodle_pending_count: Int? = null,
             val students: List<Student> = emptyList(),
             val teachers: List<Teacher> = emptyList(),
             val students_pending: List<PendingStudent> = emptyList(),
@@ -44,7 +48,9 @@ object ParticipantsPage : EasyPage() {
             val email: String,
             val given_name: String,
             val family_name: String,
-            val groups: List<Group>
+            val groups: List<Group>,
+            @Serializable(with = DateSerializer::class)
+            val created_at: Date?
     )
 
     @Serializable
@@ -54,7 +60,9 @@ object ParticipantsPage : EasyPage() {
             val given_name: String,
             val family_name: String,
             val groups: List<Group>,
-            val moodle_username: String? = null
+            val moodle_username: String? = null,
+            @Serializable(with = DateSerializer::class)
+            val created_at: Date?
     )
 
     @Serializable
@@ -99,6 +107,8 @@ object ParticipantsPage : EasyPage() {
 
             fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
                     "students" to newStudents), successChecker = { http200 }).await()
+
+            successMessage { "Õpilased edukalt lisatud" }
         }
 
         fun toggleAddStudents(courseId: String) {
@@ -147,44 +157,57 @@ object ParticipantsPage : EasyPage() {
             val studentsSynced = participants.moodle_students_synced ?: false
             val gradesSynced = participants.moodle_grades_synced ?: false
 
-            val studentRows = participants.students_pending.map {
-                StudentRow(null, null, null, null, null, it.email, it.groups.joinToString { it.name }, true)
-            }.sortedWith(compareBy(StudentRow::groups, StudentRow::email)) +
+            data class PendingStudentRow(val moodleUsername: String?, val email: String?, val groups: String)
+            data class ActiveStudentRow(val givenName: String, val familyName: String, val username: String, val moodleUsername: String?, val email: String, val groups: String)
+            data class TeacherRow(val givenName: String, val familyName: String, val username: String, val email: String, val groups: String)
 
-                    participants.students_moodle_pending.map {
-                        StudentRow(null, null, null, null, null, it.email, it.groups.joinToString { it.name }, true,
-                                it.ut_username)
-                    }.sortedWith(compareBy(StudentRow::groups, StudentRow::moodleUsername)) +
+            val normalPendingRows = participants.students_pending.map {s ->
+                PendingStudentRow( null, s.email, s.groups.joinToString { it.name })
+            }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
 
-                    // Need to map twice because we need the groups string
-                    participants.students.map { s ->
-                        StudentRow(null, s.given_name, s.family_name, "${s.given_name} ${s.family_name}", s.id, s.email, s.groups.joinToString { it.name }, false,
-                                s.moodle_username)
-                    }.sortedWith(compareBy(StudentRow::groups, StudentRow::familyName, StudentRow::givenName))
-                            .mapIndexed { i, s ->
-                                StudentRow((i + 1).toString(), s.givenName, s.familyName, s.name, s.username, s.email, s.groups, s.isPending, s.moodleUsername)
-                            }
+            val moodlePendingRows = participants.students_moodle_pending.map { s ->
+                PendingStudentRow(s.ut_username, s.email, s.groups.joinToString { it.name })
+            }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
 
-            val students = studentRows.map {
-                objOf(
-                        "number" to it.number.orEmpty(),
-                        "name" to it.name.orEmpty(),
-                        "username" to it.username.orEmpty(),
-                        "email" to it.email.orEmpty(),
-                        "group" to it.groups,
-                        "isPending" to it.isPending,
-                        "moodleUsername" to it.moodleUsername.orEmpty()
+            val pendingRows = normalPendingRows + moodlePendingRows
+
+            val activeRows = participants.students.map { s ->
+                ActiveStudentRow(s.given_name, s.family_name, s.id, s.moodle_username, s.email, s.groups.joinToString { it.name })
+            }.sortedWith(compareBy(ActiveStudentRow::groups, ActiveStudentRow::familyName, ActiveStudentRow::givenName))
+
+            val teacherRows = participants.teachers.map { t ->
+                TeacherRow(t.given_name, t.family_name, t.id, t.email, t.groups.joinToString { it.name })
+            }.sortedWith(compareBy(TeacherRow::groups, TeacherRow::familyName, TeacherRow::givenName))
+
+            val pendingStudents = pendingRows.mapIndexed { i, s ->
+                mapOf(
+                        "number" to (i+1),
+                        "moodleUsername" to s.moodleUsername,
+                        "email" to s.email,
+                        "group" to s.groups
                 )
-            }.toTypedArray()
+            }
 
-            val teachers = participants.teachers.map {
-                objOf(
-                        "name" to "${it.given_name} ${it.family_name}",
-                        "username" to it.id,
-                        "email" to it.email,
-                        "group" to it.groups.joinToString { it.name }
+            val students = activeRows.mapIndexed {i, s ->
+                mapOf(
+                        "number" to (i+1),
+                        "name" to "${s.givenName} ${s.familyName}",
+                        "username" to s.username,
+                        "moodleUsername" to s.moodleUsername,
+                        "email" to s.email,
+                        "group" to s.groups
                 )
-            }.toTypedArray()
+            }
+
+            val teachers = teacherRows.mapIndexed {i, t ->
+                mapOf(
+                        "number" to (i+1),
+                        "name" to "${t.givenName} ${t.familyName}",
+                        "username" to t.username,
+                        "email" to t.email,
+                        "group" to t.groups
+                )
+            }
 
             getContainer().innerHTML = tmRender("tm-teach-participants", mapOf(
                     "myCoursesLabel" to "Minu kursused",
@@ -196,7 +219,8 @@ object ParticipantsPage : EasyPage() {
                     "nameLabel" to "Nimi",
                     "usernameLabel" to "Kasutajanimi",
                     "emailLabel" to "Email",
-                    "groupLabel" to "Rühm",
+                    "groupLabel" to "Rühmad",
+                    "teacherGroupLabel" to "Piiratud rühmad",
                     "pendingTooltip" to "Selle meiliaadressiga kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
                     "studentsLabel" to "Õpilased",
                     "addStudentsLink" to "&#9658; Lisa õpilasi",
@@ -207,8 +231,13 @@ object ParticipantsPage : EasyPage() {
                     "syncStudentsLabel" to "Lae õpilased Moodle'ist",
                     "moodleUsernameLabel" to "UT kasutajanimi",
                     "moodlePendingTooltip" to "Selle UT kasutajanimega kasutajat ei eksisteeri. Kui selline kasutaja registreeritakse, siis lisatakse ta automaatselt siia kursusele.",
+                    "activeStudentsLabel" to "Aktiivsed",
+                    "pendingStudentsLabel" to "Ootel",
+                    "teachers" to teachers,
+                    "hasActiveStudents" to students.isNotEmpty(),
                     "students" to students,
-                    "teachers" to teachers
+                    "hasPendingStudents" to pendingStudents.isNotEmpty(),
+                    "pendingStudents" to pendingStudents
             ))
 
             if (!studentsSynced) {
@@ -236,9 +265,6 @@ object ParticipantsPage : EasyPage() {
         }
     }
 
-    data class StudentRow(val number: String?, val givenName: String?, val familyName: String?,
-                          val name: String?, val username: String?, val email: String?,
-                          val groups: String, val isPending: Boolean, val moodleUsername: String? = null)
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))

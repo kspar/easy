@@ -681,6 +681,10 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 2rem;
 }
 
+#participants-container h5.subsection {
+    margin-top: 3rem;
+}
+
 #participants-container #add-students-wrap {
     border: 1px solid #ddd;
     background-color: #eee;
@@ -707,13 +711,10 @@ nav.crumb-wrap .breadcrumb:before {
     font-weight: 500;
 }
 
-#participants-container .pending-row {
-    background-color: #fff1cc;
-}
-
 #participants-container .pending-icon {
     margin-left: 5px;
     font-size: 1.3em;
+    cursor: default;
 }
 
 /** Grade table page **/
