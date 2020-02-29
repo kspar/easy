@@ -32,7 +32,7 @@ class ReadParticipantsOnCourseController {
                             @JsonProperty("given_name") val givenName: String,
                             @JsonProperty("family_name") val familyName: String,
                             @JsonSerialize(using = DateTimeSerializer::class)
-                            @JsonProperty("created_at") val createdAt: DateTime,
+                            @JsonProperty("created_at") val createdAt: DateTime?,
                             @JsonProperty("groups") val groups: List<GroupResp>,
                             @JsonProperty("moodle_username") val moodleUsername: String? = null)
 
@@ -41,12 +41,12 @@ class ReadParticipantsOnCourseController {
                             @JsonProperty("given_name") val givenName: String,
                             @JsonProperty("family_name") val familyName: String,
                             @JsonSerialize(using = DateTimeSerializer::class)
-                            @JsonProperty("created_at") val createdAt: DateTime,
+                            @JsonProperty("created_at") val createdAt: DateTime?,
                             @JsonProperty("groups") val groups: List<GroupResp>)
 
     data class StudentPendingResp(@JsonProperty("email") val email: String,
                                   @JsonSerialize(using = DateTimeSerializer::class)
-                                  @JsonProperty("valid_from") val validFrom: DateTime,
+                                  @JsonProperty("valid_from") val validFrom: DateTime?,
                                   @JsonProperty("groups") val groups: List<GroupResp>)
 
     data class StudentMoodlePendingResp(@JsonProperty("ut_username") val utUsername: String,
@@ -184,7 +184,7 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): P
                                val email: String,
                                val givenName: String,
                                val familyName: String,
-                               val createdAt: DateTime,
+                               val createdAt: DateTime?,
                                val moodleUsername: String?
     )
 
@@ -336,7 +336,7 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): P
                                val email: String,
                                val givenName: String,
                                val familyName: String,
-                               val createdAt: DateTime
+                               val createdAt: DateTime?
     )
 
     data class TeacherGroup(val id: String, val name: String)
