@@ -63,6 +63,18 @@ class ReadParticipantsOnCourseController {
                     @JsonProperty("moodle_grades_synced")
                     @JsonInclude(Include.NON_EMPTY)
                     val moodleGradesSynced: Boolean?,
+                    @JsonProperty("student_count")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val studentCount: Int?,
+                    @JsonProperty("teacher_count")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val teacherCount: Int?,
+                    @JsonProperty("students_pending_count")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val studentsPendingCount: Int?,
+                    @JsonProperty("students_moodle_pending_count")
+                    @JsonInclude(Include.NON_EMPTY)
+                    val studentsMoodlePendingCount: Int?,
                     @JsonProperty("students")
                     @JsonInclude(Include.NON_EMPTY)
                     val students: List<StudentsResp>?,
@@ -109,21 +121,57 @@ class ReadParticipantsOnCourseController {
 
         when (roleReq) {
             Role.TEACHER.paramValue -> {
-                val teachers = selectTeachersOnCourse(courseId, offset, limit)
-                return Resp(shortname, syncStudents, syncGrades, null, teachers, null, null)
+                val teachersPair = selectTeachersOnCourse(courseId, offset, limit)
+                return Resp(
+                        shortname,
+                        syncStudents,
+                        syncGrades,
+                        null,
+                        teachersPair.second,
+                        null,
+                        null,
+                        null,
+                        teachersPair.first,
+                        null,
+                        null
+                )
             }
             Role.STUDENT.paramValue -> {
-                val students = selectStudentsOnCourse(courseId, offset, limit)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, offset, limit)
-                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
-                return Resp(shortname, syncStudents, syncGrades, students, null, studentsPending, studentsMoodle)
+                val studentsPair = selectStudentsOnCourse(courseId, offset, limit)
+                val studentsPendingPair = selectStudentsPendingOnCourse(courseId, offset, limit)
+                val studentsMoodlePair = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
+                return Resp(
+                        shortname,
+                        syncStudents,
+                        syncGrades,
+                        studentsPair.second,
+                        null,
+                        studentsPendingPair.second,
+                        studentsMoodlePair.second,
+                        studentsPair.first,
+                        null,
+                        studentsPendingPair.first,
+                        studentsMoodlePair.first
+                )
             }
             Role.ALL.paramValue, null -> {
-                val students = selectStudentsOnCourse(courseId, offset, limit)
-                val teachers = selectTeachersOnCourse(courseId, offset, limit)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, offset, limit)
-                val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
-                return Resp(shortname, syncStudents, syncGrades, students, teachers, studentsPending, studentsMoodle)
+                val studentsPair = selectStudentsOnCourse(courseId, offset, limit)
+                val teachersPair = selectTeachersOnCourse(courseId, offset, limit)
+                val studentsPendingPair = selectStudentsPendingOnCourse(courseId, offset, limit)
+                val studentsMoodlePair = selectMoodleStudentsPendingOnCourse(courseId, offset, limit)
+                return Resp(
+                        shortname,
+                        syncStudents,
+                        syncGrades,
+                        studentsPair.second,
+                        teachersPair.second,
+                        studentsPendingPair.second,
+                        studentsMoodlePair.second,
+                        studentsPair.first,
+                        teachersPair.first,
+                        studentsPendingPair.first,
+                        studentsMoodlePair.first
+                )
             }
             else -> throw InvalidRequestException("Invalid parameter $roleReq")
         }
@@ -131,7 +179,7 @@ class ReadParticipantsOnCourseController {
 }
 
 
-private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentsResp> {
+private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): Pair<List<ReadParticipantsOnCourseController.StudentsResp>, Int> {
     data class StudentOnCourse(val id: String,
                                val email: String,
                                val givenName: String,
@@ -143,7 +191,7 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): L
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess leftJoin Group)
+        val selectQuery = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess leftJoin Group)
                 .slice(Account.id,
                         Account.email,
                         Account.givenName,
@@ -154,127 +202,136 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Int?, limit: Int?): L
                         Group.name
                 )
                 .select { StudentCourseAccess.course eq courseId }
-                .also {
-                    it.limit(limit?: it.count(), offset ?: 0)
-                }
-                .map {
-                    val groupId: EntityID<Long>? = it[Group.id]
-                    Pair(
-                            StudentOnCourse(
-                                    it[Account.id].value,
-                                    it[Account.email],
-                                    it[Account.givenName],
-                                    it[Account.familyName],
-                                    it[StudentCourseAccess.createdAt],
-                                    it[Account.moodleUsername]
-                            ),
-                            if (groupId == null) null else
-                                StudentGroup(
-                                        groupId.value.toString(),
-                                        it[Group.name]
-                                )
-                    )
-                }
-                .groupBy({ it.first }) { it.second }
-                .map { (student, groups) ->
-                    ReadParticipantsOnCourseController.StudentsResp(
-                            student.id,
-                            student.email,
-                            student.givenName,
-                            student.familyName,
-                            student.createdAt,
-                            groups.filterNotNull().map {
-                                ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
-                            },
-                            student.moodleUsername
-                    )
-                }
+
+        val count = selectQuery.count()
+
+        Pair(
+                selectQuery.limit(limit ?: count, offset ?: 0)
+                        .map {
+                            val groupId: EntityID<Long>? = it[Group.id]
+                            Pair(
+                                    StudentOnCourse(
+                                            it[Account.id].value,
+                                            it[Account.email],
+                                            it[Account.givenName],
+                                            it[Account.familyName],
+                                            it[StudentCourseAccess.createdAt],
+                                            it[Account.moodleUsername]
+                                    ),
+                                    if (groupId == null) null else
+                                        StudentGroup(
+                                                groupId.value.toString(),
+                                                it[Group.name]
+                                        )
+                            )
+                        }
+                        .groupBy({ it.first }) { it.second }
+                        .map { (student, groups) ->
+                            ReadParticipantsOnCourseController.StudentsResp(
+                                    student.id,
+                                    student.email,
+                                    student.givenName,
+                                    student.familyName,
+                                    student.createdAt,
+                                    groups.filterNotNull().map {
+                                        ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
+                                    },
+                                    student.moodleUsername
+                            )
+                        },
+                count)
     }
 }
 
-private fun selectStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentPendingResp> {
+private fun selectStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): Pair<List<ReadParticipantsOnCourseController.StudentPendingResp>, Int> {
     data class PendingStudent(val email: String, val validFrom: DateTime)
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        (StudentPendingAccess leftJoin StudentPendingGroup leftJoin Group)
+        val selectQuery = (StudentPendingAccess leftJoin StudentPendingGroup leftJoin Group)
                 .slice(StudentPendingAccess.email,
                         StudentPendingAccess.validFrom,
                         Group.id,
                         Group.name)
                 .select { StudentPendingAccess.course eq courseId }
-                .also {
-                    it.limit(limit?: it.count(), offset ?: 0)
-                }
-                .map {
-                    val groupId: EntityID<Long>? = it[Group.id]
-                    Pair(
-                            PendingStudent(
-                                    it[StudentPendingAccess.email],
-                                    it[StudentPendingAccess.validFrom]
-                            ),
-                            if (groupId == null) null else
-                                StudentGroup(
-                                        groupId.value.toString(),
-                                        it[Group.name]
-                                )
-                    )
-                }
-                .groupBy({ it.first }) { it.second }
-                .map { (student, groups) ->
-                    ReadParticipantsOnCourseController.StudentPendingResp(
-                            student.email,
-                            student.validFrom,
-                            groups.filterNotNull().map {
-                                ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
-                            }
-                    )
-                }
+
+        val count = selectQuery.count()
+
+        Pair(
+                selectQuery.limit(limit ?: count, offset ?: 0)
+                        .map {
+                            val groupId: EntityID<Long>? = it[Group.id]
+                            Pair(
+                                    PendingStudent(
+                                            it[StudentPendingAccess.email],
+                                            it[StudentPendingAccess.validFrom]
+                                    ),
+                                    if (groupId == null) null else
+                                        StudentGroup(
+                                                groupId.value.toString(),
+                                                it[Group.name]
+                                        )
+                            )
+                        }
+                        .groupBy({ it.first }) { it.second }
+                        .map { (student, groups) ->
+                            ReadParticipantsOnCourseController.StudentPendingResp(
+                                    student.email,
+                                    student.validFrom,
+                                    groups.filterNotNull().map {
+                                        ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
+                                    }
+                            )
+                        },
+                count)
     }
 }
 
-private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.StudentMoodlePendingResp> {
+private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Int?, limit: Int?): Pair<List<ReadParticipantsOnCourseController.StudentMoodlePendingResp>, Int> {
     data class PendingStudent(val moodleUsername: String, val email: String)
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        (StudentMoodlePendingAccess leftJoin StudentMoodlePendingGroup leftJoin Group)
+        val selectQuery = (StudentMoodlePendingAccess leftJoin StudentMoodlePendingGroup leftJoin Group)
                 .slice(StudentMoodlePendingAccess.moodleUsername,
                         StudentMoodlePendingAccess.email,
                         Group.id,
                         Group.name)
                 .select { StudentMoodlePendingAccess.course eq courseId }
-                .also {
-                    it.limit(limit?: it.count(), offset ?: 0)
-                }
-                .map {
-                    val groupId: EntityID<Long>? = it[Group.id]
-                    Pair(
-                            PendingStudent(
-                                    it[StudentMoodlePendingAccess.moodleUsername],
-                                    it[StudentMoodlePendingAccess.email]
-                            ),
-                            if (groupId == null) null else
-                                StudentGroup(
-                                        groupId.value.toString(),
-                                        it[Group.name]
-                                )
-                    )
-                }
-                .groupBy({ it.first }) { it.second }
-                .map { (student, groups) ->
-                    ReadParticipantsOnCourseController.StudentMoodlePendingResp(
-                            student.moodleUsername,
-                            student.email,
-                            groups.filterNotNull().map {
-                                ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
-                            }
-                    )
-                }
+
+        val count = selectQuery.count()
+
+        Pair(
+                selectQuery.limit(limit ?: count, offset ?: 0)
+                        .map {
+                            val groupId: EntityID<Long>? = it[Group.id]
+                            Pair(
+                                    PendingStudent(
+                                            it[StudentMoodlePendingAccess.moodleUsername],
+                                            it[StudentMoodlePendingAccess.email]
+                                    ),
+                                    if (groupId == null) null else
+                                        StudentGroup(
+                                                groupId.value.toString(),
+                                                it[Group.name]
+                                        )
+                            )
+                        }
+                        .groupBy({ it.first }) { it.second }
+                        .map { (student, groups) ->
+                            ReadParticipantsOnCourseController.StudentMoodlePendingResp(
+                                    student.moodleUsername,
+                                    student.email,
+                                    groups.filterNotNull().map {
+                                        ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
+                                    }
+                            )
+                        },
+                count)
     }
 }
 
-private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): List<ReadParticipantsOnCourseController.TeachersResp> {
+private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): Pair<List<ReadParticipantsOnCourseController.TeachersResp>, Int> {
     data class TeacherOnCourse(val id: String,
                                val email: String,
                                val givenName: String,
@@ -285,7 +342,7 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): L
     data class TeacherGroup(val id: String, val name: String)
 
     return transaction {
-        (Account innerJoin Teacher innerJoin TeacherCourseAccess leftJoin TeacherGroupAccess leftJoin Group)
+        val selectQuery = (Account innerJoin Teacher innerJoin TeacherCourseAccess leftJoin TeacherGroupAccess leftJoin Group)
                 .slice(Account.id,
                         Account.email,
                         Account.givenName,
@@ -294,39 +351,42 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Int?, limit: Int?): L
                         Group.name,
                         TeacherCourseAccess.createdAt)
                 .select { TeacherCourseAccess.course eq courseId }
-                .also {
-                    it.limit(limit?: it.count(), offset ?: 0)
-                }
-                .map {
-                    val groupId: EntityID<Long>? = it[Group.id]
-                    Pair(
-                            TeacherOnCourse(
-                                    it[Account.id].value,
-                                    it[Account.email],
-                                    it[Account.givenName],
-                                    it[Account.familyName],
-                                    it[TeacherCourseAccess.createdAt]
-                            ),
-                            if (groupId == null) null else
-                                TeacherGroup(
-                                        groupId.value.toString(),
-                                        it[Group.name]
-                                )
-                    )
-                }
-                .groupBy({ it.first }) { it.second }
-                .map { (teacher, groups) ->
-                    ReadParticipantsOnCourseController.TeachersResp(
-                            teacher.id,
-                            teacher.email,
-                            teacher.givenName,
-                            teacher.familyName,
-                            teacher.createdAt,
-                            groups.filterNotNull().map {
-                                ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
-                            }
-                    )
-                }
+
+        val count = selectQuery.count()
+
+        Pair(
+                selectQuery.limit(limit ?: count, offset ?: 0)
+                        .map {
+                            val groupId: EntityID<Long>? = it[Group.id]
+                            Pair(
+                                    TeacherOnCourse(
+                                            it[Account.id].value,
+                                            it[Account.email],
+                                            it[Account.givenName],
+                                            it[Account.familyName],
+                                            it[TeacherCourseAccess.createdAt]
+                                    ),
+                                    if (groupId == null) null else
+                                        TeacherGroup(
+                                                groupId.value.toString(),
+                                                it[Group.name]
+                                        )
+                            )
+                        }
+                        .groupBy({ it.first }) { it.second }
+                        .map { (teacher, groups) ->
+                            ReadParticipantsOnCourseController.TeachersResp(
+                                    teacher.id,
+                                    teacher.email,
+                                    teacher.givenName,
+                                    teacher.familyName,
+                                    teacher.createdAt,
+                                    groups.filterNotNull().map {
+                                        ReadParticipantsOnCourseController.GroupResp(it.id, it.name)
+                                    }
+                            )
+                        },
+                count)
     }
 }
 

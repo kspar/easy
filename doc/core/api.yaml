@@ -1295,6 +1295,14 @@ paths:
                 type: boolean
               moodle_grades_synced:
                 type: boolean
+              student_count:
+                type: integer
+              teacher_count:
+                type: integer
+              students_pending_count:
+                type: integer
+              students_moodle_pending_count:
+                type: integer
               students:
                 type: array
                 items:
