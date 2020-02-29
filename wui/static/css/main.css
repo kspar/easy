@@ -376,6 +376,7 @@ nav.crumb-wrap .breadcrumb:before {
 
 #exercise-card #export-submissions-button {
     margin-bottom: 1rem;
+    margin-left: 2rem;
 }
 
 #exercise-card .submission-item > * {
