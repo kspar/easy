@@ -1,10 +1,13 @@
 package pages
 
+import AppProperties
 import PageName
+import PaginationConf
 import Role
 import Str
 import getContainer
 import getElemsByClass
+import getLastPageOffset
 import isNotNullAndTrue
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -129,7 +132,6 @@ object GradeTablePage : EasyPage() {
                 )
             }.toTypedArray()
 
-            data class PaginationConf(val pageStart: Int, val pageEnd: Int, val pageTotal: Int, val canGoBack: Boolean, val canGoForward: Boolean)
 
             val paginationConf = if (gradeTable.student_count > PAGE_STEP) {
                 PaginationConf(offset + 1, min(offset + limit, gradeTable.student_count), gradeTable.student_count,
@@ -171,16 +173,6 @@ object GradeTablePage : EasyPage() {
             }
         }
     }
-}
-
-private fun getLastPageOffset(totalCount: Int, step: Int): Int {
-    val itemsOnLastPageRaw = totalCount % step
-    val itemsOnLastPage = when {
-        itemsOnLastPageRaw == 0 && totalCount == 0 -> 0
-        itemsOnLastPageRaw == 0 -> step
-        else -> itemsOnLastPageRaw
-    }
-    return totalCount - itemsOnLastPage
 }
 
 private fun extractSanitizedCourseId(path: String): String {

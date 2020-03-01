@@ -374,6 +374,11 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 2rem;
 }
 
+#exercise-card #export-submissions-button {
+    margin-bottom: 1rem;
+    margin-left: 2rem;
+}
+
 #exercise-card .submission-item > * {
     flex-shrink: 0;
 }
@@ -675,10 +680,23 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Participants page **/
 
+#participants-container .subsection-wrap {
+    display: flex;
+    justify-content: space-between;
+}
+
+#participants-container ez-pagination {
+    padding: 0 1rem;
+}
+
 #participants-container h4.subsection {
     font-size: 2rem;
     margin-top: 4rem;
     margin-bottom: 2rem;
+}
+
+#participants-container h5.subsection {
+    margin-top: 3rem;
 }
 
 #participants-container #add-students-wrap {
@@ -698,22 +716,22 @@ nav.crumb-wrap .breadcrumb:before {
     min-height: 6rem;
 }
 
+#participants-container .card {
+    margin: .5rem 0;
+}
+
 #participants-container .card .card-content {
     padding: 5px 10px 0 10px;
-    margin-top: 20px;
 }
 
 #participants-container table th {
     font-weight: 500;
 }
 
-#participants-container .pending-row {
-    background-color: #fff1cc;
-}
-
 #participants-container .pending-icon {
     margin-left: 5px;
     font-size: 1.3em;
+    cursor: default;
 }
 
 /** Grade table page **/
@@ -1352,11 +1370,16 @@ button i.material-icons {
 #toast-container {
     max-width: 35%;
     bottom: 2rem;
-    right: 3rem;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-end;
+}
+
+@media only screen and (min-width: 993px) {
+    #toast-container {
+        right: 3rem;
+    }
 }
 
 .toast i.material-icons.dismiss {
@@ -1394,6 +1417,7 @@ button i.material-icons {
 ez-pagination {
     display: flex;
     align-items: flex-end;
+    justify-content: flex-end;
 }
 
 ez-pageinfo {

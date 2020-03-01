@@ -95,6 +95,11 @@
     font-size: 0.83em;
 }
 
+#exercise-text .imageblock.text-center {
+    display: flex;
+    justify-content: center;
+}
+
 
 /* Legacy pure-HTML rules */
 

@@ -1,9 +1,11 @@
 package pages
 
+import AppProperties
 import Auth
 import DateSerializer
 import MathJax
 import PageName
+import PaginationConf
 import Role
 import Str
 import compareTo
@@ -14,8 +16,11 @@ import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
 import getElemBySelector
+import getElemsByClass
 import getElemsBySelector
+import getLastPageOffset
 import getNodelistBySelector
+import isNotNullAndTrue
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -43,8 +48,11 @@ import kotlin.dom.addClass
 import kotlin.dom.clear
 import kotlin.dom.removeClass
 import kotlin.js.Date
+import kotlin.math.min
 
 object ExerciseSummaryPage : EasyPage() {
+
+    private const val PAGE_STEP = AppProperties.SUBMISSIONS_ROWS_ON_PAGE
 
     @Serializable
     data class TeacherExercise(
@@ -403,13 +411,15 @@ object ExerciseSummaryPage : EasyPage() {
         }.then {
             val groups = it.groups
             debug { "Groups available: $groups" }
-            if (groups.isNotEmpty()) {
-                val map = mapOf("groupLabel" to "Rühm",
-                        "allLabel" to "Kõik rühmad",
-                        "manyGroups" to (groups.size > 1),
-                        "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) })
 
-                getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", map)
+            getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", mapOf(
+                    "exportSubmissionsLabel" to "Salvesta kõik",
+                    "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
+                    "allLabel" to "Kõik rühmad",
+                    "manyGroups" to (groups.size > 1),
+                    "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) }))
+
+            if (groups.isNotEmpty()) {
                 initSelectFields()
                 val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
                 groupSelect.onChange {
@@ -428,9 +438,9 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, exerciseId: String,
-                                                 threshold: Int, groupId: String? = null) {
+                                                 threshold: Int, groupId: String? = null, offset: Int = 0) {
 
-        val q = createQueryString("group" to groupId)
+        val q = createQueryString("group" to groupId, "limit" to PAGE_STEP.toString(), "offset" to offset.toString())
         val teacherStudents = fetchEms(
                 "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET,
                 successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage).await()
@@ -470,12 +480,44 @@ object ExerciseSummaryPage : EasyPage() {
             studentMap.toJsObj()
         }.toTypedArray()
 
+
+        val studentTotal = teacherStudents.student_count
+        val paginationConf = if (studentTotal > PAGE_STEP) {
+            PaginationConf(offset + 1, min(offset + PAGE_STEP, studentTotal), studentTotal,
+                    offset != 0, offset + PAGE_STEP < studentTotal)
+        } else null
+
         getElemById("students-list").innerHTML = tmRender("tm-teach-exercise-students-list", mapOf(
                 "students" to studentArray,
                 "autoLabel" to Str.gradedAutomatically(),
                 "teacherLabel" to Str.gradedByTeacher(),
-                "missingLabel" to Str.notGradedYet()
+                "missingLabel" to Str.notGradedYet(),
+                "hasPagination" to (paginationConf != null),
+                "pageStart" to paginationConf?.pageStart,
+                "pageEnd" to paginationConf?.pageEnd,
+                "pageTotal" to paginationConf?.pageTotal,
+                "pageTotalLabel" to ", kokku ",
+                "canGoBack" to paginationConf?.canGoBack,
+                "canGoForward" to paginationConf?.canGoForward
         ))
+
+        if (paginationConf?.canGoBack.isNotNullAndTrue) {
+            getElemsByClass("go-first").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, 0)
+            }
+            getElemsByClass("go-back").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset - PAGE_STEP)
+            }
+        }
+
+        if (paginationConf?.canGoForward.isNotNullAndTrue) {
+            getElemsByClass("go-forward").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset + PAGE_STEP)
+            }
+            getElemsByClass("go-last").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, getLastPageOffset(studentTotal, PAGE_STEP))
+            }
+        }
 
         getElemsBySelector("[data-student-id]").forEach {
             val id = it.getAttribute("data-student-id")

@@ -5,7 +5,7 @@ import org.w3c.dom.Node
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 
-fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit) {
+fun Node.onVanillaClick(preventDefault: Boolean, f: suspend (event: MouseEvent) -> Unit) {
     this.addEventListener("click", { event ->
         if (event is MouseEvent &&
                 !event.defaultPrevented &&
@@ -21,12 +21,14 @@ fun Node.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit)
             if (preventDefault)
                 event.preventDefault()
 
-            f(event)
+            MainScope().launch {
+                f(event)
+            }
         }
     })
 }
 
-fun List<Node>.onVanillaClick(preventDefault: Boolean, f: (event: MouseEvent) -> Unit) {
+fun List<Node>.onVanillaClick(preventDefault: Boolean, f: suspend (event: MouseEvent) -> Unit) {
     this.forEach {
         it.onVanillaClick(preventDefault, f)
     }

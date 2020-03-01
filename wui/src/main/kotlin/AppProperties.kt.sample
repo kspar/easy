@@ -13,4 +13,6 @@ object AppProperties {
     const val MATHJAX_CONF = "MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};"
 
     const val GRADE_TABLE_ROWS_ON_PAGE = 50
+    const val PARTICIPANTS_ROWS_ON_PAGE = 50
+    const val SUBMISSIONS_ROWS_ON_PAGE = 50
 }
