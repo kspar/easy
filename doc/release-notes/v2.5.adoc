@@ -1,0 +1,15 @@
+
+
+= Release notes: v2.5
+
+* Latest submissions from all students to one exercise can now be downloaded as a zip file. (EZ-1282, EZ-1274)
+* Grade table, teacher exercises, registration and other services have received caching improvements. (EZ-1267)
+* Grade table now also shows when a student's submissions is ungraded (blue). (EZ-1197)
+* Grade table is now paginated if there are many students. (EZ-1281)
+* Students and pending students have been moved into separate tables on the participants page and are both paginated if necessary. (EZ-1180)
+* Latest submissions to an exercise are now paginated if necessary. (EZ-1283)
+* Testing the new stateful component system in the client. Only the courses page has been migrated at the moment. (EZ-1275, EZ-1276)
+* Minor cosmetic improvements for small screens.
+* Dependencies updated. (EZ-1236, EZ-1273)
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.5%20[here].
