@@ -1,6 +1,7 @@
 package core.ems.service
 
 import core.db.*
+import core.ems.service.cache.PrivateCachingService
 import core.exception.InvalidRequestException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction

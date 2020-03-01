@@ -24,6 +24,15 @@ tags:
 
 paths:
 
+  /remove-cache:
+    post:
+      summary: Force cache eviction for all cached content.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Caches evicted.
+
   /articles:
     post:
       summary: Create new article.

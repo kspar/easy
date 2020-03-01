@@ -7,7 +7,7 @@ import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.AdocService
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert

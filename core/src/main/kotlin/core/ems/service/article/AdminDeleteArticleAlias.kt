@@ -2,7 +2,7 @@ package core.ems.service.article
 
 import core.conf.security.EasyUser
 import core.db.ArticleAlias
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
 import core.ems.service.assertArticleAliasExists
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq

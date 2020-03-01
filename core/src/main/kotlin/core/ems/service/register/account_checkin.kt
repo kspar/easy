@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.CacheInvalidator
-import core.ems.service.PrivateCachingService
+import core.ems.service.cache.CacheInvalidator
+import core.ems.service.cache.PrivateCachingService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*

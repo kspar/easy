@@ -7,7 +7,7 @@ import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.AdocService
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
