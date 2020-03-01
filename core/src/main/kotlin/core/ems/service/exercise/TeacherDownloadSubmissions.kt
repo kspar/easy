@@ -71,7 +71,8 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, callerId: String)
                         Group.name)
                 .select {
                     CourseExercise.exercise eq exerciseId and
-                            (CourseExercise.course eq courseId)
+                            (CourseExercise.course eq courseId) and
+                            (StudentCourseAccess.course eq courseId)
                 }
                 .orderBy(Submission.createdAt, SortOrder.DESC)
 
