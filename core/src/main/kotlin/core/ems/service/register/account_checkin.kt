@@ -112,6 +112,8 @@ private fun updateAccount(accountData: AccountData, privateCachingService: Priva
         } else {
 
             val isChanged = oldAccount.email != accountData.email ||
+                    oldAccount.givenName != accountData.givenName ||
+                    oldAccount.familyName != accountData.familyName ||
                     accountData.moodleUsername != null && accountData.moodleUsername != oldAccount.moodleUsername
 
             Account.update({ Account.id eq accountData.username }) {
