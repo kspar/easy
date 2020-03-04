@@ -73,10 +73,7 @@ class MoodleSyncService {
         val response = responseEntity.body
         if (response == null) {
             log.error { "Moodle returned empty response with request $request" }
-            throw InvalidRequestException("Course linking with Moodle failed due to Moodle empty response body.",
-                    ReqError.MOODLE_EMPTY_RESPONSE,
-                    "Moodle response" to responseEntity.statusCodeValue.toString(),
-                    notify = true)
+            return MoodleResponse(emptyList())
         }
         return response
     }
