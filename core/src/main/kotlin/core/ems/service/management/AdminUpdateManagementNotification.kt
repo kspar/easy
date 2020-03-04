@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateManagementNotificationsController {
+class AdminUpdateManagementNotificationsController {
 
     data class Req(@JsonProperty("message", required = true)
                    @field:NotBlank @field:Size(max = 1000) val message: String)
@@ -37,7 +37,7 @@ class UpdateManagementNotificationsController {
     }
 }
 
-private fun updateMessage(dto: UpdateManagementNotificationsController.Req, notificationId: Long) {
+private fun updateMessage(dto: AdminUpdateManagementNotificationsController.Req, notificationId: Long) {
     transaction {
 
         val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1

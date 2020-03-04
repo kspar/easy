@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateManagementNotificationsController {
+class AdminCreateManagementNotificationsController {
 
     data class Req(@JsonProperty("message", required = true)
                    @field:NotBlank @field:Size(max = 1000) val message: String)
@@ -34,7 +34,7 @@ class CreateManagementNotificationsController {
     }
 }
 
-private fun insertMessage(dto: CreateManagementNotificationsController.Req) {
+private fun insertMessage(dto: AdminCreateManagementNotificationsController.Req) {
     transaction {
         ManagementNotification.insert {
             it[message] = dto.message

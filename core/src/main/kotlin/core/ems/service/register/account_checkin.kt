@@ -1,6 +1,5 @@
 package core.ems.service.register
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
@@ -31,14 +30,10 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
                                 @JsonProperty("last_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val lastName: String)
 
-    data class Resp(@JsonProperty("messages")
-                    @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
-
-    data class MessageResp(@JsonProperty("message") val message: String)
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/account/checkin")
-    fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
+    fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser) {
 
         val account = AccountData(
                 caller.id,
@@ -78,8 +73,6 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
             // Admins should also have a teacher entity to add assessments, exercises etc
             updateTeacher(account)
         }
-
-        return selectMessages()
     }
 }
 
@@ -159,18 +152,6 @@ private fun updateAdmin(admin: AccountData) {
     }
 }
 
-private fun selectMessages(): UpdateAccountController.Resp {
-    return transaction {
-        UpdateAccountController.Resp(
-                ManagementNotification.selectAll()
-                        .orderBy(ManagementNotification.id, SortOrder.DESC)
-                        .map {
-                            UpdateAccountController.MessageResp(
-                                    it[ManagementNotification.message]
-                            )
-                        })
-    }
-}
 
 private fun updateStudentCourseAccesses(accountData: AccountData) {
     log.debug { "Updating student course accesses" }

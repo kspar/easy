@@ -17,33 +17,34 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class ReadManagementNotificationsController {
+class CommonReadManagementNotificationsController {
 
     data class Resp(@JsonProperty("messages")
                     @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
 
-    data class MessageResp(@JsonProperty("id") val messageId: String,
-                           @JsonProperty("message") val message: String)
+    data class MessageResp(@JsonProperty("message") val message: String)
 
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/management/notifications")
+    @Secured("ROLE_ADMIN", "ROLE_TEACHER", "ROLE_STUDENT")
+    @GetMapping("/management/common/notifications")
     fun controller(caller: EasyUser): Resp {
 
-        log.debug { "Getting system management notifications for ${caller.id}" }
+        log.debug { "Getting common system management notifications for ${caller.id}" }
 
         return selectMessages()
     }
 }
 
-private fun selectMessages(): ReadManagementNotificationsController.Resp {
+private fun selectMessages(): CommonReadManagementNotificationsController.Resp {
     return transaction {
-        ReadManagementNotificationsController.Resp(ManagementNotification.selectAll()
-                .orderBy(ManagementNotification.id, SortOrder.DESC)
-                .map {
-                    ReadManagementNotificationsController.MessageResp(
-                            it[ManagementNotification.id].value.toString(),
-                            it[ManagementNotification.message]
-                    )
-                })
+        CommonReadManagementNotificationsController.Resp(
+                ManagementNotification.selectAll()
+                        .orderBy(ManagementNotification.id, SortOrder.DESC)
+                        .map {
+                            CommonReadManagementNotificationsController.MessageResp(
+                                    it[ManagementNotification.message]
+                            )
+                        })
     }
 }
+
+

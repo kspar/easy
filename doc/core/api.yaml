@@ -342,7 +342,7 @@ paths:
     post:
       summary: "Update account data in easy:core.
             Creates account if it does not exist. If the account does not exist,
-            then this must be called before any other services. Returns system management notifications."
+            then this must be called before any other services."
       tags:
         - common
       parameters:
@@ -359,6 +359,15 @@ paths:
               - last_name
       responses:
         200:
+          description: Check-in done.
+
+  /management/common/notifications:
+    get:
+      summary: Get all system management notifications.
+      tags:
+        - common
+      responses:
+        200:
           description: Returns system management notifications (messages).
           schema:
             properties:
@@ -368,7 +377,6 @@ paths:
                   properties:
                     message:
                       type: string
-
 
   /management/notifications:
     get:

@@ -18,7 +18,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class DeleteManagementNotification {
+class AdminDeleteManagementNotification {
 
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/management/notifications/{notificationId}")
