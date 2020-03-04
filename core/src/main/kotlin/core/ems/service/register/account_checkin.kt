@@ -116,13 +116,15 @@ private fun updateAccount(accountData: AccountData, privateCachingService: Priva
                     oldAccount.familyName != accountData.familyName ||
                     accountData.moodleUsername != null && accountData.moodleUsername != oldAccount.moodleUsername
 
-            Account.update({ Account.id eq accountData.username }) {
-                it[email] = accountData.email
-                if (accountData.moodleUsername != null) {
-                    it[moodleUsername] = accountData.moodleUsername
+            if (isChanged) {
+                Account.update({ Account.id eq accountData.username }) {
+                    it[email] = accountData.email
+                    if (accountData.moodleUsername != null) {
+                        it[moodleUsername] = accountData.moodleUsername
+                    }
+                    it[givenName] = accountData.givenName
+                    it[familyName] = accountData.familyName
                 }
-                it[givenName] = accountData.givenName
-                it[familyName] = accountData.familyName
             }
 
             isChanged
