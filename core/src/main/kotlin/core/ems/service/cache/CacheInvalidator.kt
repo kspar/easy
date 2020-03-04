@@ -2,7 +2,7 @@ package core.ems.service.cache
 
 import mu.KotlinLogging
 import org.springframework.cache.CacheManager
-import org.springframework.cache.annotation.CacheEvict
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger {}
@@ -11,31 +11,51 @@ private val log = KotlinLogging.logger {}
 @Component
 class CacheInvalidator(val cacheManager: CacheManager) {
 
-    @CacheEvict("submissions", allEntries = true, beforeInvocation = false)
-    fun invalidateSubmissionCache() = log.debug { "Invalidating submission cache." }
+    @Async
+    fun invalidateSubmissionCache() {
+        log.debug { "Invalidating 'submissions' cache." }
+        cacheManager.getCache("submissions")?.invalidate()
+    }
 
-    @CacheEvict("autoassessment", allEntries = true, beforeInvocation = false)
-    fun invalidateAutoAssessmentCountCache() = log.debug { "Invalidating assessment cache." }
+    @Async
+    fun invalidateAutoAssessmentCountCache() {
+        log.debug { "Invalidating 'autoassessment' cache." }
+        cacheManager.getCache("autoassessment")?.invalidate()
+    }
 
-    @CacheEvict("users", allEntries = true, beforeInvocation = false)
-    fun invalidateTotalUserCache() = log.debug { "Invalidating total number of users cache." }
+    @Async
+    fun invalidateTotalUserCache() {
+        log.debug { "Invalidating total number of 'users' cache." }
+        cacheManager.getCache("users")?.invalidate()
+    }
 
-    @CacheEvict("articles", allEntries = true, beforeInvocation = false)
-    fun invalidateArticleCache() = log.debug { "Invalidating article cache." }
+    @Async
+    fun invalidateArticleCache() {
+        log.debug { "Invalidating 'articles' cache." }
+        cacheManager.getCache("articles")?.invalidate()
+    }
 
+    @Async
     fun invalidateAccountCache(username: String) {
         log.debug { "Invalidating 'account' cache." }
         cacheManager.getCache("account")?.evict(username)
     }
 
+    @Async
     fun invalidateSelectLatestValidGrades(courseExerciseId: Long) {
         log.debug { "Invalidating 'selectLatestValidGrades' cache." }
         cacheManager.getCache("selectLatestValidGrades")?.evict(courseExerciseId)
     }
 
-    @CacheEvict("selectLatestValidGrades", allEntries = true, beforeInvocation = false)
-    fun invalidateSelectLatestValidGrades() = log.debug { "Invalidating all 'selectLatestValidGrades' cache." }
+    @Async
+    fun invalidateSelectLatestValidGrades() {
+        log.debug { "Invalidating 'selectLatestValidGrades' cache." }
+        cacheManager.getCache("selectLatestValidGrades")?.invalidate()
+    }
 
-    @CacheEvict("account", allEntries = true, beforeInvocation = false)
-    fun invalidateAccountCache() = log.debug { "Invalidating 'account' cache." }
+    @Async
+    fun invalidateAccountCache() {
+        log.debug { "Invalidating 'account' cache." }
+        cacheManager.getCache("account")?.invalidate()
+    }
 }
