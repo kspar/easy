@@ -389,8 +389,8 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
                 "exportSubmissionsLabel" to "Lae alla"
         )
-        buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
-        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold)
+        val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
+        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, defaultGroupId)
 
         getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
             debug { "Downloading submissions" }
@@ -404,33 +404,34 @@ object ExerciseSummaryPage : EasyPage() {
         fl?.end()
     }
 
-    private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int) {
-        fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
-                errorHandler = ErrorHandlers.noCourseAccessPage).then {
-            it.parseTo(Groups.serializer())
-        }.then {
-            val groups = it.groups
-            debug { "Groups available: $groups" }
+    private suspend fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int): String? {
+        val groups = fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
+                errorHandler = ErrorHandlers.noCourseAccessPage).await()
+                .parseTo(Groups.serializer()).await()
+                .groups
 
-            getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", mapOf(
-                    "exportSubmissionsLabel" to "Salvesta kõik",
-                    "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
-                    "allLabel" to "Kõik rühmad",
-                    "manyGroups" to (groups.size > 1),
-                    "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) }))
+        debug { "Groups available: $groups" }
 
-            if (groups.isNotEmpty()) {
-                initSelectFields()
-                val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
-                groupSelect.onChange {
-                    MainScope().launch {
-                        val group = groupSelect.value
-                        debug { "Selected group $group" }
-                        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, group)
-                    }
+        getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", mapOf(
+                "exportSubmissionsLabel" to "Salvesta kõik",
+                "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
+                "allLabel" to "Kõik õpilased",
+                "hasOneGroup" to (groups.size == 1),
+                "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) }))
+
+        if (groups.isNotEmpty()) {
+            initSelectFields()
+            val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
+            groupSelect.onChange {
+                MainScope().launch {
+                    val group = groupSelect.value
+                    debug { "Selected group $group" }
+                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, group)
                 }
             }
         }
+
+        return if (groups.size == 1) groups[0].id else null
     }
 
     private fun initSelectFields() {
@@ -438,7 +439,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, exerciseId: String,
-                                                 threshold: Int, groupId: String? = null, offset: Int = 0) {
+                                                 threshold: Int, groupId: String?, offset: Int = 0) {
 
         val q = createQueryString("group" to groupId, "limit" to PAGE_STEP.toString(), "offset" to offset.toString())
         val teacherStudents = fetchEms(
