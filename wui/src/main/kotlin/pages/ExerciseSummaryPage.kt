@@ -408,7 +408,7 @@ object ExerciseSummaryPage : EasyPage() {
         val groups = fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
                 errorHandler = ErrorHandlers.noCourseAccessPage).await()
                 .parseTo(Groups.serializer()).await()
-                .groups
+                .groups.sortedBy { it.name }
 
         debug { "Groups available: $groups" }
 
