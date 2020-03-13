@@ -59,8 +59,8 @@ fun mainCommented() {
  */
 class DiceCoefficientStrategy {
 
-    fun findClosestN(code: String, codes: List<String>, n: Int): List<Pair<Int, Double>> {
-        return codes.mapIndexed { i, it -> i to score(code, it) }
+    fun findClosestN(sourceCode: String, targetSourceCode: List<String>, n: Int): List<Pair<Int, Double>> {
+        return targetSourceCode.mapIndexed { i, it -> i to score(sourceCode, it) }
                 .sortedByDescending { it.second }
                 .take(n)
     }
