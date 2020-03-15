@@ -94,6 +94,9 @@ dependencies {
 
     // StoredFile type detection
     implementation 'org.apache.tika:tika-core:1.23'
+
+    // Source code similarity
+    implementation 'me.xdrop:fuzzywuzzy:1.2.0'
 }
 
 
