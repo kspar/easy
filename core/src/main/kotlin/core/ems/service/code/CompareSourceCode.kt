@@ -102,7 +102,7 @@ fun mainTest() {
 }
 
 fun fuzzy(s1: String, s2: String): Int {
-    return FuzzySearch.ratio(s1, s2) //TODO: best
+    return FuzzySearch.ratio(s1, s2)
 }
 
 /**
