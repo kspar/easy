@@ -3,17 +3,20 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.autoAssess
 import core.conf.security.EasyUser
-import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.db.Teacher
+import core.db.TeacherSubmission
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -32,23 +35,19 @@ class TeacherAutoassController {
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/teacher/courses/{courseId}/exercises/{courseExId}/autoassess")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @PathVariable("courseExId") courseExIdStr: String,
+    @PostMapping("/exercises/{exerciseId}/testing/autoassess")
+    fun controller(@PathVariable("exerciseId") exerciseIdStr: String,
                    @Valid @RequestBody dto: Req,
                    caller: EasyUser): Resp {
 
         val callerId = caller.id
+        log.debug { "Teacher/admin $callerId autoassessing solution to exercise $exerciseIdStr" }
+        val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
-        log.debug { "Teacher/admin $callerId autoassessing solution to exercise $courseExIdStr on course $courseIdStr" }
+        insertTeacherSubmission(exerciseId, dto.solution, callerId)
 
-        val courseId = courseIdStr.idToLongOrInvalidReq()
-        val courseExId = courseExIdStr.idToLongOrInvalidReq()
-
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-
-        val aaId = getAutoExerciseId(courseId, courseExId)
-                ?: throw InvalidRequestException("Autoassessment not found for exercise $courseExId on course $courseId")
+        val aaId = getAutoExerciseId(exerciseId)
+                ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.ASSESSMENT_NOT_LINKED)
 
         val aaResult = autoAssess(aaId, dto.solution)
         return Resp(aaResult.grade, aaResult.feedback)
@@ -56,16 +55,24 @@ class TeacherAutoassController {
 }
 
 
-private fun getAutoExerciseId(courseId: Long, courseExerciseId: Long): EntityID<Long>? {
+private fun getAutoExerciseId(exerciseId: Long): EntityID<Long>? {
     return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+        (Exercise innerJoin ExerciseVer)
                 .slice(ExerciseVer.autoExerciseId)
-                .select {
-                    CourseExercise.course eq courseId and
-                            (CourseExercise.id eq courseExerciseId) and
-                            ExerciseVer.validTo.isNull()
-                }
+                .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
                 .map { it[ExerciseVer.autoExerciseId] }
                 .single()
+    }
+}
+
+
+private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String) {
+    transaction {
+        TeacherSubmission.insert {
+            it[TeacherSubmission.solution] = solution
+            it[TeacherSubmission.createdAt] = DateTime.now()
+            it[TeacherSubmission.exercise] = EntityID(exerciseId, TeacherSubmission)
+            it[TeacherSubmission.teacher] = EntityID(teacherId, Teacher)
+        }
     }
 }

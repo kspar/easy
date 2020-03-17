@@ -207,12 +207,11 @@ object SubmissionDraft : Table("submission_draft") {
     override val primaryKey = PrimaryKey(courseExercise, student)
 }
 
-object TestingDraft : Table("testing_draft") {
-    val courseExercise = reference("course_exercise_id", CourseExercise)
+object TeacherSubmission : LongIdTable("teacher_submission") {
     val teacher = reference("teacher_id", Teacher)
+    val exercise = reference("exercise_id", Exercise)
     val createdAt = datetime("created_at")
     val solution = text("solution")
-    override val primaryKey = PrimaryKey(courseExercise, teacher)
 }
 
 object SystemConfiguration : IdTable<String>("system_configuration") {
