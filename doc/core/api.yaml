@@ -804,33 +804,26 @@ paths:
           description: Teachers' accesses removed.
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess/draft:
+  /exercises/{exerciseId}/testing/autoassess/submissions:
     parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
+      - $ref: '#/parameters/ExerciseId'
+      - $ref: '#/parameters/Limit'
+      - $ref: '#/parameters/Offset'
     get:
-      summary: Get the latest teacher submission's draft to the specified course exercise.
+      summary: Get the latest teacher submissions to the specified exercise.
       tags:
         - teacher
       responses:
         200:
-          description: Get the latest teacher submission draft of this exercise.
-          schema:
-            $ref: '#/definitions/SubmissionDraft'
-    post:
-      summary: Upload new teacher submission's draft to the specified course exercise.
-      tags:
-        - teacher
-      parameters:
-        - name: submission
-          in: body
+          description: Get the latest teacher submissions of this exercise.
           schema:
             properties:
-              solution:
-                type: string
-      responses:
-        200:
-          description: Submission draft uploaded.
+              count:
+                type: integer
+              submissions:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherSubmission'
 
 
   /teacher/courses:
@@ -1103,11 +1096,9 @@ paths:
           description: Reordered.
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess:
+  /exercises/{exerciseId}/testing/autoassess:
     parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-
+      - $ref: '#/parameters/ExerciseId'
     post:
       summary: Test autoassessment of this exercise with this solution.
       tags:
@@ -1872,6 +1863,20 @@ definitions:
         type: string
         format: date-time
     required:
+      - solution
+      - created_at
+
+  TeacherSubmission:
+    properties:
+      id:
+        type: string
+      solution:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+    required:
+      - id
       - solution
       - created_at
 
