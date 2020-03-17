@@ -3884,7 +3884,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: teacher: post: submit draft: success",
+			"name": "EMS: teacher: post: submit teacher submission: success",
 			"event": [
 				{
 					"listen": "test",
@@ -3948,25 +3948,22 @@
 					}
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"raw": "{{EMSBASE}}/exercises/1/testing/autoassess",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
-						"courses",
-						"1",
 						"exercises",
 						"1",
-						"autoassess",
-						"draft"
+						"testing",
+						"autoassess"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "EMS: teacher: get: read draft: success",
+			"name": "EMS: teacher: get: read teacher submissions: success",
 			"event": [
 				{
 					"listen": "test",
@@ -4021,18 +4018,16 @@
 					}
 				],
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"raw": "{{EMSBASE}}/exercises/1/testing/autoassess/submissions",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
-						"courses",
-						"1",
 						"exercises",
 						"1",
+						"testing",
 						"autoassess",
-						"draft"
+						"submissions"
 					]
 				}
 			},
