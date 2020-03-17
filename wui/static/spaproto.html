@@ -62,11 +62,42 @@
     </div>
 </script>
 
+<script id="t-c-card-tabs" type="text/x-handlebars">
+    <div class="card">
+        <div class="tabs-wrap">
+            <ul id="{{tabsId}}" class="tabs">
+                {{#tabs}}
+                    <li class="tab"><a href="#{{dstId}}">{{title}}</a></li>
+                {{/tabs}}
+            </ul>
+        </div>
+        <div class="card-content">
+            {{#tabs}}
+                <div id="{{dstId}}"></div>
+            {{/tabs}}
+        </div>
+    </div>
+</script>
+
+<script id="t-c-code-editor" type="text/x-handlebars">
+    <div class="editor-wrapper">
+        <div class="editor-top">
+            <div class="left-side">
+                {{#tabs}}
+                    <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
+                {{/tabs}}
+            </div>
+        </div>
+        <textarea id="{{textareaId}}"></textarea>
+    </div>
+</script>
+
+
 <!-- Courses page -->
 
 <script id="t-c-stud-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{pageTitle}}</h3>
+        <h2 class="title">{{pageTitle}}</h2>
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
@@ -96,7 +127,7 @@
 
 <script id="t-c-teach-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{pageTitle}}</h3>
+        <h2 class="title">{{pageTitle}}</h2>
         {{#canAddCourse}}
             <a class="waves-effect waves-light btn title-button" href="/courses/new">
                 <i class="material-icons">add</i><span class="text">{{newCourseLabel}}</span></a>
@@ -141,7 +172,7 @@
 <script id="t-c-stud-course-exercises" type="text/x-handlebars">
     <ez-dst id="{{crumbDstId}}"></ez-dst>
     <div class="title-wrap">
-        <h3 class="title">{{courseTitle}}</h3>
+        <h2 class="title">{{courseTitle}}</h2>
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
@@ -190,6 +221,52 @@
 </script>
 
 
+<!-- Exercise page -->
+
+<script id="t-c-exercise" type="text/x-handlebars">
+    <div id="global-exercise">
+        <ez-dst id="{{crumbsDstId}}"></ez-dst>
+        <ez-dst id="{{cardDstId}}"></ez-dst>
+    </div>
+</script>
+
+<script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
+    <p class="subheading-item"><span class="subheading">{{createdAtLabel}}:</span>{{createdAt}} ({{createdBy}})</p>
+    <p class="subheading-item"><span class="subheading">{{modifiedAtLabel}}:</span>{{modifiedAt}} ({{modifiedBy}})</p>
+    <p class="subheading-item"><span class="subheading">{{isPublicLabel}}:</span>{{isPublic}}</p>
+    <p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>
+    <p class="subheading-item"><span class="subheading">{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</span>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</p>
+    <ul class="browser-default" style="margin-top: 0;">
+        {{#onCourses}}
+            <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
+        {{/onCourses}}
+    </ul>
+    <h2>{{title}}</h2>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-view" type="text/x-handlebars">
+    <div class="pre-exercise-text-wrap">
+        <a id="exercise-text-enable-edit" href="#!"><i class="material-icons" style="font-size: 19px; margin-right: .5rem;">create</i>{{doEditLabel}}</a>
+    </div>
+    <div id="exercise-text">{{{html}}}</div>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
+    <ez-dst id="{{editorDstId}}"></ez-dst>
+    <div class="center">
+        <button id="update-submit" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+    </div>
+    <ez-dst id="{{previewDstId}}"></ez-dst>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-edit-preview" type="text/x-handlebars">
+    <h2>{{previewLabel}}</h2>
+    <div id="exercise-text">-</div>
+</script>
+
+
+
+<!-- Legacy templates -->
 
 <script id="tm-stud-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
@@ -197,7 +274,7 @@
         <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
@@ -321,7 +398,7 @@
 
 <script id="tm-no-access-page" type="text/x-handlebars-template">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div class="missing-content-wrap sad-robot">
         <div class="antennaball"></div>
@@ -336,7 +413,7 @@
 
 <script id="tm-broken-page" type="text/x-handlebars-template">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div class="missing-content-wrap sad-robot">
         <div class="antennaball"></div>
@@ -426,7 +503,7 @@
 </script>
 
 <script id="tm-teach-exercise-student-submission-sub" type="text/x-handlebars-template">
-    <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3>
+    <h2 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h2>
     {{#isLatest}}<span class="last-submission-label">{{latestSubmissionLabel}}</span>{{/isLatest}}
     {{^isLatest}}
     <div><span class="note warn">
@@ -578,7 +655,7 @@
 <script id="tm-teach-exercise" type="text/x-handlebars-template">
     <nav id="crumbs" class="crumb-wrap"></nav>
     <div id="exercise-card" class="card">
-        <div id="tabs-wrap">
+        <div class="tabs-wrap">
             <ul id="tabs" class="tabs">
                 <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
                 <li class="tab"><a href="#testing">{{testingLabel}}</a></li>
@@ -644,7 +721,7 @@
 <script id="tm-stud-exercise" type="text/x-handlebars-template">
     <nav id="crumbs" class="crumb-wrap"></nav>
     <div id="exercise-card" class="card">
-        <div id="tabs-wrap">
+        <div class="tabs-wrap">
             <ul id="tabs" class="tabs">
                 <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
                 <li class="tab"><a href="#submit">{{submitLabel}}</a></li>
@@ -663,7 +740,7 @@
         <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
         <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
             <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
         </a>
@@ -696,7 +773,7 @@
             <a class="breadcrumb truncate">{{participantsLabel}}</a>
         </nav>
         <div class="title-wrap">
-            <h3 class="title">{{title}}</h3>
+            <h2 class="title">{{title}}</h2>
         </div>
 
         <h4 class="subsection">{{teachersLabel}}</h4>
@@ -875,7 +952,7 @@
         <a class="breadcrumb truncate">{{gradesLabel}}</a>
     </nav>
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div class="card">
         <div class="card-content">
@@ -946,32 +1023,6 @@
     </div>
 </script>
 
-<script id="tm-modify-global-exercise" type="text/x-handlebars-template">
-    <div id="exercise-card" class="card">
-        <div class="card-content">
-            <h2>{{title}}</h2>
-            <p>{{onCoursesLabel}}:</p>
-            {{#onCourses}}
-                <p>{{title}}</p>
-            {{/onCourses}}
-            <div class="editor-wrapper">
-                <div class="editor-top">
-                    <div class="left-side">
-                        <a id="tab-adoc" class="top-item editor-tab active">adoc</a>
-                        <a id="tab-html" href="#!" class="top-item editor-tab">html</a>
-                    </div>
-                </div>
-                <textarea id="text-editor"></textarea>
-            </div>
-            <div class="center">
-                <button id="update-submit" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
-            </div>
-            <p id="status"></p>
-            <h4>{{previewLabel}}</h4>
-            <div id="exercise-text"></div>
-        </div>
-    </div>
-</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://idp.lahendus.ut.ee/auth/js/keycloak.js"></script>

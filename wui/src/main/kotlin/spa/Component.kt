@@ -1,5 +1,6 @@
 package spa
 
+import IdGenerator
 import doInPromise
 import getElemById
 import kotlinx.coroutines.await
@@ -21,8 +22,9 @@ import kotlin.js.Promise
  *
  * Components should not directly call any methods other than [createAndBuild] and [rebuild] on themselves.
  */
-abstract class Component(val dstId: String,
-                         private val parent: Component?) {
+abstract class Component(private val parent: Component?,
+                         val dstId: String = IdGenerator.nextId()
+) {
 
     /**
      * This component's dependants.
@@ -76,10 +78,12 @@ abstract class Component(val dstId: String,
     /**
      * Rebuild this component and its children.
      */
-    // Might want a recreateChildren: Boolean param in the future... or some other method to recreate children.
-    fun rebuild() {
+    fun rebuild(recreateChildren: Boolean = true): Promise<*> = doInPromise {
         buildThis()
-        children.forEach { it.rebuild() }
+        if (recreateChildren)
+            children.map { it.createAndBuild() }.unionPromise().await()
+        else
+            children.forEach { it.rebuild(false) }
     }
 
     protected fun buildThis() {

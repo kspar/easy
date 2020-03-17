@@ -1,15 +1,13 @@
 package pages.course_exercises
 
-import IdGenerator
 import doInPromise
 import spa.Component
 import kotlin.js.Promise
 
 class StudentCourseExercisesListComp(
         private val courseId: String,
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : Component(dstId, parent) {
+        parent: Component?
+) : Component(parent) {
 
     private lateinit var items: List<StudentCourseExercisesItemComp>
 
@@ -25,9 +23,8 @@ class StudentCourseExercisesListComp(
 }
 
 class StudentCourseExercisesItemComp(
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : Component(dstId, parent) {
+        parent: Component?
+) : Component(parent) {
 
     override fun render(): String = "item"
 }

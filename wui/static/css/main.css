@@ -28,6 +28,14 @@ body {
     margin-right: 0.5rem;
 }
 
+h2 {
+    font-size: 2.3rem;
+}
+
+h4 {
+    font-size: 2rem;
+}
+
 
 /** Navbar **/
 
@@ -241,61 +249,7 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-/** Exercise page **/
-
-#exercise-card #tabs-wrap {
-    text-align: center;
-}
-
-#exercise-card .tabs .tab {
-    text-transform: none;
-}
-
-#exercise-card .tabs .tab a {
-    font-size: 1.7rem;
-    color: gray;
-}
-
-@media only screen and (min-width: 601px) {
-    #exercise-card .tabs .tab a {
-        font-size: 2.1rem;
-    }
-}
-
-#exercise-card .tabs .tab a:hover,
-#exercise-card .tabs .tab a.active {
-    background-color: transparent;
-    color: #4DAB54;
-}
-
-#exercise-card .tabs .tab a:focus,
-#exercise-card .tabs .tab a:focus.active {
-    background-color: rgba(77, 171, 84, 0.2);
-    outline: none;
-}
-
-#exercise-card .tabs .indicator {
-    background-color: #4DAB54;
-}
-
-#exercise-card .card-content {
-    padding: 1.3rem;
-    border-top: 1px solid #e2e2e2;
-}
-
-@media only screen and (min-width: 601px) {
-    #exercise-card .card-content {
-        padding: 2.4rem;
-    }
-}
-
-#exercise-card h2 {
-    font-size: 2.3rem;
-}
-
-#exercise-card #exercise-text {
-    overflow: auto;
-}
+/** Course exercise page **/
 
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
@@ -446,14 +400,6 @@ nav.crumb-wrap .breadcrumb:before {
     margin-left: 1rem;
 }
 
-#exercise-card h3 {
-    font-size: 2.3rem;
-}
-
-#exercise-card h4 {
-    font-size: 2rem;
-}
-
 #exercise-card .all-submissions-wrap {
     max-height: 35vh;
     overflow: auto;
@@ -555,6 +501,14 @@ nav.crumb-wrap .breadcrumb:before {
 
 #exercises-list .collection-item .row {
     margin-bottom: 0;
+}
+
+
+/** Exercise page **/
+
+#global-exercise .pre-exercise-text-wrap {
+    display: flex;
+    justify-content: flex-end;
 }
 
 
@@ -874,6 +828,10 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Links **/
 
+/*a[href]:hover {*/
+/*    text-decoration: underline;*/
+/*}*/
+
 .toggle-link {
     display: block;
     padding-bottom: 0.5rem;
@@ -1094,6 +1052,55 @@ h3.title {
 
 div.title-wrap > .title-button > i.material-icons {
     font-size: 2rem;
+}
+
+
+/** Card tabs **/
+
+.tabs-wrap {
+    text-align: center;
+}
+
+.tabs .tab {
+    text-transform: none;
+}
+
+.tabs .tab a {
+    font-size: 1.7rem;
+    color: gray;
+}
+
+@media only screen and (min-width: 601px) {
+    .tabs .tab a {
+        font-size: 2.1rem;
+    }
+}
+
+.tabs .tab a:hover,
+.tabs .tab a.active {
+    background-color: transparent;
+    color: #4DAB54;
+}
+
+.tabs .tab a:focus,
+.tabs .tab a:focus.active {
+    background-color: rgba(77, 171, 84, 0.2);
+    outline: none;
+}
+
+.tabs .indicator {
+    background-color: #4DAB54;
+}
+
+.tabs-wrap + .card-content {
+    padding: 1.3rem;
+    border-top: 1px solid #e2e2e2;
+}
+
+@media only screen and (min-width: 601px) {
+    .tabs-wrap + .card-content {
+        padding: 2.4rem;
+    }
 }
 
 

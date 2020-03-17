@@ -1,5 +1,6 @@
 package spa
 
+import IdGenerator
 import doInPromise
 import kotlinx.coroutines.await
 import unionPromise
@@ -13,7 +14,7 @@ import kotlin.js.Promise
  * the children won't be created from state.
  * @param StateType type of the cacheable state object, must be @Serializable
  */
-abstract class CacheableComponent<StateType>(dstId: String, parent: Component?) : Component(dstId, parent) {
+abstract class CacheableComponent<StateType>(parent: Component?, dstId: String = IdGenerator.nextId()) : Component(parent, dstId) {
 
     /**
      * Return a cacheable state object representing this component's current state.

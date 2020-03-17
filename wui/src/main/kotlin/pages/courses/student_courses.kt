@@ -1,7 +1,6 @@
 package pages.courses
 
 import CourseInfoCache
-import IdGenerator
 import Str
 import doInPromise
 import kotlinx.coroutines.await
@@ -14,9 +13,8 @@ import kotlin.js.Promise
 
 
 class StudentCoursesRootComp(
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : CacheableComponent<StudentCoursesRootComp.State>(dstId, parent) {
+        parent: Component?
+) : CacheableComponent<StudentCoursesRootComp.State>(parent) {
 
     @Serializable
     data class State(val coursesState: StudentCourseListComp.State)
@@ -48,9 +46,8 @@ class StudentCoursesRootComp(
 
 
 class StudentCourseListComp(
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : CacheableComponent<StudentCourseListComp.State>(dstId, parent) {
+        parent: Component?
+) : CacheableComponent<StudentCourseListComp.State>(parent) {
 
     @Serializable
     data class State(val courses: List<SCourse>)
@@ -102,9 +99,8 @@ class StudentCourseListComp(
 class StudentCourseItemComp(
         val id: String,
         val title: String,
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : Component(dstId, parent) {
+        parent: Component?
+) : Component(parent) {
 
     override fun render(): String = tmRender("t-c-stud-courses-item",
             "id" to id,

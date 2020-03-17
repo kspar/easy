@@ -1,7 +1,7 @@
 package pages.courses
 
 import Auth
-import IdGenerator
+import CONTENT_CONTAINER_ID
 import PageName
 import Role
 import ScrollPosition
@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import pages.EasyPage
 import parseTo
+import plainDstStr
 import restoreWindowScroll
-import singleDstStr
 import spa.CacheableComponent
 import spa.Component
 import stringify
@@ -41,7 +41,7 @@ object CoursesPage : EasyPage() {
 
             val state = pageStateStr?.parseTo(State.serializer())
 
-            val root = CoursesRootComponent(Auth.activeRole, "content-container")
+            val root = CoursesRootComponent(Auth.activeRole, CONTENT_CONTAINER_ID)
             rootComp = root
 
             if (state == null) {
@@ -69,8 +69,8 @@ object CoursesPage : EasyPage() {
 
 class CoursesRootComponent(
         private val role: Role,
-        dstId: String = IdGenerator.nextId()
-) : CacheableComponent<CoursesRootComponent.State>(dstId, null) {
+        dstId: String
+) : CacheableComponent<CoursesRootComponent.State>(null, dstId) {
 
     @Serializable
     data class State(val studentState: StudentCoursesRootComp.State?, val teacherState: TeacherCoursesRootComp.State?)
@@ -102,7 +102,7 @@ class CoursesRootComponent(
         teacherRoot?.createAndBuildFromState(state.teacherState!!)
     }
 
-    override fun render(): String = singleDstStr(children[0].dstId)
+    override fun render(): String = plainDstStr(children[0].dstId)
 
     override fun getCacheableState(): State = State(studentRoot?.getCacheableState(), teacherRoot?.getCacheableState())
 }

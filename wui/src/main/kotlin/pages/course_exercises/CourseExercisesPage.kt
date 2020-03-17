@@ -1,12 +1,15 @@
 package pages.course_exercises
 
 import Auth
+import CONTENT_CONTAINER_ID
 import DateSerializer
 import IdGenerator
 import JsonUtil
 import PageName
 import Role
 import Str
+import components.BreadcrumbsComp
+import components.Crumb
 import debug
 import debugFunStart
 import doInPromise
@@ -17,8 +20,6 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
-import pages.BreadcrumbsComp
-import pages.Crumb
 import pages.EasyPage
 import parseTo
 import queries.*
@@ -36,7 +37,7 @@ class StudentCourseExercisesComp(
         private val courseId: String,
         parent: Component?,
         dstId: String = IdGenerator.nextId()
-) : Component(dstId, parent) {
+) : Component(parent, dstId) {
 
     private lateinit var courseTitle: String
 
@@ -136,7 +137,7 @@ object CourseExercisesPage : EasyPage() {
     }
 
     private fun buildStudentExercises2(courseId: String) {
-        val c = StudentCourseExercisesComp(courseId, null, "content-container")
+        val c = StudentCourseExercisesComp(courseId, null, CONTENT_CONTAINER_ID)
         c.onStateChanged = { debug { "State change detected" } }
         c.createAndBuild()
     }

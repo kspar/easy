@@ -1,10 +1,11 @@
-import pages.*
-import pages.courses.CoursesPage
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import libheaders.CodeMirror
+import pages.*
 import pages.course_exercises.CourseExercisesPage
+import pages.courses.CoursesPage
+import pages.exercise.ExercisePage
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200

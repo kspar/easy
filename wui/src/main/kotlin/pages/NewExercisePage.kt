@@ -7,13 +7,12 @@ import getContainer
 import getElemById
 import getElemByIdAs
 import getElemByIdOrNull
-import getNodelistBySelector
+import highlightCode
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
-import libheaders.highlightCode
 import objOf
 import observeValueChange
 import org.w3c.dom.HTMLDivElement
@@ -96,10 +95,6 @@ object NewExercisePage : EasyPage() {
                 )
             }
         }
-    }
-
-    private fun highlightCode() {
-        getNodelistBySelector("pre.highlightjs.highlight code.hljs").highlightCode()
     }
 
     private suspend fun adocToHtml(adoc: String): String {

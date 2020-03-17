@@ -3,9 +3,10 @@ import kotlin.browser.document
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
 
+const val CONTENT_CONTAINER_ID = "content-container"
 
 fun getContainer(): HTMLDivElement =
-        getElemByIdAs("content-container")
+        getElemByIdAs(CONTENT_CONTAINER_ID)
 
 fun getBody(): HTMLBodyElement =
         document.body as HTMLBodyElement
@@ -25,8 +26,9 @@ fun getElemsBySelector(selector: String): List<Element> =
 fun getElemBySelector(selector: String): Element? =
         document.querySelector(selector)
 
-fun getElemsByClass(className: String): List<Element> =
-        document.getElementsByClassName(className).asList()
+fun getElemsByClass(className: String): List<Element> = document.getElementsByClassName(className).asList()
+
+fun Element.getElemsByClass(className: String): List<Element> = getElementsByClassName(className).asList()
 
 fun getElemByIdOrNull(id: String): Element? =
         document.getElementById(id)

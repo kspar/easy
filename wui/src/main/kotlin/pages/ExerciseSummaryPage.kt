@@ -20,6 +20,7 @@ import getElemsByClass
 import getElemsBySelector
 import getLastPageOffset
 import getNodelistBySelector
+import highlightCode
 import isNotNullAndTrue
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -28,7 +29,7 @@ import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
-import libheaders.highlightCode
+import lightboxExerciseImages
 import moveClass
 import objOf
 import observeValueChange
@@ -289,8 +290,8 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", exerciseMap)
 
-        initExerciseImages()
-        highlightExerciseCode()
+        lightboxExerciseImages()
+        highlightCode()
 
         if (aaFiles != null) {
             initAaFileEditor(aaFiles)
@@ -822,8 +823,8 @@ object ExerciseSummaryPage : EasyPage() {
                     "title" to exercise.effective_title,
                     "text" to exercise.text_html
             ))
-            initExerciseImages()
-            highlightExerciseCode()
+            lightboxExerciseImages()
+            highlightCode()
             MathJax.formatPageIfNeeded(exercise.text_html.orEmpty())
         }
 
@@ -1047,16 +1048,8 @@ object ExerciseSummaryPage : EasyPage() {
         moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-fail"), "visible")
     }
 
-    private fun initExerciseImages() {
-        Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
-    }
-
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
-    }
-
-    private fun highlightExerciseCode() {
-        getNodelistBySelector("pre.highlightjs.highlight code.hljs").highlightCode()
     }
 
     data class PathIds(val courseId: String, val exerciseId: String)
