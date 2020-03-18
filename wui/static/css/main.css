@@ -899,8 +899,8 @@ a i.pre-link-icon {
 /** Form elements **/
 
 input,
-textarea {
-    height: 4rem !important;
+textarea.materialize-textarea {
+    min-height: 4rem;
 }
 
 .input-field label {
