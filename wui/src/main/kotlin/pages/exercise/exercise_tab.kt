@@ -168,7 +168,7 @@ class ExerciseTextEditComp(
     override fun create(): Promise<*> = doInPromise {
         editor = CodeEditorComp(listOf(
                 CodeEditorComp.File(ADOC_FILENAME, textAdoc, "asciidoc"),
-                CodeEditorComp.File(HTML_FILENAME, null, objOf("name" to "xml", "htmlMode" to true), false)
+                CodeEditorComp.File(HTML_FILENAME, null, objOf("name" to "xml", "htmlMode" to true), CodeEditorComp.Edit.READONLY)
         ), this)
         preview = ExercisePreviewComp(this)
     }
@@ -191,7 +191,7 @@ class ExerciseTextEditComp(
             )
         }
 
-        getElemByIdAs<HTMLButtonElement>("update-submit").onSingleClickWithDisabled("Salvestan...") {
+        getElemByIdAs<HTMLButtonElement>("update-submit-exercise").onSingleClickWithDisabled("Salvestan...") {
             onSaveUpdatedAdoc(getCurrentAdoc())
         }
     }

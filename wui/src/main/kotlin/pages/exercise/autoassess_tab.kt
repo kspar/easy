@@ -1,15 +1,49 @@
 package pages.exercise
 
+import components.CodeEditorComp
+import doInPromise
+import getElemByIdAs
+import onSingleClickWithDisabled
+import org.w3c.dom.HTMLButtonElement
 import spa.Component
+import tmRender
+import kotlin.js.Promise
 
 
 class AutoAssessmentTabComp(
-        private val scripts: List<AutoAssessScript>,
+        private val exercise: ExerciseDTO,
         private val onSaveUpdatedExercise: suspend (exercise: ExerciseDTO) -> Unit,
         parent: Component?
 ) : Component(parent) {
 
-    data class AutoAssessScript(val filename: String, val content: String)
+    companion object {
+        const val GRADING_SCRIPT_FILENAME = "evaluate.sh"
+    }
 
-    override fun render(): String = "autoassessment tab"
+    private lateinit var editor: CodeEditorComp
+
+    override val children: List<Component>
+        get() = listOf(editor)
+
+    override fun create(): Promise<*> = doInPromise {
+        val gradingScript = CodeEditorComp.File(GRADING_SCRIPT_FILENAME, exercise.grading_script, "shell", CodeEditorComp.Edit.TOGGLED)
+        val assets = exercise.assets.orEmpty().map { CodeEditorComp.File(it.file_name, it.file_content, "python", CodeEditorComp.Edit.TOGGLED) }
+        editor = CodeEditorComp(listOf(gradingScript) + assets, this)
+    }
+
+    override fun render(): String = tmRender("t-c-exercise-tab-aa",
+            "aaLabel" to "Automaatkontroll",
+            "editorDstId" to editor.dstId,
+            "doUpdateLabel" to "Salvesta"
+    )
+
+    override fun postRender() {
+        getElemByIdAs<HTMLButtonElement>("update-submit-aa").onSingleClickWithDisabled("Salvestan...") {
+            val newScripts = editor.getAllFiles().map { AssetDTO(it.name, it.content.orEmpty()) }
+            val newGradingScript = newScripts.single { it.file_name == GRADING_SCRIPT_FILENAME }
+            exercise.grading_script = newGradingScript.file_content
+            exercise.assets = newScripts - newGradingScript
+            onSaveUpdatedExercise(exercise)
+        }
+    }
 }

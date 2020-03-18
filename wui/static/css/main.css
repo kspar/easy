@@ -616,9 +616,8 @@ nav.crumb-wrap .breadcrumb:before {
     margin-right: 10px;
 }
 
-
 .CodeMirror {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     height: auto;
 }
 
@@ -627,8 +626,12 @@ nav.crumb-wrap .breadcrumb:before {
     max-height: 85vh;
 }
 
-.no-cursor .CodeMirror-cursors {
+.editor-read-only .CodeMirror-cursors {
     visibility: hidden !important;
+}
+
+.editor-read-only .CodeMirror {
+    background-color: #f6f6f6;
 }
 
 
@@ -856,6 +859,11 @@ nav.crumb-wrap .breadcrumb:before {
 
 a.uncolored {
     color: inherit;
+}
+
+a i.pre-link-icon {
+    font-size: 1.1em;
+    margin-right: .4rem;
 }
 
 

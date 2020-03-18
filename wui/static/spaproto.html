@@ -87,9 +87,16 @@
                     <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
                 {{/tabs}}
             </div>
+            <div class="right-side">
+                <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
+            </div>
         </div>
         <textarea id="{{textareaId}}"></textarea>
     </div>
+</script>
+
+<script id="t-c-link" type="text/x-handlebars">
+    <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
 </script>
 
 
@@ -254,7 +261,7 @@
 <script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
     <ez-dst id="{{editorDstId}}"></ez-dst>
     <div class="center">
-        <button id="update-submit" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+        <button id="update-submit-exercise" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
     </div>
     <ez-dst id="{{previewDstId}}"></ez-dst>
 </script>
@@ -262,6 +269,14 @@
 <script id="t-c-exercise-tab-exercise-text-edit-preview" type="text/x-handlebars">
     <h2>{{previewLabel}}</h2>
     <div id="exercise-text">-</div>
+</script>
+
+<script id="t-c-exercise-tab-aa" type="text/x-handlebars">
+    <h2>{{aaLabel}}</h2>
+    <ez-dst id="{{editorDstId}}"></ez-dst>
+    <div class="center">
+        <button id="update-submit-aa" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+    </div>
 </script>
 
 
@@ -518,7 +533,7 @@
     <a id="add-grade-link" class="toggle-link" href="#!">{{addGradeLink}}</a>
     <div id="add-grade-section"></div>
     {{/isLatest}}
-    <div class="editor-wrapper no-cursor">
+    <div class="editor-wrapper editor-read-only">
         <div class="editor-top"></div>
         <textarea id="student-submission">{{solution}}</textarea>
     </div>
@@ -633,7 +648,7 @@
     <div id="exercise-text">{{{exerciseText}}}</div>
     {{#aaTitle}}
         <h4>{{aaTitle}}</h4>
-        <div class="editor-wrapper no-cursor aa-files-wrap">
+        <div class="editor-wrapper editor-read-only aa-files-wrap">
             <div class="editor-top">
                 <div class="left-side">
                     {{#aaFiles}}
@@ -1018,7 +1033,7 @@
             <div id="exercise-text"></div>
         </div>
     </div>
-    <div class="editor-wrapper no-cursor">
+    <div class="editor-wrapper editor-read-only">
         <textarea id="text-html"></textarea>
     </div>
 </script>

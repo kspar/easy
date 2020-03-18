@@ -939,7 +939,7 @@ object ExerciseSummaryPage : EasyPage() {
         submitButton.disabled = true
         submitButton.textContent = Str.autoAssessing()
         editor?.setOption("readOnly", true)
-        editorWrap.addClass("no-cursor")
+        editorWrap.addClass("editor-read-only")
     }
 
     private fun paintAutoassInProgress() {

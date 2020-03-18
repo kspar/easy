@@ -90,11 +90,7 @@ class ExerciseRootComp(
         tabsMap["Ülesanne"] = ExerciseTabComp(exercise, ::saveExercise, tabs)
 
         if (exercise.grader_type == GraderType.AUTO) {
-            val aaScripts =
-                    listOf(AutoAssessmentTabComp.AutoAssessScript("evaluate.sh", exercise.grading_script.orEmpty())) +
-                            exercise.assets.orEmpty().map { AutoAssessmentTabComp.AutoAssessScript(it.file_name, it.file_content) }
-
-            tabsMap["Automaatkontroll"] = AutoAssessmentTabComp(aaScripts, ::saveExercise, this.tabs)
+            tabsMap["Automaatkontroll"] = AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs)
             tabsMap["Katsetamine"] = TestingTabComp(this.tabs)
         }
 
