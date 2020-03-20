@@ -91,7 +91,7 @@ class ExerciseRootComp(
 
         if (exercise.grader_type == GraderType.AUTO) {
             tabsMap["Automaatkontroll"] = AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs)
-            tabsMap["Katsetamine"] = TestingTabComp(this.tabs)
+            tabsMap["Katsetamine"] = TestingTabComp(exerciseId, this.tabs)
         }
 
         tabs.setTabs(tabsMap)

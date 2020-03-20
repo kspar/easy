@@ -3,6 +3,7 @@ import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.Node
+import org.w3c.dom.asList
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 
@@ -65,10 +66,11 @@ fun HTMLButtonElement.onSingleClickWithDisabled(disabledText: String, f: suspend
         val btn = this
         MainScope().launch {
             btn.disabled = true
-            val activeHtml = btn.innerHTML
-            btn.textContent = disabledText
+            val btnContent = btn.getElementsByTagName("ez-btn-content").asList().single()
+            val activeHtml = btnContent.innerHTML
+            btnContent.textContent = disabledText
             f(it)
-            btn.innerHTML = activeHtml
+            btnContent.innerHTML = activeHtml
             btn.disabled = false
         }
     }

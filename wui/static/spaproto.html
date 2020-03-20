@@ -99,6 +99,12 @@
     <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
 </script>
 
+<script id="t-c-assessment-view" type="text/x-handlebars">
+    <h4>{{title}}</h4>
+    <pre class="feedback {{#auto}}auto-feedback{{/auto}}">{{feedback}}</pre>
+    <div>{{gradeLabel}}: <span class="grade-number">{{grade}}{{^grade}}-{{/grade}}</span>/100</div>
+</script>
+
 
 <!-- Courses page -->
 
@@ -261,7 +267,7 @@
 <script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
     <ez-dst id="{{editorDstId}}"></ez-dst>
     <div class="center">
-        <button id="update-submit-exercise" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+        <button id="update-submit-exercise" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
     </div>
     <ez-dst id="{{previewDstId}}"></ez-dst>
 </script>
@@ -275,9 +281,18 @@
     <h2>{{aaLabel}}</h2>
     <ez-dst id="{{editorDstId}}"></ez-dst>
     <div class="center">
-        <button id="update-submit-aa" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
+        <button id="update-submit-aa" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
     </div>
 </script>
+
+<script id="t-c-exercise-tab-testing" type="text/x-handlebars">
+    <ez-dst id="{{assessId}}"></ez-dst>
+    <ez-dst id="{{editorId}}"></ez-dst>
+    <div class="center">
+        <button id="testing-submit" class="waves-effect waves-light btn"><ez-btn-content>{{doTestLabel}}</ez-btn-content></button>
+    </div>
+</script>
+
 
 
 
@@ -376,7 +391,7 @@
 
 <script id="tm-message" type="text/x-handlebars-template">
     <i class="material-icons" style="margin-right: 10px;">{{icon}}</i>
-    <span class="msg">{{msg}}</span>
+    <span class="msg truncate">{{msg}}</span>
     <button id="{{btnId}}" class="btn-flat toast-action"><i class="material-icons dismiss">close</i></button>
 </script>
 

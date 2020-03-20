@@ -22,6 +22,7 @@ abstract class TranslatableStrings {
     abstract fun closeToggleLink(): String
     abstract fun doSave(): String
     abstract fun saving(): String
+    abstract fun solutionCodeTabName(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
 
@@ -125,6 +126,7 @@ abstract class TranslatableStrings {
 
 
 private object EstStrings : TranslatableStrings() {
+    override fun solutionCodeTabName() = "lahendus"
     override fun activeRoleLabel() = "Aktiivne roll:"
     override fun roleListAdmin() = "Admin"
     override fun roleListTeacher() = "Õpetaja"

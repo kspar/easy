@@ -20,6 +20,8 @@ class CodeEditorComp(
         parent: Component?
 ) : Component(parent) {
 
+    constructor(file: File, parent: Component?) : this(listOf(file), parent)
+
     data class File(val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE)
     enum class Edit { EDITABLE, READONLY, TOGGLED }
 
@@ -86,6 +88,11 @@ class CodeEditorComp(
 
     fun setFileValue(filename: String, value: String?) {
         tabs.single { it.filename == filename }.doc.setValue(value)
+    }
+
+    fun setFileEditable(filename: String, isEditable: Boolean) {
+        tabs.single { it.filename == filename }.editability = if (isEditable) Edit.EDITABLE else Edit.READONLY
+        refreshEditability()
     }
 
     private fun switchToTab(tab: Tab = activeTab) {
