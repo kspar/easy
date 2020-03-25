@@ -7,6 +7,7 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.Teacher
 import core.db.TeacherSubmission
+import core.ems.service.assertTeacherOrAdminHasAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -44,10 +45,12 @@ class TeacherAutoassController {
         log.debug { "Teacher/admin $callerId autoassessing solution to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
+        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+
         insertTeacherSubmission(exerciseId, dto.solution, callerId)
 
         val aaId = getAutoExerciseId(exerciseId)
-                ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.ASSESSMENT_NOT_LINKED)
+                ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.EXERCISE_NOT_AUTOASSESSABLE)
 
         val aaResult = autoAssess(aaId, dto.solution)
         return Resp(aaResult.grade, aaResult.feedback)

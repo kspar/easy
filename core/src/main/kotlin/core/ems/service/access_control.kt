@@ -1,15 +1,13 @@
 package core.ems.service
 
 import core.conf.security.EasyUser
-import core.db.CourseExercise
-import core.db.StudentCourseAccess
-import core.db.TeacherCourseAccess
-import core.db.TeacherGroupAccess
+import core.db.*
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -136,3 +134,23 @@ fun isVisibleExerciseOnCourse(courseExId: Long, courseId: Long): Boolean {
     }
 }
 
+fun canTeacherOrAdminHasAccessExercise(user: EasyUser, exerciseId: Long): Boolean {
+    return when {
+        user.isAdmin() -> true
+        user.isTeacher() -> transaction {
+            Exercise.select {
+                Exercise.id eq exerciseId and (Exercise.owner eq user.id or Exercise.public)
+            }.count() == 1
+        }
+        else -> {
+            log.warn { "User ${user.id} is not admin or teacher" }
+            false
+        }
+    }
+}
+
+fun assertTeacherOrAdminHasAccessToExercise(user: EasyUser, exerciseId: Long) {
+    if (!canTeacherOrAdminHasAccessExercise(user, exerciseId)) {
+        throw ForbiddenException("User ${user.id} does not have access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
