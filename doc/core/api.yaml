@@ -1119,6 +1119,8 @@ paths:
                 type: integer
               feedback:
                 type: string
+            required:
+              - grade
 
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students:
