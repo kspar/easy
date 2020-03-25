@@ -263,7 +263,7 @@
 
 
     <div class="ez-collection">
-        <div class="item">
+        <div class="item item1">
             <span class="field icon">icon</span>
             <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
             <span class="field atr1">11. september 2019, 14:52</span>
@@ -272,7 +272,7 @@
             <span class="field spacer"></span>
             <span class="field more"><i class="material-icons">more_vert</i></span>
         </div>
-        <div class="item">
+        <div class="item item2">
             <span class="field icon">icon</span>
             <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
             <span class="field atr1">1. mai 2019, 14:52</span>
@@ -286,6 +286,11 @@
 </div>
 <style>
 
+    .ez-collection {
+        display: grid;
+        grid-template-columns: auto repeat(3, auto) 1fr auto;
+    }
+
     .item {
         background-color: #fff;
         margin: .5rem 0 1rem 0;
@@ -294,11 +299,21 @@
         transition: box-shadow .25s, -webkit-box-shadow .25s;
         box-shadow: 0 3px 1px -2px rgba(0,0,0,.05), 0 1px 5px 0 rgba(0,0,0,.1);
 
+        grid-column: 1 / 7;
         display: grid;
         grid-template-rows: repeat(2, auto);
         grid-template-columns: auto repeat(3, auto) 1fr auto;
+        grid-template-columns: subgrid;
         grid-template-areas: "icon title title title title more" "icon atr1 atr2 atr3 spacer more";
         grid-gap: .5rem 1rem;
+    }
+
+    .item1 {
+        grid-row: 1;
+    }
+
+    .item2 {
+        grid-row: 2;
     }
 
     .icon {
