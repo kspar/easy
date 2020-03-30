@@ -26,6 +26,7 @@ object PageManager {
         val path = window.location.pathname
         val newPage = pageFromPath(path)
 
+        currentPage?.destruct()
         currentPage = newPage
 
         newPage.assertAuthorisation()
