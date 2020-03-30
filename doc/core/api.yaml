@@ -637,6 +637,18 @@ paths:
                   properties:
                     id:
                       type: string
+                    groups:
+                      type: array
+                      items:
+                        properties:
+                          id:
+                            type: string
+                        required:
+                          - id
+                  required:
+                    - id
+            required:
+              - courses
       responses:
         200:
           description: Zipped file of the submissions as a resource.
