@@ -11,9 +11,11 @@ import Str
 import compareTo
 import debug
 import debugFunStart
+import emptyToNull
 import getContainer
 import getElemById
 import getElemByIdAs
+import getElemByIdAsOrNull
 import getElemByIdOrNull
 import getElemBySelector
 import getElemsByClass
@@ -387,18 +389,18 @@ object ExerciseSummaryPage : EasyPage() {
 
     private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int) {
         val fl = debugFunStart("buildTeacherStudents")
-        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students",
-                "exportSubmissionsLabel" to "Lae alla"
-        )
+        getElemById("students").innerHTML = tmRender("tm-teach-exercise-students")
         val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
         buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, defaultGroupId)
 
         getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
             debug { "Downloading submissions" }
+            val selectedGroupId = getElemByIdAsOrNull<HTMLSelectElement>("group-select")?.value.emptyToNull()
+            val groupsList = selectedGroupId?.let { listOf(mapOf("id" to it)) }
             val blob = fetchEms("/export/exercises/$exerciseId/submissions/latest", ReqMethod.POST,
-                    mapOf("courses" to listOf(mapOf("id" to courseId))), successChecker = { http200 }).await()
+                    mapOf("courses" to listOf(mapOf("id" to courseId, "groups" to groupsList))), successChecker = { http200 }).await()
                     .blob().await()
-            val filename = "esitused-kursus-$courseId-ul-$courseExerciseId.zip"
+            val filename = "esitused-kursus-$courseId-ul-$courseExerciseId${selectedGroupId?.let { "-g-$it" }.orEmpty()}.zip"
             blob.saveAsFile(filename)
         }
 
@@ -414,7 +416,7 @@ object ExerciseSummaryPage : EasyPage() {
         debug { "Groups available: $groups" }
 
         getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", mapOf(
-                "exportSubmissionsLabel" to "Salvesta kõik",
+                "exportSubmissionsLabel" to "Lae alla",
                 "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
                 "allLabel" to "Kõik õpilased",
                 "hasOneGroup" to (groups.size == 1),
