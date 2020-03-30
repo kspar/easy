@@ -111,8 +111,8 @@ object CourseExercisesPage : EasyPage() {
 
     override fun clear() {
         super.clear()
-        //getContainer().innerHTML = tmRender("tm-loading-placeholders",
-        //        mapOf("marginTopRem" to 6, "titleWidthRem" to 30))
+        getContainer().innerHTML = tmRender("tm-loading-placeholders",
+                mapOf("marginTopRem" to 6, "titleWidthRem" to 30))
     }
 
     override fun build(pageStateStr: String?) {
