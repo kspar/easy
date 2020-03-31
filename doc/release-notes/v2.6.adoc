@@ -1,0 +1,15 @@
+
+
+= Release notes: v2.6
+
+* Downloading submissions now respects the chosen group. (EZ-1294)
+* When a teacher has access to one group, it's selected by default in the group selector. (EZ-1289)
+* Fixed a regression where tooltips and toasts we're not destroyed on navigation. (EZ-1296)
+* Checkin service no longer returns system messages, this has been refactored into a separate service. (EZ-1288)
+* Teacher testing service now uses exercise ID instead of course exercise ID to accommodate testing in the global exercise page. (EZ-1290)
+* Caching provider changed from Hazelcast to Caffeine. (EZ-1285)
+* Optimised caching and cache invalidation. (EZ-1285)
+* Initial version of the global exercise page for admins. (EZ-1224, EZ-1225)
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.6%20[here].
