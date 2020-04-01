@@ -115,7 +115,8 @@ class ExerciseRootComp(
         val body = exercise.let {
             mapOf(
                     "title" to it.title,
-                    "text_adoc" to it.text_adoc,
+                    "text_adoc" to it.text_adoc.blankToNull(),
+                    "text_html" to it.text_html,
                     "public" to it.is_public,
                     "grader_type" to it.grader_type.name,
                     "grading_script" to it.grading_script,
