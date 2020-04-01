@@ -467,7 +467,7 @@
 
 <script id="tm-exercise-auto-feedback" type="text/x-handlebars-template">
     <h4>{{autoLabel}}</h4>
-    <pre class="feedback auto-feedback">{{feedback}}</pre>
+    <pre class="feedback auto-feedback {{aprilClass}}" {{#aprilClass}}style="transition: transform .2s ease-in-out;"{{/aprilClass}}>{{feedback}}</pre>
     <div>{{autoGradeLabel}}: <span class="grade-number">{{grade}}</span>/100</div>
 </script>
 

@@ -1627,3 +1627,6 @@ ez-pagebtn[disabled] {
     }
 }
 
+.apf {
+    transform: rotate(180deg);
+}
