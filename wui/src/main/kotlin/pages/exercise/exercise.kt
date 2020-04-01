@@ -1,6 +1,7 @@
 package pages.exercise
 
 import DateSerializer
+import blankToNull
 import components.BreadcrumbsComp
 import components.CardTabsComp
 import components.Crumb
@@ -67,8 +68,16 @@ enum class GraderType {
 
 class ExerciseRootComp(
         private val exerciseId: String,
+        private val preselectedTabId: String?,
+        private val onActivateTab: (String) -> Unit,
         dstId: String
 ) : Component(null, dstId) {
+
+    companion object {
+        private const val EXERCISE_TAB_ID = "exercise"
+        private const val AA_TAB_ID = "autoassess"
+        private const val TESTING_TAB_ID = "testing"
+    }
 
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: CardTabsComp
@@ -83,18 +92,18 @@ class ExerciseRootComp(
                 .parseTo(ExerciseDTO.serializer()).await()
 
         crumbs = BreadcrumbsComp(listOf(Crumb.exercises, Crumb(exercise.title)), this)
-        tabs = CardTabsComp(this)
+        tabs = CardTabsComp(this, onActivateTab)
 
-        val tabsMap = mutableMapOf<String, Component>()
+        val tabsList = mutableListOf<CardTabsComp.Tab>()
 
-        tabsMap["Ülesanne"] = ExerciseTabComp(exercise, ::saveExercise, tabs)
+        tabsList.add(CardTabsComp.Tab(EXERCISE_TAB_ID, "Ülesanne", ExerciseTabComp(exercise, ::saveExercise, tabs), preselectedTabId == EXERCISE_TAB_ID))
 
         if (exercise.grader_type == GraderType.AUTO) {
-            tabsMap["Automaatkontroll"] = AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs)
-            tabsMap["Katsetamine"] = TestingTabComp(exerciseId, this.tabs)
+            tabsList.add(CardTabsComp.Tab(AA_TAB_ID, "Automaatkontroll", AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs), preselectedTabId == AA_TAB_ID))
+            tabsList.add(CardTabsComp.Tab(TESTING_TAB_ID, "Katsetamine", TestingTabComp(exerciseId, this.tabs), preselectedTabId == TESTING_TAB_ID))
         }
 
-        tabs.setTabs(tabsMap)
+        tabs.setTabs(tabsList)
     }
 
     override fun render(): String = tmRender("t-c-exercise",

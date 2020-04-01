@@ -7,6 +7,8 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import pages.EasyPage
+import queries.createQueryString
+import queries.getCurrentQueryParamValue
 import kotlin.browser.window
 
 object ExercisePage : EasyPage() {
@@ -24,7 +26,10 @@ object ExercisePage : EasyPage() {
         val exerciseId = extractSanitizedExerciseId(window.location.pathname)
 
         MainScope().launch {
-            ExerciseRootComp(exerciseId, CONTENT_CONTAINER_ID).createAndBuild().await()
+            ExerciseRootComp(exerciseId,
+                    getCurrentQueryParamValue("tab"),
+                    { updateUrl(createQueryString("tab" to it)) }, CONTENT_CONTAINER_ID)
+                    .createAndBuild().await()
         }
     }
 

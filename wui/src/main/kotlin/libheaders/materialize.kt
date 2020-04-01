@@ -33,11 +33,12 @@ external class MTooltipInstance {
 }
 
 external object MTabs {
-    fun init(elements: dynamic, options: dynamic = definedExternally): MTabsInstance?
+    fun init(elements: dynamic, options: dynamic = definedExternally): MTabsInstance
     fun getInstance(element: Element): MTabsInstance?
 }
 
 external class MTabsInstance {
+    val index: Int
     fun select(tabId: String)
     fun updateTabIndicator()
 }

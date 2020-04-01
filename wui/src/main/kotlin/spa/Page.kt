@@ -65,4 +65,12 @@ abstract class Page {
     fun updateState(pageStateStr: String) {
         window.history.replaceState(pageStateStr, "")
     }
+
+    /**
+     * Update current page URL. Takes a URL fragment that can be relative ('foo') or absolute ('/foo') or
+     * only query string ('?foo') or only hash string ('#foo') or a combination of these.
+     */
+    fun updateUrl(urlFragment: String) {
+        window.history.replaceState(null, "", urlFragment)
+    }
 }
