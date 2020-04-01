@@ -816,6 +816,78 @@ paths:
           description: Teachers' accesses removed.
 
 
+  /exercises/{exerciseId}/similarity:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+    post:
+      summary: Check submissions similarity.
+      tags:
+        - teacher
+      parameters:
+        - name: solution
+          in: body
+          schema:
+            properties:
+              courses:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                required:
+                  - id
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                required:
+                  - id
+      responses:
+        200:
+          description: Submission similarities.
+          schema:
+            properties:
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    solution:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+                    course_title:
+                      type: string
+                required:
+                  - id
+                  - solution
+                  - given_name
+                  - family_name
+                  - course_title
+              scores:
+                type: array
+                items:
+                  properties:
+                    sub_1:
+                      type: string
+                    sub_2:
+                      type: string
+                    score_a:
+                      type: number
+                    score_b:
+                      type: number
+                required:
+                  - sub1
+                  - sub2
+                  - score_a
+                  - score_b
+
+
   /exercises/{exerciseId}/testing/autoassess/submissions:
     parameters:
       - $ref: '#/parameters/ExerciseId'
