@@ -5,7 +5,7 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.AdocService
-import core.ems.service.assertTeacherOrAdminHasAccessToExercise
+import core.ems.service.assertTeacherOrAdminCanUpdateExercise
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -51,7 +51,7 @@ class UpdateExerciseCont(private val adocService: AdocService) {
 
         log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
-        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        assertTeacherOrAdminCanUpdateExercise(caller, exerciseId)
 
         val html = req.textAdoc?.let { adocService.adocToHtml(it) } ?: req.textHtml
         updateExercise(exerciseId, caller.id, req, html)

@@ -154,3 +154,24 @@ fun assertTeacherOrAdminHasAccessToExercise(user: EasyUser, exerciseId: Long) {
         throw ForbiddenException("User ${user.id} does not have access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
     }
 }
+
+fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
+    return when {
+        user.isAdmin() -> true
+        user.isTeacher() -> transaction {
+            Exercise.select {
+                Exercise.id eq exerciseId and (Exercise.owner eq user.id)
+            }.count() == 1
+        }
+        else -> {
+            log.warn { "User ${user.id} is not admin or teacher" }
+            false
+        }
+    }
+}
+
+fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
+    if (!canTeacherOrAdminUpdateExercise(user, exerciseId)) {
+        throw ForbiddenException("User ${user.id} does not have access to update exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
