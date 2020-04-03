@@ -5,6 +5,7 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.AdocService
+import core.ems.service.assertTeacherOrAdminHasAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -44,14 +45,15 @@ class UpdateExerciseCont(private val adocService: AdocService) {
     data class ReqExecutor(@JsonProperty("executor_id", required = true) @field:Size(max = 100) val executorId: String)
 
 
-    @Secured("ROLE_ADMIN")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/exercises/{exerciseId}")
     fun controller(@PathVariable("exerciseId") exIdString: String, @Valid @RequestBody req: Req, caller: EasyUser) {
 
         log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
+        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
 
-        val html = req.textAdoc?.let { adocService.adocToHtml(it) }
+        val html = req.textAdoc?.let { adocService.adocToHtml(it) } ?: req.textHtml
         updateExercise(exerciseId, caller.id, req, html)
     }
 }

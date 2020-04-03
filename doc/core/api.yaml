@@ -1646,7 +1646,7 @@ paths:
     put:
       summary: Modify exercise.
       tags:
-        - admin
+        - teacher
       parameters:
         - name: exercise
           in: body
