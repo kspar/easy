@@ -94,22 +94,6 @@ fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
         text().then { it.parseTo(deserializer) }
 
 
-fun createQueryString(vararg params: Pair<String, String?>): String {
-    val encodedParams = params.filter { (_, v) ->
-        !v.isNullOrBlank()
-    }.map { (k, v) ->
-        encodeURIComponent(k) to encodeURIComponent(v!!)
-    }
-
-    return when {
-        encodedParams.isEmpty() -> ""
-        else -> encodedParams.joinToString("&", "?") { (k, v) -> "$k=$v" }
-    }
-}
-
-
-external fun encodeURIComponent(str: String): String
-
 external class AbortController {
     val signal: AbortSignal
 
@@ -117,5 +101,3 @@ external class AbortController {
 }
 
 external class AbortSignal
-
-fun String.truncate(n: Int) = if (this.length <= n) this else "${this.take(n - 3)}..."
