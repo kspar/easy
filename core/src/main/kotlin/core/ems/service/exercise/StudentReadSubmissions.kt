@@ -31,7 +31,7 @@ class StudentReadSubmissionsController {
             @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
     data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>,
-                    @JsonProperty("count") val submissionCount: Int)
+                    @JsonProperty("count") val submissionCount: Long)
 
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all")
     fun controller(@PathVariable("courseId") courseIdStr: String,
@@ -46,12 +46,12 @@ class StudentReadSubmissionsController {
 
         assertStudentHasAccessToCourse(caller.id, courseId)
 
-        return selectStudentSubmissions(courseId, courseExId, caller.id, limitStr?.toIntOrNull(), offsetStr?.toIntOrNull())
+        return selectStudentSubmissions(courseId, courseExId, caller.id, limitStr?.toIntOrNull(), offsetStr?.toLongOrNull())
     }
 }
 
 
-private fun selectStudentSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Int?):
+private fun selectStudentSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Long?):
         StudentReadSubmissionsController.Resp {
 
     return transaction {
@@ -86,7 +86,7 @@ private fun selectStudentSubmissions(courseId: Long, courseExId: Long, studentId
 
         val submissions = wrapQuery
                 .orderBy(subTable[Submission.createdAt] to SortOrder.DESC)
-                .limit(limit ?: count, offset ?: 0)
+                .limit(limit ?: count.toInt(), offset ?: 0)
                 .map {
                     StudentReadSubmissionsController.SubmissionResp(
                             it[subTable[distinctSubmissionId]].value.toString(),

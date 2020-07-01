@@ -64,7 +64,7 @@ private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Lon
                     Course.id eq courseId and
                             (CourseExercise.id eq courseExId) and
                             (Submission.id eq submissionId)
-                }.count() == 1
+                }.count() == 1L
     }
 }
 

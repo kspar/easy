@@ -20,7 +20,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherReadGradesController(val courseService: CourseService) {
 
-    data class Resp(@JsonProperty("student_count") val studentCount: Int,
+    data class Resp(@JsonProperty("student_count") val studentCount: Long,
                     @JsonProperty("students")
                     @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>,
                     @JsonProperty("exercises")
@@ -62,14 +62,14 @@ class TeacherReadGradesController(val courseService: CourseService) {
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, caller.id)
 
-        return selectGradesResponse(courseId, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull(), queryWords, restrictedGroups, courseService)
+        return selectGradesResponse(courseId, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull(), queryWords, restrictedGroups, courseService)
     }
 }
 
 
 private fun selectGradesResponse(
         courseId: Long,
-        offset: Int?,
+        offset: Long?,
         limit: Int?,
         queryWords: List<String>,
         restrictedGroups: List<Long>,
@@ -81,7 +81,7 @@ private fun selectGradesResponse(
         val studentCount = studentsQuery.count()
         val students = studentsQuery
                 .orderBy(Account.familyName to SortOrder.ASC, Account.givenName to SortOrder.ASC)
-                .limit(limit ?: studentCount, offset ?: 0)
+                .limit(limit ?: studentCount.toInt(), offset ?: 0)
                 .map {
                     TeacherReadGradesController.StudentsResp(
                             it[Student.id].value,

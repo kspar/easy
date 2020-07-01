@@ -95,7 +95,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
         val newStudentsWithAccount = studentsWithAccount.filter {
             StudentCourseAccess.select {
                 StudentCourseAccess.student eq it.id and (StudentCourseAccess.course eq courseId)
-            }.count() == 0
+            }.count() == 0L
         }
 
         log.debug { "Granting access to students (the rest already have access): $newStudentsWithAccount" }

@@ -47,7 +47,7 @@ private fun deleteTeachersFromCourse(teachers: RemoveTeachersFromCourseControlle
         teachers.teacherIds.forEach { teacher ->
             val teacherExists =
                     Teacher.select { Teacher.id eq teacher.teacherId }
-                            .count() == 1
+                            .count() == 1L
             if (!teacherExists) {
                 throw InvalidRequestException("Teacher not found: $teacher")
             }

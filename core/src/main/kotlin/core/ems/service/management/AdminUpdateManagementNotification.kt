@@ -40,7 +40,7 @@ class AdminUpdateManagementNotificationsController {
 private fun updateMessage(dto: AdminUpdateManagementNotificationsController.Req, notificationId: Long) {
     transaction {
 
-        val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1
+        val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1L
 
         if (!messageExists) {
             throw InvalidRequestException("No message with ID $notificationId found.")

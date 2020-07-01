@@ -36,7 +36,7 @@ class TeacherReadSubmissionsController {
             @JsonProperty("feedback_teacher") val feedbackTeacher: String?)
 
     data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>,
-                    @JsonProperty("count") val submissionCount: Int)
+                    @JsonProperty("count") val submissionCount: Long)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -54,12 +54,12 @@ class TeacherReadSubmissionsController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return selectTeacherAllSubmissions(courseId, courseExId, studentId, limitStr?.toIntOrNull(), offsetStr?.toIntOrNull())
+        return selectTeacherAllSubmissions(courseId, courseExId, studentId, limitStr?.toIntOrNull(), offsetStr?.toLongOrNull())
     }
 }
 
 
-private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Int?):
+private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Long?):
         TeacherReadSubmissionsController.Resp {
     return transaction {
 
@@ -75,7 +75,7 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
 
         TeacherReadSubmissionsController.Resp(
                 query.orderBy(Submission.createdAt, SortOrder.DESC)
-                        .limit(limit ?: count, offset ?: 0)
+                        .limit(limit ?: count.toInt(), offset ?: 0)
                         .map {
                             val id = it[Submission.id].value
                             val autoAssessment = lastAutoAssessment(id)

@@ -140,7 +140,7 @@ fun canTeacherOrAdminHasAccessExercise(user: EasyUser, exerciseId: Long): Boolea
         user.isTeacher() -> transaction {
             Exercise.select {
                 Exercise.id eq exerciseId and (Exercise.owner eq user.id or Exercise.public)
-            }.count() == 1
+            }.count() == 1L
         }
         else -> {
             log.warn { "User ${user.id} is not admin or teacher" }
@@ -161,7 +161,7 @@ fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
         user.isTeacher() -> transaction {
             Exercise.select {
                 Exercise.id eq exerciseId and (Exercise.owner eq user.id)
-            }.count() == 1
+            }.count() == 1L
         }
         else -> {
             log.warn { "User ${user.id} is not admin or teacher" }

@@ -43,12 +43,12 @@ class TeacherReadLatestTeacherSubmissionController {
         log.debug { "Getting latest teacher submissions for ${caller.id} on exercise $exerciseIdStr" }
 
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
-        return selectLatestTeacherSubmissions(exerciseId, caller.id, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull())
+        return selectLatestTeacherSubmissions(exerciseId, caller.id, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())
     }
 }
 
 
-private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, offset: Int?, limit: Int?): TeacherReadLatestTeacherSubmissionController.Resp {
+private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, offset: Long?, limit: Int?): TeacherReadLatestTeacherSubmissionController.Resp {
     return transaction {
         val selectQuery = TeacherSubmission
                 .select {
@@ -60,7 +60,7 @@ private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, 
         val totalSubmissions = selectQuery.count()
 
         val submissions = selectQuery
-                .limit(limit ?: totalSubmissions, offset ?: 0)
+                .limit(limit ?: totalSubmissions.toInt(), offset ?: 0)
                 .map {
                     TeacherReadLatestTeacherSubmissionController.RespSubmission(
                             it[TeacherSubmission.id].value.toString(),

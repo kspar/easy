@@ -27,7 +27,7 @@ private fun deleteExecutor(executorId: Long) {
     return transaction {
         val executorExists =
                 Executor.select { Executor.id eq executorId }
-                        .count() == 1
+                        .count() == 1L
 
         if (executorExists) {
             Executor.deleteWhere { Executor.id eq executorId }

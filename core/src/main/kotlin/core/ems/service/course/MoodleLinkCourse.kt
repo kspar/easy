@@ -54,7 +54,7 @@ class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
 
 private fun linkCourse(courseId: Long, moodleShortname: String, syncStudents: Boolean, syncGrades: Boolean) {
     transaction {
-        if (Course.select { Course.id eq courseId }.count() != 1) {
+        if (Course.select { Course.id eq courseId }.count() != 1L) {
             throw InvalidRequestException("Course with $courseId does not exist")
         }
         Course.update({ Course.id eq courseId }) {

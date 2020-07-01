@@ -28,9 +28,9 @@ private val log = KotlinLogging.logger {}
 class StatisticsController(private val statisticsService: StatisticsService) {
 
 
-    data class ReqResp(@JsonProperty("in_auto_assessing") val inAutoAssessing: Int,
-                       @JsonProperty("total_submissions") val totalSubmissions: Int,
-                       @JsonProperty("total_users") val totalUsers: Int)
+    data class ReqResp(@JsonProperty("in_auto_assessing") val inAutoAssessing: Long,
+                       @JsonProperty("total_submissions") val totalSubmissions: Long,
+                       @JsonProperty("total_users") val totalUsers: Long)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")

@@ -38,7 +38,7 @@ fun insertAutoExercise(gradingScript: String?, containerImage: String?, maxTime:
 
         val executorIds = executors.map {
             val executorId = EntityID(it, Executor)
-            if (Executor.select { Executor.id eq executorId }.count() == 0) {
+            if (Executor.select { Executor.id eq executorId }.count() == 0L) {
                 throw InvalidRequestException("Executor $executorId does not exist")
             }
             executorId

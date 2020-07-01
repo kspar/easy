@@ -84,7 +84,7 @@ class PrivateCachingService {
     fun studentExists(studentUsername: String): Boolean {
         log.debug { "$studentUsername not in 'student' cache. Executing select." }
         return transaction {
-            Student.select { Student.id eq studentUsername }.count() == 1
+            Student.select { Student.id eq studentUsername }.count() == 1L
         }
     }
 
@@ -92,7 +92,7 @@ class PrivateCachingService {
     fun teacherExists(teacherUsername: String): Boolean {
         log.debug { "$teacherUsername not in 'teacher' cache. Executing select." }
         return transaction {
-            Teacher.select { Teacher.id eq teacherUsername }.count() == 1
+            Teacher.select { Teacher.id eq teacherUsername }.count() == 1L
         }
     }
 
@@ -100,7 +100,7 @@ class PrivateCachingService {
     fun adminExists(adminUsername: String): Boolean {
         log.debug { "$adminUsername not in 'admin' cache. Executing select." }
         return transaction {
-            Admin.select { Admin.id eq adminUsername }.count() == 1
+            Admin.select { Admin.id eq adminUsername }.count() == 1L
         }
     }
 }

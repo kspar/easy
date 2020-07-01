@@ -39,7 +39,7 @@ private enum class OrderBy {
 @RequestMapping("/v2")
 class TeacherReadSubmissionSummariesController {
 
-    data class Resp(@JsonProperty("student_count") val studentCount: Int,
+    data class Resp(@JsonProperty("student_count") val studentCount: Long,
                     @JsonProperty("students") val students: List<StudentsResp>)
 
     data class StudentsResp(@JsonProperty("student_id") val studentId: String,
@@ -93,13 +93,13 @@ class TeacherReadSubmissionSummariesController {
         val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
         return selectTeacherSubmissionSummaries(caller.id, courseId, courseExId, groupId,
-                queryWords, orderBy, order, offsetStr?.toIntOrNull(), limitStr?.toIntOrNull())
+                queryWords, orderBy, order, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())
     }
 }
 
 private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, courseExId: Long, groupId: Long?,
                                              queryWords: List<String>, orderBy: OrderBy, order: SortOrder,
-                                             offset: Int?, limit: Int?): TeacherReadSubmissionSummariesController.Resp {
+                                             offset: Long?, limit: Int?): TeacherReadSubmissionSummariesController.Resp {
     return transaction {
 
         // Aliases are needed on all of these
@@ -176,7 +176,7 @@ private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, c
         val resultCount = wrapQuery.count()
 
         val studentsResp =
-                wrapQuery.limit(limit ?: resultCount, offset ?: 0).map {
+                wrapQuery.limit(limit ?: resultCount.toInt(), offset ?: 0).map {
                     // Explicit nullable types because exposed's type system seems to fail here: it's assuming
                     // non-nullable types as they are in the table, does not account for left joins that create nulls
                     val autoGrade: Int? = it[subTable[autoGradeAlias]]
