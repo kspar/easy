@@ -264,31 +264,45 @@
 
     <div class="ez-collection">
         <div class="item item1">
-            <span class="field icon">icon</span>
-            <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
-            <span class="field atr1">11. september 2019, 14:52</span>
-            <span class="field atr2">Teine atribuut</span>
-            <span class="field atr3">Kolmas atribuut</span>
-            <span class="field spacer"></span>
-            <span class="field more"><i class="material-icons">more_vert</i></span>
+            <span class="icon">icon</span>
+            <span class="title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
+            <span class="atr atr1 truncate">11. september 2019, 14:52</span>
+            <span class="atr atr2 truncate">Teine atribuut</span>
+            <span class="atr atr3 truncate">Kolmas atribuut</span>
+            <span class="atr atr4 truncate"></span>
+            <span class="spacer"></span>
+            <span class="more"><i class="material-icons">more_vert</i></span>
         </div>
         <div class="item item2">
-            <span class="field icon">icon</span>
-            <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
-            <span class="field atr1">1. mai 2019, 14:52</span>
-            <span class="field atr2">Teine</span>
-            <span class="field atr3">Kolmas atribuut</span>
-            <span class="field spacer"></span>
-            <span class="field more"><i class="material-icons">more_vert</i></span>
+            <span class="icon">icon</span>
+            <span class="title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
+            <span class="atr atr1 truncate">1. mai 2019, 14:52</span>
+            <span class="atr atr2 truncate">Teine</span>
+            <span class="atr atr3 truncate">Kolmas atribuut Kolmas atribuut Kolmas atribuut</span>
+            <span class="atr atr4 truncate">Kolmas atribuut</span>
+            <span class="spacer"></span>
+            <span class="more"><i class="material-icons">more_vert</i></span>
+            <span class="atr expanded">Neljas atribuut</span>
+
         </div>
     </div>
 
 </div>
 <style>
 
+    .expanded {
+        background-color: #eee;
+        grid-column: 2 / 7;
+    }
+
+    .atr {
+        padding-left: 1rem;
+        border-left: 1px solid black;
+    }
+
     .ez-collection {
         display: grid;
-        grid-template-columns: auto repeat(3, auto) 1fr auto;
+        grid-template-columns: auto repeat(4, auto) 1fr auto;
     }
 
     .item {
@@ -297,14 +311,14 @@
         padding: 1.5rem 2rem;
         border-radius: 2px;
         transition: box-shadow .25s, -webkit-box-shadow .25s;
-        box-shadow: 0 3px 1px -2px rgba(0,0,0,.05), 0 1px 5px 0 rgba(0,0,0,.1);
+        box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .05), 0 1px 5px 0 rgba(0, 0, 0, .1);
 
-        grid-column: 1 / 7;
+        grid-column: 1 / 8;
         display: grid;
         grid-template-rows: repeat(2, auto);
-        grid-template-columns: auto repeat(3, auto) 1fr auto;
+        grid-template-columns: auto repeat(4, 21rem) 1fr auto;
         grid-template-columns: subgrid;
-        grid-template-areas: "icon title title title title more" "icon atr1 atr2 atr3 spacer more";
+        grid-template-areas: "icon title title title title title more" "icon atr1 atr2 atr3 atr4 spacer more";
         grid-gap: .5rem 1rem;
     }
 
@@ -329,18 +343,18 @@
 
     .atr1 {
         grid-area: atr1;
-        padding-right: 1rem;
-        border-right: 1px solid black;
     }
 
     .atr2 {
         grid-area: atr2;
-        padding-right: 1rem;
-        border-right: 1px solid black;
     }
 
     .atr3 {
         grid-area: atr3;
+    }
+
+    .atr4 {
+        grid-area: atr4;
     }
 
     .spacer {
@@ -352,8 +366,6 @@
         justify-self: center;
         align-self: center;
     }
-
-
 
 
     #content-container {
