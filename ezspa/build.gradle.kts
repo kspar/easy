@@ -1,7 +1,7 @@
 val mvnGroup = "rip.kspar"
 val mvnArtifact = "ezspa"
-val mvnVersion = "0.2.0"
-val repoUrl = "https://github.com/kspar/easy/ezspa"
+val mvnVersion = "0.3.0"
+val repoUrl = "https://github.com/kspar/easy/tree/master/ezspa"
 
 plugins {
     kotlin("js")
