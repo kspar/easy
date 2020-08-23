@@ -1,6 +1,4 @@
-package spa
-
-import kotlin.browser.window
+import kotlinx.browser.window
 
 /**
  * Represents a page with a unique path scheme and rendering logic.

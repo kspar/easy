@@ -8,11 +8,11 @@ import libheaders.CodeMirrorInstance
 import negation
 import objOf
 import onVanillaClick
-import spa.Component
+import Component
 import tmRender
-import kotlin.dom.addClass
-import kotlin.dom.clear
-import kotlin.dom.removeClass
+import kotlinx.dom.addClass
+import kotlinx.dom.clear
+import kotlinx.dom.removeClass
 
 
 class CodeEditorComp(

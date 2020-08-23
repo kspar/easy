@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import pages.EasyPage
 import queries.createQueryString
 import queries.getCurrentQueryParamValue
-import kotlin.browser.window
+import kotlinx.browser.window
 
 object ExercisePage : EasyPage() {
 
@@ -23,6 +23,7 @@ object ExercisePage : EasyPage() {
             path.matches("^/exercises/\\w+/details/?$")
 
     override fun build(pageStateStr: String?) {
+        super.build(pageStateStr)
         val exerciseId = extractSanitizedExerciseId(window.location.pathname)
 
         MainScope().launch {

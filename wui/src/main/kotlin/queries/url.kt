@@ -1,7 +1,7 @@
 package queries
 
 import org.w3c.dom.url.URL
-import kotlin.browser.window
+import kotlinx.browser.window
 
 
 fun getCurrentQueryParamValue(key: String): String? {

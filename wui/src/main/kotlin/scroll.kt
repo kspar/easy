@@ -1,5 +1,5 @@
 import kotlinx.serialization.Serializable
-import kotlin.browser.window
+import kotlinx.browser.window
 
 @Serializable
 data class ScrollPosition(val x: Double, val y: Double)

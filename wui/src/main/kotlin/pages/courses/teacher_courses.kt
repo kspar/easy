@@ -6,8 +6,8 @@ import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
-import spa.CacheableComponent
-import spa.Component
+import CacheableComponent
+import Component
 import tmRender
 import kotlin.js.Promise
 
@@ -39,8 +39,6 @@ class TeacherCoursesRootComp(
 
     override fun render(): String = tmRender("t-c-teach-courses",
             "pageTitle" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
-            "canAddCourse" to isAdmin,
-            "newCourseLabel" to Str.newCourseLink(),
             "listDstId" to coursesList.dstId
     )
 

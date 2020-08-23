@@ -15,14 +15,14 @@ scp static/spaproto.html devgate:/var/www/wui/index.html
 # All CSS files
 scp -r static/css/ devgate:/var/www/wui/static
 
-# Only main js file
-#scp build/kotlin-js-min/main/wui.js devgate:/var/www/wui/static/js/
+# wui js file
+scp build/distributions/wui.js devgate:/var/www/wui/static/js/
 
-# All js files
-scp build/kotlin-js-min/main/{kotlin.js,kotlinx-coroutines-core.js,kotlinx-serialization-kotlinx-serialization-runtime.js,wui.js} devgate:/var/www/wui/static/js/
+# wui map
+scp build/distributions/wui.js.map devgate:/var/www/wui/static/js/
 
-# All js maps
-scp build/kotlin-js-min/main/{kotlin.js.map,kotlinx-coroutines-core.js.map,kotlinx-serialization-kotlinx-serialization-runtime.js.map,wui.js.map} devgate:/var/www/wui/static/js/
+# Pace js file
+#scp static/js/pace.min.js devgate:/var/www/wui/static/js/pace.min.js
 
 
 # Remove page generation time

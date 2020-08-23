@@ -13,7 +13,7 @@ import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
-import spa.Component
+import Component
 import tmRender
 import kotlin.js.Promise
 

@@ -3,7 +3,8 @@ package components
 import getElemByIdAs
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLAnchorElement
-import spa.Component
+import Component
+import IdGenerator
 import tmRender
 
 

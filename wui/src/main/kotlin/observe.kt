@@ -1,5 +1,5 @@
 import kotlinx.coroutines.await
-import kotlin.browser.window
+import kotlinx.browser.window
 import kotlin.js.Promise
 
 

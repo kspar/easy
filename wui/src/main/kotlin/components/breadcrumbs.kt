@@ -2,7 +2,7 @@ package components
 
 import IdGenerator
 import Str
-import spa.Component
+import Component
 import tmRender
 
 

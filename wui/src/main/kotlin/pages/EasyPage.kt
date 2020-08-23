@@ -6,14 +6,18 @@ import Str
 import getContainer
 import getElemsByClass
 import libheaders.Materialize
-import spa.Page
+import pages.leftbar.Leftbar
+import Page
 import tmRender
-import kotlin.dom.clear
+import kotlinx.dom.clear
 
 abstract class EasyPage : Page() {
 
     // All roles allowed by default
     open val allowedRoles: List<Role> = Role.values().asList()
+
+    // Leftbar with no course by default
+    open val leftbarConf: Leftbar.Conf = Leftbar.Conf(null)
 
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
@@ -30,6 +34,10 @@ abstract class EasyPage : Page() {
     override fun clear() {
         super.clear()
         getContainer().clear()
+    }
+
+    override fun build(pageStateStr: String?) {
+        Leftbar.refresh(leftbarConf)
     }
 
     override fun destruct() {

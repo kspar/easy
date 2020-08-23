@@ -1,10 +1,4 @@
-package spa
-
-import IdGenerator
-import doInPromise
-import getElemById
 import kotlinx.coroutines.await
-import unionPromise
 import kotlin.js.Promise
 
 /**

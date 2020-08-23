@@ -15,9 +15,10 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
 import onVanillaClick
+import pages.leftbar.Leftbar
 import queries.*
 import tmRender
-import kotlin.browser.window
+import kotlinx.browser.window
 import kotlin.math.min
 
 object GradeTablePage : EasyPage() {
@@ -67,6 +68,9 @@ object GradeTablePage : EasyPage() {
     override val pageName: Any
         get() = PageName.GRADE_TABLE
 
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedCourseId())
+
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
@@ -74,7 +78,8 @@ object GradeTablePage : EasyPage() {
             path.matches("^/courses/\\w+/grades/?$")
 
     override fun build(pageStateStr: String?) {
-        val courseId = extractSanitizedCourseId(window.location.pathname)
+        super.build(pageStateStr)
+        val courseId = extractSanitizedCourseId()
         buildTable(courseId, 0, PAGE_STEP)
     }
 
@@ -175,7 +180,8 @@ object GradeTablePage : EasyPage() {
     }
 }
 
-private fun extractSanitizedCourseId(path: String): String {
+private fun extractSanitizedCourseId(): String {
+    val path = window.location.pathname
     val match = path.match("^/courses/(\\w+)/grades/?$")
     if (match != null && match.size == 2) {
         return match[1]

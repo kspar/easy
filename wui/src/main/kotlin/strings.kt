@@ -25,15 +25,20 @@ abstract class TranslatableStrings {
     abstract fun solutionCodeTabName(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
+    fun translateRole(role: Role) = when (role) {
+        Role.STUDENT -> roleStudent()
+        Role.TEACHER -> roleTeacher()
+        Role.ADMIN -> roleAdmin()
+    }
 
 
     // Navbar
 
     abstract fun topMenuCourses(): String
     abstract fun activeRoleLabel(): String
-    abstract fun roleListAdmin(): String
-    abstract fun roleListTeacher(): String
-    abstract fun roleListStudent(): String
+    abstract fun roleAdmin(): String
+    abstract fun roleTeacher(): String
+    abstract fun roleStudent(): String
     abstract fun accountData(): String
     abstract fun logOut(): String
     abstract fun roleChangeStudentSuffix(): String
@@ -128,9 +133,9 @@ abstract class TranslatableStrings {
 private object EstStrings : TranslatableStrings() {
     override fun solutionCodeTabName() = "lahendus"
     override fun activeRoleLabel() = "Aktiivne roll:"
-    override fun roleListAdmin() = "Admin"
-    override fun roleListTeacher() = "Õpetaja"
-    override fun roleListStudent() = "Õpilane"
+    override fun roleAdmin() = "Admin"
+    override fun roleTeacher() = "Õpetaja"
+    override fun roleStudent() = "Õpilane"
     override fun usedOnCoursesLabel() = "Kasutusel kursustel"
     override fun previewLabel() = "Eelvaade"
     override fun doSave() = "Salvesta"

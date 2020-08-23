@@ -5,7 +5,7 @@ import getElemById
 import libheaders.MTabsInstance
 import libheaders.Materialize
 import objOf
-import spa.Component
+import Component
 import tmRender
 
 

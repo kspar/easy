@@ -8,335 +8,213 @@
     <link rel="stylesheet" href="css/pace.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
     <link rel="stylesheet" href="css/main.css"/>
     <link rel="stylesheet" href="css/exercise.css"/>
 </head>
-<body>
+<body class="leftbar-active rightbar-active">
+<!--<body>-->
 
-<div id="nav-wrap">
-    <nav class="nav-center" role="navigation">
-        <div class="container">
-            <a href="/courses" class="brand-logo left">
-                <img style="height: 4rem; vertical-align: middle;" class="logo-img"
-                     src="../../doc/wui/design/new_logo.svg" alt="Lahendus"/>
-                <span style="font-size: 2.5rem">Lahendus</span>
-            </a>
-            <ul id="nav-mobile" class="hide-on-med-and-down">
-                <li><a class="nav-link" href="/courses">Minu kursused</a></li>
-            </ul>
-            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
-                <a href="#!">
-                    <i id="profile-logo" class="left material-icons">account_circle</i>
-                    <span id="profile-name">Kuslap</span><span id="profile-role"></span>
-                </a>
-            </div>
-        </div>
-    </nav>
-    <!-- Profile dropdown menu structure -->
-    <ul id="profile-dropdown" class="dropdown-content">
-        <span id="role-wrap"></span>
-        <li><a href="{{accountLink}}">{{account}}</a></li>
-        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
-    </ul>
-</div>
-<div id="sidenav-wrap"></div>
-
-
-<div id="content-container" class="container">
-
-
-    <!--
-    <div id="exercise-card" class="card">
-        <div id="tabs-wrap">
-            <ul class="tabs">
-                <li class="tab"><a class="active" href="#exercise">Ülesanne</a></li>
-                <li class="tab"><a href="#testing">Testimine</a></li>
-                <li class="tab"><a href="#students">Esitused</a></li>
-                <li id="tab-student" class="tab"><a href="#student">Andrus</a></li>
-            </ul>
-        </div>
-        <div class="card-content">
-            <div id="students">
-
-                <div class="collection divided-collection">
-                    <a class="collection-item bb-wrap row" href="{{href}}">
-                        <div class="row">
-                            <span class="col s6">Kalle Malle</span>
-                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
-                            <span class="col s2 grade">
-                                <span>42/100</span
-                                ><img class="eval-logo-auto" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
-                            </span>
-                        </div>
-                        <div class="bb">
-                            <span class="bb-item bb-green"></span>
-                        </div>
-                    </a>
-
-                    <a class="collection-item bb-wrap row" href="{{href}}">
-                        <div class="row">
-                            <span class="col s6">Kalle Malle</span>
-                            <span class="col s4 deadline"></span>
-                            <span class="col s2 grade">
-                                <span style="margin-right: 34px;">-/100</span
-                                >
-                            </span>
-                        </div>
-                        <div class="bb">
-                            <span class="bb-item bb-grey"></span>
-                        </div>
-                    </a>
-
-                    <a class="collection-item bb-wrap row" href="{{href}}">
-                        <div class="row">
-                            <span class="col s6">Kalle Malle</span>
-                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
-                            <span class="col s2 grade">
-                                <span>0/100</span
-                                ><i id="some" class="material-icons eval-logo-teacher">face</i>
-                            </span>
-                        </div>
-                        <div class="bb">
-                            <span class="bb-item bb-yellow"></span>
-                        </div>
-                    </a>
-
-                    <a class="collection-item bb-wrap row" href="{{href}}">
-                        <div class="row">
-                            <span class="col s6">Kalle Malle</span>
-                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
-                            <span class="col s2 grade">
-                                <span>-/100</span
-                                ><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
-                            </span>
-                        </div>
-                        <div class="bb">
-                            <span class="bb-item bb-blue"></span>
-                        </div>
-                    </a>
-                </div>
-
-
-
-
-
-
-
-
-
-
-
-            </div>
-            <div id="exercise">
-                <div class="exercise-info">
-                    <p><span class="subheading">Tähtaeg: </span>18. jaanuar 2019, 12.42</p>
-                    <p><span class="subheading">Sulgemise aeg: </span>1. juuni 2019, 23.59</p>
-                    <p><span class="subheading">Hindamine: </span>automaatne</p>
-                    <p><span class="subheading">Lävend: </span>42%</p>
-                    <p><span class="subheading">Õpilastele nähtav: </span>jah</p>
-                    <p><span class="subheading">Hinnangud õpilastele nähtavad: </span>jah</p>
-                    <p><span class="subheading">Viimati muudetud: </span>18. märts 2018, 9.15</p>
-                </div>
-                <div>
-                    <h2>Ülesande pealkiri</h2>
-                    <div>Ülesande tekst</div>
-                </div>
-            </div>
-
-            <div id="testing">
-                <h4>Automaatkontrolli hinnang</h4>
-                <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
-                <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
-                <div class="editor-wrapper">
-                    <textarea id="testing-submission"></textarea>
-                </div>
-                <div class="center">
-                    <button id="testing-submit" class="waves-effect waves-light btn">Esita</button>
-                </div>
-            </div>
-
-            <div id="student">
-                <a id="all-submissions-link" class="toggle-link" href="#!">► Vaata kõiki esitusi (4)</a>
-                <div class="toggleable-wrap all-submissions-wrap" id="all-submissions-wrap">
-                    <div class="collection divided-collection">
-                        <a class="collection-item sm row bb-wrap" href="#!">
-                            <span class="col s2">#2</span>
-                            <span class="col s7" style="text-align: center">18. jaanuar 2019, 12.42</span>
-                            <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
-                                <span>0/100</span><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
-                            </span>
-                            <div class="bb sm">
-                                <span class="bb-item sm bb-green"></span>
-                            </div>
-                        </a>
-
-                        <a class="collection-item sm row bb-wrap" href="#!">
-                            <span class="col s2">#1</span>
-                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
-                            <span class="col s3 flex" style="justify-content: flex-end">
-                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
-                            </span>
-                            <div class="bb sm">
-                                <span class="bb-item bb-yellow sm"></span>
-                            </div>
-                        </a>
-
-                        <a class="collection-item sm row bb-wrap" href="#!">
-                            <span class="col s2">#1</span>
-                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
-                            <span class="col s3 flex" style="justify-content: flex-end">
-                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
-                            </span>
-                            <div class="bb sm">
-                                <span class="bb-item bb-yellow sm"></span>
-                            </div>
-                        </a>
-
-                        <a class="collection-item sm row bb-wrap" href="#!">
-                            <span class="col s2">#1</span>
-                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
-                            <span class="col s3 flex" style="justify-content: flex-end">
-                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
-                            </span>
-                            <div class="bb sm">
-                                <span class="bb-item bb-yellow sm"></span>
-                            </div>
-                        </a>
-
-                        <a class="collection-item sm row bb-wrap" href="#!">
-                            <span class="col s2">#1</span>
-                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
-                            <span class="col s3 flex" style="justify-content: flex-end">
-                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
-                            </span>
-                            <div class="bb sm">
-                                <span class="bb-item bb-yellow sm"></span>
-                            </div>
-                        </a>
+<header>
+    <div id="nav-wrap">
+        <nav class="navbar">
+            <div class="topnav container" role="navigation">
+                <div class="left-cluster">
+                    <div id="sidenav-trigger-wrap">
+                        <a href="#!" data-target="leftbar" class="sidenav-trigger"><i class="material-icons">menu</i></a>
                     </div>
+                    <a href="/courses" class="logo">
+                        <img class="img" src="img/main-logo.svg" alt="Lahendus"/>
+                        <span class="text">LAHENDUS</span>
+                    </a>
                 </div>
-                <h3 class="submission-title">Esitus #4</h3><span class="last-submission-label">(viimane esitus)</span>
-                <div><span class="note warn"><i class="material-icons warn">info_outline</i>See on vana esitus. <a href="#!">Vaata viimast esitust.</a></span></div>
-                <p id="submission-info">
-                    <span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
-                <div id="submission-auto">
-                    <h4 style="font-size: 2rem;">Automaatne hinnang</h4>
-                    <pre class="feedback auto-feedback">Gut :)</pre>
-                    <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
-                </div>
-                <div id="submission-teacher">
-                    <h4 style="font-size: 2rem;">Õpetaja hinnang</h4>
-                    <pre class="feedback">Sehr gut :)</pre>
-                    <div>Hinne: <span class="grade-number">66</span>/100</div>
-                </div>
+                <ul class="menu">
+                    <li><a href="/courses" class="truncate">Minu kursused</a></li>
+                </ul>
+                <div class="right-cluster">
+                    <a href="#!" data-target="rightbar" class="sidenav-trigger">
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" style="width: 24px; fill: #fff; vertical-align: middle;">-->
+<!--                            <path d="M26 11c-8 0-15 7-15 15v140c0 8 7 15 15 15h140c8 0 15-7 15-15V26c0-8-7-15-15-15zm2 17h136v67H28zm34 85a17 17 0 110 34 17 17 0 110-34zm36 0h50v11H98zm0 22h23v12H98z"/>-->
+<!--                            <path d="M45 45h34v34H45zM98 45h50v11H98zM98 67h22v12H98z"/>-->
+<!--                        </svg>-->
 
-                <a class="toggle-link" id="add-grade-link" href="#!">Lisa hinnang</a>
-                <div class="toggleable-wrap" id="add-grade-wrap">
-                    <div class="row">
-                        <div class="input-field col s8">
-                            <textarea id="feedback" class="materialize-textarea"></textarea>
-                            <label for="feedback">Tagasiside</label>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="input-field col s4">
-                            <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
-                            <label for="grade">Hinne</label>
-                            <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
-                        </div>
-                    </div>
-                    <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
-                </div>
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 202.3 153.6" style="width: 24px; fill: #fff; vertical-align: middle;">-->
+<!--                            <g transform="translate(-27 227) scale(1.3333)">-->
+<!--                                <path d="M31-170c-6 0-11 5-11 11v93c0 6 5 11 11 11h130c6 0 11-5 11-11v-93c0-6-5-11-11-11zm2 13h126v89H33z" />-->
+<!--                                <rect width="42.5" height="42.5" x="48.2" y="-133.8" ry="21.3"/>-->
+<!--                                <path d="M100-134h43v9h-43zM100-117h23v9h-23zM100-100h43v9h-43z"/>-->
+<!--                            </g>-->
+<!--                        </svg>-->
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; fill: #fff; vertical-align: middle;">-->
+<!--                            <path fill="none" d="M0 0h24v24H0z"/>-->
+<!--                            <path d="M9 18h12v-2H9zm0-5h12v-2H9zm0-7v2h12V6zM3 11h2v2H3z"/>-->
+<!--                            <circle cx="4" cy="7.1" r="1.1"/>-->
+<!--                            <path d="M5 18H3l1-2z"/>-->
+<!--                        </svg>-->
 
-                <div class="editor-wrapper editor-read-only">
-                    <form>
-                        <textarea id="student-submission"></textarea>
-                    </form>
-                </div>
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; fill: #fff; vertical-align: middle;">-->
+<!--                            <path fill="none" d="M0 0h24v24H0z"/>-->
+<!--                            <path d="M15 18h6v-2h-6zm0-5h6v-2h-6zm0-7v2h6V6zM7 18l1-1H6l1 1zm4-4v-3c0-2-1-3-3-4a1 1 0 10-2 0c-2 1-3 2-3 4v3l-1 2h10z"/>-->
+<!--                        </svg>-->
 
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; fill: #fff; vertical-align: middle;">-->
+<!--                            <path fill="none" d="M0 0h24v24H0z"/>-->
+<!--                            <path d="M5 3L3 5v14l2 2h14l2-2V5l-2-2H5zm7 2a3 3 0 012 3 3 3 0 01-2 2 3 3 0 01-3-2 3 3 0 013-3zm4 9l3 5h-5l2-5zM5 14h5v5H5v-5z"/>-->
+<!--                        </svg>-->
+
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; fill: #fff; vertical-align: middle;">
+                            <path fill="none" d="M0 0h24v24H0z"/>
+                            <rect width="18" height="18" x="3" y="3" ry="2"/>
+                            <circle cx="12" cy="8.8" r="2.8" fill="#fff"/>
+                            <path fill="#fff" d="M6 14h5v4H6zM18 18h-5l2-5z"/>
+                        </svg>
+
+
+<!--                                            <i class="profile-logo material-icons">recent_actors</i>-->
+<!--                                            <i class="profile-logo material-icons">local_play</i>-->
+<!--                        <i class="profile-logo material-icons">group_work</i>-->
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+<main>
+    <div id="leftbar-wrap">
+        <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
+            <li><div class="user-view">
+                <div class="background"></div>
+                <div class="name attr truncate">Peeter Pingviin</div>
+                <div class="email attr truncate">peeter@p.i</div>
+<!--                <div class="role attr">Õpilane</div>-->
+                <div class="role-select-wrap">
+                    <select id="role-select">
+                        <option value="teacher">Õpetaja</option>
+                        <option value="student" selected>Õpilane</option>
+                    </select>
+                </div>
+            </div></li>
+            <li><div class="divider"></div></li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">storage</i>Minu kursused</a></li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">folder</i>Ülesandekogu</a></li>
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-course-modal"><i class="material-icons">child_care</i>Uus kursus</a></li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">assignment_ind</i>Artiklid</a></li>
+            <li><div class="divider"></div></li>
+            <li title="Tehnoloogia tarbijast loojaks (1337)"><a class="subheader truncate">Tehnoloogia tarbijast loojaks (1337)</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>Osalejad</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>Hinded</a></li>
+            <li><a class="waves-effect sidenav-close" href="#!" id="new-exercise-link"><i class="material-icons">create</i>Uus ülesanne</a></li>
+            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>Lisa olemasolev ülesanne</a></li>
+            <li><div class="divider"></div></li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">settings</i>Konto seaded</a></li>
+        </ul>
+        <!-- Modal Structure -->
+        <div id="new-course-modal" class="modal">
+            <div class="modal-content">
+                <h4>Uus kursus</h4>
+                <div class="new-course-name-field input-field">
+                    <input id="new-course-name-input" type="text">
+                    <label for="new-course-name-input">Kursuse nimi</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="new-course-btn" class="waves-effect waves-light btn"><ez-btn-content>Salvesta</ez-btn-content></button>
             </div>
         </div>
     </div>
-    -->
-
-
-    <div class="ez-collection">
-        <div class="item">
-            <span class="field icon">icon</span>
-            <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
-            <span class="field atr1">11. september 2019, 14:52</span>
-            <span class="field atr2">Teine atribuut</span>
-            <span class="field atr3">Kolmas atribuut</span>
-            <span class="field spacer"></span>
-            <span class="field more"><i class="material-icons">more_vert</i></span>
-        </div>
-        <div class="item">
-            <span class="field icon">icon</span>
-            <span class="field title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
-            <span class="field atr1">1. mai 2019, 14:52</span>
-            <span class="field atr2">Teine</span>
-            <span class="field atr3">Kolmas atribuut</span>
-            <span class="field spacer"></span>
-            <span class="field more"><i class="material-icons">more_vert</i></span>
-        </div>
+    <div id="rightbar-wrap">
+        <ul id="rightbar" class="rightbar sidenav sidenav-fixed">
+            <li></li>
+        </ul>
     </div>
+    <div id="content-container" class="container">
 
-</div>
+        <div class="card">
+            <div class="card-content">
+                <div class="grades-wrap">
+                    <div class="pre-table-wrap">
+                        <ez-pagination>
+                            <ez-pageinfo>1 &#8212; 50, kokku 1249</ez-pageinfo>
+                            <ez-pagenav>
+                                <ez-pagebtn disabled><i class="material-icons">first_page</i></ez-pagebtn
+                                ><ez-pagebtn disabled><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn><i class="material-icons">last_page</i></ez-pagebtn>
+                            </ez-pagenav>
+                        </ez-pagination>
+                    </div>
+                    <div class="grade-table-wrap">
+                        <table class="highlight colored truncated-ex">
+                            <thead><tr>
+                                <th class="header-spacer"></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.1 Bla bla blabla bla bla bla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><i class="material-icons">arrow_downward</i><span class="text">1.2 Bla bla blabla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.3 Bla bla blabla bla bla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                                <th><a class="wrap uncolored" href="#!"><span class="text">1.4 Bla bla blabla bla</span></a></th>
+                            </tr></thead>
+
+                            <tbody>
+                            <tr>
+                                <td class="student truncate">Kuslap Ants-Mets Kuusik</td>
+                                <td class="finished">100</td>
+                                <td class="unfinished">0</td>
+                                <td class="unstarted">-</td>
+                                <td class="ungraded">⋯</td>
+                                <td>100</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td class="student truncate">Mari Maasikas</td>
+                                <td>0</td>
+                                <td>99</td>
+                                <td>100</td>
+                                <td>11</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td class="student truncate">Jüri-Jaanus Juurikas</td>
+                                <td>100</td>
+                                <td>99</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>100</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="post-table-wrap">
+                        <ez-pagination>
+                            <ez-pageinfo>1 &#8212; 50, kokku 1249</ez-pageinfo>
+                            <ez-pagenav>
+                                <button  class="go-first waves-effect waves-green btn-flat" ><i class="material-icons">first_page</i></button
+                                ><ez-pagebtn disabled><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn class="waves-effect waves-green"><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn><i class="material-icons">last_page</i></ez-pagebtn>
+                            </ez-pagenav>
+                        </ez-pagination>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+<footer>
+</footer>
 <style>
-
-    .item {
-        background-color: #fff;
-        margin: .5rem 0 1rem 0;
-        padding: 1.5rem 2rem;
-        border-radius: 2px;
-        transition: box-shadow .25s, -webkit-box-shadow .25s;
-        box-shadow: 0 3px 1px -2px rgba(0,0,0,.05), 0 1px 5px 0 rgba(0,0,0,.1);
-
-        display: grid;
-        grid-template-rows: repeat(2, auto);
-        grid-template-columns: auto repeat(3, auto) 1fr auto;
-        grid-template-areas: "icon title title title title more" "icon atr1 atr2 atr3 spacer more";
-        grid-gap: .5rem 1rem;
-    }
-
-    .icon {
-        background-color: yellow;
-        grid-area: icon;
-        justify-self: center;
-        align-self: center;
-    }
-
-    .title {
-        grid-area: title;
-    }
-
-    .atr1 {
-        grid-area: atr1;
-        padding-right: 1rem;
-        border-right: 1px solid black;
-    }
-
-    .atr2 {
-        grid-area: atr2;
-        padding-right: 1rem;
-        border-right: 1px solid black;
-    }
-
-    .atr3 {
-        grid-area: atr3;
-    }
-
-    .spacer {
-        grid-area: spacer;
-    }
-
-    .more {
-        grid-area: more;
-        justify-self: center;
-        align-self: center;
-    }
 
 
 
@@ -352,22 +230,44 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
-<script src="js/kotlin.js"></script>
-<script src="js/kotlinx-coroutines-core.js"></script>
-<script src="js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
-<script src="js/wui.js"></script>
-<div id="date"></div> <!-- Temporary, for automatic generation time -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/theme/idea.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/mode/loadmode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
+
 
 <script>
-    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {
-        // margin: 0,
-        // transitionMovement: 10
+    const a = M.Sidenav.init(document.getElementById('#leftbar'), {});
+    // a.forEach((i) => {
+    //     window.setTimeout(() => {
+    //         i.close();
+    //         document.getElementsByTagName("body").item(0).classList.remove("leftbar-active");
+    //     }, 2000);
+    //     window.setTimeout(() => {
+    //         i.open();
+    //         document.getElementsByTagName("body").item(0).classList.add("leftbar-active");
+    //     }, 4000);
+    // });
+    M.Sidenav.init(document.querySelectorAll('#rightbar'), {
+        edge: 'right'
     });
 
-    M.Tabs.init(document.getElementsByClassName('tabs').item(0), {});
+
+    M.FormSelect.init(document.querySelectorAll('select'), {
+        classes: 'role-select',
+        dropdownOptions: {
+            coverTrigger: false,
+            autoFocus: true
+        }
+    });
+
+    const m = M.Modal.init(document.getElementById("new-course-modal"), {
+
+    });
 </script>
 </body>
 </html>

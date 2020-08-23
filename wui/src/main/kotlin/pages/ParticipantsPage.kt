@@ -22,11 +22,12 @@ import libheaders.Materialize
 import onVanillaClick
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
+import pages.leftbar.Leftbar
 import queries.*
 import successMessage
 import tmRender
-import kotlin.browser.window
-import kotlin.dom.clear
+import kotlinx.browser.window
+import kotlinx.dom.clear
 import kotlin.js.Date
 import kotlin.math.min
 
@@ -97,6 +98,9 @@ object ParticipantsPage : EasyPage() {
     override val pageName: Any
         get() = PageName.PARTICIPANTS
 
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedCourseId())
+
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
@@ -104,7 +108,8 @@ object ParticipantsPage : EasyPage() {
             path.matches("^/courses/\\w+/participants/?$")
 
     override fun build(pageStateStr: String?) {
-        val courseId = extractSanitizedCourseId(window.location.pathname)
+        super.build(pageStateStr)
+        val courseId = extractSanitizedCourseId()
         buildParticipants(courseId)
     }
 
@@ -347,7 +352,8 @@ object ParticipantsPage : EasyPage() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 
-    private fun extractSanitizedCourseId(path: String): String {
+    private fun extractSanitizedCourseId(): String {
+        val path = window.location.pathname
         val match = path.match("^/courses/(\\w+)/participants/?$")
         if (match != null && match.size == 2) {
             return match[1]

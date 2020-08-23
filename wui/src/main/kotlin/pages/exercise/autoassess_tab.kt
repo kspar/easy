@@ -5,7 +5,7 @@ import doInPromise
 import getElemByIdAs
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
-import spa.Component
+import Component
 import tmRender
 import kotlin.js.Promise
 

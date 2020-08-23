@@ -46,6 +46,81 @@
 
 <!-- Common -->
 
+<script id="t-c-leftbar" type="text/x-handlebars">
+    <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
+        <li><div class="user-view">
+            <div class="background"></div>
+            <div class="name attr truncate">{{userName}}</div>
+            <div class="email attr truncate">{{userEmail}}</div>
+            {{^canSwitchRole}}
+                <div class="role attr">{{userRole}}</div>
+            {{/canSwitchRole}}
+            {{#canSwitchRole}}
+                <div class="role-select-wrap">
+                    <select id="select-role">
+                        {{#rolesAvailable}}
+                            <option value="{{id}}" {{#isSelected}}selected{{/isSelected}}>{{name}}</option>
+                        {{/rolesAvailable}}
+                    </select>
+                </div>
+            {{/canSwitchRole}}
+        </div></li>
+        <li><div class="divider"></div></li>
+        <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>{{myCoursesLabel}}</a></li>
+        {{#isTeacherOrAdmin}}
+            <li><a class="waves-effect sidenav-close" href="/exercises"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>
+        {{/isTeacherOrAdmin}}
+        {{#isAdmin}}
+            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-course-modal"><i class="material-icons">child_care</i>{{newCourseLabel}}</a></li>
+        {{/isAdmin}}
+        {{#isCourseActive}}
+            <li><div class="divider"></div></li>
+            <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/exercises"><i class="material-icons">assignment</i>{{exercisesLabel}}</a></li>
+        {{#isTeacherOrAdmin}}
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{gradesLabel}}</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participantsLabel}}</a></li>
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><i class="material-icons">create</i>{{newExerciseLabel}}</a></li>
+            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>{{addExerciseLabel}}</a></li>
+        {{/isTeacherOrAdmin}}
+        {{/isCourseActive}}
+        <li><div class="divider"></div></li>
+        <li><a class="waves-effect sidenav-close" href="{{accountSettingsLink}}"><i class="material-icons">settings</i>{{accountSettingsLabel}}</a></li>
+        <li><a class="waves-effect sidenav-close" href="{{logOutLink}}"><i class="material-icons">exit_to_app</i>{{logOutLabel}}</a></li>
+    </ul>
+    <!-- New course modal -->
+    <div id="new-course-modal" class="modal">
+        <div class="modal-content">
+            <h4>{{newCourseLabel}}</h4>
+            <div class="form-fields">
+                <div class="input-field">
+                    <input id="new-course-name-input" type="text">
+                    <label for="new-course-name-input">{{newCourseTitleLabel}}</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="new-course-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
+        </div>
+    </div>
+    <!-- New exercise modal -->
+    <div id="new-exercise-modal" class="modal">
+        <div class="modal-content">
+            <h4>{{newExerciseLabel}}</h4>
+            <div class="form-fields">
+                <div class="input-field">
+                    <input id="new-exercise-name-input" type="text">
+                    <label for="new-exercise-name-input">{{newExerciseTitleLabel}}</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
+        </div>
+    </div>
+</script>
+
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
@@ -141,10 +216,6 @@
 <script id="t-c-teach-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h2 class="title">{{pageTitle}}</h2>
-        {{#canAddCourse}}
-            <a class="waves-effect waves-light btn title-button" href="/courses/new">
-                <i class="material-icons">add</i><span class="text">{{newCourseLabel}}</span></a>
-        {{/canAddCourse}}
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
@@ -344,63 +415,40 @@
     </div>
 </script>
 
-
-<!-- Templates -->
 <script id="tm-navbar" type="text/x-handlebars-template">
-    <nav class="nav-center" role="navigation">
-        <div class="container">
-            <a href="/courses" class="brand-logo left">
-                <img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/>
-                <span class="logo-text">LAHENDUS</span>
-            </a>
-            <ul id="nav-mobile" class="hide-on-med-and-down">
-                <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
-            </ul>
-            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
-                <a href="#!">
-                    <i id="profile-logo" class="left material-icons">account_circle</i>
-                    <span id="profile-name">{{userName}}{{roleIndicator}}</span>
+    <nav class="navbar">
+        <div class="topnav container" role="navigation">
+            <div class="left-cluster">
+                <div>
+                    <a id="sidenav-toggle" href="#!" class="sidenav-toggle"><i class="material-icons">menu</i></a>
+                </div>
+                <a href="/courses" class="logo">
+                    <img class="img" src="/static/img/main-logo.svg" alt="Lahendus"/>
+                    <span class="text">LAHENDUS</span>
                 </a>
+            </div>
+            <!-- Search here -->
+            <div class="right-cluster">
+                <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                    <a href="#!">
+                        <i class="profile-logo left material-icons">account_circle</i>
+                        <span class="profile-name">{{userName}}</span>
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
     <!-- Profile dropdown menu structure -->
     <ul id="profile-dropdown" class="dropdown-content">
-        {{#hasRoles}}
-            <div id="active-role-label">{{activeRoleLabel}}</div>
-            {{#roles}}
-                <li><a id="{{linkId}}" href="#!"><i class="material-icons role-radio-icon">{{#active}}radio_button_checked{{/active}}{{^active}}radio_button_unchecked{{/active}}</i>{{name}}</a></li>
-            {{/roles}}
-        {{/hasRoles}}
         <li><a href="{{accountLink}}">{{account}}</a></li>
-        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+        <li><a href="{{logOutLink}}">{{logOut}}</a></li>
     </ul>
-</script>
-
-<script id="tm-sidenav" type="text/x-handlebars-template">
-    <ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
-        <li><a class="subheader">{{header}}</a></li>
-        <li class="divider-wrap"><div class="divider"></div></li>
-        <li><a class="waves-effect sidenav-close" href="/exercises/new?addto={{courseId}}"><i class="material-icons">create</i>{{newExercise}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/addexercise"><i class="material-icons">add_box</i>{{addExistingExercise}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participants}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{grades}}</a></li>
-    </ul>
-    <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 </script>
 
 <script id="tm-message" type="text/x-handlebars-template">
     <i class="material-icons" style="margin-right: 10px;">{{icon}}</i>
     <span class="msg truncate">{{msg}}</span>
     <button id="{{btnId}}" class="btn-flat toast-action"><i class="material-icons dismiss">close</i></button>
-</script>
-
-<script id="tm-add-course" type="text/x-handlebars-template">
-    <div class="input-field">
-        <textarea id="course-title" class="materialize-textarea"></textarea>
-        <label for="course-title">{{newCourseName}}</label>
-    </div>
-    <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
 </script>
 
 <script id="tm-loading-exercise" type="text/x-handlebars-template">
@@ -1074,10 +1122,6 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
 <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
 <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
-
-<script src="/static/js/kotlin.js"></script>
-<script src="/static/js/kotlinx-coroutines-core.js"></script>
-<script src="/static/js/kotlinx-serialization-kotlinx-serialization-runtime.js"></script>
 <script src="/static/js/wui.js"></script>
 
 <div id="date"></div> <!-- Temporary, for automatic generation time -->

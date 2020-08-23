@@ -16,8 +16,8 @@ import pages.EasyPage
 import parseTo
 import plainDstStr
 import restoreWindowScroll
-import spa.CacheableComponent
-import spa.Component
+import CacheableComponent
+import Component
 import stringify
 import warn
 import kotlin.js.Promise
@@ -36,6 +36,7 @@ object CoursesPage : EasyPage() {
             path.matches("^/courses/?$")
 
     override fun build(pageStateStr: String?) {
+        super.build(pageStateStr)
         MainScope().launch {
             val funLog = debugFunStart("CoursesPage.build")
 

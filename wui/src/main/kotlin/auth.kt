@@ -1,12 +1,12 @@
 import org.w3c.dom.get
 import org.w3c.dom.set
-import kotlin.browser.localStorage
+import kotlinx.browser.localStorage
 import kotlin.js.Promise
 
-enum class Role {
-    STUDENT,
-    TEACHER,
-    ADMIN
+enum class Role(val id: String) {
+    STUDENT("student"),
+    TEACHER("teacher"),
+    ADMIN("admin")
 }
 
 @JsName("Keycloak")
@@ -36,40 +36,15 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     lateinit var activeRole: Role
 
-    fun isStudent(): Boolean = this.tokenParsed.easy_role.includes("student").unsafeCast<Boolean>()
-    fun isTeacher(): Boolean = this.tokenParsed.easy_role.includes("teacher").unsafeCast<Boolean>()
-    fun isAdmin(): Boolean = this.tokenParsed.easy_role.includes("admin").unsafeCast<Boolean>()
+    fun hasRole(role: Role): Boolean = this.tokenParsed.easy_role.includes(role.id).unsafeCast<Boolean>()
 
-    fun isMainRoleActive(): Boolean = getMainRole() == activeRole
-    fun isStudentActive(): Boolean = activeRole == Role.STUDENT
-    fun isTeacherActive(): Boolean = activeRole == Role.TEACHER
-    fun isAdminActive(): Boolean = activeRole == Role.ADMIN
-
-    fun switchRoleToAdmin() {
-        if (!isAdmin()) {
+    fun switchToRole(newRole: Role) {
+        if (!hasRole(newRole)) {
             errorMessage { Str.somethingWentWrong() }
-            error("Role change to admin but user is not admin")
+            error("Role change to ${newRole.id} but user doesn't have that role")
         }
-        activeRole = Role.ADMIN
-        localStorage.removeItem("activeRole")
-    }
-
-    fun switchRoleToTeacher() {
-        if (!isTeacher()) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Role change to teacher but user is not teacher")
-        }
-        activeRole = Role.TEACHER
-        localStorage.removeItem("activeRole")
-    }
-
-    fun switchRoleToStudent() {
-        if (!isStudent()) {
-            errorMessage { Str.somethingWentWrong() }
-            error("Role change to student but user is not student")
-        }
-        activeRole = Role.STUDENT
-        localStorage["activeRole"] = "student"
+        activeRole = newRole
+        localStorage["activeRole"] = newRole.id
     }
 
 
@@ -103,16 +78,18 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     private fun getPersistedRole(): Role? {
         val persistedRoleStr = localStorage["activeRole"]
+        val persistedRole = Role.values().firstOrNull { it.id == persistedRoleStr }
         return when {
-            persistedRoleStr == "student" && isStudent() -> Role.STUDENT
+            persistedRole == null -> null
+            hasRole(persistedRole) -> persistedRole
             else -> null
         }
     }
 
     private fun getMainRole(): Role = when {
-        isAdmin() -> Role.ADMIN
-        isTeacher() -> Role.TEACHER
-        isStudent() -> Role.STUDENT
+        hasRole(Role.ADMIN) -> Role.ADMIN
+        hasRole(Role.TEACHER) -> Role.TEACHER
+        hasRole(Role.STUDENT) -> Role.STUDENT
         else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
     }
 }

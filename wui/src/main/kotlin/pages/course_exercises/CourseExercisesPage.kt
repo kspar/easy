@@ -2,6 +2,7 @@ package pages.course_exercises
 
 import Auth
 import CONTENT_CONTAINER_ID
+import Component
 import DateSerializer
 import IdGenerator
 import JsonUtil
@@ -15,19 +16,19 @@ import debugFunStart
 import doInPromise
 import getContainer
 import getNodelistBySelector
+import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import pages.EasyPage
+import pages.leftbar.Leftbar
 import parseTo
 import queries.*
-import spa.Component
 import tmRender
 import toEstonianString
 import toJsObj
-import kotlin.browser.window
 import kotlin.js.Date
 import kotlin.js.Promise
 import kotlin.math.max
@@ -106,6 +107,9 @@ object CourseExercisesPage : EasyPage() {
     override val pageName: PageName
         get() = PageName.EXERCISES
 
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedCourseId())
+
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/exercises/?$")
 
@@ -117,8 +121,9 @@ object CourseExercisesPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("ExercisesPage.build")
+        super.build(pageStateStr)
 
-        val courseId = extractSanitizedCourseId(window.location.pathname)
+        val courseId = extractSanitizedCourseId()
 
         val pageState = pageStateStr?.parseTo(State.serializer())
         if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
@@ -142,7 +147,8 @@ object CourseExercisesPage : EasyPage() {
         c.createAndBuild()
     }
 
-    private fun extractSanitizedCourseId(path: String): String {
+    private fun extractSanitizedCourseId(): String {
+        val path = window.location.pathname
         val match = path.match("^/courses/(\\w+)/exercises/?$")
         if (match != null && match.size == 2) {
             return match[1]
@@ -211,7 +217,7 @@ object CourseExercisesPage : EasyPage() {
             getContainer().innerHTML = exercisesHtml
 
             val newState = State(courseId, Auth.activeRole, exercisesHtml)
-            updateState(JsonUtil.stringify(State.serializer(), newState))
+            updateState(JsonUtil.encodeToString(State.serializer(), newState))
 
             initTooltips()
         }
@@ -310,7 +316,7 @@ object CourseExercisesPage : EasyPage() {
             getContainer().innerHTML = exercisesHtml
 
             val newState = State(courseId, Role.STUDENT, exercisesHtml)
-            updateState(JsonUtil.stringify(State.serializer(), newState))
+            updateState(JsonUtil.encodeToString(State.serializer(), newState))
 
             initTooltips()
         }

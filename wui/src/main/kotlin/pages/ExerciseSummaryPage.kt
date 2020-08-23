@@ -39,6 +39,7 @@ import onChange
 import onSingleClickWithDisabled
 import onVanillaClick
 import org.w3c.dom.*
+import pages.leftbar.Leftbar
 import queries.*
 import saveAsFile
 import sleep
@@ -47,10 +48,10 @@ import tmRender
 import toEstonianString
 import toJsObj
 import warn
-import kotlin.browser.window
-import kotlin.dom.addClass
-import kotlin.dom.clear
-import kotlin.dom.removeClass
+import kotlinx.browser.window
+import kotlinx.dom.addClass
+import kotlinx.dom.clear
+import kotlinx.dom.removeClass
 import kotlin.js.Date
 import kotlin.math.min
 import kotlin.random.Random
@@ -203,11 +204,15 @@ object ExerciseSummaryPage : EasyPage() {
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
 
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedPathIds().courseId)
+
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/exercises/\\w+/summary/?$")
 
     override fun build(pageStateStr: String?) {
-        val pathIds = extractSanitizedPathIds(window.location.pathname)
+        super.build(pageStateStr)
+        val pathIds = extractSanitizedPathIds()
         val courseId = pathIds.courseId
         val courseExerciseId = pathIds.exerciseId
 
@@ -1082,7 +1087,8 @@ object ExerciseSummaryPage : EasyPage() {
 
     data class PathIds(val courseId: String, val exerciseId: String)
 
-    private fun extractSanitizedPathIds(path: String): PathIds {
+    private fun extractSanitizedPathIds(): PathIds {
+        val path = window.location.pathname
         val match = path.match("^/courses/(\\w+)/exercises/(\\w+)/summary/?\$")
         if (match != null && match.size == 3) {
             return PathIds(match[1], match[2])

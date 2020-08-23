@@ -17,12 +17,6 @@ fun warn(msgProvider: () -> Any?) {
         console.warn("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
 
-fun warn(msg: String?) {
-    if (AppProperties.LOG_WARN_ENABLED)
-        console.warn("$WARN_PREFIX ${datetimeString()}: $msg")
-}
-
-
 class FunLog(private val funName: String, private val funStartTime: Double) {
     fun end() {
         debug { "<-- ${this.funName} (took ${Date.now() - this.funStartTime} ms)" }

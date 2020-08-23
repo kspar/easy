@@ -11,17 +11,28 @@ external object Materialize {
     val Toast: MToast
     val Materialbox: MMaterialbox
     val FormSelect: MFormSelect
+    val Modal: MModal
 
     fun toast(options: dynamic): MToastInstance
 }
+
 
 external object MDropdown {
     fun init(elements: dynamic, options: dynamic)
 }
 
+
 external object MSidenav {
-    fun init(elements: dynamic, options: dynamic)
+    fun init(elements: dynamic, options: dynamic): MSidenavInstance
+    fun getInstance(element: Element): MSidenavInstance?
 }
+
+external class MSidenavInstance {
+    fun open()
+    fun close()
+    val isOpen: Boolean
+}
+
 
 external object MTooltip {
     fun init(elements: dynamic, options: dynamic = definedExternally)
@@ -31,6 +42,7 @@ external object MTooltip {
 external class MTooltipInstance {
     fun destroy()
 }
+
 
 external object MTabs {
     fun init(elements: dynamic, options: dynamic = definedExternally): MTabsInstance
@@ -43,6 +55,7 @@ external class MTabsInstance {
     fun updateTabIndicator()
 }
 
+
 external class MToast {
     fun dismissAll()
 }
@@ -51,8 +64,14 @@ external class MToastInstance {
     fun dismiss()
 }
 
+
 external class MMaterialbox {
     fun init(elements: dynamic, options: dynamic = definedExternally)
+}
+
+
+external class MFormSelect {
+    fun init(elements: dynamic, options: dynamic = definedExternally): MFormSelectInstance
 }
 
 external class MFormSelectInstance {
@@ -60,6 +79,11 @@ external class MFormSelectInstance {
     fun getSelectedValues(): dynamic
 }
 
-external class MFormSelect {
-    fun init(elements: dynamic, options: dynamic = definedExternally) : MFormSelectInstance
+
+external class MModal {
+    fun init(elements: dynamic, options: dynamic = definedExternally): MModalInstance
+}
+
+external class MModalInstance {
+    fun close()
 }

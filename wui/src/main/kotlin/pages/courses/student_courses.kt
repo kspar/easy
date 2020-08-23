@@ -6,8 +6,8 @@ import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
-import spa.CacheableComponent
-import spa.Component
+import CacheableComponent
+import Component
 import tmRender
 import kotlin.js.Promise
 

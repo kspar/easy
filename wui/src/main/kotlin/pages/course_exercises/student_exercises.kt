@@ -1,7 +1,7 @@
 package pages.course_exercises
 
 import doInPromise
-import spa.Component
+import Component
 import kotlin.js.Promise
 
 class StudentCourseExercisesListComp(

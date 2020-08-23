@@ -1,25 +1,27 @@
-import kotlinx.serialization.*
-import kotlinx.serialization.internal.StringDescriptor
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import kotlin.js.Date
 
 
-val JsonUtil = Json(JsonConfiguration.Stable)
+val JsonUtil = Json {}
 
 
 fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =
-        JsonUtil.parse(deserializer, this)
+        JsonUtil.decodeFromString(deserializer, this)
 
-fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.stringify(this, obj)
+fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.encodeToString(this, obj)
 
 
-@Serializer(forClass = Date::class)
 object DateSerializer : KSerializer<Date> {
-    override val descriptor: SerialDescriptor =
-            StringDescriptor.withName("Date")
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Date", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: Date) {
+    override fun serialize(encoder: Encoder, value: Date) {
         // Probably just Date.toISOString()
         TODO("Not implemented")
     }
