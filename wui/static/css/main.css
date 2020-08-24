@@ -110,6 +110,7 @@ h4 {
 
 .profile-wrap .profile-logo {
     font-size: 37px;
+    margin-right: 10px;
 }
 
 @media only screen and (max-width: 992px) {
