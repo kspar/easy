@@ -1,10 +1,4 @@
 import kotlinx.coroutines.await
-import kotlinx.browser.window
-import kotlin.js.Promise
-
-
-fun sleep(timeMs: Int) =
-        Promise<Unit> { resolve, _ -> window.setTimeout(resolve, timeMs) }
 
 
 suspend fun <T> observeValueChange(idleThresholdMs: Int, pollTimeMs: Int, doActionFirst: Boolean = false,
