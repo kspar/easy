@@ -786,33 +786,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun renderAutoAssessment(grade: Int, feedback: String?): String {
-        val isYourLuckyDay = Date.now().toLong() in 1585692000000..1586037600000 && Random.nextInt(0, 100) == 0
-        if (isYourLuckyDay)
-            MainScope().launch {
-                sleep(3000).await()
-                getElemsByClass("apf").forEach { it.removeClass("apf") }
-                debug {
-                    """
-░░░░░▄▄▄▄▀▀▀▀▀▀▀▀▄▄▄▄▄▄░░░░░░░
-░░░░░█░░░░▒▒▒▒▒▒▒▒▒▒▒▒░░▀▀▄░░░░
-░░░░█░░░▒▒▒▒▒▒░░░░░░░░▒▒▒░░█░░░
-░░░█░░░░░░▄██▀▄▄░░░░░▄▄▄░░░░█░░
-░▄▀▒▄▄▄▒░█▀▀▀▀▄▄█░░░██▄▄█░░░░█░
-█░▒█▒▄░▀▄▄▄▀░░░░░░░░█░░░▒▒▒▒▒░█
-█░▒█░█▀▄▄░░░░░█▀░░░░▀▄░░▄▀▀▀▄▒█
-░█░▀▄░█▄░█▀▄▄░▀░▀▀░▄▄▀░░░░█░░█░
-░░█░░░▀▄▀█▄▄░█▀▀▀▄▄▄▄▀▀█▀██░█░░
-░░░█░░░░██░░▀█▄▄▄█▄▄█▄████░█░░░
-░░░░█░░░░▀▀▄░█░░░█░█▀██████░█░░
-░░░░░▀▄░░░░░▀▀▄▄▄█▄█▄█▄█▄▀░░█░░
-░░░░░░░▀▄▄░▒▒▒▒░░░░░░░░░░▒░░░█░
-░░░░░░░░░░▀▀▄▄░▒▒▒▒▒▒▒▒▒▒░░░░█░
-░░░░░░░░░░░░░░▀▄▄▄▄▄░░░░░░░░█░░"""
-                }
-            }
-
         return tmRender("tm-exercise-auto-feedback", mapOf(
-                "aprilClass" to if (isYourLuckyDay) "apf" else null,
                 "autoLabel" to Str.autoAssessmentLabel(),
                 "autoGradeLabel" to Str.autoGradeLabel(),
                 "grade" to grade.toString(),
