@@ -1,6 +1,6 @@
 val mvnGroup = "rip.kspar"
 val mvnArtifact = "ezspa"
-val mvnVersion = "0.3.0"
+val mvnVersion = "0.4.0"
 val repoUrl = "https://github.com/kspar/easy/tree/master/ezspa"
 
 plugins {
