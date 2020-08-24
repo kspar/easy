@@ -4,6 +4,7 @@ import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
 import org.w3c.dom.events.MouseEvent
+import rip.kspar.ezspa.onVanillaClick
 
 fun HTMLAnchorElement.onSingleClickWithDisabled(disabledText: String?, f: suspend (event: MouseEvent) -> Unit) {
     this.onVanillaClick(true) {

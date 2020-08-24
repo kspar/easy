@@ -1,3 +1,5 @@
+import rip.kspar.ezspa.getElemById
+
 fun tmRender(templateId: String, data: Map<String, Any?>? = null): String =
         render(getElemById(templateId).innerHTML, data ?: emptyMap())
 

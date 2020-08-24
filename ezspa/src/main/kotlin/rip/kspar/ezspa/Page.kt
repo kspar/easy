@@ -1,3 +1,5 @@
+package rip.kspar.ezspa
+
 import kotlinx.browser.window
 
 /**

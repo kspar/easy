@@ -1,11 +1,11 @@
 package pages.exercise
 
 import components.CodeEditorComp
-import doInPromise
-import getElemByIdAs
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemByIdAs
 import tmRender
 import kotlin.js.Promise
 

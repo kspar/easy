@@ -13,20 +13,16 @@ import debug
 import debugFunStart
 import emptyToNull
 import getContainer
-import getElemById
-import getElemByIdAs
-import getElemByIdAsOrNull
-import getElemByIdOrNull
-import getElemBySelector
-import getElemsByClass
-import getElemsBySelector
 import getLastPageOffset
-import getNodelistBySelector
 import highlightCode
 import isNotNullAndTrue
+import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.dom.addClass
+import kotlinx.dom.clear
+import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
@@ -35,12 +31,20 @@ import lightboxExerciseImages
 import moveClass
 import objOf
 import observeValueChange
-import onChange
 import onSingleClickWithDisabled
-import onVanillaClick
 import org.w3c.dom.*
 import pages.leftbar.Leftbar
 import queries.*
+import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.getElemByIdAs
+import rip.kspar.ezspa.getElemByIdAsOrNull
+import rip.kspar.ezspa.getElemByIdOrNull
+import rip.kspar.ezspa.getElemBySelector
+import rip.kspar.ezspa.getElemsByClass
+import rip.kspar.ezspa.getElemsBySelector
+import rip.kspar.ezspa.getNodelistBySelector
+import rip.kspar.ezspa.onChange
+import rip.kspar.ezspa.onVanillaClick
 import saveAsFile
 import sleep
 import successMessage
@@ -48,10 +52,6 @@ import tmRender
 import toEstonianString
 import toJsObj
 import warn
-import kotlinx.browser.window
-import kotlinx.dom.addClass
-import kotlinx.dom.clear
-import kotlinx.dom.removeClass
 import kotlin.js.Date
 import kotlin.math.min
 import kotlin.random.Random
@@ -801,7 +801,8 @@ object ExerciseSummaryPage : EasyPage() {
             MainScope().launch {
                 sleep(3000).await()
                 getElemsByClass("apf").forEach { it.removeClass("apf") }
-                debug { """
+                debug {
+                    """
 ░░░░░▄▄▄▄▀▀▀▀▀▀▀▀▄▄▄▄▄▄░░░░░░░
 ░░░░░█░░░░▒▒▒▒▒▒▒▒▒▒▒▒░░▀▀▄░░░░
 ░░░░█░░░▒▒▒▒▒▒░░░░░░░░▒▒▒░░█░░░
@@ -816,7 +817,8 @@ object ExerciseSummaryPage : EasyPage() {
 ░░░░░▀▄░░░░░▀▀▄▄▄█▄█▄█▄█▄▀░░█░░
 ░░░░░░░▀▄▄░▒▒▒▒░░░░░░░░░░▒░░░█░
 ░░░░░░░░░░▀▀▄▄░▒▒▒▒▒▒▒▒▒▒░░░░█░
-░░░░░░░░░░░░░░▀▄▄▄▄▄░░░░░░░░█░░""" }
+░░░░░░░░░░░░░░▀▄▄▄▄▄░░░░░░░░█░░"""
+                }
             }
 
         return tmRender("tm-exercise-auto-feedback", mapOf(

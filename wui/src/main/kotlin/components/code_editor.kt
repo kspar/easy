@@ -1,18 +1,14 @@
 package components
 
-import IdGenerator
-import getElemById
-import getElemsByClass
+import kotlinx.dom.addClass
+import kotlinx.dom.clear
+import kotlinx.dom.removeClass
 import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
 import negation
 import objOf
-import onVanillaClick
-import Component
+import rip.kspar.ezspa.*
 import tmRender
-import kotlinx.dom.addClass
-import kotlinx.dom.clear
-import kotlinx.dom.removeClass
 
 
 class CodeEditorComp(

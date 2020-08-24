@@ -1,6 +1,9 @@
 import kotlinx.coroutines.await
 import libheaders.CodeMirror
-import pages.*
+import pages.ExerciseSummaryPage
+import pages.GradeTablePage
+import pages.Navbar
+import pages.ParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
@@ -8,6 +11,10 @@ import queries.ReqMethod
 import queries.abortAllFetchesAndClear
 import queries.fetchEms
 import queries.http200
+import rip.kspar.ezspa.EzSpa
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getHeader
+import rip.kspar.ezspa.getMain
 
 
 private val PAGES = listOf(

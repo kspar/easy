@@ -1,17 +1,10 @@
 package pages.leftbar
 
 import Auth
-import Component
-import EzSpa
 import Role
 import Str
 import buildStatics
 import debug
-import doInPromise
-import getBody
-import getElemById
-import getElemByIdAs
-import getElemByIdAsOrNull
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
@@ -19,12 +12,12 @@ import kotlinx.serialization.Serializable
 import libheaders.MSidenavInstance
 import libheaders.Materialize
 import objOf
-import onChange
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLSelectElement
 import queries.*
+import rip.kspar.ezspa.*
 import tmRender
 import kotlin.js.Promise
 

@@ -2,11 +2,11 @@ package pages
 
 import Auth
 import Str
-import getBody
-import getElemById
 import libheaders.Materialize
-import onVanillaClick
 import pages.leftbar.Leftbar
+import rip.kspar.ezspa.getBody
+import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.onVanillaClick
 import tmRender
 import toJsObj
 

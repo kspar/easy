@@ -1,3 +1,5 @@
+package rip.kspar.ezspa
+
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.w3c.dom.HTMLAnchorElement
@@ -40,7 +42,7 @@ internal fun setupHistoryNavInterception() {
         if (state == null || state is String) {
             EzSpa.PageManager.updatePage(state as? String)
         } else {
-            EzSpa.Logger.warn { "Page state was a non-null non-string:" }
+            EzSpa.Logger.warn { "rip.kspar.ezspa.Page state was a non-null non-string:" }
             console.dir(state)
             EzSpa.PageManager.updatePage()
         }

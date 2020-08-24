@@ -1,8 +1,8 @@
 package components
 
-import IdGenerator
 import Str
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import tmRender
 
 

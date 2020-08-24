@@ -1,11 +1,11 @@
 package components
 
-import IdGenerator
-import getElemById
 import libheaders.MTabsInstance
 import libheaders.Materialize
 import objOf
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.getElemById
 import tmRender
 
 

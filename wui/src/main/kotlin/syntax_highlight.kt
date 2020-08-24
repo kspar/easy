@@ -1,6 +1,7 @@
 import libheaders.HighlightJS
 import org.w3c.dom.NodeList
 import org.w3c.dom.asList
+import rip.kspar.ezspa.getNodelistBySelector
 
 
 fun NodeList.highlightCode() {

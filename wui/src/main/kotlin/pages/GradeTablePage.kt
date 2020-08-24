@@ -6,19 +6,19 @@ import PaginationConf
 import Role
 import Str
 import getContainer
-import getElemsByClass
 import getLastPageOffset
 import isNotNullAndTrue
+import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import objOf
-import onVanillaClick
 import pages.leftbar.Leftbar
 import queries.*
+import rip.kspar.ezspa.getElemsByClass
+import rip.kspar.ezspa.onVanillaClick
 import tmRender
-import kotlinx.browser.window
 import kotlin.math.min
 
 object GradeTablePage : EasyPage() {

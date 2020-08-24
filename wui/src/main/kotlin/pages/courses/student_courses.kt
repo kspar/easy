@@ -2,12 +2,12 @@ package pages.courses
 
 import CourseInfoCache
 import Str
-import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
-import CacheableComponent
-import Component
+import rip.kspar.ezspa.CacheableComponent
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Promise
 

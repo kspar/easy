@@ -1,4 +1,6 @@
 import libheaders.Materialize
+import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.onVanillaClick
 import kotlin.js.Date
 import kotlin.random.Random
 

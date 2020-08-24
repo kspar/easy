@@ -4,10 +4,6 @@ import MathJax
 import Str
 import components.CodeEditorComp
 import debug
-import doInPromise
-import getElemById
-import getElemByIdAs
-import getElemByIdOrNull
 import highlightCode
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -22,7 +18,7 @@ import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
-import Component
+import rip.kspar.ezspa.*
 import tmRender
 import toEstonianString
 import kotlin.js.Promise

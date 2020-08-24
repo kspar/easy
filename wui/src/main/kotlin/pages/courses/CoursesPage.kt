@@ -6,7 +6,6 @@ import PageName
 import Role
 import ScrollPosition
 import debugFunStart
-import doInPromise
 import getWindowScrollPosition
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -16,8 +15,9 @@ import pages.EasyPage
 import parseTo
 import plainDstStr
 import restoreWindowScroll
-import CacheableComponent
-import Component
+import rip.kspar.ezspa.CacheableComponent
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import stringify
 import warn
 import kotlin.js.Promise

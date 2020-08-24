@@ -4,12 +4,12 @@ import Auth
 import Role
 import Str
 import getContainer
-import getElemsByClass
+import kotlinx.dom.clear
 import libheaders.Materialize
 import pages.leftbar.Leftbar
-import Page
+import rip.kspar.ezspa.Page
+import rip.kspar.ezspa.getElemsByClass
 import tmRender
-import kotlinx.dom.clear
 
 abstract class EasyPage : Page() {
 

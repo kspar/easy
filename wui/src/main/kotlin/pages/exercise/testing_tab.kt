@@ -1,10 +1,7 @@
 package pages.exercise
 
-import IdGenerator
 import Str
 import components.CodeEditorComp
-import doInPromise
-import getElemByIdAs
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import onSingleClickWithDisabled
@@ -13,7 +10,10 @@ import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemByIdAs
 import tmRender
 import kotlin.js.Promise
 

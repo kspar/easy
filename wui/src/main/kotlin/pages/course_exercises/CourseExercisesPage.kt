@@ -2,9 +2,7 @@ package pages.course_exercises
 
 import Auth
 import CONTENT_CONTAINER_ID
-import Component
 import DateSerializer
-import IdGenerator
 import JsonUtil
 import PageName
 import Role
@@ -13,9 +11,7 @@ import components.BreadcrumbsComp
 import components.Crumb
 import debug
 import debugFunStart
-import doInPromise
 import getContainer
-import getNodelistBySelector
 import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
@@ -26,6 +22,10 @@ import pages.EasyPage
 import pages.leftbar.Leftbar
 import parseTo
 import queries.*
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getNodelistBySelector
 import tmRender
 import toEstonianString
 import toJsObj
@@ -79,7 +79,7 @@ object CourseExercisesPage : EasyPage() {
     data class StudentExercise(val id: String,
                                val effective_title: String,
                                @Serializable(with = DateSerializer::class)
-                               val deadline: Date?,
+                                   val deadline: Date?,
                                val status: ExerciseStatus,
                                val grade: Int?,
                                val graded_by: GraderType?,
@@ -92,7 +92,7 @@ object CourseExercisesPage : EasyPage() {
     data class TeacherExercise(val id: String,
                                val effective_title: String,
                                @Serializable(with = DateSerializer::class)
-                               val soft_deadline: Date?,
+                                   val soft_deadline: Date?,
                                val grader_type: GraderType,
                                val ordering_idx: Int,
                                val unstarted_count: Int,

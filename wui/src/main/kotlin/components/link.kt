@@ -1,10 +1,10 @@
 package components
 
-import getElemByIdAs
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLAnchorElement
-import Component
-import IdGenerator
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.getElemByIdAs
 import tmRender
 
 

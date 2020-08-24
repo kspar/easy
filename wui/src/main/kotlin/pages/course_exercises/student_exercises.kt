@@ -1,7 +1,7 @@
 package pages.course_exercises
 
-import doInPromise
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import kotlin.js.Promise
 
 class StudentCourseExercisesListComp(

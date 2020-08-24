@@ -1,3 +1,5 @@
+package rip.kspar.ezspa
+
 import org.w3c.dom.Node
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent

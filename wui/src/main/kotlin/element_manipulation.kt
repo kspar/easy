@@ -1,6 +1,8 @@
-import org.w3c.dom.*
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
+import org.w3c.dom.Element
+import org.w3c.dom.HTMLDivElement
+import rip.kspar.ezspa.getElemByIdAs
 
 const val CONTENT_CONTAINER_ID = "content-container"
 

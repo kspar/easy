@@ -5,14 +5,14 @@ import blankToNull
 import components.BreadcrumbsComp
 import components.CardTabsComp
 import components.Crumb
-import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
-import Component
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import successMessage
 import tmRender
 import kotlin.js.Date
