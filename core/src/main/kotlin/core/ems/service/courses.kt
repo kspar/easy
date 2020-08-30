@@ -49,9 +49,10 @@ class CourseService(val privateCachingService: PrivateCachingService) {
     }
 
     /**
-     * Return a query for all students on the course, filtering by search query words and restricted group IDs.
+     * Return a query for all students on the course, filtering by search query words and group IDs.
      */
-    fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>, restrictedGroups: List<Long>): Query {
+    fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>,
+                                    groups: List<Long>, includeUngrouped: Boolean): Query {
         val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess)
                 .slice(Student.id,
                         Account.email,
@@ -60,10 +61,12 @@ class CourseService(val privateCachingService: PrivateCachingService) {
                 .select { StudentCourseAccess.course eq courseId }
                 .withDistinct()
 
-        if (restrictedGroups.isNotEmpty()) {
+        if (groups.isNotEmpty()) {
             query.andWhere {
-                StudentGroupAccess.group inList restrictedGroups or
-                        (StudentGroupAccess.group.isNull())
+                if (includeUngrouped)
+                    StudentGroupAccess.group inList groups or StudentGroupAccess.group.isNull()
+                else
+                    StudentGroupAccess.group inList groups
             }
         }
 
