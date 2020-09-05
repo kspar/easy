@@ -1,12 +1,12 @@
 import kotlinx.coroutines.await
 import libheaders.CodeMirror
 import pages.ExerciseSummaryPage
-import pages.GradeTablePage
 import pages.Navbar
 import pages.ParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
+import pages.grade_table.GradeTablePage
 import queries.ReqMethod
 import queries.abortAllFetchesAndClear
 import queries.fetchEms

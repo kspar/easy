@@ -1,10 +1,13 @@
-package pages
+package pages.grade_table
 
 import AppProperties
+import CONTENT_CONTAINER_ID
 import PageName
 import PaginationConf
 import Role
 import Str
+import components.BreadcrumbsComp
+import components.Crumb
 import getContainer
 import getLastPageOffset
 import isNotNullAndTrue
@@ -13,12 +16,16 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import libheaders.Materialize
 import objOf
+import org.w3c.dom.HTMLSelectElement
+import pages.EasyPage
 import pages.leftbar.Leftbar
+import plainDstStr
 import queries.*
-import rip.kspar.ezspa.getElemsByClass
-import rip.kspar.ezspa.onVanillaClick
+import rip.kspar.ezspa.*
 import tmRender
+import kotlin.js.Promise
 import kotlin.math.min
 
 object GradeTablePage : EasyPage() {
@@ -190,3 +197,137 @@ private fun extractSanitizedCourseId(): String {
     }
 }
 
+
+object NewGradeTablePage : EasyPage() {
+    private const val PAGE_STEP = AppProperties.GRADE_TABLE_ROWS_ON_PAGE
+
+    override val pageName: Any
+        get() = PageName.GRADE_TABLE
+
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedCourseId())
+
+    override val allowedRoles: List<Role>
+        get() = listOf(Role.TEACHER, Role.ADMIN)
+
+    override fun pathMatches(path: String) =
+            path.matches("^/courses/\\w+/grades/?$")
+
+
+    private var rootComp: GradeTableRootComponent? = null
+
+    override fun build(pageStateStr: String?) {
+        doInPromise {
+            super.build(pageStateStr)
+            val courseId = extractSanitizedCourseId()
+            val root = GradeTableRootComponent(courseId, CONTENT_CONTAINER_ID)
+            root.createAndBuild().await()
+        }
+    }
+}
+
+class GradeTableRootComponent(
+        private val courseId: String,
+        dstId: String
+) : Component(null, dstId) {
+
+    private lateinit var crumbsComp: BreadcrumbsComp
+    private lateinit var cardComp: GradeTableCardComp
+
+    override val children: List<Component>
+        get() = listOf(crumbsComp, cardComp)
+
+    override fun create(): Promise<*> = doInPromise {
+        val courseTitle = BasicCourseInfo.get(courseId).await().title
+        crumbsComp = BreadcrumbsComp(listOf(Crumb.myCourses, Crumb(courseTitle, "/courses/$courseId/exercises"), Crumb(Str.gradesLabel())), this)
+        cardComp = GradeTableCardComp(courseTitle, this)
+    }
+
+    override fun render() = plainDstStr(crumbsComp.dstId, cardComp.dstId)
+}
+
+class GradeTableCardComp(
+        private val courseTitle: String,
+        parent: Component?
+) : Component(parent) {
+
+    private lateinit var groupSelectComp: SelectComp
+    private lateinit var tableComp: GradeTableTableComp
+    // Static ID for table since it's recreated
+    private val tableDstId = IdGenerator.nextId()
+
+    override val children: List<Component>
+        get() = listOf(groupSelectComp, tableComp)
+
+    override fun create() = doInPromise {
+        // TODO: get groups
+        groupSelectComp = SelectComp("Grupp",
+                listOf(SelectComp.Option("Esimene", "1"), SelectComp.Option("Teine", "2", true)),
+                ::handleGroupChange, this)
+        tableComp = GradeTableTableComp(null, this, tableDstId)
+    }
+
+    override fun render() = tmRender("t-c-grades-card",
+            "title" to courseTitle,
+            "groupSelectDstId" to groupSelectComp.dstId,
+            "tableDstId" to tableDstId)
+
+    private fun handleGroupChange(newGroupId: String?) {
+        doInPromise {
+            tableComp = GradeTableTableComp(newGroupId, this, tableDstId)
+            tableComp.createAndBuild().await()
+        }
+    }
+}
+
+class SelectComp(
+        private val label: String,
+        private val options: List<Option>,
+        private val onOptionChange: ((String) -> Unit)? = null,
+        parent: Component
+) : Component(parent) {
+
+    data class Option(val label: String, val value: String, val preselected: Boolean = false)
+
+    private val selectId = IdGenerator.nextId()
+
+    override fun render() = tmRender("t-c-select",
+            "selectId" to selectId,
+            "selectLabel" to label,
+            "options" to options.map { mapOf("value" to it.value, "isSelected" to it.preselected, "label" to it.label) }
+    )
+
+    override fun postRender() {
+        Materialize.FormSelect.init(getElemById(selectId), objOf(
+                "dropdownOptions" to objOf(
+                        "coverTrigger" to false,
+                        "autoFocus" to false
+                )
+        ))
+        val selectElement = getElemByIdAs<HTMLSelectElement>(selectId)
+        selectElement.onChange {
+            onOptionChange?.invoke(selectElement.value)
+        }
+    }
+}
+
+class GradeTableTableComp(
+        private val groupId: String?,
+        parent: Component,
+        dstId: String = IdGenerator.nextId()
+) : Component(parent, dstId) {
+
+    override fun create() = doInPromise {
+        // TODO: get grades
+        sleep(3000).await()
+    }
+
+    override fun renderLoading(): String {
+        return "loading..."
+    }
+
+    override fun render(): String {
+        return "table comp for group $groupId"
+    }
+
+}

@@ -993,6 +993,11 @@ textarea.materialize-textarea {
     background-color: rgba(0, 0, 0, 0.08);
 }
 
+.select-wrap {
+    width: fit-content;
+    width: -moz-fit-content;
+}
+
 
 /** Modals **/
 
