@@ -389,6 +389,56 @@
     </div>
 </script>
 
+<script id="t-c-grades-table" type="text/x-handlebars">
+    <div class="grades-wrap">
+        <div class="pre-table-wrap">
+            {{#hasPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                    ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                    ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/hasPagination}}
+        </div>
+        <div class="grade-table-wrap">
+            <table class="colored truncated-ex">
+                <thead><tr>
+                    <th class="header-spacer"></th>
+                    {{#exercises}}
+                        <th><a class="wrap uncolored"><span class="text">{{exerciseTitle}}</span></a></th>
+                    {{/exercises}}
+                </tr></thead>
+                <tbody>
+                {{#students}}
+                    <tr>
+                        <td class="student truncate">{{name}}</td>
+                        {{#grades}}
+                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}</td>
+                        {{/grades}}
+                    </tr>
+                {{/students}}
+                </tbody>
+            </table>
+        </div>
+        <div class="post-table-wrap">
+            {{#hasPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                    ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                    ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/hasPagination}}
+        </div>
+    </div>
+</script>
 
 
 
@@ -1055,69 +1105,6 @@
             <div class="col s4"></div>
         </div>
         <button id="add-students-button" class="waves-effect waves-light btn">{{addButtonLabel}}</button>
-    </div>
-</script>
-
-<script id="tm-teach-gradetable" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="/courses" class="breadcrumb truncate">{{myCoursesLabel}}</a>
-        <a href="{{courseHref}}" class="breadcrumb truncate">{{title}}</a>
-        <a class="breadcrumb truncate">{{gradesLabel}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h2 class="title">{{title}}</h2>
-    </div>
-    <div class="card">
-        <div class="card-content">
-            <div class="grades-wrap">
-                <div class="pre-table-wrap">
-                    {{#hasPagination}}
-                        <ez-pagination>
-                            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
-                            <ez-pagenav>
-                                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
-                                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
-                                ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
-                                ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
-                            </ez-pagenav>
-                        </ez-pagination>
-                    {{/hasPagination}}
-                </div>
-                <div class="grade-table-wrap">
-                    <table class="colored truncated-ex">
-                        <thead><tr>
-                            <th class="header-spacer"></th>
-                            {{#exercises}}
-                            <th><a class="wrap uncolored"><span class="text">{{exerciseTitle}}</span></a></th>
-                            {{/exercises}}
-                        </tr></thead>
-                        <tbody>
-                        {{#students}}
-                        <tr>
-                            <td class="student truncate">{{name}}</td>
-                            {{#grades}}
-                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}</td>
-                            {{/grades}}
-                        </tr>
-                        {{/students}}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="post-table-wrap">
-                    {{#hasPagination}}
-                        <ez-pagination>
-                            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
-                            <ez-pagenav>
-                                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
-                                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
-                                ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
-                                ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
-                            </ez-pagenav>
-                        </ez-pagination>
-                    {{/hasPagination}}
-                </div>
-            </div>
-        </div>
     </div>
 </script>
 
