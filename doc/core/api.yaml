@@ -996,6 +996,29 @@ paths:
                 items:
                   $ref: '#/definitions/Group'
 
+    post:
+      summary: Create new group.
+      tags:
+        - teacher
+      parameters:
+        - name: group
+          in: body
+          schema:
+            properties:
+              name:
+                type: string
+            required:
+              - name
+      responses:
+        200:
+          description: Group created.
+          schema:
+            properties:
+              id:
+                type: string
+            required:
+              - id
+
 
   /courses/teacher/{courseId}/grades:
     parameters:
