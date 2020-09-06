@@ -802,14 +802,14 @@ paths:
       parameters:
         - name: teacher
           in: body
-          description: Teacher ids.
+          description: Teacher usernames.
           schema:
             properties:
               teachers:
                 type: array
                 items:
                   properties:
-                    teacher_id:
+                    username:
                       type: string
       responses:
         200:
