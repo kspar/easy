@@ -1032,6 +1032,48 @@ paths:
           description: Group deleted.
 
 
+  /courses/{courseId}/groups/{groupId}/teachers:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+    post:
+      summary: Add teachers to group.
+      tags:
+        - teacher
+      parameters:
+        - name: teachers
+          in: body
+          schema:
+            properties:
+              teachers:
+                type: array
+                items:
+                  properties:
+                    username:
+                      type: string
+                  required:
+                    - username
+            required:
+              - teachers
+      responses:
+        200:
+          description: Teachers added to group.
+
+
+  /courses/{courseId}/groups/{groupId}/teachers/{teacherId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+      - $ref: '#/parameters/TeacherId'
+    delete:
+      summary: Remove teacher from group.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Teacher removed from group.
+
+
   /courses/teacher/{courseId}/grades:
     parameters:
       - $ref: '#/parameters/CourseId'
@@ -1855,6 +1897,12 @@ parameters:
 
   StudentId:
     name: studentId
+    in: path
+    required: true
+    type: string
+
+  TeacherId:
+    name: teacherId
     in: path
     required: true
     type: string

@@ -64,12 +64,7 @@ fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: 
 
 fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean {
     return transaction {
-        val hasGroups = TeacherGroupAccess
-                .select {
-                    TeacherGroupAccess.course eq courseId and
-                            (TeacherGroupAccess.teacher eq user.id)
-                }.count() > 0
-
+        val hasGroups = teacherHasRestrictedGroupsOnCourse(user, courseId)
         if (!hasGroups) {
             true
         } else {
@@ -79,6 +74,28 @@ fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): 
                         (TeacherGroupAccess.group eq groupId)
             }.count() > 0
         }
+    }
+}
+
+fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: Long) {
+    when {
+        user.isAdmin() -> return
+        user.isTeacher() -> {
+            if (teacherHasRestrictedGroupsOnCourse(user, courseId)) {
+                throw ForbiddenException("Teacher ${user.id} has restricted groups on course $courseId",
+                        ReqError.HAS_RESTRICTED_GROUPS)
+            }
+        }
+    }
+}
+
+fun teacherHasRestrictedGroupsOnCourse(user: EasyUser, courseId: Long): Boolean {
+    return transaction {
+        TeacherGroupAccess
+                .select {
+                    TeacherGroupAccess.course eq courseId and
+                            (TeacherGroupAccess.teacher eq user.id)
+                }.count() > 0
     }
 }
 
