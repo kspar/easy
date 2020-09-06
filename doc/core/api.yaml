@@ -1009,6 +1009,10 @@ paths:
           name: search
           type: string
           description: Search string that is matched on student names, username and email.
+        - in: query
+          name: group
+          type: string
+          description: Group ID. If given, return only students who are in this group.
       tags:
         - teacher
       responses:
