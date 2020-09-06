@@ -17,7 +17,7 @@ abstract class EasyPage : Page() {
     open val allowedRoles: List<Role> = Role.values().asList()
 
     // Leftbar with no course by default
-    open val leftbarConf: Leftbar.Conf = Leftbar.Conf(null)
+    open val leftbarConf: Leftbar.Conf = Leftbar.Conf()
 
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
@@ -27,6 +27,7 @@ abstract class EasyPage : Page() {
                     "title" to Str.noPermissionForPageTitle(),
                     "msg" to Str.noPermissionForPageMsg()
             ))
+            Leftbar.refresh(Leftbar.Conf())
             error("User is not one of $allowedRoles")
         }
     }

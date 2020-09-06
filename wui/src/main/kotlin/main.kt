@@ -7,6 +7,7 @@ import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
 import pages.grade_table.GradeTablePage
+import pages.leftbar.Leftbar
 import queries.ReqMethod
 import queries.abortAllFetchesAndClear
 import queries.fetchEms
@@ -89,4 +90,5 @@ private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
             "title" to Str.notFoundPageTitle(),
             "msg" to Str.notFoundPageMsg()
     ))
+    Leftbar.refresh(Leftbar.Conf())
 }

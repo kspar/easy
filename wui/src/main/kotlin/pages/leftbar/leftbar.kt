@@ -23,7 +23,7 @@ import kotlin.js.Promise
 
 object Leftbar {
 
-    data class Conf(val courseId: String?)
+    data class Conf(val courseId: String? = null)
 
     private const val DST_ID = "leftbar-wrap"
 
