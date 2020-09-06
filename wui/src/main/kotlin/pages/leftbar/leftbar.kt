@@ -160,7 +160,6 @@ class LeftbarRootComp(
                 debug { "Change role to $newRoleId" }
                 val newRole = rolesList.first { it.id == newRoleId }.authRole
                 Auth.switchToRole(newRole)
-                buildStatics()
                 EzSpa.PageManager.updatePage()
             }
         }
