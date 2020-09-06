@@ -68,10 +68,10 @@
         <li><div class="divider"></div></li>
         <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>{{myCoursesLabel}}</a></li>
         {{#isTeacherOrAdmin}}
-            <li><a class="waves-effect sidenav-close" href="/exercises"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>
+<!--            <li><a class="waves-effect sidenav-close" href="/exercises"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>-->
         {{/isTeacherOrAdmin}}
         {{#isAdmin}}
-            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>
+<!--            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>-->
             <li><a class="waves-effect sidenav-close modal-trigger" href="#new-course-modal"><i class="material-icons">child_care</i>{{newCourseLabel}}</a></li>
         {{/isAdmin}}
         {{#isCourseActive}}
@@ -81,9 +81,11 @@
         {{#isTeacherOrAdmin}}
             <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{gradesLabel}}</a></li>
             <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participantsLabel}}</a></li>
-            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><i class="material-icons">create</i>{{newExerciseLabel}}</a></li>
-            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>{{addExerciseLabel}}</a></li>
         {{/isTeacherOrAdmin}}
+        {{#isAdmin}}
+<!--            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>{{addExerciseLabel}}</a></li>-->
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><i class="material-icons">create</i>{{newExerciseLabel}}</a></li>
+        {{/isAdmin}}
         {{/isCourseActive}}
         <li><div class="divider"></div></li>
         <li><a class="waves-effect sidenav-close" href="{{accountSettingsLink}}"><i class="material-icons">settings</i>{{accountSettingsLabel}}</a></li>
