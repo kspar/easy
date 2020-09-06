@@ -1019,6 +1019,17 @@ paths:
             required:
               - id
 
+  /courses/{courseId}/groups/{groupId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+    delete:
+      summary: Delete group.
+      tags:
+        - teacher
+      responses:
+        200:
+
 
   /courses/teacher/{courseId}/grades:
     parameters:
@@ -1825,6 +1836,12 @@ parameters:
 
   CourseId:
     name: courseId
+    in: path
+    required: true
+    type: string
+
+  GroupId:
+    name: groupId
     in: path
     required: true
     type: string
