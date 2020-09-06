@@ -6,6 +6,7 @@ import core.db.Course
 import core.db.Group
 import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -44,15 +45,16 @@ class CreateGroupController {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         assertCourseExists(courseId)
 
-        val groupId = deleteGroup(courseId, dto.name)
+        val groupId = createGroup(courseId, dto.name)
         return Resp(groupId.toString())
     }
 }
 
 
-private fun deleteGroup(courseId: Long, groupName: String): Long {
+private fun createGroup(courseId: Long, groupName: String): Long {
     return transaction {
         Group.insertAndGetId {
             it[name] = groupName

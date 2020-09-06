@@ -2,10 +2,7 @@ package core.ems.service.course.group
 
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertGroupExistsOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
@@ -35,7 +32,7 @@ class DeleteGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
+        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         assertGroupExistsOnCourse(groupId, courseId)
 
         deleteGroup(courseId, groupId)
