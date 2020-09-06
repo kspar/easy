@@ -1029,6 +1029,7 @@ paths:
         - teacher
       responses:
         200:
+          description: Group deleted.
 
 
   /courses/teacher/{courseId}/grades:
