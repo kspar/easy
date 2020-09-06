@@ -9,6 +9,7 @@ import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.form.SelectComp
+import debug
 import emptyToNull
 import getLastPageOffset
 import kotlinx.browser.window
@@ -123,7 +124,7 @@ class GradeTableCardComp(
             } else {
                 options.addAll(groups.map { SelectComp.Option(it.name, it.id) })
             }
-            groupSelectComp = SelectComp("Grupp", options, ::handleGroupChange, this)
+            groupSelectComp = SelectComp("Rühm", options, ::handleGroupChange, this)
         }
 
         tableComp = GradeTableTableComp(courseId,
@@ -204,6 +205,7 @@ class GradeTableTableComp(
     private var paginationConf: PaginationConf? = null
 
     override fun create() = doInPromise {
+        debug { "Building grade table for course $courseId, group $groupId, offsetlimit: $offsetLimit" }
         val (offset, limit) = offsetLimit
         val q = createQueryString("group" to groupId, "offset" to offset.toString(), "limit" to limit.toString())
         val gradesPromise = fetchEms("/courses/teacher/$courseId/grades$q", ReqMethod.GET,
