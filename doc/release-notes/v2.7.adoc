@@ -9,6 +9,7 @@
 * Fixed a bug where ADOC EasyCode did not work with multiline strings. (EZ-1299)
 * Fixed a bug where the exercise update service didn't use HTML if ADOC wasn't given. (EZ-1297)
 * Fixed a bug where Moodle sync would fail if there weren't any students on the Moodle course. (EZ-1237)
+* Moved our SPA framework out of :wui to :ezspa and published it on jcenter. (EZ-1314)
 
 
 All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.7%20[here].
