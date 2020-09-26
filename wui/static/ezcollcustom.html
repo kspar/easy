@@ -1,0 +1,227 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&amp;display=swap">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/exercise.css">
+
+    <style>
+        ez-coll {
+        }
+
+        ez-coll-item {
+            padding: 8px;
+            display: flex;
+            background-color: #fff;
+            box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
+            0 2px 1px -2px rgba(0, 0, 0, 0.09),
+            0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        ez-coll-left {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            padding: 5px;
+        }
+
+        ez-coll-center {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        ez-coll-right {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            padding: 5px;
+        }
+
+        ez-coll-first {
+            display: flex;
+        }
+
+        ez-coll-title {
+            flex: 1 1 auto;
+            padding-right: 1rem;
+        }
+
+        ez-coll-first-right {
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        ez-coll-second {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        ez-coll-second-left {
+            display: flex;
+            flex: 1 1 auto;
+        }
+
+        ez-coll-second-right {
+            display: flex;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        ez-coll-attr {
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 1rem;
+            display: flex;
+
+            /* Set inline */
+            flex-basis: 200px;
+        }
+
+        /* If attrs should take up all space */
+        ez-coll-second-left.growing-attrs > ez-coll-attr {
+            /* Don't set with flex since that resets flex-basis */
+            flex-grow: 1;
+            flex-shrink: 1;
+        }
+
+
+
+        /* Element queries not supported on custom elements so need a div wrapper */
+        .ez-coll-wrap ez-coll-attr {
+            display: none;
+        }
+        .ez-coll-wrap[min-width~="200px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+1) {
+            display: flex;
+        }
+        .ez-coll-wrap[min-width~="400px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+2) {
+            display: flex;
+        }
+        .ez-coll-wrap[min-width~="600px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+3) {
+            display: flex;
+        }
+
+    </style>
+</head>
+<body style="background-color: #eee" class="leftbar-active">
+<header>
+    <div id="nav-wrap">
+        <nav class="navbar">
+            <div class="topnav container" role="navigation">
+                <div class="left-cluster">
+                    <div>
+                        <a id="sidenav-toggle" href="#!" class="sidenav-toggle"><i class="material-icons">menu</i></a>
+                    </div>
+                    <a href="/courses" class="logo">
+                        <img class="img" src="img/main-logo.svg" alt="Lahendus">
+                        <span class="text">LAHENDUS</span>
+                    </a>
+                </div>
+                <!-- Search here -->
+                <div class="right-cluster">
+                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                        <a href="#!">
+                            <i class="profile-logo left material-icons">account_circle</i>
+                            <span class="profile-name">Kaspar</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+<main>
+    <div id="leftbar-wrap">
+        <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
+            <li>
+                <div class="user-view">
+                    <div class="background"></div>
+                    <div class="name attr truncate">Jaan Jüri</div>
+                    <div class="email attr truncate">jaanjuri@gmail.com</div>
+                    <div class="role attr">Õpilane</div>
+                </div>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>Minu kursused</a>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">settings</i>Konto seaded</a>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">exit_to_app</i>Logi välja</a>
+            </li>
+        </ul>
+    </div>
+    <div id="content-container" class="container">
+        <div class="title-wrap no-crumb">
+            <h2 class="title">Minu kursused</h2>
+        </div>
+
+        <!-- ezcoll -->
+        <div class="ez-coll-wrap">
+            <ez-coll>
+                <ez-coll-item>
+                    <ez-coll-left>L</ez-coll-left>
+                    <ez-coll-center>
+                        <ez-coll-first>
+                            <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
+                            <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
+                        </ez-coll-first>
+                        <ez-coll-second>
+                            <ez-coll-second-left class="growing-attr attr-width-200">
+                                <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
+                                <ez-coll-attr style="">attr2</ez-coll-attr>
+                                <ez-coll-attr style="">attr3</ez-coll-attr>
+                            </ez-coll-second-left>
+                            <ez-coll-second-right>Teisel real paremal</ez-coll-second-right>
+                        </ez-coll-second>
+                    </ez-coll-center>
+                    <ez-coll-right>
+                        <i class="material-icons">more_vert</i>
+                    </ez-coll-right>
+                </ez-coll-item>
+            </ez-coll>
+        </div>
+
+        <!-- NOTES
+        - Configurable:
+          * for each 2nd line attr: min width px (used as flex-basis; if sum > coll width, hide last attr),
+          * whether 2nd line right attr is hideable; if not, left attrs will hide and right attr will always be visible
+          * min coll width px when 1st line right attr is visible
+        - on small screen, 1st line right attr must be shown as a second-line attr or collapsed straight into
+        the fold
+
+        -->
+
+
+    </div>
+</main>
+<footer>
+</footer>
+
+<script src="js/tmp-ResizeSensor.js"></script>
+<script src="js/tmp-ElementQueries.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!--<script src="js/wui.js"></script>-->
+<script type="text/javascript">
+
+</script>
+
+
+</body>
+</html>
