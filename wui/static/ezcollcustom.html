@@ -16,13 +16,18 @@
         }
 
         ez-coll-item {
-            padding: 8px;
             display: flex;
+            flex-direction: column;
+            padding: 8px;
             background-color: #fff;
             box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
             0 2px 1px -2px rgba(0, 0, 0, 0.09),
             0 1px 3px 0 rgba(0, 0, 0, 0.1);
             border-radius: 5px;
+        }
+
+        ez-coll-main {
+            display: flex;
         }
 
         ez-coll-left {
@@ -70,15 +75,12 @@
             flex: 1 1 auto;
         }
 
-        ez-coll-second-right {
+        ez-coll-attrs {
             display: flex;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            flex: 1 1 auto;
         }
 
         ez-coll-attr {
-            display: inline-block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -89,27 +91,50 @@
             flex-basis: 200px;
         }
 
+        ez-coll-second-right {
+            display: flex;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* If attrs should take up all space */
-        ez-coll-second-left.growing-attrs > ez-coll-attr {
+        ez-coll.growing-attrs > ez-coll-attr {
             /* Don't set with flex since that resets flex-basis */
             flex-grow: 1;
             flex-shrink: 1;
         }
 
 
-
         /* Element queries not supported on custom elements so need a div wrapper */
         .ez-coll-wrap ez-coll-attr {
             display: none;
         }
-        .ez-coll-wrap[min-width~="200px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+1) {
+
+        .ez-coll-wrap[min-width~="200px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+1) {
             display: flex;
         }
-        .ez-coll-wrap[min-width~="400px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+2) {
+
+        .ez-coll-wrap[min-width~="400px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+2) {
             display: flex;
         }
-        .ez-coll-wrap[min-width~="600px"] ez-coll-second-left.attr-width-200 ez-coll-attr:nth-child(-n+3) {
+
+        .ez-coll-wrap[min-width~="600px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+3) {
             display: flex;
+        }
+
+        ez-coll-fold {
+            display: flex;
+            flex-direction: column;
+            padding: 0 3rem; /* Set to logo/more btn width */
+        }
+
+        ez-coll-fold-attr {
+            display: flex;
+        }
+
+        ez-coll-fold-value {
+            padding-left: 1rem;
         }
 
     </style>
@@ -173,26 +198,49 @@
 
         <!-- ezcoll -->
         <div class="ez-coll-wrap">
-            <ez-coll>
+            <ez-coll class="growing-attrs attr-width-200">
                 <ez-coll-item>
-                    <ez-coll-left>L</ez-coll-left>
-                    <ez-coll-center>
-                        <ez-coll-first>
-                            <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
-                            <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
-                        </ez-coll-first>
-                        <ez-coll-second>
-                            <ez-coll-second-left class="growing-attr attr-width-200">
-                                <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
-                                <ez-coll-attr style="">attr2</ez-coll-attr>
-                                <ez-coll-attr style="">attr3</ez-coll-attr>
-                            </ez-coll-second-left>
-                            <ez-coll-second-right>Teisel real paremal</ez-coll-second-right>
-                        </ez-coll-second>
-                    </ez-coll-center>
-                    <ez-coll-right>
-                        <i class="material-icons">more_vert</i>
-                    </ez-coll-right>
+                    <ez-coll-main>
+                        <ez-coll-left>L</ez-coll-left>
+                        <ez-coll-center>
+                            <ez-coll-first>
+                                <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
+                                <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
+                            </ez-coll-first>
+                            <ez-coll-second>
+                                <ez-coll-second-left>
+                                    <ez-coll-attrs>
+                                        <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
+                                        <ez-coll-attr style="">attr2</ez-coll-attr>
+                                        <ez-coll-attr style="">attr3</ez-coll-attr>
+                                    </ez-coll-attrs>
+                                </ez-coll-second-left>
+                                <ez-coll-second-right>
+                                    <ez-coll-expand-btn><i class="material-icons">expand_more</i></ez-coll-expand-btn>
+                                </ez-coll-second-right>
+                            </ez-coll-second>
+                        </ez-coll-center>
+                        <ez-coll-right>
+                            <i class="material-icons">more_vert</i>
+                        </ez-coll-right>
+                    </ez-coll-main>
+                    <ez-coll-fold class="display-none">
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr2</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr3</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                    </ez-coll-fold>
                 </ez-coll-item>
             </ez-coll>
         </div>
@@ -219,7 +267,21 @@
 
 <!--<script src="js/wui.js"></script>-->
 <script type="text/javascript">
+    function showFolds() {
+        document.querySelectorAll('ez-coll-fold').forEach(el => {
+            if (el.classList.contains("display-none")) {
+                document.querySelector('ez-coll-attrs').classList.add('display-none')
+                el.classList.remove("display-none");
+            } else {
+                el.classList.add('display-none')
+                document.querySelector('ez-coll-attrs').classList.remove('display-none')
+            }
+        });
+    }
 
+    document.querySelectorAll('ez-coll-expand-btn').forEach(el => {
+        el.onclick = showFolds
+    });
 </script>
 
 
