@@ -17,6 +17,11 @@
 
         ez-coll-item {
             display: flex;
+        }
+
+        ez-coll-item-container {
+            flex: 1 1 auto;
+            display: flex;
             flex-direction: column;
             padding: 8px;
             background-color: #fff;
@@ -35,7 +40,7 @@
             align-items: center;
             justify-content: center;
             min-width: 30px;
-            padding: 5px;
+            padding: 0 5px;
         }
 
         ez-coll-center {
@@ -48,7 +53,7 @@
             align-items: center;
             justify-content: center;
             min-width: 30px;
-            padding: 5px;
+            padding: 0 5px;
         }
 
         ez-coll-first {
@@ -137,6 +142,20 @@
             padding-left: 1rem;
         }
 
+        ez-coll-trailer {
+            margin-right: -25px;
+            display: flex;
+        }
+
+        ez-coll-expand-btn {
+            padding-top: 8px;
+            visibility: hidden;
+        }
+
+        ez-coll-item:hover ez-coll-expand-btn {
+            visibility: visible;
+        }
+
     </style>
 </head>
 <body style="background-color: #eee" class="leftbar-active">
@@ -200,47 +219,53 @@
         <div class="ez-coll-wrap">
             <ez-coll class="growing-attrs attr-width-200">
                 <ez-coll-item>
-                    <ez-coll-main>
-                        <ez-coll-left>L</ez-coll-left>
-                        <ez-coll-center>
-                            <ez-coll-first>
-                                <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
-                                <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
-                            </ez-coll-first>
-                            <ez-coll-second>
-                                <ez-coll-second-left>
-                                    <ez-coll-attrs>
-                                        <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
-                                        <ez-coll-attr style="">attr2</ez-coll-attr>
-                                        <ez-coll-attr style="">attr3</ez-coll-attr>
-                                    </ez-coll-attrs>
-                                </ez-coll-second-left>
-                                <ez-coll-second-right>
-                                    <ez-coll-expand-btn><i class="material-icons">expand_more</i></ez-coll-expand-btn>
-                                </ez-coll-second-right>
-                            </ez-coll-second>
-                        </ez-coll-center>
-                        <ez-coll-right>
-                            <i class="material-icons">more_vert</i>
-                        </ez-coll-right>
-                    </ez-coll-main>
-                    <ez-coll-fold class="display-none">
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr2</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr3</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                    </ez-coll-fold>
+                    <ez-coll-item-container>
+                        <ez-coll-main>
+                            <ez-coll-left>L</ez-coll-left>
+                            <ez-coll-center>
+                                <ez-coll-first>
+                                    <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
+                                    <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
+                                </ez-coll-first>
+                                <ez-coll-second>
+                                    <ez-coll-second-left>
+                                        <ez-coll-attrs>
+                                            <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
+                                            <ez-coll-attr style="">attr2</ez-coll-attr>
+                                            <ez-coll-attr style="">attr3</ez-coll-attr>
+                                        </ez-coll-attrs>
+                                    </ez-coll-second-left>
+                                    <ez-coll-second-right>
+                                    </ez-coll-second-right>
+                                </ez-coll-second>
+                            </ez-coll-center>
+                            <ez-coll-right>
+                                <i class="material-icons">more_vert</i>
+                            </ez-coll-right>
+                        </ez-coll-main>
+                        <ez-coll-fold class="display-none">
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr2</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr3</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                        </ez-coll-fold>
+                    </ez-coll-item-container>
+                    <ez-coll-trailer>
+                        <ez-coll-expand-btn>
+                            <i class="material-icons">expand_more</i>
+                        </ez-coll-expand-btn>
+                    </ez-coll-trailer>
                 </ez-coll-item>
             </ez-coll>
         </div>
