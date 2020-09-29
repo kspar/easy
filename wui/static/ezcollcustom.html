@@ -12,6 +12,16 @@
     <link rel="stylesheet" href="css/exercise.css">
 
     <style>
+        /* General show/hide based on width, used on top/bottom-space */
+        .ez-coll-wrap[max-width~="599px"] *[ez-show-min-600] {
+            display: none;
+        }
+
+        .ez-coll-wrap[min-width~="600px"] *[ez-show-max-599] {
+            display: none;
+        }
+
+
         ez-coll {
         }
 
@@ -22,6 +32,7 @@
         ez-coll-item-container {
             flex: 1 1 auto;
             display: flex;
+            min-width: 0;
             flex-direction: column;
             padding: 8px;
             background-color: #fff;
@@ -65,9 +76,10 @@
             padding-right: 1rem;
         }
 
-        ez-coll-first-right {
+        ez-coll-top-space {
             white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         ez-coll-second {
@@ -96,7 +108,7 @@
             flex-basis: 200px;
         }
 
-        ez-coll-second-right {
+        ez-coll-bottom-space {
             display: flex;
             white-space: nowrap;
             overflow: hidden;
@@ -104,7 +116,7 @@
         }
 
         /* If attrs should take up all space */
-        ez-coll.growing-attrs > ez-coll-attr {
+        ez-coll[ez-growing-attrs] > ez-coll-attr {
             /* Don't set with flex since that resets flex-basis */
             flex-grow: 1;
             flex-shrink: 1;
@@ -116,29 +128,28 @@
             display: none;
         }
 
-        .ez-coll-wrap[min-width~="200px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+1) {
-            display: flex;
-        }
-
-        .ez-coll-wrap[min-width~="400px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+2) {
-            display: flex;
-        }
-
-        .ez-coll-wrap[min-width~="600px"] ez-coll.attr-width-200 ez-coll-attr:nth-child(-n+3) {
+        .ez-coll-wrap[min-width~="200px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+1),
+        .ez-coll-wrap[min-width~="400px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+2),
+        .ez-coll-wrap[min-width~="600px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+3) {
             display: flex;
         }
 
         ez-coll-fold {
             display: flex;
             flex-direction: column;
+            min-width: 0;
             padding: 0 3rem; /* Set to logo/more btn width */
         }
 
         ez-coll-fold-attr {
             display: flex;
+            flex-wrap: wrap;
+            min-width: 0;
+            overflow: auto;
         }
 
         ez-coll-fold-value {
+            min-width: 0;
             padding-left: 1rem;
         }
 
@@ -220,7 +231,7 @@
 
         <!-- ezcoll -->
         <div class="ez-coll-wrap">
-            <ez-coll class="growing-attrs attr-width-200">
+            <ez-coll ez-growing-attrs ez-attr-width-200>
                 <ez-coll-item>
                     <ez-coll-item-container>
                         <ez-coll-main>
@@ -228,7 +239,7 @@
                             <ez-coll-center>
                                 <ez-coll-first>
                                     <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
-                                    <ez-coll-first-right>Esimesel paremal</ez-coll-first-right>
+                                    <ez-coll-top-space ez-show-min-600>Esimesel paremal</ez-coll-top-space>
                                 </ez-coll-first>
                                 <ez-coll-second>
                                     <ez-coll-second-left>
@@ -238,8 +249,7 @@
                                             <ez-coll-attr style="">attr3</ez-coll-attr>
                                         </ez-coll-attrs>
                                     </ez-coll-second-left>
-                                    <ez-coll-second-right>
-                                    </ez-coll-second-right>
+                                    <ez-coll-bottom-space ez-show-min-600>Teisel paremal</ez-coll-bottom-space>
                                 </ez-coll-second>
                             </ez-coll-center>
                             <ez-coll-right>
@@ -247,6 +257,11 @@
                             </ez-coll-right>
                         </ez-coll-main>
                         <ez-coll-fold class="display-none">
+                            <ez-coll-fold-attr ez-show-max-599>
+                                <ez-coll-fold-key>Top attr key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>Esimesel paremal</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
                             <ez-coll-fold-attr>
                                 <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
                                 :
@@ -275,12 +290,21 @@
 
         <!-- NOTES
         - Configurable:
-          * for each 2nd line attr: min width px (used as flex-basis; if sum > coll width, hide last attr),
-          * whether 2nd line right attr is hideable; if not, left attrs will hide and right attr will always be visible
-          * min coll width px when 1st line right attr is visible
-        - on small screen, 1st line right attr must be shown as a second-line attr or collapsed straight into
-        the fold
+          * min attr width px - used as flex-basis; hide attrs based on the sum,
+          * min coll/item width for top attr - "move" to fold if smaller,
+          * min coll/item width for bottom action space - hide if smaller (actions are always available from menu),
 
+        - Make expand btn always show on mobile
+
+        * When padding, margins, icon/logo sizes are finalised, adjust .ez-coll-wrap[min-width~="X"] rules to compensate
+          for these; alternatively, move the sizer inside to only measure the inner content width
+          (probs separately needed for attrs because otherwise the bottom space will make things difficult)
+        * Adjust all sizing rules for max-attrs: 6 and some reasonable options for attr widths
+        * Add VLJ to second item
+        * To be decided: when item is unfolded, should the logo and menu btn stay at the top (possibly moving to
+          align with only the first row) or move to the center of the item?
+          Related: if item has an unempty bottom action space then there's an empty space between the first row and fold.
+          If we want to fix that (move fold inside the attr row) then that's doable only if the logo/menu move to center.
         -->
 
 
