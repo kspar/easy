@@ -2,6 +2,7 @@
 
 #exercise-text {
     font-size: 1.6rem;
+    overflow: auto;
 }
 
 #exercise-text p {
@@ -72,13 +73,18 @@
     list-style-type: square !important;
 }
 
+#exercise-text details {
+    padding: 1rem 0;
+}
+
 #exercise-text details > summary {
     outline: none;
     cursor: pointer;
+    color: #039be5;
 }
 
 #exercise-text details > summary:hover {
-    color: #039be5;
+    text-decoration: underline;
 }
 
 #exercise-text details > .content {
@@ -93,6 +99,11 @@
 
 #exercise-text .small {
     font-size: 0.83em;
+}
+
+#exercise-text .imageblock.text-center {
+    display: flex;
+    justify-content: center;
 }
 
 

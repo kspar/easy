@@ -1,10 +1,10 @@
 package core.ems.service
 
 import core.db.*
+import core.ems.service.cache.PrivateCachingService
 import core.exception.InvalidRequestException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import java.io.Serializable
 
@@ -28,15 +28,31 @@ data class Grade(val submissionId: String,
                  val graderType: GraderType?,
                  val feedback: String?) : Serializable
 
-// Two almost identical services. See below for more.
-@Service
-class CourseService(val courseServiceCache: CourseServiceCache) {
 
-    fun selectLatestValidGrades(courseExerciseId: Long, studentIds: List<String>): List<Grade> {
-        return courseServiceCache.selectLatestValidGradesAll(courseExerciseId).filter { studentIds.contains(it.studentId) }
+@Service
+class CourseService(val privateCachingService: PrivateCachingService) {
+
+    /**
+     * Return all valid grades for a course exercise. If a student has not submission to this exercise, their grade
+     * is not contained in the list. Uses a cache.
+     */
+    fun selectLatestValidGrades(courseExerciseId: Long): List<Grade> {
+        return privateCachingService.selectLatestValidGradesAll(courseExerciseId)
     }
 
-    fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>, restrictedGroups: List<Long>): Query {
+    /**
+     * Return valid grades for a course exercise for the given students.
+     * If a student has not submission to this exercise, their grade is not contained in the list. Uses a cache.
+     */
+    fun selectLatestValidGrades(courseExerciseId: Long, studentIds: List<String>): List<Grade> {
+        return privateCachingService.selectLatestValidGradesAll(courseExerciseId).filter { studentIds.contains(it.studentId) }
+    }
+
+    /**
+     * Return a query for all students on the course, filtering by search query words and group IDs.
+     */
+    fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>,
+                                    groups: List<Long>, includeUngrouped: Boolean): Query {
         val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess)
                 .slice(Student.id,
                         Account.email,
@@ -45,14 +61,16 @@ class CourseService(val courseServiceCache: CourseServiceCache) {
                 .select { StudentCourseAccess.course eq courseId }
                 .withDistinct()
 
-        if (restrictedGroups.isNotEmpty()) {
+        if (groups.isNotEmpty()) {
             query.andWhere {
-                StudentGroupAccess.group inList restrictedGroups or
-                        (StudentGroupAccess.group.isNull())
+                if (includeUngrouped)
+                    StudentGroupAccess.group inList groups or StudentGroupAccess.group.isNull()
+                else
+                    StudentGroupAccess.group inList groups
             }
         }
 
-        queryWords.forEach {
+        queryWords.map(String::toLowerCase).forEach {
             query.andWhere {
                 (Student.id like "%$it%") or
                         (Account.email.lowerCase() like "%$it%") or
@@ -62,50 +80,5 @@ class CourseService(val courseServiceCache: CourseServiceCache) {
         }
 
         return query
-    }
-}
-
-// Catchable peculiarity: https://stackoverflow.com/questions/12115996/spring-cache-cacheable-method-ignored-when-called-from-within-the-same-class
-@Service
-class CourseServiceCache {
-
-    @Cacheable("selectLatestValidGrades")
-    fun selectLatestValidGradesAll(courseExerciseId: Long): List<Grade> {
-        return transaction {
-            (Submission leftJoin TeacherAssessment leftJoin AutomaticAssessment)
-                    .slice(Submission.id,
-                            Submission.student,
-                            TeacherAssessment.id,
-                            TeacherAssessment.grade,
-                            TeacherAssessment.feedback,
-                            AutomaticAssessment.id,
-                            AutomaticAssessment.grade,
-                            AutomaticAssessment.feedback)
-                    .select { Submission.courseExercise eq courseExerciseId }
-                    .orderBy(Submission.createdAt, SortOrder.DESC)
-                    .distinctBy { it[Submission.student] }
-                    .map {
-                        when {
-                            it[TeacherAssessment.id] != null -> Grade(
-                                    it[Submission.id].value.toString(),
-                                    it[Submission.student].value,
-                                    it[TeacherAssessment.grade],
-                                    GraderType.TEACHER,
-                                    it[TeacherAssessment.feedback])
-                            it[AutomaticAssessment.id] != null -> Grade(
-                                    it[Submission.id].value.toString(),
-                                    it[Submission.student].value,
-                                    it[AutomaticAssessment.grade],
-                                    GraderType.AUTO,
-                                    it[AutomaticAssessment.feedback])
-                            else -> Grade(
-                                    it[Submission.id].value.toString(),
-                                    it[Submission.student].value,
-                                    null,
-                                    null,
-                                    null)
-                        }
-                    }
-        }
     }
 }

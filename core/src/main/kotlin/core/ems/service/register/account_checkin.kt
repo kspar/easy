@@ -1,20 +1,15 @@
 package core.ems.service.register
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.db.Account.email
-import core.db.Account.familyName
-import core.db.Account.givenName
-import core.db.Account.moodleUsername
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
+import core.ems.service.cache.PrivateCachingService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -28,24 +23,17 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateAccountController {
-
-    @Autowired
-    lateinit var cacheInvalidator: CacheInvalidator
+class UpdateAccountController(val privateCachingService: PrivateCachingService, val cacheInvalidator: CacheInvalidator) {
 
     data class PersonalDataBody(@JsonProperty("first_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val firstName: String,
                                 @JsonProperty("last_name", required = true)
                                 @field:NotBlank @field:Size(max = 100) val lastName: String)
 
-    data class Resp(@JsonProperty("messages")
-                    @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
-
-    data class MessageResp(@JsonProperty("message") val message: String)
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/account/checkin")
-    fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser): Resp {
+    fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser) {
 
         val account = AccountData(
                 caller.id,
@@ -55,31 +43,36 @@ class UpdateAccountController {
                 correctNameCapitalisation(dto.lastName))
 
         log.debug { "Update personal data for $account" }
-        val isChanged = updateAccount(account)
+        val isChanged = updateAccount(account, privateCachingService)
 
         if (isChanged) {
             cacheInvalidator.invalidateTotalUserCache()
+            cacheInvalidator.invalidateAccountCache(account.username)
         }
 
         if (caller.isStudent()) {
-            log.debug { "Update student ${caller.id}" }
-            updateStudent(account)
+            if (!privateCachingService.studentExists(account.username)) {
+                log.debug { "Update student ${caller.id}" }
+                updateStudent(account)
+            }
             if (isChanged) {
+                log.debug { "Update student course access ${caller.id}" }
                 updateStudentCourseAccesses(account)
+                cacheInvalidator.invalidateAccountCache(account.username)
             }
         }
-        if (caller.isTeacher()) {
+
+        if (caller.isTeacher() && !privateCachingService.teacherExists(account.username)) {
             log.debug { "Update teacher ${caller.id}" }
             updateTeacher(account)
         }
-        if (caller.isAdmin()) {
+
+        if (caller.isAdmin() && !privateCachingService.adminExists(account.username)) {
             log.debug { "Update admin ${caller.id}" }
             updateAdmin(account)
             // Admins should also have a teacher entity to add assessments, exercises etc
             updateTeacher(account)
         }
-
-        return selectMessages()
     }
 }
 
@@ -93,21 +86,10 @@ private fun correctNameCapitalisation(name: String) =
                     }
                 }
 
-private fun updateAccount(accountData: AccountData): Boolean {
-    data class Acc(val id: String, val email: String, val moodleUsername: String?, val givenName: String, val familyName: String)
-
+private fun updateAccount(accountData: AccountData, privateCachingService: PrivateCachingService): Boolean {
     return transaction {
 
-        val oldAccount = Account.select { Account.id eq accountData.username }
-                .map {
-                    Acc(
-                            it[Account.id].value,
-                            it[email],
-                            it[moodleUsername],
-                            it[givenName],
-                            it[familyName]
-                    )
-                }.singleOrNull()
+        val oldAccount = privateCachingService.selectAccount(accountData.username)
 
         if (oldAccount == null) {
             Account.insert {
@@ -123,15 +105,19 @@ private fun updateAccount(accountData: AccountData): Boolean {
         } else {
 
             val isChanged = oldAccount.email != accountData.email ||
+                    oldAccount.givenName != accountData.givenName ||
+                    oldAccount.familyName != accountData.familyName ||
                     accountData.moodleUsername != null && accountData.moodleUsername != oldAccount.moodleUsername
 
-            Account.update({ Account.id eq accountData.username }) {
-                it[email] = accountData.email
-                if (accountData.moodleUsername != null) {
-                    it[moodleUsername] = accountData.moodleUsername
+            if (isChanged) {
+                Account.update({ Account.id eq accountData.username }) {
+                    it[email] = accountData.email
+                    if (accountData.moodleUsername != null) {
+                        it[moodleUsername] = accountData.moodleUsername
+                    }
+                    it[givenName] = accountData.givenName
+                    it[familyName] = accountData.familyName
                 }
-                it[givenName] = accountData.givenName
-                it[familyName] = accountData.familyName
             }
 
             isChanged
@@ -166,18 +152,6 @@ private fun updateAdmin(admin: AccountData) {
     }
 }
 
-private fun selectMessages(): UpdateAccountController.Resp {
-    return transaction {
-        UpdateAccountController.Resp(
-                ManagementNotification.selectAll()
-                        .orderBy(ManagementNotification.id, SortOrder.DESC)
-                        .map {
-                            UpdateAccountController.MessageResp(
-                                    it[ManagementNotification.message]
-                            )
-                        })
-    }
-}
 
 private fun updateStudentCourseAccesses(accountData: AccountData) {
     log.debug { "Updating student course accesses" }
@@ -261,7 +235,5 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
         StudentMoodlePendingAccess.deleteWhere {
             StudentMoodlePendingAccess.id inList pendingAccesses.map { it.id }
         }
-
     }
 }
-

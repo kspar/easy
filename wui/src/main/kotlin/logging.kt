@@ -1,4 +1,6 @@
 import libheaders.Materialize
+import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.onVanillaClick
 import kotlin.js.Date
 import kotlin.random.Random
 
@@ -16,12 +18,6 @@ fun warn(msgProvider: () -> Any?) {
     if (AppProperties.LOG_WARN_ENABLED)
         console.warn("$WARN_PREFIX ${datetimeString()}: ${msgProvider()}")
 }
-
-fun warn(msg: String?) {
-    if (AppProperties.LOG_WARN_ENABLED)
-        console.warn("$WARN_PREFIX ${datetimeString()}: $msg")
-}
-
 
 class FunLog(private val funName: String, private val funStartTime: Double) {
     fun end() {

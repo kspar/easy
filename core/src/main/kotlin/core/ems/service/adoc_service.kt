@@ -63,7 +63,7 @@ class EasyCodeProcessor : Postprocessor() {
 
     init {
         val attrStr = CodeAttr.values().joinToString("|") { it.id }
-        regex = Regex("\\\$($attrStr)\\[(.+?)(?<!\\\\)]")
+        regex = Regex("\\\$($attrStr)\\[(.+?)(?<!\\\\)]", RegexOption.DOT_MATCHES_ALL)
     }
 
     override fun process(document: Document?, output: String): String {

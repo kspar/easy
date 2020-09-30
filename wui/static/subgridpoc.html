@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/exercise.css"/>
+</head>
+<body>
+
+<div id="nav-wrap">
+    <nav class="nav-center" role="navigation">
+        <div class="container">
+            <a href="/courses" class="brand-logo left">
+                <img style="height: 4rem; vertical-align: middle;" class="logo-img"
+                     src="../../doc/wui/design/new_logo.svg" alt="Lahendus"/>
+                <span style="font-size: 2.5rem">Lahendus</span>
+            </a>
+            <ul id="nav-mobile" class="hide-on-med-and-down">
+                <li><a class="nav-link" href="/courses">Minu kursused</a></li>
+            </ul>
+            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
+                <a href="#!">
+                    <i id="profile-logo" class="left material-icons">account_circle</i>
+                    <span id="profile-name">Kuslap</span><span id="profile-role"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Profile dropdown menu structure -->
+    <ul id="profile-dropdown" class="dropdown-content">
+        <span id="role-wrap"></span>
+        <li><a href="{{accountLink}}">{{account}}</a></li>
+        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+    </ul>
+</div>
+<div id="sidenav-wrap"></div>
+
+
+<div id="content-container" class="container">
+
+
+    <!--
+    <div id="exercise-card" class="card">
+        <div id="tabs-wrap">
+            <ul class="tabs">
+                <li class="tab"><a class="active" href="#exercise">Ülesanne</a></li>
+                <li class="tab"><a href="#testing">Testimine</a></li>
+                <li class="tab"><a href="#students">Esitused</a></li>
+                <li id="tab-student" class="tab"><a href="#student">Andrus</a></li>
+            </ul>
+        </div>
+        <div class="card-content">
+            <div id="students">
+
+                <div class="collection divided-collection">
+                    <a class="collection-item bb-wrap row" href="{{href}}">
+                        <div class="row">
+                            <span class="col s6">Kalle Malle</span>
+                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
+                            <span class="col s2 grade">
+                                <span>42/100</span
+                                ><img class="eval-logo-auto" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                        </div>
+                        <div class="bb">
+                            <span class="bb-item bb-green"></span>
+                        </div>
+                    </a>
+
+                    <a class="collection-item bb-wrap row" href="{{href}}">
+                        <div class="row">
+                            <span class="col s6">Kalle Malle</span>
+                            <span class="col s4 deadline"></span>
+                            <span class="col s2 grade">
+                                <span style="margin-right: 34px;">-/100</span
+                                >
+                            </span>
+                        </div>
+                        <div class="bb">
+                            <span class="bb-item bb-grey"></span>
+                        </div>
+                    </a>
+
+                    <a class="collection-item bb-wrap row" href="{{href}}">
+                        <div class="row">
+                            <span class="col s6">Kalle Malle</span>
+                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
+                            <span class="col s2 grade">
+                                <span>0/100</span
+                                ><i id="some" class="material-icons eval-logo-teacher">face</i>
+                            </span>
+                        </div>
+                        <div class="bb">
+                            <span class="bb-item bb-yellow"></span>
+                        </div>
+                    </a>
+
+                    <a class="collection-item bb-wrap row" href="{{href}}">
+                        <div class="row">
+                            <span class="col s6">Kalle Malle</span>
+                            <span class="col s4 deadline">18. jaanuar 2019, 12.42</span>
+                            <span class="col s2 grade">
+                                <span>-/100</span
+                                ><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
+                            </span>
+                        </div>
+                        <div class="bb">
+                            <span class="bb-item bb-blue"></span>
+                        </div>
+                    </a>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+            </div>
+            <div id="exercise">
+                <div class="exercise-info">
+                    <p><span class="subheading">Tähtaeg: </span>18. jaanuar 2019, 12.42</p>
+                    <p><span class="subheading">Sulgemise aeg: </span>1. juuni 2019, 23.59</p>
+                    <p><span class="subheading">Hindamine: </span>automaatne</p>
+                    <p><span class="subheading">Lävend: </span>42%</p>
+                    <p><span class="subheading">Õpilastele nähtav: </span>jah</p>
+                    <p><span class="subheading">Hinnangud õpilastele nähtavad: </span>jah</p>
+                    <p><span class="subheading">Viimati muudetud: </span>18. märts 2018, 9.15</p>
+                </div>
+                <div>
+                    <h2>Ülesande pealkiri</h2>
+                    <div>Ülesande tekst</div>
+                </div>
+            </div>
+
+            <div id="testing">
+                <h4>Automaatkontrolli hinnang</h4>
+                <pre class="feedback auto-feedback">Automaatne tagasiside</pre>
+                <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+                <div class="editor-wrapper">
+                    <textarea id="testing-submission"></textarea>
+                </div>
+                <div class="center">
+                    <button id="testing-submit" class="waves-effect waves-light btn">Esita</button>
+                </div>
+            </div>
+
+            <div id="student">
+                <a id="all-submissions-link" class="toggle-link" href="#!">► Vaata kõiki esitusi (4)</a>
+                <div class="toggleable-wrap all-submissions-wrap" id="all-submissions-wrap">
+                    <div class="collection divided-collection">
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#2</span>
+                            <span class="col s7" style="text-align: center">18. jaanuar 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end; align-items: center">
+                                <span>0/100</span><img class="eval-logo-missing" src="img/missing-logo.svg" alt="{{missingLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item sm bb-green"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+
+                        <a class="collection-item sm row bb-wrap" href="#!">
+                            <span class="col s2">#1</span>
+                            <span class="col s7" style="text-align: center">1. mai 2019, 12.42</span>
+                            <span class="col s3 flex" style="justify-content: flex-end">
+                                <span>0/100</span><img class="eval-logo-auto sm" src="img/robot-logo.svg" alt="{{autoLabel}}"/>
+                            </span>
+                            <div class="bb sm">
+                                <span class="bb-item bb-yellow sm"></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                <h3 class="submission-title">Esitus #4</h3><span class="last-submission-label">(viimane esitus)</span>
+                <div><span class="note warn"><i class="material-icons warn">info_outline</i>See on vana esitus. <a href="#!">Vaata viimast esitust.</a></span></div>
+                <p id="submission-info">
+                    <span class="subheading">Esitamise aeg: </span>18. märts 2018, 9.15</p>
+                <div id="submission-auto">
+                    <h4 style="font-size: 2rem;">Automaatne hinnang</h4>
+                    <pre class="feedback auto-feedback">Gut :)</pre>
+                    <div>Automaatne hinne: <span class="grade-number">42</span>/100</div>
+                </div>
+                <div id="submission-teacher">
+                    <h4 style="font-size: 2rem;">Õpetaja hinnang</h4>
+                    <pre class="feedback">Sehr gut :)</pre>
+                    <div>Hinne: <span class="grade-number">66</span>/100</div>
+                </div>
+
+                <a class="toggle-link" id="add-grade-link" href="#!">Lisa hinnang</a>
+                <div class="toggleable-wrap" id="add-grade-wrap">
+                    <div class="row">
+                        <div class="input-field col s8">
+                            <textarea id="feedback" class="materialize-textarea"></textarea>
+                            <label for="feedback">Tagasiside</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s4">
+                            <input id="grade" placeholder="100" type="number" min="0" max="100" class="validate">
+                            <label for="grade">Hinne</label>
+                            <span class="helper-text" data-error="Hinne peab olema arv 0 ja 100 vahel."></span>
+                        </div>
+                    </div>
+                    <button id="grade-button" class="waves-effect waves-light btn">Lisa hinnang</button>
+                </div>
+
+                <div class="editor-wrapper editor-read-only">
+                    <form>
+                        <textarea id="student-submission"></textarea>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    -->
+
+
+    <div class="ez-collection">
+        <div class="item item1">
+            <span class="icon">icon</span>
+            <span class="title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
+            <span class="atr atr1 truncate">11. september 2019, 14:52</span>
+            <span class="atr atr2 truncate">Teine atribuut</span>
+            <span class="atr atr3 truncate">Kolmas atribuut</span>
+            <span class="atr atr4 truncate"></span>
+            <span class="spacer"></span>
+            <span class="more"><i class="material-icons">more_vert</i></span>
+        </div>
+        <div class="item item2">
+            <span class="icon">icon</span>
+            <span class="title">Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri Pikk pealkiri</span>
+            <span class="atr atr1 truncate">1. mai 2019, 14:52</span>
+            <span class="atr atr2 truncate">Teine</span>
+            <span class="atr atr3 truncate">Kolmas atribuut Kolmas atribuut Kolmas atribuut</span>
+            <span class="atr atr4 truncate">Kolmas atribuut</span>
+            <span class="spacer"></span>
+            <span class="more"><i class="material-icons">more_vert</i></span>
+            <span class="atr expanded">Neljas atribuut</span>
+
+        </div>
+    </div>
+
+</div>
+<style>
+
+    .expanded {
+        background-color: #eee;
+        grid-column: 2 / 7;
+    }
+
+    .atr {
+        padding-left: 1rem;
+        border-left: 1px solid black;
+    }
+
+    .ez-collection {
+        display: grid;
+        grid-template-columns: auto repeat(4, auto) 1fr auto;
+    }
+
+    .item {
+        background-color: #fff;
+        margin: .5rem 0 1rem 0;
+        padding: 1.5rem 2rem;
+        border-radius: 2px;
+        transition: box-shadow .25s, -webkit-box-shadow .25s;
+        box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .05), 0 1px 5px 0 rgba(0, 0, 0, .1);
+
+        grid-column: 1 / 8;
+        display: grid;
+        grid-template-rows: repeat(2, auto);
+        grid-template-columns: auto repeat(4, 21rem) 1fr auto;
+        grid-template-columns: subgrid;
+        grid-template-areas: "icon title title title title title more" "icon atr1 atr2 atr3 atr4 spacer more";
+        grid-gap: .5rem 1rem;
+    }
+
+    .item1 {
+        grid-row: 1;
+    }
+
+    .item2 {
+        grid-row: 2;
+    }
+
+    .icon {
+        background-color: yellow;
+        grid-area: icon;
+        justify-self: center;
+        align-self: center;
+    }
+
+    .title {
+        grid-area: title;
+    }
+
+    .atr1 {
+        grid-area: atr1;
+    }
+
+    .atr2 {
+        grid-area: atr2;
+    }
+
+    .atr3 {
+        grid-area: atr3;
+    }
+
+    .atr4 {
+        grid-area: atr4;
+    }
+
+    .spacer {
+        grid-area: spacer;
+    }
+
+    .more {
+        grid-area: more;
+        justify-self: center;
+        align-self: center;
+    }
+
+
+    #content-container {
+        margin-top: 70px;
+    }
+
+
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://dev.idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/display/autorefresh.min.js"></script>
+<script src="js/kotlin.js"></script>
+<script src="js/kotlinx-coroutines-core.js"></script>
+<script src="js/kotlinx-serialization-kotlinx-serialization-runtime.js "></script>
+<script src="js/wui.js"></script>
+<div id="date"></div> <!-- Temporary, for automatic generation time -->
+
+<script>
+    M.Tooltip.init(document.querySelectorAll(".tooltipped"), {
+        // margin: 0,
+        // transitionMovement: 10
+    });
+
+    M.Tabs.init(document.getElementsByClassName('tabs').item(0), {});
+</script>
+</body>
+</html>

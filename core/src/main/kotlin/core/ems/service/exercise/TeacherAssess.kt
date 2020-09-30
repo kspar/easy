@@ -3,7 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
 import core.ems.service.GradeService
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -64,7 +64,7 @@ private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Lon
                     Course.id eq courseId and
                             (CourseExercise.id eq courseExId) and
                             (Submission.id eq submissionId)
-                }.count() == 1
+                }.count() == 1L
     }
 }
 

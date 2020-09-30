@@ -1,23 +1,21 @@
 package pages.courses
 
 import CourseInfoCache
-import IdGenerator
 import Str
-import doInPromise
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
-import spa.CacheableComponent
-import spa.Component
+import rip.kspar.ezspa.CacheableComponent
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Promise
 
 
 class TeacherCoursesRootComp(
         private val isAdmin: Boolean,
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : CacheableComponent<TeacherCoursesRootComp.State>(dstId, parent) {
+        parent: Component?
+) : CacheableComponent<TeacherCoursesRootComp.State>(parent) {
 
     @Serializable
     data class State(val coursesState: TeacherCourseListComp.State)
@@ -31,26 +29,26 @@ class TeacherCoursesRootComp(
         coursesList = TeacherCourseListComp(this)
     }
 
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        coursesList = TeacherCourseListComp(this)
+    }
+
+    override fun createAndBuildChildrenFromState(state: State): Promise<*> = doInPromise {
+        coursesList.createAndBuildFromState(state.coursesState).await()
+    }
+
     override fun render(): String = tmRender("t-c-teach-courses",
             "pageTitle" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
-            "canAddCourse" to isAdmin,
-            "newCourseLabel" to Str.newCourseLink(),
             "listDstId" to coursesList.dstId
     )
 
     override fun getCacheableState(): State = State(coursesList.getCacheableState())
-
-    override fun createFromState(state: State): Promise<*> = doInPromise {
-        coursesList = TeacherCourseListComp(this)
-        coursesList.createFromState(state.coursesState)
-    }
 }
 
 
 class TeacherCourseListComp(
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : CacheableComponent<TeacherCourseListComp.State>(dstId, parent) {
+        parent: Component?
+) : CacheableComponent<TeacherCourseListComp.State>(parent) {
 
     @Serializable
     data class State(val courses: List<SCourse>)
@@ -102,9 +100,8 @@ class TeacherCourseItemComp(
         val id: String,
         val title: String,
         val studentCount: Int,
-        parent: Component?,
-        dstId: String = IdGenerator.nextId()
-) : Component(dstId, parent) {
+        parent: Component?
+) : Component(parent) {
 
     override fun render(): String = tmRender("t-c-teach-courses-item",
             "id" to id,

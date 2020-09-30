@@ -1,0 +1,344 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&amp;display=swap">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/exercise.css">
+
+    <style>
+        /* General show/hide based on width, used on top/bottom-space */
+        .ez-coll-wrap[max-width~="599px"] *[ez-show-min-600] {
+            display: none;
+        }
+
+        .ez-coll-wrap[min-width~="600px"] *[ez-show-max-599] {
+            display: none;
+        }
+
+
+        ez-coll {
+        }
+
+        ez-coll-item {
+            display: flex;
+        }
+
+        ez-coll-item-container {
+            flex: 1 1 auto;
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            padding: 8px;
+            background-color: #fff;
+            box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
+            0 2px 1px -2px rgba(0, 0, 0, 0.09),
+            0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        ez-coll-main {
+            display: flex;
+        }
+
+        ez-coll-left {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            padding: 0 5px;
+        }
+
+        ez-coll-center {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        ez-coll-right {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            padding: 0 5px;
+        }
+
+        ez-coll-first {
+            display: flex;
+        }
+
+        ez-coll-title {
+            flex: 1 1 auto;
+            padding-right: 1rem;
+        }
+
+        ez-coll-top-space {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        ez-coll-second {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        ez-coll-second-left {
+            display: flex;
+            flex: 1 1 auto;
+        }
+
+        ez-coll-attrs {
+            display: flex;
+            flex: 1 1 auto;
+        }
+
+        ez-coll-attr {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 1rem;
+            display: flex;
+
+            /* Set inline */
+            flex-basis: 200px;
+        }
+
+        ez-coll-bottom-space {
+            display: flex;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* If attrs should take up all space */
+        ez-coll[ez-growing-attrs] > ez-coll-attr {
+            /* Don't set with flex since that resets flex-basis */
+            flex-grow: 1;
+            flex-shrink: 1;
+        }
+
+
+        /* Element queries not supported on custom elements so need a div wrapper */
+        .ez-coll-wrap ez-coll-attr {
+            display: none;
+        }
+
+        .ez-coll-wrap[min-width~="200px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+1),
+        .ez-coll-wrap[min-width~="400px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+2),
+        .ez-coll-wrap[min-width~="600px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+3) {
+            display: flex;
+        }
+
+        ez-coll-fold {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: 0 3rem; /* Set to logo/more btn width */
+        }
+
+        ez-coll-fold-attr {
+            display: flex;
+            flex-wrap: wrap;
+            min-width: 0;
+            overflow: auto;
+        }
+
+        ez-coll-fold-value {
+            min-width: 0;
+            padding-left: 1rem;
+        }
+
+        ez-coll-trailer {
+            display: flex;
+        }
+
+        ez-coll-expand-btn {
+            padding-top: 11px;
+            visibility: hidden;
+        }
+
+        ez-coll-item:hover ez-coll-expand-btn {
+            visibility: visible;
+        }
+
+        /* Any of the user's inputs is coarse or the main input cannot hover */
+        @media (any-pointer: coarse) or (hover: none) {
+            ez-coll-expand-btn {
+                visibility: visible;
+            }
+        }
+
+        ez-coll-expand-btn i.material-icons {
+            font-size: 18px;
+        }
+
+    </style>
+</head>
+<body style="background-color: #eee" class="leftbar-active">
+<header>
+    <div id="nav-wrap">
+        <nav class="navbar">
+            <div class="topnav container" role="navigation">
+                <div class="left-cluster">
+                    <div>
+                        <a id="sidenav-toggle" href="#!" class="sidenav-toggle"><i class="material-icons">menu</i></a>
+                    </div>
+                    <a href="/courses" class="logo">
+                        <img class="img" src="img/main-logo.svg" alt="Lahendus">
+                        <span class="text">LAHENDUS</span>
+                    </a>
+                </div>
+                <!-- Search here -->
+                <div class="right-cluster">
+                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                        <a href="#!">
+                            <i class="profile-logo left material-icons">account_circle</i>
+                            <span class="profile-name">Kaspar</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+<main>
+    <div id="leftbar-wrap">
+        <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
+            <li>
+                <div class="user-view">
+                    <div class="background"></div>
+                    <div class="name attr truncate">Jaan Jüri</div>
+                    <div class="email attr truncate">jaanjuri@gmail.com</div>
+                    <div class="role attr">Õpilane</div>
+                </div>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>Minu kursused</a>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">settings</i>Konto seaded</a>
+            </li>
+            <li><a class="waves-effect sidenav-close" href="#!"><i class="material-icons">exit_to_app</i>Logi välja</a>
+            </li>
+        </ul>
+    </div>
+    <div id="content-container" class="container">
+        <div class="title-wrap no-crumb">
+            <h2 class="title">Minu kursused</h2>
+        </div>
+
+        <!-- ezcoll -->
+        <div class="ez-coll-wrap">
+            <ez-coll ez-growing-attrs ez-attr-width-200>
+                <ez-coll-item>
+                    <ez-coll-item-container>
+                        <ez-coll-main>
+                            <ez-coll-left>L</ez-coll-left>
+                            <ez-coll-center>
+                                <ez-coll-first>
+                                    <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
+                                    <ez-coll-top-space ez-show-min-600>Esimesel paremal</ez-coll-top-space>
+                                </ez-coll-first>
+                                <ez-coll-second>
+                                    <ez-coll-second-left>
+                                        <ez-coll-attrs>
+                                            <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
+                                            <ez-coll-attr style="">attr2</ez-coll-attr>
+                                            <ez-coll-attr style="">attr3</ez-coll-attr>
+                                        </ez-coll-attrs>
+                                    </ez-coll-second-left>
+                                    <ez-coll-bottom-space ez-show-min-600>Teisel paremal</ez-coll-bottom-space>
+                                </ez-coll-second>
+                            </ez-coll-center>
+                            <ez-coll-right>
+                                <i class="material-icons">more_vert</i>
+                            </ez-coll-right>
+                        </ez-coll-main>
+                        <ez-coll-fold class="display-none">
+                            <ez-coll-fold-attr ez-show-max-599>
+                                <ez-coll-fold-key>Top attr key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>Esimesel paremal</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr2</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                            <ez-coll-fold-attr>
+                                <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
+                                :
+                                <ez-coll-fold-value>attr3</ez-coll-fold-value>
+                            </ez-coll-fold-attr>
+                        </ez-coll-fold>
+                    </ez-coll-item-container>
+                    <ez-coll-trailer>
+                        <ez-coll-expand-btn>
+                            <i class="material-icons">expand_more</i>
+                        </ez-coll-expand-btn>
+                    </ez-coll-trailer>
+                </ez-coll-item>
+            </ez-coll>
+        </div>
+
+        <!-- NOTES
+        - Configurable:
+          * min attr width px - used as flex-basis; hide attrs based on the sum,
+          * min coll/item width for top attr - "move" to fold if smaller,
+          * min coll/item width for bottom action space - hide if smaller (actions are always available from menu),
+
+        * When padding, margins, icon/logo sizes are finalised, adjust .ez-coll-wrap[min-width~="X"] rules to compensate
+          for these; alternatively, move the sizer inside to only measure the inner content width
+          (probs separately needed for attrs because otherwise the bottom space will make things difficult)
+        * Adjust all sizing rules for max-attrs: 6 and some reasonable options for attr widths
+        * Add VLJ to second item
+        * To be decided: when item is unfolded, should the logo and menu btn stay at the top (possibly moving to
+          align with only the first row) or move to the center of the item?
+          Related: if item has an unempty bottom action space then there's an empty space between the first row and fold.
+          If we want to fix that (move fold inside the attr row) then that's doable only if the logo/menu move to center.
+        -->
+    </div>
+</main>
+<footer>
+</footer>
+
+<script src="js/tmp-ResizeSensor.js"></script>
+<script src="js/tmp-ElementQueries.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!--<script src="js/wui.js"></script>-->
+<script type="text/javascript">
+    function showFolds() {
+        document.querySelectorAll('ez-coll-fold').forEach(el => {
+            if (el.classList.contains("display-none")) {
+                document.querySelector('ez-coll-attrs').classList.add('display-none')
+                el.classList.remove("display-none");
+            } else {
+                el.classList.add('display-none')
+                document.querySelector('ez-coll-attrs').classList.remove('display-none')
+            }
+        });
+    }
+
+    document.querySelectorAll('ez-coll-expand-btn').forEach(el => {
+        el.onclick = showFolds
+    });
+</script>
+
+
+</body>
+</html>

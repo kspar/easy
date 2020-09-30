@@ -4,15 +4,14 @@ import AppProperties
 import Auth
 import debug
 import dynamicToAny
+import kotlinx.browser.window
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
 import objOf
 import org.w3c.fetch.Response
 import parseTo
-import spa.PageManager
 import toJsObj
 import warn
-import kotlin.browser.window
 import kotlin.js.Promise
 
 enum class ReqMethod {
@@ -31,7 +30,8 @@ fun fetchEms(path: String, method: ReqMethod,
              data: Map<String, Any?>? = null,
              headers: Map<String, String> = emptyMap(),
              successChecker: RespSuccessChecker,
-             errorHandlers: List<RespErrorHandler> = emptyList()): Promise<Response> =
+             errorHandlers: List<RespErrorHandler> = emptyList(),
+             cancellable: Boolean = true): Promise<Response> =
 
         Promise { resolve, reject ->
             Auth.makeSureTokenIsValid()
@@ -49,7 +49,7 @@ fun fetchEms(path: String, method: ReqMethod,
                                         "method" to method.name,
                                         "headers" to combinedHeaders,
                                         "body" to jsonData,
-                                        "signal" to PageManager.getNavCancelSignal()
+                                        "signal" to if (cancellable) getNavCancelSignal() else null
                                 ))
                                 .then { resp ->
                                     if (successChecker(resp.clone())) {
@@ -94,28 +94,21 @@ fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
         text().then { it.parseTo(deserializer) }
 
 
-fun createQueryString(vararg params: Pair<String, String?>): String {
-    val encodedParams = params.filter { (_, v) ->
-        !v.isNullOrBlank()
-    }.map { (k, v) ->
-        encodeURIComponent(k) to encodeURIComponent(v!!)
-    }
-
-    return when {
-        encodedParams.isEmpty() -> ""
-        else -> encodedParams.joinToString("&", "?") { (k, v) -> "$k=$v" }
-    }
-}
-
-
-external fun encodeURIComponent(str: String): String
-
 external class AbortController {
     val signal: AbortSignal
-
     fun abort()
 }
 
 external class AbortSignal
 
-fun String.truncate(n: Int) = if (this.length <= n) this else "${this.take(n - 3)}..."
+private var abortControllers = mutableListOf<AbortController>()
+
+fun getNavCancelSignal(): AbortSignal =
+        AbortController().also {
+            abortControllers.add(it)
+        }.signal
+
+fun abortAllFetchesAndClear() {
+    abortControllers.forEach { it.abort() }
+    abortControllers.clear()
+}

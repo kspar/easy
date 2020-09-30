@@ -87,6 +87,7 @@ object CourseExercise : LongIdTable("course_exercise") {
 object TeacherCourseAccess : Table("teacher_course_access") {
     val teacher = reference("teacher_id", Teacher)
     val course = reference("course_id", Course)
+    val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(teacher, course)
 }
 
@@ -101,6 +102,7 @@ object StudentCourseAccess : LongIdTable("student_course_access") {
     // Should not have ID but composite key
     val student = reference("student_id", Student)//.primaryKey()
     val course = reference("course_id", Course)//.primaryKey()
+    val createdAt = datetime("created_at")
 }
 
 object StudentGroupAccess : Table("student_group_access") {
@@ -205,12 +207,11 @@ object SubmissionDraft : Table("submission_draft") {
     override val primaryKey = PrimaryKey(courseExercise, student)
 }
 
-object TestingDraft : Table("testing_draft") {
-    val courseExercise = reference("course_exercise_id", CourseExercise)
+object TeacherSubmission : LongIdTable("teacher_submission") {
     val teacher = reference("teacher_id", Teacher)
+    val exercise = reference("exercise_id", Exercise)
     val createdAt = datetime("created_at")
     val solution = text("solution")
-    override val primaryKey = PrimaryKey(courseExercise, teacher)
 }
 
 object SystemConfiguration : IdTable<String>("system_configuration") {

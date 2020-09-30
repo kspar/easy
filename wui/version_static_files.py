@@ -2,14 +2,10 @@ import sys
 import time
 
 
-HTML_FILE_NAME = 'index.html'
-NEW_HTML_FILE_NAME = 'versioned.index.html'
-
-
-def create_versioned_files(filenames):
+def create_versioned_files(src_filename, filenames):
     timestamp = int(time.time())
 
-    with open(HTML_FILE_NAME, encoding='utf-8') as html_file:
+    with open(src_filename, encoding='utf-8') as html_file:
 
         html_file_content = html_file.read()
 
@@ -22,9 +18,9 @@ def create_versioned_files(filenames):
             new_filename = "{}?v={}".format(filename, timestamp)
             html_file_content = html_file_content.replace(filename, new_filename)
 
-    with open(NEW_HTML_FILE_NAME, mode="w", encoding="utf-8") as f:
+    with open('versioned.' + src_filename, mode="w", encoding="utf-8") as f:
         f.write(html_file_content)
 
 
 if __name__ == '__main__':
-    create_versioned_files(sys.argv[1:])
+    create_versioned_files(sys.argv[1], sys.argv[2:])

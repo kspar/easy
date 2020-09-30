@@ -24,6 +24,15 @@ tags:
 
 paths:
 
+  /remove-cache:
+    post:
+      summary: Force cache eviction for all cached content.
+      tags:
+        - admin
+      responses:
+        200:
+          description: Caches evicted.
+
   /articles:
     post:
       summary: Create new article.
@@ -333,7 +342,7 @@ paths:
     post:
       summary: "Update account data in easy:core.
             Creates account if it does not exist. If the account does not exist,
-            then this must be called before any other services. Returns system management notifications."
+            then this must be called before any other services."
       tags:
         - common
       parameters:
@@ -350,6 +359,15 @@ paths:
               - last_name
       responses:
         200:
+          description: Check-in done.
+
+  /management/common/notifications:
+    get:
+      summary: Get all system management notifications.
+      tags:
+        - common
+      responses:
+        200:
           description: Returns system management notifications (messages).
           schema:
             properties:
@@ -359,7 +377,6 @@ paths:
                   properties:
                     message:
                       type: string
-
 
   /management/notifications:
     get:
@@ -620,6 +637,18 @@ paths:
                   properties:
                     id:
                       type: string
+                    groups:
+                      type: array
+                      items:
+                        properties:
+                          id:
+                            type: string
+                        required:
+                          - id
+                  required:
+                    - id
+            required:
+              - courses
       responses:
         200:
           description: Zipped file of the submissions as a resource.
@@ -773,47 +802,112 @@ paths:
       parameters:
         - name: teacher
           in: body
-          description: Teacher ids.
+          description: Teacher usernames.
           schema:
             properties:
               teachers:
                 type: array
                 items:
                   properties:
-                    teacher_id:
+                    username:
                       type: string
       responses:
         200:
           description: Teachers' accesses removed.
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess/draft:
+  /exercises/{exerciseId}/similarity:
     parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-    get:
-      summary: Get the latest teacher submission's draft to the specified course exercise.
-      tags:
-        - teacher
-      responses:
-        200:
-          description: Get the latest teacher submission draft of this exercise.
-          schema:
-            $ref: '#/definitions/SubmissionDraft'
+      - $ref: '#/parameters/ExerciseId'
     post:
-      summary: Upload new teacher submission's draft to the specified course exercise.
+      summary: Check submissions similarity.
       tags:
         - teacher
       parameters:
-        - name: submission
+        - name: solution
           in: body
           schema:
             properties:
-              solution:
-                type: string
+              courses:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                required:
+                  - id
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                required:
+                  - id
       responses:
         200:
-          description: Submission draft uploaded.
+          description: Submission similarities.
+          schema:
+            properties:
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    solution:
+                      type: string
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+                    course_title:
+                      type: string
+                required:
+                  - id
+                  - solution
+                  - given_name
+                  - family_name
+                  - course_title
+              scores:
+                type: array
+                items:
+                  properties:
+                    sub_1:
+                      type: string
+                    sub_2:
+                      type: string
+                    score_a:
+                      type: number
+                    score_b:
+                      type: number
+                required:
+                  - sub1
+                  - sub2
+                  - score_a
+                  - score_b
+
+
+  /exercises/{exerciseId}/testing/autoassess/submissions:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+      - $ref: '#/parameters/Limit'
+      - $ref: '#/parameters/Offset'
+    get:
+      summary: Get the latest teacher submissions to the specified exercise.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Get the latest teacher submissions of this exercise.
+          schema:
+            properties:
+              count:
+                type: integer
+              submissions:
+                type: array
+                items:
+                  $ref: '#/definitions/TeacherSubmission'
 
 
   /teacher/courses:
@@ -902,6 +996,83 @@ paths:
                 items:
                   $ref: '#/definitions/Group'
 
+    post:
+      summary: Create new group.
+      tags:
+        - teacher
+      parameters:
+        - name: group
+          in: body
+          schema:
+            properties:
+              name:
+                type: string
+            required:
+              - name
+      responses:
+        200:
+          description: Group created.
+          schema:
+            properties:
+              id:
+                type: string
+            required:
+              - id
+
+  /courses/{courseId}/groups/{groupId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+    delete:
+      summary: Delete group.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Group deleted.
+
+
+  /courses/{courseId}/groups/{groupId}/teachers:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+    post:
+      summary: Add teachers to group.
+      tags:
+        - teacher
+      parameters:
+        - name: teachers
+          in: body
+          schema:
+            properties:
+              teachers:
+                type: array
+                items:
+                  properties:
+                    username:
+                      type: string
+                  required:
+                    - username
+            required:
+              - teachers
+      responses:
+        200:
+          description: Teachers added to group.
+
+
+  /courses/{courseId}/groups/{groupId}/teachers/{teacherId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/GroupId'
+      - $ref: '#/parameters/TeacherId'
+    delete:
+      summary: Remove teacher from group.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Teacher removed from group.
+
 
   /courses/teacher/{courseId}/grades:
     parameters:
@@ -915,6 +1086,10 @@ paths:
           name: search
           type: string
           description: Search string that is matched on student names, username and email.
+        - in: query
+          name: group
+          type: string
+          description: Group ID. If given, return only students who are in this group.
       tags:
         - teacher
       responses:
@@ -976,6 +1151,8 @@ paths:
           description: Exercise details.
           schema:
             properties:
+              exercise_id:
+                type: string
               title:
                 type: string
               title_alias:
@@ -1043,6 +1220,7 @@ paths:
                     - id
                     - name
             required:
+              - exercise_id
               - title
               - grader_type
               - threshold
@@ -1083,11 +1261,9 @@ paths:
           description: Reordered.
 
 
-  /teacher/courses/{courseId}/exercises/{courseExerciseId}/autoassess:
+  /exercises/{exerciseId}/testing/autoassess:
     parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseExerciseId'
-
+      - $ref: '#/parameters/ExerciseId'
     post:
       summary: Test autoassessment of this exercise with this solution.
       tags:
@@ -1108,6 +1284,8 @@ paths:
                 type: integer
               feedback:
                 type: string
+            required:
+              - grade
 
 
   /teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students:
@@ -1271,6 +1449,8 @@ paths:
     get:
       summary: Get all participants (including pending access) who are registered to this course.
       parameters:
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/Offset'
         - in: query
           name: role
           type: string
@@ -1290,6 +1470,14 @@ paths:
                 type: boolean
               moodle_grades_synced:
                 type: boolean
+              student_count:
+                type: integer
+              teacher_count:
+                type: integer
+              students_pending_count:
+                type: integer
+              students_moodle_pending_count:
+                type: integer
               students:
                 type: array
                 items:
@@ -1302,6 +1490,9 @@ paths:
                       type: string
                     family_name:
                       type: string
+                    created_at:
+                      type: string
+                      format: date-time
                     groups:
                       type: array
                       items:
@@ -1326,6 +1517,9 @@ paths:
                       type: string
                     family_name:
                       type: string
+                    created_at:
+                      type: string
+                      format: date-time
                     groups:
                       type: array
                       items:
@@ -1541,7 +1735,7 @@ paths:
     put:
       summary: Modify exercise.
       tags:
-        - admin
+        - teacher
       parameters:
         - name: exercise
           in: body
@@ -1697,6 +1891,12 @@ parameters:
     required: true
     type: string
 
+  GroupId:
+    name: groupId
+    in: path
+    required: true
+    type: string
+
   CourseExerciseId:
     name: courseExerciseId
     in: path
@@ -1705,6 +1905,12 @@ parameters:
 
   StudentId:
     name: studentId
+    in: path
+    required: true
+    type: string
+
+  TeacherId:
+    name: teacherId
     in: path
     required: true
     type: string
@@ -1844,6 +2050,20 @@ definitions:
         type: string
         format: date-time
     required:
+      - solution
+      - created_at
+
+  TeacherSubmission:
+    properties:
+      id:
+        type: string
+      solution:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+    required:
+      - id
       - solution
       - created_at
 

@@ -22,7 +22,7 @@ class TeacherReadCoursesController {
 
     data class CourseResp(@JsonProperty("id") val id: String,
                           @JsonProperty("title") val title: String,
-                          @JsonProperty("student_count") val studentCount: Int)
+                          @JsonProperty("student_count") val studentCount: Long)
 
     data class Resp(@JsonProperty("courses") val courses: List<CourseResp>)
 

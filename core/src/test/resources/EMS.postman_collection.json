@@ -1192,7 +1192,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1268,7 +1268,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1339,7 +1339,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1410,7 +1410,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1481,7 +1481,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -1552,7 +1552,7 @@
 					{
 						"key": "oidc_claim_easy_role",
 						"type": "text",
-						"value": "admin"
+						"value": "teacher"
 					},
 					{
 						"key": "oidc_claim_email",
@@ -2585,6 +2585,82 @@
 			"response": []
 		},
 		{
+			"name": "EMS: student: post: submit submission 2: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "student"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"solution\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/student/courses/1/exercises/1/submissions",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"student",
+						"courses",
+						"1",
+						"exercises",
+						"1",
+						"submissions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "EMS: student: post: submit draft: success",
 			"event": [
 				{
@@ -3502,6 +3578,87 @@
 			"response": []
 		},
 		{
+			"name": "EMS: common: get: read system messages: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"\r",
+							"pm.test('Has data', function() {\r",
+							"  pm.expect(jsonData).to.have.property('messages');\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"message\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/management/common/notifications",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"management",
+						"common",
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "EMS: admin: patch: update system message: success",
 			"event": [
 				{
@@ -3803,7 +3960,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: teacher: post: submit draft: success",
+			"name": "EMS: teacher: post: submit teacher submission: success",
 			"event": [
 				{
 					"listen": "test",
@@ -3867,25 +4024,22 @@
 					}
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"raw": "{{EMSBASE}}/exercises/1/testing/autoassess",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
-						"courses",
-						"1",
 						"exercises",
 						"1",
-						"autoassess",
-						"draft"
+						"testing",
+						"autoassess"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "EMS: teacher: get: read draft: success",
+			"name": "EMS: teacher: get: read teacher submissions: success",
 			"event": [
 				{
 					"listen": "test",
@@ -3940,18 +4094,16 @@
 					}
 				],
 				"url": {
-					"raw": "{{EMSBASE}}/teacher/courses/1/exercises/1/autoassess/draft",
+					"raw": "{{EMSBASE}}/exercises/1/testing/autoassess/submissions",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
-						"teacher",
-						"courses",
-						"1",
 						"exercises",
 						"1",
+						"testing",
 						"autoassess",
-						"draft"
+						"submissions"
 					]
 				}
 			},
@@ -4547,6 +4699,83 @@
 					],
 					"path": [
 						"articles",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: put: update exercise details: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"TEACHER\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \r\n    \r\n    \r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/exercises/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"exercises",
 						"1"
 					]
 				}
@@ -5187,6 +5416,146 @@
 						"1",
 						"submissions",
 						"latest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: admin: post: evict cache: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/remove-cache",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"remove-cache"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: post: compare: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"courses\": [\r\n    {\r\n      \"id\": \"1\"\r\n    }\r\n  ],\r\n  \"submissions\": [\r\n    {\r\n      \"id\": \"1\"\r\n    },\r\n    {\r\n      \"id\": \"2\"\r\n    }\r\n  ]\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/exercises/1/similarity",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"exercises",
+						"1",
+						"similarity"
 					]
 				}
 			},

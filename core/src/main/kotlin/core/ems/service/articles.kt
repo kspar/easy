@@ -29,7 +29,7 @@ fun assertArticleAliasExists(articleId: Long, alias: String) {
 
 private fun articleExists(articleId: Long): Boolean {
     return transaction {
-        Article.select { Article.id eq articleId }.count() == 1
+        Article.select { Article.id eq articleId }.count() == 1L
     }
 }
 
@@ -37,7 +37,7 @@ private fun articleAliasExists(articleId: Long, alias: String): Boolean {
     return transaction {
         ArticleAlias.select {
             (ArticleAlias.id eq alias) and (ArticleAlias.article eq articleId)
-        }.count() == 1
+        }.count() == 1L
     }
 }
 

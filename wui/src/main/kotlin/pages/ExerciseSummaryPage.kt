@@ -1,51 +1,58 @@
 package pages
 
+import AppProperties
 import Auth
 import DateSerializer
 import MathJax
 import PageName
+import PaginationConf
 import Role
 import Str
 import compareTo
 import debug
 import debugFunStart
+import emptyToNull
 import getContainer
-import getElemById
-import getElemByIdAs
-import getElemByIdOrNull
-import getElemBySelector
-import getElemsBySelector
-import getNodelistBySelector
+import getLastPageOffset
+import highlightCode
+import isNotNullAndTrue
+import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.dom.addClass
+import kotlinx.dom.clear
+import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
 import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
-import libheaders.highlightCode
+import lightboxExerciseImages
 import moveClass
 import objOf
 import observeValueChange
-import onChange
-import onVanillaClick
+import onSingleClickWithDisabled
 import org.w3c.dom.*
+import pages.leftbar.Leftbar
 import queries.*
+import rip.kspar.ezspa.*
+import saveAsFile
 import successMessage
 import tmRender
 import toEstonianString
 import toJsObj
 import warn
-import kotlin.browser.window
-import kotlin.dom.addClass
-import kotlin.dom.clear
-import kotlin.dom.removeClass
 import kotlin.js.Date
+import kotlin.math.min
+import kotlin.random.Random
 
 object ExerciseSummaryPage : EasyPage() {
 
+    private const val PAGE_STEP = AppProperties.SUBMISSIONS_ROWS_ON_PAGE
+
     @Serializable
     data class TeacherExercise(
+            val exercise_id: String,
             val title: String,
             val title_alias: String?,
             val instructions_html: String?,
@@ -187,11 +194,15 @@ object ExerciseSummaryPage : EasyPage() {
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
 
+    override val leftbarConf: Leftbar.Conf
+        get() = Leftbar.Conf(extractSanitizedPathIds().courseId)
+
     override fun pathMatches(path: String) =
             path.matches("^/courses/\\w+/exercises/\\w+/summary/?$")
 
     override fun build(pageStateStr: String?) {
-        val pathIds = extractSanitizedPathIds(window.location.pathname)
+        super.build(pageStateStr)
+        val pathIds = extractSanitizedPathIds()
         val courseId = pathIds.courseId
         val courseExerciseId = pathIds.exerciseId
 
@@ -217,8 +228,8 @@ object ExerciseSummaryPage : EasyPage() {
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
         val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
-        buildTeacherTesting(courseId, courseExerciseId)
-        buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.threshold)
+        buildTeacherTesting(exerciseDetails.exercise_id)
+        buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
         initTooltips()
         fl?.end()
@@ -233,6 +244,8 @@ object ExerciseSummaryPage : EasyPage() {
         val courseTitle = BasicCourseInfo.get(courseId).await().title
         val exercise = exercisePromise.await()
                 .parseTo(TeacherExercise.serializer()).await()
+
+        debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 
         getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                 "coursesLabel" to Str.myCourses(),
@@ -276,8 +289,8 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", exerciseMap)
 
-        initExerciseImages()
-        highlightExerciseCode()
+        lightboxExerciseImages()
+        highlightCode()
 
         if (aaFiles != null) {
             initAaFileEditor(aaFiles)
@@ -324,11 +337,11 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildTeacherTesting(courseId: String, courseExerciseId: String) {
+    private fun buildTeacherTesting(exerciseId: String) {
 
         suspend fun postSolution(solution: String): AutoassResult {
             debug { "Posting submission ${solution.substring(0, 15)}..." }
-            val result = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId/autoassess",
+            val result = fetchEms("/exercises/$exerciseId/testing/autoassess",
                     ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }).await()
                     .parseTo(AutoassResult.serializer()).await()
             debug { "Received result, grade: ${result.grade}" }
@@ -371,49 +384,64 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, threshold: Int) {
+    private suspend fun buildTeacherStudents(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int) {
         val fl = debugFunStart("buildTeacherStudents")
         getElemById("students").innerHTML = tmRender("tm-teach-exercise-students")
-        buildTeacherStudentsFrame(courseId, courseExerciseId, threshold)
-        buildTeacherStudentsList(courseId, courseExerciseId, threshold)
+        val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
+        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, defaultGroupId)
+
+        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
+            debug { "Downloading submissions" }
+            val selectedGroupId = getElemByIdAsOrNull<HTMLSelectElement>("group-select")?.value.emptyToNull()
+            val groupsList = selectedGroupId?.let { listOf(mapOf("id" to it)) }
+            val blob = fetchEms("/export/exercises/$exerciseId/submissions/latest", ReqMethod.POST,
+                    mapOf("courses" to listOf(mapOf("id" to courseId, "groups" to groupsList))), successChecker = { http200 }).await()
+                    .blob().await()
+            val filename = "esitused-kursus-$courseId-ul-$courseExerciseId${selectedGroupId?.let { "-g-$it" }.orEmpty()}.zip"
+            blob.saveAsFile(filename)
+        }
+
         fl?.end()
     }
 
-    private fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, threshold: Int) {
-        fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
-                errorHandler = ErrorHandlers.noCourseAccessPage).then {
-            it.parseTo(Groups.serializer())
-        }.then {
-            val groups = it.groups
-            debug { "Groups available: $groups" }
-            if (groups.isNotEmpty()) {
-                val map = mapOf("groupLabel" to "Rühm",
-                        "allLabel" to "Kõik rühmad",
-                        "manyGroups" to (groups.size > 1),
-                        "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) })
+    private suspend fun buildTeacherStudentsFrame(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int): String? {
+        val groups = fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
+                errorHandler = ErrorHandlers.noCourseAccessPage).await()
+                .parseTo(Groups.serializer()).await()
+                .groups.sortedBy { it.name }
 
-                getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", map)
-                initSelectFields()
-                val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
-                groupSelect.onChange {
-                    MainScope().launch {
-                        val group = groupSelect.value
-                        debug { "Selected group $group" }
-                        buildTeacherStudentsList(courseId, courseExerciseId, threshold, group)
-                    }
+        debug { "Groups available: $groups" }
+
+        getElemById("students-frame").innerHTML = tmRender("tm-teach-exercise-students-frame", mapOf(
+                "exportSubmissionsLabel" to "Lae alla",
+                "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
+                "allLabel" to "Kõik õpilased",
+                "hasOneGroup" to (groups.size == 1),
+                "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) }))
+
+        if (groups.isNotEmpty()) {
+            initSelectFields()
+            val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
+            groupSelect.onChange {
+                MainScope().launch {
+                    val group = groupSelect.value
+                    debug { "Selected group $group" }
+                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, group)
                 }
             }
         }
+
+        return if (groups.size == 1) groups[0].id else null
     }
 
     private fun initSelectFields() {
         Materialize.FormSelect.init(getNodelistBySelector("select"), objOf("coverTrigger" to false))
     }
 
-    private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, threshold: Int,
-                                                 groupId: String? = null) {
+    private suspend fun buildTeacherStudentsList(courseId: String, courseExerciseId: String, exerciseId: String,
+                                                 threshold: Int, groupId: String?, offset: Int = 0) {
 
-        val q = createQueryString("group" to groupId)
+        val q = createQueryString("group" to groupId, "limit" to PAGE_STEP.toString(), "offset" to offset.toString())
         val teacherStudents = fetchEms(
                 "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET,
                 successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage).await()
@@ -453,12 +481,44 @@ object ExerciseSummaryPage : EasyPage() {
             studentMap.toJsObj()
         }.toTypedArray()
 
+
+        val studentTotal = teacherStudents.student_count
+        val paginationConf = if (studentTotal > PAGE_STEP) {
+            PaginationConf(offset + 1, min(offset + PAGE_STEP, studentTotal), studentTotal,
+                    offset != 0, offset + PAGE_STEP < studentTotal)
+        } else null
+
         getElemById("students-list").innerHTML = tmRender("tm-teach-exercise-students-list", mapOf(
                 "students" to studentArray,
                 "autoLabel" to Str.gradedAutomatically(),
                 "teacherLabel" to Str.gradedByTeacher(),
-                "missingLabel" to Str.notGradedYet()
+                "missingLabel" to Str.notGradedYet(),
+                "hasPagination" to (paginationConf != null),
+                "pageStart" to paginationConf?.pageStart,
+                "pageEnd" to paginationConf?.pageEnd,
+                "pageTotal" to paginationConf?.pageTotal,
+                "pageTotalLabel" to ", kokku ",
+                "canGoBack" to paginationConf?.canGoBack,
+                "canGoForward" to paginationConf?.canGoForward
         ))
+
+        if (paginationConf?.canGoBack.isNotNullAndTrue) {
+            getElemsByClass("go-first").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, 0)
+            }
+            getElemsByClass("go-back").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset - PAGE_STEP)
+            }
+        }
+
+        if (paginationConf?.canGoForward.isNotNullAndTrue) {
+            getElemsByClass("go-forward").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset + PAGE_STEP)
+            }
+            getElemsByClass("go-last").onVanillaClick(true) {
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, getLastPageOffset(studentTotal, PAGE_STEP))
+            }
+        }
 
         getElemsBySelector("[data-student-id]").forEach {
             val id = it.getAttribute("data-student-id")
@@ -469,7 +529,7 @@ object ExerciseSummaryPage : EasyPage() {
                     ?: error("No data-family-name found on student item")
 
             it.onVanillaClick(true) {
-                buildStudentTab(courseId, courseExerciseId, threshold, id, givenName, familyName, false)
+                buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, id, givenName, familyName, false)
             }
         }
 
@@ -477,7 +537,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildStudentTab(courseId: String, courseExerciseId: String, threshold: Int,
+    private fun buildStudentTab(courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int,
                                 studentId: String, givenName: String, familyName: String, isAllSubsOpen: Boolean) {
 
         suspend fun addAssessment(grade: Int, feedback: String, submissionId: String) {
@@ -508,8 +568,8 @@ object ExerciseSummaryPage : EasyPage() {
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
                         successMessage { Str.assessmentAddedMsg() }
-                        buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
-                        buildTeacherStudents(courseId, courseExerciseId, threshold)
+                        buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, studentId, givenName, familyName, isSubmissionBoxVisible())
+                        buildTeacherStudents(courseId, courseExerciseId, exerciseId, threshold)
                     }
                 }
 
@@ -561,7 +621,7 @@ object ExerciseSummaryPage : EasyPage() {
 
             getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
                 val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null
-                buildStudentTab(courseId, courseExerciseId, threshold, studentId, givenName, familyName, isAllSubsBoxOpen)
+                buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, studentId, givenName, familyName, isAllSubsBoxOpen)
             }
         }
 
@@ -762,8 +822,8 @@ object ExerciseSummaryPage : EasyPage() {
                     "title" to exercise.effective_title,
                     "text" to exercise.text_html
             ))
-            initExerciseImages()
-            highlightExerciseCode()
+            lightboxExerciseImages()
+            highlightCode()
             MathJax.formatPageIfNeeded(exercise.text_html.orEmpty())
         }
 
@@ -878,7 +938,7 @@ object ExerciseSummaryPage : EasyPage() {
         submitButton.disabled = true
         submitButton.textContent = Str.autoAssessing()
         editor?.setOption("readOnly", true)
-        editorWrap.addClass("no-cursor")
+        editorWrap.addClass("editor-read-only")
     }
 
     private fun paintAutoassInProgress() {
@@ -987,21 +1047,14 @@ object ExerciseSummaryPage : EasyPage() {
         moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-fail"), "visible")
     }
 
-    private fun initExerciseImages() {
-        Materialize.Materialbox.init(getNodelistBySelector("#exercise-text img"))
-    }
-
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 
-    private fun highlightExerciseCode() {
-        getNodelistBySelector("pre.highlightjs.highlight code.hljs").highlightCode()
-    }
-
     data class PathIds(val courseId: String, val exerciseId: String)
 
-    private fun extractSanitizedPathIds(path: String): PathIds {
+    private fun extractSanitizedPathIds(): PathIds {
+        val path = window.location.pathname
         val match = path.match("^/courses/(\\w+)/exercises/(\\w+)/summary/?\$")
         if (match != null && match.size == 3) {
             return PathIds(match[1], match[2])

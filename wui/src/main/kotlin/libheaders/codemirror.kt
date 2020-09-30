@@ -6,12 +6,12 @@ import org.w3c.dom.Element
 external object CodeMirror {
     var modeURL: String
     fun fromTextArea(element: Element, options: dynamic): CodeMirrorInstance
-    fun autoLoadMode(editor: CodeMirrorInstance, mode: String)
+    fun autoLoadMode(editor: CodeMirrorInstance, mode: dynamic)
 
     @JsName("Doc")
     class Doc(value: String, mode: dynamic) {
         fun getValue(): String
-        fun setValue(value: String)
+        fun setValue(value: String?)
     }
 }
 

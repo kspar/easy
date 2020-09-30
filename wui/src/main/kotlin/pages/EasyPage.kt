@@ -4,16 +4,20 @@ import Auth
 import Role
 import Str
 import getContainer
-import getElemsByClass
+import kotlinx.dom.clear
 import libheaders.Materialize
-import spa.Page
+import pages.leftbar.Leftbar
+import rip.kspar.ezspa.Page
+import rip.kspar.ezspa.getElemsByClass
 import tmRender
-import kotlin.dom.clear
 
 abstract class EasyPage : Page() {
 
     // All roles allowed by default
     open val allowedRoles: List<Role> = Role.values().asList()
+
+    // Leftbar with no course by default
+    open val leftbarConf: Leftbar.Conf = Leftbar.Conf()
 
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
@@ -23,6 +27,7 @@ abstract class EasyPage : Page() {
                     "title" to Str.noPermissionForPageTitle(),
                     "msg" to Str.noPermissionForPageMsg()
             ))
+            Leftbar.refresh(Leftbar.Conf())
             error("User is not one of $allowedRoles")
         }
     }
@@ -30,6 +35,10 @@ abstract class EasyPage : Page() {
     override fun clear() {
         super.clear()
         getContainer().clear()
+    }
+
+    override fun build(pageStateStr: String?) {
+        Leftbar.refresh(leftbarConf)
     }
 
     override fun destruct() {

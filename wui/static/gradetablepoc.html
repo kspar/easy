@@ -41,7 +41,17 @@
     <div class="card">
         <div class="card-content">
             <div class="grades-wrap">
-                <div class="pre-table-wrap"><div class="pagination-wrap">pagination</div></div>
+                <div class="pre-table-wrap">
+                    <ez-pagination>
+                        <ez-pageinfo>1 &#8212; 50, kokku 1249</ez-pageinfo>
+                        <ez-pagenav>
+                            <ez-pagebtn disabled><i class="material-icons">first_page</i></ez-pagebtn
+                            ><ez-pagebtn disabled><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                </div>
                 <div class="grade-table-wrap">
                     <table class="highlight colored truncated-ex">
                         <thead><tr>
@@ -93,7 +103,17 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="post-table-wrap"><div class="pagination-wrap">pagination</div></div>
+                <div class="post-table-wrap">
+                    <ez-pagination>
+                        <ez-pageinfo>1 &#8212; 50, kokku 1249</ez-pageinfo>
+                        <ez-pagenav>
+                            <button  class="go-first waves-effect waves-green btn-flat" ><i class="material-icons">first_page</i></button
+                            ><ez-pagebtn disabled><i class="material-icons">navigate_before</i></ez-pagebtn
+                        ><ez-pagebtn class="waves-effect waves-green"><i class="material-icons">navigate_next</i></ez-pagebtn
+                        ><ez-pagebtn><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                </div>
             </div>
         </div>
     </div>
@@ -103,6 +123,14 @@
 
 
 <style>
+
+
+
+
+
+
+
+
     .grade-table-wrap {
         white-space: nowrap;
         overflow-x: auto;

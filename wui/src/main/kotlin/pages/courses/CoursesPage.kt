@@ -1,29 +1,34 @@
 package pages.courses
 
 import Auth
+import CONTENT_CONTAINER_ID
 import PageName
 import Role
+import ScrollPosition
 import debugFunStart
+import getWindowScrollPosition
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import pages.EasyPage
 import parseTo
+import plainDstStr
+import restoreWindowScroll
+import rip.kspar.ezspa.CacheableComponent
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import stringify
+import warn
+import kotlin.js.Promise
 
 
 object CoursesPage : EasyPage() {
 
     @Serializable
-    data class State(val studentState: StudentState?, val teacherState: TeacherState?)
+    data class State(val rootState: CoursesRootComponent.State, val scrollPosition: ScrollPosition)
 
-    @Serializable
-    data class StudentState(val listState: StudentCoursesRootComp.State)
-
-    @Serializable
-    data class TeacherState(val listState: TeacherCoursesRootComp.State)
-
+    private var rootComp: CoursesRootComponent? = null
 
     override val pageName: PageName = PageName.COURSES
 
@@ -31,43 +36,75 @@ object CoursesPage : EasyPage() {
             path.matches("^/courses/?$")
 
     override fun build(pageStateStr: String?) {
+        super.build(pageStateStr)
         MainScope().launch {
             val funLog = debugFunStart("CoursesPage.build")
 
             val state = pageStateStr?.parseTo(State.serializer())
-            val studentState = state?.studentState
-            val teacherState = state?.teacherState
 
-            when (Auth.activeRole) {
-                Role.STUDENT -> buildStudentCourses(studentState)
-                Role.TEACHER, Role.ADMIN -> buildTeacherCourses(teacherState, Auth.activeRole)
+            val root = CoursesRootComponent(Auth.activeRole, CONTENT_CONTAINER_ID)
+            rootComp = root
+
+            if (state == null) {
+                root.createAndBuild().await()
+            } else {
+                root.createAndBuildFromState(state.rootState).await()
+                restoreWindowScroll(state.scrollPosition)
             }
 
             funLog?.end()
         }
     }
 
-    private suspend fun buildStudentCourses(state: StudentState?) {
-        val root = StudentCoursesRootComp(null, "content-container")
-        if (state == null) {
-            root.createAndBuild().await()
-            val rootState = root.getCacheableState()
-            updateState(State.serializer().stringify(State(StudentState(rootState), null)))
+    override fun onPreNavigation() {
+        val root = rootComp
+        if (root != null) {
+            updateState(State.serializer().stringify(State(root.getCacheableState(), getWindowScrollPosition())))
+            rootComp = null
         } else {
-            root.createFromState(state.listState).await()
-            root.rebuild()
-        }
-    }
-
-    private suspend fun buildTeacherCourses(state: TeacherState?, role: Role) {
-        val root = TeacherCoursesRootComp(role == Role.ADMIN, null, "content-container")
-        if (state == null) {
-            root.createAndBuild().await()
-            val rootState = root.getCacheableState()
-            updateState(State.serializer().stringify(State(null, TeacherState(rootState))))
-        } else {
-            root.createFromState(state.listState).await()
-            root.rebuild()
+            warn { "Cannot cache courses page - root component is null" }
         }
     }
 }
+
+
+class CoursesRootComponent(
+        private val role: Role,
+        dstId: String
+) : CacheableComponent<CoursesRootComponent.State>(null, dstId) {
+
+    @Serializable
+    data class State(val studentState: StudentCoursesRootComp.State?, val teacherState: TeacherCoursesRootComp.State?)
+
+
+    private var studentRoot: StudentCoursesRootComp? = null
+    private var teacherRoot: TeacherCoursesRootComp? = null
+
+    override val children: List<Component>
+        get() = listOfNotNull(studentRoot, teacherRoot)
+
+    override fun create(): Promise<*> = doInPromise {
+        when (role) {
+            Role.STUDENT -> studentRoot = StudentCoursesRootComp(this)
+            Role.TEACHER -> teacherRoot = TeacherCoursesRootComp(false, this)
+            Role.ADMIN -> teacherRoot = TeacherCoursesRootComp(true, this)
+        }
+    }
+
+    override fun createFromState(state: State): Promise<*> = doInPromise {
+        when {
+            state.studentState != null -> studentRoot = StudentCoursesRootComp(this)
+            state.teacherState != null -> teacherRoot = TeacherCoursesRootComp(role == Role.ADMIN, this)
+        }
+    }
+
+    override fun createAndBuildChildrenFromState(state: State): Promise<*> = doInPromise {
+        studentRoot?.createAndBuildFromState(state.studentState!!)
+        teacherRoot?.createAndBuildFromState(state.teacherState!!)
+    }
+
+    override fun render(): String = plainDstStr(children[0].dstId)
+
+    override fun getCacheableState(): State = State(studentRoot?.getCacheableState(), teacherRoot?.getCacheableState())
+}
+

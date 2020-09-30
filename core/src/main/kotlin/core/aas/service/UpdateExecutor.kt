@@ -38,7 +38,7 @@ private fun updateExecutor(executorId: Long, body: UpdateExecutorController.Req)
     return transaction {
         val executorExists =
                 Executor.select { Executor.id eq executorId }
-                        .count() == 1
+                        .count() == 1L
 
         if (executorExists) {
             Executor.update({ Executor.id eq executorId }) {

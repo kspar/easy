@@ -9,6 +9,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -72,10 +73,7 @@ class MoodleSyncService {
         val response = responseEntity.body
         if (response == null) {
             log.error { "Moodle returned empty response with request $request" }
-            throw InvalidRequestException("Course linking with Moodle failed due to Moodle empty response body.",
-                    ReqError.MOODLE_EMPTY_RESPONSE,
-                    "Moodle response" to responseEntity.statusCodeValue.toString(),
-                    notify = true)
+            return MoodleResponse(emptyList())
         }
         return response
     }
@@ -149,6 +147,7 @@ class MoodleSyncService {
             // Remove & insert all accesses
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
+            val time = DateTime.now()
             newAccesses.forEach { newAccess ->
                 Account.update({ Account.id eq newAccess.username }) {
                     it[moodleUsername] = newAccess.moodleUsername
@@ -156,6 +155,7 @@ class MoodleSyncService {
                 val accessId = StudentCourseAccess.insertAndGetId {
                     it[student] = EntityID(newAccess.username, Student)
                     it[course] = courseEntity
+                    it[createdAt] = time
                 }
                 StudentGroupAccess.batchInsert(newAccess.groups) {
                     this[StudentGroupAccess.student] = newAccess.username

@@ -1,15 +1,13 @@
 package core.ems.service
 
 import core.conf.security.EasyUser
-import core.db.CourseExercise
-import core.db.StudentCourseAccess
-import core.db.TeacherCourseAccess
-import core.db.TeacherGroupAccess
+import core.db.*
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -66,12 +64,7 @@ fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: 
 
 fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean {
     return transaction {
-        val hasGroups = TeacherGroupAccess
-                .select {
-                    TeacherGroupAccess.course eq courseId and
-                            (TeacherGroupAccess.teacher eq user.id)
-                }.count() > 0
-
+        val hasGroups = teacherHasRestrictedGroupsOnCourse(user, courseId)
         if (!hasGroups) {
             true
         } else {
@@ -81,6 +74,28 @@ fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): 
                         (TeacherGroupAccess.group eq groupId)
             }.count() > 0
         }
+    }
+}
+
+fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: Long) {
+    when {
+        user.isAdmin() -> return
+        user.isTeacher() -> {
+            if (teacherHasRestrictedGroupsOnCourse(user, courseId)) {
+                throw ForbiddenException("Teacher ${user.id} has restricted groups on course $courseId",
+                        ReqError.HAS_RESTRICTED_GROUPS)
+            }
+        }
+    }
+}
+
+fun teacherHasRestrictedGroupsOnCourse(user: EasyUser, courseId: Long): Boolean {
+    return transaction {
+        TeacherGroupAccess
+                .select {
+                    TeacherGroupAccess.course eq courseId and
+                            (TeacherGroupAccess.teacher eq user.id)
+                }.count() > 0
     }
 }
 
@@ -136,3 +151,44 @@ fun isVisibleExerciseOnCourse(courseExId: Long, courseId: Long): Boolean {
     }
 }
 
+fun canTeacherOrAdminHasAccessExercise(user: EasyUser, exerciseId: Long): Boolean {
+    return when {
+        user.isAdmin() -> true
+        user.isTeacher() -> transaction {
+            Exercise.select {
+                Exercise.id eq exerciseId and (Exercise.owner eq user.id or Exercise.public)
+            }.count() == 1L
+        }
+        else -> {
+            log.warn { "User ${user.id} is not admin or teacher" }
+            false
+        }
+    }
+}
+
+fun assertTeacherOrAdminHasAccessToExercise(user: EasyUser, exerciseId: Long) {
+    if (!canTeacherOrAdminHasAccessExercise(user, exerciseId)) {
+        throw ForbiddenException("User ${user.id} does not have access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
+
+fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
+    return when {
+        user.isAdmin() -> true
+        user.isTeacher() -> transaction {
+            Exercise.select {
+                Exercise.id eq exerciseId and (Exercise.owner eq user.id)
+            }.count() == 1L
+        }
+        else -> {
+            log.warn { "User ${user.id} is not admin or teacher" }
+            false
+        }
+    }
+}
+
+fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
+    if (!canTeacherOrAdminUpdateExercise(user, exerciseId)) {
+        throw ForbiddenException("User ${user.id} does not have access to update exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}

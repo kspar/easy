@@ -1,7 +1,7 @@
 import libheaders.MathJaxJS
 import org.w3c.dom.get
-import kotlin.browser.document
-import kotlin.browser.window
+import kotlinx.browser.document
+import kotlinx.browser.window
 
 object MathJax {
 

@@ -5,8 +5,8 @@ liquibaseProperties.load(new FileInputStream(
 
 buildscript {
     ext {
-        springBootVersion = '2.2.4.RELEASE'
-        liquibaseVersion = '2.0.1'
+        springBootVersion = '2.3.2.RELEASE'
+        liquibaseVersion = '2.0.4'
     }
     repositories {
         mavenCentral()
@@ -55,24 +55,25 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Cache
-    implementation 'com.hazelcast:hazelcast-spring'
+    implementation 'com.github.ben-manes.caffeine:caffeine:2.8.5'
 
     // Logging
-    implementation 'io.github.microutils:kotlin-logging:1.7.6'
+    implementation 'io.github.microutils:kotlin-logging:1.7.10'
 
     // Database
-    implementation 'org.jetbrains.exposed:exposed-core:0.20.3'
-    implementation 'org.jetbrains.exposed:exposed-java-time:0.20.3'
-    implementation 'org.jetbrains.exposed:exposed-dao:0.20.3'
-    implementation 'org.jetbrains.exposed:exposed-jodatime:0.20.3'
-    implementation 'org.jetbrains.exposed:exposed-jdbc:0.20.3'
+    implementation 'org.jetbrains.exposed:exposed-core:0.26.2'
+    implementation 'org.jetbrains.exposed:exposed-java-time:0.26.2'
+    implementation 'org.jetbrains.exposed:exposed-dao:0.26.2'
+    implementation 'org.jetbrains.exposed:exposed-jodatime:0.26.2'
+    implementation 'org.jetbrains.exposed:exposed-jdbc:0.26.2'
 
-    implementation 'com.zaxxer:HikariCP:3.4.1'
-    implementation "org.postgresql:postgresql:42.2.9"
-    liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
-    liquibaseRuntime 'org.postgresql:postgresql:42.2.9'
+    implementation 'com.zaxxer:HikariCP:3.4.5'
+    implementation "org.postgresql:postgresql:42.2.14"
+    liquibaseRuntime 'org.liquibase:liquibase-core:3.6.3'
+    liquibaseRuntime 'org.postgresql:postgresql:42.2.14'
     // After updating Spring Boot to 2.2.2 liquibase-core has a missing logback-classic dep.
     // Maybe not required with future releases:
     // https://stackoverflow.com/questions/50487054/cant-run-liquibase-with-command-line
@@ -87,13 +88,17 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     // Asciidoc
-    implementation 'org.asciidoctor:asciidoctorj:2.2.0'
+    implementation 'org.asciidoctor:asciidoctorj:2.4.0'
 
     // Jsoup for Asciidoctor HTML output customisation
-    implementation 'org.jsoup:jsoup:1.12.1'
+    implementation 'org.jsoup:jsoup:1.13.1'
 
     // StoredFile type detection
-    implementation 'org.apache.tika:tika-core:1.23'
+    implementation 'org.apache.tika:tika-core:1.24.1'
+
+    // Source code similarity
+    implementation 'me.xdrop:fuzzywuzzy:1.2.0'
+    implementation "com.marcinmoskala:DiscreteMathToolkit:1.0.3"
 }
 
 

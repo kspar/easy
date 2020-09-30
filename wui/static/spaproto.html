@@ -46,6 +46,83 @@
 
 <!-- Common -->
 
+<script id="t-c-leftbar" type="text/x-handlebars">
+    <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
+        <li><div class="user-view">
+            <div class="background"></div>
+            <div class="name attr truncate">{{userName}}</div>
+            <div class="email attr truncate">{{userEmail}}</div>
+            {{^canSwitchRole}}
+                <div class="role attr">{{userRole}}</div>
+            {{/canSwitchRole}}
+            {{#canSwitchRole}}
+                <div class="role-select-wrap">
+                    <select id="select-role">
+                        {{#rolesAvailable}}
+                            <option value="{{id}}" {{#isSelected}}selected{{/isSelected}}>{{name}}</option>
+                        {{/rolesAvailable}}
+                    </select>
+                </div>
+            {{/canSwitchRole}}
+        </div></li>
+        <li><div class="divider"></div></li>
+        <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>{{myCoursesLabel}}</a></li>
+        {{#isTeacherOrAdmin}}
+<!--            <li><a class="waves-effect sidenav-close" href="/exercises"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>-->
+        {{/isTeacherOrAdmin}}
+        {{#isAdmin}}
+<!--            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>-->
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-course-modal"><i class="material-icons">child_care</i>{{newCourseLabel}}</a></li>
+        {{/isAdmin}}
+        {{#isCourseActive}}
+            <li><div class="divider"></div></li>
+            <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/exercises"><i class="material-icons">assignment</i>{{exercisesLabel}}</a></li>
+        {{#isTeacherOrAdmin}}
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{gradesLabel}}</a></li>
+            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participantsLabel}}</a></li>
+        {{/isTeacherOrAdmin}}
+        {{#isAdmin}}
+<!--            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>{{addExerciseLabel}}</a></li>-->
+            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><i class="material-icons">create</i>{{newExerciseLabel}}</a></li>
+        {{/isAdmin}}
+        {{/isCourseActive}}
+        <li><div class="divider"></div></li>
+        <li><a class="waves-effect sidenav-close" href="{{accountSettingsLink}}"><i class="material-icons">settings</i>{{accountSettingsLabel}}</a></li>
+        <li><a class="waves-effect sidenav-close" href="{{logOutLink}}"><i class="material-icons">exit_to_app</i>{{logOutLabel}}</a></li>
+    </ul>
+    <!-- New course modal -->
+    <div id="new-course-modal" class="modal">
+        <div class="modal-content">
+            <h4>{{newCourseLabel}}</h4>
+            <div class="form-fields">
+                <div class="input-field">
+                    <input id="new-course-name-input" type="text">
+                    <label for="new-course-name-input">{{newCourseTitleLabel}}</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="new-course-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
+        </div>
+    </div>
+    <!-- New exercise modal -->
+    <div id="new-exercise-modal" class="modal">
+        <div class="modal-content">
+            <h4>{{newExerciseLabel}}</h4>
+            <div class="form-fields">
+                <div class="input-field">
+                    <input id="new-exercise-name-input" type="text">
+                    <label for="new-exercise-name-input">{{newExerciseTitleLabel}}</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
+        </div>
+    </div>
+</script>
+
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
@@ -62,11 +139,66 @@
     </div>
 </script>
 
+<script id="t-c-card-tabs" type="text/x-handlebars">
+    <div class="card">
+        <div class="tabs-wrap">
+            <ul id="{{tabsId}}" class="tabs">
+                {{#tabs}}
+                    <li class="tab"><a href="#{{dstId}}">{{title}}</a></li>
+                {{/tabs}}
+            </ul>
+        </div>
+        <div class="card-content">
+            {{#tabs}}
+                <div id="{{dstId}}"></div>
+            {{/tabs}}
+        </div>
+    </div>
+</script>
+
+<script id="t-c-code-editor" type="text/x-handlebars">
+    <div class="editor-wrapper">
+        <div class="editor-top">
+            <div class="left-side">
+                {{#tabs}}
+                    <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
+                {{/tabs}}
+            </div>
+            <div class="right-side">
+                <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
+            </div>
+        </div>
+        <textarea id="{{textareaId}}"></textarea>
+    </div>
+</script>
+
+<script id="t-c-link" type="text/x-handlebars">
+    <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
+</script>
+
+<script id="t-c-assessment-view" type="text/x-handlebars">
+    <h4>{{title}}</h4>
+    <pre class="feedback {{#auto}}auto-feedback{{/auto}}">{{feedback}}</pre>
+    <div>{{gradeLabel}}: <span class="grade-number">{{grade}}{{^grade}}-{{/grade}}</span>/100</div>
+</script>
+
+<script id="t-c-select" type="text/x-handlebars">
+    <div class="input-field select-wrap">
+        <select id="{{selectId}}">
+            {{#options}}
+                <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{label}}</option>
+            {{/options}}
+        </select>
+        <label>{{selectLabel}}</label>
+    </div>
+</script>
+
+
 <!-- Courses page -->
 
 <script id="t-c-stud-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{pageTitle}}</h3>
+        <h2 class="title">{{pageTitle}}</h2>
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
@@ -96,11 +228,7 @@
 
 <script id="t-c-teach-courses" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{pageTitle}}</h3>
-        {{#canAddCourse}}
-            <a class="waves-effect waves-light btn title-button" href="/courses/new">
-                <i class="material-icons">add</i><span class="text">{{newCourseLabel}}</span></a>
-        {{/canAddCourse}}
+        <h2 class="title">{{pageTitle}}</h2>
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
@@ -141,12 +269,183 @@
 <script id="t-c-stud-course-exercises" type="text/x-handlebars">
     <ez-dst id="{{crumbDstId}}"></ez-dst>
     <div class="title-wrap">
-        <h3 class="title">{{courseTitle}}</h3>
+        <h2 class="title">{{courseTitle}}</h2>
     </div>
     <ez-dst id="{{listDstId}}"></ez-dst>
 </script>
 
+<script id="t-c-stud-course-exercises-list" type="text/x-handlebars">
+    <div id="exercises-list" class="collection divided-collection">
+        {{#exercises}}
+            <a class="collection-item bb-wrap" href="{{href}}">
+                <div class="exercise-item">
+                    <span>{{title}}</span>
+                    <span class="exercise-item">
+                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
+                    <span class="grade">
+                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
+                       >{{#evalAuto
+}}<img class="tooltipped eval-logo-auto" src="/static/img/robot-logo.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    {{/evalAuto}}{{#evalTeacher
+}}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    {{/evalTeacher}}{{#evalMissing
+}}<img class="tooltipped eval-logo-missing" src="/static/img/missing-logo.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    {{/evalMissing}}
+                    </span>
+                </span>
+                </div>
+                <div class="bb">
+                    {{#completed}}
+                        <span class="bb-item bb-green"></span>
+                    {{/completed}}
+    {{#started}}
+                        <span class="bb-item bb-yellow"></span>
+                    {{/started}}
+    {{#evalMissing}}
+                        <span class="bb-item bb-blue"></span>
+                    {{/evalMissing}}
+    {{#unstarted}}
+                        <span class="bb-item bb-grey"></span>
+                    {{/unstarted}}
+                </div>
+            </a>
+        {{/exercises}}
+    </div>
+</script>
 
+<script id="t-c-stud-course-exercises-item" type="text/x-handlebars">
+
+</script>
+
+
+<!-- Exercise page -->
+
+<script id="t-c-exercise" type="text/x-handlebars">
+    <div id="global-exercise">
+        <ez-dst id="{{crumbsDstId}}"></ez-dst>
+        <ez-dst id="{{cardDstId}}"></ez-dst>
+    </div>
+</script>
+
+<script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
+    <p class="subheading-item"><span class="subheading">{{createdAtLabel}}:</span>{{createdAt}} ({{createdBy}})</p>
+    <p class="subheading-item"><span class="subheading">{{modifiedAtLabel}}:</span>{{modifiedAt}} ({{modifiedBy}})</p>
+    <p class="subheading-item"><span class="subheading">{{isPublicLabel}}:</span>{{isPublic}}</p>
+    <p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>
+    <p class="subheading-item"><span class="subheading">{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</span>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</p>
+    <ul class="browser-default" style="margin-top: 0;">
+        {{#onCourses}}
+            <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
+        {{/onCourses}}
+    </ul>
+    <h2>{{title}}</h2>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-view" type="text/x-handlebars">
+    <div class="pre-exercise-text-wrap">
+        <a id="exercise-text-enable-edit" href="#!"><i class="material-icons" style="font-size: 19px; margin-right: .5rem;">create</i>{{doEditLabel}}</a>
+    </div>
+    <div id="exercise-text">{{{html}}}</div>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
+    <ez-dst id="{{editorDstId}}"></ez-dst>
+    <div class="center">
+        <button id="update-submit-exercise" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
+    </div>
+    <ez-dst id="{{previewDstId}}"></ez-dst>
+</script>
+
+<script id="t-c-exercise-tab-exercise-text-edit-preview" type="text/x-handlebars">
+    <h2>{{previewLabel}}</h2>
+    <div id="exercise-text">-</div>
+</script>
+
+<script id="t-c-exercise-tab-aa" type="text/x-handlebars">
+    <h2>{{aaLabel}}</h2>
+    <ez-dst id="{{editorDstId}}"></ez-dst>
+    <div class="center">
+        <button id="update-submit-aa" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
+    </div>
+</script>
+
+<script id="t-c-exercise-tab-testing" type="text/x-handlebars">
+    <ez-dst id="{{assessId}}"></ez-dst>
+    <ez-dst id="{{editorId}}"></ez-dst>
+    <div class="center">
+        <button id="testing-submit" class="waves-effect waves-light btn"><ez-btn-content>{{doTestLabel}}</ez-btn-content></button>
+    </div>
+</script>
+
+
+<!-- Grade table page -->
+<script id="t-c-grades-card" type="text/x-handlebars">
+    <div class="title-wrap">
+        <h2 class="title">{{title}}</h2>
+    </div>
+    <div class="card">
+        <div class="card-content">
+            <ez-dst id="{{groupSelectDstId}}"></ez-dst>
+            <ez-dst id="{{tableDstId}}"></ez-dst>
+        </div>
+    </div>
+</script>
+
+<script id="t-c-grades-table" type="text/x-handlebars">
+    <div class="grades-wrap">
+        <div class="pre-table-wrap">
+            {{#hasPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                    ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                    ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/hasPagination}}
+        </div>
+        <div class="grade-table-wrap">
+            <table class="colored truncated-ex">
+                <thead><tr>
+                    <th class="header-spacer"></th>
+                    {{#exercises}}
+                        <th><a class="wrap uncolored"><span class="text">{{exerciseTitle}}</span></a></th>
+                    {{/exercises}}
+                </tr></thead>
+                <tbody>
+                {{#students}}
+                    <tr>
+                        <td class="student truncate">{{name}}</td>
+                        {{#grades}}
+                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}</td>
+                        {{/grades}}
+                    </tr>
+                {{/students}}
+                </tbody>
+            </table>
+        </div>
+        <div class="post-table-wrap">
+            {{#hasPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                    ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                    ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/hasPagination}}
+        </div>
+    </div>
+</script>
+
+
+
+
+<!-- Legacy templates -->
 
 <script id="tm-stud-exercises-list" type="text/x-handlebars-template">
     <nav class="crumb-wrap">
@@ -154,7 +453,7 @@
         <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div id="exercises-list" class="collection divided-collection">
         {{#exercises}}
@@ -194,72 +493,40 @@
     </div>
 </script>
 
-
-<!-- Templates -->
 <script id="tm-navbar" type="text/x-handlebars-template">
-    <nav class="nav-center" role="navigation">
-        <div class="container">
-            <a href="/courses" class="brand-logo left">
-                <img class="logo-img" src="/static/img/main-logo.svg" alt="Lahendus"/>
-                <span class="logo-text">LAHENDUS</span>
-            </a>
-            <ul id="nav-mobile" class="hide-on-med-and-down">
-                <li><a class="nav-link" href="/courses">{{myCourses}}</a></li>
-            </ul>
-            <div id="profile-wrapper" class="dropdown-trigger" data-target="profile-dropdown">
-                <a href="#!">
-                    <i id="profile-logo" class="left material-icons">account_circle</i>
-                    <span id="profile-name">{{userName}}{{roleIndicator}}</span>
+    <nav class="navbar">
+        <div class="topnav container" role="navigation">
+            <div class="left-cluster">
+                <div>
+                    <a id="sidenav-toggle" href="#!" class="sidenav-toggle"><i class="material-icons">menu</i></a>
+                </div>
+                <a href="/courses" class="logo">
+                    <img class="img" src="/static/img/main-logo.svg" alt="Lahendus"/>
+                    <span class="text">LAHENDUS</span>
                 </a>
+            </div>
+            <!-- Search here -->
+            <div class="right-cluster">
+                <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                    <a href="#!">
+                        <i class="profile-logo left material-icons">account_circle</i>
+                        <span class="profile-name">{{userName}}</span>
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
     <!-- Profile dropdown menu structure -->
     <ul id="profile-dropdown" class="dropdown-content">
-        {{#hasRoles}}
-            <div id="active-role-label">{{activeRoleLabel}}</div>
-            {{#roles}}
-                <li><a id="{{linkId}}" href="#!"><i class="material-icons role-radio-icon">{{#active}}radio_button_checked{{/active}}{{^active}}radio_button_unchecked{{/active}}</i>{{name}}</a></li>
-            {{/roles}}
-        {{/hasRoles}}
         <li><a href="{{accountLink}}">{{account}}</a></li>
-        <li><a href="{{logoutLink}}">{{logOut}}</a></li>
+        <li><a href="{{logOutLink}}">{{logOut}}</a></li>
     </ul>
-</script>
-
-<script id="tm-sidenav" type="text/x-handlebars-template">
-    <ul id="slide-out" class="sidenav sidenav-fixed" data-course="{{courseId}}">
-        <li><a class="subheader">{{header}}</a></li>
-        <li class="divider-wrap"><div class="divider"></div></li>
-        <li><a class="waves-effect sidenav-close" href="/exercises/new?addto={{courseId}}"><i class="material-icons">create</i>{{newExercise}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/addexercise"><i class="material-icons">add_box</i>{{addExistingExercise}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participants}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{grades}}</a></li>
-    </ul>
-    <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 </script>
 
 <script id="tm-message" type="text/x-handlebars-template">
     <i class="material-icons" style="margin-right: 10px;">{{icon}}</i>
-    <span class="msg">{{msg}}</span>
+    <span class="msg truncate">{{msg}}</span>
     <button id="{{btnId}}" class="btn-flat toast-action"><i class="material-icons dismiss">close</i></button>
-</script>
-
-<script id="tm-add-course" type="text/x-handlebars-template">
-    <div class="input-field">
-        <textarea id="course-title" class="materialize-textarea"></textarea>
-        <label for="course-title">{{newCourseName}}</label>
-    </div>
-    <button id="add-course-button" class="waves-effect waves-light btn">{{addNewCourse}}</button>
-</script>
-
-<script id="tm-loading-placeholders" type="text/x-handlebars-template">
-    <div class="collection loading-collection loading-courses" style="margin-top: {{marginTopRem}}rem;">
-        <div class="item title" style="width: {{titleWidthRem}}rem;"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-    </div>
 </script>
 
 <script id="tm-loading-exercise" type="text/x-handlebars-template">
@@ -285,9 +552,18 @@
     </div>
 </script>
 
+<script id="tm-loading-placeholders" type="text/x-handlebars-template">
+    <div class="collection loading-collection loading-courses" style="margin-top: {{marginTopRem}}rem;">
+        <div class="item title" style="width: {{titleWidthRem}}rem;"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+    </div>
+</script>
+
 <script id="tm-no-access-page" type="text/x-handlebars-template">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div class="missing-content-wrap sad-robot">
         <div class="antennaball"></div>
@@ -302,7 +578,7 @@
 
 <script id="tm-broken-page" type="text/x-handlebars-template">
     <div class="title-wrap no-crumb">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
     </div>
     <div class="missing-content-wrap sad-robot">
         <div class="antennaball"></div>
@@ -392,7 +668,7 @@
 </script>
 
 <script id="tm-teach-exercise-student-submission-sub" type="text/x-handlebars-template">
-    <h3 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h3>
+    <h2 class="submission-title" data-active-sub="{{id}}">{{submissionLabel}} #{{submissionNo}}</h2>
     {{#isLatest}}<span class="last-submission-label">{{latestSubmissionLabel}}</span>{{/isLatest}}
     {{^isLatest}}
     <div><span class="note warn">
@@ -407,7 +683,7 @@
     <a id="add-grade-link" class="toggle-link" href="#!">{{addGradeLink}}</a>
     <div id="add-grade-section"></div>
     {{/isLatest}}
-    <div class="editor-wrapper no-cursor">
+    <div class="editor-wrapper editor-read-only">
         <div class="editor-top"></div>
         <textarea id="student-submission">{{solution}}</textarea>
     </div>
@@ -424,22 +700,34 @@
 </script>
 
 <script id="tm-teach-exercise-students-frame" type="text/x-handlebars-template">
-    {{#groupLabel}}
-        <div class="input-field group-select-wrap">
-            <select id="group-select" {{^manyGroups}}disabled{{/manyGroups}}>
-                {{#manyGroups}}
+    <div style="display: flex; align-items: baseline; {{#groupLabel}}justify-content: space-between;{{/groupLabel}} {{^groupLabel}}justify-content: flex-end;{{/groupLabel}}">
+        {{#groupLabel}}
+            <div class="input-field group-select-wrap">
+                <select id="group-select">
                     <option value="">{{allLabel}}</option>
-                {{/manyGroups}}
-                {{#groups}}
-                    <option value="{{id}}">{{name}}</option>
-                {{/groups}}
-            </select>
-            <label>{{groupLabel}}</label>
-        </div>
-    {{/groupLabel}}
+                    {{#groups}}
+                        <option value="{{id}}" {{#hasOneGroup}}selected{{/hasOneGroup}}>{{name}}</option>
+                    {{/groups}}
+                </select>
+                <label>{{groupLabel}}</label>
+            </div>
+        {{/groupLabel}}
+        <button id="export-submissions-button" class="waves-effect waves-light btn"><ez-btn-content>{{exportSubmissionsLabel}}</ez-btn-content></button>
+    </div>
 </script>
 
 <script id="tm-teach-exercise-students-list" type="text/x-handlebars-template">
+    {{#hasPagination}}
+        <ez-pagination>
+            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+            <ez-pagenav>
+                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+            ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+            ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+            </ez-pagenav>
+        </ez-pagination>
+    {{/hasPagination}}
     <div class="collection divided-collection">
         {{#students}}
             <a class="collection-item bb-wrap {{#unstarted}}inactive{{/unstarted}}" {{^unstarted}}href="#!" data-student-id="{{id}}" data-given-name="{{givenName}}" data-family-name="{{familyName}}{{/unstarted}}">
@@ -474,6 +762,17 @@
             </a>
         {{/students}}
     </div>
+    {{#hasPagination}}
+        <ez-pagination>
+            <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+            <ez-pagenav>
+                <ez-pagebtn class="go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                ><ez-pagebtn class="go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+            ><ez-pagebtn class="go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+            ><ez-pagebtn class="go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+            </ez-pagenav>
+        </ez-pagination>
+    {{/hasPagination}}
 </script>
 
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
@@ -499,7 +798,7 @@
     <div id="exercise-text">{{{exerciseText}}}</div>
     {{#aaTitle}}
         <h4>{{aaTitle}}</h4>
-        <div class="editor-wrapper no-cursor aa-files-wrap">
+        <div class="editor-wrapper editor-read-only aa-files-wrap">
             <div class="editor-top">
                 <div class="left-side">
                     {{#aaFiles}}
@@ -521,7 +820,7 @@
 <script id="tm-teach-exercise" type="text/x-handlebars-template">
     <nav id="crumbs" class="crumb-wrap"></nav>
     <div id="exercise-card" class="card">
-        <div id="tabs-wrap">
+        <div class="tabs-wrap">
             <ul id="tabs" class="tabs">
                 <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
                 <li class="tab"><a href="#testing">{{testingLabel}}</a></li>
@@ -587,7 +886,7 @@
 <script id="tm-stud-exercise" type="text/x-handlebars-template">
     <nav id="crumbs" class="crumb-wrap"></nav>
     <div id="exercise-card" class="card">
-        <div id="tabs-wrap">
+        <div class="tabs-wrap">
             <ul id="tabs" class="tabs">
                 <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
                 <li class="tab"><a href="#submit">{{submitLabel}}</a></li>
@@ -606,7 +905,7 @@
         <a class="breadcrumb truncate">{{title}}</a>
     </nav>
     <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
+        <h2 class="title">{{title}}</h2>
         <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
             <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
         </a>
@@ -631,8 +930,6 @@
     </div>
 </script>
 
-
-
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">
         <nav class="crumb-wrap">
@@ -641,7 +938,7 @@
             <a class="breadcrumb truncate">{{participantsLabel}}</a>
         </nav>
         <div class="title-wrap">
-            <h3 class="title">{{title}}</h3>
+            <h2 class="title">{{title}}</h2>
         </div>
 
         <h4 class="subsection">{{teachersLabel}}</h4>
@@ -651,16 +948,18 @@
                 <table class="responsive-table highlight">
                     <thead>
                     <tr>
+                        <th>{{numberLabel}}</th>
                         <th>{{nameLabel}}</th>
                         <th>{{usernameLabel}}</th>
                         <th>{{emailLabel}}</th>
-                        <th>{{groupLabel}}</th>
+                        <th>{{teacherGroupLabel}}</th>
                     </tr>
                     </thead>
 
                     <tbody>
                     {{#teachers}}
                     <tr>
+                        <td>{{number}}.</td>
                         <td>{{name}}</td>
                         <td>{{username}}</td>
                         <td>{{email}}</td>
@@ -685,35 +984,114 @@
             <div id="add-students-section"></div>
         {{/studentsSynced}}
 
-        <div class="card">
-            <div class="card-content">
-                <table class="responsive-table highlight">
-                    <thead>
-                    <tr>
-                        <th>{{numberLabel}}</th>
-                        <th>{{nameLabel}}</th>
-                        <th>{{usernameLabel}}</th>
-                        {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
-                        <th>{{emailLabel}}</th>
-                        <th>{{groupLabel}}</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {{#students}}
-                    <tr {{#isPending}}class="pending-row"{{/isPending}}>
-                        <td>{{#number}}{{number}}.{{/number}}{{^number}}-{{/number}}</td>
-                        <td>{{#name}}{{name}}{{/name}}{{^name}}-{{/name}}</td>
-                        <td>{{#username}}{{username}}{{/username}}{{^username}}-{{/username}}</td>
-                        {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/isPending}}{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
-                        <td>{{#email}}{{email}}{{#isPending}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/isPending}}{{/email}}{{^email}}-{{/email}}</td>
-                        <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
-                    </tr>
-                    {{/students}}
-                    </tbody>
-                </table>
+        {{#hasActiveStudents}}
+            <div class="subsection-wrap">
+                <h5 class="subsection">{{activeStudentsLabel}}</h5>
+                {{#studentsPagination}}
+                    <ez-pagination>
+                        <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                        <ez-pagenav>
+                            <ez-pagebtn class="student-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn class="student-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                {{/studentsPagination}}
             </div>
-        </div>
+            <div class="card">
+                <div class="card-content">
+                    <table class="responsive-table highlight">
+                        <thead>
+                        <tr>
+                            <th>{{numberLabel}}</th>
+                            <th>{{nameLabel}}</th>
+                            <th>{{usernameLabel}}</th>
+                            {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
+                            <th>{{emailLabel}}</th>
+                            <th>{{groupLabel}}</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {{#students}}
+                        <tr>
+                            <td>{{number}}.</td>
+                            <td>{{name}}</td>
+                            <td>{{username}}</td>
+                            {{#isMoodleSynced}}<td>{{moodleUsername}}</td>{{/isMoodleSynced}}
+                            <td>{{email}}</td>
+                            <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
+                        </tr>
+                        {{/students}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{#studentsPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="student-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                        ><ez-pagebtn class="student-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/studentsPagination}}
+        {{/hasActiveStudents}}
+
+        {{#hasPendingStudents}}
+            <div class="subsection-wrap">
+                <h5 class="subsection">{{pendingStudentsLabel}}</h5>
+                {{#pendingStudentsPagination}}
+                    <ez-pagination>
+                        <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                        <ez-pagenav>
+                            <ez-pagebtn class="pending-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                            ><ez-pagebtn class="pending-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                        </ez-pagenav>
+                    </ez-pagination>
+                {{/pendingStudentsPagination}}
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <table class="responsive-table highlight">
+                        <thead>
+                        <tr>
+                            <th>{{numberLabel}}</th>
+                            {{#isMoodleSynced}}<th>{{moodleUsernameLabel}}</th>{{/isMoodleSynced}}
+                            <th>{{emailLabel}}</th>
+                            <th>{{groupLabel}}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{#pendingStudents}}
+                            <tr>
+                                <td>{{number}}.</td>
+                                {{#isMoodleSynced}}<td>{{#moodleUsername}}{{moodleUsername}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{moodlePendingTooltip}}">access_time</i>{{/moodleUsername}}{{^moodleUsername}}-{{/moodleUsername}}</td>{{/isMoodleSynced}}
+                                <td>{{#email}}{{email}}<i class="material-icons pending-icon tooltipped" data-position="bottom" data-tooltip="{{pendingTooltip}}">access_time</i>{{/email}}{{^email}}-{{/email}}</td>
+                                <td>{{#group}}{{group}}{{/group}}{{^group}}-{{/group}}</td>
+                            </tr>
+                        {{/pendingStudents}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{#pendingStudentsPagination}}
+                <ez-pagination>
+                    <ez-pageinfo>{{pageStart}} &#8212; {{pageEnd}}{{pageTotalLabel}}{{pageTotal}}</ez-pageinfo>
+                    <ez-pagenav>
+                        <ez-pagebtn class="pending-go-first waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">first_page</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-back waves-effect waves-green" {{^canGoBack}}disabled{{/canGoBack}}><i class="material-icons">navigate_before</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-forward waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">navigate_next</i></ez-pagebtn
+                        ><ez-pagebtn class="pending-go-last waves-effect waves-green" {{^canGoForward}}disabled{{/canGoForward}}><i class="material-icons">last_page</i></ez-pagebtn>
+                    </ez-pagenav>
+                </ez-pagination>
+            {{/pendingStudentsPagination}}
+        {{/hasPendingStudents}}
     </div>
 </script>
 
@@ -732,45 +1110,6 @@
     </div>
 </script>
 
-<script id="tm-teach-gradetable" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="/courses" class="breadcrumb truncate">{{myCoursesLabel}}</a>
-        <a href="{{courseHref}}" class="breadcrumb truncate">{{title}}</a>
-        <a class="breadcrumb truncate">{{gradesLabel}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h3 class="title">{{title}}</h3>
-    </div>
-    <div class="card">
-        <div class="card-content">
-            <div class="grades-wrap">
-                <div class="pre-table-wrap"><!-- TODO --></div>
-                <div class="grade-table-wrap">
-                    <table class="colored truncated-ex">
-                        <thead><tr>
-                            <th class="header-spacer"></th>
-                            {{#exercises}}
-                            <th><a class="wrap uncolored"><span class="text">{{exerciseTitle}}</span></a></th>
-                            {{/exercises}}
-                        </tr></thead>
-                        <tbody>
-                        {{#students}}
-                        <tr>
-                            <td class="student truncate">{{name}}</td>
-                            {{#grades}}
-                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}</td>
-                            {{/grades}}
-                        </tr>
-                        {{/students}}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="post-table-wrap"><!-- TODO --></div>
-            </div>
-        </div>
-    </div>
-</script>
-
 <script id="tm-teach-new-exercise" type="text/x-handlebars-template">
     <div class="editor-wrapper">
         <textarea id="text-adoc"></textarea>
@@ -781,37 +1120,11 @@
             <div id="exercise-text"></div>
         </div>
     </div>
-    <div class="editor-wrapper no-cursor">
+    <div class="editor-wrapper editor-read-only">
         <textarea id="text-html"></textarea>
     </div>
 </script>
 
-<script id="tm-modify-global-exercise" type="text/x-handlebars-template">
-    <div id="exercise-card" class="card">
-        <div class="card-content">
-            <h2>{{title}}</h2>
-            <p>{{onCoursesLabel}}:</p>
-            {{#onCourses}}
-                <p>{{title}}</p>
-            {{/onCourses}}
-            <div class="editor-wrapper">
-                <div class="editor-top">
-                    <div class="left-side">
-                        <a id="tab-adoc" class="top-item editor-tab active">adoc</a>
-                        <a id="tab-html" href="#!" class="top-item editor-tab">html</a>
-                    </div>
-                </div>
-                <textarea id="text-editor"></textarea>
-            </div>
-            <div class="center">
-                <button id="update-submit" class="waves-effect waves-light btn">{{doUpdateLabel}}</button>
-            </div>
-            <p id="status"></p>
-            <h4>{{previewLabel}}</h4>
-            <div id="exercise-text"></div>
-        </div>
-    </div>
-</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
@@ -824,10 +1137,6 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
 <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
 <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
-
-<script src="/static/js/kotlin.js"></script>
-<script src="/static/js/kotlinx-coroutines-core.js"></script>
-<script src="/static/js/kotlinx-serialization-kotlinx-serialization-runtime.js"></script>
 <script src="/static/js/wui.js"></script>
 
 <div id="date"></div> <!-- Temporary, for automatic generation time -->

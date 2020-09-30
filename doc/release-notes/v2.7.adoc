@@ -1,0 +1,15 @@
+
+
+= Release notes: v2.7
+
+* Added a context-aware sidenav menu for students, teachers and admins that attempts to make it faster to navigate and do common actions. (EZ-1313)
+* Added group selection to the grade table. (EZ-1293)
+* Optimised wui static JS files. (EZ-1226)
+* Updated dependencies. (EZ-1300, EZ-1301, EZ-1302)
+* Fixed a bug where ADOC EasyCode did not work with multiline strings. (EZ-1299)
+* Fixed a bug where the exercise update service didn't use HTML if ADOC wasn't given. (EZ-1297)
+* Fixed a bug where Moodle sync would fail if there weren't any students on the Moodle course. (EZ-1237)
+* Moved our SPA framework out of :wui to :ezspa and published it on jcenter. (EZ-1314)
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.7%20[here].

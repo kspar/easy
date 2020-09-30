@@ -60,9 +60,9 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String, cou
     return transaction {
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
-        val studentQuery = courseService.selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups)
+        val studentQuery = courseService.selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups, true)
 
-        val studentCount = studentQuery.count()
+        val studentCount = studentQuery.count().toInt()
         val students = studentQuery.map { it[Student.id].value }
 
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)

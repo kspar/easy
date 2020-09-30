@@ -817,4 +817,34 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="160220-1" author="priit">
+        <addColumn tableName="student_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="teacher_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="160320-1" author="priit">
+        <renameTable newTableName="teacher_submission"
+                     oldTableName="testing_draft "/>
+
+        <dropColumn tableName="teacher_submission" columnName="course_exercise_id"/>
+
+        <addColumn tableName="teacher_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_teacher_submission_exercise" nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

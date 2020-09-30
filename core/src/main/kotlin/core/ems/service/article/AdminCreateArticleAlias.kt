@@ -5,7 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
-import core.ems.service.CacheInvalidator
+import core.ems.service.cache.CacheInvalidator
 import core.ems.service.assertArticleExists
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
