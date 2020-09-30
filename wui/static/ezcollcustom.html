@@ -166,6 +166,13 @@
             visibility: visible;
         }
 
+        /* Any of the user's inputs is coarse or the main input cannot hover */
+        @media (any-pointer: coarse) or (hover: none) {
+            ez-coll-expand-btn {
+                visibility: visible;
+            }
+        }
+
         ez-coll-expand-btn i.material-icons {
             font-size: 18px;
         }
@@ -294,8 +301,6 @@
           * min coll/item width for top attr - "move" to fold if smaller,
           * min coll/item width for bottom action space - hide if smaller (actions are always available from menu),
 
-        - Make expand btn always show on mobile
-
         * When padding, margins, icon/logo sizes are finalised, adjust .ez-coll-wrap[min-width~="X"] rules to compensate
           for these; alternatively, move the sizer inside to only measure the inner content width
           (probs separately needed for attrs because otherwise the bottom space will make things difficult)
@@ -306,8 +311,6 @@
           Related: if item has an unempty bottom action space then there's an empty space between the first row and fold.
           If we want to fix that (move fold inside the attr row) then that's doable only if the logo/menu move to center.
         -->
-
-
     </div>
 </main>
 <footer>
