@@ -1424,6 +1424,14 @@ paths:
             properties:
               moodle_short_name:
                 type: string
+              sync_students:
+                type: boolean
+              sync_grades:
+                type: boolean
+            required:
+              - moodle_short_name
+              - sync_students
+              - sync_grades
       responses:
         200:
           description: Number of student access added, pending and removed.
