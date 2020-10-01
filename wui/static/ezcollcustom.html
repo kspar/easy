@@ -12,17 +12,18 @@
     <link rel="stylesheet" href="css/exercise.css">
 
     <style>
-        /* General show/hide based on width, used on top/bottom-space */
-        .ez-coll-wrap[max-width~="599px"] *[ez-show-min-600] {
-            display: none;
-        }
-
-        .ez-coll-wrap[min-width~="600px"] *[ez-show-max-599] {
-            display: none;
-        }
-
-
         ez-coll {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* General show/hide based on width */
+        ez-coll[max-width~="599px"] *[ez-show-min-600] {
+            display: none;
+        }
+
+        ez-coll[min-width~="600px"] *[ez-show-max-599] {
+            display: none;
         }
 
         ez-coll-item {
@@ -87,51 +88,93 @@
             justify-content: space-between;
         }
 
-        ez-coll-second-left {
+        ez-coll-attrs-sizer {
             display: flex;
             flex: 1 1 auto;
+            min-width: 0;
         }
 
         ez-coll-attrs {
             display: flex;
             flex: 1 1 auto;
+            min-width: 0;
         }
 
         ez-coll-attr {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            padding-right: 1rem;
-            display: flex;
-
-            /* Set inline */
-            flex-basis: 200px;
+            display: none;
+            position: relative;
         }
 
-        ez-coll-bottom-space {
-            display: flex;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* Fade out long attr values - do we want this? */
+        ez-coll-attr:after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: 1rem;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff);
+            pointer-events: none;
+        }
+
+        /* Padding-left because padding-right allows overflow on it */
+        ez-coll-attr:not(:first-child) {
+            padding-left: 1rem;
         }
 
         /* If attrs should take up all space */
-        ez-coll[ez-growing-attrs] > ez-coll-attr {
+        ez-coll-attrs[ez-growing-attrs] > ez-coll-attr {
             /* Don't set with flex since that resets flex-basis */
             flex-grow: 1;
             flex-shrink: 1;
         }
 
 
-        /* Element queries not supported on custom elements so need a div wrapper */
-        .ez-coll-wrap ez-coll-attr {
-            display: none;
+        /* Attr widths */
+
+        ez-coll-attrs[ez-attr-width-200] > ez-coll-attr {
+            flex-basis: 200px;
         }
 
-        .ez-coll-wrap[min-width~="200px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+1),
-        .ez-coll-wrap[min-width~="400px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+2),
-        .ez-coll-wrap[min-width~="600px"] ez-coll[ez-attr-width-200] ez-coll-attr:nth-child(-n+3) {
+        ez-coll-attrs-sizer[min-width~="200px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+1),
+        ez-coll-attrs-sizer[min-width~="400px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+2),
+        ez-coll-attrs-sizer[min-width~="600px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+3) {
+            display: inline-block;
+        }
+
+        /* When one attr is shown, grow it. Only matters if the content doesn't fit. Do we need this? */
+        /*
+        ez-coll-attrs[max-width~="399px"][ez-attr-width-200] > ez-coll-attr:nth-child(-n+1) {
+            flex-grow: 1;
+        }
+        */
+
+
+        ez-coll-attrs[ez-attr-width-150] > ez-coll-attr {
+            flex-basis: 150px;
+        }
+
+        ez-coll-attrs-sizer[min-width~="150px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+1),
+        ez-coll-attrs-sizer[min-width~="300px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+2),
+        ez-coll-attrs-sizer[min-width~="450px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+3) {
+            display: inline-block;
+        }
+
+        /* Increase attr width if there's more space. Determine reasonable combinations? */
+        ez-coll-attrs-sizer[min-width~="600px"] ez-coll-attrs[ez-attr-width-large-200] > ez-coll-attr {
+            flex-basis: 200px;
+        }
+
+
+
+        ez-coll-bottom-space {
             display: flex;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         ez-coll-fold {
@@ -176,6 +219,7 @@
         ez-coll-expand-btn i.material-icons {
             font-size: 18px;
         }
+
 
     </style>
 </head>
@@ -237,63 +281,62 @@
         </div>
 
         <!-- ezcoll -->
-        <div class="ez-coll-wrap">
-            <ez-coll ez-growing-attrs ez-attr-width-200>
-                <ez-coll-item>
-                    <ez-coll-item-container>
-                        <ez-coll-main>
-                            <ez-coll-left>L</ez-coll-left>
-                            <ez-coll-center>
-                                <ez-coll-first>
-                                    <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
-                                    <ez-coll-top-space ez-show-min-600>Esimesel paremal</ez-coll-top-space>
-                                </ez-coll-first>
-                                <ez-coll-second>
-                                    <ez-coll-second-left>
-                                        <ez-coll-attrs>
-                                            <ez-coll-attr style="">attr1 attr1</ez-coll-attr>
-                                            <ez-coll-attr style="">attr2</ez-coll-attr>
-                                            <ez-coll-attr style="">attr3</ez-coll-attr>
-                                        </ez-coll-attrs>
-                                    </ez-coll-second-left>
-                                    <ez-coll-bottom-space ez-show-min-600>Teisel paremal</ez-coll-bottom-space>
-                                </ez-coll-second>
-                            </ez-coll-center>
-                            <ez-coll-right>
-                                <i class="material-icons">more_vert</i>
-                            </ez-coll-right>
-                        </ez-coll-main>
-                        <ez-coll-fold class="display-none">
-                            <ez-coll-fold-attr ez-show-max-599>
-                                <ez-coll-fold-key>Top attr key</ez-coll-fold-key>
-                                :
-                                <ez-coll-fold-value>Esimesel paremal</ez-coll-fold-value>
-                            </ez-coll-fold-attr>
-                            <ez-coll-fold-attr>
-                                <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
-                                :
-                                <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
-                            </ez-coll-fold-attr>
-                            <ez-coll-fold-attr>
-                                <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
-                                :
-                                <ez-coll-fold-value>attr2</ez-coll-fold-value>
-                            </ez-coll-fold-attr>
-                            <ez-coll-fold-attr>
-                                <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
-                                :
-                                <ez-coll-fold-value>attr3</ez-coll-fold-value>
-                            </ez-coll-fold-attr>
-                        </ez-coll-fold>
-                    </ez-coll-item-container>
-                    <ez-coll-trailer>
-                        <ez-coll-expand-btn>
-                            <i class="material-icons">expand_more</i>
-                        </ez-coll-expand-btn>
-                    </ez-coll-trailer>
-                </ez-coll-item>
-            </ez-coll>
-        </div>
+        <ez-coll>
+            <ez-coll-item>
+                <ez-coll-item-container>
+                    <ez-coll-main>
+                        <ez-coll-left>L</ez-coll-left>
+                        <ez-coll-center>
+                            <ez-coll-first>
+                                <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
+                                <ez-coll-top-space title="Top attr key" ez-show-min-600>Paremal</ez-coll-top-space>
+                            </ez-coll-first>
+                            <ez-coll-second>
+                                <ez-coll-attrs-sizer>
+                                    <ez-coll-attrs ez-attr-width-150 ez-attr-width-large-200><!--ez-growing-attrs>-->
+                                        <ez-coll-attr title="Attr1 key" style="">attr1 attr1abcdefghijklmnopqrstuvw
+                                        </ez-coll-attr>
+                                        <ez-coll-attr title="Attr2 key" style="">attr2</ez-coll-attr>
+                                        <ez-coll-attr title="Attr3 key" style="">attr3</ez-coll-attr>
+                                    </ez-coll-attrs>
+                                </ez-coll-attrs-sizer>
+                                <ez-coll-bottom-space ez-show-min-600>Teisel paremal</ez-coll-bottom-space>
+                            </ez-coll-second>
+                        </ez-coll-center>
+                        <ez-coll-right>
+                            <i class="material-icons">more_vert</i>
+                        </ez-coll-right>
+                    </ez-coll-main>
+                    <ez-coll-fold class="display-none">
+                        <ez-coll-fold-attr ez-show-max-599>
+                            <ez-coll-fold-key>Top attr key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>Esimesel paremal</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr2</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                        <ez-coll-fold-attr>
+                            <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
+                            :
+                            <ez-coll-fold-value>attr3</ez-coll-fold-value>
+                        </ez-coll-fold-attr>
+                    </ez-coll-fold>
+                </ez-coll-item-container>
+                <ez-coll-trailer>
+                    <ez-coll-expand-btn>
+                        <i class="material-icons">expand_more</i>
+                    </ez-coll-expand-btn>
+                </ez-coll-trailer>
+            </ez-coll-item>
+        </ez-coll>
 
         <!-- NOTES
         - Configurable:
@@ -301,9 +344,6 @@
           * min coll/item width for top attr - "move" to fold if smaller,
           * min coll/item width for bottom action space - hide if smaller (actions are always available from menu),
 
-        * When padding, margins, icon/logo sizes are finalised, adjust .ez-coll-wrap[min-width~="X"] rules to compensate
-          for these; alternatively, move the sizer inside to only measure the inner content width
-          (probs separately needed for attrs because otherwise the bottom space will make things difficult)
         * Adjust all sizing rules for max-attrs: 6 and some reasonable options for attr widths
         * Add VLJ to second item
         * To be decided: when item is unfolded, should the logo and menu btn stay at the top (possibly moving to
