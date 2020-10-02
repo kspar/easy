@@ -12,25 +12,66 @@
     <link rel="stylesheet" href="css/exercise.css">
 
     <style>
+        :root {
+            --ez-icon-action-col: rgba(0, 0, 0, .54);
+            --ez-icon-action-active-col: rgba(0, 0, 0, .87);
+            --ez-icon-action-disabled-col: rgba(0, 0, 0, .38);
+            --ezc-link-hover-col: #039be5;
+            --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
+            --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
+            --ezc-attr-change-col: rgba(0, 0, 0, .93);
+        }
+
+        svg {
+            fill: currentColor;
+        }
+
+        ez-icon {
+            width: 1.8rem;
+            height: 1.8rem;
+        }
+
+        ez-icon-action {
+            display: flex;
+            padding: .2rem;
+            cursor: pointer;
+            color: var(--ez-icon-action-col);
+            transition: color 300ms ease-in-out;
+        }
+        ez-icon-action:hover {
+            color: var(--ez-icon-action-active-col);
+        }
+        ez-icon-action.disabled {
+            color: var(--ez-icon-action-disabled-col);
+            cursor: default;
+        }
+
+
+
         ez-coll {
             display: flex;
             flex-direction: column;
         }
 
-        /* General show/hide based on width */
-        ez-coll[max-width~="599px"] *[ez-show-min-600] {
+        /* General show/hide based on collection width */
+        ez-coll *[ez-show-min="600"],
+        ez-coll *[ez-show-max="599"] {
             display: none;
         }
-
-        ez-coll[min-width~="600px"] *[ez-show-max-599] {
-            display: none;
-        }
-
-        ez-coll-item {
+        ez-coll[min-width~="600px"] *[ez-show-min="600"] {
             display: flex;
         }
 
-        ez-coll-item-container {
+        ez-coll[max-width~="599px"] *[ez-show-max="599"] {
+            display: flex;
+        }
+
+
+        ezc-item {
+            display: flex;
+        }
+
+        ezc-item-container {
             flex: 1 1 auto;
             display: flex;
             min-width: 0;
@@ -43,11 +84,11 @@
             border-radius: 5px;
         }
 
-        ez-coll-main {
+        ezc-main {
             display: flex;
         }
 
-        ez-coll-left {
+        ezc-left {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -55,12 +96,12 @@
             padding: 0 5px;
         }
 
-        ez-coll-center {
+        ezc-center {
             flex: 1 1 auto;
             min-width: 0;
         }
 
-        ez-coll-right {
+        ezc-right {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -68,48 +109,70 @@
             padding: 0 5px;
         }
 
-        ez-coll-first {
+        ezc-first {
             display: flex;
         }
 
-        ez-coll-title {
+        ezc-title {
             flex: 1 1 auto;
             padding-right: 1rem;
         }
 
-        ez-coll-top-space {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        ezc-title > a {
+            color: inherit;
         }
 
-        ez-coll-second {
+        ezc-title > a:hover {
+            color: var(--ezc-link-hover-col);
+        }
+
+        ezc-second {
             display: flex;
             justify-content: space-between;
+            line-height: 1.6;
+            margin-top: .5rem;
         }
 
-        ez-coll-attrs-sizer {
+        ezc-attrs-sizer {
             display: flex;
             flex: 1 1 auto;
             min-width: 0;
         }
 
-        ez-coll-attrs {
+        ezc-bottom-attrs {
             display: flex;
             flex: 1 1 auto;
             min-width: 0;
         }
 
-        ez-coll-attr {
+        ezc-attr {
+            display: none;
+            position: relative;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: none;
-            position: relative;
+        }
+
+        ezc-attr,
+        ezc-fold-attr {
+            font-size: 1.4rem;
+        }
+
+        ezc-attr.top {
+            align-items: center;
+        }
+
+        ezc-attr.bottom {
+
+        }
+
+        /* Padding-left because padding-right allows overflow on it */
+        ezc-attr.bottom:not(:first-child) {
+            padding-left: 1rem;
         }
 
         /* Fade out long attr values - do we want this? */
-        ez-coll-attr:after {
+        ezc-attr.bottom:after {
             content: "";
             position: absolute;
             top: 0;
@@ -120,103 +183,100 @@
             pointer-events: none;
         }
 
-        /* Padding-left because padding-right allows overflow on it */
-        ez-coll-attr:not(:first-child) {
-            padding-left: 1rem;
+        ezc-attr-text {
+            transition: color 300ms ease-in-out;
+        }
+        ezc-attr-text.immutable {
+            color: var(--ezc-attr-immutable-col);
+        }
+        ezc-attr-text.mutable {
+            color: var(--ezc-attr-mutable-col);
+        }
+        ezc-attr-text.mutable:hover {
+            cursor: pointer;
+            color: var(--ezc-attr-change-col);
         }
 
         /* If attrs should take up all space */
-        ez-coll-attrs[ez-growing-attrs] > ez-coll-attr {
+        ezc-bottom-attrs[ez-growing-attrs] > ezc-attr {
             /* Don't set with flex since that resets flex-basis */
             flex-grow: 1;
-            flex-shrink: 1;
         }
 
 
         /* Attr widths */
 
-        ez-coll-attrs[ez-attr-width-200] > ez-coll-attr {
+        ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr {
             flex-basis: 200px;
         }
 
-        ez-coll-attrs-sizer[min-width~="200px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+1),
-        ez-coll-attrs-sizer[min-width~="400px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+2),
-        ez-coll-attrs-sizer[min-width~="600px"] > ez-coll-attrs[ez-attr-width-200] > ez-coll-attr:nth-child(-n+3) {
+        ezc-attrs-sizer[min-width~="200px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+1),
+        ezc-attrs-sizer[min-width~="400px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+2),
+        ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+3) {
             display: inline-block;
         }
 
         /* When one attr is shown, grow it. Only matters if the content doesn't fit. Do we need this? */
         /*
-        ez-coll-attrs[max-width~="399px"][ez-attr-width-200] > ez-coll-attr:nth-child(-n+1) {
+        ezc-bottom-attrs[max-width~="399px"][ez-attr-width-200] > ezc-attr:nth-child(-n+1) {
             flex-grow: 1;
         }
         */
 
 
-        ez-coll-attrs[ez-attr-width-150] > ez-coll-attr {
-            flex-basis: 150px;
-        }
-
-        ez-coll-attrs-sizer[min-width~="150px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+1),
-        ez-coll-attrs-sizer[min-width~="300px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+2),
-        ez-coll-attrs-sizer[min-width~="450px"] > ez-coll-attrs[ez-attr-width-150] > ez-coll-attr:nth-child(-n+3) {
-            display: inline-block;
-        }
-
-        /* Increase attr width if there's more space. Determine reasonable combinations? */
-        ez-coll-attrs-sizer[min-width~="600px"] ez-coll-attrs[ez-attr-width-large-200] > ez-coll-attr {
-            flex-basis: 200px;
+        /* Increase attr width if there's more space. Determine reasonable attr-width-m's. */
+        ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="2"] > ezc-attr,
+        ezc-attrs-sizer[min-width~="900px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="3"] > ezc-attr {
+            flex-basis: 300px;
         }
 
 
 
-        ez-coll-bottom-space {
-            display: flex;
+        ezc-bottom-space {
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        ez-coll-fold {
+        ezc-fold {
             display: flex;
             flex-direction: column;
             min-width: 0;
             padding: 0 3rem; /* Set to logo/more btn width */
         }
 
-        ez-coll-fold-attr {
+        ezc-fold-attr {
             display: flex;
             flex-wrap: wrap;
             min-width: 0;
             overflow: auto;
         }
 
-        ez-coll-fold-value {
+        ezc-fold-value {
             min-width: 0;
             padding-left: 1rem;
         }
 
-        ez-coll-trailer {
+        ezc-trailer {
             display: flex;
         }
 
-        ez-coll-expand-btn {
+        ezc-expand-btn {
             padding-top: 11px;
             visibility: hidden;
         }
 
-        ez-coll-item:hover ez-coll-expand-btn {
+        ezc-item:hover ezc-expand-btn {
             visibility: visible;
         }
 
         /* Any of the user's inputs is coarse or the main input cannot hover */
         @media (any-pointer: coarse) or (hover: none) {
-            ez-coll-expand-btn {
+            ezc-expand-btn {
                 visibility: visible;
             }
         }
 
-        ez-coll-expand-btn i.material-icons {
+        ezc-expand-btn i.material-icons {
             font-size: 18px;
         }
 
@@ -282,60 +342,93 @@
 
         <!-- ezcoll -->
         <ez-coll>
-            <ez-coll-item>
-                <ez-coll-item-container>
-                    <ez-coll-main>
-                        <ez-coll-left>L</ez-coll-left>
-                        <ez-coll-center>
-                            <ez-coll-first>
-                                <ez-coll-title>Pealkiri Pealkiri Pealkiri</ez-coll-title>
-                                <ez-coll-top-space title="Top attr key" ez-show-min-600>Paremal</ez-coll-top-space>
-                            </ez-coll-first>
-                            <ez-coll-second>
-                                <ez-coll-attrs-sizer>
-                                    <ez-coll-attrs ez-attr-width-150 ez-attr-width-large-200><!--ez-growing-attrs>-->
-                                        <ez-coll-attr title="Attr1 key" style="">attr1 attr1abcdefghijklmnopqrstuvw
-                                        </ez-coll-attr>
-                                        <ez-coll-attr title="Attr2 key" style="">attr2</ez-coll-attr>
-                                        <ez-coll-attr title="Attr3 key" style="">attr3</ez-coll-attr>
-                                    </ez-coll-attrs>
-                                </ez-coll-attrs-sizer>
-                                <ez-coll-bottom-space ez-show-min-600>Teisel paremal</ez-coll-bottom-space>
-                            </ez-coll-second>
-                        </ez-coll-center>
-                        <ez-coll-right>
+            <ezc-item>
+                <ezc-item-container>
+                    <ezc-main>
+                        <ezc-left>L</ezc-left>
+                        <ezc-center>
+                            <ezc-first>
+                                <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
+                                <ezc-attr class="top" ez-show-min="600">
+                                    <ezc-attr-text class="immutable" title="Top attr key">
+                                        Paremal
+                                    </ezc-attr-text>
+                                </ezc-attr>
+                            </ezc-first>
+                            <ezc-second>
+                                <ezc-attrs-sizer>
+                                    <ezc-bottom-attrs ez-attrs="3" ez-attr-width-s="200" ez-attr-width-m="300" ez-growing-attrss>
+                                        <ezc-attr class="bottom" style="">
+                                            <ezc-attr-text class="immutable" title="Attr1 key">
+                                                attr1 attr1
+                                            </ezc-attr-text>
+                                        </ezc-attr>
+                                        <ezc-attr class="bottom" style="">
+                                            <ezc-attr-text class="mutable" title="Attr2 key">
+                                                attr2
+                                            </ezc-attr-text>
+                                        </ezc-attr>
+                                        <ezc-attr class="bottom" style="">
+                                            <ezc-attr-text class="immutable" title="Attr3 key">
+                                                attr3
+                                            </ezc-attr-text>
+                                        </ezc-attr>
+                                    </ezc-bottom-attrs>
+                                </ezc-attrs-sizer>
+                                <ezc-bottom-space ez-show-min="600">
+                                    <ez-icon-action title="Peida">
+                                        <ez-icon>
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                        </ez-icon>
+                                    </ez-icon-action>
+                                </ezc-bottom-space>
+                            </ezc-second>
+                        </ezc-center>
+                        <ezc-right>
                             <i class="material-icons">more_vert</i>
-                        </ez-coll-right>
-                    </ez-coll-main>
-                    <ez-coll-fold class="display-none">
-                        <ez-coll-fold-attr ez-show-max-599>
-                            <ez-coll-fold-key>Top attr key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>Esimesel paremal</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 1 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr1 attr1</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 2 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr2</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                        <ez-coll-fold-attr>
-                            <ez-coll-fold-key>Attr 3 key</ez-coll-fold-key>
-                            :
-                            <ez-coll-fold-value>attr3</ez-coll-fold-value>
-                        </ez-coll-fold-attr>
-                    </ez-coll-fold>
-                </ez-coll-item-container>
-                <ez-coll-trailer>
-                    <ez-coll-expand-btn>
+                        </ezc-right>
+                    </ezc-main>
+                    <ezc-fold class="display-none">
+                        <ezc-fold-attr ez-show-max="599">
+                            <ezc-fold-key>Top attr key</ezc-fold-key>:
+                            <ezc-fold-value>
+                                <ezc-attr-text class="immutable" title="Top attr key">
+                                    Paremal
+                                </ezc-attr-text>
+                            </ezc-fold-value>
+                        </ezc-fold-attr>
+                        <ezc-fold-attr>
+                            <ezc-fold-key>Attr 1 key</ezc-fold-key>:
+                            <ezc-fold-value>
+                                <ezc-attr-text class="immutable" title="Attr1 key">
+                                    attr1 attr1
+                                </ezc-attr-text>
+                            </ezc-fold-value>
+                        </ezc-fold-attr>
+                        <ezc-fold-attr>
+                            <ezc-fold-key>Attr 2 key</ezc-fold-key>:
+                            <ezc-fold-value>
+                                <ezc-attr-text class="mutable" title="Attr2 key">
+                                    attr2
+                                </ezc-attr-text>
+                            </ezc-fold-value>
+                        </ezc-fold-attr>
+                        <ezc-fold-attr>
+                            <ezc-fold-key>Attr 3 key</ezc-fold-key>:
+                            <ezc-fold-value>
+                                <ezc-attr-text class="immutable" title="Attr3 key">
+                                    attr3
+                                </ezc-attr-text>
+                            </ezc-fold-value>
+                        </ezc-fold-attr>
+                    </ezc-fold>
+                </ezc-item-container>
+                <ezc-trailer>
+                    <ezc-expand-btn>
                         <i class="material-icons">expand_more</i>
-                    </ez-coll-expand-btn>
-                </ez-coll-trailer>
-            </ez-coll-item>
+                    </ezc-expand-btn>
+                </ezc-trailer>
+            </ezc-item>
         </ez-coll>
 
         <!-- NOTES
@@ -363,18 +456,18 @@
 <!--<script src="js/wui.js"></script>-->
 <script type="text/javascript">
     function showFolds() {
-        document.querySelectorAll('ez-coll-fold').forEach(el => {
+        document.querySelectorAll('ezc-fold').forEach(el => {
             if (el.classList.contains("display-none")) {
-                document.querySelector('ez-coll-attrs').classList.add('display-none')
+                document.querySelector('ezc-bottom-attrs').classList.add('display-none')
                 el.classList.remove("display-none");
             } else {
                 el.classList.add('display-none')
-                document.querySelector('ez-coll-attrs').classList.remove('display-none')
+                document.querySelector('ezc-bottom-attrs').classList.remove('display-none')
             }
         });
     }
 
-    document.querySelectorAll('ez-coll-expand-btn').forEach(el => {
+    document.querySelectorAll('ezc-expand-btn').forEach(el => {
         el.onclick = showFolds
     });
 </script>
