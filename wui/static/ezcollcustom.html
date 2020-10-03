@@ -27,6 +27,10 @@
         }
 
         ez-icon {
+
+        }
+
+        ez-icon > svg {
             width: 1.8rem;
             height: 1.8rem;
         }
@@ -44,6 +48,11 @@
         ez-icon-action.disabled {
             color: var(--ez-icon-action-disabled-col);
             cursor: default;
+        }
+
+        ez-icon.med > svg {
+            width: 2.4rem;
+            height: 2.4rem;
         }
 
 
@@ -225,6 +234,8 @@
 
 
         /* Increase attr width if there's more space. Determine reasonable attr-width-m's. */
+        /* Note that if items have a different number of attrs, they will resize differently when using this.
+           This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
         ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="2"] > ezc-attr,
         ezc-attrs-sizer[min-width~="900px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="3"] > ezc-attr {
             flex-basis: 300px;
@@ -260,24 +271,29 @@
             display: flex;
         }
 
-        ezc-expand-btn {
+        ezc-expand-trailer {
             padding-top: 11px;
             visibility: hidden;
+
         }
 
-        ezc-item:hover ezc-expand-btn {
+        ezc-expand-trailer > ez-icon-action > ez-icon {
+            transition: transform 200ms ease-in-out;
+        }
+
+        ezc-expand-trailer.open > ez-icon-action > ez-icon {
+            transform: rotate(180deg);
+        }
+
+        ezc-item:hover ezc-expand-trailer {
             visibility: visible;
         }
 
         /* Any of the user's inputs is coarse or the main input cannot hover */
         @media (any-pointer: coarse) or (hover: none) {
-            ezc-expand-btn {
+            ezc-expand-trailer {
                 visibility: visible;
             }
-        }
-
-        ezc-expand-btn i.material-icons {
-            font-size: 18px;
         }
 
 
@@ -342,7 +358,7 @@
 
         <!-- ezcoll -->
         <ez-coll>
-            <ezc-item>
+            <ezc-item ez-item="1">
                 <ezc-item-container>
                     <ezc-main>
                         <ezc-left>L</ezc-left>
@@ -385,7 +401,11 @@
                             </ezc-second>
                         </ezc-center>
                         <ezc-right>
-                            <i class="material-icons">more_vert</i>
+                            <ez-icon-action title="Tegevused...">
+                                <ez-icon class="med">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                </ez-icon>
+                            </ez-icon-action>
                         </ezc-right>
                     </ezc-main>
                     <ezc-fold class="display-none">
@@ -424,9 +444,13 @@
                     </ezc-fold>
                 </ezc-item-container>
                 <ezc-trailer>
-                    <ezc-expand-btn>
-                        <i class="material-icons">expand_more</i>
-                    </ezc-expand-btn>
+                    <ezc-expand-trailer>
+                        <ez-icon-action ez-expand-item="1" title="Laienda">
+                            <ez-icon class="medd">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+                            </ez-icon>
+                        </ez-icon-action>
+                    </ezc-expand-trailer>
                 </ezc-trailer>
             </ezc-item>
         </ez-coll>
@@ -455,20 +479,25 @@
 
 <!--<script src="js/wui.js"></script>-->
 <script type="text/javascript">
-    function showFolds() {
-        document.querySelectorAll('ezc-fold').forEach(el => {
+    function showFolds(itemId) {
+        const a = 'ezc-item[ez-item="' + itemId + '"]'
+        document.querySelectorAll(a + ' ezc-fold').forEach(el => {
             if (el.classList.contains("display-none")) {
-                document.querySelector('ezc-bottom-attrs').classList.add('display-none')
+                document.querySelector(a + ' ezc-expand-trailer').classList.add('open');
+                document.querySelector(a + ' ezc-bottom-attrs').classList.add('display-none');
                 el.classList.remove("display-none");
             } else {
-                el.classList.add('display-none')
-                document.querySelector('ezc-bottom-attrs').classList.remove('display-none')
+                document.querySelector(a + ' ezc-expand-trailer').classList.remove('open');
+                el.classList.add('display-none');
+                document.querySelector(a + ' ezc-bottom-attrs').classList.remove('display-none');
             }
         });
     }
 
-    document.querySelectorAll('ezc-expand-btn').forEach(el => {
-        el.onclick = showFolds
+    document.querySelectorAll('ez-icon-action[ez-expand-item]').forEach(el => {
+        el.onclick = (() => {
+            showFolds(el.getAttribute('ez-expand-item'));
+        });
     });
 </script>
 
