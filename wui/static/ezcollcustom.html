@@ -13,6 +13,7 @@
 
     <style>
         :root {
+            --ez-icon-col: rgba(0, 0, 0, .38);
             --ez-icon-action-col: rgba(0, 0, 0, .54);
             --ez-icon-action-active-col: rgba(0, 0, 0, .87);
             --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
@@ -25,6 +26,10 @@
 
         svg {
             fill: currentColor;
+        }
+
+        ez-icon {
+            color: var(--ez-icon-col);
         }
 
         ez-icon > svg {
@@ -41,26 +46,34 @@
             display: flex;
             padding: .3rem;
             cursor: pointer;
-            color: var(--ez-icon-action-col);
-            transition: color .2s ease-in-out, background .2s;
             border-radius: 50%;
+            transition: background .2s ease-in-out;
+        }
+        ez-icon-action > ez-icon {
+            color: var(--ez-icon-action-col);
+            transition: color .2s ease-in-out;
+        }
+        ez-icon-action:hover > ez-icon {
+            color: var(--ez-icon-action-active-col);
+        }
+        ez-icon-action.disabled > ez-icon {
+            color: var(--ez-icon-action-disabled-col);
         }
         ez-icon-action:hover {
-            color: var(--ez-icon-action-active-col);
             background-color: var(--ez-icon-action-active-bg-col);
         }
         ez-icon-action:focus {
             background-color: var(--ez-icon-action-clicked-bg-col);
         }
         ez-icon-action.disabled {
-            color: var(--ez-icon-action-disabled-col);
             cursor: default;
+            background-color: inherit;
         }
 
         /* styles otherwise overwritten by .waves-effect */
         ez-icon-action.waves-effect {
             display: flex;
-            transition: color .2s ease-in-out, background .2s;
+            transition: background .2s ease-in-out;
         }
 
         ez-icon-action > ez-icon.med {
@@ -99,7 +112,7 @@
             flex: 1 1 auto;
             display: flex;
             min-width: 0;
-            padding: 8px;
+            padding: .8rem .8rem .8rem .2rem;
             background-color: #fff;
             box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
             0 2px 1px -2px rgba(0, 0, 0, 0.09),
@@ -111,17 +124,42 @@
             display: flex;
             align-items: start;
             justify-content: center;
-            min-width: 30px;
-            padding: 0 5px;
-            /* Or maybe... test with svg icon/checkbox */
-            /*padding: .2rem 5px 0;*/
+            padding: .7rem 1rem .1rem .8rem;
+        }
+
+        ez-coll[min-width~="400px"] ezc-left {
+            padding-left: 1.2rem;
+            padding-right: 1.4rem;
+        }
+        ez-coll[min-width~="700px"] ezc-left {
+            padding-left: 1.5rem;
+            padding-right: 1.7rem;
+        }
+
+        ezc-left:hover ez-icon,
+        ez-coll[selection-active] ezc-left ez-icon {
+            display: none;
+        }
+        ezc-left:hover .ezc-item-checkbox,
+        ez-coll[selection-active] ezc-left .ezc-item-checkbox {
+            display: block;
+        }
+
+        ezc-left > ez-icon > svg {
+            width: 2rem;
+            height: 2rem;
         }
 
         ezc-item.two-rows ezc-left {
-            padding-top: 1.1rem;
+            padding-top: 1.8rem;
         }
-        ezc-item.two-rows ezc-right {
-            padding-top: 1.1rem;
+
+        ezc-left .ezc-item-checkbox {
+            display: none;
+            width: 2rem;
+        }
+        ezc-left .ezc-item-checkbox span.dummy {
+            padding-left: 0;
         }
 
         ezc-main {
@@ -144,8 +182,11 @@
             display: flex;
             align-items: start;
             justify-content: center;
-            min-width: 30px;
-            padding: 0 5px;
+            padding-left: .8rem;
+        }
+
+        ezc-item.two-rows ezc-right {
+            padding-top: 1.1rem;
         }
 
         ezc-first {
@@ -242,6 +283,11 @@
             flex-grow: 1;
         }
 
+        /* Show first attr regardless of size */
+        ezc-bottom-attrs > ezc-attr:nth-child(-n+1) {
+            display: inline-block;
+        }
+
 
         /* Attr widths */
 
@@ -249,7 +295,6 @@
             flex-basis: 200px;
         }
 
-        ezc-attrs-sizer[min-width~="200px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+1),
         ezc-attrs-sizer[min-width~="400px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+2),
         ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+3) {
             display: inline-block;
@@ -275,8 +320,6 @@
 
         ezc-bottom-space {
             align-self: flex-start;
-            white-space: nowrap;
-            overflow: hidden;
         }
 
         ezc-fold {
@@ -388,10 +431,17 @@
         </div>
 
         <!-- ezcoll -->
-        <ez-coll>
+        <ez-coll selection-activee>
             <ezc-item ez-item="1" class="two-rows">
                 <ezc-item-container>
-                    <ezc-left>L</ezc-left>
+                    <ezc-left>
+                        <ez-icon class="">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
+                        </ez-icon>
+                        <label class="ezc-item-checkbox">
+                            <input type="checkbox" class="filled-in" /><span class="dummy"></span>
+                        </label>
+                    </ezc-left>
 
                     <ezc-main>
                         <ezc-center>
@@ -495,7 +545,14 @@
 
             <ezc-item ez-item="1" class="">
                 <ezc-item-container>
-                    <ezc-left>L</ezc-left>
+                    <ezc-left>
+                        <ez-icon class="">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
+                        </ez-icon>
+                        <label class="ezc-item-checkbox">
+                            <input type="checkbox" class="filled-in" /><span class="dummy"></span>
+                        </label>
+                    </ezc-left>
 
                     <ezc-main>
                         <ezc-center>

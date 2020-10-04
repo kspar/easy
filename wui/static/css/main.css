@@ -1,3 +1,8 @@
+:root {
+    --ez-checkbox-border-col: rgba(0, 0, 0, .35);
+    --ez-checkbox-fill-col: #4DAB54;
+}
+
 /** Page, body, general **/
 
 html {
@@ -997,6 +1002,14 @@ textarea.materialize-textarea {
 .select-wrap {
     width: fit-content;
     width: -moz-fit-content;
+}
+
+[type="checkbox"].filled-in:not(:checked) + span:not(.lever)::after {
+    border: 2px solid var(--ez-checkbox-border-col);
+}
+[type="checkbox"].filled-in:checked + span:not(.lever)::after {
+    border: 2px solid var(--ez-checkbox-fill-col);
+    background-color: var(--ez-checkbox-fill-col);
 }
 
 
