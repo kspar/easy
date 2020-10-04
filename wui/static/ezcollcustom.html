@@ -15,7 +15,8 @@
         :root {
             --ez-icon-action-col: rgba(0, 0, 0, .54);
             --ez-icon-action-active-col: rgba(0, 0, 0, .87);
-            --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);;
+            --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
+            --ez-icon-action-clicked-bg-col: rgba(0, 0, 0, .1);
             --ez-icon-action-disabled-col: rgba(0, 0, 0, .38);
             --ezc-link-hover-col: #429748;
             --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
@@ -48,9 +49,18 @@
             color: var(--ez-icon-action-active-col);
             background-color: var(--ez-icon-action-active-bg-col);
         }
+        ez-icon-action:focus {
+            background-color: var(--ez-icon-action-clicked-bg-col);
+        }
         ez-icon-action.disabled {
             color: var(--ez-icon-action-disabled-col);
             cursor: default;
+        }
+
+        /* styles otherwise overwritten by .waves-effect */
+        ez-icon-action.waves-effect {
+            display: flex;
+            transition: color .2s ease-in-out, background .2s;
         }
 
         ez-icon-action > ez-icon.med {
@@ -159,14 +169,15 @@
         ezc-second {
             display: flex;
             justify-content: space-between;
-            line-height: 1.6;
             margin-top: .5rem;
+            min-height: 24px;
         }
 
         ezc-attrs-sizer {
-            display: flex;
+            align-self: center;
             flex: 1 1 auto;
             min-width: 0;
+            display: flex;
         }
 
         ezc-bottom-attrs {
@@ -263,6 +274,7 @@
 
 
         ezc-bottom-space {
+            align-self: flex-start;
             white-space: nowrap;
             overflow: hidden;
         }
@@ -290,9 +302,23 @@
         }
 
         ezc-expand-trailer {
-            padding-top: 11px;
-            visibility: hidden;
+            padding-top: 1.1rem;
+        }
 
+        ezc-expand-trailer > ez-icon-action {
+            visibility: hidden;
+        }
+
+        ezc-item:hover ezc-expand-trailer > ez-icon-action,
+        ezc-expand-trailer ez-icon-action:focus {
+            visibility: visible;
+        }
+
+        /* Any of the user's inputs is coarse or the main input cannot hover */
+        @media (any-pointer: coarse) or (hover: none) {
+            ezc-expand-trailer > ez-icon-action {
+                visibility: visible;
+            }
         }
 
         ezc-expand-trailer > ez-icon-action > ez-icon {
@@ -302,19 +328,6 @@
         ezc-expand-trailer.open > ez-icon-action > ez-icon {
             transform: rotate(180deg);
         }
-
-        ezc-item:hover ezc-expand-trailer {
-            visibility: visible;
-        }
-
-        /* Any of the user's inputs is coarse or the main input cannot hover */
-        @media (any-pointer: coarse) or (hover: none) {
-            ezc-expand-trailer {
-                visibility: visible;
-            }
-        }
-
-
     </style>
 </head>
 <body style="background-color: #eee" class="leftbar-active">
@@ -385,8 +398,8 @@
                             <ezc-first>
                                 <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
                                 <ezc-attr class="top" ez-show-min="600">
-                                    <ezc-attr-text class="immutable" title="Top attr key">
-                                        Paremal
+                                    <ezc-attr-text class="immutable" title="Tähtaeg">
+                                        11.09.20, 11:11
                                     </ezc-attr-text>
                                 </ezc-attr>
                             </ezc-first>
@@ -447,7 +460,7 @@
                                 </ezc-fold>
 
                                 <ezc-bottom-space ez-show-min="600">
-                                    <ez-icon-action title="Peida">
+                                    <ez-icon-action title="Peida" class="waves-effect" tabindex="0">
                                         <ez-icon>
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
                                         </ez-icon>
@@ -458,7 +471,7 @@
                     </ezc-main>
 
                     <ezc-right>
-                        <ez-icon-action title="Tegevused...">
+                        <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
                             <ez-icon class="med">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                             </ez-icon>
@@ -468,7 +481,7 @@
 
                 <ezc-trailer>
                     <ezc-expand-trailer>
-                        <ez-icon-action ez-expand-item="1" title="Laienda">
+                        <ez-icon-action ez-expand-item="1"  title="Laienda" class="waves-effect" tabindex="0">
                             <ez-icon class="">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
                             </ez-icon>
@@ -498,7 +511,7 @@
                     </ezc-main>
 
                     <ezc-right>
-                        <ez-icon-action title="Tegevused...">
+                        <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
                             <ez-icon class="med">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                             </ez-icon>
