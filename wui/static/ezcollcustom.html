@@ -85,15 +85,15 @@
         }
 
         /* General show/hide based on collection width */
-        ez-coll *[ez-show-min="600"],
-        ez-coll *[ez-show-max="599"] {
+        .ez-coll-sizer *[ez-show-min="600"],
+        .ez-coll-sizer *[ez-show-max="599"] {
             display: none;
         }
-        ez-coll[min-width~="600px"] *[ez-show-min="600"] {
+        .ez-coll-sizer[min-width~="600px"] *[ez-show-min="600"] {
             display: flex;
         }
 
-        ez-coll[max-width~="599px"] *[ez-show-max="599"] {
+        .ez-coll-sizer[max-width~="599px"] *[ez-show-max="599"] {
             display: flex;
         }
 
@@ -123,11 +123,11 @@
             padding: .7rem 1rem .1rem .8rem;
         }
 
-        ez-coll[min-width~="400px"] ezc-left {
+        .ez-coll-sizer[min-width~="400px"] ezc-left {
             padding-left: 1.2rem;
             padding-right: 1.4rem;
         }
-        ez-coll[min-width~="700px"] ezc-left {
+        .ez-coll-sizer[min-width~="700px"] ezc-left {
             padding-left: 1.5rem;
             padding-right: 1.7rem;
         }
@@ -316,6 +316,7 @@
 
         ezc-bottom-space {
             align-self: flex-start;
+            display: flex;
         }
 
         ezc-fold {
@@ -427,152 +428,159 @@
         </div>
 
         <!-- ezcoll -->
-        <ez-coll selection-activee>
-            <ezc-item ez-item="1" class="two-rows">
-                <ezc-item-container>
-                    <ezc-left>
-                        <ez-icon class="">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
-                        </ez-icon>
-                        <label class="ezc-item-checkbox">
-                            <input type="checkbox" class="filled-in" /><span class="dummy"></span>
-                        </label>
-                    </ezc-left>
-
-                    <ezc-main>
-                        <ezc-center>
-                            <ezc-first>
-                                <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
-                                <ezc-attr class="top" ez-show-min="600">
-                                    <ezc-attr-text class="immutable" title="Tähtaeg">
-                                        11.09.20, 11:11
-                                    </ezc-attr-text>
-                                </ezc-attr>
-                            </ezc-first>
-                            <ezc-second>
-                                <ezc-attrs-sizer>
-                                    <ezc-bottom-attrs ez-attrs="3" ez-attr-width-s="200" ez-attr-width-m="300" ez-growing-attrss>
-                                        <ezc-attr class="bottom" style="">
-                                            <ezc-attr-text class="immutable" title="Attr1 key">
-                                                attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1
-                                            </ezc-attr-text>
-                                        </ezc-attr>
-                                        <ezc-attr class="bottom" style="">
-                                            <ezc-attr-text class="mutable" title="Attr2 key">
-                                                attr2
-                                            </ezc-attr-text>
-                                        </ezc-attr>
-                                        <ezc-attr class="bottom" style="">
-                                            <ezc-attr-text class="immutable" title="Attr3 key">
-                                                attr3
-                                            </ezc-attr-text>
-                                        </ezc-attr>
-                                    </ezc-bottom-attrs>
-                                </ezc-attrs-sizer>
-
-                                <ezc-fold class="display-none">
-                                    <ezc-fold-attr ez-show-max="599">
-                                        <ezc-fold-key>Top attr key</ezc-fold-key>:
-                                        <ezc-fold-value>
-                                            <ezc-attr-text class="immutable" title="Top attr key">
-                                                Paremal
-                                            </ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                    <ezc-fold-attr>
-                                        <ezc-fold-key>Attr 1 key</ezc-fold-key>:
-                                        <ezc-fold-value>
-                                            <ezc-attr-text class="immutable" title="Attr1 key">
-                                                attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1
-                                            </ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                    <ezc-fold-attr>
-                                        <ezc-fold-key>Attr 2 key</ezc-fold-key>:
-                                        <ezc-fold-value>
-                                            <ezc-attr-text class="mutable" title="Attr2 key">
-                                                attr2
-                                            </ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                    <ezc-fold-attr>
-                                        <ezc-fold-key>Attr 3 key</ezc-fold-key>:
-                                        <ezc-fold-value>
-                                            <ezc-attr-text class="immutable" title="Attr3 key">
-                                                attr3
-                                            </ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                </ezc-fold>
-
-                                <ezc-bottom-space ez-show-min="600">
-                                    <ez-icon-action title="Peida" class="waves-effect" tabindex="0">
-                                        <ez-icon>
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                                        </ez-icon>
-                                    </ez-icon-action>
-                                </ezc-bottom-space>
-                            </ezc-second>
-                        </ezc-center>
-                    </ezc-main>
-
-                    <ezc-right>
-                        <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
-                            <ez-icon class="med">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                            </ez-icon>
-                        </ez-icon-action>
-                    </ezc-right>
-                </ezc-item-container>
-
-                <ezc-trailer>
-                    <ezc-expand-trailer>
-                        <ez-icon-action ez-expand-item="1"  title="Laienda" class="waves-effect" tabindex="0">
+        <div class="ez-coll-sizer">
+            <ez-coll selection-activee>
+                <ezc-item ez-item="1" class="two-rows">
+                    <ezc-item-container>
+                        <ezc-left>
                             <ez-icon class="">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
                             </ez-icon>
-                        </ez-icon-action>
-                    </ezc-expand-trailer>
-                </ezc-trailer>
-            </ezc-item>
+                            <label class="ezc-item-checkbox">
+                                <input type="checkbox" class="filled-in" /><span class="dummy"></span>
+                            </label>
+                        </ezc-left>
+
+                        <ezc-main>
+                            <ezc-center>
+                                <ezc-first>
+                                    <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
+                                    <ezc-attr class="top" ez-show-min="600">
+                                        <ezc-attr-text class="immutable" title="Tähtaeg">
+                                            11.09.20, 11:11
+                                        </ezc-attr-text>
+                                    </ezc-attr>
+                                </ezc-first>
+                                <ezc-second>
+                                    <ezc-attrs-sizer>
+                                        <ezc-bottom-attrs ez-attrs="3" ez-attr-width-s="200" ez-attr-width-m="300" ez-growing-attrss>
+                                            <ezc-attr class="bottom" style="">
+                                                <ezc-attr-text class="immutable" title="Attr1 key">
+                                                    attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1
+                                                </ezc-attr-text>
+                                            </ezc-attr>
+                                            <ezc-attr class="bottom" style="">
+                                                <ezc-attr-text class="mutable" title="Attr2 key">
+                                                    attr2
+                                                </ezc-attr-text>
+                                            </ezc-attr>
+                                            <ezc-attr class="bottom" style="">
+                                                <ezc-attr-text class="immutable" title="Attr3 key">
+                                                    attr3
+                                                </ezc-attr-text>
+                                            </ezc-attr>
+                                        </ezc-bottom-attrs>
+                                    </ezc-attrs-sizer>
+
+                                    <ezc-fold class="display-none">
+                                        <ezc-fold-attr ez-show-max="599">
+                                            <ezc-fold-key>Top attr key</ezc-fold-key>:
+                                            <ezc-fold-value>
+                                                <ezc-attr-text class="immutable" title="Top attr key">
+                                                    Paremal
+                                                </ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                        <ezc-fold-attr>
+                                            <ezc-fold-key>Attr 1 key</ezc-fold-key>:
+                                            <ezc-fold-value>
+                                                <ezc-attr-text class="immutable" title="Attr1 key">
+                                                    attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1 attr1
+                                                </ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                        <ezc-fold-attr>
+                                            <ezc-fold-key>Attr 2 key</ezc-fold-key>:
+                                            <ezc-fold-value>
+                                                <ezc-attr-text class="mutable" title="Attr2 key">
+                                                    attr2
+                                                </ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                        <ezc-fold-attr>
+                                            <ezc-fold-key>Attr 3 key</ezc-fold-key>:
+                                            <ezc-fold-value>
+                                                <ezc-attr-text class="immutable" title="Attr3 key">
+                                                    attr3
+                                                </ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                    </ezc-fold>
+
+                                    <ezc-bottom-space>
+                                        <ez-icon-action ez-show-min="600" title="Peida" class="waves-effect" tabindex="0">
+                                            <ez-icon>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                            </ez-icon>
+                                        </ez-icon-action>
+                                        <ez-icon-action title="Peida" class="waves-effect" tabindex="0">
+                                            <ez-icon>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                            </ez-icon>
+                                        </ez-icon-action>
+                                    </ezc-bottom-space>
+                                </ezc-second>
+                            </ezc-center>
+                        </ezc-main>
+
+                        <ezc-right>
+                            <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
+                                <ez-icon class="med">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                </ez-icon>
+                            </ez-icon-action>
+                        </ezc-right>
+                    </ezc-item-container>
+
+                    <ezc-trailer>
+                        <ezc-expand-trailer>
+                            <ez-icon-action ez-expand-item="1"  title="Laienda" class="waves-effect" tabindex="0">
+                                <ez-icon class="">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+                                </ez-icon>
+                            </ez-icon-action>
+                        </ezc-expand-trailer>
+                    </ezc-trailer>
+                </ezc-item>
 
 
-
-
-            <ezc-item ez-item="1" class="">
-                <ezc-item-container>
-                    <ezc-left>
-                        <ez-icon class="">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
-                        </ez-icon>
-                        <label class="ezc-item-checkbox">
-                            <input type="checkbox" class="filled-in" /><span class="dummy"></span>
-                        </label>
-                    </ezc-left>
-
-                    <ezc-main>
-                        <ezc-center>
-                            <ezc-first>
-                                <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
-                                <ezc-attr class="top" ez-show-min="600">
-                                    <ezc-attr-text class="immutable" title="Top attr key">
-                                        Paremal
-                                    </ezc-attr-text>
-                                </ezc-attr>
-                            </ezc-first>
-                        </ezc-center>
-                    </ezc-main>
-
-                    <ezc-right>
-                        <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
-                            <ez-icon class="med">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                <ezc-item ez-item="2" class="">
+                    <ezc-item-container>
+                        <ezc-left>
+                            <ez-icon class="">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg>
                             </ez-icon>
-                        </ez-icon-action>
-                    </ezc-right>
-                </ezc-item-container>
-            </ezc-item>
-        </ez-coll>
+                            <label class="ezc-item-checkbox">
+                                <input type="checkbox" class="filled-in" /><span class="dummy"></span>
+                            </label>
+                        </ezc-left>
+
+                        <ezc-main>
+                            <ezc-center>
+                                <ezc-first>
+                                    <ezc-title><a href="#!">Pealkiri Pealkiri Pealkiri</a></ezc-title>
+                                    <ezc-attr class="top" ez-show-min="600">
+                                        <ezc-attr-text class="immutable" title="Top attr key">
+                                            Paremal
+                                        </ezc-attr-text>
+                                    </ezc-attr>
+                                </ezc-first>
+                            </ezc-center>
+                        </ezc-main>
+
+                        <ezc-right>
+                            <ez-icon-action title="Tegevused..." class="waves-effect" tabindex="0">
+                                <ez-icon class="med">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                </ez-icon>
+                            </ez-icon-action>
+                        </ezc-right>
+                    </ezc-item-container>
+                </ezc-item>
+            </ez-coll>
+
+            </ez-coll>
+        </div>
 
         <!-- NOTES
         - Configurable:
