@@ -20,7 +20,7 @@ object ExercisePage : EasyPage() {
         get() = listOf(Role.ADMIN)
 
     override fun pathMatches(path: String): Boolean =
-            path.matches("^/exercises/\\w+/details/?$")
+            path.matches("^/exerciselib/\\w+/details/?$")
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
@@ -35,7 +35,7 @@ object ExercisePage : EasyPage() {
     }
 
     private fun extractSanitizedExerciseId(path: String): String {
-        val match = path.match("^/exercises/(\\w+)/details/?$")
+        val match = path.match("^/exerciselib/(\\w+)/details/?$")
         if (match != null && match.size == 2) {
             return match[1]
         } else {

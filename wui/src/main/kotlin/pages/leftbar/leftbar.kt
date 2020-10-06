@@ -188,7 +188,7 @@ class LeftbarRootComp(
                     successChecker = { http200 }).await().parseTo(NewExerciseDTO.serializer()).await().id
             debug { "Saved new exercise with id $exerciseId" }
             modal.close()
-            EzSpa.PageManager.navigateTo("/exercises/$exerciseId/details")
+            EzSpa.PageManager.navigateTo("/exerciselib/$exerciseId/details")
         }
     }
 

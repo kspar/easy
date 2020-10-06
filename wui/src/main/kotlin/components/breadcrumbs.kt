@@ -9,7 +9,7 @@ import tmRender
 data class Crumb(val label: String, val href: String? = null) {
     companion object {
         val myCourses = Crumb(Str.myCourses(), "/courses")
-        val exercises = Crumb("Ülesandekogu", "/exercises")
+        val exercises = Crumb("Ülesandekogu", "/exerciselib")
     }
 }
 
