@@ -6,6 +6,7 @@ import pages.ParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
+import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
 import pages.leftbar.Leftbar
 import queries.ReqMethod
@@ -20,7 +21,7 @@ import rip.kspar.ezspa.getMain
 
 private val PAGES = listOf(
         CoursesPage, CourseExercisesPage, ExerciseSummaryPage, ParticipantsPage, GradeTablePage,
-        ExercisePage)
+        ExerciseLibraryPage, ExercisePage)
 
 
 fun main() {

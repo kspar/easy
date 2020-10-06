@@ -6,5 +6,6 @@ enum class PageName {
     PARTICIPANTS,
     GRADE_TABLE,
     NEW_EXERCISE,
-    EXERCISE
+    EXERCISE_LIBRARY,
+    EXERCISE,
 }
