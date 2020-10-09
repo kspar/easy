@@ -10,6 +10,5 @@ fun plainDstStr(vararg dstIds: String): String {
 }
 
 private fun render(template: String, data: Map<String, Any?>): String {
-    Mustache.parse(template)
     return Mustache.render(template, dynamicToAny(data.toJsObj()))
 }
