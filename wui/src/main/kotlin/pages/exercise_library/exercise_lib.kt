@@ -19,9 +19,10 @@ class ExerciseLibRootComp(
 
     override fun create() = doInPromise {
         val items = listOf(
-                EzCollComp.Item("title", "#!", "42",
-                        EzCollComp.TopAttr("Tähtaeg", Date().toEstonianString(), "", EzCollComp.AttrType.DATETIME, true, EzCollComp.CollMinWidth.W600),
-                        listOf(EzCollComp.BottomAttr("k", "v", "@ v", EzCollComp.AttrType.STRING, false, EzCollComp.AttrMinWidth.W200)),
+                EzCollComp.Item("title", "#!", "42", false,
+                        EzCollComp.TopAttr("Tähtaeg", Date().toEstonianString(), "123", EzCollComp.AttrType.DATETIME, true, EzCollComp.CollMinWidth.W600),
+                        listOf(EzCollComp.BottomAttr("k", "v", "@ v", EzCollComp.AttrType.STRING, false)),
+                        EzCollComp.AttrWidthS.W200, EzCollComp.AttrWidthM.W300, false,
                         listOf(EzCollComp.Action(null, "Peida", EzCollComp.CollMinWidth.W600)))
         )
         ezcoll = EzCollComp(items, this)

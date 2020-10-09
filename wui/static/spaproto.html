@@ -68,7 +68,7 @@
         <li><div class="divider"></div></li>
         <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>{{myCoursesLabel}}</a></li>
         {{#isTeacherOrAdmin}}
-<!--            <li><a class="waves-effect sidenav-close" href="/exerciselib"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>-->
+            <li><a class="waves-effect sidenav-close" href="/exerciselib"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>
         {{/isTeacherOrAdmin}}
         {{#isAdmin}}
 <!--            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>-->
@@ -170,6 +170,107 @@
         </div>
         <textarea id="{{textareaId}}"></textarea>
     </div>
+</script>
+
+<script id="t-c-ezcoll" type="text/x-handlebars">
+    <div class="ez-coll-sizer">
+        <ez-coll>
+            {{#items}}
+                <ez-dst id="{{dstId}}"></ez-dst>
+            {{/items}}
+        </ez-coll>
+    </div>
+</script>
+
+<script id="t-c-ezcoll-item" type="text/x-handlebars">
+    <ezc-item ez-item="{{idx}}" class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}}">
+        <ezc-item-container>
+            <ezc-left>
+                <ezc-item-type>
+                    {{#isTypeIcon}}<ez-icon>{{{typeHtml}}}</ez-icon>{{/isTypeIcon}}
+                    {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
+                </ezc-item-type>
+            </ezc-left>
+            <ezc-main>
+                <ezc-center>
+                    <ezc-first>
+                        <ezc-title><a {{#titleLink}}href="{{titleLink}}"{{/titleLink}}>{{title}}</a></ezc-title>
+                        {{#topAttr}}
+                            <ezc-attr class="top" ez-show-min="{{minCollWidth}}">
+                                <ezc-attr-text class="{{#isMutable}}mutable{{/isMutable}}" title="{{key}}: {{value}}">{{{shortValueHtml}}}</ezc-attr-text>
+                            </ezc-attr>
+                        {{/topAttr}}
+                    </ezc-first>
+                    {{#hasBottomAttrs}}
+                        <ezc-second>
+                            <ezc-attrs-sizer>
+                                <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" ez-attr-width-s="{{attrWidthS}}" ez-attr-width-m="{{attrWidthM}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
+                                    {{#bottomAttrs}}
+                                        <ezc-attr class="bottom">
+                                            <ezc-attr-text class="{{#isMutable}}mutable{{/isMutable}}" title="{{key}}: {{value}}">
+                                                {{{shortValueHtml}}}
+                                            </ezc-attr-text>
+                                        </ezc-attr>
+                                    {{/bottomAttrs}}
+                                </ezc-bottom-attrs>
+                            </ezc-attrs-sizer>
+                            <ezc-fold class="display-none">
+                                {{#topAttr}}
+                                    <ezc-fold-attr ez-show-max="{{maxCollWidthInFold}}">
+                                        <ezc-fold-key>{{key}}</ezc-fold-key>:
+                                        <ezc-fold-value>
+                                            <ezc-attr-text class="{{#isMutable}}mutable{{/isMutable}}">
+                                                {{value}}
+                                            </ezc-attr-text>
+                                        </ezc-fold-value>
+                                    </ezc-fold-attr>
+                                {{/topAttr}}
+                                {{#bottomAttrs}}
+                                    <ezc-fold-attr>
+                                        <ezc-fold-key>{{key}}</ezc-fold-key>:
+                                        <ezc-fold-value>
+                                            <ezc-attr-text class="{{#isMutable}}mutable{{/isMutable}}">
+                                                {{value}}
+                                            </ezc-attr-text>
+                                        </ezc-fold-value>
+                                    </ezc-fold-attr>
+                                {{/bottomAttrs}}
+                            </ezc-fold>
+                            {{#hasActions}}
+                                <ezc-bottom-space>
+                                    {{#actions}}{{#iconHtml}}
+                                        <ez-icon-action ez-show-min="{{minCollWidth}}" title="{{text}}" class="waves-effect" tabindex="0">
+                                            <ez-icon>{{{iconHtml}}}</ez-icon>
+                                        </ez-icon-action>
+                                    {{/iconHtml}}{{/actions}}
+                                </ezc-bottom-space>
+                            {{/hasActions}}
+                        </ezc-second>
+                    {{/hasBottomAttrs}}
+                </ezc-center>
+            </ezc-main>
+            {{#hasActions}}
+                <ezc-right>
+                    <ez-icon-action title="{{actionMenuTitle}}" class="waves-effect" tabindex="0">
+                        <ez-icon class="med">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                        </ez-icon>
+                    </ez-icon-action>
+                </ezc-right>
+            {{/hasActions}}
+        </ezc-item-container>
+        {{#hasBottomAttrs}}
+            <ezc-trailer>
+                <ezc-expand-trailer>
+                    <ez-icon-action ez-expand-item="{{idx}}" title="{{expandItemTitle}}" class="waves-effect" tabindex="0">
+                        <ez-icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+                        </ez-icon>
+                    </ez-icon-action>
+                </ezc-expand-trailer>
+            </ezc-trailer>
+        {{/hasBottomAttrs}}
+    </ezc-item>
 </script>
 
 <script id="t-c-link" type="text/x-handlebars">

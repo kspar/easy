@@ -3,10 +3,9 @@ package pages.exercise_library
 import CONTENT_CONTAINER_ID
 import PageName
 import Role
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
-import kotlinx.coroutines.launch
 import pages.EasyPage
+import rip.kspar.ezspa.doInPromise
 
 object ExerciseLibraryPage : EasyPage() {
 
@@ -22,7 +21,7 @@ object ExerciseLibraryPage : EasyPage() {
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 
-        MainScope().launch {
+        doInPromise {
             ExerciseLibRootComp(CONTENT_CONTAINER_ID)
                     .createAndBuild().await()
         }
