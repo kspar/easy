@@ -1143,6 +1143,7 @@ ez-icon-action:hover {
 
 ez-icon-action:focus {
     background-color: var(--ez-icon-action-clicked-bg-col);
+    outline: none;
 }
 
 ez-icon-action.disabled {
