@@ -47,8 +47,11 @@ class EzCollComp(
     override fun create() = doInPromise {
     }
 
-    override fun render(): String = tmRender("t-c-ezcoll",
-            "items" to itemComps.map { mapOf("dstId" to it.dstId) })
+    override fun render(): String = tmRender(
+            "t-c-ezcoll",
+            "isSelectable" to false,
+            "items" to itemComps.map { mapOf("dstId" to it.dstId) },
+    )
 
     override fun postRender() {
     }

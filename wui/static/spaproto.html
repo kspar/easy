@@ -174,7 +174,7 @@
 
 <script id="t-c-ezcoll" type="text/x-handlebars">
     <div class="ez-coll-sizer">
-        <ez-coll>
+        <ez-coll {{#isSelectable}}selectable{{/isSelectable}}>
             {{#items}}
                 <ez-dst id="{{dstId}}"></ez-dst>
             {{/items}}
@@ -190,6 +190,9 @@
                     {{#isTypeIcon}}<ez-icon>{{{typeHtml}}}</ez-icon>{{/isTypeIcon}}
                     {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
                 </ezc-item-type>
+                <label class="ezc-item-checkbox">
+                    <input id="ezc-item-checkbox-{{idx}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
+                </label>
             </ezc-left>
             <ezc-main>
                 <ezc-center>

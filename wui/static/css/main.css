@@ -1215,13 +1215,13 @@ ezc-item-type-text {
     font-size: .9em;
 }
 
-ezc-left:hover ezc-item-type,
+ez-coll[selectable] ezc-left:hover ezc-item-type,
 ez-coll[selection-active] ezc-left ezc-item-type {
     display: none;
 }
 
 /* TODO: allow clicking/checking checkbox when hovering is not possible. */
-ezc-left:hover .ezc-item-checkbox,
+ez-coll[selectable] ezc-left:hover .ezc-item-checkbox,
 ez-coll[selection-active] ezc-left .ezc-item-checkbox {
     display: block;
 }
