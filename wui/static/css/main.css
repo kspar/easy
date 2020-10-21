@@ -7,6 +7,7 @@
     --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
     --ez-icon-action-clicked-bg-col: rgba(0, 0, 0, .1);
     --ez-icon-action-disabled-col: rgba(0, 0, 0, .38);
+    --ez-attr-key-col: #4DAB54;
 
     --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
@@ -1102,6 +1103,7 @@ div.divided-collection {
 /** Ez Icons **/
 
 ez-icon {
+    display: flex;
     color: var(--ez-icon-col);
 }
 
@@ -1332,6 +1334,10 @@ ezc-attr.bottom:first-child {
     display: inline-block;
 }
 
+ezc-attr.bottom ez-icon {
+    padding-right: .8rem;
+}
+
 ezc-attr.bottom:not(:first-child) {
     /* Padding-left because padding-right allows overflow on it */
     padding-left: 1rem;
@@ -1351,6 +1357,7 @@ ezc-attr.bottom:after {
 }
 
 ezc-attr-text {
+    display: flex;
     color: var(--ezc-attr-immutable-col);
 }
 
@@ -1386,9 +1393,14 @@ ezc-fold-attr {
     overflow: auto;
 }
 
+ezc-fold-key {
+    color: var(--ez-attr-key-col);
+    font-weight: 500;
+}
+
 ezc-fold-value {
     min-width: 0;
-    padding-left: 1rem;
+    padding-left: .6rem;
 }
 
 ezc-trailer {

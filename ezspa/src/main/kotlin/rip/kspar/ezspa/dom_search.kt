@@ -22,8 +22,14 @@ fun getNodelistBySelector(selector: String): NodeList =
 fun getElemsBySelector(selector: String): List<Element> =
         getNodelistBySelector(selector).asList().mapNotNull { it as? Element }
 
+fun Element.getElemsBySelector(selector: String): List<Element> =
+        this.querySelectorAll(selector).asList().mapNotNull { it as? Element }
+
 fun getElemBySelector(selector: String): Element? =
         document.querySelector(selector)
+
+fun Element.getElemBySelector(selector: String): Element? =
+        this.querySelector(selector)
 
 fun getElemsByClass(className: String): List<Element> =
         document.getElementsByClassName(className).asList()

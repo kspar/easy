@@ -1,8 +1,11 @@
 package components
 
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.doInPromise
+import kotlinx.dom.addClass
+import kotlinx.dom.hasClass
+import kotlinx.dom.removeClass
+import org.w3c.dom.Element
+import pages.exercise_library.ElementQueries
+import rip.kspar.ezspa.*
 import tmRender
 
 class EzCollComp(
@@ -11,11 +14,14 @@ class EzCollComp(
         dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
 
-    data class Item(val title: String, val titleLink: String? = null, val typeHtml: String, val isTypeIcon: Boolean,
+    data class Item(val refId: String,
+                    val title: String, val titleLink: String? = null, val typeHtml: String, val isTypeIcon: Boolean,
                     val topAttr: TopAttr? = null, val bottomAttrs: List<BottomAttr>, val attrWidthS: AttrWidthS,
                     val attrWidthM: AttrWidthM, val hasGrowingAttrs: Boolean, val actions: List<Action>)
 
-    data class Action(val iconHtml: String?, val text: String, val minCollWidth: CollMinWidth)
+    data class Action(val iconHtml: String?, val text: String, val minCollWidth: CollMinWidth,
+                      val onActivate: (Item) -> Unit, val id: String = IdGenerator.nextId())
+
     data class BottomAttr(val key: String, val value: String, val shortValueHtml: String, val type: AttrType,
                           val isMutable: Boolean)
 
@@ -99,6 +105,7 @@ class EzCollItemComp(
             },
             "actions" to spec.actions.map {
                 mapOf(
+                        "id" to it.id,
                         "text" to it.text,
                         "iconHtml" to it.iconHtml,
                         "minCollWidth" to it.minCollWidth.valuePx,
@@ -109,5 +116,41 @@ class EzCollItemComp(
     )
 
     override fun postRender() {
+        // Maybe can only call in main() if it correctly detects DOM additions
+        ElementQueries.init()
+
+        val item = getElemBySelector("ezc-item[ez-item='$index']")!!
+
+        initExpanding(item)
+        initActions(item)
+    }
+
+    private fun initExpanding(item: Element) {
+        val expand = item.getElemBySelector("ez-icon-action[ez-expand-item]")!!
+        val fold = item.getElemBySelector("ezc-fold")!!
+        val trailer = item.getElemBySelector("ezc-expand-trailer")!!
+        val attrs = item.getElemBySelector("ezc-attrs-sizer")!!
+
+        expand.onVanillaClick(false) {
+            if (fold.hasClass("display-none")) {
+                trailer.addClass("open")
+                attrs.addClass("display-none")
+                fold.removeClass("display-none")
+            } else {
+                trailer.removeClass("open")
+                fold.addClass("display-none")
+                attrs.removeClass("display-none")
+            }
+        }
+    }
+
+    private fun initActions(item: Element) {
+        spec.actions.forEach { action ->
+            item.getElemsBySelector("[ez-action='${action.id}']").forEach {
+                it.onVanillaClick(false) {
+                    action.onActivate.invoke(spec)
+                }
+            }
+        }
     }
 }
