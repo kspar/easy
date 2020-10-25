@@ -241,9 +241,9 @@
                             </ezc-fold>
                             {{#hasActions}}
                                 <ezc-bottom-space>
-                                    {{#actions}}{{#iconHtml}}
+                                    {{#actions}}{{#showShortcut}}
                                         <ez-icon-action ez-action="{{id}}" ez-show-min="{{minCollWidth}}" title="{{text}}" class="waves-effect" tabindex="0">{{{iconHtml}}}</ez-icon-action>
-                                    {{/iconHtml}}{{/actions}}
+                                    {{/showShortcut}}{{/actions}}
                                 </ezc-bottom-space>
                             {{/hasActions}}
                         </ezc-second>
@@ -252,7 +252,7 @@
             </ezc-main>
             {{#hasActions}}
                 <ezc-right>
-                    <ez-icon-action title="{{actionMenuTitle}}" class="waves-effect" tabindex="0">
+                    <ez-icon-action id="ezc-item-action-menu-{{idx}}" title="{{actionMenuTitle}}" class="waves-effect dropdown-trigger" tabindex="0" data-target="ezc-item-action-dropdown-{{idx}}">
                         <ez-icon class="med">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                         </ez-icon>
@@ -271,6 +271,12 @@
                 </ezc-expand-trailer>
             </ezc-trailer>
         {{/hasBottomAttrs}}
+        <!-- Action menu structure -->
+        <ul id="ezc-item-action-dropdown-{{idx}}" class="dropdown-content">
+            {{#actions}}
+                <li><span ez-action="{{id}}">{{{iconHtml}}}{{text}}</span></li>
+            {{/actions}}
+        </ul>
     </ezc-item>
 </script>
 

@@ -48,8 +48,9 @@ class ExerciseLibRootComp(
                         ),
                         EzCollComp.AttrWidthS.W200, EzCollComp.AttrWidthM.W300, false,
                         listOf(
-                                EzCollComp.Action(addToCourseIcon, "Lisa kursusele...", EzCollComp.CollMinWidth.W600,
-                                        { debug { it } })
+                                EzCollComp.Action(addToCourseIcon, "Lisa kursusele...",
+                                        { debug { it } }, true
+                                )
                         )
                 )
         )

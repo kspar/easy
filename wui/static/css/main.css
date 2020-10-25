@@ -961,6 +961,7 @@ input[type=search]:not(.browser-default),
 textarea.materialize-textarea {
     height: 4rem;
     font-size: 1.5rem;
+    color: #333;
 }
 
 input:not([type]):focus:not([readonly]),
@@ -1007,8 +1008,15 @@ textarea.materialize-textarea {
 
 .dropdown-content li > a,
 .dropdown-content li > span {
-    color: #000;
+    display: flex;
+    align-items: center;
+    color: #333;
     font-size: 1.5rem;
+}
+
+.dropdown-content li ez-icon {
+    color: var(--ez-icon-action-col);
+    padding-right: 1rem;
 }
 
 .select-dropdown.dropdown-content li.selected:hover {

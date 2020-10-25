@@ -3,6 +3,8 @@ package components
 import kotlinx.dom.addClass
 import kotlinx.dom.hasClass
 import kotlinx.dom.removeClass
+import libheaders.Materialize
+import objOf
 import org.w3c.dom.Element
 import pages.exercise_library.ElementQueries
 import rip.kspar.ezspa.*
@@ -19,8 +21,11 @@ class EzCollComp(
                     val topAttr: TopAttr? = null, val bottomAttrs: List<BottomAttr>, val attrWidthS: AttrWidthS,
                     val attrWidthM: AttrWidthM, val hasGrowingAttrs: Boolean, val actions: List<Action>)
 
-    data class Action(val iconHtml: String?, val text: String, val minCollWidth: CollMinWidth,
-                      val onActivate: (Item) -> Unit, val id: String = IdGenerator.nextId())
+    data class Action(val iconHtml: String, val text: String,
+                      val onActivate: (Item) -> Unit,
+                      val showShortcutIcon: Boolean = false,
+                      val shortcutMinCollWidth: CollMinWidth = CollMinWidth.W600,
+                      val id: String = IdGenerator.nextId())
 
     data class BottomAttr(val key: String, val value: String, val shortValueHtml: String, val type: AttrType,
                           val isMutable: Boolean)
@@ -108,7 +113,8 @@ class EzCollItemComp(
                         "id" to it.id,
                         "text" to it.text,
                         "iconHtml" to it.iconHtml,
-                        "minCollWidth" to it.minCollWidth.valuePx,
+                        "showShortcut" to it.showShortcutIcon,
+                        "minCollWidth" to it.shortcutMinCollWidth.valuePx,
                 )
             },
             "actionMenuTitle" to "Muuda...",
@@ -147,10 +153,16 @@ class EzCollItemComp(
     private fun initActions(item: Element) {
         spec.actions.forEach { action ->
             item.getElemsBySelector("[ez-action='${action.id}']").forEach {
-                it.onVanillaClick(false) {
+                it.onVanillaClick(true) {
                     action.onActivate.invoke(spec)
                 }
             }
         }
+
+        Materialize.Dropdown.init(
+                getElemById("ezc-item-action-menu-$index"),
+                objOf("constrainWidth" to false,
+                        "coverTrigger" to false)
+        )
     }
 }
