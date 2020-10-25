@@ -1002,6 +1002,7 @@ textarea.materialize-textarea {
 }
 
 .input-field > label {
+    /* Font size for moving/scaling labels: 15 * 0.8 = 12 (normal label size) */
     font-size: 1.5rem;
     pointer-events: all;
 }
@@ -1021,6 +1022,11 @@ textarea.materialize-textarea {
 
 .select-dropdown.dropdown-content li.selected:hover {
     background-color: rgba(0, 0, 0, 0.08);
+}
+
+.select-wrapper + label {
+    /* Font size for fixed labels */
+    font-size: 1.2rem;
 }
 
 .select-wrap {
