@@ -1881,6 +1881,31 @@ paths:
         200:
           description: Updated.
 
+  /groups:
+    post:
+      summary: Create new group.
+      tags:
+        - teacher
+      parameters:
+        - name: group
+          in: body
+          required: true
+          schema:
+            properties:
+              name:
+                type: string
+            required:
+              - name
+      responses:
+        200:
+          description: Created.
+          schema:
+            properties:
+              id:
+                type: string
+            required:
+              - id
+
 
 
 parameters:

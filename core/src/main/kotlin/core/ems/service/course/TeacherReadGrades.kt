@@ -67,7 +67,7 @@ class TeacherReadGradesController(val courseService: CourseService) {
 
         val queryWords = searchStr.trim().toLowerCase().split(Regex(" +"))
 
-        val restrictedGroups = getTeacherRestrictedGroups(courseId, caller.id)
+        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller.id)
 
         val (groups, includeUngrouped) = when {
             groupId == null -> restrictedGroups to true

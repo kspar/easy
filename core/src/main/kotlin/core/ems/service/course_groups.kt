@@ -22,7 +22,7 @@ fun groupExistsOnCourse(groupId: Long, courseId: Long): Boolean {
     }
 }
 
-fun getTeacherRestrictedGroups(courseId: Long, callerId: String): List<Long> {
+fun getTeacherRestrictedCourseGroups(courseId: Long, callerId: String): List<Long> {
     return transaction {
         TeacherCourseGroup
                 .slice(TeacherCourseGroup.courseGroup)

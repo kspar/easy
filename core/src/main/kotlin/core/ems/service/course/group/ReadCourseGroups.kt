@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseGroup
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.getTeacherRestrictedGroups
+import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.andWhere
@@ -20,7 +20,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class ReadGroupsController {
+class ReadCourseGroupsController {
 
     data class Resp(@JsonProperty("groups") val groups: List<GroupResp>)
 
@@ -41,10 +41,10 @@ class ReadGroupsController {
     }
 }
 
-private fun selectGroups(courseId: Long, callerId: String): List<ReadGroupsController.GroupResp> {
+private fun selectGroups(courseId: Long, callerId: String): List<ReadCourseGroupsController.GroupResp> {
     return transaction {
 
-        val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
+        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
 
         val query = CourseGroup
                 .select {
@@ -58,7 +58,7 @@ private fun selectGroups(courseId: Long, callerId: String): List<ReadGroupsContr
         }
 
         query.map {
-            ReadGroupsController.GroupResp(
+            ReadCourseGroupsController.GroupResp(
                     it[CourseGroup.id].value.toString(),
                     it[CourseGroup.name]
             )

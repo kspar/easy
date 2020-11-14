@@ -20,7 +20,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class RemoveTeacherFromGroupController {
+class RemoveTeacherFromCourseGroupController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @DeleteMapping("/courses/{courseId}/groups/{groupId}/teachers/{teacherId}")

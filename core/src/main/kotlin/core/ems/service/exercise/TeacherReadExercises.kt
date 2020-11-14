@@ -59,7 +59,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String, cou
 
     return transaction {
 
-        val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
+        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
         val studentQuery = courseService.selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups, true)
 
         val studentCount = studentQuery.count().toInt()

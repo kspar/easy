@@ -5,7 +5,7 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
-import core.ems.service.getTeacherRestrictedGroups
+import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
 import core.util.writeZipFile
@@ -87,7 +87,7 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Lo
         when {
             groupIds.isNotEmpty() -> query.andWhere { StudentCourseGroup.courseGroup inList groupIds }
             else -> {
-                val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
+                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
                 if (restrictedGroups.isNotEmpty()) {
                     query.andWhere {
                         StudentCourseGroup.courseGroup inList restrictedGroups or (StudentCourseGroup.courseGroup.isNull())

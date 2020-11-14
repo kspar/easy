@@ -22,7 +22,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateGroupController {
+class CreateCourseGroupController {
 
     data class Req(
             @JsonProperty("name", required = true)

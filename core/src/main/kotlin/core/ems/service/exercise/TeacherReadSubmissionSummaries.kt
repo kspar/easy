@@ -6,7 +6,7 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
-import core.ems.service.getTeacherRestrictedGroups
+import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -133,7 +133,7 @@ private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, c
         when {
             groupId != null -> subQuery.andWhere { StudentCourseGroup.courseGroup eq groupId }
             else -> {
-                val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
+                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
                 if (restrictedGroups.isNotEmpty()) {
                     subQuery.andWhere {
                         StudentCourseGroup.courseGroup inList restrictedGroups or
