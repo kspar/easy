@@ -64,7 +64,7 @@ object Course : LongIdTable("course") {
     val moodleSyncGrades = bool("moodle_sync_grades")
 }
 
-object Group : LongIdTable("group") {
+object CourseGroup : LongIdTable("course_group") {
     val name = text("name")
     val course = reference("course_id", Course)
 }
@@ -91,11 +91,11 @@ object TeacherCourseAccess : Table("teacher_course_access") {
     override val primaryKey = PrimaryKey(teacher, course)
 }
 
-object TeacherGroupAccess : Table("teacher_group_access") {
+object TeacherCourseGroup : Table("teacher_course_group_access") {
     val teacher = reference("teacher_id", TeacherCourseAccess.teacher)
     val course = reference("course_id", TeacherCourseAccess.course)
-    val group = reference("group_id", Group)
-    override val primaryKey = PrimaryKey(teacher, course, group)
+    val courseGroup = reference("group_id", CourseGroup)
+    override val primaryKey = PrimaryKey(teacher, course, courseGroup)
 }
 
 object StudentCourseAccess : LongIdTable("student_course_access") {
@@ -105,13 +105,13 @@ object StudentCourseAccess : LongIdTable("student_course_access") {
     val createdAt = datetime("created_at")
 }
 
-object StudentGroupAccess : Table("student_group_access") {
+object StudentCourseGroup : Table("student_course_group_access") {
     // Should not refer to StudentCourseAccess.id but to its composite key
     val student = text("student_id") //reference("student_id", StudentCourseAccess.student).primaryKey()
     val course = long("course_id") //reference("course_id", StudentCourseAccess.course).primaryKey()
     val courseAccess = reference("student_course_access_id", StudentCourseAccess)
-    val group = reference("group_id", Group)
-    override val primaryKey = PrimaryKey(courseAccess, group)
+    val courseGroup = reference("group_id", CourseGroup)
+    override val primaryKey = PrimaryKey(courseAccess, courseGroup)
 }
 
 object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access") {
@@ -121,13 +121,13 @@ object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access")
     val email = text("email")
 }
 
-object StudentMoodlePendingGroup : Table("student_moodle_pending_group_access") {
+object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_group_access") {
     // Should not refer to StudentMoodlePendingAccess.id but to its composite key
     val moodleUsername = text("moodle_username") //reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
     val course = long("course_id") //reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
     val pendingAccess = reference("student_moodle_pending_access_id", StudentMoodlePendingAccess)
-    val group = reference("group_id", Group)
-    override val primaryKey = PrimaryKey(pendingAccess, group)
+    val courseGroup = reference("group_id", CourseGroup)
+    override val primaryKey = PrimaryKey(pendingAccess, courseGroup)
 }
 
 object StudentPendingAccess : LongIdTable("student_pending_access") {
@@ -137,13 +137,13 @@ object StudentPendingAccess : LongIdTable("student_pending_access") {
     val validFrom = datetime("valid_from")
 }
 
-object StudentPendingGroup : Table("student_pending_group_access") {
+object StudentPendingCourseGroup : Table("student_pending_course_group_access") {
     // Should not refer to StudentPendingAccess.id but to its composite key
     val email = text("email") //reference("email", StudentPendingAccess.email).primaryKey()
     val course = long("course_id") //reference("course_id", StudentPendingAccess.course).primaryKey()
     val pendingAccess = reference("student_pending_access_id", StudentPendingAccess)
-    val group = reference("group_id", Group)
-    override val primaryKey = PrimaryKey(pendingAccess, group)
+    val courseGroup = reference("group_id", CourseGroup)
+    override val primaryKey = PrimaryKey(pendingAccess, courseGroup)
 }
 
 object Submission : LongIdTable("submission") {
@@ -265,4 +265,19 @@ object StoredFile : IdTable<String>("stored_file") {
     val data = binary("data")
     val createdAt = datetime("created_at")
     val owner = reference("created_by_id", Teacher)
+}
+
+object Group : LongIdTable("group") {
+    val name = text("name")
+    val color = text("color").nullable()
+    val isImplicit = bool("implicit")
+    val createdAt = datetime("created_at")
+}
+
+object AccountGroup : Table("account_group_access") {
+    val account = reference("account_id", Account)
+    val group = reference("group_id", Group)
+    val isManager = bool("manager")
+    val createdAt = datetime("created_at")
+    override val primaryKey = PrimaryKey(account, group)
 }

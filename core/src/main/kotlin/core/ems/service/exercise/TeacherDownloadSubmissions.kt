@@ -69,14 +69,14 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Lo
     return transaction {
 
         val join1 = Submission innerJoin CourseExercise innerJoin (Student innerJoin Account)
-        val join2 = StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group)
+        val join2 = StudentCourseAccess leftJoin (StudentCourseGroup innerJoin CourseGroup)
 
         val query = Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
                 .slice(Submission.solution,
                         Submission.student,
                         Account.givenName,
                         Account.familyName,
-                        Group.name)
+                        CourseGroup.name)
                 .select {
                     CourseExercise.exercise eq exerciseId and
                             (CourseExercise.course eq courseId) and
@@ -85,12 +85,12 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Lo
                 .orderBy(Submission.createdAt, SortOrder.DESC)
 
         when {
-            groupIds.isNotEmpty() -> query.andWhere { StudentGroupAccess.group inList groupIds }
+            groupIds.isNotEmpty() -> query.andWhere { StudentCourseGroup.courseGroup inList groupIds }
             else -> {
                 val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
                 if (restrictedGroups.isNotEmpty()) {
                     query.andWhere {
-                        StudentGroupAccess.group inList restrictedGroups or (StudentGroupAccess.group.isNull())
+                        StudentCourseGroup.courseGroup inList restrictedGroups or (StudentCourseGroup.courseGroup.isNull())
                     }
                 }
             }
@@ -102,7 +102,7 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Lo
                             createFileName(it[Account.givenName],
                                     it[Account.familyName],
                                     courseId,
-                                    it[Group.name]))
+                                    it[CourseGroup.name]))
                 }
     }
 }

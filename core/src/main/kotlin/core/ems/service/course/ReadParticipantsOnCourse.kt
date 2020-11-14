@@ -191,15 +191,15 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Long?, limit: Int?): 
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        val selectQuery = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess leftJoin Group)
+        val selectQuery = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
                 .slice(Account.id,
                         Account.email,
                         Account.givenName,
                         Account.familyName,
                         Account.moodleUsername,
                         StudentCourseAccess.createdAt,
-                        Group.id,
-                        Group.name
+                        CourseGroup.id,
+                        CourseGroup.name
                 )
                 .select { StudentCourseAccess.course eq courseId }
 
@@ -208,7 +208,7 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Long?, limit: Int?): 
         Pair(
                 selectQuery.limit(limit ?: count.toInt(), offset ?: 0)
                         .map {
-                            val groupId: EntityID<Long>? = it[Group.id]
+                            val groupId: EntityID<Long>? = it[CourseGroup.id]
                             Pair(
                                     StudentOnCourse(
                                             it[Account.id].value,
@@ -221,7 +221,7 @@ private fun selectStudentsOnCourse(courseId: Long, offset: Long?, limit: Int?): 
                                     if (groupId == null) null else
                                         StudentGroup(
                                                 groupId.value.toString(),
-                                                it[Group.name]
+                                                it[CourseGroup.name]
                                         )
                             )
                         }
@@ -248,11 +248,11 @@ private fun selectStudentsPendingOnCourse(courseId: Long, offset: Long?, limit: 
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        val selectQuery = (StudentPendingAccess leftJoin StudentPendingGroup leftJoin Group)
+        val selectQuery = (StudentPendingAccess leftJoin StudentPendingCourseGroup leftJoin CourseGroup)
                 .slice(StudentPendingAccess.email,
                         StudentPendingAccess.validFrom,
-                        Group.id,
-                        Group.name)
+                        CourseGroup.id,
+                        CourseGroup.name)
                 .select { StudentPendingAccess.course eq courseId }
 
         val count = selectQuery.count()
@@ -260,7 +260,7 @@ private fun selectStudentsPendingOnCourse(courseId: Long, offset: Long?, limit: 
         Pair(
                 selectQuery.limit(limit ?: count.toInt(), offset ?: 0)
                         .map {
-                            val groupId: EntityID<Long>? = it[Group.id]
+                            val groupId: EntityID<Long>? = it[CourseGroup.id]
                             Pair(
                                     PendingStudent(
                                             it[StudentPendingAccess.email],
@@ -269,7 +269,7 @@ private fun selectStudentsPendingOnCourse(courseId: Long, offset: Long?, limit: 
                                     if (groupId == null) null else
                                         StudentGroup(
                                                 groupId.value.toString(),
-                                                it[Group.name]
+                                                it[CourseGroup.name]
                                         )
                             )
                         }
@@ -292,11 +292,11 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Long?, l
     data class StudentGroup(val id: String, val name: String)
 
     return transaction {
-        val selectQuery = (StudentMoodlePendingAccess leftJoin StudentMoodlePendingGroup leftJoin Group)
+        val selectQuery = (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
                 .slice(StudentMoodlePendingAccess.moodleUsername,
                         StudentMoodlePendingAccess.email,
-                        Group.id,
-                        Group.name)
+                        CourseGroup.id,
+                        CourseGroup.name)
                 .select { StudentMoodlePendingAccess.course eq courseId }
 
         val count = selectQuery.count()
@@ -304,7 +304,7 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Long?, l
         Pair(
                 selectQuery.limit(limit ?: count.toInt(), offset ?: 0)
                         .map {
-                            val groupId: EntityID<Long>? = it[Group.id]
+                            val groupId: EntityID<Long>? = it[CourseGroup.id]
                             Pair(
                                     PendingStudent(
                                             it[StudentMoodlePendingAccess.moodleUsername],
@@ -313,7 +313,7 @@ private fun selectMoodleStudentsPendingOnCourse(courseId: Long, offset: Long?, l
                                     if (groupId == null) null else
                                         StudentGroup(
                                                 groupId.value.toString(),
-                                                it[Group.name]
+                                                it[CourseGroup.name]
                                         )
                             )
                         }
@@ -342,13 +342,13 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Long?, limit: Int?): 
     data class TeacherGroup(val id: String, val name: String)
 
     return transaction {
-        val selectQuery = (Account innerJoin Teacher innerJoin TeacherCourseAccess leftJoin TeacherGroupAccess leftJoin Group)
+        val selectQuery = (Account innerJoin Teacher innerJoin TeacherCourseAccess leftJoin TeacherCourseGroup leftJoin CourseGroup)
                 .slice(Account.id,
                         Account.email,
                         Account.givenName,
                         Account.familyName,
-                        Group.id,
-                        Group.name,
+                        CourseGroup.id,
+                        CourseGroup.name,
                         TeacherCourseAccess.createdAt)
                 .select { TeacherCourseAccess.course eq courseId }
 
@@ -357,7 +357,7 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Long?, limit: Int?): 
         Pair(
                 selectQuery.limit(limit ?: count.toInt(), offset ?: 0)
                         .map {
-                            val groupId: EntityID<Long>? = it[Group.id]
+                            val groupId: EntityID<Long>? = it[CourseGroup.id]
                             Pair(
                                     TeacherOnCourse(
                                             it[Account.id].value,
@@ -369,7 +369,7 @@ private fun selectTeachersOnCourse(courseId: Long, offset: Long?, limit: Int?): 
                                     if (groupId == null) null else
                                         TeacherGroup(
                                                 groupId.value.toString(),
-                                                it[Group.name]
+                                                it[CourseGroup.name]
                                         )
                             )
                         }

@@ -3,9 +3,9 @@ package core.ems.service.course.group
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.db.Group
+import core.db.CourseGroup
 import core.db.Teacher
-import core.db.TeacherGroupAccess
+import core.db.TeacherCourseGroup
 import core.ems.service.*
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -65,10 +65,10 @@ private fun addTeachersToGroup(courseId: Long, groupId: Long, teacherUsernames: 
                 throw InvalidRequestException("Teacher $teacherUsername does not have access to course $courseId")
             }
 
-            TeacherGroupAccess.insertIgnore {
+            TeacherCourseGroup.insertIgnore {
                 it[teacher] = EntityID(teacherUsername, Teacher)
                 it[course] = EntityID(courseId, Course)
-                it[group] = EntityID(groupId, Group)
+                it[courseGroup] = EntityID(groupId, CourseGroup)
             }
         }
     }

@@ -53,7 +53,7 @@ class CourseService(val privateCachingService: PrivateCachingService) {
      */
     fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>,
                                     groups: List<Long>, includeUngrouped: Boolean): Query {
-        val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentGroupAccess)
+        val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentCourseGroup)
                 .slice(Student.id,
                         Account.email,
                         Account.givenName,
@@ -64,9 +64,9 @@ class CourseService(val privateCachingService: PrivateCachingService) {
         if (groups.isNotEmpty()) {
             query.andWhere {
                 if (includeUngrouped)
-                    StudentGroupAccess.group inList groups or StudentGroupAccess.group.isNull()
+                    StudentCourseGroup.courseGroup inList groups or StudentCourseGroup.courseGroup.isNull()
                 else
-                    StudentGroupAccess.group inList groups
+                    StudentCourseGroup.courseGroup inList groups
             }
         }
 

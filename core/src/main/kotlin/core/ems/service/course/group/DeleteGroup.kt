@@ -42,17 +42,17 @@ class DeleteGroupController {
 
 private fun deleteGroup(courseId: Long, groupId: Long) {
     transaction {
-        val teachers = TeacherGroupAccess.select {
-            TeacherGroupAccess.group eq groupId
+        val teachers = TeacherCourseGroup.select {
+            TeacherCourseGroup.courseGroup eq groupId
         }.count()
-        val students = StudentGroupAccess.select {
-            StudentGroupAccess.group eq groupId
+        val students = StudentCourseGroup.select {
+            StudentCourseGroup.courseGroup eq groupId
         }.count()
-        val pendingStudents = StudentPendingGroup.select {
-            StudentPendingGroup.group eq groupId
+        val pendingStudents = StudentPendingCourseGroup.select {
+            StudentPendingCourseGroup.courseGroup eq groupId
         }.count()
-        val moodlePendingStudents = StudentMoodlePendingGroup.select {
-            StudentMoodlePendingGroup.group eq groupId
+        val moodlePendingStudents = StudentMoodlePendingCourseGroup.select {
+            StudentMoodlePendingCourseGroup.courseGroup eq groupId
         }.count()
 
         if (teachers + students + pendingStudents + moodlePendingStudents > 0) {
@@ -63,8 +63,8 @@ private fun deleteGroup(courseId: Long, groupId: Long) {
             )
         }
 
-        Group.deleteWhere {
-            Group.id eq groupId and (Group.course eq EntityID(courseId, Course))
+        CourseGroup.deleteWhere {
+            CourseGroup.id eq groupId and (CourseGroup.course eq EntityID(courseId, Course))
         }
     }
 }

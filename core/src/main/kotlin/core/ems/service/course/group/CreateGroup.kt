@@ -3,7 +3,7 @@ package core.ems.service.course.group
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.db.Group
+import core.db.CourseGroup
 import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
@@ -56,7 +56,7 @@ class CreateGroupController {
 
 private fun createGroup(courseId: Long, groupName: String): Long {
     return transaction {
-        Group.insertAndGetId {
+        CourseGroup.insertAndGetId {
             it[name] = groupName
             it[course] = EntityID(courseId, Course)
         }

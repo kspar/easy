@@ -2,7 +2,7 @@ package core.ems.service.course.group
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Group
+import core.db.CourseGroup
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedGroups
 import core.ems.service.idToLongOrInvalidReq
@@ -46,21 +46,21 @@ private fun selectGroups(courseId: Long, callerId: String): List<ReadGroupsContr
 
         val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
 
-        val query = Group
+        val query = CourseGroup
                 .select {
-                    Group.course eq courseId
+                    CourseGroup.course eq courseId
                 }
 
         if (restrictedGroups.isNotEmpty()) {
             query.andWhere {
-                Group.id inList restrictedGroups
+                CourseGroup.id inList restrictedGroups
             }
         }
 
         query.map {
             ReadGroupsController.GroupResp(
-                    it[Group.id].value.toString(),
-                    it[Group.name]
+                    it[CourseGroup.id].value.toString(),
+                    it[CourseGroup.name]
             )
         }
     }

@@ -93,10 +93,10 @@ class MoodleSyncService {
                     .map { it.name }
 
             val groupNamesToIds = moodleGroups.map { moodleGroupName ->
-                val groupId = Group.select { Group.course eq courseId and (Group.name eq moodleGroupName) }
-                        .map { it[Group.id] }
+                val groupId = CourseGroup.select { CourseGroup.course eq courseId and (CourseGroup.name eq moodleGroupName) }
+                        .map { it[CourseGroup.id] }
                         .singleOrNull()
-                        ?: Group.insertAndGetId {
+                        ?: CourseGroup.insertAndGetId {
                             it[name] = moodleGroupName
                             it[course] = courseEntity
                         }
@@ -157,11 +157,11 @@ class MoodleSyncService {
                     it[course] = courseEntity
                     it[createdAt] = time
                 }
-                StudentGroupAccess.batchInsert(newAccess.groups) {
-                    this[StudentGroupAccess.student] = newAccess.username
-                    this[StudentGroupAccess.course] = courseId
-                    this[StudentGroupAccess.group] = groupNamesToIds.getValue(it.name)
-                    this[StudentGroupAccess.courseAccess] = accessId
+                StudentCourseGroup.batchInsert(newAccess.groups) {
+                    this[StudentCourseGroup.student] = newAccess.username
+                    this[StudentCourseGroup.course] = courseId
+                    this[StudentCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
+                    this[StudentCourseGroup.courseAccess] = accessId
                 }
             }
 
@@ -175,11 +175,11 @@ class MoodleSyncService {
                     it[course] = courseEntity
                     it[email] = newPendingAccess.email
                 }
-                StudentMoodlePendingGroup.batchInsert(newPendingAccess.groups) {
-                    this[StudentMoodlePendingGroup.moodleUsername] = newPendingAccess.moodleUsername
-                    this[StudentMoodlePendingGroup.course] = courseId
-                    this[StudentMoodlePendingGroup.group] = groupNamesToIds.getValue(it.name)
-                    this[StudentMoodlePendingGroup.pendingAccess] = accessId
+                StudentMoodlePendingCourseGroup.batchInsert(newPendingAccess.groups) {
+                    this[StudentMoodlePendingCourseGroup.moodleUsername] = newPendingAccess.moodleUsername
+                    this[StudentMoodlePendingCourseGroup.course] = courseId
+                    this[StudentMoodlePendingCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
+                    this[StudentMoodlePendingCourseGroup.pendingAccess] = accessId
                 }
             }
 

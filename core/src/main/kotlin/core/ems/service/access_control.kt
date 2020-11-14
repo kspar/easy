@@ -68,10 +68,10 @@ fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): 
         if (!hasGroups) {
             true
         } else {
-            TeacherGroupAccess.select {
-                TeacherGroupAccess.course eq courseId and
-                        (TeacherGroupAccess.teacher eq user.id) and
-                        (TeacherGroupAccess.group eq groupId)
+            TeacherCourseGroup.select {
+                TeacherCourseGroup.course eq courseId and
+                        (TeacherCourseGroup.teacher eq user.id) and
+                        (TeacherCourseGroup.courseGroup eq groupId)
             }.count() > 0
         }
     }
@@ -91,10 +91,10 @@ fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: 
 
 fun teacherHasRestrictedGroupsOnCourse(user: EasyUser, courseId: Long): Boolean {
     return transaction {
-        TeacherGroupAccess
+        TeacherCourseGroup
                 .select {
-                    TeacherGroupAccess.course eq courseId and
-                            (TeacherGroupAccess.teacher eq user.id)
+                    TeacherCourseGroup.course eq courseId and
+                            (TeacherCourseGroup.teacher eq user.id)
                 }.count() > 0
     }
 }

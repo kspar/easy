@@ -107,10 +107,10 @@ private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, c
         // Prevent teacher and auto grade name clash
         val autoGradeAlias = AutomaticAssessment.grade.alias("autoGrade")
         val validGradeAlias = Coalesce(TeacherAssessment.grade, AutomaticAssessment.grade).alias("validGrade")
-        val groupsString = GroupConcat(Group.name, ", ", false).alias("groupsString")
+        val groupsString = GroupConcat(CourseGroup.name, ", ", false).alias("groupsString")
 
         val subQuery = (
-                Join(StudentCourseAccess leftJoin (StudentGroupAccess innerJoin Group), CourseExercise,
+                Join(StudentCourseAccess leftJoin (StudentCourseGroup innerJoin CourseGroup), CourseExercise,
                         onColumn = StudentCourseAccess.course, otherColumn = CourseExercise.course) innerJoin
                         Student innerJoin Account leftJoin
                         (Submission leftJoin AutomaticAssessment leftJoin TeacherAssessment))
@@ -131,13 +131,13 @@ private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, c
                         TeacherAssessment.createdAt to SortOrder.DESC)
 
         when {
-            groupId != null -> subQuery.andWhere { StudentGroupAccess.group eq groupId }
+            groupId != null -> subQuery.andWhere { StudentCourseGroup.courseGroup eq groupId }
             else -> {
                 val restrictedGroups = getTeacherRestrictedGroups(courseId, callerId)
                 if (restrictedGroups.isNotEmpty()) {
                     subQuery.andWhere {
-                        StudentGroupAccess.group inList restrictedGroups or
-                                (StudentGroupAccess.group.isNull())
+                        StudentCourseGroup.courseGroup inList restrictedGroups or
+                                (StudentCourseGroup.courseGroup.isNull())
                     }
                 }
             }

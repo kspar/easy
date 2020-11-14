@@ -171,16 +171,16 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 it[StudentCourseAccess.course] = courseId
             }
 
-            val groupIds = StudentPendingGroup
-                    .slice(StudentPendingGroup.group)
-                    .select { StudentPendingGroup.pendingAccess eq pendingAccessId }
-                    .map { it[StudentPendingGroup.group] }
+            val groupIds = StudentPendingCourseGroup
+                    .slice(StudentPendingCourseGroup.courseGroup)
+                    .select { StudentPendingCourseGroup.pendingAccess eq pendingAccessId }
+                    .map { it[StudentPendingCourseGroup.courseGroup] }
 
-            StudentGroupAccess.batchInsert(groupIds) {
-                this[StudentGroupAccess.student] = student.value
-                this[StudentGroupAccess.course] = courseId.value
-                this[StudentGroupAccess.group] = it
-                this[StudentGroupAccess.courseAccess] = accessId
+            StudentCourseGroup.batchInsert(groupIds) {
+                this[StudentCourseGroup.student] = student.value
+                this[StudentCourseGroup.course] = courseId.value
+                this[StudentCourseGroup.courseGroup] = it
+                this[StudentCourseGroup.courseAccess] = accessId
             }
         }
 
@@ -219,16 +219,16 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 it[StudentCourseAccess.course] = EntityID(pendingAccess.courseId, Course)
             }
 
-            val groupIds = StudentMoodlePendingGroup
-                    .slice(StudentMoodlePendingGroup.group)
-                    .select { StudentMoodlePendingGroup.pendingAccess eq pendingAccess.id }
-                    .map { it[StudentMoodlePendingGroup.group] }
+            val groupIds = StudentMoodlePendingCourseGroup
+                    .slice(StudentMoodlePendingCourseGroup.courseGroup)
+                    .select { StudentMoodlePendingCourseGroup.pendingAccess eq pendingAccess.id }
+                    .map { it[StudentMoodlePendingCourseGroup.courseGroup] }
 
-            StudentGroupAccess.batchInsert(groupIds) {
-                this[StudentGroupAccess.student] = student.value
-                this[StudentGroupAccess.course] = pendingAccess.courseId
-                this[StudentGroupAccess.group] = it
-                this[StudentGroupAccess.courseAccess] = accessId
+            StudentCourseGroup.batchInsert(groupIds) {
+                this[StudentCourseGroup.student] = student.value
+                this[StudentCourseGroup.course] = pendingAccess.courseId
+                this[StudentCourseGroup.courseGroup] = it
+                this[StudentCourseGroup.courseAccess] = accessId
             }
         }
 

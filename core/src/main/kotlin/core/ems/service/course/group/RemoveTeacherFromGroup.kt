@@ -1,7 +1,7 @@
 package core.ems.service.course.group
 
 import core.conf.security.EasyUser
-import core.db.TeacherGroupAccess
+import core.db.TeacherCourseGroup
 import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
@@ -45,10 +45,10 @@ class RemoveTeacherFromGroupController {
 
 private fun removeTeacherFromGroup(courseId: Long, groupId: Long, teacherUsername: String) {
     transaction {
-        TeacherGroupAccess.deleteWhere {
-            TeacherGroupAccess.teacher eq teacherUsername and
-                    (TeacherGroupAccess.group eq groupId) and
-                    (TeacherGroupAccess.course eq courseId)
+        TeacherCourseGroup.deleteWhere {
+            TeacherCourseGroup.teacher eq teacherUsername and
+                    (TeacherCourseGroup.courseGroup eq groupId) and
+                    (TeacherCourseGroup.course eq courseId)
         }
     }
 }

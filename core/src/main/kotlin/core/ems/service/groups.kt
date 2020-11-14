@@ -1,7 +1,7 @@
 package core.ems.service
 
-import core.db.Group
-import core.db.TeacherGroupAccess
+import core.db.CourseGroup
+import core.db.TeacherCourseGroup
 import core.exception.InvalidRequestException
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
@@ -16,19 +16,19 @@ fun assertGroupExistsOnCourse(groupId: Long, courseId: Long) {
 
 fun groupExistsOnCourse(groupId: Long, courseId: Long): Boolean {
     return transaction {
-        Group.select {
-            Group.id eq groupId and (Group.course eq courseId)
+        CourseGroup.select {
+            CourseGroup.id eq groupId and (CourseGroup.course eq courseId)
         }.count() > 0
     }
 }
 
 fun getTeacherRestrictedGroups(courseId: Long, callerId: String): List<Long> {
     return transaction {
-        TeacherGroupAccess
-                .slice(TeacherGroupAccess.group)
+        TeacherCourseGroup
+                .slice(TeacherCourseGroup.courseGroup)
                 .select {
-                    TeacherGroupAccess.course eq courseId and
-                            (TeacherGroupAccess.teacher eq callerId)
-                }.map { it[TeacherGroupAccess.group].value }
+                    TeacherCourseGroup.course eq courseId and
+                            (TeacherCourseGroup.teacher eq callerId)
+                }.map { it[TeacherCourseGroup.courseGroup].value }
     }
 }

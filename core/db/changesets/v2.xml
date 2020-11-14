@@ -847,4 +847,56 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="141120-1" author="kspar">
+        <renameTable oldTableName="group" newTableName="course_group"/>
+        <sql>
+            alter index group_pkey rename to course_group_pkey;
+            alter table course_group rename constraint fk_group_course to fk_course_group_course;
+            alter sequence seq_group_id rename to seq_course_group_id;
+        </sql>
+        <renameTable oldTableName="student_group_access" newTableName="student_course_group_access"/>
+        <renameTable oldTableName="student_moodle_pending_group_access" newTableName="student_moodle_pending_course_group_access"/>
+        <renameTable oldTableName="student_pending_group_access" newTableName="student_pending_course_group_access"/>
+        <renameTable oldTableName="teacher_group_access" newTableName="teacher_course_group_access"/>
+    </changeSet>
+
+    <changeSet id="141120-2" author="kspar">
+        <createTable tableName="group">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="implicit" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="account_group_access">
+            <column name="account_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_account_group_access_account"
+                             nullable="false"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints references="group(id)"
+                             foreignKeyName="fk_account_group_access_group"
+                             nullable="false"/>
+            </column>
+            <column name="manager" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
 </databaseChangeLog>

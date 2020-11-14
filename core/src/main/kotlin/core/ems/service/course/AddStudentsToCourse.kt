@@ -107,11 +107,11 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
                 it[student] = EntityID(newStudent.id, Student)
                 it[createdAt] = now
             }
-            StudentGroupAccess.batchInsert(newStudent.groups) {
-                this[StudentGroupAccess.student] = newStudent.id
-                this[StudentGroupAccess.course] = courseId
-                this[StudentGroupAccess.group] = EntityID(it, Group)
-                this[StudentGroupAccess.courseAccess] = accessId
+            StudentCourseGroup.batchInsert(newStudent.groups) {
+                this[StudentCourseGroup.student] = newStudent.id
+                this[StudentCourseGroup.course] = courseId
+                this[StudentCourseGroup.courseGroup] = EntityID(it, CourseGroup)
+                this[StudentCourseGroup.courseAccess] = accessId
             }
         }
 
@@ -126,11 +126,11 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
                 it[email] = pendingStudent.email
                 it[validFrom] = now
             }
-            StudentPendingGroup.batchInsert(pendingStudent.groups) {
-                this[StudentPendingGroup.email] = pendingStudent.email
-                this[StudentPendingGroup.course] = courseId
-                this[StudentPendingGroup.group] = EntityID(it, Group)
-                this[StudentPendingGroup.pendingAccess] = accessId
+            StudentPendingCourseGroup.batchInsert(pendingStudent.groups) {
+                this[StudentPendingCourseGroup.email] = pendingStudent.email
+                this[StudentPendingCourseGroup.course] = courseId
+                this[StudentPendingCourseGroup.courseGroup] = EntityID(it, CourseGroup)
+                this[StudentPendingCourseGroup.pendingAccess] = accessId
             }
         }
 
