@@ -31,6 +31,8 @@ class CreateGroupController {
 
 private fun insertGroup(newGroup: CreateGroupController.Req): Long {
     return transaction {
+        // TODO: allow adding color
+        // TODO: if caller is teacher, add them to this group as manager
         Group.insertAndGetId {
             it[name] = newGroup.name
             it[color] = null
