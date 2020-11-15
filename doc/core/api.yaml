@@ -1894,6 +1894,8 @@ paths:
             properties:
               name:
                 type: string
+              color:
+                type: string
             required:
               - name
       responses:
