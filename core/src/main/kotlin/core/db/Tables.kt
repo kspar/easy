@@ -37,6 +37,7 @@ object Admin : IdTable<String>("admin") {
 }
 
 object Exercise : LongIdTable("exercise") {
+    val dir = reference("dir_id", Dir).nullable()
     val owner = reference("owned_by_id", Teacher)
     val createdAt = datetime("created_at")
     val public = bool("public")
@@ -280,4 +281,21 @@ object AccountGroup : Table("account_group_access") {
     val isManager = bool("manager")
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(account, group)
+}
+
+object Dir : LongIdTable("exercise_dir") {
+    val name = text("name")
+    val isImplicit = bool("implicit")
+    val parentDir = reference("parent", Dir).nullable()
+    val anyAccess = enumerationByName("any_account_access_level", 10, DirAccessLevel::class).nullable()
+    val createdAt = datetime("created_at")
+    val modifiedAt = datetime("modified_at")
+}
+
+object GroupDirAccess : Table("group_exercise_dir_access") {
+    val group = reference("group_id", Group)
+    val dir = reference("dir_id", Dir)
+    val level = enumerationByName("access_level", 10, DirAccessLevel::class)
+    val createdAt = datetime("created_at")
+    override val primaryKey = PrimaryKey(group, dir)
 }

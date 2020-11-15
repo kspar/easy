@@ -701,7 +701,8 @@
         easier to migrate back. -->
 
         <dropUniqueConstraint tableName="student_group_access" constraintName="student_group_access_pkey"/>
-        <dropForeignKeyConstraint baseTableName="student_group_access" constraintName="fk_student_group_access_student_course_access"/>
+        <dropForeignKeyConstraint baseTableName="student_group_access"
+                                  constraintName="fk_student_group_access_student_course_access"/>
 
         <dropUniqueConstraint tableName="student_course_access" constraintName="student_course_access_pkey"/>
         <addUniqueConstraint tableName="student_course_access" columnNames="course_id, student_id"/>
@@ -723,9 +724,10 @@
         <addPrimaryKey tableName="student_group_access" columnNames="student_course_access_id, group_id"/>
 
 
-
-        <dropUniqueConstraint tableName="student_pending_group_access" constraintName="student_pending_group_access_pkey"/>
-        <dropForeignKeyConstraint baseTableName="student_pending_group_access" constraintName="fk_student_pending_group_access_student_pending_access"/>
+        <dropUniqueConstraint tableName="student_pending_group_access"
+                              constraintName="student_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_pending_group_access"
+                                  constraintName="fk_student_pending_group_access_student_pending_access"/>
 
         <dropUniqueConstraint tableName="student_pending_access" constraintName="student_pending_access_pkey"/>
         <addUniqueConstraint tableName="student_pending_access" columnNames="course_id, email"/>
@@ -740,18 +742,21 @@
                 <constraints nullable="false"/>
             </column>
         </addColumn>
-        <addForeignKeyConstraint baseTableName="student_pending_group_access" baseColumnNames="student_pending_access_id"
+        <addForeignKeyConstraint baseTableName="student_pending_group_access"
+                                 baseColumnNames="student_pending_access_id"
                                  referencedTableName="student_pending_access" referencedColumnNames="id"
                                  onDelete="CASCADE"
                                  constraintName="fk_student_pending_group_access_student_pending_access"/>
         <addPrimaryKey tableName="student_pending_group_access" columnNames="student_pending_access_id, group_id"/>
 
 
+        <dropUniqueConstraint tableName="student_moodle_pending_group_access"
+                              constraintName="student_moodle_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
 
-        <dropUniqueConstraint tableName="student_moodle_pending_group_access" constraintName="student_moodle_pending_group_access_pkey"/>
-        <dropForeignKeyConstraint baseTableName="student_moodle_pending_group_access" constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
-
-        <dropUniqueConstraint tableName="student_moodle_pending_access" constraintName="student_moodle_pending_access_pkey"/>
+        <dropUniqueConstraint tableName="student_moodle_pending_access"
+                              constraintName="student_moodle_pending_access_pkey"/>
         <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="course_id, moodle_username"/>
         <addColumn tableName="student_moodle_pending_access">
             <column name="id" type="bigserial">
@@ -764,20 +769,22 @@
                 <constraints nullable="false"/>
             </column>
         </addColumn>
-        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access" baseColumnNames="student_moodle_pending_access_id"
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                 baseColumnNames="student_moodle_pending_access_id"
                                  referencedTableName="student_moodle_pending_access" referencedColumnNames="id"
                                  onDelete="CASCADE"
                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
-        <addPrimaryKey tableName="student_moodle_pending_group_access" columnNames="student_moodle_pending_access_id, group_id"/>
+        <addPrimaryKey tableName="student_moodle_pending_group_access"
+                       columnNames="student_moodle_pending_access_id, group_id"/>
     </changeSet>
 
 
     <changeSet id="150120-1" author="priit">
         <addColumn tableName="stored_file">
-        <column name="size_bytes" type="integer">
-            <constraints nullable="false"/>
-        </column>
-    </addColumn>
+            <column name="size_bytes" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
     </changeSet>
 
 
@@ -842,7 +849,8 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="exercise_id" type="bigint">
-                <constraints references="exercise(id)" foreignKeyName="fk_teacher_submission_exercise" nullable="false"/>
+                <constraints references="exercise(id)" foreignKeyName="fk_teacher_submission_exercise"
+                             nullable="false"/>
             </column>
         </addColumn>
     </changeSet>
@@ -855,7 +863,8 @@
             alter sequence seq_group_id rename to seq_course_group_id;
         </sql>
         <renameTable oldTableName="student_group_access" newTableName="student_course_group_access"/>
-        <renameTable oldTableName="student_moodle_pending_group_access" newTableName="student_moodle_pending_course_group_access"/>
+        <renameTable oldTableName="student_moodle_pending_group_access"
+                     newTableName="student_moodle_pending_course_group_access"/>
         <renameTable oldTableName="student_pending_group_access" newTableName="student_pending_course_group_access"/>
         <renameTable oldTableName="teacher_group_access" newTableName="teacher_course_group_access"/>
     </changeSet>
@@ -897,6 +906,65 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="141120-3" author="kspar">
+        <addPrimaryKey tableName="account_group_access" columnNames="account_id, group_id"/>
+
+        <createTable tableName="exercise_dir">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="implicit" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent" type="bigint">
+                <constraints references="exercise_dir(id)"
+                             foreignKeyName="fk_exercise_dir_exercise_dir"
+                             nullable="true"/>
+            </column>
+            <column name="any_account_access_level" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="group_exercise_dir_access">
+            <column name="group_id" type="bigint">
+                <constraints primaryKey="true"
+                             references="group(id)"
+                             foreignKeyName="fk_group_exercise_dir_access_group"
+                             nullable="false"/>
+            </column>
+            <column name="dir_id" type="bigint">
+                <constraints primaryKey="true"
+                             references="exercise_dir(id)"
+                             foreignKeyName="fk_group_exercise_dir_access_exercise_dir"
+                             nullable="false"/>
+            </column>
+            <column name="access_level" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addColumn tableName="exercise">
+            <column name="dir_id" type="bigint">
+                <constraints references="exercise_dir(id)"
+                             foreignKeyName="fk_exercise_exercise_dir"
+                             nullable="true"/>
+            </column>
+        </addColumn>
     </changeSet>
 
 </databaseChangeLog>
