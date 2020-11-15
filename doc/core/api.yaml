@@ -403,6 +403,7 @@ paths:
       parameters:
         - name: notification
           in: body
+          required: true
           schema:
             properties:
               message:
@@ -424,6 +425,7 @@ paths:
       parameters:
         - name: notification
           in: body
+          required: true
           schema:
             properties:
               message:
@@ -997,7 +999,7 @@ paths:
                   $ref: '#/definitions/Group'
 
     post:
-      summary: Create new group.
+      summary: Create new course group.
       tags:
         - teacher
       parameters:
@@ -1019,12 +1021,12 @@ paths:
             required:
               - id
 
-  /courses/{courseId}/groups/{groupId}:
+  /courses/{courseId}/groups/{courseGroupId}:
     parameters:
       - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/GroupId'
+      - $ref: '#/parameters/CourseGroupId'
     delete:
-      summary: Delete group.
+      summary: Delete course group.
       tags:
         - teacher
       responses:
@@ -1032,12 +1034,12 @@ paths:
           description: Group deleted.
 
 
-  /courses/{courseId}/groups/{groupId}/teachers:
+  /courses/{courseId}/groups/{courseGroupId}/teachers:
     parameters:
       - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/GroupId'
+      - $ref: '#/parameters/CourseGroupId'
     post:
-      summary: Add teachers to group.
+      summary: Add teachers to course group.
       tags:
         - teacher
       parameters:
@@ -1060,13 +1062,13 @@ paths:
           description: Teachers added to group.
 
 
-  /courses/{courseId}/groups/{groupId}/teachers/{teacherId}:
+  /courses/{courseId}/groups/{courseGroupId}/teachers/{teacherId}:
     parameters:
       - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/GroupId'
+      - $ref: '#/parameters/CourseGroupId'
       - $ref: '#/parameters/TeacherId'
     delete:
-      summary: Remove teacher from group.
+      summary: Remove teacher from course group.
       tags:
         - teacher
       responses:
@@ -1918,8 +1920,8 @@ parameters:
     required: true
     type: string
 
-  GroupId:
-    name: groupId
+  CourseGroupId:
+    name: courseGroupId
     in: path
     required: true
     type: string
