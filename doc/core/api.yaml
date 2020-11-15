@@ -1910,6 +1910,34 @@ paths:
             required:
               - id
 
+  /groups/{groupId}:
+    patch:
+      summary: Change group name or color.
+      tags:
+        - teacher
+      parameters:
+        - $ref: '#/parameters/GroupId'
+        - name: group
+          in: body
+          required: true
+          schema:
+            properties:
+              name:
+                type: string
+              color:
+                type: string
+              nullify:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - name
+                    - color
+      responses:
+        200:
+          description: Changed.
+
+
 
 
 parameters:
@@ -1998,6 +2026,11 @@ parameters:
     type: integer
     description: The numbers of results to return.
 
+  GroupId:
+    name: groupId
+    in: path
+    required: true
+    type: string
 
 definitions:
 
