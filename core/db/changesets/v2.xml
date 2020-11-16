@@ -967,4 +967,18 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="161120-1" author="kspar">
+        <!-- Migration: add implicit groups for all accounts -->
+        <sql>
+            INSERT INTO "group" (name, implicit, created_at)
+            SELECT a.username, true, a.created_at
+            FROM account a;
+
+            INSERT INTO account_group_access (account_id, group_id, manager, created_at)
+            SELECT g.name, g.id, false, g.created_at
+            FROM "group" g
+            WHERE g.implicit = true;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
