@@ -5,6 +5,8 @@ import core.db.*
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.util.component1
+import core.util.component2
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
@@ -190,5 +192,61 @@ fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
 fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
     if (!canTeacherOrAdminUpdateExercise(user, exerciseId)) {
         throw ForbiddenException("User ${user.id} does not have access to update exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
+
+fun assertAccountHasDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel) {
+    if (!hasAccountDirAccess(user, dirId, level)) {
+        throw ForbiddenException("User ${user.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS)
+    }
+}
+
+fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boolean {
+    return when {
+        user.isAdmin() -> true
+        else -> {
+            val effectiveLevel = getAccountDirAccessLevel(user.id, dirId, level)
+            log.trace { "effective level: $effectiveLevel" }
+            return effectiveLevel != null && effectiveLevel >= level
+        }
+    }
+}
+
+fun getAccountDirAccessLevel(userId: String, dirId: Long, target: DirAccessLevel = DirAccessLevel.RAWM): DirAccessLevel? =
+        getEffectiveDirAccessLevelRec(userId, dirId, target, null)
+
+private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, target: DirAccessLevel,
+                                                  previousBestLevel: DirAccessLevel?): DirAccessLevel? {
+    log.trace { "dir: $dirId, previous: $previousBestLevel" }
+    val currentDirGroupLevel = getAccountDirectDirAccessLevel(userId, dirId)
+    val (parentDirId, currentAnyAccessLevel) = transaction {
+        Dir.slice(Dir.parentDir, Dir.anyAccess)
+                .select { Dir.id eq dirId }
+                .map {
+                    it[Dir.parentDir] to it[Dir.anyAccess]
+                }.firstOrNull()
+    }
+
+    val bestLevel = listOfNotNull(previousBestLevel, currentDirGroupLevel, currentAnyAccessLevel).maxOrNull()
+
+    return when {
+        // Desired level achieved
+        bestLevel != null && bestLevel >= target -> bestLevel.also { log.trace { "finish, target achieved" } }
+        parentDirId == null -> bestLevel.also { log.trace { "finish, parent null" } }
+        else -> getEffectiveDirAccessLevelRec(userId, parentDirId.value, target, bestLevel)
+    }
+}
+
+fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel? {
+    return transaction {
+        (AccountGroup innerJoin Group innerJoin GroupDirAccess)
+                .slice(GroupDirAccess.level)
+                .select {
+                    AccountGroup.account eq userId and
+                            (GroupDirAccess.dir eq dirId)
+                }.map {
+                    it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
+                }.maxOrNull()
+                .also { log.trace { "best group access: $it" } }
     }
 }

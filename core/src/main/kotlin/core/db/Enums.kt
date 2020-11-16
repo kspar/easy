@@ -15,8 +15,9 @@ enum class AutoGradeStatus {
 }
 
 // Length in Table object is 10
-// TODO: Consider storing it as ordinal in DB to make it easily comparable
+// Stronger permissions must be defined after weaker ones - definition order specifies natural comparison order
 enum class DirAccessLevel {
+    // TODO: add P
     R,
     RA, // Only for non-implicit dirs
     RAW,
