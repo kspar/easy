@@ -92,14 +92,7 @@ private fun updateAccount(accountData: AccountData, privateCachingService: Priva
         val oldAccount = privateCachingService.selectAccount(accountData.username)
 
         if (oldAccount == null) {
-            Account.insert {
-                it[id] = EntityID(accountData.username, Account)
-                it[email] = accountData.email
-                it[moodleUsername] = accountData.moodleUsername
-                it[givenName] = accountData.givenName
-                it[familyName] = accountData.familyName
-                it[createdAt] = DateTime.now()
-            }
+            insertAccount(accountData)
             true
 
         } else {
@@ -122,6 +115,33 @@ private fun updateAccount(accountData: AccountData, privateCachingService: Priva
 
             isChanged
         }
+    }
+}
+
+private fun insertAccount(accountData: AccountData) {
+    val now = DateTime.now()
+    val accountId = EntityID(accountData.username, Account)
+
+    Account.insert {
+        it[id] = accountId
+        it[email] = accountData.email
+        it[moodleUsername] = accountData.moodleUsername
+        it[givenName] = accountData.givenName
+        it[familyName] = accountData.familyName
+        it[createdAt] = now
+    }
+
+    // Add implicit group for each account
+    val groupId = Group.insertAndGetId {
+        it[name] = accountData.username
+        it[isImplicit] = true
+        it[createdAt] = now
+    }
+    AccountGroup.insert {
+        it[account] = accountId
+        it[group] = groupId
+        it[isManager] = false
+        it[createdAt] = now
     }
 }
 
