@@ -271,7 +271,7 @@ object StoredFile : IdTable<String>("stored_file") {
 object Group : LongIdTable("group") {
     val name = text("name")
     val color = text("color").nullable()
-    val isImplicit = bool("implicit")
+    val isImplicit = bool("implicit").clientDefault { false }
     val createdAt = datetime("created_at")
 }
 
@@ -285,7 +285,7 @@ object AccountGroup : Table("account_group_access") {
 
 object Dir : LongIdTable("exercise_dir") {
     val name = text("name")
-    val isImplicit = bool("implicit")
+    val isImplicit = bool("implicit").clientDefault { false }
     val parentDir = reference("parent", Dir).nullable()
     val anyAccess = enumerationByName("any_account_access_level", 10, DirAccessLevel::class).nullable()
     val createdAt = datetime("created_at")
