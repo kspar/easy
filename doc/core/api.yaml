@@ -1674,6 +1674,8 @@ paths:
           in: body
           schema:
             properties:
+              parent_dir_id:
+                type: string
               title:
                 type: string
               text_html:

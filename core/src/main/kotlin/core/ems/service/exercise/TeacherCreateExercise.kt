@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.AdocService
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -29,17 +28,20 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateExerciseCont(private val adocService: AdocService) {
 
-    data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-                   @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
-                   @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
-                   @JsonProperty("public", required = true) val public: Boolean,
-                   @JsonProperty("grader_type", required = true) val graderType: GraderType,
-                   @JsonProperty("grading_script", required = false) val gradingScript: String?,
-                   @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
-                   @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
-                   @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
-                   @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
-                   @JsonProperty("executors", required = false) val executors: List<ReqExecutor>?)
+    data class Req(
+            @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
+            @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
+            @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
+            @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+            @JsonProperty("public", required = true) val public: Boolean,
+            @JsonProperty("grader_type", required = true) val graderType: GraderType,
+            @JsonProperty("grading_script", required = false) val gradingScript: String?,
+            @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
+            @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
+            @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
+            @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
+            @JsonProperty("executors", required = false) val executors: List<ReqExecutor>?,
+    )
 
     data class ReqAsset(@JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
                         @JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String)
@@ -51,19 +53,26 @@ class CreateExerciseCont(private val adocService: AdocService) {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/exercises")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
+        log.debug { "Create exercise '${dto.title}' in dir ${dto.parentDirIdStr} by ${caller.id}" }
 
-        log.debug { "Create exercise '${dto.title}' by ${caller.id}" }
+        val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
+
+        if (parentDirId != null) {
+            assertAccountHasDirAccess(caller, parentDirId, DirAccessLevel.RA)
+            assertDirExists(parentDirId)
+        }
 
         return when (dto.textAdoc) {
-            null -> Resp(insertExercise(caller.id, dto, dto.textHtml).toString())
-            else -> Resp(insertExercise(caller.id, dto, adocService.adocToHtml(dto.textAdoc)).toString())
+            null -> Resp(insertExercise(caller, dto, dto.textHtml, parentDirId).toString())
+            else -> Resp(insertExercise(caller, dto, adocService.adocToHtml(dto.textAdoc), parentDirId).toString())
         }
     }
 }
 
 
-private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req, html: String?): Long {
-    val teacherId = EntityID(ownerId, Teacher)
+private fun insertExercise(caller: EasyUser, req: CreateExerciseCont.Req, html: String?, parentDirId: Long?): Long {
+    val teacherId = EntityID(caller.id, Teacher)
+    val now = DateTime.now()
 
     return transaction {
 
@@ -75,16 +84,43 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req, html: S
 
                 } else null
 
+        val implicitDirId = Dir.insertAndGetId {
+            // ChickenEgg: name = exercise ID but that's not known yet
+            it[name] = "create-ex-placeholder"
+            it[isImplicit] = true
+            if (parentDirId != null) {
+                it[parentDir] = EntityID(parentDirId, Dir)
+            }
+            it[createdAt] = now
+            it[modifiedAt] = now
+        }
+
+        // If caller doesn't have full access by inheritance, add it explicitly
+        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.RAWM)) {
+            GroupDirAccess.insert {
+                it[group] = getAccountImplicitGroupId(caller.id)
+                it[dir] = implicitDirId
+                it[level] = DirAccessLevel.RAWM
+                it[createdAt] = now
+            }
+        }
+
         val exerciseId = Exercise.insertAndGetId {
             it[owner] = teacherId
             it[public] = req.public
-            it[createdAt] = DateTime.now()
+            it[dir] = implicitDirId
+            it[createdAt] = now
+        }
+
+        // Set correct name for implicit dir
+        Dir.update({ Dir.id eq implicitDirId }) {
+            it[name] = exerciseId.value.toString()
         }
 
         ExerciseVer.insert {
             it[exercise] = exerciseId
             it[author] = teacherId
-            it[validFrom] = DateTime.now()
+            it[validFrom] = now
             it[graderType] = req.graderType
             it[title] = req.title
             it[textHtml] = html
@@ -99,8 +135,8 @@ private fun insertExercise(ownerId: String, req: CreateExerciseCont.Req, html: S
                     .filter { html.contains(it) }
 
             StoredFile.update({ StoredFile.id inList inUse }) {
-                it[StoredFile.usageConfirmed] = true
-                it[StoredFile.exercise] = exerciseId
+                it[usageConfirmed] = true
+                it[exercise] = exerciseId
             }
         }
 
