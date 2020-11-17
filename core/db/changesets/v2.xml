@@ -981,4 +981,22 @@
         </sql>
     </changeSet>
 
+    <changeSet id="171120-1" author="kspar">
+        <!-- Migration: add implicit dirs for all exercises -->
+        <sql>
+            INSERT INTO exercise_dir (name, implicit, created_at, modified_at)
+            SELECT e.id, true, e.created_at, e.created_at
+            FROM exercise e;
+
+            UPDATE exercise e
+            SET dir_id = (SELECT id
+                FROM exercise_dir
+                WHERE name = cast(e.id as text)
+                    AND implicit = true);
+
+            <!-- After migration, exercise.dir_id always points to the exercise's implicit dir, so it cannot be null -->
+            ALTER TABLE exercise ALTER COLUMN dir_id SET NOT NULL;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
