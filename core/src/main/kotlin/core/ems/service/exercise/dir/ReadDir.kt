@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.assertAccountHasDirAccess
+import core.ems.service.assertDirExists
+import core.ems.service.getAccountDirAccessLevel
+import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -61,7 +64,6 @@ class ReadDirController {
                    caller: EasyUser): Resp {
 
         log.debug { "Read dir $dirIdString by ${caller.id}" }
-        debugPrintDir()
 
         val dirId = if (dirIdString.equals("root", true)) {
             null
