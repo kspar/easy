@@ -45,7 +45,7 @@ class CreateDirController {
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
         if (parentId != null) {
-            assertAccountHasDirAccess(caller, parentId, DirAccessLevel.RA)
+            assertAccountHasDirAccess(caller, parentId, DirAccessLevel.PRA)
         }
 
         return Resp(insertDir(body.name, parentId, caller).toString())
@@ -66,11 +66,11 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
         }
 
         // If caller doesn't have full access by inheritance, add it explicitly
-        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.RAWM)) {
+        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
             GroupDirAccess.insert {
                 it[group] = getAccountImplicitGroupId(caller.id)
                 it[dir] = newDirId
-                it[level] = DirAccessLevel.RAWM
+                it[level] = DirAccessLevel.PRAWM
                 it[createdAt] = now
             }
         }

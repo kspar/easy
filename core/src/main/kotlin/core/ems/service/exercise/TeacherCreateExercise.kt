@@ -58,7 +58,7 @@ class CreateExerciseCont(private val adocService: AdocService) {
         val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
 
         if (parentDirId != null) {
-            assertAccountHasDirAccess(caller, parentDirId, DirAccessLevel.RA)
+            assertAccountHasDirAccess(caller, parentDirId, DirAccessLevel.PRA)
             assertDirExists(parentDirId)
         }
 
@@ -96,11 +96,11 @@ private fun insertExercise(caller: EasyUser, req: CreateExerciseCont.Req, html: 
         }
 
         // If caller doesn't have full access by inheritance, add it explicitly
-        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.RAWM)) {
+        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
             GroupDirAccess.insert {
                 it[group] = getAccountImplicitGroupId(caller.id)
                 it[dir] = implicitDirId
-                it[level] = DirAccessLevel.RAWM
+                it[level] = DirAccessLevel.PRAWM
                 it[createdAt] = now
             }
         }

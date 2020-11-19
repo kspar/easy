@@ -212,11 +212,11 @@ fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boo
     }
 }
 
-fun getAccountDirAccessLevel(userId: String, dirId: Long, target: DirAccessLevel = DirAccessLevel.RAWM): DirAccessLevel? =
-        getEffectiveDirAccessLevelRec(userId, dirId, target, null)
+fun getAccountDirAccessLevel(userId: String, dirId: Long, target: DirAccessLevel = DirAccessLevel.PRAWM): DirAccessLevel? =
+        getEffectiveDirAccessLevelRec(userId, dirId, target, null, true)
 
 private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, target: DirAccessLevel,
-                                                  previousBestLevel: DirAccessLevel?): DirAccessLevel? {
+                                                  previousBestLevel: DirAccessLevel?, isDirect: Boolean): DirAccessLevel? {
     log.trace { "dir: $dirId, previous: $previousBestLevel" }
     val currentDirGroupLevel = getAccountDirectDirAccessLevel(userId, dirId)
     val (parentDirId, currentAnyAccessLevel) = transaction {
@@ -227,13 +227,18 @@ private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, t
                 }.firstOrNull()
     }
 
-    val bestLevel = listOfNotNull(previousBestLevel, currentDirGroupLevel, currentAnyAccessLevel).maxOrNull()
+    val initialDirectBestLevel = listOfNotNull(currentDirGroupLevel, currentAnyAccessLevel).maxOrNull()
+    // P is not inherited - if current dir has P and it's not direct then don't count it
+    val directBestLevel = if (!isDirect && initialDirectBestLevel == DirAccessLevel.P) null else initialDirectBestLevel
+    log.trace { "directBestLevel: $directBestLevel" }
+    val bestLevel = listOfNotNull(directBestLevel, previousBestLevel).maxOrNull()
+    log.trace { "bestLevel: $bestLevel" }
 
     return when {
         // Desired level achieved
-        bestLevel != null && bestLevel >= target -> bestLevel.also { log.trace { "finish, target achieved" } }
+        bestLevel != null && bestLevel >= target -> bestLevel.also { log.trace { "finish, target $target achieved" } }
         parentDirId == null -> bestLevel.also { log.trace { "finish, parent null" } }
-        else -> getEffectiveDirAccessLevelRec(userId, parentDirId.value, target, bestLevel)
+        else -> getEffectiveDirAccessLevelRec(userId, parentDirId.value, target, bestLevel, false)
     }
 }
 

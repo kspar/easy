@@ -17,9 +17,14 @@ enum class AutoGradeStatus {
 // Length in Table object is 10
 // Stronger permissions must be defined after weaker ones - definition order specifies natural comparison order
 enum class DirAccessLevel {
-    // TODO: add P
-    R,
-    RA, // Only for non-implicit dirs
-    RAW,
-    RAWM
+    // Pass-through, non-inheriting Read
+    P,
+    // Read everything in this dir
+    PR,
+    // Add to this dir, only for explicit dirs
+    PRA,
+    // Modify everything in this dir
+    PRAW,
+    // Manage permissions of everything in this dir
+    PRAWM
 }
