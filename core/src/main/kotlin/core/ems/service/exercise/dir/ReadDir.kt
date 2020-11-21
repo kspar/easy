@@ -35,7 +35,8 @@ class ReadDirController {
     )
 
     data class ExerciseResp(
-            @JsonProperty("id") val id: String,
+            @JsonProperty("exercise_id") val exerciseId: String,
+            @JsonProperty("dir_id") val implicitDirId: String,
             @JsonProperty("title") val title: String,
             @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
             @JsonProperty("grader_type") val graderType: GraderType,
@@ -202,6 +203,7 @@ private fun selectDir(caller: EasyUser, dirId: Long?): ReadDirController.Resp {
                     val dir = implicitDirs.first { it.name == ex.id }
                     ReadDirController.ExerciseResp(
                             ex.id,
+                            dir.id.toString(),
                             ex.title,
                             dir.access,
                             ex.graderType,
