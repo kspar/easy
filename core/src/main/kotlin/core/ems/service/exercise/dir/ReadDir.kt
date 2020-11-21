@@ -60,7 +60,7 @@ class ReadDirController {
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @GetMapping("/lib/dir/{dirId}")
+    @GetMapping("/lib/dirs/{dirId}")
     fun controller(@PathVariable("dirId") dirIdString: String,
                    caller: EasyUser): Resp {
 

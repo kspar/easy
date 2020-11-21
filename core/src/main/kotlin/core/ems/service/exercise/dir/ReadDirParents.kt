@@ -33,7 +33,7 @@ class ReadDirParentsController {
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @GetMapping("/lib/dir/{dirId}/parents")
+    @GetMapping("/lib/dirs/{dirId}/parents")
     fun controller(@PathVariable("dirId") dirIdString: String,
                    caller: EasyUser): Resp {
 

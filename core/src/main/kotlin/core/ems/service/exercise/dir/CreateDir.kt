@@ -38,7 +38,7 @@ class CreateDirController {
     data class Resp(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/lib/dir")
+    @PostMapping("/lib/dirs")
     fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
         log.debug { "Creating lib dir $body by ${caller.id}" }
 
