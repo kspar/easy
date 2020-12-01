@@ -1068,7 +1068,7 @@
                     throw 'Invalid token';
             }
 
-            str = b64DecodeUnicode(str);
+            str = decodeURIComponent(escape(atob(str)));
 
             str = JSON.parse(str);
             return str;
