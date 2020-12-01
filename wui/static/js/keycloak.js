@@ -1053,8 +1053,8 @@
         function decodeToken(str) {
             str = str.split('.')[1];
 
-            str = str.replace('/-/g', '+');
-            str = str.replace('/_/g', '/');
+            str = str.replace(/-/g, '+');
+            str = str.replace(/_/g, '/');
             switch (str.length % 4) {
                 case 0:
                     break;
@@ -1068,17 +1068,10 @@
                     throw 'Invalid token';
             }
 
-            //str = decodeURIComponent(escape(atob(str)));
             str = b64DecodeUnicode(str);
 
             str = JSON.parse(str);
             return str;
-        }
-
-        function b64DecodeUnicode(str) {
-            return decodeURIComponent(atob(str).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
         }
 
         function createUUID() {
