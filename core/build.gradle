@@ -58,7 +58,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Cache
-    implementation 'com.github.ben-manes.caffeine:caffeine:2.8.5'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.0.1'
 
     // Logging
     implementation 'io.github.microutils:kotlin-logging:1.7.10'
@@ -88,13 +88,13 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     // Asciidoc
-    implementation 'org.asciidoctor:asciidoctorj:2.4.0'
+    implementation 'org.asciidoctor:asciidoctorj:2.4.3'
 
     // Jsoup for Asciidoctor HTML output customisation
     implementation 'org.jsoup:jsoup:1.13.1'
 
     // StoredFile type detection
-    implementation 'org.apache.tika:tika-core:1.24.1'
+    implementation 'org.apache.tika:tika-core:1.25'
 
     // Source code similarity
     implementation 'me.xdrop:fuzzywuzzy:1.2.0'
