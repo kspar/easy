@@ -137,7 +137,14 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
      * Return number of jobs scheduled to run or which are already running.
      */
     fun countActive(): Long {
-        return activeJobMap.values.sumOf { if (it.result.isActive) 1L else 0L } + jobQueue.size
+        return activeJobMap.values.sumOf { if (it.result.isActive) 1L else 0L }
+    }
+
+    /**
+     * Return number of jobs scheduled to run or which are already running.
+     */
+    fun countQueue(): Long {
+        return jobQueue.size.toLong()
     }
 
     /**
