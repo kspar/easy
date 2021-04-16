@@ -148,17 +148,22 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
     }
 
     /**
-     * Clear job results, which were not retrieved or are still running.
+     * Clear job results, which were not retrieved or are still running. Return number of jobs cleared.
      *
      * According to the ConcurrentHashMap documentation: iterators are designed to be used by only one thread at a time.
      */
     @Synchronized
-    fun clearOlder(timeout: Long) {
+    fun clearOlder(timeout: Long): Long {
+        var removed = 0L
+        val currentTime = DateTime.now().millis
         activeJobMap.values.removeIf {
-            if (it.submitted < timeout) {
+            val remove = it.submitted + timeout < currentTime
+            if (remove) {
                 it.result.cancel()
+                removed++
             }
-            it.submitted < timeout
+            remove
         }
+        return removed
     }
 }

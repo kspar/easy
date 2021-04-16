@@ -28,3 +28,9 @@ enum class DirAccessLevel {
     // Manage permissions of everything in this dir
     PRAWM
 }
+
+
+enum class PriorityLevel {
+    AUTHENTICATED,
+    ANONYMOUS
+}
