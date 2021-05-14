@@ -25,7 +25,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     /**
      * Holds [JobInfo] assigned to coroutine. The finished coroutine results will be made available in this map.
      */
-    private val activeMap = ConcurrentHashMap<Ticket, DeferredOutput<T>>()
+    private val assignedMap = ConcurrentHashMap<Ticket, DeferredOutput<T>>()
 
     private data class DeferredOutput<E>(val ticket: Ticket, val submitted: Long, val deferred: Deferred<E>)
 
@@ -64,7 +64,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
                     null -> return@executeIfNotEmpty
                     else -> {
                         log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
-                        activeMap[job.ticket] = DeferredOutput(
+                        assignedMap[job.ticket] = DeferredOutput(
                             job.ticket,
                             DateTime.now().millis,
                             CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
@@ -97,7 +97,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     /**
      * Job in [pendingQueue], e.g. not yet called with coroutine?
      */
-    private fun inQueue(ticket: Ticket): Boolean {
+    private fun isPending(ticket: Ticket): Boolean {
         return pendingQueue.contains(JobInfo(ticket, emptyArray()))
     }
 
@@ -113,7 +113,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
         val endTime = DateTime.now().millis + timeout
 
         try {
-            while (inQueue(ticket)) {
+            while (isPending(ticket)) {
                 log.debug { "Requested job by the ticket '$ticket' ---> in queue." }
 
                 if (DateTime.now().millis > endTime) {
@@ -127,7 +127,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
 
             log.debug { "Requested job by the ticket '$ticket' ---> deferred result map" }
             return runBlocking {
-                val deferred = activeMap.remove(ticket)?.deferred?.await() ?: throw AwaitTimeoutException(
+                val deferred = assignedMap.remove(ticket)?.deferred?.await() ?: throw AwaitTimeoutException(
                     "Scheduled job has been cancelled due to timeout. Reason: long running time.",
                     ReqError.ASSESSMENT_AWAIT_TIMEOUT
                 )
@@ -143,7 +143,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
             )
         } finally {
             pendingQueue.remove(JobInfo(ticket, emptyArray()))
-            activeMap.remove(ticket)
+            assignedMap.remove(ticket)
         }
     }
 
@@ -151,7 +151,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      * Return number of jobs scheduled to run or which are already running.
      */
     fun countActive(): Long {
-        return activeMap.values.sumOf { if (it.deferred.isActive) 1L else 0L }
+        return assignedMap.values.sumOf { if (it.deferred.isActive) 1L else 0L }
     }
 
     /**
@@ -163,7 +163,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     fun clearOlder(timeout: Long): Long {
         var removed = 0L
         val currentTime = DateTime.now().millis
-        activeMap.values.removeIf {
+        assignedMap.values.removeIf {
             val remove = it.submitted + timeout < currentTime
             if (remove) {
                 it.deferred.cancel()
