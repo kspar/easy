@@ -46,28 +46,40 @@ class FutureAutoGradeService {
     val executors: MutableMap<Long, SortedMap<PriorityLevel, CallQueue<AutoAssessment>>> = mutableMapOf()
 
     //TODO: drain mode
-    fun delegateCall(args: DelegateParameters): AutoAssessment {
-        return callExecutor(args.selectedExecutor, args.request)
+    /**
+     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [CallQueue] .
+     */
+    fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
+        return callExecutor(executor, request)
     }
 
-    data class DelegateParameters(val selectedExecutor: CapableExecutor, val request: ExecutorRequest)
 
-    private fun executeSingle(executorId: Long, queues: SortedMap<PriorityLevel, CallQueue<AutoAssessment>>) {
+    /**
+     * Autograde maximum number of possible submissions assigned to this executor while considering current load.
+     *
+     * No guarantee is made how many submissions can be graded.
+     *
+     * @param executorId Which executor to use for grading?
+     */
+    private fun autograde(executorId: Long) {
+        val submissionsByPriority: SortedMap<PriorityLevel, CallQueue<AutoAssessment>> = executors[executorId]!!
         // Loads:
-        val max = getExecutorMaxLoad(executorId)
-        val current = max(queues.values.sumOf { it.countActive() }, getExecutorLoad(executorId).toLong())
+        val maxLoad = getExecutorMaxLoad(executorId)
+        val currentLoad =
+            max(submissionsByPriority.values.sumOf { it.countActive() }, getExecutorLoad(executorId).toLong())
+
         // TODO: currently there is equal priority
-        val avail: Long = (max - current) / queues.size
+        val availLoad: Long = (maxLoad - currentLoad) / submissionsByPriority.size
 
         // Queues by priority
-        queues.forEach { it.value.executeN(Dispatchers.Default, avail.toInt()) }
+        submissionsByPriority.forEach { it.value.executeN(Dispatchers.Default, availLoad.toInt()) }
     }
 
 
     @Scheduled(fixedDelay = 2000)
     @Synchronized
-    private fun executeAll() {
-        executors.forEach { (executorId, queues) -> executeSingle(executorId, queues) }
+    private fun grade() {
+        executors.keys.forEach { executorId -> autograde(executorId) }
     }
 
 
@@ -86,10 +98,10 @@ class FutureAutoGradeService {
         log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
         updateExecutors()
         return this.executors[selectedExecutor.id]!![priority]!!.submitAndAwait(
-            DelegateParameters(
+            arrayOf(
                 selectedExecutor,
                 request
-            ), timeout
+            ), timeout = timeout
         )
     }
 
@@ -108,8 +120,8 @@ class FutureAutoGradeService {
         val new = getAvailableExecutorIds().filter {
             executors.putIfAbsent(
                 it, sortedMapOf(
-                    Pair(PriorityLevel.AUTHENTICATED, CallQueue(::delegateCall)),
-                    Pair(PriorityLevel.ANONYMOUS, CallQueue(::delegateCall))
+                    Pair(PriorityLevel.AUTHENTICATED, CallQueue(::callExecutorInFutureJobService)),
+                    Pair(PriorityLevel.ANONYMOUS, CallQueue(::callExecutorInFutureJobService))
                 )
             ) == null
         }.size

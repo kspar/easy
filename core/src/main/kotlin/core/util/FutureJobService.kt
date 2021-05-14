@@ -14,7 +14,7 @@ private val log = KotlinLogging.logger {}
 
 typealias Ticket = Long
 
-class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
+class FutureJobService<T>(private val futureCall: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
 
     // Jobs not yet assigned to coroutine execution.
@@ -25,9 +25,9 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
 
     private data class DeferredJobResult<E>(val ticket: Ticket, val submitted: Long, val result: Deferred<E>)
 
-
     // Equals is defined only by job ticket  (e.g ID).
-    private data class JobInfo(val ticket: Ticket, val element: Any?) {
+    private data class JobInfo(val ticket: Ticket, val arguments: Array<Any?>) {
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -58,7 +58,7 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
                         activeJobMap[job.ticket] = DeferredJobResult(
                             job.ticket,
                             DateTime.now().millis,
-                            CoroutineScope(dispatcher).async { futureJobFunction.call(job.element) })
+                            CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
                     }
                 }
             }
@@ -68,23 +68,23 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
     /**
      * Submit and wait for result
      */
-    fun submitAndAwait(jobArgument: Any, timeout: Long): T {
-        return await(submit(jobArgument), timeout)
+    fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
+        return await(submit(arguments), timeout)
     }
 
 
     /**
      * Submit a job to scheduled execution, e.g queue.
      */
-    private fun submit(jobArgument: Any): Ticket {
+    private fun submit(arguments: Array<Any?>): Ticket {
         val ticket = runningTicket.incrementAndGet()
-        jobQueue.add(JobInfo(ticket, jobArgument))
+        jobQueue.add(JobInfo(ticket, arguments))
         return ticket
     }
 
 
     private fun inQueue(ticket: Ticket): Boolean {
-        return jobQueue.contains(JobInfo(ticket, null))
+        return jobQueue.contains(JobInfo(ticket, emptyArray()))
     }
 
 
@@ -128,7 +128,7 @@ class FutureJobService<T>(private val futureJobFunction: KFunction<T>) {
                 ReqError.ASSESSMENT_AWAIT_TIMEOUT
             )
         } finally {
-            jobQueue.remove(JobInfo(ticket, null))
+            jobQueue.remove(JobInfo(ticket, emptyArray()))
             activeJobMap.remove(ticket)
         }
     }
