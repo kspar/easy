@@ -42,10 +42,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
             if (javaClass != other?.javaClass) return false
 
             other as JobInfo
-
-            if (ticket != other.ticket) return false
-
-            return true
+            return ticket == other.ticket
         }
 
         override fun hashCode(): Int {
@@ -102,6 +99,28 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     }
 
 
+    private fun isTimeOut(endTime: Long): Boolean {
+        return DateTime.now().millis > endTime
+    }
+
+    private fun throwTimeOut(reason: String) {
+        throw AwaitTimeoutException(
+            "Scheduled job has been cancelled due to timeout. Reason: $reason.",
+            ReqError.ASSESSMENT_AWAIT_TIMEOUT
+        )
+    }
+
+    /**
+     * Get result from [assignedMap].
+     */
+    private fun waitResult(ticket: Ticket): T {
+        return runBlocking {
+            val deferred = assignedMap.remove(ticket)?.deferred?.await()
+            if (deferred == null) throwTimeOut("Long running time")
+            deferred!!
+        }
+    }
+
     /**
      * Wait for job result.
      *
@@ -109,42 +128,28 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      *
      * It is not exposed as knowing job ticket, any job and therefore any job result could be retrieved.
      */
+    @Throws(AwaitTimeoutException::class)
     private fun await(ticket: Ticket, timeout: Long): T {
         val endTime = DateTime.now().millis + timeout
 
         try {
-            while (isPending(ticket)) {
-                log.debug { "Requested job by the ticket '$ticket' ---> in queue." }
-
-                if (DateTime.now().millis > endTime) {
-                    throw AwaitTimeoutException(
-                        "Scheduled job has been cancelled due to timeout. Reason: long wait in queue.",
-                        ReqError.ASSESSMENT_AWAIT_TIMEOUT
-                    )
+            while (true) {
+                when {
+                    isTimeOut(endTime) -> throwTimeOut("Long wait in queue")
+                    isPending(ticket) -> Thread.sleep(1000)
+                    else -> waitResult(ticket)
                 }
-                Thread.sleep(1000)
-            }
-
-            log.debug { "Requested job by the ticket '$ticket' ---> deferred result map" }
-            return runBlocking {
-                val deferred = assignedMap.remove(ticket)?.deferred?.await() ?: throw AwaitTimeoutException(
-                    "Scheduled job has been cancelled due to timeout. Reason: long running time.",
-                    ReqError.ASSESSMENT_AWAIT_TIMEOUT
-                )
-
-                log.debug { "Requested job by the ticket '$ticket' ---> executed: $deferred." }
-                deferred
             }
 
         } catch (ex: CancellationException) {
-            throw AwaitTimeoutException(
-                "Scheduled job has been cancelled due to timeout. Reason: long running time.",
-                ReqError.ASSESSMENT_AWAIT_TIMEOUT
-            )
+            throwTimeOut("Long running time")
         } finally {
             pendingQueue.remove(JobInfo(ticket, emptyArray()))
             assignedMap.remove(ticket)
         }
+
+        // Should never be here.
+        throw RuntimeException()
     }
 
     /**
