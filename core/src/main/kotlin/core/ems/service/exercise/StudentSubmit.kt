@@ -1,11 +1,14 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.aas.autoAssess
+import core.aas.FutureAutoGradeService
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.GradeService
+import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CacheInvalidator
+import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
@@ -65,7 +68,7 @@ class StudentSubmitCont {
 }
 
 @Component
-class StupidComponentForAsync(val gradeService: GradeService) {
+class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGradeService: FutureAutoGradeService) {
     // Must be in DIFFERENT Spring Component for Async than the caller
     @Async
     fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, cacheInvalidator: CacheInvalidator) {
@@ -77,7 +80,8 @@ class StupidComponentForAsync(val gradeService: GradeService) {
             }
 
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
-            val autoAss = autoAssess(autoExerciseId, solution)
+            val autoAss =
+                futureAutoGradeService.submitAndAwait(autoExerciseId, solution, 15000, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cacheInvalidator, courseExId)
         } catch (e: Exception) {
