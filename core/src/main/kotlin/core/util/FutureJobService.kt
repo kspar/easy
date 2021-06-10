@@ -137,7 +137,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
                 when {
                     isTimeOut(endTime) -> throwTimeOut("Long wait in queue")
                     isPending(ticket) -> Thread.sleep(1000)
-                    else -> waitResult(ticket)
+                    else -> return waitResult(ticket)
                 }
             }
 
