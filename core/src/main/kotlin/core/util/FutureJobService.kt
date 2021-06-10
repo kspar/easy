@@ -75,6 +75,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      * Submit and wait for [futureCall] output with given arguments.
      *
      * @param arguments to be passed to [futureCall]
+     * @return [futureCall] output
      */
     fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
         return await(submit(arguments), timeout)
@@ -119,7 +120,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
 
             /**
             This is null if:
-            1. Job is put to the assignedMap, but is removed by [clearOlder] due to the timeout.
+            1. Job is put to the [assignedMap], but is removed by [clearOlder] due to the timeout.
 
             Also considered, but should not be possible:
             1. Job is never put to the [assignedMap]. Could be if job is still in the [pendingQueue]. However [await] checks it.
@@ -172,12 +173,14 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     }
 
     /**
-     * Clear job results, which were not retrieved or are still running. Return number of jobs cleared.
+     * Clear job results, which were not retrieved or are still running.
      *
-     * According to the ConcurrentHashMap documentation: iterators are designed to be used by only one thread at a time.
+     * @param timeout in ms after which job is cancelled
+     * @return number of old jobs that were set to timeout
      */
     @Synchronized
     fun clearOlder(timeout: Long): Long {
+        // Is synchronized as ConcurrentHashMap states: iterators are designed to be used by only one thread at a time.
         var removed = 0L
         val currentTime = DateTime.now().millis
         assignedMap.values.removeIf {
