@@ -115,9 +115,21 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      */
     private fun waitResult(ticket: Ticket): T {
         return runBlocking {
-            val deferred = assignedMap.remove(ticket)?.deferred?.await()
-            if (deferred == null) throwTimeOut("Long running time")
-            deferred!!
+            val callResult = assignedMap.remove(ticket)?.deferred?.await()
+
+            /**
+            This is null if:
+            1. Job is put to the assignedMap, but is removed by [clearOlder] due to the timeout.
+
+            Also considered, but should not be possible:
+            1. job is never put to the [assignedMap]. Could be if job is still in the [pendingQueue]. However [await] checks it.
+            2. The function used actually returns null? Currently not be possible due to [futureCall] type.
+
+            Therefore, timeout is the case for null.
+             */
+
+            if (callResult == null) throwTimeOut("Job reached maximum allowed running time.")
+            callResult!!
         }
     }
 
@@ -148,7 +160,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
             assignedMap.remove(ticket)
         }
 
-        // Should never be here.
+        // Should never reach here.
         throw RuntimeException()
     }
 
