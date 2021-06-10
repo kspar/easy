@@ -122,7 +122,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
             1. Job is put to the assignedMap, but is removed by [clearOlder] due to the timeout.
 
             Also considered, but should not be possible:
-            1. job is never put to the [assignedMap]. Could be if job is still in the [pendingQueue]. However [await] checks it.
+            1. Job is never put to the [assignedMap]. Could be if job is still in the [pendingQueue]. However [await] checks it.
             2. The function used actually returns null? Currently not be possible due to [futureCall] type.
 
             Therefore, timeout is the case for null.
