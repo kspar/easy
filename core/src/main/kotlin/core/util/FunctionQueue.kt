@@ -14,18 +14,19 @@ private val log = KotlinLogging.logger {}
 
 typealias Ticket = Long
 
-class FutureJobService<T>(private val futureCall: KFunction<T>) {
+class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatcher: CoroutineDispatcher) {
     private var runningTicket = AtomicLong(0)
 
     /**
      * Holds [JobInfo] that are not yet assigned to coroutine execution.
      */
-    private val pendingQueue = ConcurrentLinkedQueue<JobInfo>()
+    // TODO:
+    private val pendingJobs = ConcurrentLinkedQueue<JobInfo>()
 
     /**
      * Holds [JobInfo] assigned to coroutine. The finished coroutine results will be made available in this map.
      */
-    private val assignedMap = ConcurrentHashMap<Ticket, DeferredOutput<T>>()
+    private val assignedJobs = ConcurrentHashMap<Ticket, DeferredOutput<T>>()
 
     private data class DeferredOutput<E>(val ticket: Ticket, val submitted: Long, val deferred: Deferred<E>)
 
@@ -37,6 +38,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      */
     private data class JobInfo(val ticket: Ticket, val arguments: Array<Any?>) {
 
+        // equals/hashCode only based on ticket, so queue.contains() can be called using just the ticket
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -54,14 +56,14 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     /**
      * Execute min(number_of_jobs_in_queue, n) jobs.
      */
-    fun executeN(dispatcher: CoroutineDispatcher, n: Int) {
+    fun executeN(n: Int) {
         run executeIfNotEmpty@{
             repeat(n) {
-                when (val job = pendingQueue.poll()) {
+                when (val job = pendingJobs.poll()) {
                     null -> return@executeIfNotEmpty
                     else -> {
                         log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
-                        assignedMap[job.ticket] = DeferredOutput(
+                        assignedJobs[job.ticket] = DeferredOutput(
                             job.ticket,
                             DateTime.now().millis,
                             CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
@@ -83,20 +85,20 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
 
 
     /**
-     * Submit a job to scheduled execution, e.g into [pendingQueue].
+     * Submit a job to scheduled execution, e.g into [pendingJobs].
      */
     private fun submit(arguments: Array<Any?>): Ticket {
         val ticket = runningTicket.incrementAndGet()
-        pendingQueue.add(JobInfo(ticket, arguments))
+        pendingJobs.add(JobInfo(ticket, arguments))
         return ticket
     }
 
 
     /**
-     * Job in [pendingQueue], e.g. not yet called with coroutine?
+     * Job in [pendingJobs], e.g. not yet called with coroutine?
      */
     private fun isPending(ticket: Ticket): Boolean {
-        return pendingQueue.contains(JobInfo(ticket, emptyArray()))
+        return pendingJobs.contains(JobInfo(ticket, emptyArray()))
     }
 
 
@@ -112,18 +114,18 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
     }
 
     /**
-     * Get result from [assignedMap].
+     * Get result from [assignedJobs].
      */
     private fun waitResult(ticket: Ticket): T {
         return runBlocking {
-            val callResult = assignedMap.remove(ticket)?.deferred?.await()
+            val callResult = assignedJobs.remove(ticket)?.deferred?.await()
 
             /**
             This is null if:
-            1. Job is put to the [assignedMap], but is removed by [clearOlder] due to the timeout.
+            1. Job is put to the [assignedJobs], but is removed by [clearOlder] due to the timeout.
 
             Also considered, but should not be possible:
-            1. Job is never put to the [assignedMap]. Could be if job is still in the [pendingQueue]. However [await] checks it.
+            1. Job is never put to the [assignedJobs]. Could be if job is still in the [pendingJobs]. However [await] checks it.
             2. The function used actually returns null? Currently not be possible due to [futureCall] type.
 
             Therefore, timeout is the case for null.
@@ -148,17 +150,17 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
         try {
             while (true) {
                 when {
-                    isTimeOut(endTime) -> throwTimeOut("Long wait in queue")
+                    isTimeOut(endTime) -> throwTimeOut("Timeout in queue")
                     isPending(ticket) -> Thread.sleep(1000)
                     else -> return waitResult(ticket)
                 }
             }
 
         } catch (ex: CancellationException) {
-            throwTimeOut("Long running time")
+            throwTimeOut("Job was cancelled")
         } finally {
-            pendingQueue.remove(JobInfo(ticket, emptyArray()))
-            assignedMap.remove(ticket)
+            pendingJobs.remove(JobInfo(ticket, emptyArray()))
+            assignedJobs.remove(ticket)
         }
 
         // Should never reach here.
@@ -169,7 +171,7 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      * Return number of jobs scheduled to run or which are already running.
      */
     fun countActive(): Long {
-        return assignedMap.values.sumOf { if (it.deferred.isActive) 1L else 0L }
+        return assignedJobs.values.sumOf { if (it.deferred.isActive) 1L else 0L }
     }
 
     /**
@@ -180,10 +182,11 @@ class FutureJobService<T>(private val futureCall: KFunction<T>) {
      */
     @Synchronized
     fun clearOlder(timeout: Long): Long {
+        // TODO: also remove old from pending queue because the queue can get long
         // Is synchronized as ConcurrentHashMap states: iterators are designed to be used by only one thread at a time.
         var removed = 0L
         val currentTime = DateTime.now().millis
-        assignedMap.values.removeIf {
+        assignedJobs.values.removeIf {
             val remove = it.submitted + timeout < currentTime
             if (remove) {
                 it.deferred.cancel()

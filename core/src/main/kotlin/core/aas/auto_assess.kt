@@ -2,6 +2,7 @@ package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.util.FunctionQueue
 import kotlinx.coroutines.Dispatchers
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
 import kotlin.math.max
-import core.util.FutureJobService as CallQueue
 
 
 // TODO: to conf
@@ -33,6 +33,7 @@ private val log = KotlinLogging.logger {}
  * @throws ExecutorException if an executor fails
  */
 fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessment {
+    // TODO: teacher submit should also go through the queue
     val autoExercise = getAutoExerciseDetails(autoExerciseId)
     val request = mapToExecutorRequest(autoExercise, submission)
     val executors = getCapableExecutors(autoExerciseId)
@@ -43,11 +44,11 @@ fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessme
 
 @Service
 class FutureAutoGradeService {
-    val executors: MutableMap<Long, SortedMap<PriorityLevel, CallQueue<AutoAssessment>>> = mutableMapOf()
+    val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
     //TODO: drain mode
     /**
-     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [CallQueue] .
+     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue] .
      */
     fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
         return callExecutor(executor, request)
@@ -62,22 +63,28 @@ class FutureAutoGradeService {
      * @param executorId Which executor to use for grading?
      */
     private fun autograde(executorId: Long) {
-        val submissionsByPriority: SortedMap<PriorityLevel, CallQueue<AutoAssessment>> = executors[executorId]!!
+        val submissionsByPriority: SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>> = executors[executorId]!!
         // Loads:
         val maxLoad = getExecutorMaxLoad(executorId)
+
+        // TODO: maybe getExecutorLoad() (db query) not needed?
+        // TODO: only needed because of teacher synchronous jobs?
         val currentLoad =
             max(submissionsByPriority.values.sumOf { it.countActive() }, getExecutorLoad(executorId).toLong())
 
-        // TODO: currently there is equal priority
+        // TODO: currently there is equal priority, does not consider actual queue size
+        // TODO: could be optimised to consider queue size - when one is empty then the other should get more of the load
+        // TODO: 1/2 == 0 ???
         val availLoad: Long = (maxLoad - currentLoad) / submissionsByPriority.size
 
         // Queues by priority
-        submissionsByPriority.forEach { it.value.executeN(Dispatchers.Default, availLoad.toInt()) }
+        submissionsByPriority.forEach { it.value.executeN(availLoad.toInt()) }
     }
 
 
-    @Scheduled(fixedDelay = 2000)
-    @Synchronized
+    // TODO: times from conf everywhere (see Moodle sync)
+    @Scheduled(fixedDelay = 1000)
+    @Synchronized  // probably not needed because fixedDelay doesn't start a next call before the last one has finished
     private fun grade() {
         executors.keys.forEach { executorId -> autograde(executorId) }
     }
@@ -95,8 +102,12 @@ class FutureAutoGradeService {
         val selectedExecutor = selectExecutor(executors)
 
         // TODO: "!!" is not correct null handling here if drain mode is implemented.
+        // TODO: race condition can happen, NPE is not nice
         log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
-        updateExecutors()
+
+        // update executor map based on new/removed executors in db
+        updateExecutorMap()
+
         return this.executors[selectedExecutor.id]!![priority]!!.submitAndAwait(
             arrayOf(
                 selectedExecutor,
@@ -112,16 +123,19 @@ class FutureAutoGradeService {
         val timeout = 1000 * 60 * minutes
         val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout.toLong()) }
         log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$minutes' minutes." }
-
     }
 
     @Synchronized
-    private fun updateExecutors() {
+    private fun updateExecutorMap() {
+        // TODO: maybe should add these maps synchronously when executor is added
         val new = getAvailableExecutorIds().filter {
             executors.putIfAbsent(
                 it, sortedMapOf(
-                    Pair(PriorityLevel.AUTHENTICATED, CallQueue(::callExecutorInFutureJobService)),
-                    Pair(PriorityLevel.ANONYMOUS, CallQueue(::callExecutorInFutureJobService))
+                    Pair(
+                        PriorityLevel.AUTHENTICATED,
+                        FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
+                    ),
+                    Pair(PriorityLevel.ANONYMOUS, FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default))
                 )
             ) == null
         }.size
