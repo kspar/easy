@@ -18,9 +18,9 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
     private var runningTicket = AtomicLong(0)
 
     /**
-     * Holds [JobInfo] that are not yet assigned to coroutine execution.
+     * Holds [JobInfo] that are not yet assigned to coroutine execution. Chose [ConcurrentLinkedQueue] as it has no
+     * fixed size limit.
      */
-    // TODO:
     private val pendingJobs = ConcurrentLinkedQueue<JobInfo>()
 
     /**
@@ -28,17 +28,26 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
      */
     private val assignedJobs = ConcurrentHashMap<Ticket, DeferredOutput<T>>()
 
+    /**
+     * @param ticket uniq ID that identifies job.
+     * @param submitted time in long, which the job was submitted via [submit]. Expected to equal [JobInfo] param.
+     * @param deferred represents the future function/job call
+     */
     private data class DeferredOutput<E>(val ticket: Ticket, val submitted: Long, val deferred: Deferred<E>)
 
     /**
      *
      * @param ticket job ticket that identifies scheduled job.
+     * @param submitted time in long, which the job was submitted via [submit]. Should be same in [DeferredOutput].
      * @param arguments to be used on [futureCall].
      *
      */
-    private data class JobInfo(val ticket: Ticket, val arguments: Array<Any?>) {
+    private data class JobInfo(val ticket: Ticket, val submitted: Long, val arguments: Array<Any?>) {
 
-        // equals/hashCode only based on ticket, so queue.contains() can be called using just the ticket
+        /**
+         *  Implemented [equals] and [hashCode] only based on ticket so that [pendingJobs].contains()
+         *  can be called using just the ticket.
+         */
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -65,7 +74,7 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
                         log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
                         assignedJobs[job.ticket] = DeferredOutput(
                             job.ticket,
-                            DateTime.now().millis,
+                            job.submitted,
                             CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
                     }
                 }
@@ -89,16 +98,16 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
      */
     private fun submit(arguments: Array<Any?>): Ticket {
         val ticket = runningTicket.incrementAndGet()
-        pendingJobs.add(JobInfo(ticket, arguments))
+        pendingJobs.add(JobInfo(ticket, DateTime.now().millis, arguments))
         return ticket
     }
 
 
     /**
-     * Job in [pendingJobs], e.g. not yet called with coroutine?
+     * Job in [pendingJobs], e.g. not yet called with coroutine via [executeN]?
      */
     private fun isPending(ticket: Ticket): Boolean {
-        return pendingJobs.contains(JobInfo(ticket, emptyArray()))
+        return pendingJobs.contains(JobInfo(ticket, 0L, emptyArray()))
     }
 
 
@@ -159,7 +168,7 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
         } catch (ex: CancellationException) {
             throwTimeOut("Job was cancelled")
         } finally {
-            pendingJobs.remove(JobInfo(ticket, emptyArray()))
+            pendingJobs.remove(JobInfo(ticket, 0L, emptyArray()))
             assignedJobs.remove(ticket)
         }
 
@@ -182,14 +191,23 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
      */
     @Synchronized
     fun clearOlder(timeout: Long): Long {
-        // TODO: also remove old from pending queue because the queue can get long
         // Is synchronized as ConcurrentHashMap states: iterators are designed to be used by only one thread at a time.
         var removed = 0L
         val currentTime = DateTime.now().millis
+
         assignedJobs.values.removeIf {
             val remove = it.submitted + timeout < currentTime
             if (remove) {
                 it.deferred.cancel()
+                removed++
+            }
+            remove
+        }
+
+        // Also remove old from pending queue because the queue can get long
+        pendingJobs.removeIf {
+            val remove = it.submitted + timeout < currentTime
+            if (remove) {
                 removed++
             }
             remove
