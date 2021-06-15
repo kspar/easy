@@ -1,12 +1,9 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.aas.autoAssess
+import core.aas.FutureAutoGradeService
 import core.conf.security.EasyUser
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.Teacher
-import core.db.TeacherSubmission
+import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -27,7 +24,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassController {
+class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeService) {
 
     data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
@@ -52,7 +49,13 @@ class TeacherAutoassController {
         val aaId = getAutoExerciseId(exerciseId)
                 ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.EXERCISE_NOT_AUTOASSESSABLE)
 
-        val aaResult = autoAssess(aaId, dto.solution)
+        //TODO: error handling missing? Should be as in StudentSubmit?
+        // Timeout from conf?
+        val aaResult = futureAutoGradeService.submitAndAwait(aaId,
+            dto.solution,
+            30000,
+            PriorityLevel.AUTHENTICATED)
+
         return Resp(aaResult.grade, aaResult.feedback)
     }
 }
