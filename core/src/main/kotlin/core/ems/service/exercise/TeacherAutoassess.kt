@@ -49,8 +49,8 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
         val aaId = getAutoExerciseId(exerciseId)
                 ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.EXERCISE_NOT_AUTOASSESSABLE)
 
-        //TODO: error handling missing? Should be as in StudentSubmit?
-        // Timeout from conf?
+        // TODO: error handling missing? Should be as in StudentSubmit?
+        // TODO: Timeout from conf?
         val aaResult = futureAutoGradeService.submitAndAwait(aaId,
             dto.solution,
             30000,

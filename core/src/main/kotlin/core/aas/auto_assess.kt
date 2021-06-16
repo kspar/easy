@@ -15,7 +15,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
-import kotlin.math.max
 
 
 // TODO: to conf
@@ -33,7 +32,6 @@ private val log = KotlinLogging.logger {}
  * @throws ExecutorException if an executor fails
  */
 fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessment {
-    // TODO: teacher submit should also go through the queue
     val autoExercise = getAutoExerciseDetails(autoExerciseId)
     val request = mapToExecutorRequest(autoExercise, submission)
     val executors = getCapableExecutors(autoExerciseId)
@@ -48,7 +46,7 @@ class FutureAutoGradeService {
 
     //TODO: drain mode
     /**
-     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue] .
+     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue].
      */
     fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
         return callExecutor(executor, request)
@@ -63,22 +61,56 @@ class FutureAutoGradeService {
      * @param executorId Which executor to use for grading?
      */
     private fun autograde(executorId: Long) {
-        val submissionsByPriority: SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>> = executors[executorId]!!
+        val queuesByPriority: SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>> = executors[executorId]!!
+        val jobsWaitingInEachQueue = queuesByPriority.values.map { it.inPending() }
+        val totalJobsWaiting = jobsWaitingInEachQueue.sum()
+
         // Loads:
         val maxLoad = getExecutorMaxLoad(executorId)
+        val currentLoad = queuesByPriority.values.sumOf { it.countActive() }
+        val executorLoadAvail = maxLoad - currentLoad
 
-        // TODO: maybe getExecutorLoad() (db query) not needed?
-        // TODO: only needed because of teacher synchronous jobs?
-        val currentLoad =
-            max(submissionsByPriority.values.sumOf { it.countActive() }, getExecutorLoad(executorId).toLong())
+        // Balance jobs so that every queue gets a chance to run.
+        when {
+            totalJobsWaiting < executorLoadAvail -> {
+                // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
+                queuesByPriority.values.zip(jobsWaitingInEachQueue) { queue, waitingJobs ->
+                    queue.executeN(waitingJobs)
+                }
+            }
+            // Case 2: more jobs are pending than there is available load.
+            else -> {
+                var i = 0 // Jobs currently executed
+                var j = 0 // Current queue observed
 
-        // TODO: currently there is equal priority, does not consider actual queue size
-        // TODO: could be optimised to consider queue size - when one is empty then the other should get more of the load
-        // TODO: 1/2 == 0 ???
-        val availLoad: Long = (maxLoad - currentLoad) / submissionsByPriority.size
+                while (i < totalJobsWaiting) {
 
-        // Queues by priority
-        submissionsByPriority.forEach { it.value.executeN(availLoad.toInt()) }
+                    // Keep only queues that have pending jobs
+                    val queues = queuesByPriority.values.filter { it.isPending() }
+
+                    // Is there anything to execute?
+                    if (queues.isEmpty()) {
+                        break
+                    }
+
+                    // Only one queue remaining? No need to continue with while loop.
+                    if (queues.size == 1) {
+                        queues[0].executeN(totalJobsWaiting - i)
+                        break
+                    }
+
+                    // Is still the index in bounds? If not, start from first queue.
+                    if (j > queues.size - 1) {
+                        j = 0
+                    }
+
+                    queues[j].executeN(1)
+                    j++
+
+                    i++
+                }
+            }
+        }
     }
 
 

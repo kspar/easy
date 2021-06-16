@@ -110,6 +110,20 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
         return pendingJobs.contains(JobInfo(ticket, 0L, emptyArray()))
     }
 
+    /**
+     * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
+     */
+    fun inPending(): Int {
+        return pendingJobs.size
+    }
+
+    /**
+     * Is there any jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
+     */
+    fun isPending(): Boolean {
+        return pendingJobs.isNotEmpty()
+    }
+
 
     private fun isTimeOut(endTime: Long): Boolean {
         return DateTime.now().millis > endTime
