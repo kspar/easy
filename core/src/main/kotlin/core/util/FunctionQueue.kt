@@ -1,10 +1,12 @@
 package core.util
 
 import core.exception.AwaitTimeoutException
+import core.exception.DrainException
 import core.exception.ReqError
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.joda.time.DateTime
+import org.springframework.scheduling.annotation.Async
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
@@ -14,8 +16,9 @@ private val log = KotlinLogging.logger {}
 
 typealias Ticket = Long
 
-class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatcher: CoroutineDispatcher) {
+open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatcher: CoroutineDispatcher) {
     private var runningTicket = AtomicLong(0)
+    private var drain = false
 
     /**
      * Holds [JobInfo] that are not yet assigned to coroutine execution. Chose [ConcurrentLinkedQueue] as it has no
@@ -83,12 +86,49 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
     }
 
     /**
+     * Mark for drain and start draining this queue.
+     */
+    @Async
+    open fun drain(maxLoad: Int) {
+        if (drain) {
+            log.debug { "Already draining $this... Skipping this call." }
+            return
+        }
+
+        log.debug { "Draining $this" }
+        drain = true
+
+        while (inPending() != 0) {
+
+            val active = countActive()
+            if (active > maxLoad) {
+                Thread.sleep(1000)
+                continue
+
+            } else {
+                executeN((maxLoad - active).toInt())
+            }
+        }
+    }
+
+    /**
+     * Is this queue draining and not accepting new jobs?
+     */
+    fun isDraining() = drain
+
+    /**
      * Submit and wait for [futureCall] output with given arguments.
      *
      * @param arguments to be passed to [futureCall]
      * @return [futureCall] output
      */
     fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
+        if (drain) {
+            throw DrainException(
+                "This queue is not accepting any new submissions as it is marked for drain.",
+                ReqError.QUEUE_NOT_ACCEPTING_NEW_JOB
+            )
+        }
         return await(submit(arguments), timeout)
     }
 
@@ -122,6 +162,13 @@ class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatc
      */
     fun isPending(): Boolean {
         return pendingJobs.isNotEmpty()
+    }
+
+    /**
+     * Number of jobs pending and active
+     */
+    fun size(): Int {
+        return pendingJobs.size + assignedJobs.size
     }
 
 

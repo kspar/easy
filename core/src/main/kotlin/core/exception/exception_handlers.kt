@@ -101,6 +101,17 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
+    @ExceptionHandler(value = [DrainException::class])
+    fun handleDrainException(ex: DrainException, request: WebRequest): ResponseEntity<Any> {
+        val id = UUID.randomUUID().toString()
+        log.info("DrainException: ${ex.message}")
+        log.info("Request info: ${request.getDescription(true)}")
+        mailService.sendSystemNotification(ex.stackTraceString, id)
+
+        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
+        return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
     // https://www.baeldung.com/spring-boot-bean-validation and
     // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
     override fun handleMethodArgumentNotValid(ex: MethodArgumentNotValidException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {

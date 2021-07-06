@@ -2,20 +2,19 @@ package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.exception.InvalidRequestException
 import core.util.FunctionQueue
 import kotlinx.coroutines.Dispatchers
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SqlExpressionBuilder
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
+import kotlin.math.max
 
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
@@ -173,10 +172,48 @@ class FutureAutoGradeService {
         log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
 
-    fun addExecutorsFromDB() {
+    private fun drain(executorId: Long) {
+        val maxLoad = getExecutorMaxLoad(executorId)
+        val perQueueAllowed = max(maxLoad / (executors[executorId]?.keys?.size ?: 1), 1)
+
+        executors[executorId]?.values?.forEach { it.drain(perQueueAllowed) }
+        val success = executors.remove(executorId) != null
+
+        if (success) {
+            log.debug { "Set '$executorId' to drain and removed from executor map." }
+        } else {
+            // Should never be here.
+            log.debug { "Failed to set '$executorId' to drain and remove from executor map. Already removed?" }
+        }
+    }
+
+    /**
+     *  Drain and remove executor.
+     */
+    fun deleteExecutor(executorId: Long) {
         synchronized(executorLock) {
 
-            val new = getAvailableExecutorIds().filter {
+            return transaction {
+                val executorExists =
+                    Executor.select { Executor.id eq executorId }
+                        .count() == 1L
+
+                if (executorExists) {
+                    drain(executorId)
+                    Executor.deleteWhere { Executor.id eq executorId }
+                } else {
+                    throw InvalidRequestException("Executor with id $executorId not found")
+                }
+            }
+        }
+    }
+
+
+    fun addExecutorsFromDB() {
+        synchronized(executorLock) {
+            val executorIdsFromDB = getAvailableExecutorIds()
+
+            val new = executorIdsFromDB.filter {
                 executors.putIfAbsent(
                     it, sortedMapOf(
                         Pair(
@@ -190,7 +227,7 @@ class FutureAutoGradeService {
                     )
                 ) == null
             }.size
-            log.debug { "Checked for new executors. Added total of '$new' executors." }
+            log.debug { "Checked for new executors. Added total '$new' new executors." }
         }
     }
 }

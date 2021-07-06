@@ -15,6 +15,11 @@ class AwaitTimeoutException(
         vararg val attributes: Pair<String, String>
 ) : RuntimeException(message)
 
+class DrainException(
+        override val message: String,
+        val code: ReqError,
+        vararg val attributes: Pair<String, String>
+) : RuntimeException(message)
 
 class ForbiddenException(
         override val message: String,

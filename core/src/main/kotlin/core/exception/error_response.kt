@@ -21,12 +21,13 @@ enum class ReqError(val errorCodeStr: String) {
     GROUP_NOT_EMPTY("GROUP_NOT_EMPTY"),
     HAS_RESTRICTED_GROUPS("HAS_RESTRICTED_GROUPS"),
     NO_DIR_ACCESS("NO_DIR_ACCESS"),
+    QUEUE_NOT_ACCEPTING_NEW_JOB("QUEUE_NOT_ACCEPTING_NEW_JOB")
 }
 
 
 data class RequestErrorResponse(
-        @JsonProperty("id", required = true) val id: String,
-        @JsonProperty("code", required = true) val code: String?,
-        @JsonProperty("attrs", required = true) val attrs: Map<String, String>,
-        @JsonProperty("log_msg", required = true) val logMsg: String
+    @JsonProperty("id", required = true) val id: String,
+    @JsonProperty("code", required = true) val code: String?,
+    @JsonProperty("attrs", required = true) val attrs: Map<String, String>,
+    @JsonProperty("log_msg", required = true) val logMsg: String
 )
