@@ -43,7 +43,7 @@ fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessme
 @Service
 class FutureAutoGradeService {
     @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
-    private lateinit var allowedRunningTime: String
+    private lateinit var allowedRunningTimeMs: String
 
     /**
      * [submitAndAwait] expects that map of [executors] is synced with database. However [addExecutorsFromDB] can be called
@@ -168,7 +168,7 @@ class FutureAutoGradeService {
     @Scheduled(cron = "\${easy.core.auto-assess.timeout-check.cron}")
     @Synchronized
     private fun timeout() {
-        val timeout = allowedRunningTime.toLong()
+        val timeout = allowedRunningTimeMs.toLong()
         val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout) }
         log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
@@ -190,7 +190,7 @@ class FutureAutoGradeService {
                     )
                 ) == null
             }.size
-            log.debug { "Checked for new executors. Added: '$new'." }
+            log.debug { "Checked for new executors. Added total of '$new' executors." }
         }
     }
 }
