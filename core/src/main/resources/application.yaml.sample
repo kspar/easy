@@ -27,6 +27,13 @@ easy:
         enabled: true
         from: "<from-address>"
         to: "<to-address>"
+    auto-assess:
+      timeout-check:
+        cron: "0 * * * * *"
+        clear-older-than:
+          ms: "60000"
+      fixed-delay:
+        ms: "3000"
     service:
       await-assessment:
         sleep-start-ms: 1000

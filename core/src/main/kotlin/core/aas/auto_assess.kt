@@ -11,13 +11,13 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
 
 
-// TODO: to conf
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
 
 private val log = KotlinLogging.logger {}
@@ -42,6 +42,9 @@ fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessme
 
 @Service
 class FutureAutoGradeService {
+    @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
+    private lateinit var allowedRunningTime: String
+
     val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
     //TODO: drain mode
@@ -114,8 +117,7 @@ class FutureAutoGradeService {
     }
 
 
-    // TODO: times from conf everywhere (see Moodle sync)
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
     @Synchronized  // probably not needed because fixedDelay doesn't start a next call before the last one has finished
     private fun grade() {
         executors.keys.forEach { executorId -> autograde(executorId) }
@@ -148,13 +150,13 @@ class FutureAutoGradeService {
         )
     }
 
-    @Scheduled(fixedDelay = 3 * 60000)
+
+    @Scheduled(cron = "\${easy.core.auto-assess.timeout-check.cron}")
     @Synchronized
     private fun timeout() {
-        val minutes = 3
-        val timeout = 1000 * 60 * minutes
-        val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout.toLong()) }
-        log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$minutes' minutes." }
+        val timeout = allowedRunningTime.toLong()
+        val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout) }
+        log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
 
     @Synchronized
