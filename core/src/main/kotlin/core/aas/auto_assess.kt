@@ -45,6 +45,14 @@ class FutureAutoGradeService {
     @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
     private lateinit var allowedRunningTime: String
 
+    /**
+     * [submitAndAwait] expects that map of [executors] is synced with database. However [addExecutorsFromDB] can be called
+     * anytime, therefore [executorLock] is used to synchronize [submitAndAwait] and [addExecutorsFromDB] do avoid
+     * cases where [submitAndAwait] expects to see a executor in [executors] that otherwise might be already in db, but
+     * not in map.
+     */
+    private val executorLock = "LOCK"
+
     val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
     //TODO: drain mode
@@ -116,9 +124,8 @@ class FutureAutoGradeService {
         }
     }
 
-
+    //  fixedDelay doesn't start a next call before the last one has finished
     @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
-    @Synchronized  // probably not needed because fixedDelay doesn't start a next call before the last one has finished
     private fun grade() {
         executors.keys.forEach { executorId -> autograde(executorId) }
     }
@@ -132,22 +139,29 @@ class FutureAutoGradeService {
     ): AutoAssessment {
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
         val request = mapToExecutorRequest(autoExercise, submission)
-        val executors = getCapableExecutors(autoExerciseId)
-        val selectedExecutor = selectExecutor(executors)
 
-        // TODO: "!!" is not correct null handling here if drain mode is implemented.
-        // TODO: race condition can happen, NPE is not nice
-        log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
+        // If here and the map is empty, then probably there has been a server restart, force sync.
+        if (executors.isEmpty()) {
+            addExecutorsFromDB()
+        }
 
-        // update executor map based on new/removed executors in db
-        updateExecutorMap()
+        synchronized(executorLock) {
+            val executors = getCapableExecutors(autoExerciseId)
+            val selected = selectExecutor(executors)
 
-        return this.executors[selectedExecutor.id]!![priority]!!.submitAndAwait(
-            arrayOf(
-                selectedExecutor,
-                request
-            ), timeout = timeout
-        )
+            log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
+
+            return this.executors
+                .getOrElse(selected.id) {
+                    throw ExecutorException("Out of sync. Did you use API to add/remove executor '${selected.id}'?")
+                }
+                .getOrElse(priority) {
+                    throw ExecutorException("Executor (${selected.id}) does not have queue with '$priority'.")
+                }
+                .submitAndAwait(
+                    arrayOf(selected, request), timeout = timeout
+                )
+        }
     }
 
 
@@ -159,23 +173,25 @@ class FutureAutoGradeService {
         log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
 
-    @Synchronized
-    private fun updateExecutorMap() {
-        // TODO: maybe should add these maps synchronously when executor is added
-        val new = getAvailableExecutorIds().filter {
-            executors.putIfAbsent(
-                it, sortedMapOf(
-                    Pair(
-                        PriorityLevel.AUTHENTICATED,
-                        FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
-                    ),
-                    Pair(PriorityLevel.ANONYMOUS, FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default))
-                )
-            ) == null
-        }.size
+    fun addExecutorsFromDB() {
+        synchronized(executorLock) {
 
-        log.debug { "Checked for new executors. Added: '$new'." }
-
+            val new = getAvailableExecutorIds().filter {
+                executors.putIfAbsent(
+                    it, sortedMapOf(
+                        Pair(
+                            PriorityLevel.AUTHENTICATED,
+                            FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
+                        ),
+                        Pair(
+                            PriorityLevel.ANONYMOUS,
+                            FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
+                        )
+                    )
+                ) == null
+            }.size
+            log.debug { "Checked for new executors. Added: '$new'." }
+        }
     }
 }
 

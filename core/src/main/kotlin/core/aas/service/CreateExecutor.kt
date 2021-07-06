@@ -1,6 +1,7 @@
 package core.aas.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.aas.FutureAutoGradeService
 import core.db.Executor
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -15,11 +16,13 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class CreateExecutorController {
+class CreateExecutorController(private val futureAutoGradeService: FutureAutoGradeService) {
 
-    data class Req(@JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
-                   @JsonProperty("base_url", required = true) @field:NotBlank @field:Size(max = 2000) val baseUrl: String,
-                   @JsonProperty("max_load", required = true) val maxLoad: Int)
+    data class Req(
+        @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
+        @JsonProperty("base_url", required = true) @field:NotBlank @field:Size(max = 2000) val baseUrl: String,
+        @JsonProperty("max_load", required = true) val maxLoad: Int
+    )
 
     data class Resp(@JsonProperty("id") val id: String)
 
@@ -27,6 +30,7 @@ class CreateExecutorController {
     @PostMapping("/executors")
     fun controller(@Valid @RequestBody body: Req): Resp {
         val executorId = insertExecutor(body)
+        futureAutoGradeService.addExecutorsFromDB()
         return Resp(executorId.toString())
     }
 }
