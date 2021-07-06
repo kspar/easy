@@ -54,7 +54,6 @@ class FutureAutoGradeService {
 
     val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
-    //TODO: drain mode
     /**
      * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue].
      */
