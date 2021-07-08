@@ -88,8 +88,8 @@ class FutureAutoGradeService {
         if (totalWaiting < loadAvailable) {
             // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
             log.debug { "Executor '$executorId': run all ($totalWaiting) pending jobs" }
-
             executorPriorityQueues.zip(numberOfWaitingList) { queue, waitingJobs -> queue.executeN(waitingJobs) }
+
         } else {
             // Case 2: arbitrarily use remaining load between executor queues.
             run ifNotEmpty@{
