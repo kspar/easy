@@ -81,8 +81,7 @@ class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGrad
 
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
             val autoAss =
-                // TODO Timeout from conf?
-                futureAutoGradeService.submitAndAwait(autoExerciseId, solution, 30000, PriorityLevel.AUTHENTICATED)
+                futureAutoGradeService.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cacheInvalidator, courseExId)
         } catch (e: Exception) {

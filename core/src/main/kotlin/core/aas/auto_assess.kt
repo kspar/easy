@@ -45,6 +45,9 @@ class FutureAutoGradeService {
     @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
     private lateinit var allowedRunningTimeMs: String
 
+    @Value("\${easy.core.auto-assess.allowed-wait-for-user.ms}")
+    private lateinit var allowedWaitingTimeUserMs: String
+
     /**
      * [submitAndAwait] expects that map of [executors] is synced with database. However [addExecutorsFromDB] can be called
      * anytime, therefore [executorLock] is used to synchronize [submitAndAwait] and [addExecutorsFromDB] do avoid
@@ -116,7 +119,6 @@ class FutureAutoGradeService {
     fun submitAndAwait(
         autoExerciseId: EntityID<Long>,
         submission: String,
-        timeout: Long,
         priority: PriorityLevel
     ): AutoAssessment {
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
@@ -141,7 +143,7 @@ class FutureAutoGradeService {
                     throw ExecutorException("Executor (${selected.id}) does not have queue with '$priority'.")
                 }
                 .submitAndAwait(
-                    arrayOf(selected, request), timeout = timeout
+                    arrayOf(selected, request), timeout = allowedWaitingTimeUserMs.toLong()
                 )
         }
     }
