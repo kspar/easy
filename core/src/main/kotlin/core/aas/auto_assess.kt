@@ -80,15 +80,15 @@ class FutureAutoGradeService {
         val totalWaiting = numberOfWaitingList.sum()
 
         if (totalWaiting == 0) {
-            log.debug { "Executor '$executorId' has no pending jobs" }
             return
         }
 
         val loadAvailable = getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countActive() }
 
         if (totalWaiting < loadAvailable) {
-            log.debug { "Executor '$executorId' execution: run all pending jobs" }
             // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
+            log.debug { "Executor '$executorId' execution: run all pending jobs" }
+
             executorPriorityQueues.zip(numberOfWaitingList) { queue, waitingJobs -> queue.executeN(waitingJobs) }
         } else {
             // Case 2: arbitrarily use remaining load between executor queues.
