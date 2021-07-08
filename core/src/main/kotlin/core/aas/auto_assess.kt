@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
 import kotlin.math.max
+import kotlin.math.min
 
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
@@ -70,56 +71,39 @@ class FutureAutoGradeService {
      * @param executorId Which executor to use for grading?
      */
     private fun autograde(executorId: Long) {
-        val queuesByPriority: SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>> = executors[executorId]!!
-        val jobsWaitingInEachQueue = queuesByPriority.values.map { it.inPending() }
-        val totalJobsWaiting = jobsWaitingInEachQueue.sum()
+        var executorPriorityQueues = executors[executorId]?.values ?: listOf()
 
-        // Loads:
-        val maxLoad = getExecutorMaxLoad(executorId)
-        val currentLoad = queuesByPriority.values.sumOf { it.countActive() }
-        val executorLoadAvail = maxLoad - currentLoad
+        val numberOfWaitingList = executorPriorityQueues.map { it.inPending() }
+        val totalWaiting = numberOfWaitingList.sum()
 
-        // Balance jobs so that every queue gets a chance to run.
-        when {
-            totalJobsWaiting < executorLoadAvail -> {
-                // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
-                queuesByPriority.values.zip(jobsWaitingInEachQueue) { queue, waitingJobs ->
-                    queue.executeN(waitingJobs)
-                }
-            }
-            // Case 2: more jobs are pending than there is available load.
-            else -> {
-                var i = 0 // Jobs currently executed
-                var j = 0 // Current queue observed
+        if (totalWaiting == 0) {
+            log.debug { "Executor '$executorId' has no pending jobs" }
+            return
+        }
 
-                while (i < totalJobsWaiting) {
+        val loadAvailable = getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countActive() }
 
-                    // Keep only queues that have pending jobs
-                    val queues = queuesByPriority.values.filter { it.isPending() }
+        if (totalWaiting < loadAvailable) {
+            log.debug { "Executor '$executorId' execution: run all pending jobs" }
+            // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
+            executorPriorityQueues.zip(numberOfWaitingList) { queue, waitingJobs -> queue.executeN(waitingJobs) }
+        } else {
+            // Case 2: arbitrarily use remaining load between executor queues.
+            run ifNotEmpty@{
+                log.debug { "Executor '$executorId' execution: arbitrarily use remaining load between executor queues" }
 
-                    // Is there anything to execute?
-                    if (queues.isEmpty()) {
-                        break
+                repeat(min(loadAvailable.toInt(), totalWaiting)) {
+                    executorPriorityQueues.randomOrNull()?.executeN(1)
+                    executorPriorityQueues = executorPriorityQueues.filter { it.isPending() }
+
+                    // Finish early
+                    if (executorPriorityQueues.isEmpty()) {
+                        return@ifNotEmpty
                     }
-
-                    // Only one queue remaining? No need to continue with while loop.
-                    if (queues.size == 1) {
-                        queues[0].executeN(totalJobsWaiting - i)
-                        break
-                    }
-
-                    // Is still the index in bounds? If not, start from first queue.
-                    if (j > queues.size - 1) {
-                        j = 0
-                    }
-
-                    queues[j].executeN(1)
-                    j++
-
-                    i++
                 }
             }
         }
+
     }
 
     //  fixedDelay doesn't start a next call before the last one has finished
