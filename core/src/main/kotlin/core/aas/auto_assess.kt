@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
 import kotlin.math.max
-import kotlin.math.min
 
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
@@ -91,22 +90,19 @@ class FutureAutoGradeService {
             executorPriorityQueues.zip(numberOfWaitingList) { queue, waitingJobs -> queue.executeN(waitingJobs) }
 
         } else {
-            // Case 2: arbitrarily use remaining load between executor queues.
-            run ifNotEmpty@{
-                log.debug { "Executor '$executorId': arbitrarily use available load '$loadAvailable' between queues" }
+            // Case 2: use remaining load equally between executor queues.
+            log.debug { "Executor '$executorId': use available load '$loadAvailable' equally between queues" }
 
-                repeat(min(loadAvailable.toInt(), totalWaiting)) {
-                    executorPriorityQueues.randomOrNull()?.executeN(1)
-                    executorPriorityQueues = executorPriorityQueues.filter { it.isPending() }
+            var i = 0
+            while (i < totalWaiting) {
+                executorPriorityQueues = executorPriorityQueues.filter { it.isPending() }
+                if (executorPriorityQueues.isEmpty()) break
 
-                    // Finish early
-                    if (executorPriorityQueues.isEmpty()) {
-                        return@ifNotEmpty
-                    }
-                }
+                val item: FunctionQueue<AutoAssessment> = executorPriorityQueues[i % executorPriorityQueues.size]
+                item.executeN(1)
+                i++
             }
         }
-
     }
 
     //  fixedDelay doesn't start a next call before the last one has finished
