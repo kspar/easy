@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
 import kotlin.math.max
+import kotlin.math.min
 
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
@@ -49,11 +50,11 @@ class FutureAutoGradeService {
 
     /**
      * [submitAndAwait] expects that map of [executors] is synced with database. However [addExecutorsFromDB] can be called
-     * anytime, therefore [executorLock] is used to synchronize [submitAndAwait] and [addExecutorsFromDB] do avoid
-     * cases where [submitAndAwait] expects to see a executor in [executors] that otherwise might be already in db, but
+     * anytime, therefore [executorLock] is used to synchronize [submitAndAwait] and [addExecutorsFromDB] to avoid
+     * cases where [submitAndAwait] expects to see an executor in [executors] that otherwise might be already in db, but
      * not in map.
      */
-    private val executorLock = "LOCK"
+    private val executorLock = UUID.randomUUID().toString()
 
     val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
@@ -73,36 +74,27 @@ class FutureAutoGradeService {
      * @param executorId Which executor to use for grading?
      */
     private fun autograde(executorId: Long) {
-        var executorPriorityQueues = executors[executorId]?.values ?: listOf()
+        // Pointer, jobs may be added to it later
+        var executorPriorityQueues = executors[executorId]?.values?.toList() ?: listOf()
 
-        val numberOfWaitingList = executorPriorityQueues.map { it.inPending() }
-        val totalWaiting = numberOfWaitingList.sum()
+        // Number of jobs planned to be executed, ensures that loop finishes
+        val executableCount = min(
+            executorPriorityQueues.sumOf { it.countWaiting() },
+            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countRunning().toInt() }
+        )
 
-        if (totalWaiting == 0) {
-            return
+        if (executableCount != 0) log.debug { "Executor '$executorId' is executing $executableCount jobs" }
+
+        repeat(executableCount) { i ->
+            executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
+            if (executorPriorityQueues.isEmpty()) return
+
+            val item = executorPriorityQueues[i % executorPriorityQueues.size]
+            item.executeN(1)
         }
 
-        val loadAvailable = getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countActive() }
-
-        if (totalWaiting < loadAvailable) {
-            // Case 1: executor has enough load to run all pending jobs (jobs pending at the time load was queried)
-            log.debug { "Executor '$executorId': run all ($totalWaiting) pending jobs" }
-            executorPriorityQueues.zip(numberOfWaitingList) { queue, waitingJobs -> queue.executeN(waitingJobs) }
-
-        } else {
-            // Case 2: use remaining load equally between executor queues.
-            log.debug { "Executor '$executorId': use available load '$loadAvailable' equally between queues" }
-
-            var i = 0
-            while (i < totalWaiting) {
-                executorPriorityQueues = executorPriorityQueues.filter { it.isPending() }
-                if (executorPriorityQueues.isEmpty()) break
-
-                val item: FunctionQueue<AutoAssessment> = executorPriorityQueues[i % executorPriorityQueues.size]
-                item.executeN(1)
-                i++
-            }
-        }
+        // TODO: drain flag should be in DB to make select easier and drain mode persistent over reboots
+        // TODO: drain mode means that new jobs are not scheduled but old ones continue running normally via autograde()
     }
 
     //  fixedDelay doesn't start a next call before the last one has finished

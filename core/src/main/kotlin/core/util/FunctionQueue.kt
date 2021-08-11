@@ -69,6 +69,8 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      * Execute min(number_of_jobs_in_queue, n) jobs.
      */
     fun executeN(n: Int) {
+        // TODO: remove return label, return directly from fun
+        // TODO: is run needed?
         run executeIfNotEmpty@{
             repeat(n) {
                 when (val job = pendingJobs.poll()) {
@@ -90,6 +92,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      */
     @Async
     open fun drain(maxLoad: Int) {
+        // TODO: toString for this or use some other identifier, ideal would be (executor_id, queue_id) or similar
         if (drain) {
             log.debug { "Already draining $this... Skipping this call." }
             return
@@ -98,15 +101,16 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
         log.debug { "Draining $this" }
         drain = true
 
-        while (inPending() != 0) {
+        // TODO: use hasWaiting() - more efficient?
+        while (countWaiting() != 0) {
 
-            val active = countActive()
-            if (active > maxLoad) {
+            val running = countRunning()
+            if (running > maxLoad) {
                 Thread.sleep(1000)
                 continue
 
             } else {
-                executeN((maxLoad - active).toInt())
+                executeN((maxLoad - running).toInt())
             }
         }
     }
@@ -146,21 +150,21 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
     /**
      * Job in [pendingJobs], e.g. not yet called with coroutine via [executeN]?
      */
-    private fun isPending(ticket: Ticket): Boolean {
+    private fun isWaiting(ticket: Ticket): Boolean {
         return pendingJobs.contains(JobInfo(ticket, 0L, emptyArray()))
     }
 
     /**
      * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
      */
-    fun inPending(): Int {
+    fun countWaiting(): Int {
         return pendingJobs.size
     }
 
     /**
      * Is there any jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
      */
-    fun isPending(): Boolean {
+    fun hasWaiting(): Boolean {
         return pendingJobs.isNotEmpty()
     }
 
@@ -221,7 +225,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
             while (true) {
                 when {
                     isTimeOut(endTime) -> throwTimeOut("Timeout in queue")
-                    isPending(ticket) -> Thread.sleep(1000)
+                    isWaiting(ticket) -> Thread.sleep(1000)
                     else -> return waitResult(ticket)
                 }
             }
@@ -240,7 +244,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
     /**
      * Return number of jobs scheduled to run or which are already running.
      */
-    fun countActive(): Long {
+    fun countRunning(): Long {
         return assignedJobs.values.sumOf { if (it.deferred.isActive) 1L else 0L }
     }
 

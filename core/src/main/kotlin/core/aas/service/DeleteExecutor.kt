@@ -15,6 +15,10 @@ class DeleteExecutorController(private val futureAutoGradeService: FutureAutoGra
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/executors/{executorId}")
     fun controller(@PathVariable("executorId") executorId: String) {
+        // TODO: drain executor should be a separate service
+        // TODO: delete executor service should have a body with parameter force: boolean
+        // TODO: if force=false and the executor is not drained (i.e. there are waiting or running jobs) then error
+        // TODO: if force=true then executor is deleted even if it's not drained (should be logged as a warning)
         futureAutoGradeService.deleteExecutor(executorId.idToLongOrInvalidReq())
     }
 }
