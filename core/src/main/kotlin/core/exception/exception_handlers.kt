@@ -82,10 +82,12 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
 
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
-        val resp = RequestErrorResponse(id,
-                ReqError.ROLE_NOT_ALLOWED.errorCodeStr,
-                emptyMap(),
-                "Access denied for this request due to insufficient access privileges.")
+        val resp = RequestErrorResponse(
+            id,
+            ReqError.ROLE_NOT_ALLOWED.errorCodeStr,
+            emptyMap(),
+            "Access denied for this request due to insufficient access privileges."
+        )
 
         return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
@@ -101,33 +103,33 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
-    @ExceptionHandler(value = [DrainException::class])
-    fun handleDrainException(ex: DrainException, request: WebRequest): ResponseEntity<Any> {
-        val id = UUID.randomUUID().toString()
-        log.info("DrainException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
-        mailService.sendSystemNotification(ex.stackTraceString, id)
-
-        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
-        return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
 
     // https://www.baeldung.com/spring-boot-bean-validation and
     // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
-    override fun handleMethodArgumentNotValid(ex: MethodArgumentNotValidException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {
+    override fun handleMethodArgumentNotValid(
+        ex: MethodArgumentNotValidException,
+        headers: HttpHeaders,
+        status: HttpStatus,
+        request: WebRequest
+    ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
         log.info("MethodArgumentNotValidException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
 
         val msg = ex.bindingResult.allErrors
-                .joinToString(separator = ";") { "'${(it as FieldError).field}': ${it.getDefaultMessage()};" }
+            .joinToString(separator = ";") { "'${(it as FieldError).field}': ${it.getDefaultMessage()};" }
 
         val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
     // https://stackoverflow.com/questions/44850637/how-to-handle-json-parse-error-in-spring-rest-web-service
-    override fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException, headers: HttpHeaders, status: HttpStatus, request: WebRequest): ResponseEntity<Any> {
+    override fun handleHttpMessageNotReadable(
+        ex: HttpMessageNotReadableException,
+        headers: HttpHeaders,
+        status: HttpStatus,
+        request: WebRequest
+    ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
         log.info("HttpMessageNotReadableException: ${ex.message}")
         log.info("Request info: ${request.getDescription(true)}")
@@ -135,7 +137,9 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         val msg = when (ex.cause) {
             is MissingKotlinParameterException -> {
                 val cause = ex.cause as MissingKotlinParameterException
-                "Missing parameter '${cause.parameter.name}' of type '${cause.parameter.type.toString().replace("kotlin.", "")}'"
+                "Missing parameter '${cause.parameter.name}' of type '${
+                    cause.parameter.type.toString().replace("kotlin.", "")
+                }'"
             }
             is MismatchedInputException -> {
                 val cause = ex.cause as MismatchedInputException

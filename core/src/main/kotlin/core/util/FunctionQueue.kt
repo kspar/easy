@@ -1,12 +1,10 @@
 package core.util
 
 import core.exception.AwaitTimeoutException
-import core.exception.DrainException
 import core.exception.ReqError
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.joda.time.DateTime
-import org.springframework.scheduling.annotation.Async
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
@@ -18,7 +16,6 @@ typealias Ticket = Long
 
 open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatcher: CoroutineDispatcher) {
     private var runningTicket = AtomicLong(0)
-    private var drain = false
 
     /**
      * Holds [JobInfo] that are not yet assigned to coroutine execution. Chose [ConcurrentLinkedQueue] as it has no
@@ -69,56 +66,19 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      * Execute min(number_of_jobs_in_queue, n) jobs.
      */
     fun executeN(n: Int) {
-        // TODO: remove return label, return directly from fun
-        // TODO: is run needed?
-        run executeIfNotEmpty@{
-            repeat(n) {
-                when (val job = pendingJobs.poll()) {
-                    null -> return@executeIfNotEmpty
-                    else -> {
-                        log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
-                        assignedJobs[job.ticket] = DeferredOutput(
-                            job.ticket,
-                            job.submitted,
-                            CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
-                    }
+        repeat(n) {
+            when (val job = pendingJobs.poll()) {
+                null -> return
+                else -> {
+                    log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
+                    assignedJobs[job.ticket] = DeferredOutput(
+                        job.ticket,
+                        job.submitted,
+                        CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
                 }
             }
         }
     }
-
-    /**
-     * Mark for drain and start draining this queue.
-     */
-    @Async
-    open fun drain(maxLoad: Int) {
-        // TODO: toString for this or use some other identifier, ideal would be (executor_id, queue_id) or similar
-        if (drain) {
-            log.debug { "Already draining $this... Skipping this call." }
-            return
-        }
-
-        log.debug { "Draining $this" }
-        drain = true
-
-        // TODO: use hasWaiting() - more efficient?
-        while (countWaiting() != 0) {
-
-            val running = countRunning()
-            if (running > maxLoad) {
-                Thread.sleep(1000)
-                continue
-
-            } else {
-                executeN((maxLoad - running).toInt())
-            }
-        }
-    }
-
-    /**
-     * Is this queue draining and not accepting new jobs?
-     */
-    fun isDraining() = drain
 
     /**
      * Submit and wait for [futureCall] output with given arguments.
@@ -127,12 +87,6 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      * @return [futureCall] output
      */
     fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
-        if (drain) {
-            throw DrainException(
-                "This queue is not accepting any new submissions as it is marked for drain.",
-                ReqError.QUEUE_NOT_ACCEPTING_NEW_JOB
-            )
-        }
         return await(submit(arguments), timeout)
     }
 

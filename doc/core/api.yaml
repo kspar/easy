@@ -1820,6 +1820,8 @@ paths:
                   type: integer
                 max_load:
                   type: integer
+                drain:
+                  type: boolean
 
     post:
       summary: Create new executor.
@@ -1854,6 +1856,17 @@ paths:
     parameters:
       - $ref: '#/parameters/ExecutorId'
     delete:
+      parameters:
+        - $ref: '#/parameters/ExecutorId'
+        - name: executor
+          in: body
+          required: true
+          schema:
+            properties:
+              force:
+                type: boolean
+            required:
+              - force
       summary: Delete executor.
       tags:
         - admin
@@ -1874,10 +1887,13 @@ paths:
                 type: string
               max_load:
                 type: integer
+              drain:
+                type: boolean
             required:
               - name
               - base_url
               - max_load
+              - drain
       summary: Update executor.
       tags:
         - admin

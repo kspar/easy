@@ -14,7 +14,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
-import kotlin.math.max
 import kotlin.math.min
 
 
@@ -92,9 +91,6 @@ class FutureAutoGradeService {
             val item = executorPriorityQueues[i % executorPriorityQueues.size]
             item.executeN(1)
         }
-
-        // TODO: drain flag should be in DB to make select easier and drain mode persistent over reboots
-        // TODO: drain mode means that new jobs are not scheduled but old ones continue running normally via autograde()
     }
 
     //  fixedDelay doesn't start a next call before the last one has finished
@@ -109,16 +105,17 @@ class FutureAutoGradeService {
         submission: String,
         priority: PriorityLevel
     ): AutoAssessment {
-        val autoExercise = getAutoExerciseDetails(autoExerciseId)
-        val request = mapToExecutorRequest(autoExercise, submission)
-
-        // If here and the map is empty, then probably there has been a server restart, force sync.
-        if (executors.isEmpty()) {
-            addExecutorsFromDB()
-        }
-
         synchronized(executorLock) {
-            val executors = getCapableExecutors(autoExerciseId)
+
+            val autoExercise = getAutoExerciseDetails(autoExerciseId)
+            val request = mapToExecutorRequest(autoExercise, submission)
+
+            // If here and the map is empty, then probably there has been a server restart, force sync.
+            if (executors.isEmpty()) {
+                addExecutorsFromDB()
+            }
+
+            val executors = getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet()
             val selected = selectExecutor(executors)
 
             log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
@@ -145,38 +142,27 @@ class FutureAutoGradeService {
         log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
 
-    private fun drain(executorId: Long) {
-        val maxLoad = getExecutorMaxLoad(executorId)
-        val perQueueAllowed = max(maxLoad / (executors[executorId]?.keys?.size ?: 1), 1)
-
-        executors[executorId]?.values?.forEach { it.drain(perQueueAllowed) }
-        val success = executors.remove(executorId) != null
-
-        if (success) {
-            log.debug { "Set '$executorId' to drain and removed from executor map." }
-        } else {
-            // Should never be here.
-            log.debug { "Failed to set '$executorId' to drain and remove from executor map. Already removed?" }
-        }
-    }
 
     /**
-     *  Drain and remove executor.
+     *  Remove executor.
      */
-    fun deleteExecutor(executorId: Long) {
+    fun deleteExecutor(executorId: Long, force: Boolean) {
         synchronized(executorLock) {
 
             return transaction {
-                val executorExists =
-                    Executor.select { Executor.id eq executorId }
-                        .count() == 1L
+                val executorQuery = Executor.select { Executor.id eq executorId }
+                val executorExists = executorQuery.count() == 1L
+                val currentLoad = executorQuery.map { it[Executor.load] }.singleOrNull()
 
-                if (executorExists) {
-                    drain(executorId)
-                    Executor.deleteWhere { Executor.id eq executorId }
-                } else {
-                    throw InvalidRequestException("Executor with id $executorId not found")
+                when {
+                    !executorExists -> throw InvalidRequestException("Executor with id $executorId not found")
+                    !force && currentLoad!! > 0 ->
+                        throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
+                    // TODO: What about table auto_exercise_executor? foreign key constraint "fk_auto_exercise_executor_executor"
+                    else -> Executor.deleteWhere { Executor.id eq executorId }
                 }
+
+                executors.remove(executorId)
             }
         }
     }
@@ -216,7 +202,7 @@ private data class AutoAssessExerciseAsset(
 )
 
 data class CapableExecutor(
-    val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int
+    val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int, val drain: Boolean
 )
 
 data class AutoAssessment(
@@ -285,7 +271,8 @@ private fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExec
                     it[Executor.name],
                     it[Executor.baseUrl],
                     it[Executor.load],
-                    it[Executor.maxLoad]
+                    it[Executor.maxLoad],
+                    it[Executor.drain]
                 )
             }
             .toSet()

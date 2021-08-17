@@ -193,6 +193,7 @@ object Executor : LongIdTable("executor") {
     val baseUrl = text("base_url")
     val load = integer("load")
     val maxLoad = integer("max_load")
+    val drain = bool("drain")
 }
 
 object AutoExerciseExecutor : LongIdTable("auto_exercise_executor") {

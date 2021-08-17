@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "988f6111-0e42-4d5b-9be8-79a6617d39c6",
+		"_postman_id": "c84bbc77-73d4-4f7f-a6f3-251a22bc4ae0",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -12,7 +12,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -84,7 +83,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -161,7 +159,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -233,7 +230,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response should be okay to process\", function () { \r",
 							"    pm.response.to.not.be.error; \r",
@@ -305,7 +301,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response should be okay to process\", function () { \r",
 							"    pm.response.to.not.be.error; \r",
@@ -377,7 +372,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(403);\r",
@@ -448,7 +442,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -499,7 +492,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"string2\",\r\n  \"base_url\": \"string2\",\r\n  \"max_load\": 100\r\n}"
+					"raw": "{\r\n  \"name\": \"string2\",\r\n  \"base_url\": \"http://localhost:8080/\",\r\n  \"max_load\": 100,\r\n  \"drain\": false\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors/2",
@@ -520,7 +513,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -587,7 +579,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -638,7 +629,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "{\r\n    \"force\": false\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors/2",
@@ -659,7 +650,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -710,7 +700,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "{\r\n    \"force\": false\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/executors/2",
@@ -731,7 +721,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -808,7 +797,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -881,7 +869,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -932,7 +919,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"teachers\": [\r\n    {\r\n      \"teacher_id\": \"fp\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"teachers\": [\r\n    {\r\n      \"username\": \"fp\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/teachers",
@@ -954,7 +941,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1027,7 +1013,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "1b7c3688-040f-404b-9b2a-54cc30cd5963",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1097,7 +1082,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "1b7c3688-040f-404b-9b2a-54cc30cd5963",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1161,7 +1145,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1237,7 +1220,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1313,7 +1295,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -1384,7 +1365,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -1455,7 +1435,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -1526,7 +1505,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -1597,7 +1575,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1671,7 +1648,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1745,7 +1721,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1818,7 +1793,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1886,7 +1860,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -1956,7 +1929,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2037,7 +2009,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2107,7 +2078,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2200,7 +2170,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2274,7 +2243,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2354,7 +2322,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2434,7 +2401,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2514,7 +2480,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2590,7 +2555,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2666,7 +2630,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2747,7 +2710,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2819,7 +2781,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2893,7 +2854,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -2963,7 +2923,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3043,7 +3002,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3119,7 +3077,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3197,7 +3154,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3275,7 +3231,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -3353,7 +3308,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -3431,7 +3385,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3503,7 +3456,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3583,7 +3535,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3664,7 +3615,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3737,7 +3687,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3817,7 +3766,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3890,7 +3838,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -3965,7 +3912,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4024,13 +3970,13 @@
 					}
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/exercises/1/testing/autoassess",
+					"raw": "{{EMSBASE}}/exercises/2/testing/autoassess",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"exercises",
-						"1",
+						"2",
 						"testing",
 						"autoassess"
 					]
@@ -4044,7 +3990,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4115,7 +4060,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4192,7 +4136,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4269,7 +4212,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4341,7 +4283,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							""
 						],
@@ -4411,7 +4352,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4487,7 +4427,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4560,7 +4499,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4634,7 +4572,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4711,7 +4648,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4788,7 +4724,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4861,7 +4796,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -4935,7 +4869,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(400);\r",
@@ -5008,7 +4941,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5075,7 +5007,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5145,7 +5076,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5216,7 +5146,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5284,7 +5213,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(404);\r",
@@ -5352,7 +5280,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5427,7 +5354,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5494,7 +5420,6 @@
 				{
 					"listen": "test",
 					"script": {
-						"id": "2f815709-eee2-4b43-8cea-b50eb96d54ed",
 						"exec": [
 							"pm.test(\"response is ok\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
@@ -5566,7 +5491,6 @@
 		{
 			"listen": "prerequest",
 			"script": {
-				"id": "51d6d31c-cd97-4893-914a-b4fbd766f7c3",
 				"type": "text/javascript",
 				"exec": [
 					""
@@ -5576,13 +5500,11 @@
 		{
 			"listen": "test",
 			"script": {
-				"id": "afd7e7b2-09e0-4e85-b71b-d1dd7ad36a51",
 				"type": "text/javascript",
 				"exec": [
 					""
 				]
 			}
 		}
-	],
-	"protocolProfileBehavior": {}
+	]
 }

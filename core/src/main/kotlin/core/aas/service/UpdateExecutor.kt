@@ -21,9 +21,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UpdateExecutorController {
 
-    data class Req(@JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
-                   @JsonProperty("base_url", required = true) @field:NotBlank @field:Size(max = 2000) val baseUrl: String,
-                   @JsonProperty("max_load", required = true) val maxLoad: Int)
+    data class Req(
+        @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
+        @JsonProperty("base_url", required = true) @field:NotBlank @field:Size(max = 2000) val baseUrl: String,
+        @JsonProperty("max_load", required = true) val maxLoad: Int,
+        @JsonProperty("drain", required = true) val drain: Boolean
+    )
 
     @Secured("ROLE_ADMIN")
     @PutMapping("/executors/{executorId}")
@@ -37,14 +40,15 @@ class UpdateExecutorController {
 private fun updateExecutor(executorId: Long, body: UpdateExecutorController.Req) {
     return transaction {
         val executorExists =
-                Executor.select { Executor.id eq executorId }
-                        .count() == 1L
+            Executor.select { Executor.id eq executorId }
+                .count() == 1L
 
         if (executorExists) {
             Executor.update({ Executor.id eq executorId }) {
                 it[name] = body.name
                 it[baseUrl] = body.baseUrl
                 it[maxLoad] = body.maxLoad
+                it[drain] = body.drain
             }
         } else {
             throw InvalidRequestException("Executor with id $executorId not found")

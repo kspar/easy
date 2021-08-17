@@ -18,11 +18,14 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class ReadExecutorController {
 
-    data class Resp(@JsonProperty("id") val id: String,
-                    @JsonProperty("name") val name: String,
-                    @JsonProperty("base_url") val baseUrl: String,
-                    @JsonProperty("load") val load: Int,
-                    @JsonProperty("max_load") val maxLoad: Int)
+    data class Resp(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String,
+        @JsonProperty("base_url") val baseUrl: String,
+        @JsonProperty("load") val load: Int,
+        @JsonProperty("max_load") val maxLoad: Int,
+        @JsonProperty("drain") val drain: Boolean
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/executors")
@@ -36,14 +39,15 @@ class ReadExecutorController {
 private fun selectAllExecutors(): List<ReadExecutorController.Resp> {
     return transaction {
         Executor.selectAll().sortedBy { Executor.id }
-                .map {
-                    ReadExecutorController.Resp(
-                            it[Executor.id].value.toString(),
-                            it[Executor.name],
-                            it[Executor.baseUrl],
-                            it[Executor.load],
-                            it[Executor.maxLoad]
-                    )
-                }
+            .map {
+                ReadExecutorController.Resp(
+                    it[Executor.id].value.toString(),
+                    it[Executor.name],
+                    it[Executor.baseUrl],
+                    it[Executor.load],
+                    it[Executor.maxLoad],
+                    it[Executor.drain]
+                )
+            }
     }
 }

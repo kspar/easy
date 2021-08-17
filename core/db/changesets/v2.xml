@@ -229,17 +229,18 @@
         <!-- Data migration -->
         <sql>
             INSERT INTO account (username, created_at, email, given_name, family_name)
-            SELECT a.username, a.created_at, a.email, a.given_name, a.family_name FROM admin a;
+            SELECT a.username, a.created_at, a.email, a.given_name, a.family_name
+            FROM admin a;
         </sql>
         <sql>
             INSERT INTO account (username, created_at, email, given_name, family_name)
-            SELECT t.username, t.created_at, t.email, t.given_name, t.family_name FROM teacher t
-            ON CONFLICT DO NOTHING;
+            SELECT t.username, t.created_at, t.email, t.given_name, t.family_name
+            FROM teacher t ON CONFLICT DO NOTHING;
         </sql>
         <sql>
             INSERT INTO account (username, created_at, email, given_name, family_name)
-            SELECT s.username, s.created_at, s.email, s.given_name, s.family_name FROM student s
-            ON CONFLICT DO NOTHING;
+            SELECT s.username, s.created_at, s.email, s.given_name, s.family_name
+            FROM student s ON CONFLICT DO NOTHING;
         </sql>
 
         <addForeignKeyConstraint baseTableName="student" baseColumnNames="username" constraintName="fk_student_account"
@@ -858,7 +859,8 @@
     <changeSet id="141120-1" author="kspar">
         <renameTable oldTableName="group" newTableName="course_group"/>
         <sql>
-            alter index group_pkey rename to course_group_pkey;
+            alter
+            index group_pkey rename to course_group_pkey;
             alter table course_group rename constraint fk_group_course to fk_course_group_course;
             alter sequence seq_group_id rename to seq_course_group_id;
         </sql>
@@ -990,13 +992,21 @@
 
             UPDATE exercise e
             SET dir_id = (SELECT id
-                FROM exercise_dir
-                WHERE name = cast(e.id as text)
-                    AND implicit = true);
+            FROM exercise_dir
+            WHERE name = cast(e.id as text)
+            AND implicit = true);
 
             <!-- After migration, exercise.dir_id always points to the exercise's implicit dir, so it cannot be null -->
             ALTER TABLE exercise ALTER COLUMN dir_id SET NOT NULL;
         </sql>
+    </changeSet>
+
+    <changeSet id="170821-1" author="priit">
+        <addColumn tableName="executor">
+            <column name="drain" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
     </changeSet>
 
 </databaseChangeLog>
