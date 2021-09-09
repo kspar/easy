@@ -1822,6 +1822,10 @@ paths:
                   type: integer
                 drain:
                   type: boolean
+                containers:
+                  type: array
+                  items:
+                    type: string
 
     post:
       summary: Create new executor.
@@ -1887,17 +1891,60 @@ paths:
                 type: integer
               drain:
                 type: boolean
+              containers:
+                type: array
+                items:
+                  type: string
             required:
               - name
               - base_url
               - max_load
               - drain
+              - containers
       summary: Update executor.
       tags:
         - admin
       responses:
         200:
           description: Updated.
+
+
+  /container-images:
+    get:
+      summary: Read all container images.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Container images.
+          schema:
+            type: array
+            items:
+              properties:
+                id:
+                  type: string
+    post:
+      summary: Create new container image.
+      tags:
+        - admin
+      parameters:
+        - name: image
+          in: body
+          required: true
+          schema:
+            properties:
+              id:
+                type: string
+            required:
+              - id
+      responses:
+        200:
+          description: New container image created.
+          schema:
+            properties:
+              id:
+                type: string
+
 
   /groups:
     post:

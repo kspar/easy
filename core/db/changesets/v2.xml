@@ -1009,4 +1009,48 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="090921-1" author="priit">
+
+        <createTable tableName="container_image">
+            <column name="id" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="executor_container_image">
+            <column name="executor_id" type="bigint">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_executor_container_image"
+                             references="executor(id)"
+                             foreignKeyName="fk_executor_container_image_executor"
+                             nullable="false"/>
+            </column>
+            <column name="container_image_id" type="text">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_executor_container_image"
+                             references="container_image(id)"
+                             foreignKeyName="fk_executor_container_image_container_image"
+                             nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Migration: create container images from automatic exercise. -->
+        <sql>
+            INSERT INTO container_image (id)
+            SELECT DISTINCT a.container_image
+            FROM automatic_exercise a;
+        </sql>
+
+        <renameColumn
+                tableName="automatic_exercise"
+                oldColumnName="container_image"
+                newColumnName="container_image_id"/>
+
+
+        <addForeignKeyConstraint baseTableName="automatic_exercise"
+                                 baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_automatic_exercise_container_image"/>
+    </changeSet>
+
 </databaseChangeLog>

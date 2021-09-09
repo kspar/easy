@@ -124,7 +124,8 @@ object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access")
 
 object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_group_access") {
     // Should not refer to StudentMoodlePendingAccess.id but to its composite key
-    val moodleUsername = text("moodle_username") //reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
+    val moodleUsername =
+        text("moodle_username") //reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
     val course = long("course_id") //reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
     val pendingAccess = reference("student_moodle_pending_access_id", StudentMoodlePendingAccess)
     val courseGroup = reference("group_id", CourseGroup)
@@ -177,7 +178,7 @@ object ManagementNotification : LongIdTable("management_notification") {
 
 object AutoExercise : LongIdTable("automatic_exercise") {
     val gradingScript = text("grading_script")
-    val containerImage = text("container_image")
+    val containerImage = reference("container_image_id", ContainerImage)
     val maxTime = integer("max_time_sec")
     val maxMem = integer("max_mem_mb")
 }
@@ -194,6 +195,16 @@ object Executor : LongIdTable("executor") {
     val load = integer("load")
     val maxLoad = integer("max_load")
     val drain = bool("drain")
+}
+
+object ContainerImage : IdTable<String>("container_image") {
+    override val id: Column<EntityID<String>> = text("id").entityId()
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ExecutorContainerImage : Table("executor_container_image") {
+    val executor = reference("executor_id", Executor)
+    val containerImage = reference("container_image_id", ContainerImage)
 }
 
 object AutoExerciseExecutor : LongIdTable("auto_exercise_executor") {

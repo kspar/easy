@@ -44,7 +44,7 @@ fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails {
         }.map {
             AutoExerciseDetails(
                     it[AutoExercise.gradingScript],
-                    it[AutoExercise.containerImage],
+                    it[AutoExercise.containerImage].value,
                     it[AutoExercise.maxTime],
                     it[AutoExercise.maxMem],
                     assets,

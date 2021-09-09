@@ -154,12 +154,15 @@ class FutureAutoGradeService {
                 val executorExists = executorQuery.count() == 1L
                 val currentLoad = executorQuery.map { it[Executor.load] }.singleOrNull()
 
-                when {
-                    !executorExists -> throw InvalidRequestException("Executor with id $executorId not found")
-                    !force && currentLoad!! > 0 ->
-                        throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
-                    // TODO: What about table auto_exercise_executor? foreign key constraint "fk_auto_exercise_executor_executor"
-                    else -> Executor.deleteWhere { Executor.id eq executorId }
+                if (!executorExists) {
+                    throw InvalidRequestException("Executor with id $executorId not found")
+                } else if (!force && currentLoad!! > 0) {
+                    throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
+                } else {
+                    ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
+                    AutoExerciseExecutor.deleteWhere { AutoExerciseExecutor.executor eq executorId }
+                    Executor.deleteWhere { Executor.id eq executorId }
+                    log.info { "Executor '$executorId' deleted" }
                 }
 
                 executors.remove(executorId)
@@ -225,7 +228,7 @@ private fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessEx
             .map {
                 AutoAssessExerciseDetails(
                     it[AutoExercise.gradingScript],
-                    it[AutoExercise.containerImage],
+                    it[AutoExercise.containerImage].value,
                     it[AutoExercise.maxTime],
                     it[AutoExercise.maxMem],
                     assets
