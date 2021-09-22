@@ -1857,9 +1857,10 @@ paths:
 
 
   /executors/{executorId}:
+    parameters:
+      - $ref: '#/parameters/ExecutorId'
     delete:
       parameters:
-        - $ref: '#/parameters/ExecutorId'
         - name: executor
           in: body
           required: true
@@ -1877,7 +1878,6 @@ paths:
           description: Deleted.
     put:
       parameters:
-        - $ref: '#/parameters/ExecutorId'
         - name: executor
           in: body
           required: true
