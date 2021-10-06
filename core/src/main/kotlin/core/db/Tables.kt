@@ -207,6 +207,7 @@ object ExecutorContainerImage : Table("executor_container_image") {
     val containerImage = reference("container_image_id", ContainerImage)
 }
 
+// TODO: delete
 object AutoExerciseExecutor : LongIdTable("auto_exercise_executor") {
     val autoExercise = reference("auto_exercise_id", AutoExercise)
     val executor = reference("executor_id", Executor)

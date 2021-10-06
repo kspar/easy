@@ -14,29 +14,14 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.absoluteValue
 import kotlin.math.min
 
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
 
 private val log = KotlinLogging.logger {}
-
-
-/**
- * Autoassess a solution to an automatic exercise.
- * The assessment is performed synchronously and may take a long time.
- *
- * @throws NoExecutorsException if there are no executors capable of assessing this exercise
- * @throws ExecutorOverloadException if all executors capable of assessing this exercise are already overloaded
- * @throws ExecutorException if an executor fails
- */
-fun autoAssess(autoExerciseId: EntityID<Long>, submission: String): AutoAssessment {
-    val autoExercise = getAutoExerciseDetails(autoExerciseId)
-    val request = mapToExecutorRequest(autoExercise, submission)
-    val executors = getCapableExecutors(autoExerciseId)
-    val selectedExecutor = selectExecutor(executors)
-    return callExecutor(selectedExecutor, request)
-}
 
 
 @Service
@@ -57,13 +42,15 @@ class FutureAutoGradeService {
 
     val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
+    // Global index for picking the next queue
+    private var queuePickerIndex = AtomicInteger()
+
     /**
      * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue].
      */
     fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
         return callExecutor(executor, request)
     }
-
 
     /**
      * Autograde maximum number of possible submissions assigned to this executor while considering current load.
@@ -84,11 +71,12 @@ class FutureAutoGradeService {
 
         if (executableCount != 0) log.debug { "Executor '$executorId' is executing $executableCount jobs" }
 
-        repeat(executableCount) { i ->
+        repeat(executableCount) {
             executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
             if (executorPriorityQueues.isEmpty()) return
 
-            val item = executorPriorityQueues[i % executorPriorityQueues.size]
+            val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
+            val item = executorPriorityQueues[queuePicker % executorPriorityQueues.size]
             item.executeN(1)
         }
     }
@@ -153,19 +141,20 @@ class FutureAutoGradeService {
                 val executorQuery = Executor.select { Executor.id eq executorId }
                 val executorExists = executorQuery.count() == 1L
                 val currentLoad = executorQuery.map { it[Executor.load] }.singleOrNull()
-
                 if (!executorExists) {
                     throw InvalidRequestException("Executor with id $executorId not found")
+
+                    // TODO: waiting jobs are not considered. Get all priorities size() from executor map.
+                    // TODO: executors[executorId].values.map { it.size() }.sum() != 0 ??
                 } else if (!force && currentLoad!! > 0) {
                     throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
                 } else {
                     ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
                     AutoExerciseExecutor.deleteWhere { AutoExerciseExecutor.executor eq executorId }
                     Executor.deleteWhere { Executor.id eq executorId }
+                    executors.remove(executorId)
                     log.info { "Executor '$executorId' deleted" }
                 }
-
-                executors.remove(executorId)
             }
         }
     }
@@ -178,14 +167,11 @@ class FutureAutoGradeService {
             val new = executorIdsFromDB.filter {
                 executors.putIfAbsent(
                     it, sortedMapOf(
-                        Pair(
-                            PriorityLevel.AUTHENTICATED,
-                            FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
+                        PriorityLevel.AUTHENTICATED to FunctionQueue(
+                            ::callExecutorInFutureJobService,
+                            Dispatchers.Default
                         ),
-                        Pair(
-                            PriorityLevel.ANONYMOUS,
-                            FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
-                        )
+                        PriorityLevel.ANONYMOUS to FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
                     )
                 ) == null
             }.size
@@ -266,6 +252,10 @@ private fun mapToExecutorRequest(exercise: AutoAssessExerciseDetails, submission
 
 private fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExecutor> {
     return transaction {
+        // automatic_exercise = AutoExercise.id == autoExerciseId
+        // executor_container_image = ExecutorContainerImage.containerImageId == ae.containerImageId
+        // executorId = executor_container_image.executorId
+
         (Executor innerJoin AutoExerciseExecutor)
             .select { AutoExerciseExecutor.autoExercise eq autoExerciseId }
             .map {
