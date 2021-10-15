@@ -54,6 +54,10 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
             dto.solution,
             PriorityLevel.AUTHENTICATED)
 
+        // TODO: maybe should save auto assessments as well and follow the scheme as with student submit:
+        // this service submits and returns
+        // and another service .../await will wait for the assessment to finish and return the result
+
         return Resp(aaResult.grade, aaResult.feedback)
     }
 }
