@@ -40,7 +40,7 @@ class AddStudentsToCourseController {
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @RequestBody @Valid body: Req, caller: EasyUser): Resp {
 
-        log.debug { "Adding access to course $courseIdStr to students $body" }
+        log.debug { "Adding access to course $courseIdStr to students $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
