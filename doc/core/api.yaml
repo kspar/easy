@@ -1623,6 +1623,34 @@ paths:
                 description: Number of students added (or updated) with pending access.
 
 
+    delete:
+      summary: Remove students from this course.
+      tags:
+        - teacher
+      parameters:
+        - name: Students
+          in: body
+          schema:
+            properties:
+              students:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                  required:
+                    - id
+            required:
+              - students
+      responses:
+        200:
+          description: Students removed.
+          schema:
+            properties:
+              removed_count:
+                type: integer
+
+
   /courses/{courseId}/moodle:
     parameters:
       - $ref: '#/parameters/CourseId'
@@ -1666,19 +1694,6 @@ paths:
       responses:
         200:
           description: Grades were successfully synced
-
-
-  /teacher/courses/{courseId}/students/{studentId}:
-    delete:
-      summary: Remove this student from this course.
-      tags:
-        - teacher
-      parameters:
-        - $ref: '#/parameters/CourseId'
-        - $ref: '#/parameters/StudentId'
-      responses:
-        200:
-          description: Student removed.
 
 
   /exercises:
