@@ -2,9 +2,7 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Course
-import core.db.Teacher
-import core.db.TeacherCourseAccess
+import core.db.*
 import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -26,51 +24,93 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AddTeachersToCourse {
 
-    data class Req(@JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>)
+    data class Req(
+        @JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
+    )
 
-    data class TeacherReq(@JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String)
+    data class TeacherReq(
+        @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String,
+        @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList()
+    )
 
-    @Secured("ROLE_ADMIN")
+    data class GroupReq(
+        @JsonProperty("id") @field:NotBlank @field:Size(max = 100) val groupId: String
+    )
+
+    data class Resp(
+        @JsonProperty("accesses_added") val accessesAdded: Int
+    )
+
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @Valid @RequestBody teachers: Req,
-                   caller: EasyUser) {
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        @Valid @RequestBody body: Req,
+        caller: EasyUser
+    ): Resp {
 
-        log.debug { "Adding access to course $courseIdStr to teachers $teachers" }
+        log.debug { "Adding access to course $courseIdStr to teachers $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
-        assertCourseExists(courseId)
 
-        insertTeacherCourseAccesses(courseId, teachers)
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+
+        val accesses = body.teachers.distinctBy { it.email }.map {
+            val id = getUsernameByEmail(it.email)
+                ?: throw InvalidRequestException(
+                    "Account with email ${it.email} not found",
+                    ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email
+                )
+            val groupIds = it.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
+            TeacherNewAccess(id, it.email, groupIds)
+        }
+
+        // Check whether the groups exist and whether the caller has access to them
+        accesses.flatMap { it.groups }.toSet().forEach {
+            assertGroupExistsOnCourse(it, courseId)
+            assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, it)
+        }
+
+        return insertTeacherCourseAccesses(courseId, accesses)
     }
 }
 
+private data class TeacherNewAccess(val id: String, val email: String, val groups: Set<Long>)
 
-private fun insertTeacherCourseAccesses(courseId: Long, teachers: AddTeachersToCourse.Req) {
+private fun insertTeacherCourseAccesses(courseId: Long, newTeachers: List<TeacherNewAccess>): AddTeachersToCourse.Resp {
     val time = DateTime.now()
-    transaction {
-        val teachersWithoutAccess =
-                teachers.teachers.map {
-                    val username = getUsernameByEmail(it.email)
-                            ?: throw InvalidRequestException("Account with email ${it.email} not found",
-                                    ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email)
 
-                    if (!teacherExists(username)) {
-                        log.debug { "No teacher entity found for account $username (email: ${it.email}), creating it" }
-                        insertTeacher(username)
-                    }
-                    username
-                }.filter {
-                    !canTeacherAccessCourse(it, courseId)
-                }
+    val accessesAdded = transaction {
+
+        newTeachers.forEach {
+            if (!teacherExists(it.id)) {
+                log.debug { "No teacher entity found for account ${it.id} (email: ${it.email}), creating it" }
+                insertTeacher(it.id)
+            }
+        }
+
+        val teachersWithoutAccess = newTeachers.filter {
+            !canTeacherAccessCourse(it.id, courseId)
+        }
 
         log.debug { "Granting access to teachers (the rest already have access): $teachersWithoutAccess" }
 
         TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
-            this[TeacherCourseAccess.teacher] = EntityID(it, Teacher)
+            this[TeacherCourseAccess.teacher] = EntityID(it.id, Teacher)
             this[TeacherCourseAccess.course] = EntityID(courseId, Course)
             this[TeacherCourseAccess.createdAt] = time
         }
+
+        teachersWithoutAccess.forEach { teacher ->
+            TeacherCourseGroup.batchInsert(teacher.groups) { groupId ->
+                this[TeacherCourseGroup.teacher] = EntityID(teacher.id, Teacher)
+                this[TeacherCourseGroup.course] = EntityID(courseId, Course)
+                this[TeacherCourseGroup.courseGroup] = EntityID(groupId, CourseGroup)
+            }
+        }
+
+        teachersWithoutAccess.size
     }
+    return AddTeachersToCourse.Resp(accessesAdded)
 }
 
 private fun insertTeacher(teacherId: String) {

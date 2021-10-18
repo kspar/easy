@@ -622,6 +622,8 @@ paths:
 
 
   /export/exercises/{exerciseId}/submissions/latest:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
     post:
       summary: Download submissions.
       tags:
@@ -780,11 +782,10 @@ paths:
     post:
       summary: Add teacher accesses to course.
       tags:
-        - admin
+        - teacher
       parameters:
         - name: teachers
           in: body
-          description: Teacher emails.
           schema:
             properties:
               teachers:
@@ -793,9 +794,25 @@ paths:
                   properties:
                     email:
                       type: string
+                    groups:
+                      type: array
+                      items:
+                        properties:
+                          id:
+                            type: string
+                        required:
+                          - id
+                  required:
+                    - email
+            required:
+              - teachers
       responses:
         200:
           description: Teacher accesses added.
+          schema:
+            properties:
+              accesses_added:
+                type: integer
 
     delete:
       summary: Remove teachers' accesses from course.
