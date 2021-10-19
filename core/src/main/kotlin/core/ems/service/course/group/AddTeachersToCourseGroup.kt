@@ -50,6 +50,11 @@ class AddTeachersToCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
+        /*
+        A teacher can only change other teachers' groups if they don't have any restricted groups themselves.
+        This makes it simpler and prevents privesc scenarios where a teacher can remove other teachers' restricted
+        groups to give them more capabilities than they themselves have.
+         */
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
         assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         assertGroupExistsOnCourse(groupId, courseId)
