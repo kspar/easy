@@ -135,6 +135,25 @@ fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean {
     }
 }
 
+fun hasStudentPendingAccessToCourse(studentEmail: String, courseId: Long): Boolean {
+    return transaction {
+        StudentPendingAccess.select {
+            StudentPendingAccess.email.eq(studentEmail) and
+                    StudentPendingAccess.course.eq(courseId)
+        }.count() > 0
+    }
+}
+
+fun hasStudentMoodlePendingAccessToCourse(moodleUsername: String, courseId: Long): Boolean {
+    return transaction {
+        StudentMoodlePendingAccess.select {
+            StudentMoodlePendingAccess.moodleUsername.eq(moodleUsername) and
+                    StudentMoodlePendingAccess.course.eq(courseId)
+        }.count() > 0
+    }
+}
+
+
 fun assertIsVisibleExerciseOnCourse(courseExId: Long, courseId: Long) {
     if (!isVisibleExerciseOnCourse(courseExId, courseId)) {
         throw InvalidRequestException("Exercise $courseExId not found on course $courseId or it is hidden")
