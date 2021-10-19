@@ -72,9 +72,9 @@ fun insertAutoExercise(
             this[Asset.fileContent] = it.second
         }
 
-        AutoExerciseExecutor.batchInsert(executorIds) {
-            this[AutoExerciseExecutor.autoExercise] = autoExerciseId
-            this[AutoExerciseExecutor.executor] = it
+        ExecutorContainerImage.batchInsert(executorIds, ignore = true) {
+            this[ExecutorContainerImage.containerImage] = containerImage
+            this[ExecutorContainerImage.executor] = it
         }
 
         autoExerciseId

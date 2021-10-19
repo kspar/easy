@@ -1053,4 +1053,8 @@
                                  constraintName="fk_automatic_exercise_container_image"/>
     </changeSet>
 
+    <changeSet id="131021-1" author="priit">
+        <dropTable tableName="auto_exercise_executor"/>
+    </changeSet>
+
 </databaseChangeLog>

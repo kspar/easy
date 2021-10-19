@@ -1,10 +1,9 @@
 package core.aas
 
-import core.db.Asset
-import core.db.AutoExercise
-import core.db.AutoExerciseExecutor
-import core.db.Executor
+import core.db.*
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -31,8 +30,8 @@ fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails {
                         .map { it[Asset.fileName] to it[Asset.fileContent] }
 
         val executors =
-                (AutoExerciseExecutor innerJoin Executor)
-                        .select { AutoExerciseExecutor.autoExercise eq autoExerciseId }
+            (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
+                .select { AutoExercise.id eq autoExerciseId}
                         .map {
                             AutoExerciseExecutorBasic(
                                     it[Executor.id].value,

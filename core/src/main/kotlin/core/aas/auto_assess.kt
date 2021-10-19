@@ -40,7 +40,7 @@ class FutureAutoGradeService {
      */
     private val executorLock = UUID.randomUUID().toString()
 
-    val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
+    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
 
     // Global index for picking the next queue
     private var queuePickerIndex = AtomicInteger()
@@ -140,17 +140,16 @@ class FutureAutoGradeService {
             return transaction {
                 val executorQuery = Executor.select { Executor.id eq executorId }
                 val executorExists = executorQuery.count() == 1L
-                val currentLoad = executorQuery.map { it[Executor.load] }.singleOrNull()
+                val currentLoad = executors[executorId]?.values?.sumOf { it.size() }
+
                 if (!executorExists) {
                     throw InvalidRequestException("Executor with id $executorId not found")
 
-                    // TODO: waiting jobs are not considered. Get all priorities size() from executor map.
-                    // TODO: executors[executorId].values.map { it.size() }.sum() != 0 ??
-                } else if (!force && currentLoad!! > 0) {
+                } else if (!force && (currentLoad ?: 0) > 0) {
                     throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
+
                 } else {
                     ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
-                    AutoExerciseExecutor.deleteWhere { AutoExerciseExecutor.executor eq executorId }
                     Executor.deleteWhere { Executor.id eq executorId }
                     executors.remove(executorId)
                     log.info { "Executor '$executorId' deleted" }
@@ -256,8 +255,9 @@ private fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExec
         // executor_container_image = ExecutorContainerImage.containerImageId == ae.containerImageId
         // executorId = executor_container_image.executorId
 
-        (Executor innerJoin AutoExerciseExecutor)
-            .select { AutoExerciseExecutor.autoExercise eq autoExerciseId }
+
+        (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
+            .select { AutoExercise.id eq autoExerciseId }
             .map {
                 CapableExecutor(
                     it[Executor.id].value,
