@@ -992,12 +992,13 @@
 
             UPDATE exercise e
             SET dir_id = (SELECT id
-            FROM exercise_dir
-            WHERE name = cast(e.id as text)
-            AND implicit = true);
+                          FROM exercise_dir
+                          WHERE name = cast(e.id as text)
+                            AND implicit = true);
 
             <!-- After migration, exercise.dir_id always points to the exercise's implicit dir, so it cannot be null -->
-            ALTER TABLE exercise ALTER COLUMN dir_id SET NOT NULL;
+            ALTER TABLE exercise
+                ALTER COLUMN dir_id SET NOT NULL;
         </sql>
     </changeSet>
 
@@ -1055,6 +1056,38 @@
 
     <changeSet id="131021-1" author="priit">
         <dropTable tableName="auto_exercise_executor"/>
+    </changeSet>
+
+
+    <changeSet id="191021-1" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student accesses, exposed fixed its issues :) -->
+
+        <!-- Drop group entity's FK so we can drop other stuff -->
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_group_access_student_course_access"/>
+
+        <!-- Replace group entity's PK -->
+        <dropPrimaryKey tableName="student_course_group_access"/>
+        <addPrimaryKey tableName="student_course_group_access" columnNames="course_id, student_id, group_id"/>
+
+        <!-- Drop group entity's old id PK/FK field -->
+        <dropColumn tableName="student_course_group_access" columnName="student_course_access_id"/>
+
+        <!-- Replace access entity's PK -->
+        <dropPrimaryKey tableName="student_course_access"/>
+        <addPrimaryKey tableName="student_course_access" columnNames="course_id, student_id"/>
+
+        <!-- Drop access entity's old id PK field and key -->
+        <dropColumn tableName="student_course_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_course_access"
+                              constraintName="student_course_access_course_id_student_id_key"/>
+
+        <!-- Add group entity's new FK last so it doesn't stop us dropping other stuff -->
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_course_group_access_student_course_access"/>
     </changeSet>
 
 </databaseChangeLog>

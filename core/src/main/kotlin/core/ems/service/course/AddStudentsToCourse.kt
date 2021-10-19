@@ -102,16 +102,16 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
         log.debug { "Granting pending access to students: $studentsNoAccount" }
 
         newStudentsWithAccount.forEach { newStudent ->
-            val accessId = StudentCourseAccess.insertAndGetId {
-                it[course] = courseEntity
-                it[student] = EntityID(newStudent.id, Student)
+            // TODO: maybe can batchInsert
+            StudentCourseAccess.insert {
+                it[course] = courseId
+                it[student] = newStudent.id
                 it[createdAt] = now
             }
             StudentCourseGroup.batchInsert(newStudent.groups) {
-                this[StudentCourseGroup.student] = newStudent.id
                 this[StudentCourseGroup.course] = courseId
-                this[StudentCourseGroup.courseGroup] = EntityID(it, CourseGroup)
-                this[StudentCourseGroup.courseAccess] = accessId
+                this[StudentCourseGroup.student] = newStudent.id
+                this[StudentCourseGroup.courseGroup] = it
             }
         }
 

@@ -186,7 +186,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
 
         pendingIdsToCourseIds.forEach { (pendingAccessId, courseId) ->
             log.debug { "Granting access for ${accountData.username} to course $courseId" }
-            val accessId = StudentCourseAccess.insertAndGetId {
+            // TODO: maybe can batchInsert
+            StudentCourseAccess.insert {
                 it[StudentCourseAccess.student] = student
                 it[StudentCourseAccess.course] = courseId
             }
@@ -200,7 +201,6 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 this[StudentCourseGroup.student] = student.value
                 this[StudentCourseGroup.course] = courseId.value
                 this[StudentCourseGroup.courseGroup] = it
-                this[StudentCourseGroup.courseAccess] = accessId
             }
         }
 
@@ -234,7 +234,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 it[moodleUsername] = pendingAccess.moodleUsername
             }
 
-            val accessId = StudentCourseAccess.insertAndGetId {
+            // TODO: maybe can batchInsert
+            StudentCourseAccess.insert {
                 it[StudentCourseAccess.student] = student
                 it[StudentCourseAccess.course] = EntityID(pendingAccess.courseId, Course)
             }
@@ -248,7 +249,6 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 this[StudentCourseGroup.student] = student.value
                 this[StudentCourseGroup.course] = pendingAccess.courseId
                 this[StudentCourseGroup.courseGroup] = it
-                this[StudentCourseGroup.courseAccess] = accessId
             }
         }
 

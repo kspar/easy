@@ -152,8 +152,9 @@ class MoodleSyncService {
                 Account.update({ Account.id eq newAccess.username }) {
                     it[moodleUsername] = newAccess.moodleUsername
                 }
-                val accessId = StudentCourseAccess.insertAndGetId {
-                    it[student] = EntityID(newAccess.username, Student)
+                // TODO: maybe can batchInsert
+                StudentCourseAccess.insert {
+                    it[student] = newAccess.username
                     it[course] = courseEntity
                     it[createdAt] = time
                 }
@@ -161,7 +162,6 @@ class MoodleSyncService {
                     this[StudentCourseGroup.student] = newAccess.username
                     this[StudentCourseGroup.course] = courseId
                     this[StudentCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
-                    this[StudentCourseGroup.courseAccess] = accessId
                 }
             }
 

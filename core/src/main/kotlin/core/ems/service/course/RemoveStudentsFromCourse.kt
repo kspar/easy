@@ -70,7 +70,7 @@ private fun assertCallerCanAccessStudents(caller: EasyUser, studentIds: List<Str
                     (StudentCourseGroup.student.inList(studentIds))
         }.map {
             // studentId -> groupId
-            it[StudentCourseGroup.student] to it[StudentCourseGroup.courseGroup].value
+            it[StudentCourseGroup.student].value to it[StudentCourseGroup.courseGroup].value
         }.groupBy({ it.first }, { it.second })
 
         // groupId -> callerCanAccess
