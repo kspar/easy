@@ -3,6 +3,8 @@ package core.ems.service.course.group
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StudentCourseGroup
+import core.db.StudentMoodlePendingCourseGroup
+import core.db.StudentPendingCourseGroup
 import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -22,9 +24,9 @@ private val log = KotlinLogging.logger {}
 class AddStudentsToCourseGroupController {
 
     data class Req(
-        @JsonProperty("active_students") @field:Valid val activeStudents: List<ActiveStudentReq>,
-        @JsonProperty("pending_students") @field:Valid val pendingStudents: List<PendingStudentReq>,
-        @JsonProperty("moodle_pending_students") @field:Valid val moodlePendingStudents: List<MoodlePendingStudentReq>,
+        @JsonProperty("active_students") @field:Valid val activeStudents: List<ActiveStudentReq> = emptyList(),
+        @JsonProperty("pending_students") @field:Valid val pendingStudents: List<PendingStudentReq> = emptyList(),
+        @JsonProperty("moodle_pending_students") @field:Valid val moodlePendingStudents: List<MoodlePendingStudentReq> = emptyList(),
     )
 
     data class ActiveStudentReq(
@@ -36,7 +38,7 @@ class AddStudentsToCourseGroupController {
     )
 
     data class MoodlePendingStudentReq(
-        @JsonProperty("moodleUsername") @field:NotBlank @field:Size(max = 100) val moodleUsername: String,
+        @JsonProperty("moodle_username") @field:NotBlank @field:Size(max = 100) val moodleUsername: String,
     )
 
 
@@ -99,17 +101,23 @@ private fun addStudentsToGroup(
     courseId: Long, groupId: Long, activeStudentIds: List<String>,
     pendingStudentEmails: List<String>, moodlePendingStudentUnames: List<String>
 ) {
-
     transaction {
-
-        StudentCourseGroup.batchInsert(activeStudentIds) {
+        StudentCourseGroup.batchInsert(activeStudentIds, ignore = true) {
             this[StudentCourseGroup.student] = it
             this[StudentCourseGroup.course] = courseId
             this[StudentCourseGroup.courseGroup] = groupId
         }
 
-        // TODO: pending and moodlePending
-        // TODO: waiting for EZ-1354
+        StudentPendingCourseGroup.batchInsert(pendingStudentEmails, ignore = true) {
+            this[StudentPendingCourseGroup.email] = it
+            this[StudentPendingCourseGroup.course] = courseId
+            this[StudentPendingCourseGroup.courseGroup] = groupId
+        }
 
+        StudentMoodlePendingCourseGroup.batchInsert(moodlePendingStudentUnames, ignore = true) {
+            this[StudentMoodlePendingCourseGroup.moodleUsername] = it
+            this[StudentMoodlePendingCourseGroup.course] = courseId
+            this[StudentMoodlePendingCourseGroup.courseGroup] = groupId
+        }
     }
 }

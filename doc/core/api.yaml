@@ -1079,6 +1079,48 @@ paths:
           description: Teachers added to group.
 
 
+  /courses/{courseId}/groups/{courseGroupId}/students:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseGroupId'
+    post:
+      summary: Add students to course group.
+      tags:
+        - teacher
+      parameters:
+        - name: students
+          in: body
+          schema:
+            properties:
+              active_students:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                  required:
+                    - id
+              pending_students:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                  required:
+                    - email
+              moodle_pending_students:
+                type: array
+                items:
+                  properties:
+                    moodle_username:
+                      type: string
+                  required:
+                    - moodle_username
+      responses:
+        200:
+          description: Added
+
+
   /courses/{courseId}/groups/{courseGroupId}/teachers/{teacherId}:
     parameters:
       - $ref: '#/parameters/CourseId'
