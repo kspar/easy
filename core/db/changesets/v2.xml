@@ -1090,4 +1090,52 @@
                                  constraintName="fk_student_course_group_access_student_course_access"/>
     </changeSet>
 
+    <changeSet id="201021-1" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student pending accesses -->
+
+        <dropForeignKeyConstraint baseTableName="student_pending_course_group_access"
+                                  constraintName="fk_student_pending_group_access_student_pending_access"/>
+        <dropPrimaryKey tableName="student_pending_course_group_access"/>
+        <addPrimaryKey tableName="student_pending_course_group_access" columnNames="course_id, email, group_id"/>
+        <dropColumn tableName="student_pending_course_group_access" columnName="student_pending_access_id"/>
+
+        <dropPrimaryKey tableName="student_pending_access"/>
+        <addPrimaryKey tableName="student_pending_access" columnNames="course_id, email"/>
+        <dropColumn tableName="student_pending_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_pending_access"
+                              constraintName="student_pending_access_course_id_email_key"/>
+
+        <addForeignKeyConstraint baseTableName="student_pending_course_group_access"
+                                 baseColumnNames="course_id, email"
+                                 referencedTableName="student_pending_access"
+                                 referencedColumnNames="course_id, email"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_pending_course_group_access_student_pending_access"/>
+    </changeSet>
+
+    <changeSet id="201021-2" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student moodle pending accesses -->
+
+        <dropForeignKeyConstraint baseTableName="student_moodle_pending_course_group_access"
+                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
+        <dropPrimaryKey tableName="student_moodle_pending_course_group_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_course_group_access"
+                       columnNames="course_id, moodle_username, group_id"/>
+        <dropColumn tableName="student_moodle_pending_course_group_access"
+                    columnName="student_moodle_pending_access_id"/>
+
+        <dropPrimaryKey tableName="student_moodle_pending_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_access" columnNames="course_id, moodle_username"/>
+        <dropColumn tableName="student_moodle_pending_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_moodle_pending_access"
+                              constraintName="student_moodle_pending_access_course_id_moodle_username_key"/>
+
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_course_group_access"
+                                 baseColumnNames="course_id, moodle_username"
+                                 referencedTableName="student_moodle_pending_access"
+                                 referencedColumnNames="course_id, moodle_username"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_moodle_pending_course_group_access_student_moodle_pending_access"/>
+    </changeSet>
+
 </databaseChangeLog>

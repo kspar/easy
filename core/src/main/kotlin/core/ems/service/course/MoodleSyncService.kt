@@ -170,7 +170,8 @@ class MoodleSyncService {
             StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
 
             newPendingAccesses.forEach { newPendingAccess ->
-                val accessId = StudentMoodlePendingAccess.insertAndGetId {
+                // TODO: maybe can batchInsert
+                StudentMoodlePendingAccess.insert {
                     it[moodleUsername] = newPendingAccess.moodleUsername
                     it[course] = courseEntity
                     it[email] = newPendingAccess.email
@@ -179,7 +180,6 @@ class MoodleSyncService {
                     this[StudentMoodlePendingCourseGroup.moodleUsername] = newPendingAccess.moodleUsername
                     this[StudentMoodlePendingCourseGroup.course] = courseId
                     this[StudentMoodlePendingCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
-                    this[StudentMoodlePendingCourseGroup.pendingAccess] = accessId
                 }
             }
 

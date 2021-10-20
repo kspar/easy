@@ -113,37 +113,32 @@ object StudentCourseGroup : Table("student_course_group_access") {
     override val primaryKey = PrimaryKey(student, course, courseGroup)
 }
 
-object StudentMoodlePendingAccess : LongIdTable("student_moodle_pending_access") {
-    // Should not have ID but composite key
-    val course = reference("course_id", Course)//.primaryKey()
-    val moodleUsername = text("moodle_username")//.primaryKey()
+object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
+    val course = reference("course_id", Course)
+    val moodleUsername = text("moodle_username")
     val email = text("email")
+    override val primaryKey = PrimaryKey(course, moodleUsername)
 }
 
 object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_group_access") {
-    // Should not refer to StudentMoodlePendingAccess.id but to its composite key
-    val moodleUsername =
-        text("moodle_username") //reference("moodle_username", StudentMoodlePendingAccess.moodleUsername).primaryKey()
-    val course = long("course_id") //reference("course_id", StudentMoodlePendingAccess.course).primaryKey()
-    val pendingAccess = reference("student_moodle_pending_access_id", StudentMoodlePendingAccess)
+    val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername)
+    val course = reference("course_id", StudentMoodlePendingAccess.course)
     val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(pendingAccess, courseGroup)
+    override val primaryKey = PrimaryKey(moodleUsername, course, courseGroup)
 }
 
-object StudentPendingAccess : LongIdTable("student_pending_access") {
-    // Should not have ID but composite key
-    val course = reference("course_id", Course)//.primaryKey()
-    val email = text("email")//.primaryKey()
+object StudentPendingAccess : Table("student_pending_access") {
+    val course = reference("course_id", Course)
+    val email = text("email")
     val validFrom = datetime("valid_from")
+    override val primaryKey = PrimaryKey(course, email)
 }
 
 object StudentPendingCourseGroup : Table("student_pending_course_group_access") {
-    // Should not refer to StudentPendingAccess.id but to its composite key
-    val email = text("email") //reference("email", StudentPendingAccess.email).primaryKey()
-    val course = long("course_id") //reference("course_id", StudentPendingAccess.course).primaryKey()
-    val pendingAccess = reference("student_pending_access_id", StudentPendingAccess)
+    val email = reference("email", StudentPendingAccess.email)
+    val course = reference("course_id", StudentPendingAccess.course)
     val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(pendingAccess, courseGroup)
+    override val primaryKey = PrimaryKey(email, course, courseGroup)
 }
 
 object Submission : LongIdTable("submission") {

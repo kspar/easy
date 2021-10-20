@@ -121,7 +121,8 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
                     (StudentPendingAccess.email inList studentsNoAccount.map { it.email })
         }
         studentsNoAccount.forEach { pendingStudent ->
-            val accessId = StudentPendingAccess.insertAndGetId {
+            // TODO: maybe can batchInsert
+            StudentPendingAccess.insert {
                 it[course] = courseEntity
                 it[email] = pendingStudent.email
                 it[validFrom] = now
@@ -129,8 +130,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
             StudentPendingCourseGroup.batchInsert(pendingStudent.groups) {
                 this[StudentPendingCourseGroup.email] = pendingStudent.email
                 this[StudentPendingCourseGroup.course] = courseId
-                this[StudentPendingCourseGroup.courseGroup] = EntityID(it, CourseGroup)
-                this[StudentPendingCourseGroup.pendingAccess] = accessId
+                this[StudentPendingCourseGroup.courseGroup] = it
             }
         }
 

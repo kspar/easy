@@ -175,52 +175,57 @@ private fun updateAdmin(admin: AccountData) {
 
 private fun updateStudentCourseAccesses(accountData: AccountData) {
     log.debug { "Updating student course accesses" }
-
-    val student = EntityID(accountData.username, Student)
+    val now = DateTime.now()
 
     transaction {
-        val pendingIdsToCourseIds = StudentPendingAccess
-                .slice(StudentPendingAccess.id, StudentPendingAccess.course)
+        val courseIds = StudentPendingAccess
+                .slice(StudentPendingAccess.course)
                 .select { StudentPendingAccess.email eq accountData.email }
-                .map { it[StudentPendingAccess.id] to it[StudentPendingAccess.course] }
+                .map { it[StudentPendingAccess.course].value }
 
-        pendingIdsToCourseIds.forEach { (pendingAccessId, courseId) ->
+        StudentPendingAccess.deleteWhere {
+            StudentPendingAccess.email eq accountData.email
+        }
+
+        courseIds.forEach { courseId ->
             log.debug { "Granting access for ${accountData.username} to course $courseId" }
+
             // TODO: maybe can batchInsert
             StudentCourseAccess.insert {
-                it[StudentCourseAccess.student] = student
-                it[StudentCourseAccess.course] = courseId
+                it[student] = accountData.username
+                it[course] = courseId
+                it[createdAt] = now
             }
 
             val groupIds = StudentPendingCourseGroup
                     .slice(StudentPendingCourseGroup.courseGroup)
-                    .select { StudentPendingCourseGroup.pendingAccess eq pendingAccessId }
+                    .select {
+                        StudentPendingCourseGroup.email.eq(accountData.email) and
+                                StudentPendingCourseGroup.course.eq(courseId)
+                    }
                     .map { it[StudentPendingCourseGroup.courseGroup] }
 
             StudentCourseGroup.batchInsert(groupIds) {
-                this[StudentCourseGroup.student] = student.value
-                this[StudentCourseGroup.course] = courseId.value
+                this[StudentCourseGroup.student] = accountData.username
+                this[StudentCourseGroup.course] = courseId
                 this[StudentCourseGroup.courseGroup] = it
             }
         }
 
-        StudentPendingAccess.deleteWhere {
-            StudentPendingAccess.id inList pendingIdsToCourseIds.map { it.first }
-        }
-
-
-        data class MoodlePendingAccess(val id: Long, val courseId: Long, val moodleUsername: String)
+        data class MoodlePendingAccess(val courseId: Long, val moodleUsername: String)
 
         val moodlePendingQuery = StudentMoodlePendingAccess
-                .select { StudentMoodlePendingAccess.email eq accountData.email }
+            .select { StudentMoodlePendingAccess.email eq accountData.email }
+
         if (accountData.moodleUsername != null) {
-            moodlePendingQuery.orWhere { StudentMoodlePendingAccess.moodleUsername eq accountData.moodleUsername }
+            moodlePendingQuery.orWhere {
+                StudentMoodlePendingAccess.moodleUsername eq accountData.moodleUsername
+            }
         }
 
         val pendingAccesses = moodlePendingQuery
                 .map {
                     MoodlePendingAccess(
-                            it[StudentMoodlePendingAccess.id].value,
                             it[StudentMoodlePendingAccess.course].value,
                             it[StudentMoodlePendingAccess.moodleUsername]
                     )
@@ -229,31 +234,36 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
         pendingAccesses.forEach { pendingAccess ->
             log.debug { "Granting access for ${accountData.username} to course ${pendingAccess.courseId} based on Moodle pending access $pendingAccess" }
 
-            // Updates moodleUsername for every pending access - not ideal but unlikely to cause problems
+            // Update moodleUsername for every pending access - not ideal but unlikely to cause problems
             Account.update({ Account.id eq accountData.username }) {
                 it[moodleUsername] = pendingAccess.moodleUsername
             }
 
             // TODO: maybe can batchInsert
             StudentCourseAccess.insert {
-                it[StudentCourseAccess.student] = student
-                it[StudentCourseAccess.course] = EntityID(pendingAccess.courseId, Course)
+                it[student] = accountData.username
+                it[course] = pendingAccess.courseId
+                it[createdAt] = now
             }
 
             val groupIds = StudentMoodlePendingCourseGroup
-                    .slice(StudentMoodlePendingCourseGroup.courseGroup)
-                    .select { StudentMoodlePendingCourseGroup.pendingAccess eq pendingAccess.id }
-                    .map { it[StudentMoodlePendingCourseGroup.courseGroup] }
+                .slice(StudentMoodlePendingCourseGroup.courseGroup)
+                .select {
+                    StudentMoodlePendingCourseGroup.moodleUsername.eq(pendingAccess.moodleUsername) and
+                            StudentMoodlePendingCourseGroup.course.eq(pendingAccess.courseId)
+                }
+                .map { it[StudentMoodlePendingCourseGroup.courseGroup] }
 
             StudentCourseGroup.batchInsert(groupIds) {
-                this[StudentCourseGroup.student] = student.value
+                this[StudentCourseGroup.student] = accountData.username
                 this[StudentCourseGroup.course] = pendingAccess.courseId
                 this[StudentCourseGroup.courseGroup] = it
             }
-        }
 
-        StudentMoodlePendingAccess.deleteWhere {
-            StudentMoodlePendingAccess.id inList pendingAccesses.map { it.id }
+            StudentMoodlePendingAccess.deleteWhere {
+                StudentMoodlePendingAccess.course.eq(pendingAccess.courseId) and
+                        StudentMoodlePendingAccess.moodleUsername.eq(pendingAccess.moodleUsername)
+            }
         }
     }
 }
