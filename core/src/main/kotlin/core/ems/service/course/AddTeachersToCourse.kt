@@ -63,11 +63,10 @@ class AddTeachersToCourse {
             val groupIds = it.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
             TeacherNewAccess(id, it.email, groupIds)
         }
-
-        // Check whether the groups exist and whether the caller has access to them
+        
+        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         accesses.flatMap { it.groups }.toSet().forEach {
             assertGroupExistsOnCourse(it, courseId)
-            assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, it)
         }
 
         return insertTeacherCourseAccesses(courseId, accesses)
