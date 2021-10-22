@@ -1078,6 +1078,33 @@ paths:
         200:
           description: Teachers added to group.
 
+    delete:
+      summary: Remove teachers from course group.
+      tags:
+        - teacher
+      parameters:
+        - name: teachers
+          in: body
+          schema:
+            properties:
+              teachers:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                  required:
+                    - id
+            required:
+              - teachers
+      responses:
+        200:
+          description: Removed.
+          schema:
+            properties:
+              deleted_count:
+                type: integer
+
 
   /courses/{courseId}/groups/{courseGroupId}/students:
     parameters:
@@ -1120,19 +1147,46 @@ paths:
         200:
           description: Added
 
-
-  /courses/{courseId}/groups/{courseGroupId}/teachers/{teacherId}:
-    parameters:
-      - $ref: '#/parameters/CourseId'
-      - $ref: '#/parameters/CourseGroupId'
-      - $ref: '#/parameters/TeacherId'
     delete:
-      summary: Remove teacher from course group.
+      summary: Remove students from course group.
       tags:
         - teacher
+      parameters:
+        - name: students
+          in: body
+          schema:
+            properties:
+              active_students:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                  required:
+                    - id
+              pending_students:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                  required:
+                    - email
+              moodle_pending_students:
+                type: array
+                items:
+                  properties:
+                    moodle_username:
+                      type: string
+                  required:
+                    - moodle_username
       responses:
         200:
-          description: Teacher removed from group.
+          description: Removed.
+          schema:
+            properties:
+              deleted_count:
+                type: integer
 
 
   /courses/teacher/{courseId}/grades:
