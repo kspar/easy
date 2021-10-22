@@ -1068,10 +1068,10 @@ paths:
                 type: array
                 items:
                   properties:
-                    username:
+                    id:
                       type: string
                   required:
-                    - username
+                    - id
             required:
               - teachers
       responses:
