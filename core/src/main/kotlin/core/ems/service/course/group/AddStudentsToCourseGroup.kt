@@ -50,7 +50,12 @@ class AddStudentsToCourseGroupController {
         @Valid @RequestBody body: Req,
         caller: EasyUser
     ) {
-        log.debug { "Add students $body to group $groupIdStr on course $courseIdStr by ${caller.id}" }
+        val activeStudentIds = body.activeStudents.map { it.id }
+        val pendingStudentEmails = body.pendingStudents.map { it.email }
+        val moodlePendingStudentUnames = body.moodlePendingStudents.map { it.moodleUsername }
+
+        log.debug { "Add students $activeStudentIds, $pendingStudentEmails, $moodlePendingStudentUnames " +
+                "to group $groupIdStr on course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
@@ -65,36 +70,36 @@ class AddStudentsToCourseGroupController {
         /*
         Students must be on the course already.
          */
-        val activeStudentIds = body.activeStudents.map {
-            if (!canStudentAccessCourse(it.id, courseId))
-                throw InvalidRequestException(
-                    "No student found with ID ${it.id} on course $courseId",
-                    ReqError.ENTITY_WITH_ID_NOT_FOUND
-                )
-
-            it.id
-        }
-        val pendingStudentEmails = body.pendingStudents.map {
-            if (!hasStudentPendingAccessToCourse(it.email, courseId))
-                throw InvalidRequestException(
-                    "No pending student found with email ${it.email} on course $courseId",
-                    ReqError.ENTITY_WITH_ID_NOT_FOUND
-                )
-
-            it.email
-        }
-        val moodlePendingStudentUnames = body.moodlePendingStudents.map {
-            if (!hasStudentMoodlePendingAccessToCourse(it.moodleUsername, courseId))
-                throw InvalidRequestException(
-                    "No Moodle pending student found with Moodle username ${it.moodleUsername} on course $courseId",
-                    ReqError.ENTITY_WITH_ID_NOT_FOUND
-                )
-
-            it.moodleUsername
-        }
+        activeStudentIds.forEach { assertStudentExistsOnCourse(it, courseId) }
+        pendingStudentEmails.forEach { assertPendingStudentExistsOnCourse(it, courseId) }
+        moodlePendingStudentUnames.forEach { assertMoodlePendingStudentExistsOnCourse(it, courseId) }
 
         addStudentsToGroup(courseId, groupId, activeStudentIds, pendingStudentEmails, moodlePendingStudentUnames)
     }
+}
+
+private fun assertStudentExistsOnCourse(studentId: String, courseId: Long) {
+    if (!canStudentAccessCourse(studentId, courseId))
+        throw InvalidRequestException(
+            "No student found with ID $studentId on course $courseId",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
+}
+
+private fun assertPendingStudentExistsOnCourse(email: String, courseId: Long) {
+    if (!hasStudentPendingAccessToCourse(email, courseId))
+        throw InvalidRequestException(
+            "No pending student found with email $email on course $courseId",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
+}
+
+private fun assertMoodlePendingStudentExistsOnCourse(moodleUsername: String, courseId: Long) {
+    if (!hasStudentMoodlePendingAccessToCourse(moodleUsername, courseId))
+        throw InvalidRequestException(
+            "No Moodle pending student found with Moodle username $moodleUsername on course $courseId",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
 }
 
 private fun addStudentsToGroup(
