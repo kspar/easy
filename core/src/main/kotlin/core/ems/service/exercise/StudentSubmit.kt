@@ -61,6 +61,13 @@ class StudentSubmitCont {
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cacheInvalidator)
+
+                // TODO
+//                val deferred: Deferred<Unit> = CoroutineScope(Dispatchers.Default).async {
+//                    some.autoAssessAsync(courseExId, solution, submissionId, cacheInvalidator)
+//                }
+                // add deferred to autoAssessStatusObserver
+
                 some.autoAssessAsync(courseExId, solution, submissionId, cacheInvalidator)
             }
         }
@@ -70,6 +77,8 @@ class StudentSubmitCont {
 @Component
 class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGradeService: FutureAutoGradeService) {
     // Must be in DIFFERENT Spring Component for Async than the caller
+
+    // TODO: maybe we don't need Async
     @Async
     fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, cacheInvalidator: CacheInvalidator) {
         try {

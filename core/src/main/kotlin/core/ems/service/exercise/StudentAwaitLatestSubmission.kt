@@ -109,6 +109,7 @@ private fun selectLatestStudentSubmission(courseId: Long,
                     .singleOrNull()
         } ?: return null
 
+        // TODO: get teacher assessment after auto assessment because it might change during auto assessment
         val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
 
         val response = transaction {
@@ -125,6 +126,9 @@ private fun selectLatestStudentSubmission(courseId: Long,
                     teacherAssessment?.second
             )
         }
+
+        // TODO: if auto assessment IN_PROGRESS -> await on autoAssessStatusObserver and select/return assessments
+        // TODO: else select/return assessments
 
         if (response.autoGradeStatus != AutoGradeStatus.IN_PROGRESS) {
             log.debug { "Got finished autograde status on iteration $sleepCounter for submission ${lastSubmission.id}" }
