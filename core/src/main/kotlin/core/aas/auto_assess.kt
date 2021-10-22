@@ -10,6 +10,8 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationListener
+import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
@@ -25,7 +27,7 @@ private val log = KotlinLogging.logger {}
 
 
 @Service
-class FutureAutoGradeService {
+class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
     @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
     private lateinit var allowedRunningTimeMs: String
 
@@ -44,6 +46,13 @@ class FutureAutoGradeService {
 
     // Global index for picking the next queue
     private var queuePickerIndex = AtomicInteger()
+
+    override fun onApplicationEvent(p0: ContextRefreshedEvent) {
+        log.info { "Initializing FutureAutoGradeService by syncing executors." }
+        synchronized(executorLock) {
+            addExecutorsFromDB()
+        }
+    }
 
     /**
      * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue].
@@ -93,32 +102,26 @@ class FutureAutoGradeService {
         submission: String,
         priority: PriorityLevel
     ): AutoAssessment {
-        synchronized(executorLock) {
 
-            val autoExercise = getAutoExerciseDetails(autoExerciseId)
-            val request = mapToExecutorRequest(autoExercise, submission)
+        val autoExercise = getAutoExerciseDetails(autoExerciseId)
+        val request = mapToExecutorRequest(autoExercise, submission)
 
-            // If here and the map is empty, then probably there has been a server restart, force sync.
-            if (executors.isEmpty()) {
-                addExecutorsFromDB()
-            }
+        val executors = getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet()
+        val selected = selectExecutor(executors)
 
-            val executors = getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet()
-            val selected = selectExecutor(executors)
+        log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
 
-            log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
-
-            return this.executors
+        val executor = synchronized(executorLock) {
+            this.executors
                 .getOrElse(selected.id) {
                     throw ExecutorException("Out of sync. Did you use API to add/remove executor '${selected.id}'?")
                 }
                 .getOrElse(priority) {
                     throw ExecutorException("Executor (${selected.id}) does not have queue with '$priority'.")
                 }
-                .submitAndAwait(
-                    arrayOf(selected, request), timeout = allowedWaitingTimeUserMs.toLong()
-                )
         }
+
+        return executor.submitAndAwait(arrayOf(selected, request), timeout = allowedWaitingTimeUserMs.toLong())
     }
 
 
@@ -251,11 +254,6 @@ private fun mapToExecutorRequest(exercise: AutoAssessExerciseDetails, submission
 
 private fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExecutor> {
     return transaction {
-        // automatic_exercise = AutoExercise.id == autoExerciseId
-        // executor_container_image = ExecutorContainerImage.containerImageId == ae.containerImageId
-        // executorId = executor_container_image.executorId
-
-
         (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
             .select { AutoExercise.id eq autoExerciseId }
             .map {
