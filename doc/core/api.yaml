@@ -1564,8 +1564,6 @@ paths:
     get:
       summary: Get all participants (including pending access) who are registered to this course.
       parameters:
-        - $ref: '#/parameters/Limit'
-        - $ref: '#/parameters/Offset'
         - in: query
           name: role
           type: string
@@ -1576,7 +1574,7 @@ paths:
         - teacher
       responses:
         200:
-          description: Participants in this course.
+          description: Participants on this course.
           schema:
             properties:
               moodle_short_name:
@@ -1585,14 +1583,6 @@ paths:
                 type: boolean
               moodle_grades_synced:
                 type: boolean
-              student_count:
-                type: integer
-              teacher_count:
-                type: integer
-              students_pending_count:
-                type: integer
-              students_moodle_pending_count:
-                type: integer
               students:
                 type: array
                 items:
@@ -1666,14 +1656,17 @@ paths:
                 type: array
                 items:
                   properties:
-                    ut_username:
+                    moodle_username:
+                      type: string
+                    email:
                       type: string
                     groups:
                       type: array
                       items:
                         $ref: '#/definitions/Group'
                   required:
-                    - ut_username
+                    - moodle_username
+                    - email
                     - groups
 
 

@@ -50,16 +50,16 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return Resp(selectTeacherExercisesOnCourse(courseId, caller.id, courseService))
+        return Resp(selectTeacherExercisesOnCourse(courseId, caller, courseService))
     }
 }
 
 
-private fun selectTeacherExercisesOnCourse(courseId: Long, callerId: String, courseService: CourseService): List<CourseExerciseResp> {
+private fun selectTeacherExercisesOnCourse(courseId: Long, caller: EasyUser, courseService: CourseService): List<CourseExerciseResp> {
 
     return transaction {
 
-        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
+        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
         val studentQuery = courseService.selectStudentsOnCourseQuery(courseId, emptyList(), restrictedGroups, true)
 
         val studentCount = studentQuery.count().toInt()

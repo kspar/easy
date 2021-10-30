@@ -1,5 +1,6 @@
 package core.ems.service
 
+import core.conf.security.EasyUser
 import core.db.CourseGroup
 import core.db.TeacherCourseGroup
 import core.exception.InvalidRequestException
@@ -22,13 +23,16 @@ fun groupExistsOnCourse(groupId: Long, courseId: Long): Boolean {
     }
 }
 
-fun getTeacherRestrictedCourseGroups(courseId: Long, callerId: String): List<Long> {
+fun getTeacherRestrictedCourseGroups(courseId: Long, caller: EasyUser): List<Long> {
+    if (caller.isAdmin())
+        return emptyList()
+
     return transaction {
         TeacherCourseGroup
                 .slice(TeacherCourseGroup.courseGroup)
                 .select {
                     TeacherCourseGroup.course eq courseId and
-                            (TeacherCourseGroup.teacher eq callerId)
+                            (TeacherCourseGroup.teacher eq caller.id)
                 }.map { it[TeacherCourseGroup.courseGroup].value }
     }
 }

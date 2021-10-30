@@ -37,15 +37,14 @@ class ReadCourseGroupsController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        return Resp(selectGroups(courseId, caller.id))
+        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
+
+        return Resp(selectGroups(courseId, restrictedGroups))
     }
 }
 
-private fun selectGroups(courseId: Long, callerId: String): List<ReadCourseGroupsController.GroupResp> {
+private fun selectGroups(courseId: Long, restrictedGroups: List<Long>): List<ReadCourseGroupsController.GroupResp> {
     return transaction {
-
-        val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
-
         val query = CourseGroup
                 .select {
                     CourseGroup.course eq courseId
