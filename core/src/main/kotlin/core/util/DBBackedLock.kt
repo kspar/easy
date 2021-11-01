@@ -42,6 +42,21 @@ class DBBackedLock<IdType : Comparable<IdType>>(
         }
     }
 
+    /**
+     * Release locks for all rows (entities).
+     * Should only be called on special occasions e.g. application startup or shutdown.
+     */
+    fun releaseAll() {
+        // sync doesn't seem necessary, just precautionary
+        synchronized(monitor) {
+            transaction {
+                backingTable.update {
+                    it[backingLockColumn] = false
+                }
+            }
+        }
+    }
+
     private fun tryObtain(entityId: IdType): Boolean {
         return synchronized(monitor) {
             transaction {
