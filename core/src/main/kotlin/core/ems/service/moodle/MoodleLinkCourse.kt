@@ -54,8 +54,10 @@ class MoodleLinkCourseController(
 
         } else {
             try {
-                moodleGradesSyncService.syncGradesLock.with(courseId) {
-                    linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
+                moodleStudentsSyncService.syncStudentsLock.with(courseId) {
+                    moodleGradesSyncService.syncGradesLock.with(courseId) {
+                        linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
+                    }
                 }
             } catch (e: ResourceLockedException) {
                 log.info { "Cannot change Moodle link, sync is in progress for course $courseId" }
