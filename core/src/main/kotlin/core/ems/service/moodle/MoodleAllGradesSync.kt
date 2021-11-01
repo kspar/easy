@@ -17,7 +17,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class MoodleGradesSyncController(val moodleGradesSyncService: MoodleGradesSyncService) {
+class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyncService) {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/moodle/grades")

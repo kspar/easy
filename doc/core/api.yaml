@@ -1743,7 +1743,7 @@ paths:
   /courses/{courseId}/moodle:
     parameters:
       - $ref: '#/parameters/CourseId'
-    post:
+    put:
       summary: Link course with a Moodle course
       tags:
         - admin
@@ -1775,12 +1775,32 @@ paths:
     parameters:
       - $ref: '#/parameters/CourseId'
     post:
-      summary: One-way sync course grades with Moodle
+      summary: Push all course grades to Moodle
       tags:
         - teacher
       responses:
         200:
-          description: Grades were successfully synced
+          description: Sync finished or already in progress
+          schema:
+            properties:
+              status:
+                $ref: '#/definitions/MoodleSyncedOperationStatus'
+
+
+  /courses/{courseId}/moodle/students:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      post:
+        summary: Pull and replace all course students from Moodle
+        tags:
+          - teacher
+        responses:
+          200:
+            description: Sync finished or already in progress
+            schema:
+              properties:
+                status:
+                  $ref: '#/definitions/MoodleSyncedOperationStatus'
 
 
   /exercises:
@@ -2386,3 +2406,10 @@ definitions:
       - INFO
       - WARN
       - ERROR
+
+  MoodleSyncedOperationStatus:
+    type: string
+    description: "Status of requested synchronised operation."
+    enum:
+      - FINISHED
+      - IN_PROGRESS

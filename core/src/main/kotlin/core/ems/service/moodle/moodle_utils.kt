@@ -3,7 +3,6 @@ package core.ems.service.moodle
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Course
 import core.exception.InvalidRequestException
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -22,11 +21,7 @@ fun assertCourseIsMoodleLinked(courseId: Long) {
 }
 
 fun isCourseMoodleLinked(courseId: Long): Boolean {
-    return transaction {
-        Course.select {
-            Course.id eq courseId and Course.moodleShortName.isNotNull()
-        }.count() > 0
-    }
+    return selectCourseShortName(courseId) != null
 }
 
 fun selectCourseShortName(courseId: Long): String? {
