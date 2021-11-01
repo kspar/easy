@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
 import core.ems.service.assertCourseExists
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
+import core.exception.ResourceLockedException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -19,46 +21,58 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class MoodleLinkCourseController(val moodleStudentsSyncService: MoodleStudentsSyncService) {
+class MoodleLinkCourseController(
+    val moodleStudentsSyncService: MoodleStudentsSyncService,
+    val moodleGradesSyncService: MoodleGradesSyncService,
+) {
 
+    data class Req(
+        @JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
+        @JsonProperty("sync_students") val syncStudents: Boolean,
+        @JsonProperty("sync_grades") val syncGrades: Boolean,
+        @JsonProperty("force") val force: Boolean = false,
+    )
 
-    data class Req(@JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
-                   @JsonProperty("sync_students", required = true) val syncStudents: Boolean,
-                   @JsonProperty("sync_grades", required = true) val syncGrades: Boolean)
-
-    data class Resp(@JsonProperty("students_synced") val studentsSynced: Int,
-                    @JsonProperty("pending_students_synced") val pendingStudentsSynced: Int)
-
-
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/courses/{courseId}/moodle")
-    fun controller(@PathVariable("courseId") courseIdStr: String, @Valid @RequestBody dto: Req, caller: EasyUser): Resp {
-        log.debug { "${caller.id} is linking Moodle course '${dto.moodleShortName}' with '$courseIdStr' (sync students: ${dto.syncStudents}, sync grades: ${dto.syncGrades})" }
+    @Secured("ROLE_ADMIN")
+    @PutMapping("/courses/{courseId}/moodle")
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        @Valid @RequestBody body: Req,
+        caller: EasyUser
+    ) {
+        log.debug {
+            "Linking Moodle course ${body.moodleShortName} with course $courseIdStr by ${caller.id} " +
+                    "(sync students: ${body.syncStudents}, sync grades: ${body.syncGrades}, force: ${body.force})"
+        }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
-
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
         assertCourseExists(courseId)
 
-        linkCourse(courseId, dto.moodleShortName, dto.syncStudents, dto.syncGrades)
+        // Don't care about locks if force
+        if (body.force) {
+            linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
 
-        return if (dto.syncStudents) {
-            val moodleStudents = moodleStudentsSyncService.queryStudents(dto.moodleShortName)
-            val syncedStudents = moodleStudentsSyncService.syncCourse(moodleStudents, courseId, dto.moodleShortName)
-            Resp(syncedStudents.syncedStudents, syncedStudents.syncedPendingStudents)
         } else {
-            Resp(0, 0)
+            try {
+                moodleGradesSyncService.withSyncGradesLock(courseId) {
+                    linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
+                }
+            } catch (e: ResourceLockedException) {
+                log.info { "Cannot change Moodle link, sync is in progress for course $courseId" }
+                throw InvalidRequestException(
+                    "Moodle sync is in progress", ReqError.MOODLE_SYNC_IN_PROGRESS, notify = false
+                )
+            }
         }
     }
-}
 
-
-private fun linkCourse(courseId: Long, moodleShortname: String, syncStudents: Boolean, syncGrades: Boolean) {
-    transaction {
-        Course.update({ Course.id eq courseId }) {
-            it[moodleShortName] = moodleShortname
-            it[moodleSyncStudents] = syncStudents
-            it[moodleSyncGrades] = syncGrades
+    private fun linkCourse(courseId: Long, moodleShortname: String, syncStudents: Boolean, syncGrades: Boolean) {
+        transaction {
+            Course.update({ Course.id eq courseId }) {
+                it[moodleShortName] = moodleShortname
+                it[moodleSyncStudents] = syncStudents
+                it[moodleSyncGrades] = syncGrades
+            }
         }
     }
 }

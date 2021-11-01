@@ -6,11 +6,13 @@ import core.db.*
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.exception.ResourceLockedException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
+import java.util.*
 
 private val log = KotlinLogging.logger {}
 
@@ -30,6 +33,11 @@ class MoodleGradesSyncService {
 
     @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
+
+    // Monitor used for reading and modifying the sync grades status in DB for any course.
+    // This monitor is global, meaning that it's shared for all courses. This isn't ideal but also not a huge problem
+    // since the get/set lock operation (in DB) is fast.
+    private val syncGradesLockMonitor = UUID.randomUUID()
 
 
     data class MoodleReq(@JsonProperty("shortname") val shortname: String,
@@ -78,22 +86,79 @@ class MoodleGradesSyncService {
 
 
     /**
-     * Sync single course all grades to Moodle.
+     * Sync all grades on a single course to Moodle. Respects grade sync locking.
+     *
+     * @throws ResourceLockedException if grades sync is already in progress
      */
     fun syncCourseGradesToMoodle(courseId: Long) {
-        val shortname = selectCourseShortName(courseId)
+        withSyncGradesLock(courseId) {
+            val shortname = selectCourseShortName(courseId)
 
-        if (shortname.isNullOrBlank()) {
-            log.debug { "Course $courseId is not synced due to no link with Moodle." }
+            if (shortname.isNullOrBlank()) {
+                log.warn { "Course $courseId is not synced due to no link with Moodle." }
 
-        } else {
-            // Send grades in batches of 200
-            val exercises = selectExercisesOnCourse(courseId)
-            val batches = batchGrades(shortname, exercises)
+            } else {
+                // Send grades in batches of 200
+                val exercises = selectExercisesOnCourse(courseId)
+                val batches = batchGrades(shortname, exercises)
 
-            batches.forEach {
-                log.debug { "Sending grade batch: $it" }
-                sendMoodleGradeRequest(it)
+                batches.forEach {
+                    log.debug { "Sending grade batch: $it" }
+                    sendMoodleGradeRequest(it)
+                }
+            }
+        }
+    }
+
+    /**
+     * Try to obtain a course's sync grades lock, do something while holding it (block()) and
+     * release the lock when done.
+     *
+     * @throws ResourceLockedException if the grades sync lock is already taken
+     */
+    fun <R> withSyncGradesLock(courseId: Long, block: () -> R): R {
+        if (!tryObtainSyncGradesLock(courseId)) {
+            throw ResourceLockedException()
+        }
+        try {
+            return block()
+        } finally {
+            releaseSyncGradesLock(courseId)
+        }
+    }
+
+    private fun tryObtainSyncGradesLock(courseId: Long): Boolean {
+        return synchronized(syncGradesLockMonitor) {
+            transaction {
+                val isInProgress = Course.select {
+                    Course.id.eq(courseId)
+                }.map {
+                    it[Course.moodleSyncGradesInProgress]
+                }.single()
+
+                if (isInProgress) {
+                    false
+                } else {
+                    Course.update({
+                        Course.id eq courseId
+                    }) {
+                        it[moodleSyncGradesInProgress] = true
+                    }
+                    true
+                }
+            }
+        }
+    }
+    
+    private fun releaseSyncGradesLock(courseId: Long) {
+        // sync doesn't seem necessary, just precautionary
+        synchronized(syncGradesLockMonitor) {
+            transaction {
+                Course.update({
+                    Course.id eq courseId
+                }) {
+                    it[moodleSyncGradesInProgress] = false
+                }
             }
         }
     }
