@@ -1,8 +1,9 @@
-package core.ems.service
+package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.db.*
+import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging

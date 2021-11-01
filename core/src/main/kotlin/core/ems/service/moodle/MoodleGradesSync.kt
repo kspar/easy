@@ -1,8 +1,7 @@
-package core.ems.service.course
+package core.ems.service.moodle
 
 import core.conf.security.EasyUser
 import core.db.Course
-import core.ems.service.GradeService
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -22,7 +21,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class GradeSyncGradesController(val gradeService: GradeService) {
+class MoodleGradesSyncController(val gradeService: GradeService) {
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

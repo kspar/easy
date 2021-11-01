@@ -1,13 +1,12 @@
-package core.ems.service.course
+package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
+import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
@@ -39,11 +38,13 @@ class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        assertCourseExists(courseId)
+
         linkCourse(courseId, dto.moodleShortName, dto.syncStudents, dto.syncGrades)
 
         return if (dto.syncStudents) {
-            val students = moodleSyncService.queryStudents(dto.moodleShortName)
-            val syncedStudents = moodleSyncService.syncCourse(students, courseId, dto.moodleShortName)
+            val moodleStudents = moodleSyncService.queryStudents(dto.moodleShortName)
+            val syncedStudents = moodleSyncService.syncCourse(moodleStudents, courseId, dto.moodleShortName)
             Resp(syncedStudents.syncedStudents, syncedStudents.syncedPendingStudents)
         } else {
             Resp(0, 0)
@@ -54,9 +55,6 @@ class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
 
 private fun linkCourse(courseId: Long, moodleShortname: String, syncStudents: Boolean, syncGrades: Boolean) {
     transaction {
-        if (Course.select { Course.id eq courseId }.count() != 1L) {
-            throw InvalidRequestException("Course with $courseId does not exist")
-        }
         Course.update({ Course.id eq courseId }) {
             it[moodleShortName] = moodleShortname
             it[moodleSyncStudents] = syncStudents

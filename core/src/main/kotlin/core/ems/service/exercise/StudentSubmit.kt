@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.FutureAutoGradeService
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.GradeService
+import core.ems.service.moodle.GradeService
 import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CacheInvalidator
