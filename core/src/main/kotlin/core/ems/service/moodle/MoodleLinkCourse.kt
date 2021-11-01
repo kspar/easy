@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
+class MoodleLinkCourseController(val moodleStudentsSyncService: MoodleStudentsSyncService) {
 
 
     data class Req(@JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
@@ -43,8 +43,8 @@ class MoodleLinkCourseController(val moodleSyncService: MoodleSyncService) {
         linkCourse(courseId, dto.moodleShortName, dto.syncStudents, dto.syncGrades)
 
         return if (dto.syncStudents) {
-            val moodleStudents = moodleSyncService.queryStudents(dto.moodleShortName)
-            val syncedStudents = moodleSyncService.syncCourse(moodleStudents, courseId, dto.moodleShortName)
+            val moodleStudents = moodleStudentsSyncService.queryStudents(dto.moodleShortName)
+            val syncedStudents = moodleStudentsSyncService.syncCourse(moodleStudents, courseId, dto.moodleShortName)
             Resp(syncedStudents.syncedStudents, syncedStudents.syncedPendingStudents)
         } else {
             Resp(0, 0)

@@ -28,7 +28,8 @@ private val log = KotlinLogging.logger {}
 data class MoodleSyncedStudents(val syncedStudents: Int, val syncedPendingStudents: Int)
 
 @Service
-class MoodleSyncService {
+class MoodleStudentsSyncService {
+
     @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
 

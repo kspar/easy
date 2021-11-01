@@ -1773,7 +1773,7 @@ paths:
                 type: integer
 
 
-  /courses/{courseId}/moodlesync/grades:
+  /courses/{courseId}/moodle/grades:
     parameters:
       - $ref: '#/parameters/CourseId'
     post:

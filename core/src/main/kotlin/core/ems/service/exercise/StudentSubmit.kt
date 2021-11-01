@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.FutureAutoGradeService
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.moodle.GradeService
+import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CacheInvalidator
@@ -75,7 +75,7 @@ class StudentSubmitCont {
 }
 
 @Component
-class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGradeService: FutureAutoGradeService) {
+class StupidComponentForAsync(val moodleGradesSyncService: MoodleGradesSyncService, val futureAutoGradeService: FutureAutoGradeService) {
     // Must be in DIFFERENT Spring Component for Async than the caller
 
     // TODO: maybe we don't need Async
@@ -98,7 +98,7 @@ class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGrad
             insertAutoAssFailed(submissionId, cacheInvalidator, courseExId)
             return
         }
-        gradeService.syncSingleGradeToMoodle(submissionId)
+        moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 }
 

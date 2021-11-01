@@ -26,7 +26,7 @@ private val log = KotlinLogging.logger {}
 
 
 @Service
-class GradeService {
+class MoodleGradesSyncService {
 
     @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
@@ -158,17 +158,6 @@ class GradeService {
                                 listOfNotNull(selectLatestGradeForSubmission(submissionId))
                         )
                     }.single()
-        }
-    }
-
-
-    private fun selectCourseShortName(courseId: Long): String? {
-        return transaction {
-            Course.slice(Course.moodleShortName)
-                    .select {
-                        Course.id eq courseId
-                    }.map { it[Course.moodleShortName] }
-                    .firstOrNull()
         }
     }
 
