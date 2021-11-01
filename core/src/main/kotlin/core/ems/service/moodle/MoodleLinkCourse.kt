@@ -54,7 +54,7 @@ class MoodleLinkCourseController(
 
         } else {
             try {
-                moodleGradesSyncService.withSyncGradesLock(courseId) {
+                moodleGradesSyncService.syncGradesLock.with(courseId) {
                     linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
                 }
             } catch (e: ResourceLockedException) {
