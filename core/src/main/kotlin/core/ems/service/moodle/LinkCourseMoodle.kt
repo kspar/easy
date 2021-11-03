@@ -27,10 +27,14 @@ class MoodleLinkCourseController(
 ) {
 
     data class Req(
+        @JsonProperty("moodle_props") val moodleProps: MoodleReq?,
+        @JsonProperty("force") val force: Boolean = false,
+    )
+
+    data class MoodleReq(
         @JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
         @JsonProperty("sync_students") val syncStudents: Boolean,
         @JsonProperty("sync_grades") val syncGrades: Boolean,
-        @JsonProperty("force") val force: Boolean = false,
     )
 
     @Secured("ROLE_ADMIN")
@@ -40,9 +44,15 @@ class MoodleLinkCourseController(
         @Valid @RequestBody body: Req,
         caller: EasyUser
     ) {
-        log.debug {
-            "Linking Moodle course ${body.moodleShortName} with course $courseIdStr by ${caller.id} " +
-                    "(sync students: ${body.syncStudents}, sync grades: ${body.syncGrades}, force: ${body.force})"
+
+        if (body.moodleProps == null) {
+            log.debug { "Unlinking course $courseIdStr from Moodle by ${caller.id} (force: ${body.force})" }
+        } else {
+            val moodleProps = body.moodleProps
+            log.debug {
+                "Linking Moodle course ${moodleProps.moodleShortName} with course $courseIdStr by ${caller.id} " +
+                        "(sync students: ${moodleProps.syncStudents}, sync grades: ${moodleProps.syncGrades}, force: ${body.force})"
+            }
         }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -50,13 +60,13 @@ class MoodleLinkCourseController(
 
         // Don't care about locks if force
         if (body.force) {
-            linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
+            linkCourse(courseId, body.moodleProps)
 
         } else {
             try {
                 moodleStudentsSyncService.syncStudentsLock.with(courseId) {
                     moodleGradesSyncService.syncGradesLock.with(courseId) {
-                        linkCourse(courseId, body.moodleShortName, body.syncStudents, body.syncGrades)
+                        linkCourse(courseId, body.moodleProps)
                     }
                 }
             } catch (e: ResourceLockedException) {
@@ -68,12 +78,16 @@ class MoodleLinkCourseController(
         }
     }
 
-    private fun linkCourse(courseId: Long, moodleShortname: String, syncStudents: Boolean, syncGrades: Boolean) {
+    private fun linkCourse(courseId: Long, moodleProps: MoodleReq?) {
         transaction {
             Course.update({ Course.id eq courseId }) {
-                it[moodleShortName] = moodleShortname
-                it[moodleSyncStudents] = syncStudents
-                it[moodleSyncGrades] = syncGrades
+                if (moodleProps == null) {
+                    it[moodleShortName] = null
+                } else {
+                    it[moodleShortName] = moodleProps.moodleShortName
+                    it[moodleSyncStudents] = moodleProps.syncStudents
+                    it[moodleSyncGrades] = moodleProps.syncGrades
+                }
             }
         }
     }

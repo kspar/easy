@@ -1768,7 +1768,7 @@ paths:
 
 
     put:
-      summary: Link course with a Moodle course
+      summary: Link/unlink course with/from a Moodle course
       tags:
         - admin
       parameters:
@@ -1776,18 +1776,21 @@ paths:
           in: body
           schema:
             properties:
-              moodle_short_name:
-                type: string
-              sync_students:
-                type: boolean
-              sync_grades:
-                type: boolean
+              moodle_props:
+                properties:
+                  moodle_short_name:
+                    type: string
+                  sync_students:
+                    type: boolean
+                  sync_grades:
+                    type: boolean
+                required:
+                  - moodle_short_name
+                  - sync_students
+                  - sync_grades
               force:
                 type: boolean
-            required:
-              - moodle_short_name
-              - sync_students
-              - sync_grades
+                default: false
       responses:
         200:
           description: OK
