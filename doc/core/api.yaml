@@ -1737,6 +1737,36 @@ paths:
   /courses/{courseId}/moodle:
     parameters:
       - $ref: '#/parameters/CourseId'
+
+    get:
+      summary: Get Moodle status and props for course
+      tags:
+        - teacher
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+              moodle_props:
+                properties:
+                  moodle_short_name:
+                    type: string
+                  students_synced:
+                    type: boolean
+                  sync_students_in_progress:
+                    type: boolean
+                  grades_synced:
+                    type: boolean
+                  sync_grades_in_progress:
+                    type: boolean
+                required:
+                  - moodle_short_name
+                  - students_synced
+                  - sync_students_in_progress
+                  - grades_synced
+                  - sync_grades_in_progress
+
+
     put:
       summary: Link course with a Moodle course
       tags:

@@ -25,11 +25,11 @@ class ReadCourseMoodlePropsController {
     )
 
     data class MoodleResp(
-        @JsonProperty("moodle_short_name") val moodleShortName: String,
-        @JsonProperty("moodle_students_synced") val moodleStudentsSynced: Boolean,
-        @JsonProperty("moodle_sync_students_in_progress") val moodleStudentsSyncInProgress: Boolean,
-        @JsonProperty("moodle_grades_synced") val moodleGradesSynced: Boolean,
-        @JsonProperty("moodle_sync_grades_in_progress") val moodleGradesSyncInProgress: Boolean,
+        @JsonProperty("moodle_short_name") val shortName: String,
+        @JsonProperty("students_synced") val studentsSynced: Boolean,
+        @JsonProperty("sync_students_in_progress") val studentsSyncInProgress: Boolean,
+        @JsonProperty("grades_synced") val gradesSynced: Boolean,
+        @JsonProperty("sync_grades_in_progress") val gradesSyncInProgress: Boolean,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -57,10 +57,10 @@ class ReadCourseMoodlePropsController {
                 if (shortname != null) {
                     MoodleResp(
                         shortname,
-                        moodleStudentsSynced = it[Course.moodleSyncStudents],
-                        moodleStudentsSyncInProgress = it[Course.moodleSyncStudentsInProgress],
-                        moodleGradesSynced = it[Course.moodleSyncGrades],
-                        moodleGradesSyncInProgress = it[Course.moodleSyncGradesInProgress]
+                        studentsSynced = it[Course.moodleSyncStudents],
+                        studentsSyncInProgress = it[Course.moodleSyncStudentsInProgress],
+                        gradesSynced = it[Course.moodleSyncGrades],
+                        gradesSyncInProgress = it[Course.moodleSyncGradesInProgress]
                     )
                 } else null
             }.single()
