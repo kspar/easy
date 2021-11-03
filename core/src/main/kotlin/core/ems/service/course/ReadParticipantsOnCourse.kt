@@ -65,9 +65,6 @@ class ReadParticipantsOnCourseController {
     )
 
     data class Resp(
-        @JsonProperty("moodle_short_name") @JsonInclude(Include.NON_NULL) val moodleShortName: String?,
-        @JsonProperty("moodle_students_synced") @JsonInclude(Include.NON_NULL) val moodleStudentsSynced: Boolean?,
-        @JsonProperty("moodle_grades_synced") @JsonInclude(Include.NON_NULL) val moodleGradesSynced: Boolean?,
         @JsonProperty("students") @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
         @JsonProperty("teachers") @JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
         @JsonProperty("students_pending") @JsonInclude(Include.NON_NULL) val studentPendingAccess: List<StudentPendingResp>?,
@@ -94,20 +91,12 @@ class ReadParticipantsOnCourseController {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val moodleState = selectMoodleState(courseId)
-        val shortname = moodleState?.shortname
-        val syncStudents = moodleState?.syncStudents
-        val syncGrades = moodleState?.syncGrades
-
         val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
 
         return when (roleReq?.toLowerCase()) {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
                 Resp(
-                    shortname,
-                    syncStudents,
-                    syncGrades,
                     null,
                     teachers,
                     null,
@@ -119,9 +108,6 @@ class ReadParticipantsOnCourseController {
                 val studentsPending = selectStudentsPendingOnCourse(courseId, restrictedGroups)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, restrictedGroups)
                 Resp(
-                    shortname,
-                    syncStudents,
-                    syncGrades,
                     students,
                     null,
                     studentsPending,
@@ -134,9 +120,6 @@ class ReadParticipantsOnCourseController {
                 val studentsPending = selectStudentsPendingOnCourse(courseId, restrictedGroups)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, restrictedGroups)
                 Resp(
-                    shortname,
-                    syncStudents,
-                    syncGrades,
                     students,
                     teachers,
                     studentsPending,
@@ -323,25 +306,6 @@ class ReadParticipantsOnCourseController {
                         }
                     )
                 }
-        }
-    }
-
-    data class CourseMoodleState(val shortname: String, val syncStudents: Boolean, val syncGrades: Boolean)
-
-    private fun selectMoodleState(courseId: Long): CourseMoodleState? {
-        return transaction {
-            Course.slice(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
-                .select { Course.id eq courseId }
-                .map {
-                    val shortname = it[Course.moodleShortName]
-                    if (shortname != null) {
-                        CourseMoodleState(
-                            shortname,
-                            it[Course.moodleSyncStudents],
-                            it[Course.moodleSyncGrades]
-                        )
-                    } else null
-                }.single()
         }
     }
 }
