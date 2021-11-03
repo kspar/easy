@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Teacher
 import core.db.TeacherCourseAccess
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -27,7 +29,7 @@ class RemoveTeachersFromCourseController {
 
     data class TeacherIdReq(@JsonProperty("username") @field:NotBlank @field:Size(max = 100) val username: String)
 
-    @Secured("ROLE_ADMIN")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @DeleteMapping("/courses/{courseId}/teachers")
     fun controller(@PathVariable("courseId") courseIdStr: String,
                    @Valid @RequestBody teachers: Req,
@@ -36,6 +38,9 @@ class RemoveTeachersFromCourseController {
         log.debug { "Removing teachers $teachers from course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
+
+        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
 
         deleteTeachersFromCourse(teachers, courseId)
     }

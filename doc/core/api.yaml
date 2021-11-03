@@ -817,7 +817,7 @@ paths:
     delete:
       summary: Remove teachers' accesses from course.
       tags:
-        - admin
+        - teacher
       parameters:
         - name: teacher
           in: body
