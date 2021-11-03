@@ -1,7 +1,6 @@
 package core.ems.service.moodle
 
 import core.conf.security.EasyUser
-import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.ResourceLockedException
@@ -30,7 +29,6 @@ class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyn
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertCourseExists(courseId)
         assertCourseIsMoodleLinked(courseId)
 
         return try {

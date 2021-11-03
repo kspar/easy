@@ -63,7 +63,6 @@ class TeacherReadGradesController(val courseService: CourseService) {
         val groupId = groupIdStr?.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertCourseExists(courseId)
 
         val queryWords = searchStr.trim().toLowerCase().split(Regex(" +"))
 
