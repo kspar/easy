@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
 import core.exception.InvalidRequestException
 import core.util.FunctionQueue
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -235,14 +234,8 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
                 executors.putIfAbsent(
                     // sortedMap does not need to be concurrent as all usages of this map are synchronized
                     it, sortedMapOf(
-                        PriorityLevel.AUTHENTICATED to FunctionQueue(
-                            ::callExecutorInFutureJobService,
-                            Dispatchers.Default
-                        ),
-                        PriorityLevel.ANONYMOUS to FunctionQueue(
-                            ::callExecutorInFutureJobService,
-                            Dispatchers.Default
-                        )
+                        PriorityLevel.AUTHENTICATED to FunctionQueue(::callExecutorInFutureJobService),
+                        PriorityLevel.ANONYMOUS to FunctionQueue(::callExecutorInFutureJobService)
                     )
                 ) == null
             }.size

@@ -14,7 +14,7 @@ private val log = KotlinLogging.logger {}
 
 typealias Ticket = Long
 
-open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val dispatcher: CoroutineDispatcher) {
+open class FunctionQueue<T>(private val futureCall: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
 
     /**
