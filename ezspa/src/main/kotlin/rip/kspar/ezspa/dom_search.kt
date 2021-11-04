@@ -28,8 +28,9 @@ fun Element.getElemsBySelector(selector: String): List<Element> =
 fun getElemBySelector(selector: String): Element? =
         document.querySelector(selector)
 
-fun Element.getElemBySelector(selector: String): Element? =
+fun Element.getElemBySelector(selector: String): Element =
         this.querySelector(selector)
+                ?: throw RuntimeException("No element with selector '$selector' under ${this.localName}#${this.id}.${this.className}")
 
 fun getElemsByClass(className: String): List<Element> =
         document.getElementsByClassName(className).asList()
