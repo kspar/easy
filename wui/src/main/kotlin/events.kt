@@ -4,6 +4,7 @@ import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
 import org.w3c.dom.events.MouseEvent
+import rip.kspar.ezspa.ActiveListener
 import rip.kspar.ezspa.onVanillaClick
 
 fun HTMLAnchorElement.onSingleClickWithDisabled(disabledText: String?, f: suspend (event: MouseEvent) -> Unit) {
@@ -25,17 +26,23 @@ fun HTMLAnchorElement.onSingleClickWithDisabled(disabledText: String?, f: suspen
     }
 }
 
-fun HTMLButtonElement.onSingleClickWithDisabled(disabledText: String, f: suspend (event: MouseEvent) -> Unit) {
+fun HTMLButtonElement.onSingleClickWithDisabled(
+    disabledText: String?,
+    f: suspend (event: MouseEvent) -> Unit
+): ActiveListener =
     this.onVanillaClick(true) {
         val btn = this
         MainScope().launch {
             btn.disabled = true
             val btnContent = btn.getElementsByTagName("ez-btn-content").asList().single()
             val activeHtml = btnContent.innerHTML
-            btnContent.textContent = disabledText
+            disabledText?.let {
+                btnContent.textContent = it
+            }
             f(it)
-            btnContent.innerHTML = activeHtml
+            disabledText?.let {
+                btnContent.innerHTML = activeHtml
+            }
             btn.disabled = false
         }
     }
-}
