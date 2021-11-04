@@ -19,8 +19,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.9")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0-RC")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.3.0")
 }
 
 kotlin {
