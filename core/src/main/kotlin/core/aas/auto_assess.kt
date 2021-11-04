@@ -5,6 +5,7 @@ import core.db.*
 import core.exception.InvalidRequestException
 import core.util.FunctionQueue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
@@ -16,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
 import kotlin.math.min
@@ -25,6 +27,59 @@ private const val EXECUTOR_GRADE_URL = "/v1/grade"
 
 private val log = KotlinLogging.logger {}
 
+enum class ObserverCallerType {
+    TEACHER,
+    STUDENT
+}
+
+@Service
+class AutoAssessStatusObserver {
+    private data class StatusObserverKey(val submissionId: Long, val callerType: ObserverCallerType)
+
+    private val statuses: MutableMap<StatusObserverKey, Job> = ConcurrentHashMap()
+
+    private fun get(key: StatusObserverKey) = statuses[key]
+
+    private fun put(key: StatusObserverKey, value: Job) = statuses.put(key, value)
+
+    fun put(submissionId: Long, callerType: ObserverCallerType, value: Job): Job? {
+        log.debug { "Submission '$submissionId' by $callerType added to auto-assess status observer." }
+        return put(StatusObserverKey(submissionId, callerType), value)
+    }
+
+    fun get(submissionId: Long, callerType: ObserverCallerType): Job? {
+        log.debug { "Submission '$submissionId' by $callerType retrieved from status observer." }
+        return get(StatusObserverKey(submissionId, callerType))
+    }
+
+    @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay-observer-clear.ms}")
+    fun clearOld() {
+
+        val totalJobs = statuses.keys.size
+        val removed = transaction {
+            statuses.filterKeys { key ->
+
+                when (key.callerType) {
+                    ObserverCallerType.STUDENT -> {
+
+                        Submission
+                            .slice(Submission.autoGradeStatus)
+                            .select { Submission.id eq key.submissionId }
+                            .map { it[Submission.autoGradeStatus] }
+                            .single() != AutoGradeStatus.IN_PROGRESS
+                    }
+
+
+                    ObserverCallerType.TEACHER -> {
+                        TODO("TEACHER observation is not supported")
+                    }
+                }
+            }.keys.map { statuses.remove(it) }.size
+        }
+
+        log.debug { "Cleared $removed/$totalJobs auto-assess observer jobs that are NOT IN_PROGRESS." }
+    }
+}
 
 @Service
 class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
@@ -42,13 +97,15 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
      */
     private val executorLock = UUID.randomUUID().toString()
 
-    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> = mutableMapOf()
+    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> =
+        ConcurrentHashMap()
 
     // Global index for picking the next queue
     private var queuePickerIndex = AtomicInteger()
 
     override fun onApplicationEvent(p0: ContextRefreshedEvent) {
         log.info { "Initializing FutureAutoGradeService by syncing executors." }
+        // Synchronization might not be needed here, but for code consistency and for avoidance of thread issues is added.
         synchronized(executorLock) {
             addExecutorsFromDB()
         }
@@ -93,11 +150,15 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
     //  fixedDelay doesn't start a next call before the last one has finished
     @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
     private fun grade() {
-        executors.keys.forEach { executorId -> autograde(executorId) }
+        log.debug { "Grading executors $executors" }
+        // Synchronized as executors can be removed or added at any time.
+        synchronized(executorLock) {
+            executors.keys.forEach { executorId -> autograde(executorId) }
+        }
     }
 
 
-    fun submitAndAwait(
+    suspend fun submitAndAwait(
         autoExerciseId: EntityID<Long>,
         submission: String,
         priority: PriorityLevel
@@ -111,6 +172,7 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
 
         log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
 
+        // Synchronized as executors can be removed or added at any time.
         val executor = synchronized(executorLock) {
             this.executors
                 .getOrElse(selected.id) {
@@ -138,11 +200,13 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
      *  Remove executor.
      */
     fun deleteExecutor(executorId: Long, force: Boolean) {
+        // Synchronized as executors can be read or added at any time.
         synchronized(executorLock) {
 
             return transaction {
                 val executorQuery = Executor.select { Executor.id eq executorId }
                 val executorExists = executorQuery.count() == 1L
+                // The load of the all the (priority) queues in the executor map of executor x.
                 val currentLoad = executors[executorId]?.values?.sumOf { it.size() }
 
                 if (!executorExists) {
@@ -163,17 +227,22 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
 
 
     fun addExecutorsFromDB() {
+        // Synchronized as executors can be removed or read at any time.
         synchronized(executorLock) {
             val executorIdsFromDB = getAvailableExecutorIds()
 
             val new = executorIdsFromDB.filter {
                 executors.putIfAbsent(
+                    // sortedMap does not need to be concurrent as all usages of this map are synchronized
                     it, sortedMapOf(
                         PriorityLevel.AUTHENTICATED to FunctionQueue(
                             ::callExecutorInFutureJobService,
                             Dispatchers.Default
                         ),
-                        PriorityLevel.ANONYMOUS to FunctionQueue(::callExecutorInFutureJobService, Dispatchers.Default)
+                        PriorityLevel.ANONYMOUS to FunctionQueue(
+                            ::callExecutorInFutureJobService,
+                            Dispatchers.Default
+                        )
                     )
                 ) == null
             }.size

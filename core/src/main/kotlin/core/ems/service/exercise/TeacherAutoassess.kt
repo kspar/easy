@@ -8,6 +8,7 @@ import core.ems.service.assertTeacherOrAdminHasAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
@@ -28,15 +29,19 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
 
     data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
-    data class Resp(@JsonProperty("grade") val grade: Int,
-                    @JsonProperty("feedback") val feedback: String?)
+    data class Resp(
+        @JsonProperty("grade") val grade: Int,
+        @JsonProperty("feedback") val feedback: String?
+    )
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/exercises/{exerciseId}/testing/autoassess")
-    fun controller(@PathVariable("exerciseId") exerciseIdStr: String,
-                   @Valid @RequestBody dto: Req,
-                   caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("exerciseId") exerciseIdStr: String,
+        @Valid @RequestBody dto: Req,
+        caller: EasyUser
+    ): Resp {
 
         val callerId = caller.id
         log.debug { "Teacher/admin $callerId autoassessing solution to exercise $exerciseIdStr" }
@@ -47,13 +52,19 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
         insertTeacherSubmission(exerciseId, dto.solution, callerId)
 
         val aaId = getAutoExerciseId(exerciseId)
-                ?: throw InvalidRequestException("Autoassessment not found for exercise $exerciseIdStr", ReqError.EXERCISE_NOT_AUTOASSESSABLE)
+            ?: throw InvalidRequestException(
+                "Autoassessment not found for exercise $exerciseIdStr",
+                ReqError.EXERCISE_NOT_AUTOASSESSABLE
+            )
 
         // TODO: error handling missing? Should be as in StudentSubmit?
-        val aaResult = futureAutoGradeService.submitAndAwait(aaId,
-            dto.solution,
-            PriorityLevel.AUTHENTICATED)
-
+        val aaResult = runBlocking {
+            futureAutoGradeService.submitAndAwait(
+                aaId,
+                dto.solution,
+                PriorityLevel.AUTHENTICATED
+            )
+        }
         // TODO: maybe should save auto assessments as well and follow the scheme as with student submit:
         // this service submits and returns
         // and another service .../await will wait for the assessment to finish and return the result
@@ -66,10 +77,10 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
 private fun getAutoExerciseId(exerciseId: Long): EntityID<Long>? {
     return transaction {
         (Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.autoExerciseId)
-                .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.autoExerciseId] }
-                .single()
+            .slice(ExerciseVer.autoExerciseId)
+            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.autoExerciseId] }
+            .single()
     }
 }
 

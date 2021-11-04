@@ -70,11 +70,14 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
             when (val job = pendingJobs.poll()) {
                 null -> return
                 else -> {
-                    log.debug { "Setting job with ticket '${job.ticket}' to coroutine run." }
+                    log.debug { "Starting job '${job.ticket}'." }
                     assignedJobs[job.ticket] = DeferredOutput(
                         job.ticket,
                         job.submitted,
-                        CoroutineScope(dispatcher).async { futureCall.call(*job.arguments) })
+                        GlobalScope.async {
+                            futureCall.call(*job.arguments)
+                        }
+                    )
                 }
             }
         }
@@ -86,7 +89,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      * @param arguments to be passed to [futureCall]
      * @return [futureCall] output
      */
-    fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
+    suspend fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
         return await(submit(arguments), timeout)
     }
 
@@ -144,23 +147,25 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
     /**
      * Get result from [assignedJobs].
      */
-    private fun waitResult(ticket: Ticket): T {
-        return runBlocking {
-            val callResult = assignedJobs.remove(ticket)?.deferred?.await()
-
-            /**
-            This is null if:
-            1. Job is put to the [assignedJobs], but is removed by [clearOlder] due to the timeout.
-
-            Also considered, but should not be possible:
-            1. Job is never put to the [assignedJobs]. Could be if job is still in the [pendingJobs]. However [await] checks it.
-            2. The function used actually returns null? Currently not be possible due to [futureCall] type.
-
-            Therefore, timeout is the case for null.
-             */
-
+    private suspend fun waitResult(ticket: Ticket): T {
+        val call = assignedJobs.remove(ticket)
+        log.debug {
+            "Waiting for job '$ticket'. States: \nCompleted: ${call?.deferred?.isCompleted}. \n" +
+                    "Canceled = ${call?.deferred?.isCancelled}. \n" +
+                    "Active = ${call?.deferred?.isCancelled}."
+        }
+        try {
+            val callResult = call?.deferred?.await()
             if (callResult == null) throwTimeOut("Job reached maximum allowed running time.")
-            callResult!!
+            return callResult!!
+
+        } finally {
+            log.debug {
+                "Finished job '$ticket'. States: \nCompleted: ${call?.deferred?.isCompleted}. \n" +
+                        "Canceled = ${call?.deferred?.isCancelled}. \n" +
+                        "Active = ${call?.deferred?.isCancelled}."
+            }
+
         }
     }
 
@@ -172,14 +177,15 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
      * It is not exposed as knowing job ticket, any job and therefore any job result could be retrieved.
      */
     @Throws(AwaitTimeoutException::class)
-    private fun await(ticket: Ticket, timeout: Long): T {
+    private suspend fun await(ticket: Ticket, timeout: Long): T {
         val endTime = DateTime.now().millis + timeout
 
         try {
             while (true) {
                 when {
                     isTimeOut(endTime) -> throwTimeOut("Timeout in queue")
-                    isWaiting(ticket) -> Thread.sleep(1000)
+                    // Used by coroutines, using Thread.sleep in here would cause interesting concurrency issues.
+                    isWaiting(ticket) -> delay(1000)
                     else -> return waitResult(ticket)
                 }
             }
@@ -231,6 +237,13 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>, private val di
             }
             remove
         }
+
+        log.debug { "Cleared '$removed' jobs due to timeout of $timeout." }
+
         return removed
+    }
+
+    override fun toString(): String {
+        return "FunctionQueue(jobs=${size()})"
     }
 }

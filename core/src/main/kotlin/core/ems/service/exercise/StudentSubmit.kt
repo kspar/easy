@@ -1,7 +1,9 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.aas.AutoAssessStatusObserver
 import core.aas.FutureAutoGradeService
+import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.GradeService
@@ -9,15 +11,15 @@ import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CacheInvalidator
 import core.ems.service.idToLongOrInvalidReq
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.scheduling.annotation.Async
 import org.springframework.security.access.annotation.Secured
-import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
@@ -26,21 +28,22 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class StudentSubmitCont {
-
-    @Autowired
-    lateinit var some: StupidComponentForAsync
-
-    @Autowired
-    lateinit var cacheInvalidator: CacheInvalidator
+class StudentSubmitCont(
+    private val autoAssessStatusObserver: AutoAssessStatusObserver,
+    private val cacheInvalidator: CacheInvalidator,
+    private val futureAutoGradeService: FutureAutoGradeService,
+    private val gradeService: GradeService
+) {
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @PathVariable("courseExerciseId") courseExIdStr: String,
-                   @Valid @RequestBody solutionBody: Req, caller: EasyUser) {
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        @PathVariable("courseExerciseId") courseExIdStr: String,
+        @Valid @RequestBody solutionBody: Req, caller: EasyUser
+    ) {
 
         log.debug { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
@@ -60,27 +63,20 @@ class StudentSubmitCont {
             }
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
-                val submissionId = insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cacheInvalidator)
+                val submissionId =
+                    insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cacheInvalidator)
 
-                // TODO
-//                val deferred: Deferred<Unit> = CoroutineScope(Dispatchers.Default).async {
-//                    some.autoAssessAsync(courseExId, solution, submissionId, cacheInvalidator)
-//                }
+                val deferred: Job =
+                    GlobalScope.launch {
+                        autoAssessAsync(courseExId, solution, submissionId)
+                    }
                 // add deferred to autoAssessStatusObserver
-
-                some.autoAssessAsync(courseExId, solution, submissionId, cacheInvalidator)
+                autoAssessStatusObserver.put(submissionId, ObserverCallerType.STUDENT, deferred)
             }
         }
     }
-}
 
-@Component
-class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGradeService: FutureAutoGradeService) {
-    // Must be in DIFFERENT Spring Component for Async than the caller
-
-    // TODO: maybe we don't need Async
-    @Async
-    fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, cacheInvalidator: CacheInvalidator) {
+    suspend fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long) {
         try {
             val autoExerciseId = selectAutoExId(courseExId)
             if (autoExerciseId == null) {
@@ -100,30 +96,37 @@ class StupidComponentForAsync(val gradeService: GradeService, val futureAutoGrad
         }
         gradeService.syncSingleGradeToMoodle(submissionId)
     }
+
 }
 
 
 private fun selectGraderType(courseExId: Long): GraderType {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.graderType)
-                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.graderType] }
-                .single()
+            .slice(ExerciseVer.graderType)
+            .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.graderType] }
+            .single()
     }
 }
 
 private fun selectAutoExId(courseExId: Long): EntityID<Long>? {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.autoExerciseId)
-                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.autoExerciseId] }
-                .single()
+            .slice(ExerciseVer.autoExerciseId)
+            .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.autoExerciseId] }
+            .single()
     }
 }
 
-private fun insertSubmission(courseExId: Long, submission: String, studentId: String, autoAss: AutoGradeStatus, cacheInvalidator: CacheInvalidator): Long {
+private fun insertSubmission(
+    courseExId: Long,
+    submission: String,
+    studentId: String,
+    autoAss: AutoGradeStatus,
+    cacheInvalidator: CacheInvalidator
+): Long {
     val id = transaction {
         Submission.insertAndGetId {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
@@ -139,7 +142,13 @@ private fun insertSubmission(courseExId: Long, submission: String, studentId: St
     return id
 }
 
-private fun insertAutoAssessment(newGrade: Int, newFeedback: String?, submissionId: Long, cacheInvalidator: CacheInvalidator, courseExId: Long) {
+private fun insertAutoAssessment(
+    newGrade: Int,
+    newFeedback: String?,
+    submissionId: Long,
+    cacheInvalidator: CacheInvalidator,
+    courseExId: Long
+) {
     transaction {
         AutomaticAssessment.insert {
             it[submission] = EntityID(submissionId, Submission)

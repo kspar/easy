@@ -29,18 +29,15 @@ easy:
         to: "<to-address>"
     auto-assess:
         allowed-wait-for-user:
-          ms: "15000"
+          ms: "45000"
         timeout-check:
           cron: "0 * * * * *"
           clear-older-than:
-            ms: "60000"
+            ms: "460000"
         fixed-delay:
           ms: "3000"
-    service:
-      await-assessment:
-        sleep-start-ms: 1000
-        sleep-step-ms: 150
-        timeout-steps: 20
+        fixed-delay-observer-clear:
+          ms: "3000"
 
     moodle-sync:
       users:
