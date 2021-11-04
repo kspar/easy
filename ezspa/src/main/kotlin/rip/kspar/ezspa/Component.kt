@@ -46,6 +46,11 @@ abstract class Component(private val parent: Component?,
     protected open fun postRender() {}
 
     /**
+     * Perform UI initialisation or other tasks after the component's children have been painted and postRendered.
+     */
+    protected open fun postChildrenBuilt() {}
+
+    /**
      * Produce HTML to be inserted into the destination element before [create]ing this component,
      * typically indicates loading.
      */
@@ -69,6 +74,7 @@ abstract class Component(private val parent: Component?,
         create().await()
         buildThis()
         children.map { it.createAndBuild() }.unionPromise().await()
+        postChildrenBuilt()
     }
 
     /**
@@ -76,11 +82,25 @@ abstract class Component(private val parent: Component?,
      */
     fun rebuild(recreateChildren: Boolean = true): Promise<*> = doInPromise {
         buildThis()
+
         if (recreateChildren)
-            children.map { it.createAndBuild() }.unionPromise().await()
+            recreateChildren().await()
         else
-            children.forEach { it.rebuild(false) }
+            rebuildChildren().await()
+
+        postChildrenBuilt()
     }
+
+    /**
+     * Recreate and rebuild this component's children.
+     */
+    fun recreateChildren(): Promise<*> = children.map { it.createAndBuild() }.unionPromise()
+
+    /**
+     * Rebuild this component's children.
+     */
+    fun rebuildChildren(): Promise<*> = children.map { it.rebuild(false) }.unionPromise()
+
 
     protected fun buildThis() {
         paint()
