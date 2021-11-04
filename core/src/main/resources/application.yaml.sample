@@ -17,6 +17,9 @@ spring:
           port: 587
           starttls:
             enable: true
+  jackson:
+    deserialization:
+      FAIL_ON_NULL_FOR_PRIMITIVES: true
 
 
 easy:

@@ -1138,4 +1138,15 @@
                                  constraintName="fk_student_moodle_pending_course_group_access_student_moodle_pending_access"/>
     </changeSet>
 
+    <changeSet id="011121-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="moodle_sync_students_in_progress" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moodle_sync_grades_in_progress" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

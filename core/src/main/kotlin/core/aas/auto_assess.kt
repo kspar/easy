@@ -192,7 +192,7 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
     private fun timeout() {
         val timeout = allowedRunningTimeMs.toLong()
         val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout) }
-        log.debug { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
+        log.trace { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
     }
 
 

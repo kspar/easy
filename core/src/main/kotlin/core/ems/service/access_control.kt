@@ -16,37 +16,24 @@ import org.jetbrains.exposed.sql.transactions.transaction
 private val log = KotlinLogging.logger {}
 
 
-fun assertUserHasAccessToCourse(user: EasyUser, courseId: Long) {
-    if (!canUserAccessCourse(user, courseId)) {
-        throw ForbiddenException("User ${user.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
-    }
-}
+// TODO: most of these could be extension funs on EasyUser
 
-fun canUserAccessCourse(user: EasyUser, courseId: Long): Boolean {
-    if (user.isAdmin()) {
-        return true
+fun assertUserHasAccessToCourse(user: EasyUser, courseId: Long) {
+    when {
+        user.isAdmin() -> assertCourseExists(courseId)
+        user.isTeacher() && canTeacherAccessCourse(user.id, courseId) -> return
+        user.isStudent() && canStudentAccessCourse(user.id, courseId) -> return
+        else -> throw ForbiddenException("User ${user.id} does not have access to course $courseId",
+            ReqError.NO_COURSE_ACCESS)
     }
-    if (user.isTeacher() && canTeacherAccessCourse(user.id, courseId)) {
-        return true
-    }
-    return user.isStudent() && canStudentAccessCourse(user.id, courseId)
 }
 
 fun assertTeacherOrAdminHasAccessToCourse(user: EasyUser, courseId: Long) {
-    if (!canTeacherOrAdminAccessCourse(user, courseId)) {
-        throw ForbiddenException("Teacher or admin ${user.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS)
+    when {
+        user.isAdmin() -> assertCourseExists(courseId)
+        user.isTeacher() -> assertTeacherHasAccessToCourse(user.id, courseId)
     }
 }
-
-fun canTeacherOrAdminAccessCourse(user: EasyUser, courseId: Long): Boolean =
-        when {
-            user.isAdmin() -> true
-            user.isTeacher() -> canTeacherAccessCourse(user.id, courseId)
-            else -> {
-                log.warn { "User ${user.id} is not admin or teacher" }
-                false
-            }
-        }
 
 fun assertTeacherOrAdminHasAccessToCourseGroup(user: EasyUser, courseId: Long, groupId: Long) {
     if (!canTeacherOrAdminAccessCourseGroup(user, courseId, groupId)) {

@@ -1,10 +1,13 @@
-package core.ems.service
+package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.db.*
+import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.exception.ResourceLockedException
+import core.util.DBBackedLock
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
@@ -25,10 +28,12 @@ private val log = KotlinLogging.logger {}
 
 
 @Service
-class GradeService {
+class MoodleGradesSyncService {
 
     @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
+
+    val syncGradesLock = DBBackedLock(Course, Course.moodleSyncGradesInProgress)
 
 
     data class MoodleReq(@JsonProperty("shortname") val shortname: String,
@@ -77,22 +82,26 @@ class GradeService {
 
 
     /**
-     * Sync single course all grades to Moodle.
+     * Sync all grades on a single course to Moodle. Respects grade sync locking.
+     *
+     * @throws ResourceLockedException if grades sync is already in progress
      */
     fun syncCourseGradesToMoodle(courseId: Long) {
-        val shortname = selectCourseShortName(courseId)
+        syncGradesLock.with(courseId) {
+            val shortname = selectCourseShortName(courseId)
 
-        if (shortname.isNullOrBlank()) {
-            log.debug { "Course $courseId is not synced due to no link with Moodle." }
+            if (shortname.isNullOrBlank()) {
+                log.warn { "Course $courseId is not synced due to no link with Moodle." }
 
-        } else {
-            // Send grades in batches of 200
-            val exercises = selectExercisesOnCourse(courseId)
-            val batches = batchGrades(shortname, exercises)
+            } else {
+                // Send grades in batches of 200
+                val exercises = selectExercisesOnCourse(courseId)
+                val batches = batchGrades(shortname, exercises)
 
-            batches.forEach {
-                log.debug { "Sending grade batch: $it" }
-                sendMoodleGradeRequest(it)
+                batches.forEach {
+                    log.debug { "Sending grade batch: $it" }
+                    sendMoodleGradeRequest(it)
+                }
             }
         }
     }
@@ -157,17 +166,6 @@ class GradeService {
                                 listOfNotNull(selectLatestGradeForSubmission(submissionId))
                         )
                     }.single()
-        }
-    }
-
-
-    private fun selectCourseShortName(courseId: Long): String? {
-        return transaction {
-            Course.slice(Course.moodleShortName)
-                    .select {
-                        Course.id eq courseId
-                    }.map { it[Course.moodleShortName] }
-                    .firstOrNull()
         }
     }
 

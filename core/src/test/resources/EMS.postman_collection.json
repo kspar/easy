@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "82918e86-9382-42e0-99a9-1f9163fa3f1a",
+		"_postman_id": "f7552401-9d5a-47b2-bff7-e430fe3b7ea6",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -5083,75 +5083,6 @@
 					"path": [
 						"preview",
 						"adoc"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "EMS: example: admin: post: link Moodle",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							""
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
-					},
-					{
-						"key": "oidc_claim_easy_role",
-						"type": "text",
-						"value": "admin"
-					},
-					{
-						"key": "oidc_claim_email",
-						"type": "text",
-						"value": "foo@bar.com"
-					},
-					{
-						"key": "oidc_claim_given_name",
-						"type": "text",
-						"value": "Foo"
-					},
-					{
-						"key": "oidc_claim_family_name",
-						"type": "text",
-						"value": "Bar"
-					},
-					{
-						"key": "oidc_claim_preferred_username",
-						"type": "text",
-						"value": "fp"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n  \"moodle_short_name\": \"MTAT.03.032\"\r\n}"
-				},
-				"url": {
-					"raw": "{{EMSBASE}}/courses/1/moodle",
-					"host": [
-						"{{EMSBASE}}"
-					],
-					"path": [
-						"courses",
-						"1",
-						"moodle"
 					]
 				}
 			},

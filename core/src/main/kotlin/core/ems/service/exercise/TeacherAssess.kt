@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.cache.CacheInvalidator
-import core.ems.service.GradeService
+import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -26,7 +26,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController(val gradeService: GradeService, val cacheInvalidator: CacheInvalidator) {
+class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncService, val cacheInvalidator: CacheInvalidator) {
 
     data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
                    @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?)
@@ -52,7 +52,7 @@ class TeacherAssessController(val gradeService: GradeService, val cacheInvalidat
         }
 
         insertTeacherAssessment(callerId, submissionId, assessment, cacheInvalidator, courseExId)
-        gradeService.syncSingleGradeToMoodle(submissionId)
+        moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 }
 

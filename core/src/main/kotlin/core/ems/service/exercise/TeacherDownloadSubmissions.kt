@@ -58,14 +58,14 @@ class TeacherDownloadSubmissionsController {
                 req.courses.map { course ->
                     course.id.idToLongOrInvalidReq() to course.groups.orEmpty().map { it.id.idToLongOrInvalidReq() }
                 }.flatMap { (courseId, groupIds) ->
-                    selectSubmission(exerciseId, courseId, groupIds, caller.id)
+                    selectSubmission(exerciseId, courseId, groupIds, caller)
                 },
                 response.outputStream)
     }
 }
 
 
-private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Long>, callerId: String): List<Zip> {
+private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Long>, caller: EasyUser): List<Zip> {
     return transaction {
 
         val join1 = Submission innerJoin CourseExercise innerJoin (Student innerJoin Account)
@@ -87,7 +87,7 @@ private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Lo
         when {
             groupIds.isNotEmpty() -> query.andWhere { StudentCourseGroup.courseGroup inList groupIds }
             else -> {
-                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
+                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
                 if (restrictedGroups.isNotEmpty()) {
                     query.andWhere {
                         StudentCourseGroup.courseGroup inList restrictedGroups or (StudentCourseGroup.courseGroup.isNull())

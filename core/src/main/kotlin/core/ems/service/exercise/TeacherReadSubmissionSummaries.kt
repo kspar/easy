@@ -92,12 +92,12 @@ class TeacherReadSubmissionSummariesController {
 
         val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
 
-        return selectTeacherSubmissionSummaries(caller.id, courseId, courseExId, groupId,
+        return selectTeacherSubmissionSummaries(caller, courseId, courseExId, groupId,
                 queryWords, orderBy, order, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())
     }
 }
 
-private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, courseExId: Long, groupId: Long?,
+private fun selectTeacherSubmissionSummaries(caller: EasyUser, courseId: Long, courseExId: Long, groupId: Long?,
                                              queryWords: List<String>, orderBy: OrderBy, order: SortOrder,
                                              offset: Long?, limit: Int?): TeacherReadSubmissionSummariesController.Resp {
     return transaction {
@@ -133,7 +133,7 @@ private fun selectTeacherSubmissionSummaries(callerId: String, courseId: Long, c
         when {
             groupId != null -> subQuery.andWhere { StudentCourseGroup.courseGroup eq groupId }
             else -> {
-                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, callerId)
+                val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
                 if (restrictedGroups.isNotEmpty()) {
                     subQuery.andWhere {
                         StudentCourseGroup.courseGroup inList restrictedGroups or

@@ -53,6 +53,7 @@ class AddTeachersToCourse {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
 
         val accesses = body.teachers.distinctBy { it.email }.map {
             val id = getUsernameByEmail(it.email)
@@ -63,8 +64,7 @@ class AddTeachersToCourse {
             val groupIds = it.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
             TeacherNewAccess(id, it.email, groupIds)
         }
-        
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+
         accesses.flatMap { it.groups }.toSet().forEach {
             assertGroupExistsOnCourse(it, courseId)
         }

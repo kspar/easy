@@ -6,7 +6,7 @@ import core.aas.FutureAutoGradeService
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.GradeService
+import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CacheInvalidator
@@ -32,7 +32,7 @@ class StudentSubmitCont(
     private val autoAssessStatusObserver: AutoAssessStatusObserver,
     private val cacheInvalidator: CacheInvalidator,
     private val futureAutoGradeService: FutureAutoGradeService,
-    private val gradeService: GradeService
+    private val moodleGradesSyncService: MoodleGradesSyncService
 ) {
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
@@ -94,7 +94,7 @@ class StudentSubmitCont(
             insertAutoAssFailed(submissionId, cacheInvalidator, courseExId)
             return
         }
-        gradeService.syncSingleGradeToMoodle(submissionId)
+        moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 
 }

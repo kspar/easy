@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseGroup
-import core.ems.service.assertCourseExists
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -46,7 +45,6 @@ class CreateCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
         assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
-        assertCourseExists(courseId)
 
         val groupId = createGroup(courseId, dto.name)
         return Resp(groupId.toString())
