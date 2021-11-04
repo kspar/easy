@@ -12,7 +12,6 @@ import components.form.SelectComp
 import debug
 import emptyToNull
 import getLastPageOffset
-import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import objOf
@@ -31,35 +30,25 @@ object GradeTablePage : EasyPage() {
         get() = PageName.GRADE_TABLE
 
     override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(extractSanitizedCourseId())
+        get() = Leftbar.Conf(courseId)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
-    override fun pathMatches(path: String) =
-            path.matches("^/courses/\\w+/grades/?$")
+    override val pathSchema = "/courses/{courseId}/grades"
 
+    private val courseId: String
+        get() = parsePathParams()["courseId"]
 
     private var rootComp: GradeTableRootComponent? = null
 
     override fun build(pageStateStr: String?) {
         doInPromise {
             super.build(pageStateStr)
-            val courseId = extractSanitizedCourseId()
             val root = GradeTableRootComponent(courseId, CONTENT_CONTAINER_ID)
             rootComp = root
             root.createAndBuild().await()
         }
-    }
-}
-
-private fun extractSanitizedCourseId(): String {
-    val path = window.location.pathname
-    val match = path.match("^/courses/(\\w+)/grades/?$")
-    if (match != null && match.size == 2) {
-        return match[1]
-    } else {
-        error("Unexpected match on path: ${match?.joinToString()}")
     }
 }
 

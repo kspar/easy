@@ -9,7 +9,6 @@ import debug
 import getContainer
 import getLastPageOffset
 import isNotNullAndTrue
-import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -26,7 +25,7 @@ import tmRender
 import kotlin.js.Date
 import kotlin.math.min
 
-object ParticipantsPage : EasyPage() {
+object OldParticipantsPage : EasyPage() {
 
     private const val PAGE_STEP = AppProperties.PARTICIPANTS_ROWS_ON_PAGE
 
@@ -94,17 +93,18 @@ object ParticipantsPage : EasyPage() {
         get() = PageName.PARTICIPANTS
 
     override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(extractSanitizedCourseId())
+        get() = Leftbar.Conf(courseId)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
-    override fun pathMatches(path: String): Boolean =
-            path.matches("^/courses/\\w+/participants/?$")
+    override val pathSchema = "/courses/{courseId}/participants/old"
+
+    private val courseId: String
+        get() = parsePathParams()["courseId"]
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
-        val courseId = extractSanitizedCourseId()
         buildParticipants(courseId)
     }
 
@@ -345,15 +345,5 @@ object ParticipantsPage : EasyPage() {
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
-    }
-
-    private fun extractSanitizedCourseId(): String {
-        val path = window.location.pathname
-        val match = path.match("^/courses/(\\w+)/participants/?$")
-        if (match != null && match.size == 2) {
-            return match[1]
-        } else {
-            error("Unexpected match on path: ${match?.joinToString()}")
-        }
     }
 }

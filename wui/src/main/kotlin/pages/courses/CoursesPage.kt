@@ -32,8 +32,7 @@ object CoursesPage : EasyPage() {
 
     override val pageName: PageName = PageName.COURSES
 
-    override fun pathMatches(path: String): Boolean =
-            path.matches("^/courses/?$")
+    override val pathSchema = "/courses"
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
@@ -69,8 +68,8 @@ object CoursesPage : EasyPage() {
 
 
 class CoursesRootComponent(
-        private val role: Role,
-        dstId: String
+    private val role: Role,
+    dstId: String
 ) : CacheableComponent<CoursesRootComponent.State>(null, dstId) {
 
     @Serializable

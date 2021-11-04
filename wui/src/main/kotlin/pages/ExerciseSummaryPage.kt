@@ -16,7 +16,6 @@ import getContainer
 import getLastPageOffset
 import highlightCode
 import isNotNullAndTrue
-import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -44,7 +43,6 @@ import toJsObj
 import warn
 import kotlin.js.Date
 import kotlin.math.min
-import kotlin.random.Random
 
 object ExerciseSummaryPage : EasyPage() {
 
@@ -195,20 +193,23 @@ object ExerciseSummaryPage : EasyPage() {
         get() = PageName.EXERCISE_SUMMARY
 
     override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(extractSanitizedPathIds().courseId)
+        get() = Leftbar.Conf(pathParams.courseId)
 
-    override fun pathMatches(path: String) =
-            path.matches("^/courses/\\w+/exercises/\\w+/summary/?$")
+    override val pathSchema = "/courses/{courseId}/exercises/{courseExerciseId}/summary"
+
+    data class PathParams(val courseId: String, val courseExerciseId: String)
+
+    private val pathParams: PathParams
+        get() = parsePathParams().let {
+            PathParams(it["courseId"], it["courseExerciseId"])
+        }
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
-        val pathIds = extractSanitizedPathIds()
-        val courseId = pathIds.courseId
-        val courseExerciseId = pathIds.exerciseId
 
         when (Auth.activeRole) {
-            Role.STUDENT -> buildStudentExercise(courseId, courseExerciseId)
-            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(courseId, courseExerciseId)
+            Role.STUDENT -> buildStudentExercise(pathParams.courseId, pathParams.courseExerciseId)
+            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(pathParams.courseId, pathParams.courseExerciseId)
         }
     }
 
@@ -1049,17 +1050,5 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
-    }
-
-    data class PathIds(val courseId: String, val exerciseId: String)
-
-    private fun extractSanitizedPathIds(): PathIds {
-        val path = window.location.pathname
-        val match = path.match("^/courses/(\\w+)/exercises/(\\w+)/summary/?\$")
-        if (match != null && match.size == 3) {
-            return PathIds(match[1], match[2])
-        } else {
-            error("Unexpected match on path: ${match?.joinToString()}")
-        }
     }
 }

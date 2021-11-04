@@ -12,16 +12,69 @@ abstract class Page {
 
     /**
      * Human-readable page name used for representing pages in logs, should usually
-     * be unique among all the pages. Typically using an enum is a good idea to guarantee
+     * be unique among all the pages. Typically, using an enum is a good idea to guarantee
      * uniqueness. However, a simple String can also be used. [Any.toString] will be called
      * to generate a string representation.
      */
     abstract val pageName: Any
 
     /**
-     * Determine whether the given path should be served by this page.
+     * String that defines which paths should be served by the page.
+     *
+     * Format: /some/stuff/{path-param-key}/bla
+     *
+     * Example: /courses/{courseId}/dashboard
      */
-    abstract fun pathMatches(path: String): Boolean
+    abstract val pathSchema: String
+
+    private val pathComponents: List<PathComponent> by lazy {
+        pathSchema.split("/").filter { it.isNotBlank() }.map {
+            val paramMatch = it.match("^{(\\w+)}$")
+            if (paramMatch != null && paramMatch.size == 2) {
+                val paramKey = paramMatch[1]
+                PathParam(paramKey)
+            } else {
+                PathString(it)
+            }
+        }.also { EzSpa.Logger.debug { "Path schema $pathSchema parsed to $it" } }
+    }
+
+    private val pathRegex: String by lazy {
+        pathComponents.joinToString(prefix = "^/", separator = "/", postfix = "/?$") {
+            when (it) {
+                is PathString -> it.str
+                is PathParam -> "(\\w+)"
+            }
+        }.also { EzSpa.Logger.debug { "Path schema $pathSchema converted to regex $it" } }
+    }
+
+    internal fun pathMatches(): Boolean = window.location.pathname.matches(pathRegex)
+
+    /**
+     * Return a map with path params extracted from the current path. The key for each path param value
+     * comes from [pathSchema]. Example:
+     *
+     * pathSchema = "/ez/{par}/game"
+     * currentPath = "/ez/w1337/game"
+     * returns {par=w1337}
+     */
+    fun parsePathParams(): CertainMap<String, String> {
+        val expectedParamKeys = pathComponents.filterIsInstance<PathParam>().map { it.key }
+
+        val path = window.location.pathname
+        val match = path.match(pathRegex)
+
+        if (match != null && match.size == expectedParamKeys.size + 1) {
+            val paramValues = match.drop(1).map { decodeURIComponent(it) }
+            return expectedParamKeys.zip(paramValues).toMap().toCertainMap()
+                .also { EzSpa.Logger.debug { "Path: $path, extracted params: $it" } }
+        } else {
+            error(
+                "Incorrect match on path $path. Expected ${expectedParamKeys.size} params, " +
+                        "pathSchema: $pathSchema, actual match: ${match?.joinToString()}"
+            )
+        }
+    }
 
     /**
      * Build the current page: fetch resources, perform requests, render templates, add listeners etc.

@@ -2,7 +2,7 @@ import kotlinx.coroutines.await
 import libheaders.CodeMirror
 import pages.ExerciseSummaryPage
 import pages.Navbar
-import pages.ParticipantsPage
+import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
@@ -20,8 +20,10 @@ import rip.kspar.ezspa.getMain
 
 
 private val PAGES = listOf(
-        CoursesPage, CourseExercisesPage, ExerciseSummaryPage, ParticipantsPage, GradeTablePage,
-        ExerciseLibraryPage, ExercisePage)
+    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
+    OldParticipantsPage,
+    ExerciseLibraryPage, ExercisePage
+)
 
 
 fun main() {

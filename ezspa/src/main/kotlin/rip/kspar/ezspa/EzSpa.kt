@@ -48,7 +48,7 @@ object EzSpa {
         }
 
         private fun pageFromPath(path: String): Page {
-            val matchingPages = pages.filter { it.pathMatches(path) }
+            val matchingPages = pages.filter { it.pathMatches() }
             val matchingCount = matchingPages.size
             return when {
                 matchingCount == 1 -> matchingPages.single()

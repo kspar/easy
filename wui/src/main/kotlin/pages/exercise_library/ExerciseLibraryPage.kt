@@ -15,15 +15,15 @@ object ExerciseLibraryPage : EasyPage() {
     override val allowedRoles: List<Role>
         get() = listOf(Role.ADMIN, Role.TEACHER)
 
-    override fun pathMatches(path: String): Boolean =
-            path.matches("^/exerciselib/?$")
+    // TODO: /library?
+    override val pathSchema = "/exerciselib"
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 
         doInPromise {
             ExerciseLibRootComp(CONTENT_CONTAINER_ID)
-                    .createAndBuild().await()
+                .createAndBuild().await()
         }
     }
 }

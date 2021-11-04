@@ -108,10 +108,12 @@ object CourseExercisesPage : EasyPage() {
         get() = PageName.EXERCISES
 
     override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(extractSanitizedCourseId())
+        get() = Leftbar.Conf(courseId)
 
-    override fun pathMatches(path: String) =
-            path.matches("^/courses/\\w+/exercises/?$")
+    override val pathSchema = "/courses/{courseId}/exercises"
+
+    private val courseId: String
+        get() = parsePathParams()["courseId"]
 
     override fun clear() {
         super.clear()
@@ -122,8 +124,6 @@ object CourseExercisesPage : EasyPage() {
     override fun build(pageStateStr: String?) {
         val funLog = debugFunStart("ExercisesPage.build")
         super.build(pageStateStr)
-
-        val courseId = extractSanitizedCourseId()
 
         val pageState = pageStateStr?.parseTo(State.serializer())
         if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
@@ -145,16 +145,6 @@ object CourseExercisesPage : EasyPage() {
         val c = StudentCourseExercisesComp(courseId, null, CONTENT_CONTAINER_ID)
         c.onStateChanged = { debug { "State change detected" } }
         c.createAndBuild()
-    }
-
-    private fun extractSanitizedCourseId(): String {
-        val path = window.location.pathname
-        val match = path.match("^/courses/(\\w+)/exercises/?$")
-        if (match != null && match.size == 2) {
-            return match[1]
-        } else {
-            error("Unexpected match on path: ${match?.joinToString()}")
-        }
     }
 
     private fun buildTeacherExercises(courseId: String) {
