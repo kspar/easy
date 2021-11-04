@@ -57,6 +57,6 @@ private fun handleLocalLinkClick(url: String) {
 
 private tailrec fun getClosestParentA(node: Node?): HTMLAnchorElement? = when {
     node == null -> null
-    node.nodeName.toLowerCase() == "a" -> node as HTMLAnchorElement
+    node.nodeName.lowercase() == "a" -> node as HTMLAnchorElement
     else -> getClosestParentA(node.parentNode)
 }
