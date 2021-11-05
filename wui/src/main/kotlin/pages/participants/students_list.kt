@@ -1,7 +1,7 @@
 package pages.participants
 
-import BinaryModalComp
 import Icons
+import components.BinaryModalComp
 import components.EzCollComp
 import debug
 import kotlinx.coroutines.await

@@ -1,8 +1,13 @@
+package components
+
 import libheaders.MModalInstance
 import libheaders.Materialize
+import objOf
+import onSingleClickWithDisabled
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLButtonElement
 import rip.kspar.ezspa.*
+import tmRender
 import kotlin.js.Promise
 
 open class EzModalComp<T>(
