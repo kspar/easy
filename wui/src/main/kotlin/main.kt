@@ -9,6 +9,7 @@ import pages.exercise.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
 import pages.leftbar.Leftbar
+import pages.participants.ParticipantsPage
 import queries.ReqMethod
 import queries.abortAllFetchesAndClear
 import queries.fetchEms
@@ -19,13 +20,16 @@ import rip.kspar.ezspa.getHeader
 import rip.kspar.ezspa.getMain
 
 
+// buildList is experimental
+@ExperimentalStdlibApi
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
-    OldParticipantsPage,
+    OldParticipantsPage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage
 )
 
-
+// buildList is experimental
+@ExperimentalStdlibApi
 fun main() {
     val funLog = debugFunStart("main")
 
@@ -76,6 +80,8 @@ private suspend fun initAuthentication() {
     funLog?.end()
 }
 
+// buildList is experimental
+@ExperimentalStdlibApi
 private fun initApplication() {
     EzSpa.PageManager.registerPages(PAGES)
     EzSpa.PageManager.preUpdateHook = ::abortAllFetchesAndClear
