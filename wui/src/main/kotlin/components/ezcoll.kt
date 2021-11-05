@@ -21,6 +21,7 @@ class EzCollComp<P>(
     private val massActions: List<MassAction<P>> = emptyList(),
     private val filterGroups: List<FilterGroup<P>> = emptyList(),
     private val sorters: List<Sorter<P>> = emptyList(),
+    private val useFirstSorterAsDefault: Boolean = true,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -162,10 +163,9 @@ class EzCollComp<P>(
     }
 
 
-    // All items including hidden (filtered) items
-    // However, the order in this list is not necessarily the display order (set by item.orderingIndex)
-    private var items: List<EzCollItemComp<P>> =
-        items.mapIndexed { i, spec -> EzCollItemComp(spec, i, ::itemSelectClicked, ::removeItem, this) }
+    // All items including hidden (filtered) items - see init below
+    // The order in this list is not necessarily the display order (which is set by item.orderingIndex)
+    private var items: List<EzCollItemComp<P>>
 
     // Currently checked items
     private var checkedItems: MutableList<EzCollItemComp<P>> = mutableListOf()
@@ -174,7 +174,7 @@ class EzCollComp<P>(
     private var activatedFilters: List<List<Filter<P>>> = emptyList()
 
     // Currently applied sorter, if null then items are displayed in the created order
-    private var activeSorter: Sorter<P>? = null
+    private var activeSorter: Sorter<P>? = if (useFirstSorterAsDefault) sorters.firstOrNull() else null
 
     // Getters because items can change
     private val hasSelection: Boolean
@@ -187,6 +187,18 @@ class EzCollComp<P>(
         get() = sorters.isNotEmpty() && items.isNotEmpty()
 
     private val collId = IdGenerator.nextId()
+
+    init {
+        val specs = if (sorters.isNotEmpty() && useFirstSorterAsDefault) {
+            items.sortedWith(sorters.first().comparator)
+        } else
+            items
+
+        this.items = specs.mapIndexed { i, spec ->
+            EzCollItemComp(spec, i, ::itemSelectClicked, ::removeItem, this)
+        }
+    }
+
 
     override val children: List<Component>
         get() = items
@@ -220,7 +232,8 @@ class EzCollComp<P>(
             "sorters" to sorters.map {
                 mapOf(
                     "id" to it.id,
-                    "label" to it.label
+                    "label" to it.label,
+                    "isSelected" to (it == activeSorter)
                 )
             },
         )
@@ -507,10 +520,9 @@ class EzCollComp<P>(
     private fun updateSorting() {
         val currentSorter = activeSorter
         if (currentSorter != null) {
-            val compComparator =
-                Comparator<EzCollItemComp<P>> { a, b -> currentSorter.comparator.compare(a.spec, b.spec) }
+            val compCompare = Comparator<EzCollItemComp<P>> { a, b -> currentSorter.comparator.compare(a.spec, b.spec) }
 
-            items = items.sortedWith(compComparator)
+            items = items.sortedWith(compCompare)
             items.forEachIndexed { i, item ->
                 item.orderingIndex = i
                 item.updateOrderingIndex()

@@ -236,7 +236,7 @@
             <!-- Mass action menu structure -->
             <ul id="ezc-select-action-dropdown-{{collId}}" class="dropdown-content">
                 {{#selectActions}}
-                    <li><span ez-mass-action="{{id}}" style="padding:0; height: 50px">{{{actionHtml}}}</span></li>
+                    <li><span ez-mass-action="{{id}}">{{{actionHtml}}}</span></li>
                 {{/selectActions}}
             </ul>
             <!-- Sorting menu structure -->
@@ -244,7 +244,7 @@
                 {{#sorters}}
                     <li>
                         <label>
-                            <input ez-sorter="{{id}}" name="sorter" type="radio" />
+                            <input ez-sorter="{{id}}" name="sorter" type="radio" {{#isSelected}}checked{{/isSelected}}/>
                             <span>{{label}}</span>
                         </label>
                     </li>
