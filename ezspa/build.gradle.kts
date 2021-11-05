@@ -5,7 +5,6 @@ val repoUrl = "https://github.com/kspar/easy/tree/master/ezspa"
 
 plugins {
     kotlin("js")
-    kotlin("plugin.serialization")
     id("com.jfrog.bintray") version "1.8.5"
     id("maven-publish")
 }
@@ -20,7 +19,6 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.5.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.3.0")
 }
 
 kotlin {
