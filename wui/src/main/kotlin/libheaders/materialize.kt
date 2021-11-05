@@ -1,6 +1,10 @@
 package libheaders
 
+import kotlinx.coroutines.await
 import org.w3c.dom.Element
+import org.w3c.dom.HTMLSelectElement
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.sleep
 
 @JsName("M")
 external object Materialize {
@@ -19,6 +23,11 @@ external object Materialize {
 
 external object MDropdown {
     fun init(elements: dynamic, options: dynamic)
+}
+
+external class MDropdownInstance {
+    fun open()
+    fun close()
 }
 
 
@@ -75,8 +84,16 @@ external class MFormSelect {
 }
 
 external class MFormSelectInstance {
-    val el: Element
-    fun getSelectedValues(): dynamic
+    val el: HTMLSelectElement
+    val dropdownOptions: Element
+    val dropdown: MDropdownInstance
+    fun getSelectedValues(): Array<String>
+    fun destroy()
+}
+
+fun MFormSelectInstance.closePromise(timeMs: Int = 300) = doInPromise {
+    this.dropdown.close()
+    sleep(timeMs).await()
 }
 
 
@@ -85,5 +102,7 @@ external class MModal {
 }
 
 external class MModalInstance {
+    fun open()
     fun close()
+    fun destroy()
 }

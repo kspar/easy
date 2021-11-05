@@ -8,6 +8,8 @@
     --ez-icon-action-clicked-bg-col: rgba(0, 0, 0, .1);
     --ez-icon-action-disabled-col: rgba(0, 0, 0, .38);
     --ez-attr-key-col: #4DAB54;
+    --ez-flat-btn-disabled-border-col: rgba(0, 0, 0, .1);
+    --ez-flat-btn-border-col: rgba(0, 0, 0, .3);
 
     --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
@@ -1008,11 +1010,11 @@ textarea.materialize-textarea {
 }
 
 .dropdown-content li > a,
-.dropdown-content li > span {
+.dropdown-content li span {
     display: flex;
     align-items: center;
     color: #333;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
 }
 
 .dropdown-content li ez-icon {
@@ -1034,15 +1036,92 @@ textarea.materialize-textarea {
     width: -moz-fit-content;
 }
 
+.select-dropdown li.optgroup {
+    cursor: default;
+}
+
+.select-dropdown li.optgroup:hover {
+    background-color: transparent;
+}
+
+.multiple-select-dropdown li span label,
+.multiple-select-dropdown li [type="checkbox"] + span:not(.lever) {
+    height: auto;
+}
+
+/* Don't wrap the text in dropdown option until max-width */
+.multiple-select-dropdown li [type="checkbox"] + span:not(.lever) {
+    width: max-content;
+    max-width: 20rem;
+}
+
+
+[type="checkbox"] + span:not(.lever) {
+    font-size: 1.4rem;
+}
+
 [type="checkbox"].filled-in:not(:checked) + span:not(.lever)::after {
     border: 2px solid var(--ez-checkbox-border-col);
 }
 
-[type="checkbox"].filled-in:checked + span:not(.lever)::after {
+[type="checkbox"].filled-in:checked + span:not(.lever)::after,
+[type="checkbox"].filled-in:indeterminate + span:not(.lever)::after {
     border: 2px solid var(--ez-checkbox-fill-col);
     background-color: var(--ez-checkbox-fill-col);
 }
 
+[type="checkbox"].filled-in + span:not(.lever)::before {
+    transition: border .25s, background-color .25s, width .20s .1s, height .20s .1s, top .20s .1s, left .20s .1s, transform .25s;
+}
+
+[type="checkbox"].filled-in:indeterminate + span:not(.lever)::before {
+    top: -4px;
+    left: -10px;
+    width: 14px;
+    height: 12px;
+    border-top: 2px solid transparent;
+    border-left: 2px solid transparent;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid transparent;
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform-origin: 100% 100%;
+    transform-origin: 100% 100%;
+}
+
+
+[type="checkbox"] + span:not(.lever)::before,
+[type="checkbox"]:not(.filled-in) + span:not(.lever)::after {
+    border-color: var(--ez-checkbox-border-col);
+}
+
+[type="checkbox"]:checked + span:not(.lever)::before {
+    border-right-color: var(--ez-checkbox-fill-col);
+    border-bottom-color: var(--ez-checkbox-fill-col);
+}
+
+[type="radio"]:not(:checked)+span,
+[type="radio"]:checked+span {
+    font-size: 1.4rem;
+}
+
+[type="radio"]:not(:checked)+span:before,
+[type="radio"]:not(:checked)+span:after {
+    border-color: var(--ez-checkbox-border-col);
+}
+
+[type="radio"]:checked+span:after,
+[type="radio"].with-gap:checked+span:after {
+    background-color: var(--ez-checkbox-fill-col);
+}
+
+[type="radio"]:checked+span:after,
+[type="radio"].with-gap:checked+span:before,
+[type="radio"].with-gap:checked+span:after {
+    border-color: var(--ez-checkbox-fill-col);
+}
 
 /** Modals **/
 
@@ -1118,6 +1197,7 @@ div.divided-collection {
 
 ez-icon {
     display: flex;
+    align-items: center;
     color: var(--ez-icon-col);
 }
 
@@ -1180,6 +1260,135 @@ ez-icon-action > ez-icon.med {
 
 /** Ez Collection **/
 
+ezc-ctrl {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 2.2rem;
+}
+
+ezc-ctrl-left {
+    display: flex;
+    align-items: center;
+}
+
+ezc-ctrl-left label {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1.8rem;
+}
+
+ezc-ctrl-left a.dropdown-trigger {
+    border: 1px solid var(--ez-flat-btn-border-col);
+    display: flex;
+    align-items: center;
+    padding-right: .8rem;
+    margin-left: .4rem;
+    text-transform: none;
+}
+
+ezc-ctrl-left a.dropdown-trigger.disabled {
+    border-color: var(--ez-flat-btn-disabled-border-col);
+}
+
+ezc-ctrl-left a.dropdown-trigger:hover {
+    background-color: var(--ez-icon-action-active-bg-col);
+}
+
+ezc-ctrl-left a.dropdown-trigger ez-icon {
+    margin-left: .8rem;
+}
+
+ezc-ctrl-left a.dropdown-trigger ez-icon > svg,
+ezc-ctrl-filter ez-icon > svg,
+ezc-ctrl-order ez-icon > svg {
+    width: 2.4rem;
+    height: 2.4rem;
+}
+
+ezc-ctrl-left a.dropdown-trigger.disabled ez-icon {
+    color: var(--ez-flat-btn-disabled-border-col);
+}
+
+ezc-ctrl-filter[filter="on"] ez-icon > svg {
+    color: var(--ez-checkbox-fill-col);
+}
+
+ezc-ctrl-filter[filter="on"] ez-icon.filter-disabled-icon {
+    display: none;
+}
+
+ezc-ctrl-filter[filter="off"] ez-icon.filter-enabled-icon {
+    display: none;
+}
+
+ezc-ctrl-filter .dropdown-content li.optgroup:not(:first-child) {
+    min-height: 0;
+    border-top-color: #ddd;
+}
+
+ezc-ctrl-filter .dropdown-content li.optgroup:not(:first-child) > span {
+    display: none;
+}
+
+ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child {
+    cursor: pointer;
+}
+
+ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child:hover {
+    background-color: rgba(0,0,0,0.08);
+}
+
+ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child span {
+    color: #333;
+}
+
+ezc-ctrl-filter[filter="off"] .dropdown-content li.optgroup:first-child {
+    pointer-events: none;
+}
+
+/* Hide select field */
+ezc-ctrl-filter .select-wrap,
+ezc-ctrl-filter .select-wrap input.select-dropdown {
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+ezc-ctrl-filter .select-wrap svg.caret,
+ezc-ctrl-filter .select-wrap > label {
+    display: none;
+}
+
+ezc-ctrl-selected {
+    margin-left: 3rem;
+    color: var(--ezc-attr-immutable-col);
+    font-size: .86em;
+}
+
+ezc-ctrl-right {
+    display: flex;
+    align-items: center;
+}
+
+ezc-ctrl-shown {
+    margin-right: .8rem;
+    color: var(--ezc-attr-immutable-col);
+    font-size: .86em;
+}
+
+ezc-ctrl-filter {
+    margin-right: 1rem;
+}
+
+ezc-ctrl-order .dropdown-content li label {
+    display: flex;
+    padding: 14px 16px;
+    cursor: pointer;
+}
+
+ezc-ctrl-order .dropdown-content li label span {
+    font-size: 1.4rem;
+}
+
 ez-coll {
     display: flex;
     flex-direction: column;
@@ -1231,24 +1440,23 @@ ezc-item-type-text {
     font-size: .9em;
 }
 
-ez-coll[selectable] ezc-left:hover ezc-item-type,
-ez-coll[selection-active] ezc-left ezc-item-type {
+ezc-item[selectable] ezc-left:hover ezc-item-type,
+ezc-item[selected] ezc-item-type {
     display: none;
 }
 
-/* TODO: allow clicking/checking checkbox when hovering is not possible. */
-ez-coll[selectable] ezc-left:hover .ezc-item-checkbox,
-ez-coll[selection-active] ezc-left .ezc-item-checkbox {
+ezc-item[selectable] ezc-left:hover .ezc-item-checkbox,
+ezc-item[selected] .ezc-item-checkbox {
     display: block;
 }
 
 ezc-left ez-icon > svg {
-    width: 2rem;
-    height: 2rem;
+    width: 2.4rem;
+    height: 2.4rem;
 }
 
 ezc-item.two-rows ezc-left {
-    padding-top: 1.7rem;
+    padding-top: 1.5rem;
 }
 
 ezc-left .ezc-item-checkbox {
@@ -1257,7 +1465,8 @@ ezc-left .ezc-item-checkbox {
     padding: .1rem 0 0 .5rem;
 }
 
-ezc-left .ezc-item-checkbox span.dummy {
+ezc-left .ezc-item-checkbox span.dummy,
+ezc-ctrl-left .ezc-all-checkbox span.dummy {
     padding-left: 0;
 }
 
@@ -1298,11 +1507,15 @@ ezc-title {
     font-size: 1.7rem;
 }
 
+ezc-title.inactive {
+    color: var(--ezc-attr-immutable-col);
+}
+
 ezc-title > a {
     color: inherit;
 }
 
-ezc-title > a:hover {
+ezc-title > a:hover[href] {
     color: var(--ezc-link-hover-col);
 }
 
@@ -1348,7 +1561,7 @@ ezc-attr.bottom:first-child {
     display: inline-block;
 }
 
-ezc-attr.bottom ez-icon {
+ezc-attr ez-icon {
     padding-right: .8rem;
 }
 
@@ -1375,11 +1588,11 @@ ezc-attr-text {
     color: var(--ezc-attr-immutable-col);
 }
 
-ezc-attr-text.mutable {
+ezc-attr-text.actionable {
     color: var(--ezc-attr-mutable-col);
 }
 
-ezc-attr-text.mutable:hover {
+ezc-attr-text.actionable:hover {
     cursor: pointer;
     font-weight: 500;
 }
@@ -1435,7 +1648,7 @@ ezc-expand-trailer ez-icon-action:focus {
 }
 
 /* Any of the user's inputs is coarse or the main input cannot hover */
-@media (any-pointer: coarse) or (hover: none) {
+@media (any-pointer: coarse), (hover: none) {
     ezc-expand-trailer > ez-icon-action {
         visibility: visible;
     }
@@ -1544,6 +1757,7 @@ h3.title {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-left: 1rem;
 }
 
 .title-wrap.no-crumb {
