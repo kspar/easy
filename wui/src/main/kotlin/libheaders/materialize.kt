@@ -7,6 +7,8 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.sleep
 
 @JsName("M")
+@JsModule("@materializecss/materialize")
+@JsNonModule
 external object Materialize {
     val Dropdown: MDropdown
     val Sidenav: MSidenav
