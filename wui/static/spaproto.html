@@ -172,6 +172,22 @@
     </div>
 </script>
 
+<script id="t-c-modal" type="text/x-handlebars">
+    <div id="{{id}}" class="modal">
+    </div>
+</script>
+
+<script id="t-c-binary-modal-footer" type="text/x-handlebars">
+    <div class="modal-footer">
+        <button id="modal-secondary-btn-{{modalId}}" class="secondary-btn btn-flat waves-effect">
+            <ez-btn-content>{{secondaryText}}</ez-btn-content>
+        </button>
+        <button id="modal-primary-btn-{{modalId}}" class="btn waves-effect waves-light">
+            <ez-btn-content>{{primaryText}}</ez-btn-content>
+        </button>
+    </div>
+</script>
+
 <script id="t-c-ezcoll" type="text/x-handlebars">
     <div id="{{collId}}" class="ez-coll-sizer">
         <ezc-ctrl>

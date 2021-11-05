@@ -1145,8 +1145,13 @@ textarea.materialize-textarea {
     justify-content: flex-end;
 }
 
-.modal .modal-footer .btn {
+.modal .modal-footer .btn,
+.modal .modal-footer .btn-flat {
     margin: 0;
+}
+
+.modal .modal-footer .secondary-btn {
+    margin-right: 1rem;
 }
 
 
