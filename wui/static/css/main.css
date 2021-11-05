@@ -218,6 +218,15 @@ svg {
     align-items: center;
 }
 
+.leftbar li.active {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.leftbar li.active a,
+.leftbar li.active a i.material-icons {
+    color: var(--ez-checkbox-fill-col);
+}
+
 .leftbar .subheader {
     height: unset;
     line-height: unset;

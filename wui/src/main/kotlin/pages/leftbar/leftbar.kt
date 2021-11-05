@@ -23,6 +23,8 @@ import kotlin.js.Promise
 
 object Leftbar {
 
+    // TODO: add .active to li if page is active
+
     data class Conf(val courseId: String? = null)
 
     private const val DST_ID = "leftbar-wrap"
