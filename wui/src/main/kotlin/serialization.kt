@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlin.js.Date
 
 
-val JsonUtil = Json {}
+val JsonUtil = Json
 
 
 fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =

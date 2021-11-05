@@ -14,8 +14,8 @@ repositories {
 
 dependencies {
     implementation(project(":ezspa"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.9")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0-RC")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
 
     implementation(npm("css-element-queries", "1.2.2"))
 }
