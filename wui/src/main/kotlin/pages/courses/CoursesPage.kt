@@ -64,6 +64,8 @@ object CoursesPage : EasyPage() {
             warn { "Cannot cache courses page - root component is null" }
         }
     }
+
+    fun link() = constructPathLink(emptyMap())
 }
 
 

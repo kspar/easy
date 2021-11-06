@@ -77,6 +77,28 @@ abstract class Page {
     }
 
     /**
+     * Construct the path portion of a link to this page, using the supplied path params.
+     * Provided path param values will be URI-encoded. Example:
+     *
+     * [pathSchema] = "/ez/{par}/game"
+     * [pathParams] = { "par": "my/param#" }
+     * returns "/ez/my%2Fparam%23/game"
+     *
+     * @param pathParams must contain keys for all path params of this page's pathSchema
+     */
+    fun constructPathLink(pathParams: Map<String, String>): String {
+        return pathComponents.joinToString(separator = "/", prefix = "/") {
+            when (it) {
+                is PathParam -> pathParams[it.key]?.encodeURIComponent() ?: error(
+                    "Key ${it.key} not found while constructing path link. Page: $pageName," +
+                            "pathSchema: $pathSchema, given params: $pathParams"
+                )
+                is PathString -> it.str
+            }
+        }.also { EzSpa.Logger.debug { "Constructed path link to $pageName: $it" } }
+    }
+
+    /**
      * Build the current page: fetch resources, perform requests, render templates, add listeners etc.
      * A page state string is passed that was previously set by the page via [updateState].
      * If no state string is available then null is passed.
