@@ -33,10 +33,6 @@ easy:
     auto-assess:
         allowed-wait-for-user:
           ms: "45000"
-        timeout-check:
-          cron: "0 * * * * *"
-          clear-older-than:
-            ms: "460000"
         fixed-delay:
           ms: "3000"
         fixed-delay-observer-clear:

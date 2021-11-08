@@ -76,14 +76,14 @@ class AutoAssessStatusObserver {
             }.keys.map { statuses.remove(it) }.size
         }
 
-        log.debug { "Cleared $removed/$totalJobs auto-assess observer jobs that are NOT IN_PROGRESS." }
+        if (totalJobs != 0) {
+            log.debug { "Cleared $removed/$totalJobs auto-assess observer jobs that are NOT IN_PROGRESS." }
+        }
     }
 }
 
 @Service
 class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
-    @Value("\${easy.core.auto-assess.timeout-check.clear-older-than.ms}")
-    private lateinit var allowedRunningTimeMs: String
 
     @Value("\${easy.core.auto-assess.allowed-wait-for-user.ms}")
     private lateinit var allowedWaitingTimeUserMs: String
@@ -131,10 +131,8 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
         // Number of jobs planned to be executed, ensures that loop finishes
         val executableCount = min(
             executorPriorityQueues.sumOf { it.countWaiting() },
-            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countRunning().toInt() }
-        )
-
-        if (executableCount != 0) log.debug { "Executor '$executorId' is executing $executableCount jobs" }
+            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countRunning() }
+        ).toInt()
 
         repeat(executableCount) {
             executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
@@ -181,19 +179,8 @@ class FutureAutoGradeService : ApplicationListener<ContextRefreshedEvent> {
                     throw ExecutorException("Executor (${selected.id}) does not have queue with '$priority'.")
                 }
         }
-
         return executor.submitAndAwait(arrayOf(selected, request), timeout = allowedWaitingTimeUserMs.toLong())
     }
-
-
-    @Scheduled(cron = "\${easy.core.auto-assess.timeout-check.cron}")
-    @Synchronized
-    private fun timeout() {
-        val timeout = allowedRunningTimeMs.toLong()
-        val removed = executors.values.flatMap { it.values }.sumOf { it.clearOlder(timeout) }
-        log.trace { "Checked for timeout in scheduled call results: Removed '$removed' older than '$timeout' ms." }
-    }
-
 
     /**
      *  Remove executor.
