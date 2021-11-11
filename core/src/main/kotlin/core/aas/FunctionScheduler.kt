@@ -183,6 +183,6 @@ open class FunctionScheduler<T>(private val function: KFunction<T>) {
 
 
     override fun toString(): String {
-        return "FunctionScheduler(jobs=${runningJobCount.get() + pendingJobCount.get()})"
+        return "${javaClass.simpleName}(jobs=${runningJobCount.get() + pendingJobCount.get()})"
     }
 }

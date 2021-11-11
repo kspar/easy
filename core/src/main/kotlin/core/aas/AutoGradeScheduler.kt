@@ -44,7 +44,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     private var queuePickerIndex = AtomicInteger()
 
     override fun onApplicationEvent(p0: ContextRefreshedEvent) {
-        log.info { "Initializing FutureAutoGradeService by syncing executors." }
+        log.info { "Initializing ${javaClass.simpleName} by syncing executors." }
         // Synchronization might not be needed here, but for code consistency and for avoidance of thread issues is added.
         synchronized(executorLock) {
             addExecutorsFromDB()
@@ -148,18 +148,19 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     fun addExecutorsFromDB() {
         // Synchronized as executors can be removed or read at any time.
         synchronized(executorLock) {
-            val executorIdsFromDB = getAvailableExecutorIds()
+            val countBefore = executors.size
 
-            val new = executorIdsFromDB.filter {
+            getAvailableExecutorIds().forEach {
                 executors.putIfAbsent(
                     // sortedMap does not need to be concurrent as all usages of this map are synchronized
                     it, sortedMapOf(
                         PriorityLevel.AUTHENTICATED to FunctionScheduler(::callExecutor),
                         PriorityLevel.ANONYMOUS to FunctionScheduler(::callExecutor)
                     )
-                ) == null
-            }.size
-            log.debug { "Checked for new executors. Added total '$new' new executors." }
+                )
+            }
+
+            log.debug { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
         }
     }
 }
