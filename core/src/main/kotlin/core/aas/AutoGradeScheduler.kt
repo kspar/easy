@@ -103,7 +103,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         val selected = selectExecutor(executors)
 
         log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
-
+        // TODO: Still not sure about how much should be synchronized?
         // Synchronized as executors can be removed or added at any time.
         val executor = synchronized(executorLock) {
             this.executors
