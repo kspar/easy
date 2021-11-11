@@ -45,9 +45,9 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
     private val startedJobs = BlockingMap<Ticket, Deferred<T>>()
 
     /**
-     * Start n jobs.
+     * Start n submitted jobs.
      */
-    fun executeN(n: Int) {
+    fun start(n: Int) {
         repeat(n) {
             when (val job = waitingJobs.poll()) {
                 null -> return
@@ -63,7 +63,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      * @param arguments to be passed to [function]
      * @return [function] output
      */
-    suspend fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
+    suspend fun scheduleAndAwait(arguments: Array<Any?>, timeout: Long): T {
         val ticket = runningTicket.incrementAndGet()
 
         return try {
@@ -86,7 +86,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
 
 
     /**
-     * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
+     * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [start]?
      */
     fun countWaiting(): Int = waitingJobs.size
 

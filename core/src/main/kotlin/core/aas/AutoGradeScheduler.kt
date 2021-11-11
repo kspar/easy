@@ -74,7 +74,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
             val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
             val item = executorPriorityQueues[queuePicker % executorPriorityQueues.size]
-            item.executeN(1)
+            item.start(1)
         }
     }
 
@@ -112,7 +112,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                     throw ExecutorException("Executor (${targetExecutor.id}) does not have queue with '$priority'.")
                 }
         }
-        return executor.submitAndAwait(arrayOf(targetExecutor, request), timeout = allowedWaitingTimeUserMs.toLong())
+        return executor.scheduleAndAwait(arrayOf(targetExecutor, request), timeout = allowedWaitingTimeUserMs.toLong())
     }
 
     /**
