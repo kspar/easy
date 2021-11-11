@@ -98,22 +98,21 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
         val request = mapToExecutorRequest(autoExercise, submission)
 
-        val executors = getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet()
-        val selected = selectExecutor(executors)
+        val targetExecutor = selectExecutor(getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet())
 
         log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
-        // TODO: Still not sure about how much should be synchronized?
+
         // Synchronized as executors can be removed or added at any time.
         val executor = synchronized(executorLock) {
-            this.executors
-                .getOrElse(selected.id) {
-                    throw ExecutorException("Out of sync. Did you use API to add/remove executor '${selected.id}'?")
+            executors
+                .getOrElse(targetExecutor.id) {
+                    throw ExecutorException("Out of sync. Did you use API to add/remove executor '${targetExecutor.id}'?")
                 }
                 .getOrElse(priority) {
-                    throw ExecutorException("Executor (${selected.id}) does not have queue with '$priority'.")
+                    throw ExecutorException("Executor (${targetExecutor.id}) does not have queue with '$priority'.")
                 }
         }
-        return executor.submitAndAwait(arrayOf(selected, request), timeout = allowedWaitingTimeUserMs.toLong())
+        return executor.submitAndAwait(arrayOf(targetExecutor, request), timeout = allowedWaitingTimeUserMs.toLong())
     }
 
     /**
