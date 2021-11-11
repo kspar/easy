@@ -53,13 +53,6 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     }
 
     /**
-     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionScheduler].
-     */
-    fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
-        return callExecutor(executor, request)
-    }
-
-    /**
      * Autograde maximum number of possible submissions assigned to this executor while considering current load.
      *
      * No guarantee is made how many submissions can be graded.
@@ -163,8 +156,8 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                 executors.putIfAbsent(
                     // sortedMap does not need to be concurrent as all usages of this map are synchronized
                     it, sortedMapOf(
-                        PriorityLevel.AUTHENTICATED to FunctionScheduler(::callExecutorInFutureJobService),
-                        PriorityLevel.ANONYMOUS to FunctionScheduler(::callExecutorInFutureJobService)
+                        PriorityLevel.AUTHENTICATED to FunctionScheduler(::callExecutor),
+                        PriorityLevel.ANONYMOUS to FunctionScheduler(::callExecutor)
                     )
                 ) == null
             }.size
