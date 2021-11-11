@@ -40,7 +40,7 @@ private class BlockingMap<K, V> {
 }
 
 
-open class FunctionScheduler<T>(private val function: KFunction<T>) {
+class FunctionScheduler<T>(private val function: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
     private var runningJobCount = AtomicLong(0)
     private var pendingJobCount = AtomicLong(0)
