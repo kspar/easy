@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.aas.FutureAutoGradeService
+import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.assertTeacherOrAdminHasAccessToExercise
@@ -25,7 +25,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeService) {
+class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
 
     data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
@@ -59,7 +59,7 @@ class TeacherAutoassController(val futureAutoGradeService: FutureAutoGradeServic
 
         // TODO: error handling missing? Should be as in StudentSubmit?
         val aaResult = runBlocking {
-            futureAutoGradeService.submitAndAwait(
+            autoGradeScheduler.submitAndAwait(
                 aaId,
                 dto.solution,
                 PriorityLevel.AUTHENTICATED

@@ -2,7 +2,7 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoAssessStatusObserver
-import core.aas.FutureAutoGradeService
+import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
@@ -31,7 +31,7 @@ private val log = KotlinLogging.logger {}
 class StudentSubmitCont(
     private val autoAssessStatusObserver: AutoAssessStatusObserver,
     private val cacheInvalidator: CacheInvalidator,
-    private val futureAutoGradeService: FutureAutoGradeService,
+    private val autoGradeScheduler: AutoGradeScheduler,
     private val moodleGradesSyncService: MoodleGradesSyncService
 ) {
 
@@ -86,7 +86,7 @@ class StudentSubmitCont(
 
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
             val autoAss =
-                futureAutoGradeService.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
+                autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cacheInvalidator, courseExId)
         } catch (e: Exception) {
