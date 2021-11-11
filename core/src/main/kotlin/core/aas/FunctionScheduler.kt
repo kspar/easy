@@ -29,8 +29,6 @@ private class BlockingMap<K, V> {
         }
     }
 
-    fun size(): Int = map.size
-
     fun remove(key: K) = map.remove(key)
 
     fun values() = map.values.mapNotNull { it.peek() }
