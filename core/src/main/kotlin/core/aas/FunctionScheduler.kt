@@ -5,13 +5,10 @@ import core.exception.ReqError
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
-import mu.KotlinLogging
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KFunction
 
-
-private val log = KotlinLogging.logger {}
 
 typealias Ticket = Long
 
@@ -24,11 +21,11 @@ private class BlockingMap<K, V> {
 
     operator fun set(key: K, value: V): Boolean = ensureQueueExists(key).add(value)
 
-    fun poll(key: K, timeout: Long, timeUnit: TimeUnit): V? {
+    fun poll(key: K, timeout: Long): V? {
         return try {
-            ensureQueueExists(key).poll(timeout, timeUnit)
+            ensureQueueExists(key).poll(timeout, TimeUnit.MILLISECONDS)
         } finally {
-            map.remove(key)
+            remove(key)
         }
     }
 
@@ -42,147 +39,70 @@ private class BlockingMap<K, V> {
 
 class FunctionScheduler<T>(private val function: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
-    private var runningJobCount = AtomicLong(0)
-    private var pendingJobCount = AtomicLong(0)
+
+    // Holds submitted but not started job info. Pair: ticket to function arguments
+    private val waitingJobs = ConcurrentLinkedQueue<Pair<Ticket, Array<Any?>>>()
+
+    // Holds started and completed coroutines.
+    private val startedJobs = BlockingMap<Ticket, Deferred<T>>()
 
     /**
-     * Holds [JobInfo] that are not yet assigned to coroutine execution.
-     */
-    private val pendingJobs = ConcurrentLinkedQueue<JobInfo>()
-
-    /**
-     * Holds running and finished coroutines.
-     */
-    private val runningJobs = BlockingMap<Ticket, Deferred<T>>()
-
-    /**
-     *
-     * @param ticket job ticket that identifies scheduled job.
-     * @param arguments to be used on [function].
-     *
-     */
-    private data class JobInfo(val ticket: Ticket, val arguments: Array<Any?>) {
-        /**
-         *  Implemented [equals] and [hashCode] only based on ticket so that [pendingJobs].contains()
-         *  can be called using just the ticket.
-         */
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as JobInfo
-            return ticket == other.ticket
-        }
-
-        override fun hashCode(): Int {
-            return ticket.hashCode()
-        }
-    }
-
-
-    /**
-     * Execute min(number_of_jobs_in_queue, n) jobs.
+     * Start n jobs.
      */
     fun executeN(n: Int) {
         repeat(n) {
-            when (val job = pendingJobs.poll()) {
+            when (val job = waitingJobs.poll()) {
                 null -> return
-                else -> {
-                    log.debug { "Starting job '${job.ticket}'." }
-                    pendingJobCount.decrementAndGet()
-
-                    runningJobs[job.ticket] = GlobalScope.async { function.call(*job.arguments) }
-                    runningJobCount.incrementAndGet()
-                }
+                else -> startedJobs[job.first] = GlobalScope.async { function.call(*job.second) }
             }
         }
     }
 
+
     /**
-     * Submit and wait for [function] output with given arguments.
+     * Submit and wait for [function] result with given arguments.
      *
      * @param arguments to be passed to [function]
      * @return [function] output
      */
     suspend fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
-        return await(submit(arguments), timeout)
+        val ticket = runningTicket.incrementAndGet()
+
+        return try {
+            waitingJobs.add(ticket to arguments)
+            startedJobs.poll(ticket, timeout)?.await() ?: throw AwaitTimeoutException(
+                "Timeout of '$timeout' ms reached for job $ticket", ReqError.ASSESSMENT_AWAIT_TIMEOUT
+            )
+
+        } finally {
+            waitingJobs.removeAll { it.first == ticket }
+            startedJobs.remove(ticket)
+        }
     }
 
 
     /**
-     * Submit a job to scheduled execution, e.g into [pendingJobs].
+     * Are there any not started jobs?
      */
-    private fun submit(arguments: Array<Any?>): Ticket {
-        val ticket = runningTicket.incrementAndGet()
-        pendingJobCount.incrementAndGet()
-        pendingJobs.add(JobInfo(ticket, arguments))
-        return ticket
-    }
+    fun hasWaiting(): Boolean = waitingJobs.isNotEmpty()
+
 
     /**
      * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
      */
-    fun countWaiting(): Long {
-        return pendingJobCount.get()
-    }
+    fun countWaiting(): Int = waitingJobs.size
+
 
     /**
-     * Is there any jobs pending for scheduling, e.g. not yet called with coroutine via [executeN]?
+     * Return number of jobs started.
      */
-    fun hasWaiting(): Boolean {
-        return pendingJobs.isNotEmpty()
-    }
+    fun countStarted(): Long = startedJobs.values().sumOf { if (it.isActive) 1L else 0L }
+
 
     /**
-     * Number of jobs pending and active. Actual result may not reflect the exact state due to the nature of concurrency.
+     * Number of jobs started and waiting jobs. Actual result may not reflect the exact state due to the concurrency.
      */
-    fun size(): Long {
-        return runningJobCount.get() + pendingJobCount.get()
-    }
+    fun size(): Long = countStarted() + countWaiting()
 
-    /**
-     * Wait for job result.
-     *
-     * Presumes that ticket is valid.
-     *
-     * It is not exposed as knowing job ticket, any job and therefore any job result could be retrieved.
-     */
-    @Throws(AwaitTimeoutException::class)
-    private suspend fun await(ticket: Ticket, timeout: Long): T {
-        log.debug { "Waiting for job '$ticket'." }
-
-        try {
-            val deferred = runningJobs.poll(ticket, timeout, TimeUnit.MILLISECONDS)
-            val await = deferred?.await()
-
-            log.debug {
-                "Finished waiting '$ticket': " +
-                        "completed=${deferred?.isCompleted}, " +
-                        "canceled=${deferred?.isCancelled}, " +
-                        "active=${deferred?.isActive}."
-            }
-
-            return await ?: throw AwaitTimeoutException(
-                "Maximum run time of $timeout ms reached for job $ticket",
-                ReqError.ASSESSMENT_AWAIT_TIMEOUT
-            )
-
-        } finally {
-            pendingJobs.remove(JobInfo(ticket, emptyArray()))
-            runningJobs.remove(ticket)
-            runningJobCount.decrementAndGet()
-        }
-    }
-
-    /**
-     * Return number of jobs scheduled to run or which are already running.
-     */
-    fun countRunning(): Long {
-        return runningJobs.values().sumOf { if (it.isActive) 1L else 0L }
-    }
-
-
-    override fun toString(): String {
-        return "${javaClass.simpleName}(jobs=${runningJobCount.get() + pendingJobCount.get()})"
-    }
+    override fun toString(): String = "${javaClass.simpleName}(jobs=${size()})"
 }
