@@ -4,7 +4,7 @@ import core.db.Executor
 import core.db.ExecutorContainerImage
 import core.db.PriorityLevel
 import core.exception.InvalidRequestException
-import core.util.FunctionQueue
+import core.util.FunctionScheduler
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteWhere
@@ -38,7 +38,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
      */
     private val executorLock = UUID.randomUUID().toString()
 
-    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionQueue<AutoAssessment>>> =
+    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionScheduler<AutoAssessment>>> =
         ConcurrentHashMap()
 
     // Global index for picking the next queue
@@ -53,7 +53,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     }
 
     /**
-     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionQueue].
+     * Delegator for [callExecutor] as [callExecutor] is private, but reflective access is needed by [FunctionScheduler].
      */
     fun callExecutorInFutureJobService(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
         return callExecutor(executor, request)
@@ -163,8 +163,8 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                 executors.putIfAbsent(
                     // sortedMap does not need to be concurrent as all usages of this map are synchronized
                     it, sortedMapOf(
-                        PriorityLevel.AUTHENTICATED to FunctionQueue(::callExecutorInFutureJobService),
-                        PriorityLevel.ANONYMOUS to FunctionQueue(::callExecutorInFutureJobService)
+                        PriorityLevel.AUTHENTICATED to FunctionScheduler(::callExecutorInFutureJobService),
+                        PriorityLevel.ANONYMOUS to FunctionScheduler(::callExecutorInFutureJobService)
                     )
                 ) == null
             }.size

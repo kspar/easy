@@ -40,7 +40,7 @@ private class BlockingMap<K, V> {
 }
 
 
-open class FunctionQueue<T>(private val futureCall: KFunction<T>) {
+open class FunctionScheduler<T>(private val function: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
     private var runningJobCount = AtomicLong(0)
     private var pendingJobCount = AtomicLong(0)
@@ -58,7 +58,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>) {
     /**
      *
      * @param ticket job ticket that identifies scheduled job.
-     * @param arguments to be used on [futureCall].
+     * @param arguments to be used on [function].
      *
      */
     private data class JobInfo(val ticket: Ticket, val arguments: Array<Any?>) {
@@ -91,7 +91,7 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>) {
                     log.debug { "Starting job '${job.ticket}'." }
                     pendingJobCount.decrementAndGet()
 
-                    runningJobs[job.ticket] = GlobalScope.async { futureCall.call(*job.arguments) }
+                    runningJobs[job.ticket] = GlobalScope.async { function.call(*job.arguments) }
                     runningJobCount.incrementAndGet()
                 }
             }
@@ -99,10 +99,10 @@ open class FunctionQueue<T>(private val futureCall: KFunction<T>) {
     }
 
     /**
-     * Submit and wait for [futureCall] output with given arguments.
+     * Submit and wait for [function] output with given arguments.
      *
-     * @param arguments to be passed to [futureCall]
-     * @return [futureCall] output
+     * @param arguments to be passed to [function]
+     * @return [function] output
      */
     suspend fun submitAndAwait(arguments: Array<Any?>, timeout: Long): T {
         return await(submit(arguments), timeout)
