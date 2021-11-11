@@ -1,4 +1,4 @@
-package core.util
+package core.aas
 
 import core.exception.AwaitTimeoutException
 import core.exception.ReqError

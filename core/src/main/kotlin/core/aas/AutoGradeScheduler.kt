@@ -4,7 +4,6 @@ import core.db.Executor
 import core.db.ExecutorContainerImage
 import core.db.PriorityLevel
 import core.exception.InvalidRequestException
-import core.util.FunctionScheduler
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteWhere
