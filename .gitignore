@@ -7,7 +7,10 @@
 out/
 build/
 
-database.properties
-application.yaml
-gunicorn-conf.py
-AppProperties.kt
+core/db/database.properties
+core/src/main/resources/application.yaml
+
+wui/gradle.properties
+wui/src/main/kotlin/AppProperties.kt
+
+aae/gunicorn-conf.py

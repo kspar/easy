@@ -1,0 +1,4 @@
+
+# Make sure this dir contains a stable (tested) version of Materialize
+# Repo: https://github.com/materializecss/materialize
+pathToMaterialize=/absolute/path/to/materialize

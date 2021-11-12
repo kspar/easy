@@ -6,7 +6,7 @@ import org.w3c.dom.HTMLSelectElement
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.sleep
 
-@JsName("M")
+
 @JsModule("@materializecss/materialize")
 @JsNonModule
 external object Materialize {

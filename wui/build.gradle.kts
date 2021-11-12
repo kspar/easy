@@ -1,4 +1,3 @@
-
 plugins {
     kotlin("js")
     kotlin("plugin.serialization")
@@ -17,7 +16,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
 
-    implementation(npm("@materializecss/materialize", "1.0.0"))
+    val pathToMaterialize: String? by project
+    when (pathToMaterialize) {
+        null -> logger.warn("wui: path to materialize not configured")
+        else -> implementation(npm(File(pathToMaterialize!!)))
+    }
     implementation(npm("css-element-queries", "1.2.2"))
 }
 
