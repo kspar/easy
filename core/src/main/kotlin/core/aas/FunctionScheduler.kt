@@ -75,11 +75,11 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      * @param arguments to be passed to [function]
      * @return [function] output
      */
-    suspend fun scheduleAndAwait(arguments: Array<Any?>, timeout: Long): T {
+    suspend fun scheduleAndAwait(vararg arguments: Any?, timeout: Long): T {
         val ticket = runningTicket.incrementAndGet()
 
         return try {
-            waitingJobs.add(ticket to arguments)
+            waitingJobs.add(ticket to arrayOf(*arguments))
             startedJobs.poll(ticket, timeout)?.await() ?: throw AwaitTimeoutException(
                 "Timeout of '$timeout' ms reached for job $ticket", ReqError.ASSESSMENT_AWAIT_TIMEOUT
             )

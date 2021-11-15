@@ -112,7 +112,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                     throw ExecutorException("Executor (${targetExecutor.id}) does not have queue with '$priority'.")
                 }
         }
-        return executor.scheduleAndAwait(arrayOf(targetExecutor, request), timeout = allowedWaitingTimeUserMs.toLong())
+        return executor.scheduleAndAwait(targetExecutor, request, timeout = allowedWaitingTimeUserMs.toLong())
     }
 
     /**
