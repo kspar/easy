@@ -34,7 +34,18 @@ private class BlockingMap<K, V> {
     fun values() = map.values.mapNotNull { it.peek() }
 }
 
-
+/**
+ * A scheduler system for parallel processing of a fixed function with coroutines.
+ *
+ * @param function a function to be scheduled.
+ * @param T the return type of the scheduled function.
+ *
+ *
+ * Use the method [scheduleAndAwait] to schedule [function] to be executed in the future with given arguments and wait
+ * for the result. Note [scheduleAndAwait] does not start jobs. Use the method [start] for starting scheduled
+ * jobs.
+ *
+ */
 class FunctionScheduler<T>(private val function: KFunction<T>) {
     private var runningTicket = AtomicLong(0)
 
@@ -47,6 +58,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
     /**
      * Start n submitted jobs.
      */
+    @Synchronized
     fun start(n: Int) {
         repeat(n) {
             when (val job = waitingJobs.poll()) {
