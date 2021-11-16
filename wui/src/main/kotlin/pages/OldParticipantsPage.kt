@@ -5,6 +5,7 @@ import DateSerializer
 import PageName
 import PaginationConf
 import Role
+import cache.BasicCourseInfo
 import debug
 import getContainer
 import getLastPageOffset

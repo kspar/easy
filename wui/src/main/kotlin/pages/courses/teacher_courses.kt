@@ -1,7 +1,7 @@
 package pages.courses
 
-import CourseInfoCache
 import Str
+import cache.BasicCourseInfo
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
@@ -89,7 +89,7 @@ class TeacherCourseListComp(
 
     override fun postRender() {
         courseItems.forEach {
-            CourseInfoCache[it.id] = CourseInfo(it.id, it.title)
+            BasicCourseInfo.put(it.id, it.title)
         }
     }
 

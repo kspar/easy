@@ -8,6 +8,7 @@ import PageName
 import PaginationConf
 import Role
 import Str
+import cache.BasicCourseInfo
 import compareTo
 import debug
 import debugFunStart

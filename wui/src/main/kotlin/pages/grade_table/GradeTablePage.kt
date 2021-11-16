@@ -6,6 +6,7 @@ import PageName
 import PaginationConf
 import Role
 import Str
+import cache.BasicCourseInfo
 import components.BreadcrumbsComp
 import components.Crumb
 import components.form.SelectComp

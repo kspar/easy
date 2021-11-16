@@ -7,6 +7,7 @@ import JsonUtil
 import PageName
 import Role
 import Str
+import cache.BasicCourseInfo
 import components.BreadcrumbsComp
 import components.Crumb
 import debug

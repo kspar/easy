@@ -4,7 +4,7 @@ import components.BreadcrumbsComp
 import components.Crumb
 import kotlinx.coroutines.await
 import plainDstStr
-import queries.BasicCourseInfo
+import cache.BasicCourseInfo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
