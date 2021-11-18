@@ -64,9 +64,9 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
         // Number of jobs planned to be executed, ensures that loop finishes
         val executableCount = min(
-            executorPriorityQueues.sumOf { it.countWaiting().toLong() },
+            executorPriorityQueues.sumOf { it.countWaiting() },
             getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countStarted() }
-        ).toInt()
+        )
 
         repeat(executableCount) {
             executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
@@ -112,7 +112,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                     throw ExecutorException("Executor (${targetExecutor.id}) does not have queue with '$priority'.")
                 }
         }
-        return executor.scheduleAndAwait(targetExecutor, request, timeout = allowedWaitingTimeUserMs.toLong())
+        return executor.scheduleAndAwait(targetExecutor, request)
     }
 
     /**
