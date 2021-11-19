@@ -12,16 +12,19 @@ fun HTMLAnchorElement.onSingleClickWithDisabled(disabledText: String?, f: suspen
         val link = this
         MainScope().launch {
             val href = link.href
-            link.removeAttribute("href")
             val activeHtml = link.innerHTML
-            disabledText?.let {
-                link.textContent = it
+            try {
+                link.removeAttribute("href")
+                disabledText?.let {
+                    link.textContent = it
+                }
+                f(it)
+            } finally {
+                disabledText?.let {
+                    link.innerHTML = activeHtml
+                }
+                link.href = href
             }
-            f(it)
-            disabledText?.let {
-                link.innerHTML = activeHtml
-            }
-            link.href = href
         }
     }
 }
@@ -33,16 +36,19 @@ fun HTMLButtonElement.onSingleClickWithDisabled(
     this.onVanillaClick(true) {
         val btn = this
         MainScope().launch {
-            btn.disabled = true
             val btnContent = btn.getElementsByTagName("ez-btn-content").asList().single()
             val activeHtml = btnContent.innerHTML
-            disabledText?.let {
-                btnContent.textContent = it
+            try {
+                btn.disabled = true
+                disabledText?.let {
+                    btnContent.textContent = it
+                }
+                f(it)
+            } finally {
+                disabledText?.let {
+                    btnContent.innerHTML = activeHtml
+                }
+                btn.disabled = false
             }
-            f(it)
-            disabledText?.let {
-                btnContent.innerHTML = activeHtml
-            }
-            btn.disabled = false
         }
     }

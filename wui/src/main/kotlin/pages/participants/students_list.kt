@@ -1,8 +1,8 @@
 package pages.participants
 
 import Icons
-import components.BinaryModalComp
 import components.EzCollComp
+import components.modal.ConfirmationTextModalComp
 import debug
 import kotlinx.coroutines.await
 import plainDstStr
@@ -25,7 +25,7 @@ class ParticipantsStudentsListComp(
 
     private lateinit var studentsColl: EzCollComp<StudentProps>
 
-    private lateinit var removeFromCourseModal: BinaryModalComp
+    private lateinit var removeFromCourseModal: ConfirmationTextModalComp
 
     override val children: List<Component>
         get() = listOf(studentsColl, removeFromCourseModal)
@@ -136,7 +136,10 @@ class ParticipantsStudentsListComp(
             parent = this
         )
 
-        removeFromCourseModal = BinaryModalComp("Eemalda", "Tühista", "Eemaldan...", parent = this)
+        removeFromCourseModal = ConfirmationTextModalComp(
+            null, "Eemalda", "Tühista", "Eemaldan...",
+            parent = this
+        )
     }
 
 
@@ -168,7 +171,7 @@ class ParticipantsStudentsListComp(
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
         debug { "Removing ${items.map { it.title }}" }
 
-        removeFromCourseModal.setContent("Eemalda ${items.size} õpilast?")
+        removeFromCourseModal.setText("Eemalda ${items.size} õpilast?")
         removeFromCourseModal.setPrimaryAction {
             sleep(2000).await()
             true
