@@ -1,8 +1,10 @@
 package rip.kspar.ezspa
 
+import kotlinx.coroutines.await
 import org.w3c.dom.Node
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
+import kotlin.js.Date
 
 class ActiveListener internal constructor(val node: Node, val eventType: String, val listener: (Event) -> Unit) {
     fun remove() {
@@ -51,4 +53,39 @@ fun Node.onChange(f: (event: Event) -> Unit): ActiveListener {
     }
     this.addEventListener("change", listener)
     return ActiveListener(this, "change", listener)
+}
+
+
+fun Node.onInput(debounceDelay: Int = 250, f: (event: Event) -> Unit): ActiveListener {
+    val listener = createEventListenerWithDebounce(debounceDelay, f)
+    this.addEventListener("input", listener)
+    return ActiveListener(this, "input", listener)
+}
+
+private fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event: Event) -> Unit): (Event) -> Unit {
+    var isWaiting = false
+    var lastCallTime = Date.now()
+    lateinit var latestEvent: Event
+
+    val listener: (Event) -> Unit = { event: Event ->
+        doInPromise {
+            latestEvent = event
+
+            if (!isWaiting) {
+                isWaiting = true
+                val sleepTimeMs = (lastCallTime + debounceDelay - Date.now()).toInt()
+
+                if (sleepTimeMs > 0) {
+                    sleep(sleepTimeMs).await()
+                }
+
+                handler(latestEvent)
+
+                lastCallTime = Date.now()
+                isWaiting = false
+            }
+        }
+    }
+
+    return listener
 }
