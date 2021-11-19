@@ -1,6 +1,7 @@
 package rip.kspar.ezspa
 
 import kotlinx.coroutines.await
+import kotlinx.dom.clear
 import kotlin.js.Promise
 
 /**
@@ -18,8 +19,9 @@ import kotlin.js.Promise
  *
  * Components should not directly call any methods other than [createAndBuild] and [rebuild] on themselves.
  */
-abstract class Component(private val parent: Component?,
-                         val dstId: String = IdGenerator.nextId()
+abstract class Component(
+    private val parent: Component?,
+    val dstId: String = IdGenerator.nextId()
 ) {
 
     /**
@@ -101,6 +103,13 @@ abstract class Component(private val parent: Component?,
      */
     fun rebuildChildren(): Promise<*> = children.map { it.rebuild(false) }.unionPromise()
 
+    /**
+     * Clear this component's destination i.e. delete everything rendered by the component.
+     * Can be reversed by [createAndBuild] or [rebuild].
+     */
+    fun clear() {
+        getElemById(dstId).clear()
+    }
 
     protected fun buildThis() {
         paint()
