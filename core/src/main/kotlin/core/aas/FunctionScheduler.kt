@@ -9,15 +9,9 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.reflect.KFunction
 
 
-data class EzJob<J>(
-    val waitableChannel: Channel<Deferred<J>>,
-    val jobDeferred: Deferred<J>,
-)
-
 /**
- * TODO: DOCUMENTATION
  *
- * A scheduler system for parallel processing of a fixed function with coroutines.
+ * A scheduler system for parallel processing of a [KFunction] with coroutines.
  *
  * @param function a function to be scheduled.
  * @param T the return type of the scheduled function.
@@ -31,8 +25,10 @@ data class EzJob<J>(
 class FunctionScheduler<T>(private val function: KFunction<T>) {
     private val jobs = ConcurrentLinkedQueue<EzJob<T>>()
 
+    private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>>, val jobDeferred: Deferred<J>)
+
     /**
-     * Start n submitted jobs.
+     * Start n [scheduleAndAwait]ed jobs.
      */
     @Synchronized
     fun start(n: Int) {
@@ -44,7 +40,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
 
 
     /**
-     * Submit and wait for [function] result with given arguments.
+     * Submit and wait for [function] result [T] with given arguments.
      *
      * @param arguments to be passed to [function]
      * @return [function] output
@@ -67,27 +63,26 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
     /**
      * Are there any not started jobs?
      */
-    fun hasWaiting(): Boolean = jobs.isNotEmpty()
+    fun hasWaiting(): Boolean = getWaiting().isNotEmpty()
 
-
-    private fun getWaiting() = jobs.filter { !it.jobDeferred.isCompleted && !it.jobDeferred.isActive }
 
     /**
      * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [start]?
      */
     fun countWaiting(): Int = getWaiting().size
 
-
     /**
      * Return number of jobs started.
      */
-    fun countStarted(): Int = jobs.filter { it.jobDeferred.isActive }.size
+    fun countActive(): Int = jobs.filter { it.jobDeferred.isActive }.size
 
 
     /**
      * Number of jobs started and waiting jobs. Actual result may not reflect the exact state due to the concurrency.
      */
     fun size(): Int = jobs.size
+
+    private fun getWaiting() = jobs.filter { !it.jobDeferred.isCompleted && !it.jobDeferred.isActive }
 
     override fun toString(): String = "${javaClass.simpleName}(jobs=${size()})"
 }

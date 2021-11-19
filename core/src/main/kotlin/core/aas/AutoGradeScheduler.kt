@@ -65,7 +65,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         // Number of jobs planned to be executed, ensures that loop finishes
         val executableCount = min(
             executorPriorityQueues.sumOf { it.countWaiting() },
-            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countStarted() }
+            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countActive() }
         )
 
         repeat(executableCount) {
