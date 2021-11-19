@@ -31,8 +31,6 @@ easy:
         from: "<from-address>"
         to: "<to-address>"
     auto-assess:
-        allowed-wait-for-user:
-          ms: "45000"
         fixed-delay:
           ms: "3000"
         fixed-delay-observer-clear:
