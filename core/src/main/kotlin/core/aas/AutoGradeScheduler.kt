@@ -9,7 +9,6 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.scheduling.annotation.Scheduled
@@ -25,9 +24,6 @@ private val log = KotlinLogging.logger {}
 
 @Service
 class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
-
-    @Value("\${easy.core.auto-assess.allowed-wait-for-user.ms}")
-    private lateinit var allowedWaitingTimeUserMs: String
 
     /**
      * [submitAndAwait] expects that map of [executors] is synced with database. However [addExecutorsFromDB] can be called
