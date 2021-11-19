@@ -38,13 +38,19 @@ open class BinaryModalComp<T>(
         super.setFooter(secondaryBtnComp, primaryButtonComp)
     }
 
-    fun setPrimaryAction(action: (suspend () -> T)? = null, postAction: (suspend () -> Unit)? = null) {
+    fun setPrimaryAction(action: (suspend () -> T)? = null) {
         primaryAction = action
+    }
+
+    fun setPrimaryPostAction(postAction: (suspend () -> Unit)? = null) {
         primaryPostAction = postAction
     }
 
-    fun setSecondaryAction(action: (suspend () -> Unit)? = null, postAction: (suspend () -> Unit)? = null) {
+    fun setSecondaryAction(action: (suspend () -> Unit)? = null) {
         secondaryAction = action
+    }
+
+    fun setSecondaryPostAction(postAction: (suspend () -> Unit)? = null) {
         secondaryPostAction = postAction
     }
 }
