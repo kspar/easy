@@ -58,19 +58,19 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         // Pointer, jobs may be added to it later
         var executorPriorityQueues = executors[executorId]?.values?.toList() ?: listOf()
 
+        val planned = executorPriorityQueues.sumOf { it.countWaiting() }
+        val maxLoad = getExecutorMaxLoad(executorId)
+        val currentLoad = executorPriorityQueues.sumOf { it.countActive() }
+
         // Number of jobs planned to be executed, ensures that loop finishes
-        val executableCount = min(
-            executorPriorityQueues.sumOf { it.countWaiting() },
-            getExecutorMaxLoad(executorId) - executorPriorityQueues.sumOf { it.countActive() }
-        )
+        val executableCount = min(planned, maxLoad - currentLoad)
 
         repeat(executableCount) {
             executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
             if (executorPriorityQueues.isEmpty()) return
 
             val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
-            val item = executorPriorityQueues[queuePicker % executorPriorityQueues.size]
-            item.start(1)
+            executorPriorityQueues[queuePicker % executorPriorityQueues.size].startNext()
         }
     }
 

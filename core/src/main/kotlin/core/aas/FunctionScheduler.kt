@@ -28,14 +28,16 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
     private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>>, val jobDeferred: Deferred<J>)
 
     /**
-     * Start n [scheduleAndAwait]ed jobs.
+     * Start next [scheduleAndAwait] job.
+     *
+     *  @return if any job existed and was started
      */
     @Synchronized
-    fun start(n: Int) {
-        getWaiting().take(n).forEach {
-            it.jobDeferred.start()
-            it.waitableChannel.offer(it.jobDeferred)
-        }
+    fun startNext(): Boolean {
+        val next = getWaiting().firstOrNull()
+        next?.jobDeferred?.start()
+        next?.waitableChannel?.offer(next.jobDeferred)
+        return next != null
     }
 
 
