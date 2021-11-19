@@ -18,7 +18,7 @@ import kotlin.reflect.KFunction
  *
  *
  * Use the method [scheduleAndAwait] to schedule [function] to be executed in the future with given arguments and wait
- * for the result. Note [scheduleAndAwait] does not start jobs. Use the method [start] for starting scheduled
+ * for the result. Note [scheduleAndAwait] does not start jobs. Use the method [startNext] for starting scheduled
  * jobs.
  *
  */
