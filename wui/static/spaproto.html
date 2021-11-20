@@ -374,6 +374,22 @@
     </div>
 </script>
 
+<script id="t-c-button" type="text/x-handlebars">
+    <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} waves-effect">
+        <ez-btn-content>{{text}}</ez-btn-content>
+    </button>
+</script>
+
+<script id="t-c-string-field" type="text/x-handlebars">
+    <div class="form-fields">
+        <div class="input-field">
+            <input id="{{id}}" type="text" value="{{value}}">
+            <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+            <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+        </div>
+    </div>
+</script>
+
 
 <!-- Courses page -->
 
