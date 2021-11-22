@@ -54,23 +54,23 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
      *
      * @param executorId Which executor to use for grading?
      */
-    private fun autograde(executorId: Long) {
+    private fun gradeExecutor(executorId: Long) {
         // Pointer, jobs may be added to it later
-        var executorPriorityQueues = executors[executorId]?.values?.toList() ?: listOf()
+        var schedulers: List<FunctionScheduler<AutoAssessment>> = executors[executorId]?.values?.toList() ?: return
 
-        val planned = executorPriorityQueues.sumOf { it.countWaiting() }
+        val waiting = schedulers.sumOf { it.countWaiting() }
+        val running = schedulers.sumOf { it.countActive() }
         val maxLoad = getExecutorMaxLoad(executorId)
-        val currentLoad = executorPriorityQueues.sumOf { it.countActive() }
 
         // Number of jobs planned to be executed, ensures that loop finishes
-        val executableCount = min(planned, maxLoad - currentLoad)
+        val executableCount = min(waiting, maxLoad - running)
 
         repeat(executableCount) {
-            executorPriorityQueues = executorPriorityQueues.filter { it.hasWaiting() }
-            if (executorPriorityQueues.isEmpty()) return
+            schedulers = schedulers.filter { it.hasWaiting() }
+            if (schedulers.isEmpty()) return
 
             val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
-            executorPriorityQueues[queuePicker % executorPriorityQueues.size].startNext()
+            schedulers[queuePicker % schedulers.size].startNext()
         }
     }
 
@@ -80,7 +80,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         log.debug { "Grading executors $executors" }
         // Synchronized as executors can be removed or added at any time.
         synchronized(executorLock) {
-            executors.keys.forEach { executorId -> autograde(executorId) }
+            executors.keys.forEach { executorId -> gradeExecutor(executorId) }
         }
     }
 
