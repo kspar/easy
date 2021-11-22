@@ -13,7 +13,6 @@ import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
@@ -25,8 +24,7 @@ private val log = KotlinLogging.logger {}
 @Service
 class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
-    private val executors: MutableMap<Long, SortedMap<PriorityLevel, FunctionScheduler<AutoAssessment>>> =
-        ConcurrentHashMap()
+    private val executors: MutableMap<Long, Map<PriorityLevel, FunctionScheduler<AutoAssessment>>> = ConcurrentHashMap()
 
     // Global index for picking the next queue
     private var queuePickerIndex = AtomicInteger()
@@ -121,13 +119,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         val countBefore = executors.size
 
         getAvailableExecutorIds().forEach {
-            executors.putIfAbsent(
-                // sortedMap does not need to be concurrent as all usages of this map are synchronized
-                it, sortedMapOf(
-                    PriorityLevel.AUTHENTICATED to FunctionScheduler(::callExecutor),
-                    PriorityLevel.ANONYMOUS to FunctionScheduler(::callExecutor)
-                )
-            )
+            executors.putIfAbsent(it, PriorityLevel.values().associateWith { FunctionScheduler(::callExecutor) })
         }
 
         log.debug { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
