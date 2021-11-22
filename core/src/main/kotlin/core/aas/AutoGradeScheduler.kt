@@ -37,40 +37,29 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         addExecutorsFromDB()
     }
 
-    /**
-     * Autograde maximum number of possible submissions assigned to this executor while considering current load.
-     *
-     * No guarantee is made how many submissions can be graded.
-     *
-     * @param executorId Which executor to use for grading?
-     */
-    private fun gradeExecutor(executorId: Long) {
-        // Pointer, jobs may be added to it later
-        var schedulers: List<FunctionScheduler<AutoAssessment>> = executors[executorId]?.values?.toList() ?: return
-
-        val waiting = schedulers.sumOf { it.countWaiting() }
-        val running = schedulers.sumOf { it.countActive() }
-        val maxLoad = getExecutorMaxLoad(executorId)
-
-        // Number of jobs planned to be executed, ensures that loop finishes
-        val executableCount = min(waiting, maxLoad - running)
-
-        repeat(executableCount) {
-            schedulers = schedulers.filter { it.hasWaiting() }
-            if (schedulers.isEmpty()) return
-
-            val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
-            schedulers[queuePicker % schedulers.size].startNext()
-        }
-    }
 
     //  fixedDelay doesn't start a next call before the last one has finished
     @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
     @Synchronized
     private fun grade() {
         log.debug { "Grading executors $executors" }
-        // Synchronized as executors can be removed or added at any time.
-        executors.keys.forEach { executorId -> gradeExecutor(executorId) }
+
+        executors.forEach { (executorId, schedulers) ->
+            val waiting = schedulers.values.sumOf { it.countWaiting() }
+            val running = schedulers.values.sumOf { it.countActive() }
+            val maxLoad = getExecutorMaxLoad(executorId)
+
+            // Number of jobs planned to be executed, ensures that loop finishes
+            val executableCount = min(waiting, maxLoad - running)
+
+            repeat(executableCount) {
+                val startable = schedulers.values.filter { it.hasWaiting() }
+                if (startable.isEmpty()) return
+
+                val queuePicker = queuePickerIndex.incrementAndGet().absoluteValue
+                startable[queuePicker % startable.size].startNext()
+            }
+        }
     }
 
 
@@ -103,10 +92,8 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     /**
      *  Remove executor.
      */
-    @Synchronized
+    @Synchronized // Synchronized as executors can be read or added at any time.
     fun deleteExecutor(executorId: Long, force: Boolean) {
-        // Synchronized as executors can be read or added at any time.
-
         return transaction {
             val executorQuery = Executor.select { Executor.id eq executorId }
             val executorExists = executorQuery.count() == 1L
