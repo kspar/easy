@@ -2,6 +2,7 @@ package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
@@ -122,6 +123,7 @@ internal fun selectExecutor(executors: Set<CapableExecutor>): CapableExecutor {
 }
 
 internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
+    // TODO is the whole incExecutorLoad and decExecutorLoad system needed?
     incExecutorLoad(executor.id)
     try {
         log.info { "Calling executor ${executor.name}, load is now ${getExecutorLoad(executor.id)}" }
@@ -190,5 +192,18 @@ internal fun getExecutorMaxLoad(executorId: Long): Int {
 internal fun getAvailableExecutorIds(): List<Long> {
     return transaction {
         Executor.slice(Executor.id).selectAll().map { it[Executor.id].value }
+    }
+}
+
+
+private fun executorExists(executorId: Long): Boolean {
+    return transaction {
+        !Executor.select { Executor.id eq executorId }.empty()
+    }
+}
+
+internal fun assertExecutorExists(executorId: Long) {
+    if (!executorExists(executorId)) {
+        throw InvalidRequestException("Executor with id $executorId not found")
     }
 }

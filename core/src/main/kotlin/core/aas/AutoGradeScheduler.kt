@@ -7,7 +7,6 @@ import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
@@ -88,16 +87,14 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     @Synchronized // Synchronized as executors can be read or added at any time.
     fun deleteExecutor(executorId: Long, force: Boolean) {
         return transaction {
-            val executorQuery = Executor.select { Executor.id eq executorId }
-            val executorExists = executorQuery.count() == 1L
+
+            assertExecutorExists(executorId)
+
             // The load of the all the (priority) queues in the executor map of executor x.
-            val currentLoad = executors[executorId]?.values?.sumOf { it.size() }
+            val load = executors[executorId]?.values?.sumOf { it.size() }
 
-            if (!executorExists) {
-                throw InvalidRequestException("Executor with id $executorId not found")
-
-            } else if (!force && (currentLoad ?: 0) > 0) {
-                throw InvalidRequestException("Executor load != 0 (is $currentLoad). Set 'force'=true for forced removal.")
+            if (!force && (load ?: 0) > 0) {
+                throw InvalidRequestException("Executor load != 0 (is $load). Set 'force'=true for forced removal.")
 
             } else {
                 ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
