@@ -90,18 +90,18 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
             assertExecutorExists(executorId)
 
-            // The load of the all the (priority) queues in the executor map of executor x.
+            // The load of the all the (priority) queues in the executor map of this executor.
             val load = executors[executorId]?.values?.sumOf { it.size() }
 
             if (!force && (load ?: 0) > 0) {
                 throw InvalidRequestException("Executor load != 0 (is $load). Set 'force'=true for forced removal.")
-
-            } else {
-                ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
-                Executor.deleteWhere { Executor.id eq executorId }
-                executors.remove(executorId)
-                log.info { "Executor '$executorId' deleted" }
             }
+
+            ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
+            Executor.deleteWhere { Executor.id eq executorId }
+            executors.remove(executorId)
+
+            log.info { "Executor '$executorId' deleted" }
         }
     }
 
