@@ -24,8 +24,7 @@ class ReadExecutorController {
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String,
         @JsonProperty("base_url") val baseUrl: String,
-        @JsonProperty("load") val load: Int,
-        @JsonProperty("max_load") val maxLoad: Int,
+        @JsonProperty("max_load") val maxLoad: Int, //TODO: rm "load" from api doc
         @JsonProperty("drain") val drain: Boolean,
         @JsonProperty("containers") val containers: List<String>
     )
@@ -47,7 +46,6 @@ private fun selectAllExecutors(): List<ReadExecutorController.Resp> {
                     it[Executor.id].value.toString(),
                     it[Executor.name],
                     it[Executor.baseUrl],
-                    it[Executor.load],
                     it[Executor.maxLoad],
                     it[Executor.drain],
 

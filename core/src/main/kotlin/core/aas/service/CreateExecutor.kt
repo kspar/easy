@@ -41,7 +41,6 @@ private fun insertExecutor(newExecutor: CreateExecutorController.Req): Long {
             it[name] = newExecutor.name
             it[baseUrl] = newExecutor.baseUrl
             it[maxLoad] = newExecutor.maxLoad
-            it[load] = 0
             it[drain] = false
         }
     }.value

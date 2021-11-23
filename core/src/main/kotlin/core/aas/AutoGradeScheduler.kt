@@ -34,7 +34,6 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         addExecutorsFromDB()
     }
 
-
     //  fixedDelay doesn't start a next call before the last one has finished
     @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
     @Synchronized
@@ -68,22 +67,21 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
         val request = mapToExecutorRequest(autoExercise, submission)
-        val targetExecutor = selectExecutor(getCapableExecutors(autoExerciseId).filter { !it.drain }.toSet())
 
-        log.debug { "Scheduling and waiting for priority '$priority' autoExerciseId '$autoExerciseId'." }
+        // Synchronized, every usage to executors is monitored.
+        val selectedExecutor = synchronized(this) {
 
-        // Synchronized as executors can be removed or added at any time.
-        val executor = synchronized(this) {
-            executors
-                .getOrElse(targetExecutor.id) { throw ExecutorException("Executor '${targetExecutor.id}' not found.") }
-                .getOrElse(priority) { throw ExecutorException("$priority not found for executor ${targetExecutor.id}.") }
+            getCapableExecutors(autoExerciseId)
+                .mapNotNull { it.associateWithSchedulerOrNull(executors[it.id]?.get(priority)) }
+                .minByOrNull { it.functionScheduler.size() / it.capableExecutor.maxLoad }
+                ?: throw NoExecutorsException("No capable executors found for this auto exercise")
+
         }
-        return executor.scheduleAndAwait(targetExecutor, request)
+
+        return selectedExecutor.functionScheduler.scheduleAndAwait(selectedExecutor.capableExecutor, request)
     }
 
-    /**
-     *  Remove executor.
-     */
+
     @Synchronized // Synchronized as executors can be read or added at any time.
     fun deleteExecutor(executorId: Long, force: Boolean) {
         return transaction {

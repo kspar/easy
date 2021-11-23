@@ -1149,4 +1149,8 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="231121-1" author="priit">
+        <dropColumn tableName="executor" columnName="load"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -5,11 +5,9 @@ import core.db.*
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.springframework.web.client.RestTemplate
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
@@ -37,8 +35,18 @@ data class ExecutorRequestAsset(
 )
 
 data class CapableExecutor(
-    val id: Long, val name: String, val baseUrl: String, val load: Int, val maxLoad: Int, val drain: Boolean
+    val id: Long, val name: String, val baseUrl: String, val maxLoad: Int, val drain: Boolean
 )
+
+internal fun CapableExecutor.associateWithSchedulerOrNull(functionScheduler: FunctionScheduler<AutoAssessment>?): AssociatedExecutor? {
+    return if (functionScheduler == null) null else AssociatedExecutor(this, functionScheduler)
+}
+
+internal data class AssociatedExecutor(
+    val capableExecutor: CapableExecutor,
+    val functionScheduler: FunctionScheduler<AutoAssessment>
+)
+
 
 data class AutoAssessment(
     val grade: Int, val feedback: String
@@ -98,7 +106,6 @@ internal fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExe
                     it[Executor.id].value,
                     it[Executor.name],
                     it[Executor.baseUrl],
-                    it[Executor.load],
                     it[Executor.maxLoad],
                     it[Executor.drain]
                 )
@@ -107,78 +114,28 @@ internal fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExe
     }
 }
 
-internal fun selectExecutor(executors: Set<CapableExecutor>): CapableExecutor {
-    if (executors.isEmpty()) {
-        throw NoExecutorsException("No capable executors found for this auto exercise")
-    }
-
-    val executor = executors.reduce { bestExec, currentExec ->
-        if (currentExec.load / currentExec.maxLoad < bestExec.load / bestExec.maxLoad) currentExec else bestExec
-    }
-
-    if (executor.load >= executor.maxLoad) {
-        throw ExecutorOverloadException("All capable executors at max load")
-    }
-    return executor
-}
-
 internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
-    // TODO is the whole incExecutorLoad and decExecutorLoad system needed?
-    incExecutorLoad(executor.id)
-    try {
-        log.info { "Calling executor ${executor.name}, load is now ${getExecutorLoad(executor.id)}" }
+    log.info { "Calling executor ${executor.name}" }
 
-        val template = RestTemplate()
-        val responseEntity = template.postForEntity(
-            executor.baseUrl + EXECUTOR_GRADE_URL, request, ExecutorResponse::class.java
-        )
+    val template = RestTemplate()
+    val responseEntity = template.postForEntity(
+        executor.baseUrl + EXECUTOR_GRADE_URL, request, ExecutorResponse::class.java
+    )
 
-        if (responseEntity.statusCode.isError) {
-            log.error { "Executor error ${responseEntity.statusCodeValue} with request $request" }
-            throw ExecutorException("Executor error (${responseEntity.statusCodeValue})")
-        }
-
-        val response = responseEntity.body
-        if (response == null) {
-            log.error { "Executor response is empty with request $request" }
-            throw ExecutorException("Executor error (empty body)")
-        }
-
-        return AutoAssessment(response.grade, response.feedback)
-
-    } finally {
-        decExecutorLoad(executor.id)
-        log.info { "Call finished to executor ${executor.name}, load is now ${getExecutorLoad(executor.id)}" }
+    if (responseEntity.statusCode.isError) {
+        log.error { "Executor error ${responseEntity.statusCodeValue} with request $request" }
+        throw ExecutorException("Executor error (${responseEntity.statusCodeValue})")
     }
+
+    val response = responseEntity.body
+    if (response == null) {
+        log.error { "Executor response is empty with request $request" }
+        throw ExecutorException("Executor error (empty body)")
+    }
+
+    return AutoAssessment(response.grade, response.feedback)
 }
 
-private fun incExecutorLoad(executorId: Long) {
-    transaction {
-        Executor.update({ Executor.id eq executorId }) {
-            with(SqlExpressionBuilder) {
-                it.update(load, load + 1)
-            }
-        }
-    }
-}
-
-private fun decExecutorLoad(executorId: Long) {
-    transaction {
-        Executor.update({ Executor.id eq executorId }) {
-            with(SqlExpressionBuilder) {
-                it.update(load, load - 1)
-            }
-        }
-    }
-}
-
-private fun getExecutorLoad(executorId: Long): Int {
-    return transaction {
-        Executor.slice(Executor.load)
-            .select { Executor.id eq executorId }
-            .map { it[Executor.load] }[0]
-    }
-}
 
 internal fun getExecutorMaxLoad(executorId: Long): Int {
     return transaction {

@@ -187,7 +187,6 @@ object Asset : LongIdTable("asset") {
 object Executor : LongIdTable("executor") {
     val name = text("name")
     val baseUrl = text("base_url")
-    val load = integer("load")
     val maxLoad = integer("max_load")
     val drain = bool("drain")
 }
