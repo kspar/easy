@@ -89,10 +89,10 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
             assertExecutorExists(executorId)
 
             // The load of the all the (priority) queues in the executor map of this executor.
-            val load = executors[executorId]?.values?.sumOf { it.size() }
+            val load = executors[executorId]?.values?.sumOf { it.size() } ?: 0
 
             // If not force removal and there is any load, deny removal
-            if (!force && (load ?: 0) > 0) {
+            if (!force && load > 0) {
                 throw InvalidRequestException("Executor load != 0 (is $load). Set 'force'=true for forced removal.")
             }
 
