@@ -66,7 +66,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     ): AutoAssessment {
 
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
-        val request = mapToExecutorRequest(autoExercise, submission)
+        val request = autoExercise.mapToExecutorRequest(submission)
 
         // Synchronized, every usage to executors is monitored.
         val selectedExecutor = synchronized(this) {

@@ -38,29 +38,57 @@ data class CapableExecutor(
     val id: Long, val name: String, val baseUrl: String, val maxLoad: Int, val drain: Boolean
 )
 
-internal fun CapableExecutor.associateWithSchedulerOrNull(functionScheduler: FunctionScheduler<AutoAssessment>?): AssociatedExecutor? {
-    return if (functionScheduler == null) null else AssociatedExecutor(this, functionScheduler)
-}
+data class AutoAssessment(val grade: Int, val feedback: String)
 
 internal data class AssociatedExecutor(
     val capableExecutor: CapableExecutor,
     val functionScheduler: FunctionScheduler<AutoAssessment>
 )
 
-
-data class AutoAssessment(
-    val grade: Int, val feedback: String
-)
-
+internal data class AutoAssessExerciseAsset(val fileName: String, val fileContent: String)
 
 internal data class AutoAssessExerciseDetails(
-    val gradingScript: String, val containerImage: String, val maxTime: Int, val maxMem: Int,
+    val gradingScript: String,
+    val containerImage: String,
+    val maxTime: Int,
+    val maxMem: Int,
     val assets: List<AutoAssessExerciseAsset>
 )
 
-internal data class AutoAssessExerciseAsset(
-    val fileName: String, val fileContent: String
-)
+fun assertExecutorExists(executorId: Long) {
+    val exists = transaction { !Executor.select { Executor.id eq executorId }.empty() }
+
+    if (!exists) {
+        throw InvalidRequestException("Executor with id $executorId not found")
+    }
+}
+
+fun getExecutorMaxLoad(executorId: Long): Int {
+    return transaction {
+        Executor.slice(Executor.maxLoad)
+            .select { Executor.id eq executorId }
+            .map { it[Executor.maxLoad] }
+            .first()
+    }
+}
+
+fun getAvailableExecutorIds(): List<Long> {
+    return transaction { Executor.slice(Executor.id).selectAll().map { it[Executor.id].value } }
+}
+
+internal fun CapableExecutor.associateWithSchedulerOrNull(functionScheduler: FunctionScheduler<AutoAssessment>?): AssociatedExecutor? {
+    return if (functionScheduler == null) null else AssociatedExecutor(this, functionScheduler)
+}
+
+internal fun AutoAssessExerciseDetails.mapToExecutorRequest(submission: String): ExecutorRequest =
+    ExecutorRequest(
+        submission,
+        gradingScript,
+        assets.map { ExecutorRequestAsset(it.fileName, it.fileContent) },
+        containerImage,
+        maxTime,
+        maxMem
+    )
 
 internal fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessExerciseDetails {
     return transaction {
@@ -87,16 +115,6 @@ internal fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessE
     }
 }
 
-internal fun mapToExecutorRequest(exercise: AutoAssessExerciseDetails, submission: String): ExecutorRequest =
-    ExecutorRequest(
-        submission,
-        exercise.gradingScript,
-        exercise.assets.map { ExecutorRequestAsset(it.fileName, it.fileContent) },
-        exercise.containerImage,
-        exercise.maxTime,
-        exercise.maxMem
-    )
-
 internal fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExecutor> {
     return transaction {
         (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
@@ -117,8 +135,7 @@ internal fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExe
 internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
     log.info { "Calling executor ${executor.name}" }
 
-    val template = RestTemplate()
-    val responseEntity = template.postForEntity(
+    val responseEntity = RestTemplate().postForEntity(
         executor.baseUrl + EXECUTOR_GRADE_URL, request, ExecutorResponse::class.java
     )
 
@@ -136,31 +153,3 @@ internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): 
     return AutoAssessment(response.grade, response.feedback)
 }
 
-
-internal fun getExecutorMaxLoad(executorId: Long): Int {
-    return transaction {
-        Executor.slice(Executor.maxLoad)
-            .select { Executor.id eq executorId }
-            .map { it[Executor.maxLoad] }[0]
-    }
-}
-
-
-internal fun getAvailableExecutorIds(): List<Long> {
-    return transaction {
-        Executor.slice(Executor.id).selectAll().map { it[Executor.id].value }
-    }
-}
-
-
-private fun executorExists(executorId: Long): Boolean {
-    return transaction {
-        !Executor.select { Executor.id eq executorId }.empty()
-    }
-}
-
-internal fun assertExecutorExists(executorId: Long) {
-    if (!executorExists(executorId)) {
-        throw InvalidRequestException("Executor with id $executorId not found")
-    }
-}
