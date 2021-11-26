@@ -1982,8 +1982,6 @@ paths:
                   type: string
                 base_url:
                   type: string
-                load:
-                  type: integer
                 max_load:
                   type: integer
                 drain:

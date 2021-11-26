@@ -24,7 +24,7 @@ class ReadExecutorController {
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String,
         @JsonProperty("base_url") val baseUrl: String,
-        @JsonProperty("max_load") val maxLoad: Int, //TODO: rm "load" from api doc
+        @JsonProperty("max_load") val maxLoad: Int,
         @JsonProperty("drain") val drain: Boolean,
         @JsonProperty("containers") val containers: List<String>
     )
