@@ -25,7 +25,7 @@ import kotlin.reflect.KFunction
 class FunctionScheduler<T>(private val function: KFunction<T>) {
     private val jobs = ConcurrentLinkedQueue<EzJob<T>>()
 
-    private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>>, val jobDeferred: Deferred<J>)
+    private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>?>, val jobDeferred: Deferred<J>)
 
     /**
      * Start next [scheduleAndAwait] job.
@@ -55,10 +55,18 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
         jobs.add(job)
 
         try {
-            return job.waitableChannel.receive().await()
+            return job.waitableChannel.receive()?.await() ?: throw ExecutorException("Scheduler was killed")
         } finally {
             jobs.remove(job)
         }
+    }
+
+    @Synchronized
+    fun killAll() {
+        jobs.forEach {
+            it.waitableChannel.offer(null)
+        }
+        jobs.clear()
     }
 
 
