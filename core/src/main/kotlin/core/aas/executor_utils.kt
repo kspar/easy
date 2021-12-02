@@ -2,9 +2,7 @@ package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
-import core.exception.InvalidRequestException
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -55,14 +53,6 @@ internal data class AutoAssessExerciseDetails(
     val assets: List<AutoAssessExerciseAsset>
 )
 
-fun assertExecutorExists(executorId: Long) {
-    val exists = transaction { !Executor.select { Executor.id eq executorId }.empty() }
-
-    if (!exists) {
-        throw InvalidRequestException("Executor with id $executorId not found")
-    }
-}
-
 fun getExecutorMaxLoad(executorId: Long): Int {
     return transaction {
         Executor.slice(Executor.maxLoad)
@@ -90,7 +80,7 @@ internal fun AutoAssessExerciseDetails.mapToExecutorRequest(submission: String):
         maxMem
     )
 
-internal fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessExerciseDetails {
+internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails {
     return transaction {
         val assets = Asset
             .select { Asset.autoExercise eq autoExerciseId }
@@ -115,7 +105,7 @@ internal fun getAutoExerciseDetails(autoExerciseId: EntityID<Long>): AutoAssessE
     }
 }
 
-internal fun getCapableExecutors(autoExerciseId: EntityID<Long>): Set<CapableExecutor> {
+internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
     return transaction {
         (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
             .select { AutoExercise.id eq autoExerciseId }

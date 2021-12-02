@@ -5,7 +5,6 @@ import core.db.ExecutorContainerImage
 import core.db.PriorityLevel
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.ApplicationListener
@@ -60,32 +59,29 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
 
     suspend fun submitAndAwait(
-        autoExerciseId: EntityID<Long>,
+        autoExerciseId: Long,
         submission: String,
         priority: PriorityLevel
     ): AutoAssessment {
 
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
         val request = autoExercise.mapToExecutorRequest(submission)
-
-        // Synchronized, every usage to executors is monitored.
-        val selectedExecutor = synchronized(this) {
-
-            getCapableExecutors(autoExerciseId)
-                .mapNotNull { it.associateWithSchedulerOrNull(executors[it.id]?.get(priority)) }
-                .minByOrNull { it.functionScheduler.size().toDouble() / it.capableExecutor.maxLoad }
-                ?: throw NoExecutorsException("No capable executors found for this auto exercise")
-        }
+        val selectedExecutor = chooseOptimalExecutor(autoExerciseId, priority)
 
         return selectedExecutor.functionScheduler.scheduleAndAwait(selectedExecutor.capableExecutor, request)
     }
 
+    @Synchronized
+    private fun chooseOptimalExecutor(autoExerciseId: Long, priority: PriorityLevel) =
+        getCapableExecutors(autoExerciseId)
+            .mapNotNull { it.associateWithSchedulerOrNull(executors[it.id]?.get(priority)) }
+            .minByOrNull { it.functionScheduler.size().toDouble() / it.capableExecutor.maxLoad }
+            ?: throw NoExecutorsException("No capable executors found for this auto exercise")
 
-    @Synchronized // Synchronized as executors can be read or added at any time.
+
+    @Synchronized
     fun deleteExecutor(executorId: Long, force: Boolean) {
         return transaction {
-
-            assertExecutorExists(executorId)
 
             // The load of the all the (priority) queues in the executor map of this executor.
             val load = executors[executorId]?.values?.sumOf { it.size() } ?: 0
@@ -105,7 +101,6 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
     @Synchronized
     fun addExecutorsFromDB() {
-        // Synchronized as executors can be removed or read at any time.
         val countBefore = executors.size
 
         getAvailableExecutorIds().forEach {

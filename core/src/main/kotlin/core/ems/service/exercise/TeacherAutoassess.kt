@@ -74,13 +74,13 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
 }
 
 
-private fun getAutoExerciseId(exerciseId: Long): EntityID<Long>? {
+private fun getAutoExerciseId(exerciseId: Long): Long? {
     return transaction {
         (Exercise innerJoin ExerciseVer)
             .slice(ExerciseVer.autoExerciseId)
             .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.autoExerciseId] }
-            .single()
+            .single()?.value
     }
 }
 

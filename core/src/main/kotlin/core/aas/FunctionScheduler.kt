@@ -69,7 +69,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
 
 
     /**
-     * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [start]?
+     * Number of jobs pending for scheduling, e.g. not yet called with coroutine via [startNext].
      */
     fun countWaiting(): Int = getWaiting().size
 

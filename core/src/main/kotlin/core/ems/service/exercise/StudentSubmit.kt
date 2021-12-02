@@ -110,13 +110,13 @@ private fun selectGraderType(courseExId: Long): GraderType {
     }
 }
 
-private fun selectAutoExId(courseExId: Long): EntityID<Long>? {
+private fun selectAutoExId(courseExId: Long): Long? {
     return transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(ExerciseVer.autoExerciseId)
             .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.autoExerciseId] }
-            .single()
+            .single()?.value
     }
 }
 
