@@ -74,6 +74,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     @Synchronized
     private fun chooseOptimalExecutor(autoExerciseId: Long, priority: PriorityLevel) =
         getCapableExecutors(autoExerciseId)
+            .filterNot { it.drain }
             .mapNotNull { it.associateWithSchedulerOrNull(executors[it.id]?.get(priority)) }
             .minByOrNull { it.functionScheduler.size().toDouble() / it.capableExecutor.maxLoad }
             ?: throw NoExecutorsException("No capable executors found for this auto exercise")
