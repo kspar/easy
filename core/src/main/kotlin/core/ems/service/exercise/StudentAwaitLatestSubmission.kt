@@ -48,7 +48,8 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
     fun controller(
         @PathVariable("courseId") courseIdStr: String,
         @PathVariable("courseExerciseId") courseExerciseIdStr: String,
-        response: HttpServletResponse, caller: EasyUser
+        response: HttpServletResponse,
+        caller: EasyUser
     ): Resp? {
 
         log.debug { "Getting latest submission for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
@@ -82,24 +83,17 @@ private suspend fun selectLatestStudentSubmission(
     autoAssessStatusObserver: AutoAssessStatusObserver
 ): StudentAwaitLatestSubmissionController.Resp? {
 
-    data class SubmissionPartial(
-        val id: Long,
-        val solution: String,
-        val time: DateTime,
-        val autogradeStatus: AutoGradeStatus
-    )
+    data class SubmissionPartial(val id: Long, val solution: String, val time: DateTime, val status: AutoGradeStatus)
 
+    val latestSubmissionId = lastSubmissionId(courseId, courseExId, studentId) ?: return null
+
+    // Wait while automatic grading in progress
+    autoAssessStatusObserver.get(latestSubmissionId, ObserverCallerType.STUDENT)?.join()
 
     val lastSubmission = transaction {
-        (CourseExercise innerJoin Submission)
+        Submission
             .slice(Submission.createdAt, Submission.id, Submission.solution, Submission.autoGradeStatus)
-            .select {
-                CourseExercise.course eq courseId and
-                        (CourseExercise.id eq courseExId) and
-                        (Submission.student eq studentId)
-            }
-            .orderBy(Submission.createdAt to SortOrder.DESC)
-            .limit(1)
+            .select { Submission.id eq latestSubmissionId }
             .map {
                 SubmissionPartial(
                     it[Submission.id].value,
@@ -112,21 +106,7 @@ private suspend fun selectLatestStudentSubmission(
     } ?: return null
 
 
-    var autoAssessment = transaction { lastAutoAssessment(lastSubmission.id) }
-    var status = lastSubmission.autogradeStatus
-
-    if (lastSubmission.autogradeStatus == AutoGradeStatus.IN_PROGRESS) {
-
-        autoAssessStatusObserver.get(lastSubmission.id, ObserverCallerType.STUDENT)?.join()
-
-        autoAssessment = transaction { lastAutoAssessment(lastSubmission.id) }
-        status = transaction {
-            Submission.slice(Submission.autoGradeStatus)
-                .select { Submission.id eq lastSubmission.id }
-                .map { it[Submission.autoGradeStatus] }.single()
-        }
-    }
-
+    val autoAssessment = transaction { lastAutoAssessment(lastSubmission.id) }
     // Get teacher assessment after auto assessment because it might change during auto assessment
     val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
 
@@ -135,12 +115,28 @@ private suspend fun selectLatestStudentSubmission(
         lastSubmission.id.toString(),
         lastSubmission.solution,
         lastSubmission.time,
-        status,
+        lastSubmission.status,
         autoAssessment?.first,
         autoAssessment?.second,
         teacherAssessment?.first,
         teacherAssessment?.second
     )
+}
+
+private fun lastSubmissionId(courseId: Long, courseExId: Long, studentId: String): Long? {
+    return transaction {
+        (CourseExercise innerJoin Submission)
+            .slice(Submission.id)
+            .select {
+                CourseExercise.course eq courseId and
+                        (CourseExercise.id eq courseExId) and
+                        (Submission.student eq studentId)
+            }
+            .orderBy(Submission.createdAt to SortOrder.DESC)
+            .limit(1)
+            .map { it[Submission.id].value }
+            .firstOrNull()
+    }
 }
 
 private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? {
