@@ -6,6 +6,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KFunction
 
 
@@ -24,6 +25,7 @@ import kotlin.reflect.KFunction
  */
 class FunctionScheduler<T>(private val function: KFunction<T>) {
     private val jobs = ConcurrentLinkedQueue<EzJob<T>>()
+    private val closed = AtomicBoolean(false)
 
     private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>?>, val jobDeferred: Deferred<J>)
 
@@ -32,12 +34,13 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      *
      *  @return if any job existed and was started
      */
-    @Synchronized
     fun startNext(): Boolean {
-        val next = getWaiting().firstOrNull()
-        next?.jobDeferred?.start()
-        next?.waitableChannel?.offer(next.jobDeferred)
-        return next != null
+        return synchronized(this) {
+            val next = getWaiting().firstOrNull()
+            next?.jobDeferred?.start()
+            next?.waitableChannel?.offer(next.jobDeferred)
+            next != null
+        }
     }
 
 
@@ -48,11 +51,17 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      * @return [function] output
      */
     suspend fun scheduleAndAwait(vararg arguments: Any?): T {
-        val job = EzJob(
-            Channel(Channel.CONFLATED),
-            GlobalScope.async(start = CoroutineStart.LAZY) { function.call(*arguments) }
-        )
-        jobs.add(job)
+        val job = synchronized(this) {
+            if (closed.get()) throw ExecutorException("Scheduler is killed")
+
+            val job = EzJob(
+                Channel(Channel.CONFLATED),
+                GlobalScope.async(start = CoroutineStart.LAZY) { function.call(*arguments) }
+            )
+            jobs.add(job)
+
+            job
+        }
 
         try {
             return job.waitableChannel.receive()?.await() ?: throw ExecutorException("Scheduler was killed")
@@ -61,12 +70,15 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
         }
     }
 
-    @Synchronized
-    fun killAll() {
-        jobs.forEach {
-            it.waitableChannel.offer(null)
+    fun killScheduler() {
+        synchronized(this) {
+            closed.set(true)
+            jobs.forEach {
+                it.jobDeferred.cancel()
+                it.waitableChannel.offer(null)
+            }
+            jobs.clear()
         }
-        jobs.clear()
     }
 
 

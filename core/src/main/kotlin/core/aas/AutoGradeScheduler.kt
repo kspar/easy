@@ -95,7 +95,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
             ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
             Executor.deleteWhere { Executor.id eq executorId }
 
-            executors[executorId]?.forEach { it.value.killAll() }
+            executors[executorId]?.forEach { it.value.killScheduler() }
             executors.remove(executorId)
 
             log.info { "Executor '$executorId' deleted" }
