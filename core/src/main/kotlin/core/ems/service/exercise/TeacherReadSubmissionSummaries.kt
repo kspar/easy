@@ -90,7 +90,7 @@ class TeacherReadSubmissionSummariesController {
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
         if (groupId != null) assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
 
-        val queryWords = searchString.trim().toLowerCase().split(" ").filter { it.isNotEmpty() }
+        val queryWords = searchString.trim().lowercase().split(" ").filter { it.isNotEmpty() }
 
         return selectTeacherSubmissionSummaries(caller, courseId, courseExId, groupId,
                 queryWords, orderBy, order, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())

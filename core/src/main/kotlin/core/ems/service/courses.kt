@@ -70,7 +70,7 @@ class CourseService(val privateCachingService: PrivateCachingService) {
             }
         }
 
-        queryWords.map(String::toLowerCase).forEach {
+        queryWords.map(String::lowercase).forEach {
             query.andWhere {
                 (Student.id like "%$it%") or
                         (Account.email.lowerCase() like "%$it%") or

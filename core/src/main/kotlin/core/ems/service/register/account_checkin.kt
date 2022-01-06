@@ -38,7 +38,7 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
         val account = AccountData(
                 caller.id,
                 caller.moodleUsername,
-                caller.email.toLowerCase(),
+                caller.email.lowercase(),
                 correctNameCapitalisation(dto.firstName),
                 correctNameCapitalisation(dto.lastName))
 
@@ -82,7 +82,7 @@ private fun correctNameCapitalisation(name: String) =
         name.split(Regex(" +"))
                 .joinToString(separator = " ") {
                     it.split("-").joinToString(separator = "-") {
-                        it.toLowerCase().capitalize()
+                        it.lowercase().replaceFirstChar(Char::titlecase)
                     }
                 }
 

@@ -47,7 +47,7 @@ class AddStudentsToCourseController {
 
         val students = body.students.map {
             StudentNoAccount(
-                    it.studentEmail.toLowerCase(),
+                    it.studentEmail.lowercase(),
                     it.groups.map {
                         it.groupId.idToLongOrInvalidReq()
                     }.toSet()

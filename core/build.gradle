@@ -5,7 +5,7 @@ liquibaseProperties.load(new FileInputStream(
 
 buildscript {
     ext {
-        springBootVersion = '2.4.4'
+        springBootVersion = '2.6.2'
         liquibaseVersion = '2.0.4'
     }
     repositories {
@@ -45,7 +45,6 @@ compileTestKotlin {
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
@@ -74,10 +73,6 @@ dependencies {
     implementation "org.postgresql:postgresql:42.2.14"
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.3'
     liquibaseRuntime 'org.postgresql:postgresql:42.2.14'
-    // After updating Spring Boot to 2.2.2 liquibase-core has a missing logback-classic dep.
-    // Maybe not required with future releases:
-    // https://stackoverflow.com/questions/50487054/cant-run-liquibase-with-command-line
-    liquibaseRuntime 'ch.qos.logback:logback-classic:1.2.3'
 
     // Kotlin support
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'

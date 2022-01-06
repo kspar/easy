@@ -93,7 +93,7 @@ class ReadParticipantsOnCourseController {
 
         val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
 
-        return when (roleReq?.toLowerCase()) {
+        return when (roleReq?.lowercase()) {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
                 Resp(

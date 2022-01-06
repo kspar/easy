@@ -64,7 +64,7 @@ class TeacherReadGradesController(val courseService: CourseService) {
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
-        val queryWords = searchStr.trim().toLowerCase().split(Regex(" +"))
+        val queryWords = searchStr.trim().lowercase().split(Regex(" +"))
 
         val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
 

@@ -136,7 +136,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             // Partition users by whether they have an Easy account
             val newAccesses =
                 moodleResponse.students.flatMap { moodleStudent ->
-                    val moodleEmail = moodleStudent.email.toLowerCase()
+                    val moodleEmail = moodleStudent.email.lowercase()
                     Account.slice(Account.id)
                         .select {
                             Account.moodleUsername eq moodleStudent.username or
@@ -166,7 +166,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     newAccesses.none { it.moodleUsername == moodleStudent.username }
                 }.map {
                     NewPendingAccess(
-                        it.email.toLowerCase(),
+                        it.email.lowercase(),
                         it.username,
                         it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                     )
