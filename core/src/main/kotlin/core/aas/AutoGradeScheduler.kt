@@ -115,8 +115,8 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
     /**
      * Set AutoGradeStatus in the database from IN_PROGRESS to FAILED. Keeps database consistent in case of unexpected
-     * outages, where some failed jobs can have database state of IN_PROGRESS. Consistency is necessary as some
-     * services rely on the autograde state.
+     * outages, where some failed jobs can have database state of IN_PROGRESS. Consistency is necessary as some suspending
+     * services rely on the correct IN_PROGRESS autograde state.
      */
     private fun statusInProgressToFailed() {
         val updated = transaction {
