@@ -1,9 +1,6 @@
 package core.aas
 
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,7 +35,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
         return synchronized(this) {
             val next = getWaiting().firstOrNull()
             next?.jobDeferred?.start()
-            next?.waitableChannel?.offer(next.jobDeferred)
+            next?.waitableChannel?.trySend(next.jobDeferred)
             next != null
         }
     }
@@ -75,7 +72,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
             closed.set(true)
             jobs.forEach {
                 it.jobDeferred.cancel()
-                it.waitableChannel.offer(null)
+                it.waitableChannel.trySend(null)
             }
             jobs.clear()
         }

@@ -1,12 +1,11 @@
 package core.aas
 
-import core.db.Executor
-import core.db.ExecutorContainerImage
-import core.db.PriorityLevel
+import core.db.*
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.scheduling.annotation.Scheduled
@@ -29,8 +28,9 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
     @Synchronized
     override fun onApplicationEvent(p0: ContextRefreshedEvent) {
-        log.info { "Initializing ${javaClass.simpleName} by syncing executors." }
+        log.info { "Initializing ${javaClass.simpleName} by syncing executors and checking AutoAssess statuses." }
         addExecutorsFromDB()
+        statusInProgressToFailed()
     }
 
     //  fixedDelay doesn't start a next call before the last one has finished
@@ -111,5 +111,19 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         }
 
         log.debug { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
+    }
+
+    /**
+     * Set AutoGradeStatus in the database from IN_PROGRESS to FAILED. Keeps database consistent in case of unexpected
+     * outages, where some failed jobs can have database state of IN_PROGRESS. Consistency is necessary as some
+     * services rely on the autograde state.
+     */
+    private fun statusInProgressToFailed() {
+        val updated = transaction {
+            Submission.update({ Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }) {
+                it[autoGradeStatus] = AutoGradeStatus.FAILED
+            }
+        }
+        log.debug { "Set $updated AutoGradeStatus from ${AutoGradeStatus.IN_PROGRESS} to ${AutoGradeStatus.FAILED}." }
     }
 }
