@@ -1,6 +1,6 @@
+import kotlinx.browser.localStorage
 import org.w3c.dom.get
 import org.w3c.dom.set
-import kotlinx.browser.localStorage
 import kotlin.js.Promise
 
 enum class Role(val id: String) {
@@ -11,17 +11,15 @@ enum class Role(val id: String) {
 
 @JsName("Keycloak")
 open external class InternalKeycloak(confUrl: String = definedExternally) {
-    val authenticated: Boolean
     val token: String
     val tokenParsed: dynamic
 
-    var onTokenExpired: dynamic
-    var onAuthRefreshSuccess: dynamic
-
     fun createAccountUrl(): String
     fun createLogoutUrl(options: dynamic = definedExternally): String
-    protected fun init(options: dynamic): dynamic
-    protected fun updateToken(minValidSec: Int): dynamic
+
+    protected fun init(options: dynamic): Promise<Boolean>
+    protected fun login(options: dynamic = definedExternally)
+    protected fun updateToken(minValidSec: Int): Promise<Boolean>
 }
 
 // Expose keycloak instance via a singleton
@@ -49,32 +47,37 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
 
     fun initialize(): Promise<Boolean> =
-            Promise { resolve, reject ->
-                this.init(objOf("onLoad" to "login-required"))
-                        .success { authenticated: Boolean ->
-                            debug { "Authenticated: $authenticated" }
-                            activeRole = getPersistedRole() ?: getMainRole()
-                            resolve(authenticated)
-                        }
-                        .error {
-                            reject(RuntimeException("Authentication error"))
-                        }
-                Unit
+        Promise { resolve, reject ->
+            this.init(
+                objOf(
+                    "onLoad" to "check-sso",
+                    "silentCheckSsoRedirectUri" to AppProperties.KEYCLOAK_SILENT_SSO_URL,
+                    "pkceMethod" to "S256"
+                )
+            ).then { authenticated: Boolean ->
+                debug { "Authenticated: $authenticated" }
+                when {
+                    authenticated -> {
+                        activeRole = getPersistedRole() ?: getMainRole()
+                        resolve(authenticated)
+                    }
+                    else -> login()
+                }
+            }.catch {
+                reject(RuntimeException("Authentication error"))
             }
+        }
 
 
     fun makeSureTokenIsValid(): Promise<Boolean> =
-            Promise { resolve, reject ->
-                this.updateToken(AppProperties.KEYCLOAK_TOKEN_MIN_VALID_SEC)
-                        .success { refreshed: Boolean ->
-                            resolve(refreshed)
-                        }
-                        .error { error ->
-                            warn { "Authentication error: $error" }
-                            reject(RuntimeException("Authentication error"))
-                        }
-                Unit
+        Promise { resolve, reject ->
+            this.updateToken(AppProperties.KEYCLOAK_TOKEN_MIN_VALID_SEC).then { refreshed: Boolean ->
+                resolve(refreshed)
+            }.catch { error ->
+                warn { "Authentication error: $error" }
+                reject(RuntimeException("Authentication error"))
             }
+        }
 
     private fun getPersistedRole(): Role? {
         val persistedRoleStr = localStorage["activeRole"]

@@ -36,7 +36,9 @@ fun main() {
 
     // Start authentication as soon as possible
     doInPromise {
+        setSplashText("Login sisse")
         initAuthentication()
+        setSplashText("Uuendan andmeid")
         updateAccountData()
         buildStatics()
         EzSpa.PageManager.updatePage()
@@ -48,6 +50,10 @@ fun main() {
     EzSpa.Navigation.enableHistoryNavInterception()
 
     funLog?.end()
+}
+
+fun setSplashText(text: String) {
+    getElemById("loading-splash-text").textContent = text
 }
 
 suspend fun buildStatics() {
@@ -70,7 +76,13 @@ private suspend fun updateAccountData() {
 
     val personalData = mapOf("first_name" to firstName, "last_name" to lastName)
 
-    fetchEms("/account/checkin", ReqMethod.POST, personalData, successChecker = { http200 }, cancellable = false).await()
+    fetchEms(
+        "/account/checkin",
+        ReqMethod.POST,
+        personalData,
+        successChecker = { http200 },
+        cancellable = false
+    ).await()
     debug { "Account data updated" }
 
     funLog?.end()

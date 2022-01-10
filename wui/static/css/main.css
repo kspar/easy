@@ -2388,9 +2388,10 @@ ez-pagebtn[disabled] {
     animation: eye-blink 3s infinite;
 }
 
-#loading-splash .text {
-    font-size: 1.6rem;
+#loading-splash #loading-splash-text {
     margin-top: 2rem;
+    font-size: 1.6rem;
+    color: var(--ezc-attr-immutable-col);
 }
 
 @keyframes morse {
