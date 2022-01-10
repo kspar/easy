@@ -4,7 +4,10 @@ import Str
 import cache.BasicCourseInfo
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import queries.*
+import queries.ReqMethod
+import queries.fetchEms
+import queries.http200
+import queries.parseTo
 import rip.kspar.ezspa.CacheableComponent
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -13,8 +16,8 @@ import kotlin.js.Promise
 
 
 class TeacherCoursesRootComp(
-        private val isAdmin: Boolean,
-        parent: Component?
+    private val isAdmin: Boolean,
+    parent: Component?
 ) : CacheableComponent<TeacherCoursesRootComp.State>(parent) {
 
     @Serializable
@@ -37,9 +40,10 @@ class TeacherCoursesRootComp(
         coursesList.createAndBuildFromState(state.coursesState).await()
     }
 
-    override fun render(): String = tmRender("t-c-teach-courses",
-            "pageTitle" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
-            "listDstId" to coursesList.dstId
+    override fun render(): String = tmRender(
+        "t-c-teach-courses",
+        "pageTitle" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
+        "listDstId" to coursesList.dstId
     )
 
     override fun getCacheableState(): State = State(coursesList.getCacheableState())
@@ -47,7 +51,7 @@ class TeacherCoursesRootComp(
 
 
 class TeacherCourseListComp(
-        parent: Component?
+    parent: Component?
 ) : CacheableComponent<TeacherCourseListComp.State>(parent) {
 
     @Serializable
@@ -70,8 +74,11 @@ class TeacherCourseListComp(
 
     override fun create(): Promise<*> = doInPromise {
         courseItems = fetchEms("/teacher/courses", ReqMethod.GET, successChecker = { http200 }).await()
-                .parseTo(CoursesDto.serializer()).await()
-                .courses.map { TeacherCourseItemComp(it.id, it.title, it.student_count, this) }
+            .parseTo(CoursesDto.serializer()).await()
+            .courses
+            // Temp hack to sort by created time - newer on top
+            .sortedByDescending { it.id.toInt() }
+            .map { TeacherCourseItemComp(it.id, it.title, it.student_count, this) }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
@@ -79,12 +86,13 @@ class TeacherCourseListComp(
     }
 
     override fun render(): String = tmRender("t-c-teach-courses-list",
-            "noCoursesLabel" to Str.noCoursesLabel(),
-            "courses" to courseItems.map { mapOf("dstId" to it.dstId) }
+        "noCoursesLabel" to Str.noCoursesLabel(),
+        "courses" to courseItems.map { mapOf("dstId" to it.dstId) }
     )
 
-    override fun renderLoading(): String = tmRender("t-loading-list",
-            "items" to listOf(emptyMap<Nothing, Nothing>(), emptyMap(), emptyMap())
+    override fun renderLoading(): String = tmRender(
+        "t-loading-list",
+        "items" to listOf(emptyMap<Nothing, Nothing>(), emptyMap(), emptyMap())
     )
 
     override fun postRender() {
@@ -97,16 +105,17 @@ class TeacherCourseListComp(
 }
 
 class TeacherCourseItemComp(
-        val id: String,
-        val title: String,
-        val studentCount: Int,
-        parent: Component?
+    val id: String,
+    val title: String,
+    val studentCount: Int,
+    parent: Component?
 ) : Component(parent) {
 
-    override fun render(): String = tmRender("t-c-teach-courses-item",
-            "id" to id,
-            "title" to title,
-            "count" to studentCount,
-            "studentsLabel" to if (studentCount == 1) Str.coursesStudent() else Str.coursesStudents()
+    override fun render(): String = tmRender(
+        "t-c-teach-courses-item",
+        "id" to id,
+        "title" to title,
+        "count" to studentCount,
+        "studentsLabel" to if (studentCount == 1) Str.coursesStudent() else Str.coursesStudents()
     )
 }
