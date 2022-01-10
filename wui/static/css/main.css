@@ -2315,15 +2315,15 @@ ez-pagebtn[disabled] {
 
 /** Full page loading **/
 
-.loading-full-page {
+#loading-splash {
     display: flex;
-    min-height: 85vh;
+    flex-direction: column;
+    height: 100vh;
     width: 100%;
     align-items: center;
-    justify-content: center;
 }
 
-.loading-full-page .loading-wrap {
+#loading-splash .loading-wrap {
     background-color: #eee;
     box-shadow: 0 0 50px 50px #eee;
     border-radius: 30%;
@@ -2334,7 +2334,25 @@ ez-pagebtn[disabled] {
     justify-content: center;
 }
 
-.loading-full-page .robot {
+@media only screen and (min-height: 401px) {
+    #loading-splash .loading-wrap {
+        margin-top: 50px;
+    }
+}
+
+@media only screen and (min-height: 601px) {
+    #loading-splash .loading-wrap {
+        margin-top: 150px;
+    }
+}
+
+@media only screen and (min-height: 993px) {
+    #loading-splash .loading-wrap {
+        margin-top: 264px;
+    }
+}
+
+#loading-splash .robot {
     display: flex;
     justify-content: space-between;
     flex-shrink: 0;
@@ -2345,14 +2363,14 @@ ez-pagebtn[disabled] {
     border-radius: 20%;
 }
 
-.loading-full-page .antenna {
+#loading-splash .antenna {
     width: 12px;
     height: 15px;
     flex-shrink: 0;
     background-color: #a8a8a8;
 }
 
-.loading-full-page .antennaball {
+#loading-splash .antennaball {
     width: 24px;
     height: 24px;
     flex-shrink: 0;
@@ -2362,12 +2380,17 @@ ez-pagebtn[disabled] {
     animation: morse 18825ms step-start;
 }
 
-.loading-full-page .robot-eye {
+#loading-splash .robot-eye {
     background: white;
     width: 21px;
     height: 21px;
     border-radius: 50%;
     animation: eye-blink 3s infinite;
+}
+
+#loading-splash .text {
+    font-size: 1.6rem;
+    margin-top: 2rem;
 }
 
 @keyframes morse {

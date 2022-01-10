@@ -49,7 +49,8 @@ fun main() {
     funLog?.end()
 }
 
-fun buildStatics() {
+suspend fun buildStatics() {
+    getElemById("loading-splash-container").clear()
     getHeader().innerHTML = """<div id="nav-wrap"></div>"""
     getMain().innerHTML = """<div id="leftbar-wrap"></div>
 <div id="content-container" class="container"></div>"""
