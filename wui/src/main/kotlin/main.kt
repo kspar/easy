@@ -1,4 +1,5 @@
 import kotlinx.coroutines.await
+import kotlinx.dom.clear
 import libheaders.CodeMirror
 import pages.ExerciseSummaryPage
 import pages.Navbar
