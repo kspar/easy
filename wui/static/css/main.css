@@ -412,12 +412,6 @@ nav.crumb-wrap .breadcrumb:before {
     background-color: unset;
 }
 
-#exercise-card .eval-logo-auto {
-    vertical-align: sub;
-    width: 24px;
-    margin-left: 10px;
-}
-
 #exercise-card .groups {
     font-size: 0.8em;
     margin-left: 1rem;
@@ -430,18 +424,20 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercise-card .grade {
+    display: flex;
+    align-items: center;
     font-size: 0.8em;
 }
 
-#exercise-card .eval-logo-teacher {
-    color: #aaa;
+#exercise-card .eval-logo-auto,
+#exercise-card .eval-logo-teacher,
+#exercise-card .eval-logo-missing {
     margin-left: 10px;
 }
 
-#exercise-card .eval-logo-missing {
-    vertical-align: middle;
-    width: 24px;
-    margin-left: 10px;
+#exercise-card .eval-logo-teacher {
+    font-size: 18px;
+    color: #aaa;
 }
 
 #exercise-card .divided-collection .collection-item {
@@ -537,25 +533,20 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 #exercises-list .grade {
-    text-align: right;
+    display: flex;
+    align-items: center;
     font-size: 0.8em;
 }
 
-#exercises-list .eval-logo-auto {
-    vertical-align: sub;
-    width: 24px;
+#exercises-list .eval-logo-auto,
+#exercises-list .eval-logo-missing,
+#exercises-list .eval-logo-teacher {
     margin-left: 10px;
 }
 
 #exercises-list .eval-logo-teacher {
+    font-size: 18px;
     color: #aaa;
-    margin-left: 10px;
-}
-
-#exercises-list .eval-logo-missing {
-    vertical-align: middle;
-    width: 24px;
-    margin-left: 10px;
 }
 
 #exercises-list .collection-item .row {

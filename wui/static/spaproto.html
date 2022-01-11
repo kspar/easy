@@ -665,11 +665,11 @@
                     <span class="grade">
                        <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
                        >{{#evalAuto
-                    }}<img class="tooltipped eval-logo-auto" src="/static/img/inline-icons/optimised/robot-op.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                    }}<ez-icon class="tooltipped eval-logo-auto" data-position="bottom" data-tooltip="{{autoLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg></ez-icon>
                     {{/evalAuto}}{{#evalTeacher
-                    }}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
+                    }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
                     {{/evalTeacher}}{{#evalMissing
-                    }}<img class="tooltipped eval-logo-missing" src="/static/img/inline-icons/optimised/missing-ass-op.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                    }}<ez-icon class="tooltipped eval-logo-missing" data-position="bottom" data-tooltip="{{missingLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.95 0A3.76 3.76 0 00.18 3.77V14.2a3.76 3.76 0 003.77 3.77h13l5.6 6.03 1.06-8.47-.04.01c.16-.41.25-.87.25-1.34V3.77A3.76 3.76 0 0020.05 0zm7.63 1.98c.63 0 1.22.06 1.77.2.54.12 1.02.32 1.42.6.41.28.73.64.95 1.07.24.43.35.95.35 1.55a3.36 3.36 0 01-.56 1.93c-.19.28-.41.55-.69.8-.27.26-.59.52-.94.8l-.64.5c-.17.16-.32.32-.45.48a1.7 1.7 0 00-.1 1.94h-2.7a3 3 0 01-.13-1.93 3.07 3.07 0 01.74-1.28c.19-.2.4-.4.65-.58.26-.2.48-.39.68-.56.2-.17.36-.35.5-.52a1.85 1.85 0 00.41-1.16 1.28 1.28 0 00-.44-.98c-.14-.12-.31-.21-.52-.28-.2-.07-.42-.1-.66-.1A5.46 5.46 0 007.93 5.7V2.83c.53-.29 1.1-.5 1.72-.65a8.43 8.43 0 011.93-.22zm-.1 10.89c.54 0 .99.15 1.34.44.36.3.54.66.54 1.11 0 .46-.18.83-.53 1.13-.35.3-.8.44-1.35.44s-1-.15-1.36-.45a1.44 1.44 0 01-.54-1.12c0-.44.18-.81.54-1.1.36-.3.82-.45 1.36-.45z"/></svg></ez-icon>
                     {{/evalMissing}}
                     </span>
                 </span>
@@ -837,11 +837,11 @@
                     <span class="grade">
                         <span>{{points}}{{^points}}-{{/points}}/100</span
                         >{{#evalAuto
-                        }}<img class="tooltipped eval-logo-auto" src="/static/img/inline-icons/optimised/robot-op.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        }}<ez-icon class="tooltipped eval-logo-auto" data-position="bottom" data-tooltip="{{autoLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg></ez-icon>
                         {{/evalAuto}}{{#evalTeacher
                         }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
                         {{/evalTeacher}}{{#evalMissing
-                        }}<img class="tooltipped eval-logo-missing" src="/static/img/inline-icons/optimised/missing-ass-op.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        }}<ez-icon class="tooltipped eval-logo-missing" data-position="bottom" data-tooltip="{{missingLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.95 0A3.76 3.76 0 00.18 3.77V14.2a3.76 3.76 0 003.77 3.77h13l5.6 6.03 1.06-8.47-.04.01c.16-.41.25-.87.25-1.34V3.77A3.76 3.76 0 0020.05 0zm7.63 1.98c.63 0 1.22.06 1.77.2.54.12 1.02.32 1.42.6.41.28.73.64.95 1.07.24.43.35.95.35 1.55a3.36 3.36 0 01-.56 1.93c-.19.28-.41.55-.69.8-.27.26-.59.52-.94.8l-.64.5c-.17.16-.32.32-.45.48a1.7 1.7 0 00-.1 1.94h-2.7a3 3 0 01-.13-1.93 3.07 3.07 0 01.74-1.28c.19-.2.4-.4.65-.58.26-.2.48-.39.68-.56.2-.17.36-.35.5-.52a1.85 1.85 0 00.41-1.16 1.28 1.28 0 00-.44-.98c-.14-.12-.31-.21-.52-.28-.2-.07-.42-.1-.66-.1A5.46 5.46 0 007.93 5.7V2.83c.53-.29 1.1-.5 1.72-.65a8.43 8.43 0 011.93-.22zm-.1 10.89c.54 0 .99.15 1.34.44.36.3.54.66.54 1.11 0 .46-.18.83-.53 1.13-.35.3-.8.44-1.35.44s-1-.15-1.36-.45a1.44 1.44 0 01-.54-1.12c0-.44.18-.81.54-1.1.36-.3.82-.45 1.36-.45z"/></svg></ez-icon>
                         {{/evalMissing}}
                     </span>
                 </div>
@@ -937,11 +937,11 @@
                     <span class="grade">
                        <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
                        >{{#evalAuto
-                        }}<img class="tooltipped eval-logo-auto" src="/static/img/inline-icons/optimised/robot-op.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
+                        }}<ez-icon class="tooltipped eval-logo-auto" data-position="bottom" data-tooltip="{{autoLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.96.24a2.8 2.8 0 00-2.76 2.8 2.8 2.8 0 001.44 2.45v2.9H5.2a3.17 3.17 0 00-3.27 3.1v9.28a3.17 3.17 0 003.27 3.09h13.6a3.17 3.17 0 003.27-3.1v-9.28A3.17 3.17 0 0018.8 8.4h-5.44V5.5a2.8 2.8 0 001.44-2.45A2.8 2.8 0 0012 .24a2.8 2.8 0 00-.04 0zM7.24 11.98a2.8 2.8 0 01.08 0 2.8 2.8 0 011.09.25 2.8 2.8 0 011.43 3.6l-.22.44a2.8 2.8 0 01-3.75.96 2.8 2.8 0 01-1.12-3.72 2.8 2.8 0 012.5-1.53zm9.57 0a2.8 2.8 0 01.03 0 2.8 2.8 0 011.09.26 2.8 2.8 0 011.38 3.7l-.02.05a2.8 2.8 0 01-3.72 1.33 2.8 2.8 0 01-1.35-3.72 2.8 2.8 0 012.6-1.62z"/></svg></ez-icon>
                         {{/evalAuto}}{{#evalTeacher
                         }}<i class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
                         {{/evalTeacher}}{{#evalMissing
-                        }}<img class="tooltipped eval-logo-missing" src="/static/img/inline-icons/optimised/missing-ass-op.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
+                        }}<ez-icon class="tooltipped eval-logo-missing" data-position="bottom" data-tooltip="{{missingLabel}}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.95 0A3.76 3.76 0 00.18 3.77V14.2a3.76 3.76 0 003.77 3.77h13l5.6 6.03 1.06-8.47-.04.01c.16-.41.25-.87.25-1.34V3.77A3.76 3.76 0 0020.05 0zm7.63 1.98c.63 0 1.22.06 1.77.2.54.12 1.02.32 1.42.6.41.28.73.64.95 1.07.24.43.35.95.35 1.55a3.36 3.36 0 01-.56 1.93c-.19.28-.41.55-.69.8-.27.26-.59.52-.94.8l-.64.5c-.17.16-.32.32-.45.48a1.7 1.7 0 00-.1 1.94h-2.7a3 3 0 01-.13-1.93 3.07 3.07 0 01.74-1.28c.19-.2.4-.4.65-.58.26-.2.48-.39.68-.56.2-.17.36-.35.5-.52a1.85 1.85 0 00.41-1.16 1.28 1.28 0 00-.44-.98c-.14-.12-.31-.21-.52-.28-.2-.07-.42-.1-.66-.1A5.46 5.46 0 007.93 5.7V2.83c.53-.29 1.1-.5 1.72-.65a8.43 8.43 0 011.93-.22zm-.1 10.89c.54 0 .99.15 1.34.44.36.3.54.66.54 1.11 0 .46-.18.83-.53 1.13-.35.3-.8.44-1.35.44s-1-.15-1.36-.45a1.44 1.44 0 01-.54-1.12c0-.44.18-.81.54-1.1.36-.3.82-.45 1.36-.45z"/></svg></ez-icon>
                         {{/evalMissing}}
                     </span>
                 </div>
