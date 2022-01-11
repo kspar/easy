@@ -17,7 +17,8 @@ import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import objOf
 import pages.EasyPage
-import pages.leftbar.Leftbar
+import pages.sidenav.ActivePage
+import pages.sidenav.Sidenav
 import plainDstStr
 import queries.*
 import rip.kspar.ezspa.*
@@ -30,8 +31,8 @@ object GradeTablePage : EasyPage() {
     override val pageName: Any
         get() = PageName.GRADE_TABLE
 
-    override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(courseId)
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_GRADES)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
@@ -51,6 +52,8 @@ object GradeTablePage : EasyPage() {
             root.createAndBuild().await()
         }
     }
+
+    fun link(courseId: String) = constructPathLink(mapOf("courseId" to courseId))
 }
 
 class GradeTableRootComponent(

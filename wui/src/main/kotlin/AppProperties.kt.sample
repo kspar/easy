@@ -5,6 +5,9 @@ object AppProperties {
     const val KEYCLOAK_CONF_URL = "https://dev.lahendus.ut.ee/static/keycloak.json"
     const val KEYCLOAK_SILENT_SSO_URL = "https://dev.lahendus.ut.ee/static/keycloak-silent-sso-redirect.html"
     const val KEYCLOAK_TOKEN_MIN_VALID_SEC = 30
+    const val KEYCLOAK_ADMIN_CONSOLE_URL = "https://dev.idp.lahendus.ut.ee/auth/admin/master/console"
+
+    const val ISSUE_TRACKER_URL = "https://easy.myjetbrains.com/youtrack/issues"
 
     const val LOG_DEBUG_ENABLED = true
     const val LOG_WARN_ENABLED = true

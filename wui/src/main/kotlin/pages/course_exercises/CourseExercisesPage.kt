@@ -13,14 +13,14 @@ import components.Crumb
 import debug
 import debugFunStart
 import getContainer
-import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import pages.EasyPage
-import pages.leftbar.Leftbar
+import pages.sidenav.ActivePage
+import pages.sidenav.Sidenav
 import parseTo
 import queries.*
 import rip.kspar.ezspa.Component
@@ -108,8 +108,8 @@ object CourseExercisesPage : EasyPage() {
     override val pageName: PageName
         get() = PageName.EXERCISES
 
-    override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(courseId)
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_EXERCISES)
 
     override val pathSchema = "/courses/{courseId}/exercises"
 
@@ -141,6 +141,8 @@ object CourseExercisesPage : EasyPage() {
 
         funLog?.end()
     }
+
+    fun link(courseId: String): String = constructPathLink(mapOf("courseId" to courseId))
 
     private fun buildStudentExercises2(courseId: String) {
         val c = StudentCourseExercisesComp(courseId, null, CONTENT_CONTAINER_ID)

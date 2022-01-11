@@ -6,7 +6,7 @@ import Str
 import getContainer
 import kotlinx.dom.clear
 import libheaders.Materialize
-import pages.leftbar.Leftbar
+import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Page
 import rip.kspar.ezspa.getElemsByClass
 import tmRender
@@ -16,8 +16,8 @@ abstract class EasyPage : Page() {
     // All roles allowed by default
     open val allowedRoles: List<Role> = Role.values().asList()
 
-    // Leftbar with no course by default
-    open val leftbarConf: Leftbar.Conf = Leftbar.Conf()
+    // Sidenav with no course by default
+    open val sidenavSpec: Sidenav.Spec = Sidenav.Spec()
 
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
@@ -27,7 +27,7 @@ abstract class EasyPage : Page() {
                     "title" to Str.noPermissionForPageTitle(),
                     "msg" to Str.noPermissionForPageMsg()
             ))
-            Leftbar.refresh(Leftbar.Conf())
+            Sidenav.refresh(Sidenav.Spec())
             error("User is not one of $allowedRoles")
         }
     }
@@ -38,7 +38,7 @@ abstract class EasyPage : Page() {
     }
 
     override fun build(pageStateStr: String?) {
-        Leftbar.refresh(leftbarConf)
+        Sidenav.refresh(sidenavSpec)
     }
 
     override fun destruct() {

@@ -87,25 +87,31 @@ svg {
     padding: 0;
 }
 
-.left-cluster .sidenav-toggle,
-.left-cluster .sidenav-toggle i.material-icons {
+.left-cluster .sidenav-trigger {
     height: 58px;
     line-height: 58px;
-}
-
-.left-cluster .sidenav-toggle {
-    display: block;
     margin: 0;
-    padding: 0 2rem 0 1rem;
+    padding: 0 18px 0 6px;
+    display: flex;
+    align-items: center;
 }
 
-.sidenav-toggle i.material-icons {
-    font-size: 32px;
+@media only screen and (min-width: 993px) {
+    .left-cluster .sidenav-trigger {
+        display: none;
+    }
+}
+
+.left-cluster .sidenav-trigger ez-icon svg {
+    width: 36px;
+    height: 36px;
+    color: #fff;
 }
 
 .logo {
     display: flex;
     align-items: center;
+    padding: 0 10px;
 }
 
 @media only screen and (max-width: 992px) {
@@ -146,88 +152,77 @@ svg {
 
 /** Sidenav **/
 
-.sidenav {
-    transition: transform 200ms ease-out;
-}
-
-
-/** Leftbar **/
-
 @media only screen and (min-width: 993px) {
-    body.leftbar-active {
-        margin-left: 300px;
+    header,
+    main,
+    footer {
+        padding-left: 300px;
     }
 }
 
-.leftbar .user-view {
+.sidenav .user-view {
     padding: 32px 0 10px 32px;
     margin-bottom: 0;
 }
 
-.leftbar .user-view .attr {
+.sidenav .user-view .attr {
     color: #333;
     font-size: 1.4rem;
     line-height: 2.4rem;
 }
 
-.leftbar .user-view .name {
+.sidenav .user-view .name {
     margin-top: 0;
 }
 
-.leftbar .user-view .email {
+.sidenav .user-view .email {
     padding-bottom: 0;
 }
 
-.leftbar .user-view .role {
+.sidenav .user-view .role {
     margin-top: .5rem;
     color: #777;
 }
 
-.leftbar .role-select-wrap {
+.sidenav .role-select-wrap {
     margin-top: .5rem;
     width: 15rem;
 }
 
-.leftbar .role-select input.select-dropdown {
-    color: #333;
-    font-size: 1.4rem;
-}
-
-.leftbar .role-select > ul > li > span {
-    font-size: 1.4rem;
-}
-
-.leftbar > li {
+.sidenav li {
     line-height: unset;
 }
 
-.leftbar > li:last-child {
+/* Last item of the trailer section - leave a bit of whitespace below */
+.sidenav .trailer li:last-child {
     margin-bottom: 3rem;
 }
 
-.leftbar > li > a,
-.leftbar .subheader {
+.sidenav li a,
+.sidenav .subheader {
     color: #4c4c4c;
     height: 45px;
     line-height: unset;
 }
 
-.leftbar > li > a {
+.sidenav li a {
     font-size: 1.4rem;
+    font-weight: normal;
     display: flex;
     align-items: center;
 }
 
-.leftbar li.active {
-    background-color: rgba(0,0,0,0.03);
+.sidenav li.active {
+    background-color: rgba(0,0,0,0.04);
 }
 
-.leftbar li.active a,
-.leftbar li.active a i.material-icons {
+.sidenav li.active a,
+.sidenav li.active a ez-icon {
     color: var(--ez-checkbox-fill-col);
+    font-weight: 500;
 }
 
-.leftbar .subheader {
+.sidenav .subheader {
     height: unset;
     line-height: unset;
     text-transform: uppercase;
@@ -236,15 +231,19 @@ svg {
     padding-top: 8px;
 }
 
-.leftbar .divider {
+.sidenav .divider {
     margin: 8px 0;
     height: 1px;
 }
 
-.leftbar > li > a > i.material-icons {
+.sidenav li a ez-icon {
     margin-right: 24px;
-    height: unset;
-    line-height: unset;
+    color: var(--ez-icon-action-col);
+}
+
+.sidenav li a ez-icon > svg {
+    width: 2.4rem;
+    height: 2.4rem;
 }
 
 
@@ -252,49 +251,19 @@ svg {
 
 div.container {
     position: relative;
-    width: 98%;
+    width: 95%;
     transition: width 200ms ease-out;
-}
-
-@media only screen and (min-width: 601px) {
-    div.container {
-        width: 95%;
-    }
-}
-
-@media only screen and (min-width: 993px) {
-    div.container {
-        width: 88%;
-    }
-
-    body.leftbar-active div.container {
-        width: 95%;
-    }
 }
 
 @media only screen and (min-width: 1200px) {
     div.container {
-        width: 75%;
-    }
-
-    body.leftbar-active div.container {
         width: 88%;
     }
 }
 
 @media only screen and (min-width: 1500px) {
     div.container {
-        width: 65%;
-    }
-
-    body.leftbar-active div.container {
         width: 75%;
-    }
-}
-
-@media only screen and (min-width: 1800px) {
-    body.leftbar-active div.container {
-        width: 65%;
     }
 }
 
@@ -1085,6 +1054,10 @@ textarea.materialize-textarea {
 .select-wrapper + label {
     /* Font size for fixed labels */
     font-size: 1.2rem;
+}
+
+.select-wrapper input.select-dropdown:focus {
+    border-bottom: 1px solid var(--ez-checkbox-fill-col);
 }
 
 .select-wrap {

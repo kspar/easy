@@ -9,28 +9,21 @@ import pages.courses.CoursesPage
 import pages.exercise.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
-import pages.leftbar.Leftbar
 import pages.participants.ParticipantsPage
+import pages.sidenav.Sidenav
 import queries.ReqMethod
 import queries.abortAllFetchesAndClear
 import queries.fetchEms
 import queries.http200
-import rip.kspar.ezspa.EzSpa
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getHeader
-import rip.kspar.ezspa.getMain
+import rip.kspar.ezspa.*
 
 
-// buildList is experimental
-@ExperimentalStdlibApi
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
     OldParticipantsPage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage
 )
 
-// buildList is experimental
-@ExperimentalStdlibApi
 fun main() {
     val funLog = debugFunStart("main")
 
@@ -59,9 +52,9 @@ fun setSplashText(text: String) {
 suspend fun buildStatics() {
     getElemById("loading-splash-container").clear()
     getHeader().innerHTML = """<div id="nav-wrap"></div>"""
-    getMain().innerHTML = """<div id="leftbar-wrap"></div>
-<div id="content-container" class="container"></div>"""
+    getMain().innerHTML = """<div id="sidenav-wrap"></div><div id="content-container" class="container"></div>"""
     Navbar.build()
+    Sidenav.build()
 }
 
 
@@ -94,8 +87,6 @@ private suspend fun initAuthentication() {
     funLog?.end()
 }
 
-// buildList is experimental
-@ExperimentalStdlibApi
 private fun initApplication() {
     EzSpa.PageManager.registerPages(PAGES)
     EzSpa.PageManager.preUpdateHook = ::abortAllFetchesAndClear
@@ -109,9 +100,11 @@ private fun initApplication() {
 }
 
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
-    getContainer().innerHTML = tmRender("tm-broken-page", mapOf(
+    getContainer().innerHTML = tmRender(
+        "tm-broken-page", mapOf(
             "title" to Str.notFoundPageTitle(),
             "msg" to Str.notFoundPageMsg()
-    ))
-    Leftbar.refresh(Leftbar.Conf())
+        )
+    )
+    Sidenav.refresh(Sidenav.Spec())
 }

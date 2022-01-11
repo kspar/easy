@@ -16,12 +16,14 @@ abstract class TranslatableStrings {
     abstract fun yes(): String
     abstract fun no(): String
     abstract fun myCourses(): String
+    abstract fun exerciseLibrary(): String
     abstract fun gradedAutomatically(): String
     abstract fun gradedByTeacher(): String
     abstract fun notGradedYet(): String
     abstract fun closeToggleLink(): String
     abstract fun doSave(): String
     abstract fun saving(): String
+    abstract fun cancel(): String
     abstract fun solutionCodeTabName(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
@@ -140,6 +142,7 @@ private object EstStrings : TranslatableStrings() {
     override fun previewLabel() = "Eelvaade"
     override fun doSave() = "Salvesta"
     override fun saving() = "Salvestan..."
+    override fun cancel() = "Tühista"
     override fun exerciseSaved() = "Ülesanne uuendatud"
     override fun assessmentAddedMsg() = "Hinnang lisatud."
     override fun oldSubmissionNote() = "See on vana esitus."
@@ -173,7 +176,7 @@ private object EstStrings : TranslatableStrings() {
     override fun fetchingCoursesFailed() = "Kursuste laadimine ebaõnnestus."
     override fun courseCreationFailed() = "Uue kursuse loomine ebaõnnestus."
     override fun coursesTitleAdmin() = "Kõik kursused"
-    override fun accountData() = "Konto andmed"
+    override fun accountData() = "Konto seaded"
     override fun logOut() = "Logi välja"
     override fun roleChangeStudentSuffix() = " (õpilane)"
     override fun sidenavHeader() = "Kursuse seaded"
@@ -183,6 +186,7 @@ private object EstStrings : TranslatableStrings() {
     override fun gradesLabel() = "Hinded"
     override fun coursesTitle() = "Minu kursused"
     override fun myCourses() = "Minu kursused"
+    override fun exerciseLibrary() = "Ülesandekogu"
     override fun deadlineLabel() = "Tähtaeg"
     override fun gradedAutomatically() = "Automaatselt hinnatud"
     override fun gradedByTeacher() = "Õpetaja poolt hinnatud"

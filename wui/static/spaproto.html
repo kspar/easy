@@ -49,66 +49,19 @@
 
 <!-- Common -->
 
-<script id="t-c-leftbar" type="text/x-handlebars">
-    <ul id="leftbar" class="leftbar sidenav sidenav-fixed">
-        <li><div class="user-view">
-            <div class="background"></div>
-            <div class="name attr truncate">{{userName}}</div>
-            <div class="email attr truncate">{{userEmail}}</div>
-            {{^canSwitchRole}}
-                <div class="role attr">{{userRole}}</div>
-            {{/canSwitchRole}}
-            {{#canSwitchRole}}
-                <div class="role-select-wrap">
-                    <select id="select-role">
-                        {{#rolesAvailable}}
-                            <option value="{{id}}" {{#isSelected}}selected{{/isSelected}}>{{name}}</option>
-                        {{/rolesAvailable}}
-                    </select>
-                </div>
-            {{/canSwitchRole}}
-        </div></li>
-        <li><div class="divider"></div></li>
-        <li><a class="waves-effect sidenav-close" href="/courses"><i class="material-icons">storage</i>{{myCoursesLabel}}</a></li>
-        {{#isTeacherOrAdmin}}
-            <li><a class="waves-effect sidenav-close" href="/exerciselib"><i class="material-icons">folder</i>{{exerciseLibLabel}}</a></li>
-        {{/isTeacherOrAdmin}}
-        {{#isAdmin}}
-<!--            <li><a class="waves-effect sidenav-close" href="/articles"><i class="material-icons">assignment_ind</i>{{articlesLabel}}</a></li>-->
-            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-course-modal"><i class="material-icons">child_care</i>{{newCourseLabel}}</a></li>
-        {{/isAdmin}}
-        {{#isCourseActive}}
-            <li><div class="divider"></div></li>
-            <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
-            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/exercises"><i class="material-icons">assignment</i>{{exercisesLabel}}</a></li>
-        {{#isTeacherOrAdmin}}
-            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/grades"><i class="material-icons">school</i>{{gradesLabel}}</a></li>
-            <li><a class="waves-effect sidenav-close" href="/courses/{{courseId}}/participants"><i class="material-icons">group</i>{{participantsLabel}}</a></li>
-        {{/isTeacherOrAdmin}}
-        {{#isAdmin}}
-<!--            <li><a class="waves-effect sidenav-close" href="#!" id="add-exercise-link"><i class="material-icons">add_box</i>{{addExerciseLabel}}</a></li>-->
-            <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><i class="material-icons">create</i>{{newExerciseLabel}}</a></li>
-        {{/isAdmin}}
-        {{/isCourseActive}}
-        <li><div class="divider"></div></li>
-        <li><a class="waves-effect sidenav-close" href="{{accountSettingsLink}}"><i class="material-icons">settings</i>{{accountSettingsLabel}}</a></li>
-        <li><a class="waves-effect sidenav-close" href="{{logOutLink}}"><i class="material-icons">exit_to_app</i>{{logOutLabel}}</a></li>
+<script id="t-c-sidenav" type="text/x-handlebars">
+    <ul id="sidenav" class="sidenav sidenav-fixed">
+        <ez-dst id="{{headSectionId}}"></ez-dst>
+        <ez-dst id="{{generalSectionId}}"></ez-dst>
+        <ez-dst id="{{courseSectionId}}"></ez-dst>
+        <ez-dst id="{{pageSectionId}}"></ez-dst>
+        <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
     </ul>
-    <!-- New course modal -->
-    <div id="new-course-modal" class="modal">
-        <div class="modal-content">
-            <h4>{{newCourseLabel}}</h4>
-            <div class="form-fields">
-                <div class="input-field">
-                    <input id="new-course-name-input" type="text">
-                    <label for="new-course-name-input">{{newCourseTitleLabel}}</label>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button id="new-course-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
-        </div>
-    </div>
+
+    <!-- Workaround: modals cannot be inside elements that have transforms like sidenav: -->
+    <!-- Elements with transforms act as a containing block for fixed position descendants, so position:fixed under something with a transform no longer has fixed behavior. -->
+    <ez-dst id="new-course-modal-dst-id"></ez-dst>
+
     <!-- New exercise modal -->
     <div id="new-exercise-modal" class="modal">
         <div class="modal-content">
@@ -124,6 +77,68 @@
             <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
         </div>
     </div>
+</script>
+
+<script id="t-c-sidenav-head-account-section" type="text/x-handlebars">
+    <li>
+        <div class="user-view">
+            <div class="background"></div>
+            <div class="name attr truncate">{{userName}}</div>
+            <div class="email attr truncate">{{userEmail}}</div>
+            {{^canSwitchRole}}
+                <div class="role attr">{{userRole}}</div>
+            {{/canSwitchRole}}
+            {{#canSwitchRole}}
+                <div class="role-select-wrap">
+                    <ez-dst id="{{roleSelectId}}"></ez-dst>
+                </div>
+            {{/canSwitchRole}}
+        </div>
+    </li>
+</script>
+
+<script id="t-c-sidenav-general-section" type="text/x-handlebars">
+    <li><div class="divider"></div></li>
+    <li id="{{coursesId}}"><a href="{{coursesLink}}" class="waves-effect sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
+    {{#isTeacherOrAdmin}}
+        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
+    {{/isTeacherOrAdmin}}
+    {{#isAdmin}}
+        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="waves-effect sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>
+        <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
+    {{/isAdmin}}
+</script>
+
+<script id="t-c-sidenav-course-section" type="text/x-handlebars">
+    <li><div class="divider"></div></li>
+    <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
+    <li id="{{exercisesId}}"><a href="{{exercisesLink}}" class="waves-effect sidenav-close">{{{exercisesIcon}}}{{exercisesLabel}}</a></li>
+    {{#isTeacherOrAdmin}}
+        <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
+        <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+    {{/isTeacherOrAdmin}}
+    {{#isAdmin}}
+        <li><a class="waves-effect sidenav-close">{{{addExerciseIcon}}}{{addExerciseLabel}}</a></li>
+        <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal">{{{newExerciseIcon}}}{{newExerciseLabel}}</a></li>
+    {{/isAdmin}}
+</script>
+
+<script id="t-c-sidenav-page-section" type="text/x-handlebars">
+    <li><div class="divider"></div></li>
+    <li title="{{pageSectionTitle}}"><a class="subheader truncate">{{pageSectionTitle}}</a></li>
+    {{#pageItems}}
+        <li><a class="waves-effect sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
+    {{/pageItems}}
+</script>
+
+<script id="t-c-sidenav-trailer-section" type="text/x-handlebars">
+    <li><div class="divider"></div></li>
+    {{#isAdmin}}
+        <li><a href="{{idpLink}}" class="waves-effect sidenav-close">{{{idpIcon}}}{{idpLabel}}</a></li>
+        <li><a href="{{issueTrackLink}}" class="waves-effect sidenav-close">{{{issueTrackIcon}}}{{issueTrackLabel}}</a></li>
+    {{/isAdmin}}
+    <li><a href="{{accountSettingsLink}}" class="waves-effect sidenav-close">{{{accountSettingsIcon}}}{{accountSettingsLabel}}</a></li>
+    <li><a href="{{logOutLink}}" class="waves-effect sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
 </script>
 
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
@@ -231,7 +246,7 @@
                 {{#hasOrdering}}
                 <ezc-ctrl-order>
                     <ez-icon-action title="{{orderLabel}}" class="dropdown-trigger waves-effect" data-target="ezc-sorting-dropdown-{{collId}}" tabindex="0">
-                        <ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0V0zm0 0h24v24H0V0zm.75.75h22.5v22.5H.75z" fill="none"/><path d="M14.94 4.66h-4.72l2.36-2.36zm-4.69 14.71h4.66l-2.33 2.33zM6.1 6.27L1.6 17.73h1.84l.92-2.45h5.11l.92 2.45h1.84L7.74 6.27H6.1zm-1.13 7.37l1.94-5.18 1.94 5.18H4.97zm10.76 2.5h6.12v1.59h-8.53v-1.29l5.92-8.56h-5.88v-1.6h8.3v1.26l-5.93 8.6z"/></svg></ez-icon>
+                        <ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></ez-icon>
                     </ez-icon-action>
                 </ezc-ctrl-order>
                 {{/hasOrdering}}
@@ -373,7 +388,9 @@
                 <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{label}}</option>
             {{/options}}
         </select>
-        <label>{{selectLabel}}</label>
+        {{#selectLabel}}
+            <label>{{selectLabel}}</label>
+        {{/selectLabel}}
     </div>
 </script>
 
@@ -698,7 +715,7 @@
         <div class="topnav container" role="navigation">
             <div class="left-cluster">
                 <div>
-                    <a id="sidenav-toggle" href="#!" class="sidenav-toggle"><i class="material-icons">menu</i></a>
+                    <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
                 </div>
                 <a href="/courses" class="logo">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>

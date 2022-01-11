@@ -33,7 +33,7 @@ import objOf
 import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
-import pages.leftbar.Leftbar
+import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
 import saveAsFile
@@ -193,8 +193,8 @@ object ExerciseSummaryPage : EasyPage() {
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
 
-    override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(pathParams.courseId)
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(pathParams.courseId)
 
     override val pathSchema = "/courses/{courseId}/exercises/{courseExerciseId}/summary"
 

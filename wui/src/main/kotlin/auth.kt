@@ -36,6 +36,8 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     fun hasRole(role: Role): Boolean = this.tokenParsed.easy_role.includes(role.id).unsafeCast<Boolean>()
 
+    fun getAvailableRoles(): List<Role> = Role.values().filter { hasRole(it) }
+
     fun switchToRole(newRole: Role) {
         if (!hasRole(newRole)) {
             errorMessage { Str.somethingWentWrong() }
@@ -61,7 +63,10 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                         activeRole = getPersistedRole() ?: getMainRole()
                         resolve(authenticated)
                     }
-                    else -> login()
+                    else -> {
+                        debug { "Redirecting to login" }
+                        login()
+                    }
                 }
             }.catch {
                 reject(RuntimeException("Authentication error"))
@@ -73,9 +78,10 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         Promise { resolve, reject ->
             this.updateToken(AppProperties.KEYCLOAK_TOKEN_MIN_VALID_SEC).then { refreshed: Boolean ->
                 resolve(refreshed)
-            }.catch { error ->
-                warn { "Authentication error: $error" }
-                reject(RuntimeException("Authentication error"))
+            }.catch {
+                debug { "Token refresh failed, redirecting to login" }
+                login()
+                reject(RuntimeException("Token refresh failed"))
             }
         }
 

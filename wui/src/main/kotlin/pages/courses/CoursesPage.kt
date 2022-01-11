@@ -12,6 +12,8 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import pages.EasyPage
+import pages.sidenav.ActivePage
+import pages.sidenav.Sidenav
 import parseTo
 import plainDstStr
 import restoreWindowScroll
@@ -31,6 +33,9 @@ object CoursesPage : EasyPage() {
     private var rootComp: CoursesRootComponent? = null
 
     override val pageName: PageName = PageName.COURSES
+
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(activePage = ActivePage.MY_COURSES)
 
     override val pathSchema = "/courses"
 

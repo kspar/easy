@@ -5,6 +5,8 @@ import PageName
 import Role
 import kotlinx.coroutines.await
 import pages.EasyPage
+import pages.sidenav.ActivePage
+import pages.sidenav.Sidenav
 import rip.kspar.ezspa.doInPromise
 
 object ExerciseLibraryPage : EasyPage() {
@@ -15,8 +17,10 @@ object ExerciseLibraryPage : EasyPage() {
     override val allowedRoles: List<Role>
         get() = listOf(Role.ADMIN, Role.TEACHER)
 
-    // TODO: /library?
-    override val pathSchema = "/exerciselib"
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(activePage = ActivePage.LIBRARY)
+
+    override val pathSchema = "/library"
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
@@ -26,4 +30,6 @@ object ExerciseLibraryPage : EasyPage() {
                 .createAndBuild().await()
         }
     }
+
+    fun link() = constructPathLink(emptyMap())
 }

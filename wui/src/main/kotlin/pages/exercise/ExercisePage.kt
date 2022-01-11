@@ -35,4 +35,6 @@ object ExercisePage : EasyPage() {
             ).createAndBuild().await()
         }
     }
+
+    fun link(exerciseId: String): String = constructPathLink(mapOf("exerciseId" to exerciseId))
 }

@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
-import pages.leftbar.Leftbar
+import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
 import successMessage
@@ -93,8 +93,8 @@ object OldParticipantsPage : EasyPage() {
     override val pageName: Any
         get() = PageName.PARTICIPANTS
 
-    override val leftbarConf: Leftbar.Conf
-        get() = Leftbar.Conf(courseId)
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(courseId)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)

@@ -7,7 +7,7 @@ import rip.kspar.ezspa.*
 import tmRender
 
 class SelectComp(
-        private val label: String,
+        private val label: String? = null,
         private val options: List<Option>,
         private val onOptionChange: ((String) -> Unit)? = null,
         parent: Component
