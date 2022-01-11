@@ -125,6 +125,7 @@ internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
 internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
     log.info { "Calling executor ${executor.name}" }
 
+    // TODO: go from infinity timeout finite timeout via https://stackoverflow.com/questions/13837012/spring-resttemplate-timeout
     val responseEntity = RestTemplate().postForEntity(
         executor.baseUrl + EXECUTOR_GRADE_URL, request, ExecutorResponse::class.java
     )
