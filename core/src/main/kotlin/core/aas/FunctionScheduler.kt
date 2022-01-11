@@ -2,10 +2,15 @@ package core.aas
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onClosed
+import kotlinx.coroutines.channels.onFailure
+import mu.KotlinLogging
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KFunction
 
+private val log = KotlinLogging.logger {}
 
 /**
  *
@@ -24,7 +29,11 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
     private val jobs = ConcurrentLinkedQueue<EzJob<T>>()
     private val closed = AtomicBoolean(false)
 
-    private data class EzJob<J>(val waitableChannel: Channel<Deferred<J>?>, val jobDeferred: Deferred<J>)
+    private data class EzJob<J>(
+        val id: String,
+        val waitableChannel: Channel<Deferred<J>?>,
+        val jobDeferred: Deferred<J>
+    )
 
     /**
      * Start next [scheduleAndAwait] job.
@@ -33,9 +42,12 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      */
     fun startNext(): Boolean {
         return synchronized(this) {
-            val next = getWaiting().firstOrNull()
+            val next = getWaiting().firstOrNull()?.also { log.debug { "Job@${it.id}: Starting (1/2)" } }
             next?.jobDeferred?.start()
+            next?.also { log.debug { "Job@${it.id}: Started (2/2)" } }
             next?.waitableChannel?.trySend(next.jobDeferred)
+                ?.onFailure { log.error { "Job@${next.id}: Channel failed with ${it?.stackTrace}" } }
+                ?.onClosed { log.warn { "Job@${next.id}: Channel is closed ${it?.stackTrace}" } }
             next != null
         }
     }
@@ -52,6 +64,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
             if (closed.get()) throw ExecutorException("Scheduler is killed")
 
             val job = EzJob(
+                UUID.randomUUID().toString(),
                 Channel(Channel.CONFLATED),
                 GlobalScope.async(start = CoroutineStart.LAZY) { function.call(*arguments) }
             )
@@ -60,9 +73,16 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
             job
         }
 
+
         try {
-            return job.waitableChannel.receive()?.await() ?: throw ExecutorException("Scheduler was killed")
+            log.debug { "Job@${job.id}: Listening on channel (1/4)" }
+            val channel = job.waitableChannel.receive()
+            log.debug { "Job@${job.id}: Waiting for job to complete on channel '$channel' (2/4)" }
+            val result = channel?.await() ?: throw ExecutorException("Job@${job.id}: Scheduler was killed")
+            log.debug { "Job@${job.id}: Job finished (3/4)" }
+            return result
         } finally {
+            log.debug { "Job@${job.id}: Job removed (4/4)" }
             jobs.remove(job)
         }
     }
@@ -71,9 +91,11 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
         synchronized(this) {
             closed.set(true)
             jobs.forEach {
+                log.debug { "Job@${it.id}: Killing (it)" }
                 it.jobDeferred.cancel()
                 it.waitableChannel.trySend(null)
             }
+            log.debug { "Clearing jobs" }
             jobs.clear()
         }
     }
