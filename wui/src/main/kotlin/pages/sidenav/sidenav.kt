@@ -154,6 +154,9 @@ class SidenavRootComp(
                 pageSectionComp?.createAndBuild(),
                 trailerSectionComp.createAndBuild()
             ).unionPromise().await()
+
+            // Force refresh active page since the sidenav was rebuilt
+            refreshActivePage()
         }
     }
 
@@ -181,9 +184,13 @@ class SidenavRootComp(
             debug { "Sidenav updating active page" }
             activePage = newActivePage
 
-            generalSectionComp.clearAndSetActivePage(newActivePage)
-            courseSectionComp?.clearAndSetActivePage(newActivePage)
+            refreshActivePage()
         }
+    }
+
+    private fun refreshActivePage() {
+        generalSectionComp.clearAndSetActivePage(activePage)
+        courseSectionComp?.clearAndSetActivePage(activePage)
     }
 
     fun updatePageItems(newPageSection: Sidenav.PageSection?) = doInPromise {
