@@ -44,7 +44,7 @@ class TeacherReadCoursesController {
 
     private fun selectCoursesForAdmin(): List<CourseResp> = transaction {
         val studentCount = StudentCourseAccess.student.count().alias("student_count")
-        (Course innerJoin StudentCourseAccess)
+        (Course leftJoin StudentCourseAccess)
             .slice(Course.id, Course.title, studentCount)
             .selectAll()
             .groupBy(Course.id, Course.title)
