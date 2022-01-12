@@ -30,7 +30,6 @@ open class MemoryCache<K, V>(
     }
 
     fun put(key: K, value: V) {
-        debug { "Cache $cacheName: put value for key $key (cache size: ${cache.size})" }
         cache[key] = value
     }
 }
