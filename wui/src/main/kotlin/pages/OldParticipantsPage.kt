@@ -18,6 +18,7 @@ import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
+import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -94,12 +95,12 @@ object OldParticipantsPage : EasyPage() {
         get() = PageName.PARTICIPANTS
 
     override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(courseId)
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_PARTICIPANTS)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
-    override val pathSchema = "/courses/{courseId}/participants/old"
+    override val pathSchema = "/courses/{courseId}/participants"
 
     private val courseId: String
         get() = parsePathParams()["courseId"]

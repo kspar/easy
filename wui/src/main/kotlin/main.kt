@@ -20,7 +20,8 @@ import rip.kspar.ezspa.*
 
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
-    OldParticipantsPage, ParticipantsPage,
+    OldParticipantsPage,
+//    ParticipantsPage,
     ExerciseLibraryPage, ExercisePage
 )
 
