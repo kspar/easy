@@ -1,6 +1,6 @@
 package components.modal
 
-import components.TextComp
+import components.StringComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -23,15 +23,15 @@ class ConfirmationTextModalComp(
     parent
 ) {
 
-    private var textComp = TextComp("", this)
+    private var stringComp = StringComp("", this)
 
     override fun create() = doInPromise {
         super.create().await()
-        super.setContent(textComp)
+        super.setContent(stringComp)
     }
 
     fun setText(text: String) {
-        textComp.text = text
-        textComp.rebuild()
+        stringComp.text = text
+        stringComp.rebuild()
     }
 }

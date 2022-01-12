@@ -21,7 +21,7 @@ dependencies {
         null -> logger.warn("wui: path to materialize not configured")
         else -> implementation(npm(File(pathToMaterialize!!)))
     }
-    implementation(npm("css-element-queries", "1.2.2"))
+//    implementation(npm("css-element-queries", "1.2.3"))
 }
 
 kotlin {

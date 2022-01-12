@@ -656,6 +656,14 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Participants page **/
 
+.add-students-modal textarea {
+    min-height: 6rem;
+}
+
+.add-students-modal .input-field {
+    margin-top: 4rem;
+}
+
 #participants-container .subsection-wrap {
     display: flex;
     justify-content: space-between;
@@ -1588,6 +1596,12 @@ ezc-fold-attr {
 
 ezc-attr.top {
     align-items: center;
+    /* Padding if there's no right-side action menu */
+    padding-right: 1rem;
+}
+
+ezc-item.has-actions ezc-attr.top {
+    padding-right: 0;
 }
 
 /* Show first attr regardless of size */

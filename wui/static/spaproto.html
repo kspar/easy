@@ -278,7 +278,7 @@
 </script>
 
 <script id="t-c-ezcoll-item" type="text/x-handlebars">
-    <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}}">
+    <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}}">
         <ezc-item-container>
             <ezc-left>
                 <ezc-item-type>
@@ -401,12 +401,18 @@
 </script>
 
 <script id="t-c-string-field" type="text/x-handlebars">
-    <div class="form-fields">
-        <div class="input-field">
-            <input id="{{id}}" type="text" value="{{value}}">
-            <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
-            <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
-        </div>
+    <div class="input-field">
+        <input id="{{id}}" type="text" value="{{value}}">
+        <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+    </div>
+</script>
+
+<script id="t-c-text-field" type="text/x-handlebars">
+    <div class="input-field">
+        <textarea id="{{id}}" class="materialize-textarea" placeholder="{{{placeholder}}}"></textarea>
+        <label for="{{id}}" class="{{#active}}active{{/active}}">{{label}}</label>
+        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
 </script>
 
@@ -659,6 +665,21 @@
     </div>
 </script>
 
+<script id="t-c-participants" type="text/x-handlebars">
+    <ez-dst id="{{breadcrumbsId}}"></ez-dst>
+
+    <div class="title-wrap">
+        <h2 class="title">{{title}}</h2>
+    </div>
+
+    <h4 class="subsection">{{teachersLabel}}</h4>
+    <ez-dst id="{{teachersListId}}"></ez-dst>
+
+    <h4 class="subsection">{{studentsLabel}}</h4>
+    <ez-dst id="{{studentsListId}}"></ez-dst>
+
+    <ez-dst class="add-students-modal" id="{{addStudentsModalId}}"></ez-dst>
+</script>
 
 
 

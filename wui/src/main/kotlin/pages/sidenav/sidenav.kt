@@ -10,6 +10,7 @@ import libheaders.Materialize
 import objOf
 import rip.kspar.ezspa.*
 import tmRender
+import kotlin.js.Promise
 
 enum class ActivePage {
     MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS,
@@ -47,7 +48,7 @@ object Sidenav {
     data class Action(
         override val iconHtml: String,
         override val text: String,
-        val onActivate: (a: Action) -> Unit,
+        val onActivate: suspend (a: Action) -> Unit,
     ) : Item(iconHtml, text) {
         override fun toString() = "Action(text=$text)"
     }
@@ -69,6 +70,10 @@ object Sidenav {
             sidenavComp.updateActivePage(spec.activePage).await()
             sidenavComp.updatePageItems(spec.pageSection).await()
         }
+    }
+
+    fun replacePageSection(pageSection: PageSection?): Promise<Unit> {
+        return sidenavComp.updatePageItems(pageSection)
     }
 }
 

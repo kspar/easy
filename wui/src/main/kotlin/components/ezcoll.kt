@@ -11,7 +11,6 @@ import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement
 import org.w3c.dom.events.Event
-import pages.exercise_library.ElementQueries
 import rip.kspar.ezspa.*
 import tmRender
 
@@ -343,7 +342,7 @@ class EzCollComp<P>(
             activatedFilters.all { filterGroup ->
                 filterGroup.any { filter -> filter.predicate(item.spec) }
             }
-        }.also { debug { "Calculated visible items: ${it.map { it.spec.title }}" } }
+        }
     }
 
     private fun updateFiltering() {
@@ -596,9 +595,6 @@ class EzCollItemComp<P>(
     )
 
     override fun postRender() {
-        // Maybe can only call in main() if it correctly detects DOM additions
-        ElementQueries.init()
-
         initExpanding()
         initActions()
         initActionableAttrs()
@@ -680,10 +676,12 @@ class EzCollItemComp<P>(
         }
 
         // Init item menu
-        Materialize.Dropdown.init(
-            getElemById("ezc-item-action-menu-${spec.id}"),
-            objOf("constrainWidth" to false, "coverTrigger" to false)
-        )
+        if (spec.actions.isNotEmpty()) {
+            Materialize.Dropdown.init(
+                getElemById("ezc-item-action-menu-${spec.id}"),
+                objOf("constrainWidth" to false, "coverTrigger" to false)
+            )
+        }
     }
 
     private fun initActionableAttrs() {

@@ -42,6 +42,8 @@ fun main() {
     EzSpa.Navigation.enableAnchorLinkInterception()
     EzSpa.Navigation.enableHistoryNavInterception()
 
+//    ElementQueries.listen()
+
     funLog?.end()
 }
 

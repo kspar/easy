@@ -13,7 +13,10 @@ import rip.kspar.ezspa.sleep
 // buildList is experimental
 @ExperimentalStdlibApi
 class ParticipantsStudentsListComp(
-    private val courseId: String,
+    private val students: List<ParticipantsRootComp.Student>,
+    private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
+    private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
+    private val isEditable: Boolean,
     parent: Component?
 ) : Component(parent) {
 
@@ -32,44 +35,17 @@ class ParticipantsStudentsListComp(
 
     override fun create() = doInPromise {
 
-        val studentProps = listOf(
-            StudentProps(
-                "Peeter",
-                "Paan",
-                "peeter.paan@peeter.paan",
-                "peeterpaan",
-                "peeter_paan123",
-                true,
-                listOf("Rühm AK")
-            ),
-            StudentProps(
-                null,
-                null,
-                "jaan.jaanusk12345678@jaan.ee",
-                null,
-                null,
-                false,
-                listOf("Rühm AK", "Rühm BC", "Rühm POW")
-            ),
-            StudentProps(
-                "E",
-                "A",
-                "abc",
-                "abc",
-                "abc",
-                true,
-                listOf("Rühm BC")
-            ),
-            StudentProps(
-                "X",
-                "X",
-                "abc",
-                "abc",
-                "abc",
-                true,
-                listOf("Rühm AA")
-            ),
-        )
+        val activeStudentProps = students.map {
+            StudentProps(it.given_name, it.family_name, it.email, it.id, it.moodle_username, true, it.groups.map { it.name })
+        }
+        val pendingStudentProps = studentsPending.map {
+            StudentProps(null, null, it.email, null, null, false, it.groups.map { it.name })
+        }
+        val moodlePendingStudentProps = studentsMoodlePending.map {
+            StudentProps(null, null, it.email, null, it.moodle_username, false, it.groups.map { it.name })
+        }
+
+        val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
 
         val items = studentProps.map { p ->
             EzCollComp.Item(
@@ -81,18 +57,18 @@ class ParticipantsStudentsListComp(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it) }.toMutableList(),
                     Icons.groups,
-                    onClick = ::changeGroups
+                    onClick = if (isEditable) ::changeGroups else null
                 ),
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
                     add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
                     p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user)) }
                     p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUser)) }
                 },
-                isSelectable = true,
-                actions = listOf(
+                isSelectable = isEditable,
+                actions = if (isEditable) listOf(
                     EzCollComp.Action(Icons.groups, "Rühmad...", ::changeGroups),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse),
-                ),
+                ) else emptyList(),
             )
         }
 
@@ -101,9 +77,9 @@ class ParticipantsStudentsListComp(
         studentsColl = EzCollComp(
             items,
             EzCollComp.Strings("õpilane", "õpilast"),
-            listOf(
+            if (isEditable) listOf(
                 EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse)
-            ),
+            ) else emptyList(),
             listOf(
                 EzCollComp.FilterGroup(
                     "Staatus", listOf(
@@ -149,9 +125,7 @@ class ParticipantsStudentsListComp(
         super.postRender()
     }
 
-    override fun renderLoading(): String {
-        return super.renderLoading()
-    }
+    override fun renderLoading() = "Laen õpilasi..."
 
     override fun postChildrenBuilt() {
     }

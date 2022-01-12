@@ -2,7 +2,7 @@ package components
 
 import rip.kspar.ezspa.Component
 
-class TextComp(
+class StringComp(
     var text: String,
     parent: Component
 ) : Component(parent) {
