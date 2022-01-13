@@ -1215,7 +1215,8 @@
             <p class="subheading-item"><span class="subheading">{{moodleShortnameLabel}}:</span>{{moodleShortname}}</p>
         {{/isMoodleSynced}}
         {{#studentsSynced}}
-            <button id="sync-students-button" class="waves-effect waves-light btn">{{syncStudentsLabel}}</button>
+
+            <button id="sync-students-button" class="waves-effect waves-light btn"><ez-btn-content>{{syncStudentsLabel}}</ez-btn-content></button>
         {{/studentsSynced}}
         {{^studentsSynced}}
             <a id="add-students-link" class="toggle-link" href="#!">{{{addStudentsLink}}}</a>

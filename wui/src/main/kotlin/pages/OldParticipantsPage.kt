@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.dom.clear
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLTextAreaElement
 import pages.sidenav.ActivePage
@@ -33,13 +34,6 @@ object OldParticipantsPage : EasyPage() {
 
     @Serializable
     data class Participants(
-            val moodle_short_name: String? = null,
-            val moodle_students_synced: Boolean? = null,
-            val moodle_grades_synced: Boolean? = null,
-            val student_count: Int? = null,
-            val teacher_count: Int? = null,
-            val students_pending_count: Int? = null,
-            val students_moodle_pending_count: Int? = null,
             val students: List<Student> = emptyList(),
             val teachers: List<Teacher> = emptyList(),
             val students_pending: List<PendingStudent> = emptyList(),
@@ -79,7 +73,7 @@ object OldParticipantsPage : EasyPage() {
 
     @Serializable
     data class PendingMoodleStudent(
-            val ut_username: String,
+            val moodle_username: String,
             val email: String,
             val groups: List<Group>
     )
@@ -89,6 +83,27 @@ object OldParticipantsPage : EasyPage() {
             val id: String,
             val name: String
     )
+
+    @Serializable
+    data class MoodleStatus(
+        val moodle_props: MoodleProps?
+    )
+
+    @Serializable
+    data class MoodleProps(
+        val moodle_short_name: String,
+        val students_synced: Boolean,
+        val grades_synced: Boolean,
+        val sync_students_in_progress: Boolean,
+        val sync_grades_in_progress: Boolean,
+    )
+
+    @Serializable
+    data class MoodleSyncedStatus(
+        val status: MoodleSyncStatus,
+    )
+
+    enum class MoodleSyncStatus { FINISHED, IN_PROGRESS }
 
 
     override val pageName: Any
@@ -118,20 +133,26 @@ object OldParticipantsPage : EasyPage() {
         MainScope().launch {
             val participantsPromise = fetchEms("/courses/$courseId/participants", ReqMethod.GET,
                     successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
+            val moodleStatusPromise = fetchEms(
+                "/courses/$courseId/moodle", ReqMethod.GET,
+                successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            )
             val courseTitle = BasicCourseInfo.get(courseId).await().title
 
             val participants = participantsPromise.await()
                     .parseTo(Participants.serializer()).await()
+            val moodleStatus = moodleStatusPromise.await()
+                .parseTo(MoodleStatus.serializer()).await()
 
-            val isMoodleSynced = participants.moodle_short_name != null
-            val studentsSynced = participants.moodle_students_synced ?: false
-            val gradesSynced = participants.moodle_grades_synced ?: false
+            val isMoodleSynced = moodleStatus.moodle_props?.moodle_short_name != null
+            val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
+            val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
             val normalPendingRows = participants.students_pending.map { s ->
                 PendingStudentRow(null, s.email, s.groups.joinToString { it.name })
             }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
             val moodlePendingRows = participants.students_moodle_pending.map { s ->
-                PendingStudentRow(s.ut_username, s.email, s.groups.joinToString { it.name })
+                PendingStudentRow(s.moodle_username, s.email, s.groups.joinToString { it.name })
             }.sortedWith(compareBy(PendingStudentRow::groups, PendingStudentRow::email))
 
             val pendingRows = normalPendingRows + moodlePendingRows
@@ -144,7 +165,7 @@ object OldParticipantsPage : EasyPage() {
                 TeacherRow(t.given_name, t.family_name, t.id, t.email, t.groups.joinToString { it.name })
             }.sortedWith(compareBy(TeacherRow::groups, TeacherRow::familyName, TeacherRow::givenName))
 
-            paintParticipants(courseId, courseTitle, isMoodleSynced, participants.moodle_short_name, studentsSynced, gradesSynced,
+            paintParticipants(courseId, courseTitle, isMoodleSynced, moodleStatus.moodle_props?.moodle_short_name, studentsSynced, gradesSynced,
                     teacherRows, activeRows, 0, pendingRows, 0)
         }
     }
@@ -240,18 +261,34 @@ object OldParticipantsPage : EasyPage() {
 
         if (studentsSynced) {
             val syncBtn = getElemByIdAs<HTMLButtonElement>("sync-students-button")
-            syncBtn.onVanillaClick(true) {
-                MainScope().launch {
-                    syncBtn.disabled = true
-                    fetchEms("/courses/$courseId/moodle", ReqMethod.POST,
-                            mapOf(
-                                    "moodle_short_name" to moodleShortName,
-                                    "sync_students" to studentsSynced,
-                                    "sync_grades" to gradesSynced
-                            ), successChecker = { http200 }).await()
-                    successMessage { "Õpilased edukalt sünkroniseeritud" }
-                    build(null)
+            syncBtn.onSingleClickWithDisabled("Sünkroniseerin...") {
+
+                debug { "Syncing students from moodle" }
+                val moodleStudentsSyncStatus = fetchEms("/courses/$courseId/moodle/students", ReqMethod.POST,
+                    successChecker = { http200 }).await()
+                    .parseTo(MoodleSyncedStatus.serializer()).await().status
+
+                if (moodleStudentsSyncStatus == MoodleSyncStatus.IN_PROGRESS) {
+                    debug { "Sync already in progress" }
+                    successMessage { "Sünkroniseerimine juba käib" }
+
+                    while (true) {
+                        sleep(3000).await()
+                        debug { "Polling moodle students sync status" }
+
+                        val moodleProps = fetchEms(
+                            "/courses/$courseId/moodle", ReqMethod.GET,
+                            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+                        ).await().parseTo(MoodleStatus.serializer()).await().moodle_props
+
+                        if (moodleProps?.sync_students_in_progress != true) {
+                            break
+                        }
+                    }
                 }
+                debug { "Sync completed" }
+                successMessage { "Õpilased edukalt sünkroniseeritud" }
+                build(null)
             }
         }
 
