@@ -1,14 +1,19 @@
 package core.aas
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.conf.SysConf
 import core.db.*
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.web.client.RestTemplate
+import java.time.Duration
+
 
 private const val EXECUTOR_GRADE_URL = "/v1/grade"
+const val EXECUTOR_REQUEST_TIMEOUT_SECONDS_KEY = "executor-request-timeout-seconds"
 
 private val log = KotlinLogging.logger {}
 
@@ -122,11 +127,19 @@ internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
     }
 }
 
+private fun timeoutRestTemplate(): RestTemplate {
+    val timeout = SysConf.getProp(EXECUTOR_REQUEST_TIMEOUT_SECONDS_KEY)?.toLong() ?: 3600L
+
+    return RestTemplateBuilder()
+        .setConnectTimeout(Duration.ofSeconds(timeout))
+        .setReadTimeout(Duration.ofSeconds(timeout))
+        .build()
+}
+
 internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): AutoAssessment {
     log.info { "Calling executor ${executor.name}" }
 
-    // TODO: go from infinity timeout finite timeout via https://stackoverflow.com/questions/13837012/spring-resttemplate-timeout
-    val responseEntity = RestTemplate().postForEntity(
+    val responseEntity = timeoutRestTemplate().postForEntity(
         executor.baseUrl + EXECUTOR_GRADE_URL, request, ExecutorResponse::class.java
     )
 
