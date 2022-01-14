@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object SysConf {
 
+    // TODO: make it cachable and evict cache after certain amount of time
     fun getProp(key: String): String? {
         return transaction {
             SystemConfiguration.select {
