@@ -11,18 +11,12 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AdminEvictAllCacheController(private val cacheInvalidator: CacheInvalidator) {
+class AdminEvictAllCacheController(private val cachingService: CachingService) {
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/remove-cache")
     fun controller(caller: EasyUser) {
         log.debug { "${caller.id} is calling cache eviction service to force evict all cached content." }
-
-        cacheInvalidator.invalidateSelectLatestValidGrades()
-        cacheInvalidator.invalidateAccountCache()
-        cacheInvalidator.invalidateArticleCache()
-        cacheInvalidator.invalidateTotalUserCache()
-        cacheInvalidator.invalidateAutoAssessmentCountCache()
-        cacheInvalidator.invalidateSubmissionCache()
+        cachingService.invalidateAll()
     }
 }

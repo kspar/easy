@@ -3,10 +3,10 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.cache.CacheInvalidator
-import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -26,17 +26,24 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncService, val cacheInvalidator: CacheInvalidator) {
+class TeacherAssessController(
+    val moodleGradesSyncService: MoodleGradesSyncService,
+    val cachingService: CachingService
+) {
 
-    data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
-                   @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?)
+    data class Req(
+        @JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
+        @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/assessments")
-    fun controller(@PathVariable("courseId") courseIdString: String,
-                   @PathVariable("courseExerciseId") courseExerciseIdString: String,
-                   @PathVariable("submissionId") submissionIdString: String,
-                   @Valid @RequestBody assessment: Req, caller: EasyUser) {
+    fun controller(
+        @PathVariable("courseId") courseIdString: String,
+        @PathVariable("courseExerciseId") courseExerciseIdString: String,
+        @PathVariable("submissionId") submissionIdString: String,
+        @Valid @RequestBody assessment: Req, caller: EasyUser
+    ) {
 
         log.debug { "Adding teacher assessment by ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
@@ -51,7 +58,7 @@ class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncServi
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
-        insertTeacherAssessment(callerId, submissionId, assessment, cacheInvalidator, courseExId)
+        insertTeacherAssessment(callerId, submissionId, assessment, cachingService, courseExId)
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 }
@@ -60,15 +67,21 @@ class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncServi
 private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean {
     return transaction {
         (Course innerJoin CourseExercise innerJoin Submission)
-                .select {
-                    Course.id eq courseId and
-                            (CourseExercise.id eq courseExId) and
-                            (Submission.id eq submissionId)
-                }.count() == 1L
+            .select {
+                Course.id eq courseId and
+                        (CourseExercise.id eq courseExId) and
+                        (Submission.id eq submissionId)
+            }.count() == 1L
     }
 }
 
-private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: TeacherAssessController.Req, cacheInvalidator: CacheInvalidator, courseExId: Long) {
+private fun insertTeacherAssessment(
+    teacherId: String,
+    submissionId: Long,
+    assessment: TeacherAssessController.Req,
+    cachingService: CachingService,
+    courseExId: Long
+) {
     transaction {
         TeacherAssessment.insert {
             it[submission] = EntityID(submissionId, Submission)
@@ -78,5 +91,5 @@ private fun insertTeacherAssessment(teacherId: String, submissionId: Long, asses
             it[feedback] = assessment.feedback
         }
     }
-    cacheInvalidator.invalidateSelectLatestValidGrades(courseExId)
+    cachingService.evictSelectLatestValidGrades(courseExId)
 }

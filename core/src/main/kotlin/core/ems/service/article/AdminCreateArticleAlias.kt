@@ -1,12 +1,13 @@
 package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.ems.service.cache.articleCache
 import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
-import core.ems.service.cache.CacheInvalidator
 import core.ems.service.assertArticleExists
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -15,7 +16,6 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -27,16 +27,15 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateArticleAliasController {
+class CreateArticleAliasController(private val cachingService: CachingService) {
 
-    @Autowired
-    lateinit var cacheInvalidator: CacheInvalidator
-
-    data class Req(@JsonProperty("alias", required = true)
-                   @field:NotBlank
-                   @field:Size(max = 100)
-                   @field:Pattern(regexp = "\\w*[a-zA-Z]\\w*")
-                   val alias: String)
+    data class Req(
+        @JsonProperty("alias", required = true)
+        @field:NotBlank
+        @field:Size(max = 100)
+        @field:Pattern(regexp = "\\w*[a-zA-Z]\\w*")
+        val alias: String
+    )
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/articles/{articleId}/aliases")
@@ -48,7 +47,7 @@ class CreateArticleAliasController {
         assertArticleExists(articleId)
 
         insertAlias(caller.id, articleId, req.alias)
-        cacheInvalidator.invalidateArticleCache()
+        cachingService.invalidate(articleCache)
     }
 }
 

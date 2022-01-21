@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoAssessStatusObserver
 import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
+import core.ems.service.cache.countSubmissionsCache
+import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
-import core.ems.service.cache.CacheInvalidator
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -30,7 +32,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StudentSubmitCont(
     private val autoAssessStatusObserver: AutoAssessStatusObserver,
-    private val cacheInvalidator: CacheInvalidator,
+    private val cachingService: CachingService,
     private val autoGradeScheduler: AutoGradeScheduler,
     private val moodleGradesSyncService: MoodleGradesSyncService
 ) {
@@ -59,12 +61,12 @@ class StudentSubmitCont(
         when (selectGraderType(courseExId)) {
             GraderType.TEACHER -> {
                 log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
-                insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE, cacheInvalidator)
+                insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE, cachingService)
             }
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 val submissionId =
-                    insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cacheInvalidator)
+                    insertSubmission(courseExId, solution, studentId, AutoGradeStatus.IN_PROGRESS, cachingService)
 
                 val deferred: Job =
                     GlobalScope.launch {
@@ -80,7 +82,7 @@ class StudentSubmitCont(
         try {
             val autoExerciseId = selectAutoExId(courseExId)
             if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId, cacheInvalidator, courseExId)
+                insertAutoAssFailed(submissionId, cachingService, courseExId)
                 throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
             }
 
@@ -88,10 +90,10 @@ class StudentSubmitCont(
             val autoAss =
                 autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
-            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cacheInvalidator, courseExId)
+            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId)
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId, cacheInvalidator, courseExId)
+            insertAutoAssFailed(submissionId, cachingService, courseExId)
             return
         }
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
@@ -125,7 +127,7 @@ private fun insertSubmission(
     submission: String,
     studentId: String,
     autoAss: AutoGradeStatus,
-    cacheInvalidator: CacheInvalidator
+    cachingService: CachingService
 ): Long {
     val id = transaction {
         Submission.insertAndGetId {
@@ -137,8 +139,8 @@ private fun insertSubmission(
         }.value
     }
 
-    cacheInvalidator.invalidateSubmissionCache()
-    cacheInvalidator.invalidateSelectLatestValidGrades(courseExId)
+    cachingService.invalidate(countSubmissionsCache)
+    cachingService.evictSelectLatestValidGrades(courseExId)
     return id
 }
 
@@ -146,7 +148,7 @@ private fun insertAutoAssessment(
     newGrade: Int,
     newFeedback: String?,
     submissionId: Long,
-    cacheInvalidator: CacheInvalidator,
+    cachingService: CachingService,
     courseExId: Long
 ) {
     transaction {
@@ -161,18 +163,18 @@ private fun insertAutoAssessment(
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
         }
 
-        cacheInvalidator.invalidateAutoAssessmentCountCache()
-        cacheInvalidator.invalidateSelectLatestValidGrades(courseExId)
+        cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
+        cachingService.evictSelectLatestValidGrades(courseExId)
     }
 }
 
-private fun insertAutoAssFailed(submissionId: Long, cacheInvalidator: CacheInvalidator, courseExId: Long) {
+private fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, courseExId: Long) {
     transaction {
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.FAILED
         }
     }
 
-    cacheInvalidator.invalidateAutoAssessmentCountCache()
-    cacheInvalidator.invalidateSelectLatestValidGrades(courseExId)
+    cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
+    cachingService.evictSelectLatestValidGrades(courseExId)
 }

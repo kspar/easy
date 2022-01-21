@@ -35,6 +35,9 @@ easy:
           ms: "3000"
         fixed-delay-observer-clear:
           ms: "3000"
+    statistics:
+      fixed-delay:
+        ms: "15000"
 
     moodle-sync:
       users:

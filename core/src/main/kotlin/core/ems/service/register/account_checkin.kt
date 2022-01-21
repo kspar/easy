@@ -1,10 +1,10 @@
 package core.ems.service.register
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.ems.service.cache.countTotalUsersCache
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.cache.CacheInvalidator
-import core.ems.service.cache.PrivateCachingService
+import core.ems.service.cache.CachingService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
@@ -23,12 +23,14 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateAccountController(val privateCachingService: PrivateCachingService, val cacheInvalidator: CacheInvalidator) {
+class UpdateAccountController(val cachingService: CachingService) {
 
-    data class PersonalDataBody(@JsonProperty("first_name", required = true)
-                                @field:NotBlank @field:Size(max = 100) val firstName: String,
-                                @JsonProperty("last_name", required = true)
-                                @field:NotBlank @field:Size(max = 100) val lastName: String)
+    data class PersonalDataBody(
+        @JsonProperty("first_name", required = true)
+        @field:NotBlank @field:Size(max = 100) val firstName: String,
+        @JsonProperty("last_name", required = true)
+        @field:NotBlank @field:Size(max = 100) val lastName: String
+    )
 
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
@@ -36,38 +38,39 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
     fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser) {
 
         val account = AccountData(
-                caller.id,
-                caller.moodleUsername,
-                caller.email.lowercase(),
-                correctNameCapitalisation(dto.firstName),
-                correctNameCapitalisation(dto.lastName))
+            caller.id,
+            caller.moodleUsername,
+            caller.email.lowercase(),
+            correctNameCapitalisation(dto.firstName),
+            correctNameCapitalisation(dto.lastName)
+        )
 
         log.debug { "Update personal data for $account" }
-        val isChanged = updateAccount(account, privateCachingService)
+        val isChanged = updateAccount(account, cachingService)
 
         if (isChanged) {
-            cacheInvalidator.invalidateTotalUserCache()
-            cacheInvalidator.invalidateAccountCache(account.username)
+            cachingService.invalidate(countTotalUsersCache)
+            cachingService.evictAccountCache(account.username)
         }
 
         if (caller.isStudent()) {
-            if (!privateCachingService.studentExists(account.username)) {
+            if (!cachingService.studentExists(account.username)) {
                 log.debug { "Update student ${caller.id}" }
                 updateStudent(account)
             }
             if (isChanged) {
                 log.debug { "Update student course access ${caller.id}" }
                 updateStudentCourseAccesses(account)
-                cacheInvalidator.invalidateAccountCache(account.username)
+                cachingService.evictAccountCache(account.username)
             }
         }
 
-        if (caller.isTeacher() && !privateCachingService.teacherExists(account.username)) {
+        if (caller.isTeacher() && !cachingService.teacherExists(account.username)) {
             log.debug { "Update teacher ${caller.id}" }
             updateTeacher(account)
         }
 
-        if (caller.isAdmin() && !privateCachingService.adminExists(account.username)) {
+        if (caller.isAdmin() && !cachingService.adminExists(account.username)) {
             log.debug { "Update admin ${caller.id}" }
             updateAdmin(account)
             // Admins should also have a teacher entity to add assessments, exercises etc
@@ -76,20 +79,26 @@ class UpdateAccountController(val privateCachingService: PrivateCachingService, 
     }
 }
 
-data class AccountData(val username: String, val moodleUsername: String?, val email: String, val givenName: String, val familyName: String)
+data class AccountData(
+    val username: String,
+    val moodleUsername: String?,
+    val email: String,
+    val givenName: String,
+    val familyName: String
+)
 
 private fun correctNameCapitalisation(name: String) =
-        name.split(Regex(" +"))
-                .joinToString(separator = " ") {
-                    it.split("-").joinToString(separator = "-") {
-                        it.lowercase().replaceFirstChar(Char::titlecase)
-                    }
-                }
+    name.split(Regex(" +"))
+        .joinToString(separator = " ") {
+            it.split("-").joinToString(separator = "-") {
+                it.lowercase().replaceFirstChar(Char::titlecase)
+            }
+        }
 
-private fun updateAccount(accountData: AccountData, privateCachingService: PrivateCachingService): Boolean {
+private fun updateAccount(accountData: AccountData, cachingService: CachingService): Boolean {
     return transaction {
 
-        val oldAccount = privateCachingService.selectAccount(accountData.username)
+        val oldAccount = cachingService.selectAccount(accountData.username)
 
         if (oldAccount == null) {
             insertAccount(accountData)
@@ -179,9 +188,9 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
 
     transaction {
         val courseIds = StudentPendingAccess
-                .slice(StudentPendingAccess.course)
-                .select { StudentPendingAccess.email eq accountData.email }
-                .map { it[StudentPendingAccess.course].value }
+            .slice(StudentPendingAccess.course)
+            .select { StudentPendingAccess.email eq accountData.email }
+            .map { it[StudentPendingAccess.course].value }
 
         StudentPendingAccess.deleteWhere {
             StudentPendingAccess.email eq accountData.email
@@ -198,12 +207,12 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
             }
 
             val groupIds = StudentPendingCourseGroup
-                    .slice(StudentPendingCourseGroup.courseGroup)
-                    .select {
-                        StudentPendingCourseGroup.email.eq(accountData.email) and
-                                StudentPendingCourseGroup.course.eq(courseId)
-                    }
-                    .map { it[StudentPendingCourseGroup.courseGroup] }
+                .slice(StudentPendingCourseGroup.courseGroup)
+                .select {
+                    StudentPendingCourseGroup.email.eq(accountData.email) and
+                            StudentPendingCourseGroup.course.eq(courseId)
+                }
+                .map { it[StudentPendingCourseGroup.courseGroup] }
 
             StudentCourseGroup.batchInsert(groupIds) {
                 this[StudentCourseGroup.student] = accountData.username
@@ -224,12 +233,12 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
         }
 
         val pendingAccesses = moodlePendingQuery
-                .map {
-                    MoodlePendingAccess(
-                            it[StudentMoodlePendingAccess.course].value,
-                            it[StudentMoodlePendingAccess.moodleUsername]
-                    )
-                }
+            .map {
+                MoodlePendingAccess(
+                    it[StudentMoodlePendingAccess.course].value,
+                    it[StudentMoodlePendingAccess.moodleUsername]
+                )
+            }
 
         pendingAccesses.forEach { pendingAccess ->
             log.debug { "Granting access for ${accountData.username} to course ${pendingAccess.courseId} based on Moodle pending access $pendingAccess" }

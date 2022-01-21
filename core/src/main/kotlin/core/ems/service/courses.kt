@@ -1,7 +1,7 @@
 package core.ems.service
 
 import core.db.*
-import core.ems.service.cache.PrivateCachingService
+import core.ems.service.cache.CachingService
 import core.exception.InvalidRequestException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -30,14 +30,14 @@ data class Grade(val submissionId: String,
 
 
 @Service
-class CourseService(val privateCachingService: PrivateCachingService) {
+class CourseService(val cachingService: CachingService) {
 
     /**
      * Return all valid grades for a course exercise. If a student has not submission to this exercise, their grade
      * is not contained in the list. Uses a cache.
      */
     fun selectLatestValidGrades(courseExerciseId: Long): List<Grade> {
-        return privateCachingService.selectLatestValidGradesAll(courseExerciseId)
+        return cachingService.selectLatestValidGradesAll(courseExerciseId)
     }
 
     /**
@@ -45,7 +45,7 @@ class CourseService(val privateCachingService: PrivateCachingService) {
      * If a student has not submission to this exercise, their grade is not contained in the list. Uses a cache.
      */
     fun selectLatestValidGrades(courseExerciseId: Long, studentIds: List<String>): List<Grade> {
-        return privateCachingService.selectLatestValidGradesAll(courseExerciseId).filter { studentIds.contains(it.studentId) }
+        return cachingService.selectLatestValidGradesAll(courseExerciseId).filter { studentIds.contains(it.studentId) }
     }
 
     /**

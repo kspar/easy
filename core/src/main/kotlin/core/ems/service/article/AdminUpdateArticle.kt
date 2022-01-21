@@ -1,14 +1,15 @@
 package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.ems.service.cache.articleCache
 import core.conf.security.EasyUser
 import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.AdocService
-import core.ems.service.cache.CacheInvalidator
 import core.ems.service.assertArticleExists
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -18,7 +19,6 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -29,14 +29,13 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateArticleController(private val adocService: AdocService) {
+class UpdateArticleController(private val adocService: AdocService, private val cachingService: CachingService) {
 
-    @Autowired
-    lateinit var cacheInvalidator: CacheInvalidator
-
-    data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-                   @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
-                   @JsonProperty("public", required = true) val public: Boolean)
+    data class Req(
+        @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
+        @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @JsonProperty("public", required = true) val public: Boolean
+    )
 
 
     @Secured("ROLE_ADMIN")
@@ -50,7 +49,7 @@ class UpdateArticleController(private val adocService: AdocService) {
 
         val html = req.textAdoc?.let { adocService.adocToHtml(it) }
         updateArticle(caller.id, articleId, req, html)
-        cacheInvalidator.invalidateArticleCache()
+        cachingService.invalidate(articleCache)
     }
 }
 
@@ -64,9 +63,9 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
         }
 
         val lastVersionId = ArticleVersion
-                .select { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
-                .map { it[ArticleVersion.id].value }
-                .first()
+            .select { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
+            .map { it[ArticleVersion.id].value }
+            .first()
 
         ArticleVersion.update({ ArticleVersion.id eq lastVersionId }) {
             it[validTo] = time
@@ -84,9 +83,9 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
 
         if (html != null) {
             val inUse = StoredFile.slice(StoredFile.id)
-                    .select { StoredFile.usageConfirmed eq false }
-                    .map { it[StoredFile.id].value }
-                    .filter { html.contains(it) }
+                .select { StoredFile.usageConfirmed eq false }
+                .map { it[StoredFile.id].value }
+                .filter { html.contains(it) }
 
             StoredFile.update({ StoredFile.id inList inUse }) {
                 it[StoredFile.usageConfirmed] = true
