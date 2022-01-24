@@ -4,15 +4,15 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoAssessStatusObserver
 import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
-import core.ems.service.cache.countSubmissionsCache
-import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CachingService
+import core.ems.service.cache.countSubmissionsCache
+import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.moodle.MoodleGradesSyncService
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -87,8 +87,14 @@ class StudentSubmitCont(
             }
 
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
-            val autoAss =
+            val autoAss = try {
                 autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
+            } catch (e: Exception) {
+                // EZ-1214, retry autoassessment automatically once if it fails
+                log.error("Autoassessment failed, retrying once more...", e)
+                autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
+            }
+
             log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId)
         } catch (e: Exception) {
