@@ -37,7 +37,7 @@ easy:
           ms: "3000"
     statistics:
       fixed-delay:
-        ms: "15000"
+        ms: "1000"
 
     moodle-sync:
       users:

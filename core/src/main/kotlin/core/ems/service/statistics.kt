@@ -26,15 +26,7 @@ class StatisticsController(private val statisticsService: StatisticsService) {
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: StatResp?, caller: EasyUser): StatResp {
         log.debug { "${caller.id} is querying statistics." }
-
-        return runBlocking {
-            when (dto) {
-                // If client stats matches current known-stats, wait for update...
-                statisticsService.getLastKnownStats() -> statisticsService.waitStatUpdate()
-                // if client has no current stats or stats differ, return latest queried stats...
-                else -> statisticsService.getLastKnownStats()
-            }
-        }
+        return runBlocking { statisticsService.getOrWaitStatUpdate(dto) }
     }
 }
 
@@ -50,15 +42,31 @@ class StatisticsService(private val cachingService: CachingService) {
     private val clientsListening = ConcurrentLinkedQueue<Channel<StatResp>>()
     private var lastKnownResponse = composeStatResp()
 
-    fun getLastKnownStats() = lastKnownResponse
+    suspend fun getOrWaitStatUpdate(currentStatResp: StatResp?): StatResp {
+        val channel = Channel<StatResp>(Channel.CONFLATED)
 
-    suspend fun waitStatUpdate() = Channel<StatResp>(Channel.CONFLATED).also { clientsListening.add(it) }.receive()
+        synchronized(this) {
+            // if client has no current stats or stats differ, return latest queried stats...
+            if (currentStatResp != lastKnownResponse) return lastKnownResponse else clientsListening.add(channel)
+        }
+        // else wait for update...
+        return channel.receive()
+    }
+
 
     @Scheduled(fixedDelayString = "\${easy.core.statistics.fixed-delay.ms}")
     fun pushStatUpdate() {
-        lastKnownResponse = composeStatResp()
-        // Push response to clients
-        while (clientsListening.isNotEmpty()) clientsListening.poll().trySend(lastKnownResponse)
+        synchronized(this) {
+            val databaseState = composeStatResp()
+
+            // If nothing new to push, don't push, just return
+            if (databaseState == lastKnownResponse) return
+
+            // Has new state, update and push
+            lastKnownResponse = databaseState
+            // Push response to clients
+            while (clientsListening.isNotEmpty()) clientsListening.poll().trySend(lastKnownResponse)
+        }
     }
 
     private fun composeStatResp() = StatResp(
