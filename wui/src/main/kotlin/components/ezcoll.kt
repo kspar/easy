@@ -1,5 +1,6 @@
 package components
 
+import Icons
 import debug
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
@@ -142,7 +143,7 @@ class EzCollComp<P>(
         }
 
         override fun getLongValue(): String {
-            return items.joinToString(separator) { it.longValue.toString() }
+            return if (items.isEmpty()) "--" else items.joinToString(separator) { it.longValue.toString() }
         }
     }
 
@@ -383,12 +384,14 @@ class EzCollComp<P>(
 
         if (isFilterActive) {
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").clear()
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = "$visibleItemsCount / $totalItemsCount"
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent =
+                "$visibleItemsCount / $totalItemsCount"
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = "kuvatud"
         } else {
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "Σ"
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent =
+                if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
         }
     }
 
