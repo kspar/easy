@@ -36,7 +36,14 @@ class ParticipantsStudentsListComp(
     override fun create() = doInPromise {
 
         val activeStudentProps = students.map {
-            StudentProps(it.given_name, it.family_name, it.email, it.id, it.moodle_username, true, it.groups.map { it.name })
+            StudentProps(
+                it.given_name,
+                it.family_name,
+                it.email,
+                it.id,
+                it.moodle_username,
+                true,
+                it.groups.map { it.name })
         }
         val pendingStudentProps = studentsPending.map {
             StudentProps(null, null, it.email, null, null, false, it.groups.map { it.name })
@@ -47,18 +54,21 @@ class ParticipantsStudentsListComp(
 
         val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
 
+        val allGroups: List<String> = studentProps.flatMap { it.groups }.distinct().sorted()
+        val hasGroups = allGroups.isNotEmpty()
+
         val items = studentProps.map { p ->
             EzCollComp.Item(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isActive) Icons.user else Icons.pending),
                 if (p.isActive) "${p.firstName} ${p.lastName}" else "(Kutse ootel)",
                 if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
-                topAttr = EzCollComp.ListAttr(
+                topAttr = if (hasGroups) EzCollComp.ListAttr(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it) }.toMutableList(),
                     Icons.groups,
                     onClick = if (isEditable) ::changeGroups else null
-                ),
+                ) else null,
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
                     add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
                     p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user)) }
@@ -72,43 +82,52 @@ class ParticipantsStudentsListComp(
             )
         }
 
-        val allGroups: List<String> = studentProps.flatMap { it.groups }.distinct().sorted()
-
         studentsColl = EzCollComp(
             items,
             EzCollComp.Strings("õpilane", "õpilast"),
             if (isEditable) listOf(
                 EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse)
             ) else emptyList(),
-            listOf(
-                EzCollComp.FilterGroup(
-                    "Staatus", listOf(
-                        EzCollComp.Filter("Aktiivne", { it.props.isActive }),
-                        EzCollComp.Filter("Ootel", { !it.props.isActive }),
+            buildList {
+                add(
+                    EzCollComp.FilterGroup<StudentProps>(
+                        "Staatus", listOf(
+                            EzCollComp.Filter("Aktiivne", { it.props.isActive }),
+                            EzCollComp.Filter("Ootel", { !it.props.isActive }),
+                        )
                     )
-                ),
-                EzCollComp.FilterGroup(
-                    "Rühm",
-                    allGroups.map { g ->
-                        EzCollComp.Filter(g, { it.props.groups.contains(g) })
-                    }
-                ),
-            ),
-            listOf(
-                EzCollComp.Sorter("Rühma ja nime järgi",
-                    compareBy<EzCollComp.Item<StudentProps>> { it.props.groups.getOrNull(0) }
-                        .thenBy { it.props.groups.getOrNull(1) }
-                        .thenBy { it.props.groups.getOrNull(2) }
-                        .thenBy { it.props.groups.getOrNull(3) }
-                        .thenBy { it.props.groups.getOrNull(4) }
-                        .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
-                        .thenBy { it.props.firstName?.lowercase() }),
-                EzCollComp.Sorter("Nime järgi",
-                    compareBy<EzCollComp.Item<StudentProps>> {
-                        it.props.lastName?.lowercase() ?: it.props.email.lowercase()
-                    }
-                        .thenBy { it.props.firstName?.lowercase() })
-            ),
+                )
+                if (hasGroups)
+                    add(
+                        EzCollComp.FilterGroup<StudentProps>(
+                            "Rühm",
+                            allGroups.map { g ->
+                                EzCollComp.Filter(g, { it.props.groups.contains(g) })
+                            }
+                        )
+                    )
+            },
+            buildList {
+                if (hasGroups)
+                    add(
+                        EzCollComp.Sorter("Rühma ja nime järgi",
+                            compareBy<EzCollComp.Item<StudentProps>> { it.props.groups.getOrNull(0) }
+                                .thenBy { it.props.groups.getOrNull(1) }
+                                .thenBy { it.props.groups.getOrNull(2) }
+                                .thenBy { it.props.groups.getOrNull(3) }
+                                .thenBy { it.props.groups.getOrNull(4) }
+                                .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
+                                .thenBy { it.props.firstName?.lowercase() })
+                    )
+                add(
+                    EzCollComp.Sorter("Nime järgi",
+                        compareBy<EzCollComp.Item<StudentProps>> {
+                            it.props.lastName?.lowercase() ?: it.props.email.lowercase()
+                        }
+                            .thenBy { it.props.firstName?.lowercase() }
+                    )
+                )
+            },
             parent = this
         )
 
@@ -132,11 +151,22 @@ class ParticipantsStudentsListComp(
 
     private var groupIdx = 1
     private suspend fun changeGroups(item: EzCollComp.Item<StudentProps>): EzCollComp.Result {
-        val groupAttr = item.topAttr.unsafeCast<EzCollComp.ListAttr<StudentProps, String>>()
+        // TODO: if hasGroups changed i.e. first student is added to a group then should createAndBuild this
 
-        groupAttr.items.add(EzCollComp.ListAttrItem("Rühm ${groupIdx++}"))
+        return if (item.topAttr != null && item.topAttr is EzCollComp.ListAttr<*, *>) {
+            val groupAttr = item.topAttr.unsafeCast<EzCollComp.ListAttr<StudentProps, String>>()
+            groupAttr.items.add(EzCollComp.ListAttrItem("Rühm ${groupIdx++}"))
+            EzCollComp.ResultModified(listOf(item))
 
-        return EzCollComp.ResultModified(listOf(item))
+        } else {
+            val groupAttr = EzCollComp.ListAttr(
+                "Rühmad",
+                mutableListOf(EzCollComp.ListAttrItem("Rühm ${groupIdx++}")),
+                Icons.groups,
+                onClick = if (isEditable) ::changeGroups else null
+            )
+            EzCollComp.ResultModified(listOf(item.copy(topAttr = groupAttr)))
+        }
     }
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<StudentProps>): EzCollComp.Result =
