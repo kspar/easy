@@ -1,0 +1,20 @@
+<html>
+
+<!-- Added by plugin -->
+<link type="text/css" id="dark-mode" rel="stylesheet" href="">
+
+<head>
+</head>
+<body>
+abc
+
+<script type="text/x-handlebars">
+    {{#foo}}
+    {{/foo}} <!-- Infinite loop when looking at first { on this line -->
+    {{#foo}}
+    {{/foo}}
+</script>
+
+<script src="https://unpkg.com/container-query-polyfill/cqfill.iife.min.js"></script>
+</body>
+</html>

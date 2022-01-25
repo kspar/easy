@@ -207,21 +207,26 @@
 </script>
 
 <script id="t-c-ezcoll" type="text/x-handlebars">
-    <div id="{{collId}}" class="ez-coll-sizer">
+    <ez-coll-wrap id="{{collId}}">
         <ezc-ctrl>
             <ezc-ctrl-left>
                 {{#hasSelection}}
                 <label class="ezc-all-checkbox">
                     <input id="ezc-select-all-{{collId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
                 </label>
-                <a class="btn-flat dropdown-trigger waves-effect disabled" data-target='ezc-select-action-dropdown-{{collId}}'>{{applyLabel}}
-                    <ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"/><path d="M7 10l5 5 5-5z"/></svg></ez-icon>
+                <a class="btn-flat dropdown-trigger waves-effect disabled" data-target='ezc-select-action-dropdown-{{collId}}'>
+                    <ezc-mass-action-btn-label>{{applyLabel}}{{{applyExpandIcon}}}</ezc-mass-action-btn-label>
+                    <ezc-mass-action-btn-icon>{{{applyShortIcon}}}</ezc-mass-action-btn-icon>
                 </a>
                 <ezc-ctrl-selected></ezc-ctrl-selected>
                 {{/hasSelection}}
             </ezc-ctrl-left>
             <ezc-ctrl-right>
-                <ezc-ctrl-shown></ezc-ctrl-shown>
+                <ezc-ctrl-shown>
+                    <ezc-ctrl-shown-icon></ezc-ctrl-shown-icon>
+                    <ezc-ctrl-shown-count></ezc-ctrl-shown-count>
+                    <ezc-ctrl-shown-name></ezc-ctrl-shown-name>
+                </ezc-ctrl-shown>
                 {{#hasFiltering}}
                 <ezc-ctrl-filter filter="off">
                     <ez-icon-action title="{{filterLabel}}" class="waves-effect" tabindex="0">
@@ -274,7 +279,7 @@
                 <ez-dst id="{{dstId}}" style="order: {{idx}}"></ez-dst>
             {{/items}}
         </ez-coll>
-    </div>
+    </ez-coll-wrap>
 </script>
 
 <script id="t-c-ezcoll-item" type="text/x-handlebars">
@@ -301,17 +306,15 @@
                     </ezc-first>
                     {{#hasBottomAttrs}}
                         <ezc-second>
-                            <ezc-attrs-sizer>
-                                <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" ez-attr-width-s="{{attrWidthS}}" ez-attr-width-m="{{attrWidthM}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
-                                    {{#bottomAttrs}}
-                                        <ezc-attr class="bottom">
-                                            <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">
-                                                {{{shortValueHtml}}}
-                                            </ezc-attr-text>
-                                        </ezc-attr>
-                                    {{/bottomAttrs}}
-                                </ezc-bottom-attrs>
-                            </ezc-attrs-sizer>
+                            <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
+                                {{#bottomAttrs}}
+                                    <ezc-attr class="bottom">
+                                        <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">
+                                            {{{shortValueHtml}}}
+                                        </ezc-attr-text>
+                                    </ezc-attr>
+                                {{/bottomAttrs}}
+                            </ezc-bottom-attrs>
                             <ezc-fold class="display-none">
                                 {{#topAttr}}
                                     <ezc-fold-attr ez-show-max="{{maxCollWidthInFold}}">

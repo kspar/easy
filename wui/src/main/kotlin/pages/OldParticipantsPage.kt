@@ -115,7 +115,7 @@ object OldParticipantsPage : EasyPage() {
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
 
-    override val pathSchema = "/courses/{courseId}/participants"
+    override val pathSchema = "/courses/{courseId}/participants-old"
 
     private val courseId: String
         get() = parsePathParams()["courseId"]

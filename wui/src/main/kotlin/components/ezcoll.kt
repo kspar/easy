@@ -3,6 +3,7 @@ package components
 import debug
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
+import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.Materialize
 import libheaders.closePromise
@@ -214,6 +215,8 @@ class EzCollComp<P>(
             "selectActions" to massActions.map { mapOf("actionHtml" to "${it.iconHtml} ${it.text}", "id" to it.id) },
             "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
             "applyLabel" to "Rakenda...",
+            "applyExpandIcon" to Icons.dropdownBtnExpand,
+            "applyShortIcon" to Icons.dotsHorizontal,
             "filterLabel" to "Filtreeri",
             "orderLabel" to "Järjesta",
             "removeFiltersLabel" to "Eemalda filtrid",
@@ -378,12 +381,15 @@ class EzCollComp<P>(
     private fun updateShownCount(visibleItemsCount: Int, isFilterActive: Boolean) {
         val totalItemsCount = items.size
 
-        val shownString = if (isFilterActive)
-            "$visibleItemsCount / $totalItemsCount"
-        else
-            "$totalItemsCount ${if (totalItemsCount > 1) strings.totalItemsPlural else strings.totalItemsSingular}"
-
-        getElemById(collId).getElemBySelector("ezc-ctrl-shown").textContent = shownString
+        if (isFilterActive) {
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").clear()
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = "$visibleItemsCount / $totalItemsCount"
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = "kuvatud"
+        } else {
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "Σ"
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
+        }
     }
 
     private suspend fun invokeMassAction(action: MassAction<P>) {
@@ -643,7 +649,7 @@ class EzCollItemComp<P>(
     private fun updateExpanded() {
         val fold = itemEl.getElemBySelector("ezc-fold")
         val trailer = itemEl.getElemBySelector("ezc-expand-trailer")
-        val attrs = itemEl.getElemBySelector("ezc-attrs-sizer")
+        val attrs = itemEl.getElemBySelector("ezc-bottom-attrs")
         if (isExpanded) {
             trailer.addClass("open")
             attrs.addClass("display-none")

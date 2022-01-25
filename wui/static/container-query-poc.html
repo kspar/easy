@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+<!--    <script src="/static/js/pace.min.js"></script>-->
+    <link rel="stylesheet" href="/static/css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.css"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/exercise.css"/>
+
+
+    <style>
+        main {
+            font-size: 1.6rem;
+            border: 1px solid black;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .box {
+            display: flex;
+            justify-content: center;
+            border: 1px solid #469c45;
+            margin: 2rem 0;
+
+            container: inline-size;
+            width: 100%;
+        }
+        .a, .b, .c {
+            display: none;
+            padding: 3rem;
+            border: 1px solid #0000ff;
+        }
+
+        /*noinspection CssInvalidAtRule*/
+        @container (min-width: 400px) {
+            .a {
+                display: flex;
+            }
+        }
+        @container (min-width: 500px) {
+            .b {
+                display: flex;
+            }
+        }
+        @container (min-width: 600px) {
+            .c {
+                display: flex;
+            }
+        }
+
+    </style>
+</head>
+<body style="background-color: #eee">
+<header>
+</header>
+<main>
+    <div class="box">
+        <span class="a">attr-a</span>
+        <span class="b">attr-b</span>
+        <span class="c">attr-c</span>
+    </div>
+    <div class="box" style="width: 80%">
+        <span class="a">attr-a</span>
+        <span class="b">attr-b</span>
+        <span class="c">attr-c</span>
+    </div>
+</main>
+<footer>
+</footer>
+
+
+<script src="https://unpkg.com/container-query-polyfill/cqfill.iife.min.js"></script>
+<!--<script src="https://idp.lahendus.ut.ee/auth/js/keycloak-tmp.js"></script>-->
+<!--<script src="/static/js/keycloak.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/mode/python/python.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/theme/idea.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/display/autorefresh.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.48.4/addon/mode/loadmode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/idea.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js"></script>
+<!--<script src="/static/js/wui.js"></script>-->
+
+<div id="date"></div> <!-- Temporary, for automatic generation time -->
+</body>
+</html>

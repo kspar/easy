@@ -11,12 +11,6 @@ import rip.kspar.ezspa.doInPromise
 import toEstonianString
 import kotlin.js.Date
 
-//@JsModule("css-element-queries/src/ElementQueries")
-//@JsNonModule
-//external object ElementQueries {
-//    fun init()
-//    fun listen()
-//}
 
 class ExerciseLibRootComp(
         dstId: String

@@ -128,6 +128,8 @@ class ParticipantsRootComp(
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
+        // TODO: remove
+//        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(5) { a } }
 
         teachersList = ParticipantsTeachersListComp(courseId, this)
         studentsList = ParticipantsStudentsListComp(
