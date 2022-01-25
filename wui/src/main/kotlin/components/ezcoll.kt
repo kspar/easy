@@ -184,8 +184,8 @@ class EzCollComp<P>(
     private val hasFiltering: Boolean
         get() = filterGroups.isNotEmpty() && items.isNotEmpty()
 
-    private val hasSorting: Boolean
-        get() = sorters.isNotEmpty() && items.isNotEmpty()
+    private val hasChangeableSorting: Boolean
+        get() = sorters.size > 1 && items.isNotEmpty()
 
     private val collId = IdGenerator.nextId()
 
@@ -212,7 +212,7 @@ class EzCollComp<P>(
             "collId" to collId,
             "hasSelection" to hasSelection,
             "hasFiltering" to hasFiltering,
-            "hasOrdering" to hasSorting,
+            "hasOrdering" to hasChangeableSorting,
             "selectActions" to massActions.map { mapOf("actionHtml" to "${it.iconHtml} ${it.text}", "id" to it.id) },
             "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
             "applyLabel" to "Rakenda...",
@@ -247,7 +247,7 @@ class EzCollComp<P>(
             initSelection()
         if (hasFiltering)
             initFiltering()
-        if (hasSorting)
+        if (hasChangeableSorting)
             initSorting()
     }
 
@@ -633,7 +633,6 @@ class EzCollItemComp<P>(
 
         isSelected = selected
         updateSelectionState()
-        debug { "Item ${spec.title} now selected: $isSelected" }
     }
 
     fun updateOrderingIndex() {
