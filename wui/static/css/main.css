@@ -1725,7 +1725,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 
 /* Container is ez-coll-wrap */
 /*noinspection CssInvalidAtRule*/
-@container (min-width: 400px) {
+@container (width >= 400px) {
     ezc-ctrl-shown-icon {
         display: none;
     }
@@ -1742,7 +1742,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 }
 
 /*noinspection CssInvalidAtRule*/
-@container (min-width: 600px) {
+@container (width >= 600px) {
     ezc-ctrl {
         padding-left: 2.2rem;
         padding-right: 2.2rem;
@@ -1769,7 +1769,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 }
 
 /*noinspection CssInvalidAtRule*/
-@container (max-width: 599px) {
+@container (width < 600px) {
     ez-coll-wrap *[ez-show-max="599"] {
         display: flex;
     }
@@ -1793,14 +1793,14 @@ ezc-bottom-attrs > ezc-attr {
 
 /* Container is ezc-bottom-attrs */
 /*noinspection CssInvalidAtRule*/
-@container (min-width: 400px) {
+@container (width >= 400px) {
     ezc-bottom-attrs > ezc-attr:nth-child(2) {
         display: inline-block;
     }
 }
 
 /*noinspection CssInvalidAtRule*/
-@container (min-width: 600px) {
+@container (width >= 600px) {
     ezc-bottom-attrs > ezc-attr:nth-child(3) {
         display: inline-block;
     }
@@ -1812,7 +1812,7 @@ ezc-bottom-attrs > ezc-attr {
 /* Increase attr width if there's more space. Note that if items have a different number of attrs, they will resize differently.
    This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
 /*noinspection CssInvalidAtRule*/
-@container (min-width: 900px) {
+@container (width >= 900px) {
     ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
         flex-basis: 300px;
     }
