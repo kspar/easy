@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .box {
+            display: flex;
+            justify-content: center;
+            border: 1px solid #469c45;
+
+            container: inline-size;
+            width: 100%;
+        }
+
+        .a, .b {
+            display: none;
+            padding: 3rem;
+            border: 1px solid #0000ff;
+        }
+
+        @container (width >= 400px) {
+            .a {
+                display: flex;
+            }
+        }
+        @container (width >= 500px) {
+            .b {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <span id="a">
+        <span class="a">A</span>
+    </span>
+    <span class="b">B</span>
+</div>
+
+<button onclick="a();">Render A</button>
+
+<script>
+    function a() {
+        document.getElementById("a").innerHTML = ""
+        document.getElementById("a").innerHTML = "<span class=\"a\">A</span>"
+    }
+</script>
+
+<script src="https://unpkg.com/container-query-polyfill/cqfill.iife.min.js"></script>
+</body>
+</html>
