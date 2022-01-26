@@ -718,6 +718,15 @@ nav.crumb-wrap .breadcrumb:before {
     cursor: default;
 }
 
+
+/** Participants page v3 **/
+
+ez-participants-list {
+    display: block;
+    margin-top: 1rem;
+}
+
+
 /** Grade table page **/
 
 .grade-table-wrap {
@@ -1884,7 +1893,7 @@ h3.title {
 }
 
 .title-wrap.no-crumb {
-    margin-top: 3.5rem;
+    margin-top: 2.5rem;
 }
 
 .title-button > .text {
@@ -1950,6 +1959,43 @@ div.title-wrap > .title-button > i.material-icons {
     .tabs-wrap + .card-content {
         padding: 2.4rem;
     }
+}
+
+
+/** Tabs **/
+
+.ez-tabs {
+    background-color: transparent;
+    border-bottom: 1px solid #ccc;
+}
+
+.ez-tabs .indicator {
+    background-color: var(--ez-checkbox-fill-col);
+}
+
+.ez-tabs > .tab > a,
+.ez-tabs > .tab > a:hover:not(.active) {
+    font-size: 1.6rem;
+    color: var(--ezc-attr-mutable-col);
+}
+
+.ez-tabs > .tab > a.active {
+    color: var(--ez-checkbox-fill-col);
+    font-weight: 500;
+}
+
+.ez-tabs > .tab > a:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.ez-tabs .tab a:focus,
+.ez-tabs .tab a:focus.active {
+    background-color: transparent;
+}
+
+ez-tabs-content {
+    display: block;
+    margin-top: 1rem;
 }
 
 
