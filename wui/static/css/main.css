@@ -718,6 +718,15 @@ nav.crumb-wrap .breadcrumb:before {
     cursor: default;
 }
 
+
+/** Participants page v3 **/
+
+ez-participants-list {
+    display: block;
+    margin-top: 1rem;
+}
+
+
 /** Grade table page **/
 
 .grade-table-wrap {
@@ -1302,10 +1311,16 @@ ez-icon-action > ez-icon.med {
 
 /** Ez Collection **/
 
+ez-coll-wrap {
+    display: block;
+    width: 100%;
+    container: inline-size;
+}
+
 ezc-ctrl {
     display: flex;
     justify-content: space-between;
-    padding: 1rem 2.2rem;
+    padding: 1rem 0 1rem 1.3rem;
 }
 
 ezc-ctrl-left {
@@ -1323,9 +1338,16 @@ ezc-ctrl-left a.dropdown-trigger {
     border: 1px solid var(--ez-flat-btn-border-col);
     display: flex;
     align-items: center;
-    padding-right: .8rem;
+    padding: 0 .8rem;
     margin-left: .4rem;
     text-transform: none;
+}
+
+ezc-mass-action-btn-label {
+    display: none;
+}
+ezc-mass-action-btn-icon {
+    display: flex;
 }
 
 ezc-ctrl-left a.dropdown-trigger.disabled {
@@ -1336,7 +1358,7 @@ ezc-ctrl-left a.dropdown-trigger:hover {
     background-color: var(--ez-icon-action-active-bg-col);
 }
 
-ezc-ctrl-left a.dropdown-trigger ez-icon {
+ezc-ctrl-left a.dropdown-trigger ezc-mass-action-btn-label ez-icon {
     margin-left: .8rem;
 }
 
@@ -1401,7 +1423,7 @@ ezc-ctrl-filter .select-wrap > label {
 }
 
 ezc-ctrl-selected {
-    margin-left: 3rem;
+    margin-left: 1.5rem;
     color: var(--ezc-attr-immutable-col);
     font-size: .86em;
 }
@@ -1412,9 +1434,20 @@ ezc-ctrl-right {
 }
 
 ezc-ctrl-shown {
+    display: flex;
     margin-right: .8rem;
     color: var(--ezc-attr-immutable-col);
     font-size: .86em;
+}
+
+ezc-ctrl-shown-icon {
+    margin-right: .6rem;
+    font-weight: 500;
+}
+
+ezc-ctrl-shown-name {
+    display: none;
+    margin-left: .4rem;
 }
 
 ezc-ctrl-filter {
@@ -1458,17 +1491,7 @@ ezc-left {
     display: flex;
     align-items: start;
     justify-content: center;
-    padding: .6rem 1rem .1rem .8rem;
-}
-
-.ez-coll-sizer[min-width~="400px"] ezc-left {
-    padding-left: 1.2rem;
-    padding-right: 1.4rem;
-}
-
-.ez-coll-sizer[min-width~="700px"] ezc-left {
-    padding-left: 1.5rem;
-    padding-right: 1.7rem;
+    padding: .6rem 1rem .1rem .6rem;
 }
 
 ezc-item-type {
@@ -1566,13 +1589,6 @@ ezc-second {
     justify-content: space-between;
     margin-top: .5rem;
     min-height: 24px;
-}
-
-ezc-attrs-sizer {
-    align-self: center;
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
 }
 
 ezc-bottom-attrs {
@@ -1710,37 +1726,105 @@ ezc-expand-trailer.open > ez-icon-action > ez-icon {
     transform: rotate(180deg);
 }
 
-/* General show/hide based on collection width */
-.ez-coll-sizer *[ez-show-min="600"],
-.ez-coll-sizer *[ez-show-max="599"] {
+
+ez-coll-wrap *[ez-show-min="600"],
+ez-coll-wrap *[ez-show-max="599"] {
     display: none;
 }
 
-.ez-coll-sizer[min-width~="600px"] *[ez-show-min="600"] {
-    display: flex;
+/* Container is ez-coll-wrap */
+/*noinspection CssInvalidAtRule*/
+@container (width >= 400px) {
+    ezc-ctrl-shown-icon {
+        display: none;
+    }
+    ezc-ctrl-shown-name {
+        display: flex;
+    }
+    ezc-ctrl {
+        padding-left: 1.9rem;
+    }
+    ezc-left {
+        padding-left: 1.2rem;
+        padding-right: 1.4rem;
+    }
 }
 
-.ez-coll-sizer[max-width~="599px"] *[ez-show-max="599"] {
-    display: flex;
+/*noinspection CssInvalidAtRule*/
+@container (width >= 600px) {
+    ezc-ctrl {
+        padding-left: 2.2rem;
+        padding-right: 2.2rem;
+    }
+    ezc-ctrl-left a.dropdown-trigger {
+        padding-left: 1.6rem;
+    }
+    ezc-mass-action-btn-label {
+        display: flex;
+    }
+    ezc-mass-action-btn-icon {
+        display: none;
+    }
+    ezc-ctrl-selected {
+        margin-left: 3rem;
+    }
+    ezc-left {
+        padding-left: 1.5rem;
+        padding-right: 1.7rem;
+    }
+    ez-coll-wrap *[ez-show-min="600"] {
+        display: flex;
+    }
 }
 
-/* Attr widths */
+/*noinspection CssInvalidAtRule*/
+@container (width < 600px) {
+    ez-coll-wrap *[ez-show-max="599"] {
+        display: flex;
+    }
+}
 
-ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr {
+
+/*
+  Max num of attrs: 3
+  Attr width on small: 200px
+  Attr width on med: 300px
+*/
+
+ezc-bottom-attrs {
+    width: 100%;
+    container: inline-size;
+}
+
+ezc-bottom-attrs > ezc-attr {
     flex-basis: 200px;
 }
 
-ezc-attrs-sizer[min-width~="400px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+2),
-ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-s="200"] > ezc-attr:nth-child(-n+3) {
-    display: inline-block;
+/* Container is ezc-bottom-attrs */
+/*noinspection CssInvalidAtRule*/
+@container (width >= 400px) {
+    ezc-bottom-attrs > ezc-attr:nth-child(2) {
+        display: inline-block;
+    }
 }
 
-/* Increase attr width if there's more space. Determine reasonable attr-width-m's. */
-/* Note that if items have a different number of attrs, they will resize differently when using this.
+/*noinspection CssInvalidAtRule*/
+@container (width >= 600px) {
+    ezc-bottom-attrs > ezc-attr:nth-child(3) {
+        display: inline-block;
+    }
+    ezc-bottom-attrs[ez-attrs="2"] > ezc-attr {
+        flex-basis: 300px;
+    }
+}
+
+/* Increase attr width if there's more space. Note that if items have a different number of attrs, they will resize differently.
    This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
-ezc-attrs-sizer[min-width~="600px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="2"] > ezc-attr,
-ezc-attrs-sizer[min-width~="900px"] > ezc-bottom-attrs[ez-attr-width-m="300"][ez-attrs="3"] > ezc-attr {
-    flex-basis: 300px;
+/*noinspection CssInvalidAtRule*/
+@container (width >= 900px) {
+    ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
+        flex-basis: 300px;
+    }
 }
 
 
@@ -1809,7 +1893,7 @@ h3.title {
 }
 
 .title-wrap.no-crumb {
-    margin-top: 3.5rem;
+    margin-top: 2.5rem;
 }
 
 .title-button > .text {
@@ -1875,6 +1959,43 @@ div.title-wrap > .title-button > i.material-icons {
     .tabs-wrap + .card-content {
         padding: 2.4rem;
     }
+}
+
+
+/** Tabs **/
+
+.ez-tabs {
+    background-color: transparent;
+    border-bottom: 1px solid #ccc;
+}
+
+.ez-tabs .indicator {
+    background-color: var(--ez-checkbox-fill-col);
+}
+
+.ez-tabs > .tab > a,
+.ez-tabs > .tab > a:hover:not(.active) {
+    font-size: 1.6rem;
+    color: var(--ezc-attr-mutable-col);
+}
+
+.ez-tabs > .tab > a.active {
+    color: var(--ez-checkbox-fill-col);
+    font-weight: 500;
+}
+
+.ez-tabs > .tab > a:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.ez-tabs .tab a:focus,
+.ez-tabs .tab a:focus.active {
+    background-color: transparent;
+}
+
+ez-tabs-content {
+    display: block;
+    margin-top: 1rem;
 }
 
 

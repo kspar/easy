@@ -1,6 +1,8 @@
+import kotlinx.browser.document
 import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
+import libheaders.ContainerQueryPolyfill
 import pages.ExerciseSummaryPage
 import pages.Navbar
 import pages.OldParticipantsPage
@@ -20,8 +22,7 @@ import rip.kspar.ezspa.*
 
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
-    OldParticipantsPage,
-//    ParticipantsPage,
+    OldParticipantsPage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage
 )
 
@@ -42,8 +43,6 @@ fun main() {
     initApplication()
     EzSpa.Navigation.enableAnchorLinkInterception()
     EzSpa.Navigation.enableHistoryNavInterception()
-
-//    ElementQueries.listen()
 
     funLog?.end()
 }
@@ -100,6 +99,8 @@ private fun initApplication() {
     EzSpa.Logger.warnFunction = ::warn
 
     CodeMirror.modeURL = AppProperties.CM_MODE_URL_TEMPLATE
+
+    loadContainerQueries()
 }
 
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
@@ -110,4 +111,20 @@ private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
         )
     )
     Sidenav.refresh(Sidenav.Spec())
+}
+
+private fun loadContainerQueries() {
+    val supportsContainerQueries = try {
+         document.documentElement?.asDynamic().style.container != null
+    } catch (e: Throwable) {
+        false
+    }
+
+    if (!supportsContainerQueries) {
+        debug { "Native container queries NOT supported, using polyfill :(" }
+        // Just including the reference in code forces the module to be included/loaded
+        ContainerQueryPolyfill
+    } else {
+        debug { "Native container queries supported :)" }
+    }
 }

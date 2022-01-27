@@ -3,8 +3,8 @@ package pages.participants
 import DateSerializer
 import Icons
 import cache.BasicCourseInfo
-import components.BreadcrumbsComp
-import components.Crumb
+import components.PageTabsComp
+import components.StringComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.sidenav.Sidenav
@@ -87,14 +87,12 @@ class ParticipantsRootComp(
         val sync_grades_in_progress: Boolean,
     )
 
-    private lateinit var breadcrumbs: BreadcrumbsComp
-    private lateinit var teachersList: ParticipantsTeachersListComp
-    private lateinit var studentsList: ParticipantsStudentsListComp
+    private lateinit var tabsComp: PageTabsComp
     private lateinit var addStudentsModal: AddStudentsModalComp
     private lateinit var courseTitle: String
 
     override val children: List<Component>
-        get() = listOf(breadcrumbs, teachersList, studentsList, addStudentsModal)
+        get() = listOf(tabsComp, addStudentsModal)
 
     override fun create() = doInPromise {
         val courseTitlePromise = BasicCourseInfo.get(courseId)
@@ -110,13 +108,6 @@ class ParticipantsRootComp(
         addStudentsModal = AddStudentsModalComp(courseId, this)
 
         courseTitle = courseTitlePromise.await().title
-        breadcrumbs = BreadcrumbsComp(
-            listOf(
-                Crumb.myCourses,
-                Crumb.courseExercises(courseId, courseTitle),
-                Crumb("Osalejad")
-            ), this
-        )
 
         val participants = participantsPromise.await()
             .parseTo(Participants.serializer()).await()
@@ -128,14 +119,31 @@ class ParticipantsRootComp(
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
+        // TODO: remove
+//        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(5) { a } }
 
-        teachersList = ParticipantsTeachersListComp(courseId, this)
-        studentsList = ParticipantsStudentsListComp(
-            participants.students,
-            participants.students_pending,
-            participants.students_moodle_pending,
-            !studentsSynced,
-            this
+
+        tabsComp = PageTabsComp(
+            listOf(
+                PageTabsComp.Tab("Õpilased", preselected = true) {
+                    ParticipantsStudentsListComp(
+                        participants.students,
+                        participants.students_pending,
+                        participants.students_moodle_pending,
+                        !studentsSynced,
+                        it
+                    )
+                },
+                PageTabsComp.Tab("Õpetajad") {
+                    ParticipantsTeachersListComp(
+                        courseId,
+                        it
+                    )
+                },
+                PageTabsComp.Tab("Rühmad") {
+                    StringComp("Rühmad", it)
+                }
+            ), this
         )
 
         if (!studentsSynced) {
@@ -153,12 +161,8 @@ class ParticipantsRootComp(
 
     override fun render() = tmRender(
         "t-c-participants",
-        "breadcrumbsId" to breadcrumbs.dstId,
-        "teachersListId" to teachersList.dstId,
-        "studentsListId" to studentsList.dstId,
+        "tabsId" to tabsComp.dstId,
         "addStudentsModalId" to addStudentsModal.dstId,
         "title" to courseTitle,
-        "teachersLabel" to "Õpetajad",
-        "studentsLabel" to "Õpilased",
     )
 }
