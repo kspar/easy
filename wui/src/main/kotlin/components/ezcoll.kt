@@ -218,6 +218,7 @@ class EzCollComp<P>(
             "hasOrdering" to hasChangeableSorting,
             "selectActions" to massActions.map { mapOf("actionHtml" to "${it.iconHtml} ${it.text}", "id" to it.id) },
             "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
+            "isEmpty" to items.isEmpty(),
             "applyLabel" to "Rakenda...",
             "applyExpandIcon" to Icons.dropdownBtnExpand,
             "applyShortIcon" to Icons.dotsHorizontal,
@@ -242,6 +243,14 @@ class EzCollComp<P>(
                     "isSelected" to (it == activeSorter)
                 )
             },
+            "emptyPlaceholder" to tmRender(
+                "t-s-missing-content-wandering-eyes",
+                "text" to "Siin pole veel midagi näidata."
+            ),
+            "noMatchingItemsPlaceholder" to tmRender(
+                "t-s-missing-content-wandering-eyes",
+                "text" to "Valitud filtritele ei vasta ükski rida."
+            ),
         )
     }
 
@@ -368,6 +377,14 @@ class EzCollComp<P>(
 
     private fun updateVisibleItems(visibleItems: List<EzCollItemComp<P>>) {
         items.forEach { it.setVisible(visibleItems.contains(it)) }
+
+        if (visibleItems.isEmpty()) {
+            getElemById(collId).getElemBySelector("ez-coll")
+                .setAttribute("no-matched-items", "")
+        } else {
+            getElemById(collId).getElemBySelector("ez-coll")
+                .removeAttribute("no-matched-items")
+        }
     }
 
     private fun updateCheckedItemsBasedOnVisible(visibleItems: List<EzCollItemComp<P>>) {

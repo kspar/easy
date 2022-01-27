@@ -31,8 +31,8 @@
             <div class="antennaball"></div>
             <div class="antenna"></div>
             <div class="robot">
-                <div class="robot-eye"></div>
-                <div class="robot-eye"></div>
+                <div class="robot-eye blinking"></div>
+                <div class="robot-eye blinking"></div>
             </div>
             <div id="loading-splash-text">Laen rakendust</div>
         </div>
@@ -288,10 +288,13 @@
                 {{/sorters}}
             </ul>
         </ezc-ctrl>
-        <ez-coll>
+        <ez-coll {{#isEmpty}}empty{{/isEmpty}}>
             {{#items}}
                 <ez-dst id="{{dstId}}" style="order: {{idx}}"></ez-dst>
             {{/items}}
+
+            <ezc-empty-placeholder>{{{emptyPlaceholder}}}</ezc-empty-placeholder>
+            <ezc-no-match-placeholder>{{{noMatchingItemsPlaceholder}}}</ezc-no-match-placeholder>
         </ez-coll>
     </ez-coll-wrap>
 </script>
@@ -454,8 +457,8 @@
             <div class="antennaball"></div>
             <div class="antenna"></div>
             <div class="robot">
-                <div class="robot-eye"></div>
-                <div class="robot-eye"></div>
+                <div class="robot-eye blinking"></div>
+                <div class="robot-eye blinking"></div>
             </div>
             <p class="text">{{noCoursesLabel}}</p>
         </div>
@@ -484,8 +487,8 @@
             <div class="antennaball"></div>
             <div class="antenna"></div>
             <div class="robot">
-                <div class="robot-eye"></div>
-                <div class="robot-eye"></div>
+                <div class="robot-eye blinking"></div>
+                <div class="robot-eye blinking"></div>
             </div>
             <p class="text">{{noCoursesLabel}}</p>
         </div>
@@ -682,6 +685,8 @@
     </div>
 </script>
 
+
+<!-- Participants page -->
 <script id="t-c-participants" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h2 class="title">{{title}}</h2>
@@ -692,6 +697,19 @@
     <ez-dst class="add-students-modal" id="{{addStudentsModalId}}"></ez-dst>
 </script>
 
+
+<!-- Snippets -->
+<script id="t-s-missing-content-wandering-eyes" type="text/x-handlebars">
+    <div class="missing-content-wrap">
+        <div class="antennaball"></div>
+        <div class="antenna"></div>
+        <div class="robot">
+            <div class="robot-eye looking"></div>
+            <div class="robot-eye looking"></div>
+        </div>
+        <p class="text">{{text}}</p>
+    </div>
+</script>
 
 
 <!-- Legacy templates -->

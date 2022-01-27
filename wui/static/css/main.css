@@ -1473,6 +1473,19 @@ ez-coll {
     flex-direction: column;
 }
 
+ez-coll > ezc-empty-placeholder,
+ez-coll > ezc-no-match-placeholder {
+    display: none;
+}
+
+ez-coll[empty] > ezc-empty-placeholder {
+    display: block;
+}
+
+ez-coll[no-matched-items] > ezc-no-match-placeholder {
+    display: block;
+}
+
 ezc-item {
     display: flex;
     margin-bottom: 1rem;
@@ -2255,11 +2268,39 @@ pre.auto-feedback {
     width: 14px;
     height: 14px;
     border-radius: 50%;
+}
+
+.missing-content-wrap .robot-eye.blinking {
     animation: eye-blink 3s infinite;
 }
 
+.missing-content-wrap .robot-eye.looking {
+    animation: looking 5s 1s infinite;
+}
+
+@keyframes looking {
+    0%, 83.34%, 100%{
+        transform: translate(0px, 0px);
+
+    }
+    16.67%{
+        transform: translate(-4px, -2px);
+
+    }
+    33.34%{
+        transform: translate(-4px, -2px);
+    }
+    50%{
+        transform: translate(4px, -2px);
+
+    }
+    66.67%{
+        transform: translate(4px, -2px);
+    }
+}
+
 .missing-content-wrap .text {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: #828282;
 }
 
