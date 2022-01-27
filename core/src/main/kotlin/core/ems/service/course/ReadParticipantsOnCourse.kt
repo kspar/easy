@@ -38,7 +38,7 @@ class ReadParticipantsOnCourseController {
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime?,
         @JsonProperty("groups") val groups: List<GroupResp>,
-        @JsonProperty("moodle_username") val moodleUsername: String? = null
+        @JsonProperty("moodle_username") val moodleUsername: String?,
     )
 
     data class TeachersResp(
