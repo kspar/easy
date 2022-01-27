@@ -1464,6 +1464,10 @@ ezc-ctrl-order .dropdown-content li label span {
     font-size: 1.4rem;
 }
 
+ezc-ctrl-order[custom-order="on"] ez-icon > svg {
+    color: var(--ez-checkbox-fill-col);
+}
+
 ez-coll {
     display: flex;
     flex-direction: column;

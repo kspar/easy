@@ -174,8 +174,11 @@ class EzCollComp<P>(
     // Currently applied filters - list of filter groups where each group is a list of applied filters
     private var activatedFilters: List<List<Filter<P>>> = emptyList()
 
+    // Default sorter, used to detect when a non-default sorter is active
+    private val defaultSorter: Sorter<P>? = if (useFirstSorterAsDefault) sorters.firstOrNull() else null
+
     // Currently applied sorter, if null then items are displayed in the created order
-    private var activeSorter: Sorter<P>? = if (useFirstSorterAsDefault) sorters.firstOrNull() else null
+    private var activeSorter: Sorter<P>? = defaultSorter
 
     // Getters because items can change
     private val hasSelection: Boolean
@@ -527,7 +530,13 @@ class EzCollComp<P>(
 
     private fun updateSorting() {
         val currentSorter = activeSorter
+
+        // Update icon
+        getElemById(collId).getElemBySelector("ezc-ctrl-order")
+            .setAttribute("custom-order", if (currentSorter != defaultSorter) "on" else "off")
+
         if (currentSorter != null) {
+            // Order items
             val compCompare = Comparator<EzCollItemComp<P>> { a, b -> currentSorter.comparator.compare(a.spec, b.spec) }
 
             items = items.sortedWith(compCompare)
