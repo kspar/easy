@@ -37,7 +37,9 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     @Scheduled(fixedDelayString = "\${easy.core.auto-assess.fixed-delay.ms}")
     @Synchronized
     private fun grade() {
-        log.debug { "Grading executors $executors" }
+        if (executors.values.flatMap { it.values }.sumOf { it.size() } != 0) {
+            log.debug { "Grading executors $executors" }
+        }
 
         executors.forEach { (executorId, schedulers) ->
             val waiting = schedulers.values.sumOf { it.countWaiting() }
