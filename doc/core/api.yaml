@@ -1014,6 +1014,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/definitions/Group'
+              self_is_restricted:
+                type: boolean
 
     post:
       summary: Create new course group.

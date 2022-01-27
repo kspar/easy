@@ -85,7 +85,8 @@ class GradeTableCardComp(
 
     @Serializable
     data class Groups(
-            val groups: List<Group>
+            val groups: List<Group>,
+            val self_is_restricted: Boolean,
     )
 
     @Serializable

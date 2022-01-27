@@ -22,15 +22,22 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class ReadCourseGroupsController {
 
-    data class Resp(@JsonProperty("groups") val groups: List<GroupResp>)
+    data class Resp(
+        @JsonProperty("groups") val groups: List<GroupResp>,
+        @JsonProperty("self_is_restricted") val isRestricted: Boolean,
+    )
 
-    data class GroupResp(@JsonProperty("id") val id: String,
-                         @JsonProperty("name") val name: String)
+    data class GroupResp(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/{courseId}/groups")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        caller: EasyUser
+    ): Resp {
 
         log.debug { "Getting all groups on course $courseIdStr for ${caller.id}" }
 
@@ -39,16 +46,16 @@ class ReadCourseGroupsController {
 
         val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
 
-        return Resp(selectGroups(courseId, restrictedGroups))
+        return Resp(selectGroups(courseId, restrictedGroups), restrictedGroups.isNotEmpty())
     }
 }
 
 private fun selectGroups(courseId: Long, restrictedGroups: List<Long>): List<ReadCourseGroupsController.GroupResp> {
     return transaction {
         val query = CourseGroup
-                .select {
-                    CourseGroup.course eq courseId
-                }
+            .select {
+                CourseGroup.course eq courseId
+            }
 
         if (restrictedGroups.isNotEmpty()) {
             query.andWhere {
@@ -58,8 +65,8 @@ private fun selectGroups(courseId: Long, restrictedGroups: List<Long>): List<Rea
 
         query.map {
             ReadCourseGroupsController.GroupResp(
-                    it[CourseGroup.id].value.toString(),
-                    it[CourseGroup.name]
+                it[CourseGroup.id].value.toString(),
+                it[CourseGroup.name]
             )
         }
     }
