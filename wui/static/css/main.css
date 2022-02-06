@@ -2410,6 +2410,11 @@ button i.material-icons {
     overflow: hidden;
 }
 
+.toast .toast-action {
+    white-space: nowrap;
+    overflow: inherit;
+}
+
 @media only screen and (max-width: 600px) {
     .toast .toast-action {
         margin-left: 0;

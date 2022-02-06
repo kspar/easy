@@ -69,6 +69,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                     }
                 }
             }.catch {
+                permanentErrorMessage(false, UserMessageAction("Proovi uuesti", onActivate = ::login)) { "Autentimine ebaõnnestus." }
                 reject(RuntimeException("Authentication error"))
             }
         }
@@ -77,10 +78,11 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     fun makeSureTokenIsValid(): Promise<Boolean> =
         Promise { resolve, reject ->
             this.updateToken(AppProperties.KEYCLOAK_TOKEN_MIN_VALID_SEC).then { refreshed: Boolean ->
+                if (refreshed) debug { "Refreshed tokens using refresh token" }
                 resolve(refreshed)
             }.catch {
-                debug { "Token refresh failed, redirecting to login" }
-                login()
+                debug { "Token refresh failed" }
+                permanentErrorMessage(true, UserMessageAction("Logi sisse", onActivate = ::login)) { "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida." }
                 reject(RuntimeException("Token refresh failed"))
             }
         }

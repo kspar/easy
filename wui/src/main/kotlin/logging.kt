@@ -1,8 +1,8 @@
 import libheaders.Materialize
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.onVanillaClick
 import kotlin.js.Date
-import kotlin.random.Random
 
 private const val DEBUG_PREFIX = "[DEBUG]"
 private const val WARN_PREFIX = "[WARN]"
@@ -34,30 +34,56 @@ fun debugFunStart(funName: String): FunLog? {
 }
 
 
-fun errorMessage(msgProvider: () -> String) = userMessage(msgProvider, MsgType.ERROR)
+data class UserMessageAction(val label: String, val id: String = IdGenerator.nextId(), val onActivate: () -> Unit)
 
-fun successMessage(msgProvider: () -> String) = userMessage(msgProvider, MsgType.SUCCESS)
+fun permanentErrorMessage(isDismissable: Boolean = true, action: UserMessageAction? = null, msgProvider: () -> String) =
+    userMessage(msgProvider, MsgType.PERMANENT_ERROR, action, isDismissable)
 
-fun userMessage(msgProvider: () -> String, type: MsgType) {
+fun errorMessage(isDismissable: Boolean = true, action: UserMessageAction? = null, msgProvider: () -> String) =
+    userMessage(msgProvider, MsgType.ERROR, action, isDismissable)
+
+fun successMessage(isDismissable: Boolean = true, action: UserMessageAction? = null, msgProvider: () -> String) =
+    userMessage(msgProvider, MsgType.SUCCESS, action, isDismissable)
+
+fun userMessage(msgProvider: () -> String, type: MsgType, action: UserMessageAction?, isDismissable: Boolean) {
     val msg = msgProvider()
     debug { "Showing ${type.name} message: $msg" }
-    val btnId = "toast${Random.Default.nextInt()}"
-    val toastHtml = tmRender("tm-message", mapOf(
-            "btnId" to btnId,
+    val dismissBtnId = IdGenerator.nextId()
+    val toastHtml = tmRender(
+        "tm-message", mapOf(
+            "icon" to type.iconId,
             "msg" to msg,
-            "icon" to type.iconId
-    ))
-    val toast = Materialize.toast(objOf(
-            "html" to toastHtml,
+            "action" to action?.let {
+                mapOf(
+                    "btnId" to it.id,
+                    "label" to it.label,
+                )
+            },
+            "dismissable" to isDismissable,
+            "dismissBtnId" to dismissBtnId,
+        )
+    )
+    val toast = Materialize.toast(
+        objOf(
+            "unsafeHTML" to toastHtml,
             "displayLength" to type.visibleTimeMs
-    ))
-    getElemById(btnId).onVanillaClick(true) {
-        toast.dismiss()
+        )
+    )
+    if (action != null) {
+        getElemById(action.id).onVanillaClick(true) {
+            action.onActivate.invoke()
+        }
+    }
+    if (isDismissable) {
+        getElemById(dismissBtnId).onVanillaClick(true) {
+            toast.dismiss()
+        }
     }
 }
 
 enum class MsgType(val iconId: String, val visibleTimeMs: Int) {
     ERROR("error_outline", 15_000),
+    PERMANENT_ERROR("error_outline", 31_556_952),
     SUCCESS("check", 5_000)
 }
 

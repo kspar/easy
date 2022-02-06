@@ -793,7 +793,12 @@
 <script id="tm-message" type="text/x-handlebars-template">
     <i class="material-icons" style="margin-right: 10px;">{{icon}}</i>
     <span class="msg truncate">{{msg}}</span>
-    <button id="{{btnId}}" class="btn-flat toast-action"><i class="material-icons dismiss">close</i></button>
+    {{#action}}
+        <button id="{{btnId}}" class="btn-flat toast-action waves-effect waves-light">{{label}}</button>
+    {{/action}}
+    {{#dismissable}}
+        <button id="{{dismissBtnId}}" class="btn-flat toast-action"><i class="material-icons dismiss">close</i></button>
+    {{/dismissable}}
 </script>
 
 <script id="tm-loading-exercise" type="text/x-handlebars-template">
