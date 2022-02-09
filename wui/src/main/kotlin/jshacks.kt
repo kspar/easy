@@ -1,3 +1,5 @@
+import kotlin.js.Console
+
 /**
  * Hacks, formerly known as utilities
  */
@@ -36,3 +38,7 @@ fun objOf(vararg pairs: Pair<String, Any?>): dynamic =
 fun dynamicToAny(d: dynamic) = d.unsafeCast<Any>()
 
 fun dynamicToAnyOrNull(d: dynamic) = d.unsafeCast<Any?>()
+
+fun Console.time(str: String) = asDynamic().time(str)
+
+fun Console.timeEnd(str: String) = asDynamic().timeEnd(str)
