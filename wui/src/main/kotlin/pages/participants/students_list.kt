@@ -16,6 +16,7 @@ class ParticipantsStudentsListComp(
     private val students: List<ParticipantsRootComp.Student>,
     private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
     private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
+    private val groups: List<ParticipantsRootComp.Group>,
     private val isEditable: Boolean,
     parent: Component?
 ) : Component(parent) {
@@ -43,6 +44,7 @@ class ParticipantsStudentsListComp(
                 it.id,
                 it.moodle_username,
                 true,
+                // maybe should include ids as well for removing groups
                 it.groups.map { it.name })
         }
         val pendingStudentProps = studentsPending.map {
@@ -54,8 +56,8 @@ class ParticipantsStudentsListComp(
 
         val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
 
-        val allGroups: List<String> = studentProps.flatMap { it.groups }.distinct().sorted()
-        val hasGroups = allGroups.isNotEmpty()
+        val hasGroups = groups.isNotEmpty()
+        val groupNames = groups.map { it.name }.sorted()
 
         val items = studentProps.map { p ->
             EzCollComp.Item(
@@ -76,38 +78,51 @@ class ParticipantsStudentsListComp(
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
-                    EzCollComp.Action(Icons.groups, "Rühmad...", ::changeGroups),
-                    EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse),
+                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
+                    EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 ) else emptyList(),
             )
         }
 
+        val massActions = if (isEditable) buildList {
+            if (hasGroups) {
+                add(
+                    EzCollComp.MassAction<StudentProps>(Icons.addToGroup, "Lisa rühma", { TODO() })
+                )
+                add(
+                    EzCollComp.MassAction<StudentProps>(Icons.removeFromGroup, "Eemalda rühmast", { TODO() })
+                )
+            }
+            add(
+                EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse)
+            )
+        } else emptyList()
+
         studentsColl = EzCollComp(
             items,
             EzCollComp.Strings("õpilane", "õpilast"),
-            if (isEditable) listOf(
-                EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse)
-            ) else emptyList(),
-            buildList {
+            massActions = massActions,
+            filterGroups = buildList {
                 add(
                     EzCollComp.FilterGroup<StudentProps>(
                         "Staatus", listOf(
-                            EzCollComp.Filter("Aktiivne", { it.props.isActive }),
-                            EzCollComp.Filter("Ootel", { !it.props.isActive }),
+                            EzCollComp.Filter("Aktiivne") { it.props.isActive },
+                            EzCollComp.Filter("Ootel") { !it.props.isActive },
                         )
                     )
                 )
                 if (hasGroups)
                     add(
-                        EzCollComp.FilterGroup<StudentProps>(
+                        EzCollComp.FilterGroup(
                             "Rühm",
-                            allGroups.map { g ->
-                                EzCollComp.Filter(g, { it.props.groups.contains(g) })
-                            }
+                            listOf(EzCollComp.Filter<StudentProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
+                                    groupNames.map { g ->
+                                        EzCollComp.Filter(g) { it.props.groups.contains(g) }
+                                    }
                         )
                     )
             },
-            buildList {
+            sorters = buildList {
                 if (hasGroups)
                     add(
                         EzCollComp.Sorter("Rühma ja nime järgi",

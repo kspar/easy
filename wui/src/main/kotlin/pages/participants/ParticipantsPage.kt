@@ -1,5 +1,6 @@
 package pages.participants
 
+import Auth
 import CONTENT_CONTAINER_ID
 import Icons
 import PageName
@@ -41,7 +42,8 @@ object ParticipantsPage : EasyPage() {
         super.build(pageStateStr)
 
         doInPromise {
-            ParticipantsRootComp(courseId, CONTENT_CONTAINER_ID).createAndBuild().await()
+            ParticipantsRootComp(courseId, Auth.activeRole == Role.ADMIN, CONTENT_CONTAINER_ID)
+                .createAndBuild().await()
         }
     }
 

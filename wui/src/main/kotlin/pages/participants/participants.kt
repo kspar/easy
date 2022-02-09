@@ -13,12 +13,14 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Date
+import kotlin.js.Promise
 
 // buildList is experimental
 @ExperimentalStdlibApi
 class ParticipantsRootComp(
     private val courseId: String,
-    dstId: String
+    private val isAdmin: Boolean,
+    dstId: String,
 ) : Component(null, dstId) {
 
     @Serializable
@@ -74,6 +76,12 @@ class ParticipantsRootComp(
     )
 
     @Serializable
+    data class Groups(
+        val groups: List<Group>,
+        val self_is_restricted: Boolean,
+    )
+
+    @Serializable
     data class MoodleStatus(
         val moodle_props: MoodleProps?
     )
@@ -100,6 +108,10 @@ class ParticipantsRootComp(
             "/courses/$courseId/participants", ReqMethod.GET,
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
+        val groupsPromise = fetchEms(
+            "/courses/$courseId/groups", ReqMethod.GET,
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+        )
         val moodleStatusPromise = fetchEms(
             "/courses/$courseId/moodle", ReqMethod.GET,
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
@@ -109,52 +121,96 @@ class ParticipantsRootComp(
 
         courseTitle = courseTitlePromise.await().title
 
-        val participants = participantsPromise.await()
-            .parseTo(Participants.serializer()).await()
+        val participants = participantsPromise.await().parseTo(Participants.serializer()).await()
+        val groups = groupsPromise.await().parseTo(Groups.serializer()).await()
+        val moodleStatus = moodleStatusPromise.await().parseTo(MoodleStatus.serializer()).await()
 
-        val moodleStatus = moodleStatusPromise.await()
-            .parseTo(MoodleStatus.serializer()).await()
-
-        val isMoodleSynced = moodleStatus.moodle_props?.moodle_short_name != null
+        val isMoodleLinked = moodleStatus.moodle_props?.moodle_short_name != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
         // TODO: remove
-//        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(5) { a } }
+        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(10) { a } }
 
 
         tabsComp = PageTabsComp(
-            listOf(
-                PageTabsComp.Tab("Õpilased", preselected = true) {
-                    ParticipantsStudentsListComp(
-                        participants.students,
-                        participants.students_pending,
-                        participants.students_moodle_pending,
-                        !studentsSynced,
-                        it
-                    )
-                },
-                PageTabsComp.Tab("Õpetajad") {
-                    ParticipantsTeachersListComp(
-                        courseId,
-                        it
-                    )
-                },
-                PageTabsComp.Tab("Rühmad") {
-                    StringComp("Rühmad", it)
-                }
-            ), this
+            buildList {
+                add(
+                    PageTabsComp.Tab("Õpilased", preselected = true) {
+                        ParticipantsStudentsListComp(
+                            multipliedStudentsForTesting,
+                            participants.students_pending,
+                            participants.students_moodle_pending,
+                            groups.groups,
+                            !studentsSynced,
+                            it
+                        )
+                    }
+                )
+                add(
+                    PageTabsComp.Tab("Õpetajad") {
+                        ParticipantsTeachersListComp(
+                            participants.teachers,
+                            groups.groups,
+                            !groups.self_is_restricted,
+                            it
+                        )
+                    }
+                )
+
+                if (groups.groups.isNotEmpty()) add(
+                    PageTabsComp.Tab("Rühmad") {
+                        ParticipantsGroupsListComp(
+                            courseId,
+                            groups.groups,
+                            participants.students,
+                            participants.students_pending,
+                            participants.students_moodle_pending,
+                            participants.teachers,
+                            !groups.self_is_restricted && !studentsSynced,
+                            it
+                        )
+                    }
+                )
+
+                if (isMoodleLinked) add(
+                    PageTabsComp.Tab("Moodle") {
+                        StringComp("Moodle", it)
+                    }
+                )
+            },
+            this
         )
 
-        if (!studentsSynced) {
+
+        // Create sidenav actions
+        val sideActions = buildList {
+            if (!studentsSynced) add(
+                Sidenav.Action(Icons.addParticipant, "Lisa õpilasi") {
+                    if (addStudentsModal.openWithClosePromise().await())
+                        createAndBuild()
+                }
+            )
+            if (!groups.self_is_restricted) add(
+                Sidenav.Action(Icons.addParticipant, "Lisa õpetajaid") {
+                    // TODO
+                }
+            )
+            if (!groups.self_is_restricted && !studentsSynced) add(
+                Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
+                    // TODO
+                }
+            )
+            if (isAdmin && !isMoodleLinked) add(
+                Sidenav.Action(Icons.moodle, "Seo UT Moodle kursusega") {
+                    // TODO
+                }
+            )
+        }
+
+        if (sideActions.isNotEmpty()) {
             Sidenav.replacePageSection(
-                Sidenav.PageSection(
-                    "Osalejad",
-                    listOf(Sidenav.Action(Icons.addToGroup, "Lisa õpilasi") {
-                        if (addStudentsModal.openWithClosePromise().await())
-                            createAndBuild()
-                    })
-                )
+                Sidenav.PageSection("Osalejad", sideActions)
             )
         }
     }

@@ -17,7 +17,8 @@ import kotlin.js.Promise
 enum class ReqMethod {
     GET,
     POST,
-    PUT
+    PUT,
+    DELETE,
 }
 
 // Overloading because vararg doesn't work for named params (error handlers)

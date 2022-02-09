@@ -56,7 +56,8 @@ object ErrorHandlers {
 }
 
 enum class RespError(val code: String) {
-    NO_COURSE_ACCESS("NO_COURSE_ACCESS")
+    NO_COURSE_ACCESS("NO_COURSE_ACCESS"),
+    GROUP_NOT_EMPTY("GROUP_NOT_EMPTY"),
 }
 
 @Serializable

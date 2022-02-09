@@ -1777,6 +1777,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 /* Container is ez-coll-wrap */
 /*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
+    /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
     ezc-ctrl-shown-icon {
         display: none;
     }
@@ -2388,6 +2389,7 @@ button i.material-icons {
 #toast-container {
     max-width: 100vw;
     bottom: 2rem;
+    top: auto;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

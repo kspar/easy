@@ -1,7 +1,8 @@
 package queries
 
-import org.w3c.dom.url.URL
 import kotlinx.browser.window
+import org.w3c.dom.url.URL
+import rip.kspar.ezspa.encodeURIComponent
 
 
 fun getCurrentQueryParamValue(key: String): String? {
@@ -13,7 +14,7 @@ fun createQueryString(vararg params: Pair<String, String?>): String {
     val encodedParams = params.filter { (_, v) ->
         !v.isNullOrBlank()
     }.map { (k, v) ->
-        encodeURIComponent(k) to encodeURIComponent(v!!)
+        k.encodeURIComponent() to v!!.encodeURIComponent()
     }
 
     return when {
@@ -21,5 +22,3 @@ fun createQueryString(vararg params: Pair<String, String?>): String {
         else -> encodedParams.joinToString("&", "?") { (k, v) -> "$k=$v" }
     }
 }
-
-external fun encodeURIComponent(str: String): String
