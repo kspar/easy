@@ -221,7 +221,7 @@
 </script>
 
 <script id="t-c-ezcoll" type="text/x-handlebars">
-    <ez-coll-wrap id="{{collId}}">
+    <ez-coll-wrap id="{{collId}}" {{#hasSelection}}has-selection{{/hasSelection}}>
         <ezc-ctrl>
             <ezc-ctrl-left>
                 {{#hasSelection}}
@@ -238,7 +238,14 @@
             <ezc-ctrl-right>
                 <ezc-ctrl-shown>
                     <ezc-ctrl-shown-icon></ezc-ctrl-shown-icon>
-                    <ezc-ctrl-shown-count></ezc-ctrl-shown-count>
+                    <ezc-ctrl-shown-count>
+                        <ez-spinner class="preloader-wrapper active">
+                            <div class="spinner-layer">
+                                <div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div>
+                            </div>
+                            </div>
+                        </ez-spinner>
+                    </ezc-ctrl-shown-count>
                     <ezc-ctrl-shown-name></ezc-ctrl-shown-name>
                 </ezc-ctrl-shown>
                 {{#hasFiltering}}

@@ -726,6 +726,10 @@ ez-participants-list {
     margin-top: 1rem;
 }
 
+ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
+    padding-top: 0;
+}
+
 
 /** Grade table page **/
 
@@ -1309,6 +1313,22 @@ ez-icon-action > ez-icon.med {
 }
 
 
+/** Loaders **/
+
+ez-spinner.preloader-wrapper {
+    width: 2rem;
+    height: 2rem;
+}
+
+ez-spinner .spinner-layer {
+    border-color: var(--ez-checkbox-fill-col);
+}
+
+ez-spinner .circle-clipper .circle {
+    border-width: 2px;
+}
+
+
 /** Ez Collection **/
 
 ez-coll-wrap {
@@ -1431,6 +1451,7 @@ ezc-ctrl-selected {
 ezc-ctrl-right {
     display: flex;
     align-items: center;
+    min-width: 5rem;
 }
 
 ezc-ctrl-shown {
@@ -1443,6 +1464,10 @@ ezc-ctrl-shown {
 ezc-ctrl-shown-icon {
     margin-right: .6rem;
     font-weight: 500;
+}
+
+ezc-ctrl-shown-count {
+    display: flex;
 }
 
 ezc-ctrl-shown-name {
