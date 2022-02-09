@@ -1053,4 +1053,7 @@ object ExerciseSummaryPage : EasyPage() {
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
+
+    fun link(courseId: String, courseExerciseId: String) =
+        constructPathLink(mapOf("courseId" to courseId, "courseExerciseId" to courseExerciseId))
 }

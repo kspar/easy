@@ -734,22 +734,9 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
 /** Grade table page **/
 
 .grade-table-wrap {
+    max-height: 85vh;
     white-space: nowrap;
-    overflow-x: auto;
-}
-
-.grades-wrap .pre-table-wrap,
-.grades-wrap .post-table-wrap {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.grades-wrap .pre-table-wrap {
-    margin-bottom: 2rem;
-}
-
-.grades-wrap .post-table-wrap {
-    margin-top: 2rem;
+    overflow: auto;
 }
 
 .grade-table-wrap table > tbody > tr {
@@ -757,19 +744,24 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
 }
 
 .grade-table-wrap table > thead > tr > th {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
     font-weight: 500;
 }
 
 .grade-table-wrap table > thead > tr > th.header-spacer {
-    min-width: 12rem;
-    width: 12rem;
+    left: 0;
+    z-index: 1;
 }
 
-@media only screen and (min-width: 400px) {
-    .grade-table-wrap table > thead > tr > th.header-spacer {
-        min-width: 18rem;
-        width: 18rem;
-    }
+.grade-table-wrap table > thead > tr > th .wrap.invisible {
+    color: #999;
+}
+
+.grade-table-wrap table > thead > tr > th .text {
+    text-align: center;
+    vertical-align: bottom;
 }
 
 .grade-table-wrap table.truncated-ex > thead > tr > th .wrap {
@@ -789,24 +781,24 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
     padding: 1rem 1rem;
 }
 
-.grade-table-wrap table > tbody > tr > td:first-child {
-    text-align: right;
-    font-weight: 500;
-}
-
 .grade-table-wrap table > tbody > tr > td {
     text-align: center;
 }
 
-.grade-table-wrap table > tbody > tr > td.student {
-    position: absolute;
+.grade-table-wrap table > tbody > tr > td.sticky-col {
+    display: revert;
+    position: sticky;
+    left: 0;
+    box-shadow: 0 0 1px 0 #bbb;  /* Border may not work for sticky elements, and this hack may also not work */
     background-color: #fff;
-    width: 12rem;
+    max-width: 12rem;
+    text-align: right;
+    font-weight: 500;
 }
 
 @media only screen and (min-width: 400px) {
-    .grade-table-wrap table > tbody > tr > td.student {
-        width: 18rem;
+    .grade-table-wrap table > tbody > tr > td.sticky-col {
+        max-width: 18rem;
     }
 }
 
@@ -823,7 +815,27 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
 }
 
 .grade-table-wrap table.colored > tbody > tr > td.ungraded {
-    background-color: #cde6fe;
+    background-color: #c8e4ff;
+}
+
+.grade-table-wrap table.colored > tbody > tr:hover > td.neutral {
+    background-color: #f8f8f8;
+}
+
+.grade-table-wrap table.colored > tbody > tr:hover > td.finished {
+    background-color: #c4e5c5;
+}
+
+.grade-table-wrap table.colored > tbody > tr:hover > td.unfinished {
+    background-color: #ffe6ad;
+}
+
+.grade-table-wrap table.colored > tbody > tr:hover > td.unstarted {
+    background-color: #ededed;
+}
+
+.grade-table-wrap table.colored > tbody > tr:hover > td.ungraded {
+    background-color: #aad1ff;
 }
 
 .grade-table-wrap table > thead > tr > th:not(:last-child),
@@ -2257,6 +2269,10 @@ pre.auto-feedback {
     background-color: #e3e3e3;
 }
 
+.card .card-content .missing-content-wrap {
+    background-color: transparent;
+}
+
 .missing-content-wrap .robot {
     display: flex;
     justify-content: space-between;
@@ -2325,9 +2341,10 @@ pre.auto-feedback {
     }
 }
 
-.missing-content-wrap .text {
+.missing-content-wrap p.text {
     font-size: 1.8rem;
     color: #828282;
+    margin: 1.8rem 0;
 }
 
 .sad-robot .robot-eye {

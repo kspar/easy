@@ -10,6 +10,8 @@ val MONTHS = listOf("jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
 fun Date.toEet() =
         Date(this.toLocaleString("en-us", dateLocaleOptions { timeZone = "Europe/Tallinn" }))
 
+fun nowTimestamp() = Date().toLocaleString("sv").replace(" ", "_")
+
 /**
  * Return a datetime string in format '31. jaanuar 2019, 23.59' of this date in Estonian time zone.
  */

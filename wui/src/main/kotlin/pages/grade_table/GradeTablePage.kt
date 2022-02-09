@@ -1,9 +1,8 @@
 package pages.grade_table
 
-import AppProperties
 import CONTENT_CONTAINER_ID
+import Icons
 import PageName
-import PaginationConf
 import Role
 import Str
 import cache.BasicCourseInfo
@@ -12,19 +11,23 @@ import components.Crumb
 import components.form.SelectComp
 import debug
 import emptyToNull
-import getLastPageOffset
+import kotlinx.browser.document
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import libheaders.CSV
+import nowTimestamp
 import objOf
+import org.w3c.dom.HTMLAnchorElement
 import pages.EasyPage
+import pages.ExerciseSummaryPage
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import plainDstStr
 import queries.*
 import rip.kspar.ezspa.*
 import tmRender
+import toJsObj
 import kotlin.js.Promise
-import kotlin.math.min
 
 
 object GradeTablePage : EasyPage() {
@@ -146,12 +149,9 @@ class GradeTableCardComp(
 class GradeTableTableComp(
         private val courseId: String,
         private val groupId: String?,
-        private var offsetLimit: OffsetLimit = OffsetLimit(0, AppProperties.GRADE_TABLE_ROWS_ON_PAGE),
         parent: Component,
         dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
-
-    data class OffsetLimit(val offset: Int, val limit: Int)
 
     @Serializable
     data class GradeTable(
@@ -193,61 +193,99 @@ class GradeTableTableComp(
         UNSTARTED, UNGRADED, UNFINISHED, FINISHED
     }
 
+    data class Table(
+        val exercises: List<ExerciseRow>,
+        val students: List<StudentRow>,
+    )
 
-    private val pageStep = AppProperties.GRADE_TABLE_ROWS_ON_PAGE
-    private lateinit var gradeTable: GradeTable
-    private var paginationConf: PaginationConf? = null
+    data class ExerciseRow(
+        val title: String,
+        val href: String,
+        val isVisible: Boolean,
+    )
+
+    data class StudentRow(
+        val name: String,
+        val grades: List<GradeCell>,
+    )
+
+    data class GradeCell(
+        val grade: Int?,
+        val status: ExerciseStatus,
+        val grader: GraderType?,
+    )
+
+
+    private lateinit var table: Table
 
     override fun create() = doInPromise {
-        debug { "Building grade table for course $courseId, group $groupId, offsetlimit: $offsetLimit" }
-        val (offset, limit) = offsetLimit
-        val q = createQueryString("group" to groupId, "offset" to offset.toString(), "limit" to limit.toString())
+        debug { "Building grade table for course $courseId, group $groupId" }
+        val q = createQueryString("group" to groupId)
         val gradesPromise = fetchEms("/courses/teacher/$courseId/grades$q", ReqMethod.GET,
                 successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
 
-        gradeTable = gradesPromise.await()
+        val gradeTable = gradesPromise.await()
                 .parseTo(GradeTable.serializer()).await()
 
-        paginationConf = if (gradeTable.student_count > pageStep) {
-            PaginationConf(offset + 1, min(offset + limit, gradeTable.student_count), gradeTable.student_count,
-                    offset != 0, offset + limit < gradeTable.student_count)
-        } else null
-    }
-
-    override fun renderLoading(): String = "Laen hindeid..."
-
-    override fun render(): String {
         val exercises = gradeTable.exercises.map {
-            objOf("exerciseTitle" to it.effective_title)
-        }.toTypedArray()
+            ExerciseRow(it.effective_title, ExerciseSummaryPage.link(courseId, it.exercise_id), it.student_visible)
+        }
 
-        val allStudents = gradeTable.students.map { it.student_id }
+        val allStudents = gradeTable.students.map { it.student_id }.toSet()
 
-        data class GradeWithInfo(val grade: String, val status: ExerciseStatus)
+        data class GradeWithInfo(val grade: Int?, val status: ExerciseStatus, val grader: GraderType?)
 
         val gradesMap = mutableMapOf<String, MutableList<GradeWithInfo>>()
         gradeTable.exercises.forEach { ex ->
             ex.grades.forEach {
                 val gradeInfo = when {
-                    it.grade == null -> GradeWithInfo("-", ExerciseStatus.UNGRADED)
-                    it.grade >= ex.grade_threshold -> GradeWithInfo(it.grade.toString(), ExerciseStatus.FINISHED)
-                    else -> GradeWithInfo(it.grade.toString(), ExerciseStatus.UNFINISHED)
+                    it.grade == null -> GradeWithInfo(null, ExerciseStatus.UNGRADED, it.grader_type)
+                    it.grade >= ex.grade_threshold -> GradeWithInfo(it.grade, ExerciseStatus.FINISHED, it.grader_type)
+                    else -> GradeWithInfo(it.grade, ExerciseStatus.UNFINISHED, it.grader_type)
                 }
                 gradesMap.getOrPut(it.student_id) { mutableListOf() }
                         .add(gradeInfo)
             }
             // Add "grade missing" grades
-            val missingStudents = allStudents - ex.grades.map { it.student_id }
+            val missingStudents = allStudents - ex.grades.map { it.student_id }.toSet()
             missingStudents.forEach {
-                gradesMap.getOrPut(it) { mutableListOf() }
-                        .add(GradeWithInfo("-", ExerciseStatus.UNSTARTED))
+                gradesMap.getOrPut(it) { mutableListOf() }.add(
+                    GradeWithInfo(null, ExerciseStatus.UNSTARTED, null)
+                )
             }
         }
 
         val students = gradeTable.students.sortedBy { it.family_name }.map { student ->
-            val grades = gradesMap.getValue(student.student_id).map {
+            val grades = gradesMap[student.student_id]?.map {
+                GradeCell(it.grade, it.status, it.grader)
+            } ?: emptyList()
+
+            StudentRow("${student.given_name} ${student.family_name}", grades)
+        }
+
+        table = Table(exercises, students)
+
+
+        Sidenav.replacePageSection(Sidenav.PageSection("Hinded",
+            listOf(Sidenav.Action(Icons.download, "Ekspordi hindetabel", ::downloadGradesCSV))))
+    }
+
+    override fun renderLoading(): String = "Laen hindeid..."
+
+    override fun render(): String {
+        val exercises = table.exercises.map {
+            objOf(
+                "title" to it.title,
+                "href" to it.href,
+                "invisible" to !it.isVisible,
+            )
+        }.toTypedArray()
+
+        val students = table.students.map { student ->
+            val grades = student.grades.map {
                 objOf(
-                        "grade" to it.grade,
+                        "grade" to (it.grade?.toString() ?: "-"),
+                        "teacherGraded" to (it.grader == GraderType.TEACHER),
                         "unstarted" to (it.status == ExerciseStatus.UNSTARTED),
                         "ungraded" to (it.status == ExerciseStatus.UNGRADED),
                         "unfinished" to (it.status == ExerciseStatus.UNFINISHED),
@@ -255,46 +293,66 @@ class GradeTableTableComp(
                 )
             }.toTypedArray()
 
+            val finishedCount = student.grades.count { it.status == ExerciseStatus.FINISHED }
+
             objOf(
-                    "name" to "${student.given_name} ${student.family_name}",
-                    "grades" to grades
+                "name" to student.name,
+                "finishedCount" to finishedCount,
+                "studentSummaryTitle" to "Lahendanud $finishedCount ülesannet",
+                "grades" to grades,
             )
         }.toTypedArray()
 
-        return tmRender("t-c-grades-table",
+        val exerciseSummaries = table.exercises.mapIndexed { i, _ ->
+            val finishedCount = table.students.count { it.grades[i].status == ExerciseStatus.FINISHED }
+            objOf(
+                "finishedCount" to finishedCount,
+                "exerciseSummaryTitle" to "Lahendatud $finishedCount õpilase poolt",
+            )
+        }.toTypedArray()
+
+        return when {
+            exercises.isEmpty() -> tmRender(
+                "t-s-missing-content-wandering-eyes",
+                "text" to "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
+            )
+            else -> tmRender(
+                "t-c-grades-table",
+                "exerciseCount" to exercises.size,
+                "exerciseCountTitle" to "Kokku ${exercises.size} ülesannet",
+                "studentCount" to students.size,
+                "studentCountTitle" to "Kokku ${students.size} õpilast",
                 "exercises" to exercises,
                 "students" to students,
-                "hasPagination" to (paginationConf != null),
-                "pageStart" to paginationConf?.pageStart,
-                "pageEnd" to paginationConf?.pageEnd,
-                "pageTotal" to paginationConf?.pageTotal,
-                "pageTotalLabel" to ", kokku ",
-                "canGoBack" to paginationConf?.canGoBack,
-                "canGoForward" to paginationConf?.canGoForward
-        )
+                "exerciseSummaries" to exerciseSummaries,
+            )
+        }
     }
 
-    override fun postRender() {
-        if (paginationConf?.canGoBack == true) {
-            getElemsByClass("go-first").onVanillaClick(true) {
-                offsetLimit = OffsetLimit(0, pageStep)
-                createAndBuild().await()
-            }
-            getElemsByClass("go-back").onVanillaClick(true) {
-                offsetLimit = OffsetLimit(offsetLimit.offset - pageStep, pageStep)
-                createAndBuild().await()
-            }
+    private fun downloadGradesCSV(sidenavAction: Sidenav.Action) {
+        val fields = listOf(
+            objOf("id" to "name", "label" to "Nimi"),
+        ) + table.exercises.mapIndexed { i, e ->
+            objOf(
+                "id" to "ex$i",
+                "label" to e.title
+            )
         }
 
-        if (paginationConf?.canGoForward == true) {
-            getElemsByClass("go-forward").onVanillaClick(true) {
-                offsetLimit = OffsetLimit(offsetLimit.offset + pageStep, pageStep)
-                createAndBuild().await()
-            }
-            getElemsByClass("go-last").onVanillaClick(true) {
-                offsetLimit = OffsetLimit(getLastPageOffset(gradeTable.student_count, pageStep), pageStep)
-                createAndBuild().await()
-            }
+        val records = table.students.map {
+            (listOf("name" to it.name) + it.grades.mapIndexed { i, g ->
+                "ex$i" to g.grade
+            }).toMap().toJsObj()
         }
+
+        val csv = CSV.serialize(objOf(
+            "fields" to fields.toTypedArray(),
+            "records" to records.toTypedArray(),
+        ), objOf("delimiter" to ";"))
+
+        val downloadLink = document.createElement("a") as HTMLAnchorElement
+        downloadLink.setAttribute("href", "data:text/plain;charset=utf-8,${csv.encodeURIComponent()}")
+        downloadLink.setAttribute("download", "hinded-$courseId-${nowTimestamp()}.csv")
+        downloadLink.click()
     }
 }
