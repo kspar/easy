@@ -45,7 +45,7 @@ abstract class Page {
                 is PathString -> it.str
                 is PathParam -> "(\\w+)"
             }
-        }.also { EzSpa.Logger.debug { "Path schema $pathSchema converted to regex $it" } }
+        }
     }
 
     internal fun pathMatches(): Boolean = window.location.pathname.matches(pathRegex)
@@ -95,7 +95,7 @@ abstract class Page {
                 )
                 is PathString -> it.str
             }
-        }.also { EzSpa.Logger.debug { "Constructed path link to $pageName: $it" } }
+        }
     }
 
     /**
