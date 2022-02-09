@@ -15,6 +15,7 @@ import org.w3c.dom.HTMLOptionElement
 import org.w3c.dom.events.Event
 import rip.kspar.ezspa.*
 import tmRender
+import kotlin.js.Promise
 
 class EzCollComp<P>(
     items: List<Item<P>>,
@@ -61,10 +62,10 @@ class EzCollComp<P>(
     data class Action<P>(
         val iconHtml: String,
         val text: String,
-        val onActivate: suspend (Item<P>) -> Result,
         val showShortcutIcon: Boolean = false,
         val shortcutMinCollWidth: CollMinWidth = CollMinWidth.W600,
-        val id: String = IdGenerator.nextId()
+        val id: String = IdGenerator.nextId(),
+        val onActivate: suspend (Item<P>) -> Result,
     )
 
     data class MassAction<P>(
@@ -82,7 +83,7 @@ class EzCollComp<P>(
 
     data class FilterGroup<P>(val groupLabel: String, val filters: List<Filter<P>>)
 
-    data class Filter<P>(val label: String, val predicate: (Item<P>) -> Boolean, val id: String = IdGenerator.nextId())
+    data class Filter<P>(val label: String, val id: String = IdGenerator.nextId(), val predicate: (Item<P>) -> Boolean)
 
     data class Sorter<P>(val label: String, val comparator: Comparator<Item<P>>, val id: String = IdGenerator.nextId())
 
@@ -271,6 +272,8 @@ class EzCollComp<P>(
         // No need to update sorting, order styles are rendered into HTML
     }
 
+    // FIXME: temporary optimisation
+    override fun createAndBuild() = createAndBuild3() ?: Promise.Companion.resolve(Unit)
 
     private fun initSelection() {
         // Init mass actions
@@ -629,7 +632,7 @@ class EzCollItemComp<P>(
         "expandItemTitle" to "Laienda",
     )
 
-    override fun postRender() {
+    public override fun postRender() {
         initExpanding()
         initActions()
         initActionableAttrs()

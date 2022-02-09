@@ -34,7 +34,7 @@ open class BinaryModalComp<T>(
     }, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
 
     override fun create() = doInPromise {
-        super.create().await()
+        super.create()?.await()
         super.setFooter(secondaryBtnComp, primaryButtonComp)
     }
 

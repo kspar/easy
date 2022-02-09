@@ -165,4 +165,8 @@ class ParticipantsRootComp(
         "addStudentsModalId" to addStudentsModal.dstId,
         "title" to courseTitle,
     )
+
+    override fun renderLoading() = tmRender("tm-loading-placeholders", "marginTopRem" to 6, "titleWidthRem" to 30)
+
+    override fun createAndBuild() = createAndBuild3() ?: Promise.Companion.resolve(Unit)
 }

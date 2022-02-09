@@ -34,7 +34,7 @@ abstract class Component(
      * the component is ready to be rendered.
      * NB! Avoid performing synchronous tasks.
      */
-    protected open fun create(): Promise<*> = Promise.Companion.resolve(Unit)
+    protected open fun create(): Promise<*>? = null
 
     /**
      * Produce HTML that represents this component's current state. This HTML is inserted into the destination element
@@ -56,7 +56,7 @@ abstract class Component(
      * Produce HTML to be inserted into the destination element before [create]ing this component,
      * typically indicates loading.
      */
-    protected open fun renderLoading(): String = ""
+    protected open fun renderLoading(): String? = null
 
 
     /**
@@ -71,12 +71,41 @@ abstract class Component(
      * Create and build this component, and then recursively create and build its children in parallel.
      * Returns a promise that resolves when everything is complete.
      */
-    fun createAndBuild(): Promise<*> = doInPromise {
+    open fun createAndBuild(): Promise<*> = doInPromise {
         paintLoading()
-        create().await()
+        create()?.await()
         buildThis()
         children.map { it.createAndBuild() }.unionPromise().await()
         postChildrenBuilt()
+    }
+
+    open fun createAndBuild3(): Promise<*>? {
+        paintLoading()
+        val p = create()
+        if (p != null) {
+            return p.then {
+                buildThis()
+                b()
+            }
+        }
+
+        buildThis()
+        val c = b()
+        if (c != null) {
+            return c.then {
+                postChildrenBuilt()
+            }
+        }
+
+        postChildrenBuilt()
+        return null
+    }
+
+    fun b(): Promise<*>? {
+        val cp = children.mapNotNull { it.createAndBuild3() }
+        if (cp.isNotEmpty())
+            return cp.unionPromise()
+        return null
     }
 
     /**
@@ -111,16 +140,15 @@ abstract class Component(
         getElemById(dstId).clear()
     }
 
-    protected fun buildThis() {
+    // FIXME: temporarily public to optimise ezcoll
+    fun buildThis() {
         paint()
         postRender()
     }
 
     protected fun paintLoading() {
-        renderLoading().let {
-            if (it.isNotEmpty()) {
-                getElemById(dstId).innerHTML = it
-            }
+        renderLoading()?.let {
+            getElemById(dstId).innerHTML = it
         }
     }
 
