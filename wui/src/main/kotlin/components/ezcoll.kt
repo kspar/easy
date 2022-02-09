@@ -269,6 +269,10 @@ class EzCollComp<P>(
             selectItemsBasedOnChecked()
         if (hasFiltering)
             updateFiltering()
+        else
+        // Still show total count if no filtering
+            updateShownCount(items.size, false)
+
         // No need to update sorting, order styles are rendered into HTML
     }
 
