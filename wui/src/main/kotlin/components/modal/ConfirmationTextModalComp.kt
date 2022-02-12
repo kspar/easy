@@ -13,6 +13,7 @@ class ConfirmationTextModalComp(
     secondaryBtnText: String,
     primaryBtnLoadingText: String? = null,
     secondaryBtnLoadingText: String? = null,
+    fixFooter: Boolean = false,
     primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
     override var primaryAction: (suspend () -> Boolean)? = null,
     override var secondaryAction: (suspend () -> Unit)? = null,
@@ -23,7 +24,7 @@ class ConfirmationTextModalComp(
     title,
     primaryBtnText, secondaryBtnText,
     primaryBtnLoadingText, secondaryBtnLoadingText,
-    false, primaryBtnType, false,
+    false, primaryBtnType, fixFooter, false,
     primaryAction, secondaryAction, primaryPostAction, secondaryPostAction,
     parent
 ) {

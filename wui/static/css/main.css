@@ -1205,8 +1205,17 @@ textarea.materialize-textarea {
     max-height: 80%;
 }
 
+.modal.fixed-footer.open {
+    display: flex !important; /* modal adds inline style when opened :( */
+    flex-direction: column;
+}
+
 .modal.wide {
     max-width: 75rem;
+}
+
+.modal.fixed-footer .modal-content {
+    overflow: auto;
 }
 
 .modal .modal-content {
@@ -1219,10 +1228,14 @@ textarea.materialize-textarea {
 
 .modal .modal-footer {
     background-color: unset;
-    padding: .5rem 2.4rem 2.4rem 2.4rem;
+    padding: 1rem 2.4rem 2.4rem 2.4rem;
     height: unset;
     display: flex;
     justify-content: flex-end;
+}
+
+.modal.fixed-footer .modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.1);
 }
 
 .modal .modal-footer .btn,

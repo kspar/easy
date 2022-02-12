@@ -15,6 +15,7 @@ open class BinaryModalComp<T>(
     secondaryBtnLoadingText: String? = null,
     defaultReturnValue: T,
     primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
+    fixFooter: Boolean = false,
     isWide: Boolean = false,
     open var primaryAction: (suspend () -> T)? = null,
     open var secondaryAction: (suspend () -> Unit)? = null,
@@ -22,7 +23,11 @@ open class BinaryModalComp<T>(
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
-) : ModalComp<T>(title, defaultReturnValue, isWide = isWide, parent = parent, dstId = dstId) {
+) : ModalComp<T>(
+    title, defaultReturnValue,
+    fixFooter = fixFooter, isWide = isWide,
+    parent = parent, dstId = dstId
+) {
 
     val primaryButtonComp = ButtonComp(primaryBtnType, primaryBtnText, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue

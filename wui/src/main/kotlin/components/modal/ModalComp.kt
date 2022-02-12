@@ -14,6 +14,7 @@ import kotlin.js.Promise
 open class ModalComp<T>(
     private val title: String?,
     private val defaultReturnValue: T,
+    private val fixFooter: Boolean = false,
     private val isWide: Boolean = false,
     bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
@@ -44,6 +45,7 @@ open class ModalComp<T>(
     override fun render(): String = tmRender(
         "t-c-modal",
         "id" to modalId,
+        "fixedFooter" to fixFooter,
         "wide" to isWide,
         "title" to title,
         "bodyComps" to bodyComps.map { mapOf("id" to it.dstId) },

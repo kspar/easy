@@ -23,7 +23,9 @@ class AddStudentsModalComp(
         "Lisa õpilasi", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { addStudents(studentsFieldComp.getValue()) },
         primaryPostAction = ::reinitialise,
-        defaultReturnValue = false, isWide = true, parent = this
+        defaultReturnValue = false,
+        fixFooter = true, isWide = true,
+        parent = this
     )
 
     private val helpTextComp = ParagraphsComp(
