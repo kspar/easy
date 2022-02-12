@@ -1,11 +1,12 @@
 package pages
 
+import AppProperties
 import rip.kspar.ezspa.getElemBySelector
 import warn
 
 object Title {
 
-    private const val appName = "Lahendus"
+    private const val appName = AppProperties.AppName
 
     /* Formats:
         Lahendus
