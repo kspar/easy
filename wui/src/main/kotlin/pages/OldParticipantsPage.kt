@@ -110,7 +110,7 @@ object OldParticipantsPage : EasyPage() {
         get() = PageName.PARTICIPANTS
 
     override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(courseId, ActivePage.COURSE_PARTICIPANTS)
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_PARTICIPANTS_OLD)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
@@ -385,4 +385,6 @@ object OldParticipantsPage : EasyPage() {
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
+
+    fun link(courseId: String) = constructPathLink(mapOf("courseId" to courseId))
 }

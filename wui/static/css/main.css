@@ -247,6 +247,13 @@ svg {
     height: 2.4rem;
 }
 
+.sidenav li a .badge {
+    align-self: start;
+    margin-top: 4px;
+    margin-left: 0;
+    color: inherit;
+}
+
 
 /** Container **/
 

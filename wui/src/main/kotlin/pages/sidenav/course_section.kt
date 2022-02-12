@@ -11,6 +11,7 @@ import libheaders.Materialize
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLInputElement
+import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.exercise.ExercisePage
 import pages.grade_table.GradeTablePage
@@ -38,6 +39,7 @@ class SidenavCourseSectionComp(
     private val exercisesItemId = IdGenerator.nextId()
     private val gradesItemId = IdGenerator.nextId()
     private val participantsItemId = IdGenerator.nextId()
+    private val oldParticipantsItemId = IdGenerator.nextId()
 
     override fun create(): Promise<*> = doInPromise {
         courseTitle = BasicCourseInfo.get(courseId).await().title
@@ -51,9 +53,11 @@ class SidenavCourseSectionComp(
         "exercisesId" to exercisesItemId,
         "gradesId" to gradesItemId,
         "participantsId" to participantsItemId,
+        "oldParticipantsId" to oldParticipantsItemId,
         "exercisesLink" to CourseExercisesPage.link(courseId),
         "gradesLink" to GradeTablePage.link(courseId),
         "participantsLink" to ParticipantsPage.link(courseId),
+        "oldParticipantsLink" to OldParticipantsPage.link(courseId),
         "exercisesIcon" to Icons.courseExercises,
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
@@ -62,6 +66,7 @@ class SidenavCourseSectionComp(
         "exercisesLabel" to "Ülesanded",
         "gradesLabel" to "Hinded",
         "participantsLabel" to "Osalejad",
+        "oldParticipantsLabel" to "Osalejad",
         "newExerciseLabel" to "Uus ülesanne",
         "addExerciseLabel" to "Lisa ülesanne kogust",
     )
@@ -90,5 +95,6 @@ class SidenavCourseSectionComp(
         ActivePage.COURSE_EXERCISES to exercisesItemId,
         ActivePage.COURSE_GRADES to gradesItemId,
         ActivePage.COURSE_PARTICIPANTS to participantsItemId,
+        ActivePage.COURSE_PARTICIPANTS_OLD to oldParticipantsItemId,
     )
 }

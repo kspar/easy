@@ -2,13 +2,10 @@ package pages.participants
 
 import Auth
 import CONTENT_CONTAINER_ID
-import Icons
 import PageName
 import Role
-import debug
 import kotlinx.coroutines.await
 import pages.EasyPage
-import pages.courses.CoursesPage
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.doInPromise
@@ -22,13 +19,7 @@ object ParticipantsPage : EasyPage() {
 
     override val sidenavSpec: Sidenav.Spec
         get() = Sidenav.Spec(
-            courseId, ActivePage.COURSE_PARTICIPANTS, Sidenav.PageSection(
-                "Osalejad",
-                listOf(
-                    Sidenav.Link(Icons.robot, "Mine kuhugi", CoursesPage.link()),
-                    Sidenav.Action(Icons.removeParticipant, "Tee midagi", { debug { "Tee midagi" } }),
-                )
-            )
+            courseId, ActivePage.COURSE_PARTICIPANTS
         )
 
     override val pathSchema = "/courses/{courseId}/participants"
