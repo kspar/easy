@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.assertTeacherOrAdminHasAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -39,6 +40,7 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
     @PostMapping("/exercises/{exerciseId}/testing/autoassess")
     fun controller(
         @PathVariable("exerciseId") exerciseIdStr: String,
+        @RequestParam("course", required = false) courseIdStr: String?,
         @Valid @RequestBody dto: Req,
         caller: EasyUser
     ): Resp {
@@ -46,8 +48,14 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
         val callerId = caller.id
         log.debug { "Teacher/admin $callerId autoassessing solution to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
+        val courseId = courseIdStr?.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        // Can access through course or directly via library
+        if (courseId != null) {
+            assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        } else {
+            assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        }
 
         insertTeacherSubmission(exerciseId, dto.solution, callerId)
 
@@ -57,7 +65,6 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
                 ReqError.EXERCISE_NOT_AUTOASSESSABLE
             )
 
-        // TODO: error handling missing? Should be as in StudentSubmit?
         val aaResult = runBlocking {
             autoGradeScheduler.submitAndAwait(
                 aaId,

@@ -235,7 +235,7 @@ object ExerciseSummaryPage : EasyPage() {
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
         val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
-        buildTeacherTesting(exerciseDetails.exercise_id)
+        buildTeacherTesting(courseId, exerciseDetails.exercise_id)
         buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
         initTooltips()
@@ -360,11 +360,11 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildTeacherTesting(exerciseId: String) {
+    private fun buildTeacherTesting(courseId: String, exerciseId: String) {
 
         suspend fun postSolution(solution: String): AutoassResult {
             debug { "Posting submission ${solution.substring(0, 15)}..." }
-            val result = fetchEms("/exercises/$exerciseId/testing/autoassess",
+            val result = fetchEms("/exercises/$exerciseId/testing/autoassess" + createQueryString("course" to courseId),
                     ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }).await()
                     .parseTo(AutoassResult.serializer()).await()
             debug { "Received result, grade: ${result.grade}" }
