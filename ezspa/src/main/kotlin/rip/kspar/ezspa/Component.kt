@@ -153,6 +153,15 @@ abstract class Component(
     }
 
     private fun paint() {
-        getElemById(dstId).innerHTML = render()
+        try {
+            getElemById(dstId).innerHTML = render()
+        } catch (e: ElementNotFoundException) {
+            val ancestorDstStr = getAncestorsRec().joinToString(" > ") { it.dstId }
+            EzSpa.Logger.warn { "Couldn't find destination ID $dstId when painting component \n  Trace: $ancestorDstStr" }
+            throw e
+        }
     }
+
+    private fun getAncestorsRec(): List<Component> =
+        (parent?.getAncestorsRec() ?: emptyList()) + listOf(this)
 }
