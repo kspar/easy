@@ -3,8 +3,10 @@ package pages.exercise_library
 import CONTENT_CONTAINER_ID
 import PageName
 import Role
+import Str
 import kotlinx.coroutines.await
 import pages.EasyPage
+import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.doInPromise
@@ -19,6 +21,9 @@ object ExerciseLibraryPage : EasyPage() {
 
     override val sidenavSpec: Sidenav.Spec
         get() = Sidenav.Spec(activePage = ActivePage.LIBRARY)
+
+    override val titleSpec: Title.Spec
+        get() = Title.Spec(Str.exerciseLibrary())
 
     override val pathSchema = "/library"
 

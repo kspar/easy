@@ -5,6 +5,7 @@ import CONTENT_CONTAINER_ID
 import PageName
 import Role
 import ScrollPosition
+import Str
 import debugFunStart
 import getWindowScrollPosition
 import kotlinx.coroutines.MainScope
@@ -12,6 +13,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import pages.EasyPage
+import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
@@ -36,6 +38,9 @@ object CoursesPage : EasyPage() {
 
     override val sidenavSpec: Sidenav.Spec
         get() = Sidenav.Spec(activePage = ActivePage.MY_COURSES)
+
+    override val titleSpec: Title.Spec
+        get() = Title.Spec(Str.myCourses())
 
     override val pathSchema = "/courses"
 

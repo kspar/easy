@@ -20,6 +20,7 @@ import objOf
 import org.w3c.dom.HTMLAnchorElement
 import pages.EasyPage
 import pages.ExerciseSummaryPage
+import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import plainDstStr
@@ -72,8 +73,14 @@ class GradeTableRootComponent(
 
     override fun create(): Promise<*> = doInPromise {
         val courseTitle = BasicCourseInfo.get(courseId).await().title
+
         crumbsComp = BreadcrumbsComp(listOf(Crumb.myCourses, Crumb(courseTitle, "/courses/$courseId/exercises"), Crumb(Str.gradesLabel())), this)
         cardComp = GradeTableCardComp(courseId, courseTitle, this)
+
+        Title.update {
+            it.pageTitle = Str.gradesLabel()
+            it.parentPageTitle = courseTitle
+        }
     }
 
     override fun render() = plainDstStr(crumbsComp.dstId, cardComp.dstId)

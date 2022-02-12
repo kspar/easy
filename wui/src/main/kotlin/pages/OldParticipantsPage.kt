@@ -5,6 +5,7 @@ import DateSerializer
 import PageName
 import PaginationConf
 import Role
+import Str
 import cache.BasicCourseInfo
 import debug
 import getContainer
@@ -143,6 +144,11 @@ object OldParticipantsPage : EasyPage() {
                     .parseTo(Participants.serializer()).await()
             val moodleStatus = moodleStatusPromise.await()
                 .parseTo(MoodleStatus.serializer()).await()
+
+            Title.update {
+                it.pageTitle = Str.participants()
+                it.parentPageTitle = courseTitle
+            }
 
             val isMoodleSynced = moodleStatus.moodle_props?.moodle_short_name != null
             val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false

@@ -1,12 +1,14 @@
 package pages.exercise
 
 import DateSerializer
+import Str
 import blankToNull
 import components.BreadcrumbsComp
 import components.CardTabsComp
 import components.Crumb
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.Title
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -93,6 +95,11 @@ class ExerciseRootComp(
 
         crumbs = BreadcrumbsComp(listOf(Crumb.exercises, Crumb(exercise.title)), this)
         tabs = CardTabsComp(this, onActivateTab)
+
+        Title.update {
+            it.pageTitle = exercise.title
+            it.parentPageTitle = Str.exerciseLibrary()
+        }
 
         val tabsList = mutableListOf<CardTabsComp.Tab>()
 

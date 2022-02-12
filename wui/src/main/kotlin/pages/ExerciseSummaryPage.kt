@@ -248,6 +248,13 @@ object ExerciseSummaryPage : EasyPage() {
         val exercise = exercisePromise.await()
                 .parseTo(TeacherExercise.serializer()).await()
 
+        val effectiveTitle = exercise.title_alias ?: exercise.title
+
+        Title.update {
+            it.pageTitle = effectiveTitle
+            it.parentPageTitle = courseTitle
+        }
+
         debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 
         getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
@@ -255,7 +262,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "coursesHref" to "/courses",
                 "courseTitle" to courseTitle,
                 "courseHref" to "/courses/$courseId/exercises",
-                "exerciseTitle" to (exercise.title_alias ?: exercise.title)
+                "exerciseTitle" to effectiveTitle
         ))
 
         val exerciseMap = mutableMapOf<String, Any?>(
@@ -273,7 +280,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "studentVisible" to Str.translateBoolean(exercise.student_visible),
                 "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
                 "lastModified" to exercise.last_modified.toEstonianString(),
-                "exerciseTitle" to (exercise.title_alias ?: exercise.title),
+                "exerciseTitle" to effectiveTitle,
                 "exerciseText" to exercise.text_html
         )
 
@@ -806,6 +813,11 @@ object ExerciseSummaryPage : EasyPage() {
 
             val courseTitle = BasicCourseInfo.get(courseId).await().title
             val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
+
+            Title.update {
+                it.pageTitle = exercise.effective_title
+                it.parentPageTitle = courseTitle
+            }
 
             getElemById("crumbs").innerHTML = tmRender("tm-exercise-crumbs", mapOf(
                     "coursesLabel" to Str.myCourses(),

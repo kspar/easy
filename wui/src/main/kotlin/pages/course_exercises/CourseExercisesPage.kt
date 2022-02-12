@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import pages.EasyPage
+import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
@@ -160,6 +161,8 @@ object CourseExercisesPage : EasyPage() {
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(TeacherExercises.serializer()).await()
 
+            Title.update { it.parentPageTitle = courseTitle }
+
             val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }
                     .map { ex ->
@@ -251,6 +254,8 @@ object CourseExercisesPage : EasyPage() {
 
             val courseTitle = courseInfoPromise.await().title
             val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()
+
+            Title.update { it.parentPageTitle = courseTitle }
 
             val exerciseArray = exercises.exercises
                     .sortedBy { it.ordering_idx }

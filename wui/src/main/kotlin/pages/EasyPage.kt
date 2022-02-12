@@ -19,14 +19,19 @@ abstract class EasyPage : Page() {
     // Sidenav with no course by default
     open val sidenavSpec: Sidenav.Spec = Sidenav.Spec()
 
+    // Title with no info by default
+    open val titleSpec: Title.Spec = Title.Spec()
+
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
         if (allowedRoles.none { it == Auth.activeRole }) {
-            getContainer().innerHTML = tmRender("tm-no-access-page", mapOf(
+            getContainer().innerHTML = tmRender(
+                "tm-no-access-page", mapOf(
                     "title" to Str.noPermissionForPageTitle(),
                     "msg" to Str.noPermissionForPageMsg()
-            ))
+                )
+            )
             Sidenav.refresh(Sidenav.Spec())
             error("User is not one of $allowedRoles")
         }
@@ -38,6 +43,7 @@ abstract class EasyPage : Page() {
     }
 
     override fun build(pageStateStr: String?) {
+        Title.replace { titleSpec }
         Sidenav.refresh(sidenavSpec)
     }
 
@@ -46,8 +52,8 @@ abstract class EasyPage : Page() {
 
         // Destroy tooltips
         getElemsByClass("tooltipped")
-                .map { Materialize.Tooltip.getInstance(it) }
-                .forEach { it?.destroy() }
+            .map { Materialize.Tooltip.getInstance(it) }
+            .forEach { it?.destroy() }
 
         // Dismiss toasts
         Materialize.Toast.dismissAll()

@@ -2,11 +2,13 @@ package pages.participants
 
 import DateSerializer
 import Icons
+import Str
 import cache.BasicCourseInfo
 import components.PageTabsComp
 import components.StringComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.Title
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.Component
@@ -122,6 +124,11 @@ class ParticipantsRootComp(
         addStudentsModal = AddStudentsModalComp(courseId, this)
 
         courseTitle = courseTitlePromise.await().title
+
+        Title.update {
+            it.pageTitle = Str.participants()
+            it.parentPageTitle = courseTitle
+        }
 
         val participants = participantsPromise.await().parseTo(Participants.serializer()).await()
         val groups = groupsPromise.await().parseTo(Groups.serializer()).await()
