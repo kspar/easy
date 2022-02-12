@@ -143,7 +143,10 @@ fun hasStudentMoodlePendingAccessToCourse(moodleUsername: String, courseId: Long
 
 fun assertIsVisibleExerciseOnCourse(courseExId: Long, courseId: Long) {
     if (!isVisibleExerciseOnCourse(courseExId, courseId)) {
-        throw InvalidRequestException("Exercise $courseExId not found on course $courseId or it is hidden")
+        throw InvalidRequestException(
+            "Exercise $courseExId not found on course $courseId or it is hidden",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
     }
 }
 

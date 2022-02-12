@@ -9,11 +9,13 @@ import PageName
 import PaginationConf
 import Role
 import Str
+import UserMessageAction
 import cache.BasicCourseInfo
 import compareTo
 import debug
 import debugFunStart
 import emptyToNull
+import errorMessage
 import getContainer
 import getLastPageOffset
 import highlightCode
@@ -819,8 +821,11 @@ object ExerciseSummaryPage : EasyPage() {
     private fun buildStudentExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
 
         fun buildExerciseAndCrumbs() = MainScope().launch {
-            val exercisePromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId",
-                    ReqMethod.GET, successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
+            val exercisePromise = fetchEms(
+                "/student/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
+                successChecker = { http200 },
+                errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+            )
 
             val courseTitle = BasicCourseInfo.get(courseId).await().title
             val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
@@ -874,7 +879,9 @@ object ExerciseSummaryPage : EasyPage() {
     private suspend fun postSolution(courseId: String, courseExerciseId: String, solution: String) {
         debug { "Posting submission ${solution.substring(0, 15)}..." }
         fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions", ReqMethod.POST,
-                mapOf("solution" to solution), successChecker = { http200 }).await()
+                mapOf("solution" to solution), successChecker = { http200 },
+            errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+        ).await()
         debug { "Submitted" }
         successMessage { Str.submitSuccessMsg() }
     }
@@ -889,6 +896,7 @@ object ExerciseSummaryPage : EasyPage() {
                     errorHandler = {
                         handleAlways {
                             warn { "Failed to save draft with status $status" }
+                            errorMessage(action = UserMessageAction("Proovi uuesti") { saveSubmissionDraft(solution) }) { "Mustandi salvestamine ebaõnnestus" }
                             paintSyncFail()
                         }
                     }).await()
@@ -906,12 +914,15 @@ object ExerciseSummaryPage : EasyPage() {
         } else {
             debug { "Building submit tab by fetching latest submission" }
             val draftPromise = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET,
-                    successChecker = { http200 or http204 }, errorHandler = ErrorHandlers.noCourseAccessPage)
+                    successChecker = { http200 or http204 },
+                    errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg))
 
             val submission = fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET,
-                    successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage).await()
-                    .parseTo(StudentSubmissions.serializer()).await()
-                    .submissions.getOrNull(0)
+                    successChecker = { http200 },
+                    errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+            ).await()
+                .parseTo(StudentSubmissions.serializer()).await()
+                .submissions.getOrNull(0)
 
             val draftResp = draftPromise.await()
             val draft = if (draftResp.http200) draftResp.parseTo(StudentDraft.serializer()).await() else null
@@ -1046,15 +1057,16 @@ object ExerciseSummaryPage : EasyPage() {
 
     private fun pollForAutograde(courseId: String, courseExerciseId: String) {
         debug { "Starting long poll for autoassessment" }
-        fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET,
-                successChecker = { http200 })
-                .then {
-                    it.parseTo(StudentSubmission.serializer())
-                }
-                .then {
-                    debug { "Finished long poll, rebuilding" }
-                    buildSubmit(courseId, courseExerciseId, it)
-                }
+        fetchEms(
+            "/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET,
+            successChecker = { http200 },
+            errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+        ).then {
+            it.parseTo(StudentSubmission.serializer())
+        }.then {
+            debug { "Finished long poll, rebuilding" }
+            buildSubmit(courseId, courseExerciseId, it)
+        }
     }
 
     private fun paintSyncDone() {

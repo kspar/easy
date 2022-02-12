@@ -7,8 +7,11 @@ import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
+import core.ems.service.assertIsVisibleExerciseOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -50,8 +53,13 @@ class StudentReadExerciseDetailsController {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
+        assertIsVisibleExerciseOnCourse(courseExId, courseId)
 
         return selectStudentExerciseDetails(courseId, courseExId)
+            ?: throw InvalidRequestException(
+                "Exercise $courseExId not found on course $courseId or it is hidden",
+                ReqError.ENTITY_WITH_ID_NOT_FOUND
+            )
     }
 }
 

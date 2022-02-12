@@ -73,7 +73,7 @@ class TeacherReadExDetailsCont {
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
 
         return selectCourseExerciseDetails(courseId, courseExerciseIdString.idToLongOrInvalidReq())
-                ?: throw InvalidRequestException("No course exercise found with id $courseExerciseIdString from course $courseId")
+                ?: throw InvalidRequestException("No course exercise found with id $courseExerciseIdString on course $courseId")
     }
 
 }

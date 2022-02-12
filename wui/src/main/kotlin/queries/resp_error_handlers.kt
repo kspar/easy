@@ -19,10 +19,22 @@ object ErrorHandlers {
     val noCourseAccessPage: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             debug { "Error handled by no course access page handler" }
-            getContainer().innerHTML = tmRender("tm-no-access-page", mapOf(
+            getContainer().innerHTML = tmRender(
+                "tm-no-access-page", mapOf(
                     "title" to Str.noCourseAccessPageTitle(),
                     "msg" to Str.noCourseAccessPageMsg()
-            ))
+                )
+            )
+        }
+    }
+
+    val noVisibleExerciseMsg: RespErrorHandler =
+        noEntityFoundMessage("Seda ülesannet ei eksisteeri või see on peidetud")
+
+    fun noEntityFoundMessage(msg: String): RespErrorHandler = { errorBody ->
+        errorBody.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND) {
+            debug { "Error handled by no entity found message" }
+            errorMessage { msg }
         }
     }
 
@@ -58,27 +70,28 @@ object ErrorHandlers {
 enum class RespError(val code: String) {
     NO_COURSE_ACCESS("NO_COURSE_ACCESS"),
     GROUP_NOT_EMPTY("GROUP_NOT_EMPTY"),
+    ENTITY_WITH_ID_NOT_FOUND("ENTITY_WITH_ID_NOT_FOUND"),
 }
 
 @Serializable
 data class ErrorBody(
-        val id: String,
-        val code: String? = null,
-        val attrs: Map<String, String>,
-        val log_msg: String
+    val id: String,
+    val code: String? = null,
+    val attrs: Map<String, String>,
+    val log_msg: String
 )
 
 /**
- * Used to indicate that an erroneous (i.e. not successful) response was obtained from a fetch but it was handled by an error handler.
+ * Used to indicate that an erroneous (i.e. not successful) response was obtained from a fetch, but it was handled by an error handler.
  */
 class HandledResponseError : Exception()
 
 
 fun ErrorBody?.handleByCode(respError: RespError, errorHandler: (ErrorBody) -> Unit): Boolean =
-        if (this != null && this.code == respError.code) {
-            errorHandler(this)
-            true
-        } else false
+    if (this != null && this.code == respError.code) {
+        errorHandler(this)
+        true
+    } else false
 
 fun Response.handleAlways(errorHandler: (Response) -> Unit): Boolean =
-        true.also { errorHandler(this) }
+    true.also { errorHandler(this) }

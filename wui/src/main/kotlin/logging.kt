@@ -34,7 +34,7 @@ fun debugFunStart(funName: String): FunLog? {
 }
 
 
-data class UserMessageAction(val label: String, val id: String = IdGenerator.nextId(), val onActivate: () -> Unit)
+data class UserMessageAction(val label: String, val id: String = IdGenerator.nextId(), val onActivate: suspend () -> Unit)
 
 fun permanentErrorMessage(isDismissable: Boolean = true, action: UserMessageAction? = null, msgProvider: () -> String) =
     userMessage(msgProvider, MsgType.PERMANENT_ERROR, action, isDismissable)
