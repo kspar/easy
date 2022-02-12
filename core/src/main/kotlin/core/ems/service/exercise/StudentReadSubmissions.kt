@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
@@ -46,7 +46,7 @@ class StudentReadSubmissionsController {
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        assertIsVisibleExerciseOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         return selectStudentSubmissions(courseId, courseExId, caller.id, limitStr?.toIntOrNull(), offsetStr?.toLongOrNull())
     }

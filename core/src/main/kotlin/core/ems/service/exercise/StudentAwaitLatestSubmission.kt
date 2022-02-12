@@ -6,7 +6,7 @@ import core.aas.AutoAssessStatusObserver
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
@@ -58,7 +58,7 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        assertIsVisibleExerciseOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         val submission = runBlocking {
             selectLatestStudentSubmission(

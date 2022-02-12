@@ -6,7 +6,7 @@ import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsCache
@@ -52,7 +52,7 @@ class StudentSubmitCont(
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        assertIsVisibleExerciseOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         submitSolution(courseExId, solutionBody.solution, caller.id)
     }

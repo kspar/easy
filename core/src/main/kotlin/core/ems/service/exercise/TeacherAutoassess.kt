@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToExercise
-import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import kotlinx.coroutines.runBlocking
@@ -53,6 +51,7 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
         // Can access through course or directly via library
         if (courseId != null) {
             assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+            assertExerciseIsOnCourse(exerciseId, courseId, false)
         } else {
             assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
         }

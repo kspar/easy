@@ -7,7 +7,7 @@ import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
-import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -53,7 +53,7 @@ class StudentReadExerciseDetailsController {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        assertIsVisibleExerciseOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         return selectStudentExerciseDetails(courseId, courseExId)
             ?: throw InvalidRequestException(

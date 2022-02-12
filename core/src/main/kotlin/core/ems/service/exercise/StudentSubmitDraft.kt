@@ -6,7 +6,7 @@ import core.db.CourseExercise
 import core.db.Student
 import core.db.SubmissionDraft
 import core.db.insertOrUpdate
-import core.ems.service.assertIsVisibleExerciseOnCourse
+import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
@@ -37,7 +37,7 @@ class StudentSubmitDraftController {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertStudentHasAccessToCourse(caller.id, courseId)
-        assertIsVisibleExerciseOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         insertOrUpdateSubmissionDraft(courseExId, solutionBody.solution, caller.id)
     }

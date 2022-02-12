@@ -141,24 +141,51 @@ fun hasStudentMoodlePendingAccessToCourse(moodleUsername: String, courseId: Long
 }
 
 
-fun assertIsVisibleExerciseOnCourse(courseExId: Long, courseId: Long) {
-    if (!isVisibleExerciseOnCourse(courseExId, courseId)) {
+fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean = true) {
+    if (!isCourseExerciseOnCourse(courseExId, courseId, requireStudentVisible)) {
         throw InvalidRequestException(
-            "Exercise $courseExId not found on course $courseId or it is hidden",
+            "Course exercise $courseExId not found on course $courseId " +
+                    if (requireStudentVisible) "or it is hidden" else "",
             ReqError.ENTITY_WITH_ID_NOT_FOUND
         )
     }
 }
 
-fun isVisibleExerciseOnCourse(courseExId: Long, courseId: Long): Boolean {
+fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean {
     return transaction {
-        CourseExercise
+        val query = CourseExercise
                 .select {
                     CourseExercise.course eq courseId and
-                            (CourseExercise.id eq courseExId) and
-                            (CourseExercise.studentVisible eq true)
+                            (CourseExercise.id eq courseExId)
                 }
-                .count() > 0
+        if (requireStudentVisible) {
+            query.andWhere { CourseExercise.studentVisible eq true }
+        }
+        query.count() > 0
+    }
+}
+
+fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean = false) {
+    if (!isExerciseOnCourse(exerciseId, courseId, requireStudentVisible)) {
+        throw InvalidRequestException(
+            "Exercise $exerciseId not found on course $courseId " +
+                    if (requireStudentVisible) "or it is hidden" else "",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
+    }
+}
+
+fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean {
+    return transaction {
+        val query = CourseExercise
+            .select {
+                CourseExercise.course eq courseId and
+                        (CourseExercise.exercise eq exerciseId)
+            }
+        if (requireStudentVisible) {
+            query.andWhere { CourseExercise.studentVisible eq true }
+        }
+        query.count() > 0
     }
 }
 
