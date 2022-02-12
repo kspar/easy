@@ -9,6 +9,7 @@ import core.util.component1
 import core.util.component2
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
