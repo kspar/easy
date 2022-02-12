@@ -3,6 +3,7 @@ package pages
 import AppProperties
 import Auth
 import DateSerializer
+import Icons
 import MathJax
 import PageName
 import PaginationConf
@@ -33,6 +34,7 @@ import objOf
 import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
+import pages.exercise.ExercisePage
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -211,11 +213,11 @@ object ExerciseSummaryPage : EasyPage() {
 
         when (Auth.activeRole) {
             Role.STUDENT -> buildStudentExercise(pathParams.courseId, pathParams.courseExerciseId)
-            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(pathParams.courseId, pathParams.courseExerciseId)
+            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(pathParams.courseId, pathParams.courseExerciseId, Auth.activeRole == Role.ADMIN)
         }
     }
 
-    private fun buildTeacherExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
+    private fun buildTeacherExercise(courseId: String, courseExerciseId: String, isAdmin: Boolean) = MainScope().launch {
         val fl = debugFunStart("buildTeacherExercise")
 
         getContainer().innerHTML = tmRender("tm-teach-exercise", mapOf(
@@ -230,7 +232,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         // Could be optimised to load exercise details & students in parallel,
         // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
-        val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId)
+        val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
         buildTeacherTesting(exerciseDetails.exercise_id)
         buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
@@ -238,7 +240,7 @@ object ExerciseSummaryPage : EasyPage() {
         fl?.end()
     }
 
-    private suspend fun buildTeacherSummaryAndCrumbs(courseId: String, courseExerciseId: String): TeacherExercise {
+    private suspend fun buildTeacherSummaryAndCrumbs(courseId: String, courseExerciseId: String, isAdmin: Boolean): TeacherExercise {
         val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
 
         val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
@@ -254,6 +256,15 @@ object ExerciseSummaryPage : EasyPage() {
             it.pageTitle = effectiveTitle
             it.parentPageTitle = courseTitle
         }
+
+        if (isAdmin)
+            Sidenav.replacePageSection(
+                Sidenav.PageSection(
+                    effectiveTitle, listOf(
+                        Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
+                    )
+                )
+            )
 
         debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 
