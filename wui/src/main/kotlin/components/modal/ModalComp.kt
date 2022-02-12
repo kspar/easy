@@ -14,6 +14,9 @@ import kotlin.js.Promise
 open class ModalComp<T>(
     private val title: String?,
     private val defaultReturnValue: T,
+    private val isWide: Boolean = false,
+    bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
+    footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
     private val modalId: String = IdGenerator.nextId(),
@@ -24,15 +27,16 @@ open class ModalComp<T>(
 
     private var mModal: MModalInstance? = null
 
-    private var returnValue: T = defaultReturnValue
-
     // TODO: listener refresh logic is probably not needed since children are comps that manage their own listeners,
     //  remove at some point if it becomes clear that it's not needed
 //    private val listenerProducers: MutableList<() -> ActiveListener> = mutableListOf()
 //    private var activeListeners: MutableSet<ActiveListener> = mutableSetOf()
 
-    private lateinit var bodyComps: List<Component>
-    private var footerComps: List<Component> = emptyList()
+    private var bodyComps = bodyCompsProvider?.invoke(this) ?: emptyList()
+    private var footerComps = footerCompsProvider?.invoke(this) ?: emptyList()
+
+    // Modal return value is communicated through this, set when the modal is closing
+    private var returnValue: T = defaultReturnValue
 
     override val children: List<Component>
         get() = bodyComps + footerComps
@@ -40,25 +44,19 @@ open class ModalComp<T>(
     override fun render(): String = tmRender(
         "t-c-modal",
         "id" to modalId,
+        "wide" to isWide,
         "title" to title,
         "bodyComps" to bodyComps.map { mapOf("id" to it.dstId) },
         "footerComps" to footerComps.map { mapOf("id" to it.dstId) },
     )
 
-    fun setContent(vararg components: Component) {
-        setContent(components.toList())
+
+    fun setContentComps(componentsProvider: (ModalComp<T>) -> List<Component>) {
+        this.bodyComps = componentsProvider(this)
     }
 
-    fun setContent(components: List<Component>) {
-        this.bodyComps = components
-    }
-
-    fun setFooter(vararg components: Component) {
-        setFooter(components.toList())
-    }
-
-    fun setFooter(components: List<Component>) {
-        this.footerComps = components
+    fun setFooterComps(componentsProvider: (ModalComp<T>) -> List<Component>) {
+        this.footerComps = componentsProvider(this)
     }
 
 //    fun addListener(listenerProducer: () -> ActiveListener) {
@@ -78,6 +76,9 @@ open class ModalComp<T>(
         return p
     }
 
+    /**
+     * Called by other components when the modal is visible to dismiss it and return a value
+     */
     fun closeAndReturnWith(returnValue: T) {
         this.returnValue = returnValue
         mModal?.close()

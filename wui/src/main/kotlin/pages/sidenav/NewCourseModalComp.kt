@@ -7,52 +7,65 @@ import components.modal.BinaryModalComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 
 class NewCourseModalComp(
     parent: Component,
-) : BinaryModalComp<String?>(
-    "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
-    defaultReturnValue = null, dstId = "new-course-modal-dst-id", parent = parent
-) {
+    dstId: String,
+) : Component(parent, dstId) {
 
-    @Serializable
-    private data class NewCourseDTO(val id: String)
+    private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
+        "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
+        primaryAction = { createCourse(courseTitleFieldComp.getValue()) },
+        primaryPostAction = ::reinitialise,
+        defaultReturnValue = null, parent = this
+    )
 
-    private val courseTitleField = StringFieldComp(
+    private val courseTitleFieldComp = StringFieldComp(
         "Kursuse nimi",
         true,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
-        parent = this
+        parent = modalComp
     )
 
+    override val children: List<Component>
+        get() = listOf(modalComp)
+
     override fun create() = doInPromise {
-        super.create().await()
-        super.setContent(courseTitleField)
-        super.setPrimaryAction { createCourse(courseTitleField.getValue()) }
-        super.setPrimaryPostAction(::reinitialise)
-        super.setSecondaryPostAction(::reinitialise)
+        modalComp.setContentComps { listOf(courseTitleFieldComp) }
     }
+
+    override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
-        super.postChildrenBuilt()
-        courseTitleField.validateAndPaint(false)
+        // TODO: can be moved to StringFieldComp etc?
+        courseTitleFieldComp.validateAndPaint(false)
     }
 
+    fun openWithClosePromise() = modalComp.openWithClosePromise()
+
     private suspend fun reinitialise() {
-        courseTitleField.createAndBuild().await()
-        courseTitleField.validateAndPaint(false)
+        courseTitleFieldComp.createAndBuild().await()
+
+        // TODO: can be moved to StringFieldComp etc?
+        courseTitleFieldComp.validateAndPaint(false)
     }
 
     private fun updateSubmitBtn(isTitleValid: Boolean) {
-        super.primaryButtonComp.setEnabled(isTitleValid)
+        modalComp.primaryButtonComp.setEnabled(isTitleValid)
     }
+
+
+    @Serializable
+    private data class NewCourseDTO(val id: String)
 
     private suspend fun createCourse(title: String): String {
         debug { "Creating new course with title $title" }
@@ -60,6 +73,7 @@ class NewCourseModalComp(
             successChecker = { http200 }).await()
             .parseTo(NewCourseDTO.serializer()).await().id
         debug { "Saved new course with id $courseId" }
+        successMessage { "Kursus loodud" }
         return courseId
     }
 }

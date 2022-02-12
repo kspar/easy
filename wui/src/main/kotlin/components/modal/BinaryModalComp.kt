@@ -14,43 +14,31 @@ open class BinaryModalComp<T>(
     primaryBtnLoadingText: String? = null,
     secondaryBtnLoadingText: String? = null,
     defaultReturnValue: T,
+    primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
+    isWide: Boolean = false,
+    open var primaryAction: (suspend () -> T)? = null,
+    open var secondaryAction: (suspend () -> Unit)? = null,
+    open var primaryPostAction: (suspend () -> Unit)? = null,
+    open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
-) : ModalComp<T>(title, defaultReturnValue, parent, dstId) {
+) : ModalComp<T>(title, defaultReturnValue, isWide = isWide, parent = parent, dstId = dstId) {
 
-    private var primaryAction: (suspend () -> T)? = null
-    private var primaryPostAction: (suspend () -> Unit)? = null
-    private var secondaryAction: (suspend () -> Unit)? = null
-    private var secondaryPostAction: (suspend () -> Unit)? = null
-
-    protected val primaryButtonComp = ButtonComp(ButtonComp.Type.PRIMARY, primaryBtnText, {
+    val primaryButtonComp = ButtonComp(primaryBtnType, primaryBtnText, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
     }, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
 
-    protected val secondaryBtnComp = ButtonComp(ButtonComp.Type.SECONDARY, secondaryBtnText, {
+    val secondaryBtnComp = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
     }, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
 
+
     override fun create() = doInPromise {
         super.create()?.await()
-        super.setFooter(secondaryBtnComp, primaryButtonComp)
-    }
-
-    fun setPrimaryAction(action: (suspend () -> T)? = null) {
-        primaryAction = action
-    }
-
-    fun setPrimaryPostAction(postAction: (suspend () -> Unit)? = null) {
-        primaryPostAction = postAction
-    }
-
-    fun setSecondaryAction(action: (suspend () -> Unit)? = null) {
-        secondaryAction = action
-    }
-
-    fun setSecondaryPostAction(postAction: (suspend () -> Unit)? = null) {
-        secondaryPostAction = postAction
+        super.setFooterComps {
+            listOf(secondaryBtnComp, primaryButtonComp)
+        }
     }
 }

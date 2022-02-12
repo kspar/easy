@@ -39,11 +39,11 @@ abstract class ValidatableFieldComp<ValueType>(
      *
      * Subclasses should call this method whenever their content changes and should be validated.
      *
-     * @param paintNonEmptyViolation - if false, don't paint violations for the non-empty constraint, useful for
+     * @param paintEmptyViolation - if false, don't paint violations for the non-empty constraint, useful for
      * validating when first rendered since we don't want to show "is mandatory" messages at that time, or at
      * any time when the field is required to be nonempty, but we don't want to show errors for it.
      */
-    fun validateAndPaint(paintNonEmptyViolation: Boolean = true) {
+    fun validateAndPaint(paintEmptyViolation: Boolean = true) {
         val violationChanged = validate()
 
         // This can be false if this method was called with paintNonEmptyViolation=false before
@@ -52,7 +52,7 @@ abstract class ValidatableFieldComp<ValueType>(
 
         if (violationChanged || !violationIsCorrectlyPainted) {
             val violation = currentViolation
-            if (violation == null || paintNonEmptyViolation || violation.constraint != nonEmptyConstraint) {
+            if (violation == null || paintEmptyViolation || violation.constraint != nonEmptyConstraint) {
                 paintViolation(violation, getElement(), getHelperElement())
             } else {
                 // Unpaint violation if any, now "violationIsCorrectlyPainted" is false

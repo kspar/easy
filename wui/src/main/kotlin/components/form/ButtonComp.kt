@@ -19,7 +19,7 @@ class ButtonComp(
 ) : Component(parent) {
 
     enum class Type {
-        PRIMARY, SECONDARY
+        PRIMARY, FLAT, DANGER
     }
 
     private val btnId = IdGenerator.nextId()
@@ -32,7 +32,8 @@ class ButtonComp(
         "id" to btnId,
         "text" to label,
         "isPrimary" to (type == Type.PRIMARY),
-        "isSecondary" to (type == Type.SECONDARY),
+        "isSecondary" to (type == Type.FLAT),
+        "isDanger" to (type == Type.DANGER),
     )
 
     override fun postRender() {

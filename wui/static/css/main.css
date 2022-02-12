@@ -10,6 +10,7 @@
     --ez-attr-key-col: #4DAB54;
     --ez-flat-btn-disabled-border-col: rgba(0, 0, 0, .1);
     --ez-flat-btn-border-col: rgba(0, 0, 0, .3);
+    --ez-btn-danger-col: #df483d;
 
     --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
@@ -880,6 +881,11 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
     background-color: #4DAB54;
 }
 
+.btn.danger,
+.btn.danger:hover {
+    background-color: var(--ez-btn-danger-col);
+}
+
 
 /** Links **/
 
@@ -1189,6 +1195,11 @@ textarea.materialize-textarea {
 
 .modal {
     max-width: 55rem;
+    max-height: 80%;
+}
+
+.modal.wide {
+    max-width: 75rem;
 }
 
 .modal .modal-content {

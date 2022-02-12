@@ -2,12 +2,15 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.form.ButtonComp
+import components.modal.ConfirmationTextModalComp
 import errorMessage
 import kotlinx.coroutines.await
 import plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 
 @ExperimentalStdlibApi
 class ParticipantsGroupsListComp(
@@ -24,9 +27,10 @@ class ParticipantsGroupsListComp(
     data class GroupProp(val id: String, val name: String, val studentsCount: Int, val teachersCount: Int)
 
     private lateinit var groupsColl: EzCollComp<GroupProp>
+    private lateinit var deleteGroupModal: ConfirmationTextModalComp
 
     override val children: List<Component>
-        get() = listOf(groupsColl)
+        get() = listOf(groupsColl, deleteGroupModal)
 
     override fun create() = doInPromise {
         val props = groups.map { g ->
@@ -61,21 +65,40 @@ class ParticipantsGroupsListComp(
             ),
             parent = this
         )
+
+        deleteGroupModal = ConfirmationTextModalComp(
+            null, "Kustuta", "Tühista", "Kustutan...",
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+        )
     }
 
-    override fun render() = plainDstStr(groupsColl.dstId)
+    override fun render() = plainDstStr(groupsColl.dstId, deleteGroupModal.dstId)
 
     private suspend fun deleteGroup(group: EzCollComp.Item<GroupProp>): EzCollComp.Result {
-        // TODO: confirmation modal
+        val notEmptyMsg = "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased ja õpetajad."
 
-        fetchEms("/courses/$courseId/groups/${group.props.id}", ReqMethod.DELETE, successChecker = { http200 },
-            errorHandler = {
-                it.handleByCode(RespError.GROUP_NOT_EMPTY) {
-                    errorMessage { "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased ja õpetajad." }
-                }
-            }).await()
+        if (group.props.studentsCount > 0 || group.props.teachersCount > 0) {
+            errorMessage { notEmptyMsg }
+            return EzCollComp.ResultUnmodified
+        }
 
-        // If await didn't throw then it was a success
-        return EzCollComp.ResultModified<GroupProp>(emptyList())
+        deleteGroupModal.text = "Kustuta ${group.props.name}?"
+        deleteGroupModal.primaryAction = {
+            fetchEms("/courses/$courseId/groups/${group.props.id}", ReqMethod.DELETE, successChecker = { http200 },
+                errorHandler = {
+                    it.handleByCode(RespError.GROUP_NOT_EMPTY) {
+                        errorMessage { notEmptyMsg }
+                    }
+                }).await()
+
+            true
+        }
+
+        return if (deleteGroupModal.openWithClosePromise().await()) {
+            successMessage { "${group.props.name} kustutatud" }
+            EzCollComp.ResultModified<GroupProp>(emptyList())
+        } else {
+            EzCollComp.ResultUnmodified
+        }
     }
 }

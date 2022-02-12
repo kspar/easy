@@ -2,12 +2,12 @@ package pages.participants
 
 import Str
 import components.ParagraphsComp
-import components.StringComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
 import kotlinx.coroutines.await
+import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -17,49 +17,61 @@ import rip.kspar.ezspa.doInPromise
 class AddStudentsModalComp(
     val courseId: String,
     parent: Component,
-) : BinaryModalComp<Boolean>(
-    "Lisa õpilasi", Str.doSave(), Str.cancel(), Str.saving(),
-    defaultReturnValue = false, parent = parent
-) {
+) : Component(parent) {
 
-    private val helpText = ParagraphsComp(
-        listOf("Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
-        "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja registreerimise hetkel."),
-        this
+    private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
+        "Lisa õpilasi", Str.doSave(), Str.cancel(), Str.saving(),
+        primaryAction = { addStudents(studentsFieldComp.getValue()) },
+        primaryPostAction = ::reinitialise,
+        defaultReturnValue = false, isWide = true, parent = this
     )
 
-    private val studentsField = TextFieldComp(
+    private val helpTextComp = ParagraphsComp(
+        listOf(
+            "Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
+            "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja " +
+                    "registreerimise hetkel või siis, kui õpilane muudab oma meiliaadressi vastavaks."
+        ),
+        modalComp
+    )
+
+    private val studentsFieldComp = TextFieldComp(
         "Õpilaste meiliaadressid",
         true,
         "oskar@ohakas.ee &#x0a;mari@maasikas.com",
         startActive = true,
         constraints = listOf(StringConstraints.Length(max = 10000)),
         onValidChange = ::updateSubmitBtn,
-        parent = this
+        parent = modalComp
     )
 
+    override val children: List<Component>
+        get() = listOf(modalComp)
+
     override fun create() = doInPromise {
-        super.create().await()
-        super.setContent(helpText, studentsField)
-        super.setPrimaryAction { addStudents(studentsField.getValue()) }
-        super.setPrimaryPostAction(::reinitialise)
-        super.setSecondaryPostAction(::reinitialise)
+        modalComp.setContentComps { listOf(helpTextComp, studentsFieldComp) }
     }
+
+    override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
         super.postChildrenBuilt()
-        studentsField.validateAndPaint(false)
+        studentsFieldComp.validateAndPaint(false)
     }
 
+    fun openWithClosePromise() = modalComp.openWithClosePromise()
+
     private suspend fun reinitialise() {
-        studentsField.createAndBuild().await()
-        studentsField.validateAndPaint(false)
+        studentsFieldComp.createAndBuild().await()
+        studentsFieldComp.validateAndPaint(false)
     }
 
     private fun updateSubmitBtn(isFieldValid: Boolean) {
-        super.primaryButtonComp.setEnabled(isFieldValid)
+        modalComp.primaryButtonComp.setEnabled(isFieldValid)
     }
 
+    // TODO: allow adding to group
+    // TODO: success message
     private suspend fun addStudents(studentsString: String): Boolean {
         val students = studentsString.split(" ", "\n")
             .filter { it.isNotBlank() }

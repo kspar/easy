@@ -190,18 +190,16 @@ class ParticipantsStudentsListComp(
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
         debug { "Removing ${items.map { it.title }}" }
 
-        removeFromCourseModal.setText("Eemalda ${items.size} õpilast?")
-        removeFromCourseModal.setPrimaryAction {
+        removeFromCourseModal.text = "Eemalda ${items.size} õpilast?"
+        removeFromCourseModal.primaryAction = {
+            // TODO: remove
             sleep(2000).await()
             true
         }
 
-        debug { "opening modal" }
-        val removeConfirmed = removeFromCourseModal.openWithClosePromise().await()
-        debug { "modal await complete" }
-        debug { "ret = $removeConfirmed" }
+        val removed = removeFromCourseModal.openWithClosePromise().await()
 
-        return if (removeConfirmed)
+        return if (removed)
             EzCollComp.ResultModified<StudentProps>(emptyList())
         else
             EzCollComp.ResultUnmodified
