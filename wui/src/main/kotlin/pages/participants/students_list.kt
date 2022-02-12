@@ -69,7 +69,7 @@ class ParticipantsStudentsListComp(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it) }.toMutableList(),
                     Icons.groups,
-                    onClick = if (isEditable) ::changeGroups else null
+//                    onClick = if (isEditable) ::changeGroups else null
                 ) else null,
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
                     add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
@@ -78,7 +78,8 @@ class ParticipantsStudentsListComp(
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
-                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
+                    // TODO: add to group and remove from group, same modal as mass action
+//                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 ) else emptyList(),
             )
@@ -170,6 +171,7 @@ class ParticipantsStudentsListComp(
 
         return if (item.topAttr != null && item.topAttr is EzCollComp.ListAttr<*, *>) {
             val groupAttr = item.topAttr.unsafeCast<EzCollComp.ListAttr<StudentProps, String>>()
+            // TODO: change groups modal - probs not required in first iter
             groupAttr.items.add(EzCollComp.ListAttrItem("Rühm ${groupIdx++}"))
             EzCollComp.ResultModified(listOf(item))
 

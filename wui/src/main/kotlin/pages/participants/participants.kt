@@ -97,6 +97,8 @@ class ParticipantsRootComp(
 
     private lateinit var tabsComp: PageTabsComp
     private lateinit var addStudentsModal: AddStudentsModalComp
+//    private lateinit var createGroupModal: CreateGroupModalComp
+
     private lateinit var courseTitle: String
 
     override val children: List<Component>

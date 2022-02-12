@@ -47,17 +47,18 @@ class ParticipantsTeachersListComp(
         val items = props.map { p ->
 
             val groupsAttr = if (hasGroups)
-                EzCollComp.ListAttr(
+                EzCollComp.ListAttr<TeacherProps, String>(
                     "Piiratud rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
                     Icons.groups,
-                    onClick = if (isEditable) ::changeGroups else null
+//                    onClick = if (isEditable) ::changeGroups else null
                 )
             else null
 
             val actions = if (isEditable)
                 listOf(
-                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
+                    // TODO: add to group and remove from group, same modal as mass action
+//                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 )
             else emptyList()
