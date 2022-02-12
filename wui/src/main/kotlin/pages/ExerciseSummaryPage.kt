@@ -896,7 +896,8 @@ object ExerciseSummaryPage : EasyPage() {
                     errorHandler = {
                         handleAlways {
                             warn { "Failed to save draft with status $status" }
-                            errorMessage(action = UserMessageAction("Proovi uuesti") { saveSubmissionDraft(solution) }) { "Mustandi salvestamine ebaõnnestus" }
+                            // TODO: allow trying again - recursive call in message action fails due to a compiler bug
+                            errorMessage { "Mustandi salvestamine ebaõnnestus" }
                             paintSyncFail()
                         }
                     }).await()
