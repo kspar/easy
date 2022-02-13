@@ -1613,6 +1613,7 @@ ezc-left .ezc-item-checkbox {
     display: none;
     width: 3rem;
     padding: .1rem 0 0 .5rem;
+    cursor: pointer;
 }
 
 ezc-left .ezc-item-checkbox span.dummy,
