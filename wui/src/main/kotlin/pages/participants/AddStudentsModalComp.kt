@@ -7,15 +7,20 @@ import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
 import kotlinx.coroutines.await
+import kotlinx.serialization.Serializable
 import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
+import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 
+@ExperimentalStdlibApi
 class AddStudentsModalComp(
     val courseId: String,
+    val availableGroups: List<ParticipantsRootComp.Group>,
     parent: Component,
 ) : Component(parent) {
 
@@ -72,8 +77,14 @@ class AddStudentsModalComp(
         modalComp.primaryButton.setEnabled(isFieldValid)
     }
 
+
+    @Serializable
+    private data class AddStudentsResp(
+        val accesses_added: Int,
+        val pending_accesses_added_updated: Int,
+    )
+
     // TODO: allow adding to group
-    // TODO: success message
     private suspend fun addStudents(studentsString: String): Boolean {
         val students = studentsString.split(" ", "\n")
             .filter { it.isNotBlank() }
@@ -83,9 +94,18 @@ class AddStudentsModalComp(
             mapOf("email" to it, "groups" to emptyList<Nothing>())
         }
 
-        fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
+        val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
             "students" to newStudents
         ), successChecker = { http200 }).await()
+            .parseTo(AddStudentsResp.serializer()).await()
+
+        val active = resp.accesses_added
+        val pending = resp.pending_accesses_added_updated
+        val msg = "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"} ja " +
+                "lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}"
+
+        successMessage { msg }
+
         return true
     }
 }

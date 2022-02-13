@@ -21,6 +21,7 @@ class ParticipantsGroupsListComp(
     private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
     private val teachers: List<ParticipantsRootComp.Teacher>,
     private val isEditable: Boolean,
+    private val onGroupDeleted: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -52,7 +53,7 @@ class ParticipantsGroupsListComp(
                 ),
                 actions = buildList {
                     if (isEditable) add(
-                        EzCollComp.Action(Icons.delete, "Kustuta", onActivate = ::deleteGroup)
+                        EzCollComp.Action(Icons.delete, "Kustuta", onActivate = ::deleteGroup, onResultModified = { onGroupDeleted() })
                     )
                 }
             )

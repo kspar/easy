@@ -2,6 +2,8 @@ package pages.participants
 
 import Str
 import components.form.StringFieldComp
+import components.form.validation.ConstraintViolation
+import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
@@ -14,10 +16,22 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
+@ExperimentalStdlibApi
 class CreateGroupModalComp(
     val courseId: String,
+    val existingGroups: List<ParticipantsRootComp.Group>,
     parent: Component,
 ) : Component(parent) {
+
+    private val nonDuplicateGroupConstraint: FieldConstraint<String> = object : FieldConstraint<String>() {
+        val existingGroupNames = existingGroups.map { it.name }
+        override fun validate(value: String, fieldNameForMessage: String): ConstraintViolation<String>? {
+            return when {
+                existingGroupNames.contains(value) -> violation("Selle nimega rühm on juba kursusel olemas")
+                else -> null
+            }
+        }
+    }
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Loo uus rühm", Str.doSave(), Str.cancel(), Str.saving(),
@@ -29,7 +43,7 @@ class CreateGroupModalComp(
     private val groupNameFieldComp = StringFieldComp(
         "Rühma nimi",
         true, paintRequiredOnInput = false,
-        constraints = listOf(StringConstraints.Length(max = 50)),
+        constraints = listOf(StringConstraints.Length(max = 50), nonDuplicateGroupConstraint),
         onValidChange = ::updateSubmitBtn,
         parent = modalComp
     )

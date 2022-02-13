@@ -65,6 +65,7 @@ class EzCollComp<P>(
         val showShortcutIcon: Boolean = false,
         val shortcutMinCollWidth: CollMinWidth = CollMinWidth.W600,
         val id: String = IdGenerator.nextId(),
+        val onResultModified: (suspend () -> Unit)? = null,
         val onActivate: suspend (Item<P>) -> Result,
     )
 
@@ -713,6 +714,7 @@ class EzCollItemComp<P>(
                     this.spec = returnedItem
                     rebuild()
                 }
+                action.onResultModified?.invoke()
             }
         }
 

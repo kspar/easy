@@ -120,9 +120,6 @@ class ParticipantsRootComp(
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
-        addStudentsModal = AddStudentsModalComp(courseId, this)
-        createGroupModal = CreateGroupModalComp(courseId, this)
-
         courseTitle = courseTitlePromise.await().title
 
         Title.update {
@@ -137,6 +134,9 @@ class ParticipantsRootComp(
         val isMoodleLinked = moodleStatus.moodle_props?.moodle_short_name != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
+
+        addStudentsModal = AddStudentsModalComp(courseId, groups.groups, this)
+        createGroupModal = CreateGroupModalComp(courseId, groups.groups, this)
 
         // TODO: remove
         val multipliedStudentsForTesting = participants.students.flatMap { a -> List(1) { a } }
@@ -177,6 +177,7 @@ class ParticipantsRootComp(
                             participants.students_moodle_pending,
                             participants.teachers,
                             !groups.self_is_restricted && !studentsSynced,
+                            { createAndBuild().await() },
                             it
                         )
                     }
