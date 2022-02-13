@@ -22,6 +22,8 @@ abstract class ValidatableFieldComp<ValueType>(
 
     // Valid by default
     private var currentViolation: ConstraintViolation<ValueType>? = null
+    val isValid: Boolean
+        get() = currentViolation == null
 
     // Whether the current violation is painted (nonempty violations aren't always painted)
     private var violationIsPainted: Boolean = false
@@ -48,7 +50,7 @@ abstract class ValidatableFieldComp<ValueType>(
 
         // This can be false if this method was called with paintNonEmptyViolation=false before
         // and a nonempty violation was activated (but not painted)
-        val violationIsCorrectlyPainted = violationIsPainted == (currentViolation != null)
+        val violationIsCorrectlyPainted = violationIsPainted == !isValid
 
         if (violationChanged || !violationIsCorrectlyPainted) {
             val violation = currentViolation
@@ -70,7 +72,7 @@ abstract class ValidatableFieldComp<ValueType>(
         val violation = getNonemptyViolation(value) ?: getOtherViolation(value)
         return if (currentViolation != violation) {
             currentViolation = violation
-            onValidChange?.invoke(currentViolation == null)
+            onValidChange?.invoke(isValid)
             true
         } else {
             false

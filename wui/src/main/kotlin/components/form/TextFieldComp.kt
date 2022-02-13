@@ -40,7 +40,6 @@ class TextFieldComp(
         "t-c-text-field",
         "id" to elementId,
         "placeholder" to placeholderHtml,
-        // FIXME: active doesn't seem to work when in modal
         "active" to startActive,
         "label" to label,
         "helpText" to helpText,
@@ -53,4 +52,6 @@ class TextFieldComp(
             onValueChange?.invoke(getValue())
         }
     }
+
+    fun focus() = getElement().focus()
 }
