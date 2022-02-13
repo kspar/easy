@@ -103,7 +103,7 @@ class ExerciseTextComp(
         debug { "Enable edit mode" }
         editEnabled = true
         modeComp = ExerciseTextEditComp(textAdoc, onSaveUpdatedAdoc, ::disableEditMode, this)
-        rebuild().await()
+        rebuildAndRecreateChildren().await()
         onStateChanged()
     }
 

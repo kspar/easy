@@ -15,7 +15,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Date
-import kotlin.js.Promise
 
 // buildList is experimental
 @ExperimentalStdlibApi
@@ -233,5 +232,4 @@ class ParticipantsRootComp(
 
     override fun renderLoading() = tmRender("tm-loading-placeholders", "marginTopRem" to 6, "titleWidthRem" to 30)
 
-    override fun createAndBuild() = createAndBuild3() ?: Promise.Companion.resolve(Unit)
 }

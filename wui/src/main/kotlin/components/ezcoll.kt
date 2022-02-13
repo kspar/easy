@@ -464,7 +464,7 @@ class EzCollComp<P>(
         debug { "Final items: ${finalItems.map { it.spec.title }}" }
 
         checkedItems = mutableListOf()
-        super.rebuild(false)
+        rebuild()
     }
 
     private fun itemSelectClicked(item: EzCollItemComp<P>, isChecked: Boolean) {
@@ -483,7 +483,7 @@ class EzCollComp<P>(
         debug { "item ${item.spec.title} removed" }
         items = items - item
         checkedItems.remove(item)
-        super.rebuild(false)
+        rebuild()
     }
 
     private fun selectItemsBasedOnChecked() {

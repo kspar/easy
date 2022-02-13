@@ -86,6 +86,8 @@ abstract class Component(
             return p.then {
                 buildThis()
                 b()
+            }.then {
+                postChildrenBuilt()
             }
         }
 
@@ -109,28 +111,22 @@ abstract class Component(
     }
 
     /**
-     * Rebuild this component and its children.
+     * Rebuild this component and recreate its children.
      */
-    fun rebuild(recreateChildren: Boolean = true): Promise<*> = doInPromise {
+    fun rebuildAndRecreateChildren(): Promise<*> = doInPromise {
         buildThis()
-
-        if (recreateChildren)
-            recreateChildren().await()
-        else
-            rebuildChildren().await()
-
+        children.map { it.createAndBuild() }.unionPromise().await()
         postChildrenBuilt()
     }
 
     /**
-     * Recreate and rebuild this component's children.
+     * Rebuild this component and its children.
      */
-    fun recreateChildren(): Promise<*> = children.map { it.createAndBuild() }.unionPromise()
-
-    /**
-     * Rebuild this component's children.
-     */
-    fun rebuildChildren(): Promise<*> = children.map { it.rebuild(false) }.unionPromise()
+    fun rebuild() {
+        buildThis()
+        children.forEach { it.rebuild() }
+        postChildrenBuilt()
+    }
 
     /**
      * Clear this component's destination i.e. delete everything rendered by the component.
