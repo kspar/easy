@@ -876,8 +876,8 @@
         </div>
         <div class="row">
             <div class="input-field col xs6 s5 m4">
-                <input id="grade" type="number" min="0" max="100" class="validate">
-                <label for="grade">{{gradeLabel}}</label>
+                <input id="grade" type="number" min="0" max="100" class="validate" value="{{gradePrefill}}">
+                <label for="grade" {{#hasGradePrefill}}class="active"{{/hasGradePrefill}}>{{gradeLabel}}</label>
                 <span class="helper-text" data-error="{{gradeValidationError}}"></span>
             </div>
         </div>

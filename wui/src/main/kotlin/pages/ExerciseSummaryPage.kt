@@ -9,7 +9,6 @@ import PageName
 import PaginationConf
 import Role
 import Str
-import UserMessageAction
 import cache.BasicCourseInfo
 import compareTo
 import debug
@@ -574,11 +573,13 @@ object ExerciseSummaryPage : EasyPage() {
                     ReqMethod.POST, assMap, successChecker = { http200 }).await()
         }
 
-        fun toggleAddGradeBox(submissionId: String) {
+        fun toggleAddGradeBox(submissionId: String, validGrade: Int?) {
             if (getElemByIdOrNull("add-grade-wrap") == null) {
                 // Grading box is not visible
                 debug { "Open add grade" }
                 getElemById("add-grade-section").innerHTML = tmRender("tm-teach-exercise-add-grade", mapOf(
+                        "gradePrefill" to validGrade,
+                        "hasGradePrefill" to (validGrade != null),
                         "feedbackLabel" to Str.addAssessmentFeedbackLabel(),
                         "gradeLabel" to Str.addAssessmentGradeLabel(),
                         "gradeValidationError" to Str.addAssessmentGradeValidErr(),
@@ -640,7 +641,9 @@ object ExerciseSummaryPage : EasyPage() {
                     "viewportMargin" to 100,
                     "readOnly" to true))
 
-            getElemByIdOrNull("add-grade-link")?.onVanillaClick(true) { toggleAddGradeBox(id) }
+            val validGrade = gradeTeacher ?: gradeAuto
+
+            getElemByIdOrNull("add-grade-link")?.onVanillaClick(true) { toggleAddGradeBox(id, validGrade) }
 
             getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
                 val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null
