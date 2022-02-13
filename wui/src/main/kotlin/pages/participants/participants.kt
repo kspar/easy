@@ -98,12 +98,12 @@ class ParticipantsRootComp(
 
     private lateinit var tabsComp: PageTabsComp
     private lateinit var addStudentsModal: AddStudentsModalComp
-//    private lateinit var createGroupModal: CreateGroupModalComp
+    private lateinit var createGroupModal: CreateGroupModalComp
 
     private lateinit var courseTitle: String
 
     override val children: List<Component>
-        get() = listOf(tabsComp, addStudentsModal)
+        get() = listOf(tabsComp, addStudentsModal, createGroupModal)
 
     override fun create() = doInPromise {
         val courseTitlePromise = BasicCourseInfo.get(courseId)
@@ -121,6 +121,7 @@ class ParticipantsRootComp(
         )
 
         addStudentsModal = AddStudentsModalComp(courseId, this)
+        createGroupModal = CreateGroupModalComp(courseId, this)
 
         courseTitle = courseTitlePromise.await().title
 
@@ -138,7 +139,7 @@ class ParticipantsRootComp(
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
         // TODO: remove
-        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(10) { a } }
+        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(1) { a } }
 
 
         tabsComp = PageTabsComp(
@@ -196,7 +197,7 @@ class ParticipantsRootComp(
             if (!studentsSynced) add(
                 Sidenav.Action(Icons.addParticipant, "Lisa õpilasi") {
                     if (addStudentsModal.openWithClosePromise().await())
-                        createAndBuild()
+                        createAndBuild().await()
                 }
             )
             if (!groups.self_is_restricted) add(
@@ -206,7 +207,8 @@ class ParticipantsRootComp(
             )
             if (!groups.self_is_restricted && !studentsSynced) add(
                 Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
-                    // TODO
+                    if (createGroupModal.openWithClosePromise().await())
+                        createAndBuild().await()
                 }
             )
             if (isAdmin && !isMoodleLinked) add(
@@ -227,6 +229,7 @@ class ParticipantsRootComp(
         "t-c-participants",
         "tabsId" to tabsComp.dstId,
         "addStudentsModalId" to addStudentsModal.dstId,
+        "createGroupModalId" to createGroupModal.dstId,
         "title" to courseTitle,
     )
 
