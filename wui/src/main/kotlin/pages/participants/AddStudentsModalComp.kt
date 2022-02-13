@@ -20,9 +20,10 @@ class AddStudentsModalComp(
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Lisa õpilasi", Str.doSave(), Str.cancel(), Str.saving(),
+        "Lisa õpilasi", Str.doAdd(), Str.cancel(), Str.adding(),
         primaryAction = { addStudents(studentsFieldComp.getValue()) },
         primaryPostAction = ::reinitialise,
+        onOpen = { studentsFieldComp.focus() },
         defaultReturnValue = false,
         fixFooter = true, isWide = true,
         parent = this
@@ -69,7 +70,7 @@ class AddStudentsModalComp(
     }
 
     private fun updateSubmitBtn(isFieldValid: Boolean) {
-        modalComp.primaryButtonComp.setEnabled(isFieldValid)
+        modalComp.primaryButton.setEnabled(isFieldValid)
     }
 
     // TODO: allow adding to group

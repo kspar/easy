@@ -21,20 +21,21 @@ open class BinaryModalComp<T>(
     open var secondaryAction: (suspend () -> Unit)? = null,
     open var primaryPostAction: (suspend () -> Unit)? = null,
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
+    onOpen: (() -> Unit)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
 ) : ModalComp<T>(
     title, defaultReturnValue,
-    fixFooter = fixFooter, isWide = isWide,
+    fixFooter = fixFooter, isWide = isWide, onOpen = onOpen,
     parent = parent, dstId = dstId
 ) {
 
-    val primaryButtonComp = ButtonComp(primaryBtnType, primaryBtnText, {
+    val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
     }, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
 
-    val secondaryBtnComp = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, {
+    val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
     }, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
@@ -43,7 +44,7 @@ open class BinaryModalComp<T>(
     override fun create() = doInPromise {
         super.create()?.await()
         super.setFooterComps {
-            listOf(secondaryBtnComp, primaryButtonComp)
+            listOf(secondaryButton, primaryButton)
         }
     }
 }

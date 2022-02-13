@@ -18,6 +18,7 @@ open class ModalComp<T>(
     private val isWide: Boolean = false,
     bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
+    private val onOpen: (() -> Unit)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
     private val modalId: String = IdGenerator.nextId(),
@@ -74,6 +75,7 @@ open class ModalComp<T>(
             )
             modal.open()
             mModal = modal
+            onOpen?.invoke()
         }
         return p
     }

@@ -23,6 +23,8 @@ abstract class TranslatableStrings {
     abstract fun closeToggleLink(): String
     abstract fun doSave(): String
     abstract fun saving(): String
+    abstract fun doAdd(): String
+    abstract fun adding(): String
     abstract fun cancel(): String
     abstract fun solutionCodeTabName(): String
 
@@ -142,6 +144,8 @@ private object EstStrings : TranslatableStrings() {
     override fun previewLabel() = "Eelvaade"
     override fun doSave() = "Salvesta"
     override fun saving() = "Salvestan..."
+    override fun doAdd() = "Lisa"
+    override fun adding() = "Lisan..."
     override fun cancel() = "Tühista"
     override fun exerciseSaved() = "Ülesanne uuendatud"
     override fun assessmentAddedMsg() = "Hinnang lisatud."

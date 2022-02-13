@@ -26,7 +26,7 @@ class ConfirmationTextModalComp(
     primaryBtnLoadingText, secondaryBtnLoadingText,
     false, primaryBtnType, fixFooter, false,
     primaryAction, secondaryAction, primaryPostAction, secondaryPostAction,
-    parent
+    parent = parent
 ) {
 
     private val stringComp = StringComp("", this)

@@ -30,7 +30,7 @@ class NewCourseModalComp(
 
     private val courseTitleFieldComp = StringFieldComp(
         "Kursuse nimi",
-        true,
+        true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
         parent = modalComp
@@ -46,21 +46,18 @@ class NewCourseModalComp(
     override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
-        // TODO: can be moved to StringFieldComp etc?
-        courseTitleFieldComp.validateAndPaint(false)
+        courseTitleFieldComp.validateInitial()
     }
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
     private suspend fun reinitialise() {
         courseTitleFieldComp.createAndBuild().await()
-
-        // TODO: can be moved to StringFieldComp etc?
-        courseTitleFieldComp.validateAndPaint(false)
+        courseTitleFieldComp.validateInitial()
     }
 
     private fun updateSubmitBtn(isTitleValid: Boolean) {
-        modalComp.primaryButtonComp.setEnabled(isTitleValid)
+        modalComp.primaryButton.setEnabled(isTitleValid)
     }
 
 
