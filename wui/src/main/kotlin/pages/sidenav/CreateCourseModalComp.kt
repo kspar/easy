@@ -16,7 +16,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-class NewCourseModalComp(
+class CreateCourseModalComp(
     parent: Component,
     dstId: String,
 ) : Component(parent, dstId) {
@@ -51,8 +51,8 @@ class NewCourseModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    private suspend fun reinitialise() {
-        courseTitleFieldComp.createAndBuild().await()
+    private fun reinitialise() {
+        courseTitleFieldComp.rebuild()
         courseTitleFieldComp.validateInitial()
     }
 

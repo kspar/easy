@@ -2,6 +2,7 @@ package components.form.validation
 
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
+import libheaders.focus
 import org.w3c.dom.Element
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
@@ -20,6 +21,8 @@ abstract class ValidatableFieldComp<ValueType>(
     abstract fun getElement(): Element
     abstract fun getHelperElement(): Element
 
+    abstract val paintEmptyViolationInitial: Boolean
+
     // Valid by default
     private var currentViolation: ConstraintViolation<ValueType>? = null
     val isValid: Boolean
@@ -34,18 +37,29 @@ abstract class ValidatableFieldComp<ValueType>(
     }
 
     /**
+     * Validate initial value of this field.
+     * Call when ready to receive validChange events.
+     * Will always fire an initial validChange event to ensure that valid state is in sync.
+     */
+    fun validateInitial() {
+        validateAndPaint(paintEmptyViolationInitial)
+        onValidChange?.invoke(isValid)
+    }
+
+    /**
+     * Attempt to shift focus to this element
+     */
+    fun focus() = getElement().focus()
+
+    /**
      * Validate this field according to all constraints. Render the resulting violation if it changed.
-     * This method can be called manually when the containing component has finished rendering and wishes
-     * to update its state based on whether this field is (initially) valid. The validity change is communicated
-     * through the [onValidChange] hook.
-     *
      * Subclasses should call this method whenever their content changes and should be validated.
      *
-     * @param paintEmptyViolation - if false, don't paint violations for the non-empty constraint, useful for
-     * validating when first rendered since we don't want to show "is mandatory" messages at that time, or at
-     * any time when the field is required to be nonempty, but we don't want to show errors for it.
+     * @param paintEmptyViolation - if false, don't paint violations for the non-empty constraint, e.g. useful for
+     * validating when first rendered if we don't want to show "is mandatory" messages at that time, or at
+     * any time when the field is required to be nonempty to be valid, but we don't want to show errors for it.
      */
-    fun validateAndPaint(paintEmptyViolation: Boolean = true) {
+    protected fun validateAndPaint(paintEmptyViolation: Boolean) {
         val violationChanged = validate()
 
         // This can be false if this method was called with paintNonEmptyViolation=false before
@@ -63,6 +77,7 @@ abstract class ValidatableFieldComp<ValueType>(
             }
         }
     }
+
 
     /**
      * @return whether the current violation changed

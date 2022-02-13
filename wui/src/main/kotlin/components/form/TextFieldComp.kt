@@ -13,10 +13,10 @@ class TextFieldComp(
     private val label: String,
     private val isRequired: Boolean,
     private val placeholderHtml: String = "",
-    private val paintRequiredOnInput: Boolean = false,
+    private val paintRequiredOnCreate: Boolean = false,
+    private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
     private val startActive: Boolean = false,
-//    private val defaultValue: String = "",
     private val helpText: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
     onValidChange: ((Boolean) -> Unit)? = null,
@@ -36,6 +36,8 @@ class TextFieldComp(
     override fun getElement(): HTMLTextAreaElement = getElemByIdAs(elementId)
     override fun getHelperElement(): Element = getElemById("field-helper-$elementId")
 
+    override val paintEmptyViolationInitial = paintRequiredOnCreate
+
     override fun render() = tmRender(
         "t-c-text-field",
         "id" to elementId,
@@ -52,6 +54,4 @@ class TextFieldComp(
             onValueChange?.invoke(getValue())
         }
     }
-
-    fun focus() = getElement().focus()
 }

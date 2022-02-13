@@ -49,7 +49,7 @@ class CreateGroupModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    private suspend fun reinitialise() {
+    private fun reinitialise() {
         groupNameFieldComp.rebuild()
         groupNameFieldComp.validateInitial()
     }

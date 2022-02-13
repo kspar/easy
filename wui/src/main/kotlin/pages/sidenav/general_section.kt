@@ -20,7 +20,7 @@ class SidenavGeneralSectionComp(
     private val libItemId = IdGenerator.nextId()
     private val articlesItemId = IdGenerator.nextId()
 
-    private val newCourseModal = NewCourseModalComp(this, "new-course-modal-dst-id")
+    private val newCourseModal = CreateCourseModalComp(this, "new-course-modal-dst-id")
 
     private val newCourseLinkId = IdGenerator.nextId()
 

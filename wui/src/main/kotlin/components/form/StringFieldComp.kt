@@ -35,6 +35,8 @@ class StringFieldComp(
     override fun getElement(): HTMLInputElement = getElemByIdAs(inputId)
     override fun getHelperElement(): Element = getElemById("field-helper-$inputId")
 
+    override val paintEmptyViolationInitial = paintRequiredOnCreate
+
     override fun render() = tmRender(
         "t-c-string-field",
         "id" to inputId,
@@ -50,17 +52,4 @@ class StringFieldComp(
             onValueChange?.invoke(getValue())
         }
     }
-
-    /**
-     * Validate initial value of this field.
-     * Call when ready to receive validChange events.
-     * Will always fire an initial validChange event to ensure that valid state is in sync.
-     */
-    // TODO: consider moving to ValidatableFieldComp
-    fun validateInitial() {
-        validateAndPaint(paintRequiredOnCreate)
-        onValidChange?.invoke(isValid)
-    }
-
-    fun focus() = getElement().focus()
 }

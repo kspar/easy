@@ -42,7 +42,7 @@ class AddStudentsModalComp(
         "Õpilaste meiliaadressid",
         true,
         "oskar@ohakas.ee &#x0a;mari@maasikas.com",
-        startActive = true,
+        startActive = true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 10000)),
         onValidChange = ::updateSubmitBtn,
         parent = modalComp
@@ -58,15 +58,14 @@ class AddStudentsModalComp(
     override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
-        super.postChildrenBuilt()
-        studentsFieldComp.validateAndPaint(false)
+        studentsFieldComp.validateInitial()
     }
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    private suspend fun reinitialise() {
-        studentsFieldComp.createAndBuild().await()
-        studentsFieldComp.validateAndPaint(false)
+    private fun reinitialise() {
+        studentsFieldComp.rebuild()
+        studentsFieldComp.validateInitial()
     }
 
     private fun updateSubmitBtn(isFieldValid: Boolean) {
