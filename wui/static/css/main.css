@@ -799,12 +799,18 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
     left: 0;
     box-shadow: 0 0 1px 0 #bbb;  /* Border may not work for sticky elements, and this hack may also not work */
     background-color: #fff;
-    max-width: 12rem;
+    max-width: 10rem;
     text-align: right;
     font-weight: 500;
 }
 
 @media only screen and (min-width: 400px) {
+    .grade-table-wrap table > tbody > tr > td.sticky-col {
+        max-width: 13rem;
+    }
+}
+
+@media only screen and (min-width: 600px) {
     .grade-table-wrap table > tbody > tr > td.sticky-col {
         max-width: 18rem;
     }
