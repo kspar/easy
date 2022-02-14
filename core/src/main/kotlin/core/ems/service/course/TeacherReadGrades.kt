@@ -3,19 +3,17 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
 import core.exception.ForbiddenException
 import core.exception.ReqError
-import core.util.DateTimeSerializer
+import core.util.notNullAndInPast
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
@@ -39,8 +37,7 @@ class TeacherReadGradesController(val courseService: CourseService) {
     data class ExercisesResp(@JsonProperty("exercise_id") val exerciseId: String,
                              @JsonProperty("effective_title") val effectiveTitle: String,
                              @JsonProperty("grade_threshold") val gradeThreshold: Int,
-                             @JsonSerialize(using = DateTimeSerializer::class)
-                             @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+                             @JsonProperty("student_visible") val studentVisible: Boolean,
                              @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp>)
 
     data class GradeResp(@JsonProperty("student_id") val studentId: String,
@@ -142,7 +139,7 @@ private fun selectExercisesOnCourse(
                             ex[CourseExercise.id].value.toString(),
                             ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
                             ex[CourseExercise.gradeThreshold],
-                            ex[CourseExercise.studentVisibleFrom],
+                            ex[CourseExercise.studentVisibleFrom].notNullAndInPast(),
                             courseService.selectLatestValidGrades(ex[CourseExercise.id].value, studentIds)
                                     .map {
                                         TeacherReadGradesController.GradeResp(

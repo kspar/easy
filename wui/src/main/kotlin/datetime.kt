@@ -16,13 +16,11 @@ fun nowTimestamp() = Date().toLocaleString("sv").replace(" ", "_")
  * Return a datetime string in format '31. jaanuar 2019, 23.59' of this date in Estonian time zone.
  */
 fun Date.toEstonianString(): String {
-    val d = this.toEet()
+    val d = this
     val paddedHours = d.getHours().toString().padStart(2, '0')
     val paddedMins = d.getMinutes().toString().padStart(2, '0')
     return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
 }
-
-fun Date?.notNullAndConvertedInPast(): Boolean = this != null && this.toEet() <= Date()
 
 operator fun Date.compareTo(other: Date): Int =
         (this.getTime() - other.getTime()).toInt()

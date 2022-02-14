@@ -31,7 +31,6 @@ import libheaders.Materialize
 import libheaders.focus
 import lightboxExerciseImages
 import moveClass
-import notNullAndConvertedInPast
 import objOf
 import observeValueChange
 import onSingleClickWithDisabled
@@ -62,6 +61,7 @@ object ExerciseSummaryPage : EasyPage() {
             val instructions_adoc: String?,
             val text_html: String?,
             val text_adoc: String?,
+            val student_visible: Boolean,
             @Serializable(with = DateSerializer::class)
             val student_visible_from: Date?,
             @Serializable(with = DateSerializer::class)
@@ -279,11 +279,6 @@ object ExerciseSummaryPage : EasyPage() {
                 "exerciseTitle" to effectiveTitle
         ))
 
-        val (isStudentVisible, studentVisibleFromTime) = if (exercise.student_visible_from.notNullAndConvertedInPast())
-            true to null
-        else
-            false to exercise.student_visible_from
-
         val exerciseMap = mutableMapOf<String, Any?>(
                 "softDeadlineLabel" to Str.softDeadlineLabel(),
                 "hardDeadlineLabel" to Str.hardDeadlineLabel(),
@@ -297,8 +292,8 @@ object ExerciseSummaryPage : EasyPage() {
                 "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
                 "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
                 "threshold" to exercise.threshold,
-                "studentVisible" to Str.translateBoolean(isStudentVisible),
-                "studentVisibleFromTime" to studentVisibleFromTime?.toEstonianString(),
+                "studentVisible" to Str.translateBoolean(exercise.student_visible),
+                "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.toEstonianString() else null,
                 "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
                 "lastModified" to exercise.last_modified.toEstonianString(),
                 "exerciseTitle" to effectiveTitle,

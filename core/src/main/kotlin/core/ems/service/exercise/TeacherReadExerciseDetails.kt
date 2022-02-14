@@ -12,6 +12,7 @@ import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
+import core.util.notNullAndInPast
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
@@ -45,6 +46,7 @@ class TeacherReadExDetailsCont {
             @JsonProperty("threshold") val threshold: Int,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("last_modified") val lastModified: DateTime,
+            @JsonProperty("student_visible") val studentVisible: Boolean,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
             @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
@@ -127,6 +129,7 @@ private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): Teach
                             it[ExerciseVer.graderType],
                             it[CourseExercise.gradeThreshold],
                             it[ExerciseVer.validFrom],
+                            it[CourseExercise.studentVisibleFrom].notNullAndInPast(),
                             it[CourseExercise.studentVisibleFrom],
                             it[CourseExercise.assessmentsStudentVisible],
                             autoExercise?.gradingScript,

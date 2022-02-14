@@ -1238,9 +1238,8 @@ paths:
                       type: string
                     grade_threshold:
                       type: integer
-                    student_visible_from:
-                      type: string
-                      format: date-time
+                    student_visible:
+                      type: boolean
                     grades:
                       type: array
                       items:
@@ -1296,6 +1295,8 @@ paths:
               last_modified:
                 type: string
                 format: date-time
+              student_visible:
+                type: boolean
               student_visible_from:
                 type: string
                 format: date-time
@@ -1344,6 +1345,7 @@ paths:
               - grader_type
               - threshold
               - last_modified
+              - student_visible
               - assessments_student_visible
 
 
