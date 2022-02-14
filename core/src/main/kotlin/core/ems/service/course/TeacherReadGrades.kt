@@ -3,11 +3,13 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
 import core.exception.ForbiddenException
 import core.exception.ReqError
+import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
@@ -37,6 +39,7 @@ class TeacherReadGradesController(val courseService: CourseService) {
     data class ExercisesResp(@JsonProperty("exercise_id") val exerciseId: String,
                              @JsonProperty("effective_title") val effectiveTitle: String,
                              @JsonProperty("grade_threshold") val gradeThreshold: Int,
+                             @JsonSerialize(using = DateTimeSerializer::class)
                              @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
                              @JsonProperty("grades") @JsonInclude(Include.NON_NULL) val grades: List<GradeResp>)
 

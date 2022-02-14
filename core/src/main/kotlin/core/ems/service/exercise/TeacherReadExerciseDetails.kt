@@ -45,6 +45,7 @@ class TeacherReadExDetailsCont {
             @JsonProperty("threshold") val threshold: Int,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("last_modified") val lastModified: DateTime,
+            @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
             @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
             @JsonProperty("grading_script") val gradingScript: String?,
