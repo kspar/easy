@@ -95,6 +95,7 @@ abstract class TranslatableStrings {
     abstract fun graderTypeLabel(): String
     abstract fun thresholdLabel(): String
     abstract fun studentVisibleLabel(): String
+    abstract fun studentVisibleFromTimeLabel(): String
     abstract fun assStudentVisibleLabel(): String
     abstract fun lastModifiedLabel(): String
     abstract fun graderTypeAuto(): String
@@ -164,6 +165,7 @@ private object EstStrings : TranslatableStrings() {
     override fun graderTypeLabel() = "Hindamine"
     override fun thresholdLabel() = "Lävend"
     override fun studentVisibleLabel() = "Õpilastele nähtav"
+    override fun studentVisibleFromTimeLabel() = "Muutub nähtavaks"
     override fun assStudentVisibleLabel() = "Hinnangud õpilastele nähtavad"
     override fun lastModifiedLabel() = "Viimati muudetud"
     override fun submissionTimeLabel() = "Esitamise aeg"

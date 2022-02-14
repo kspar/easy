@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 
 private val log = KotlinLogging.logger {}
 
@@ -154,13 +155,15 @@ fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStud
 
 fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean {
     return transaction {
-        val query = CourseExercise
-                .select {
-                    CourseExercise.course eq courseId and
-                            (CourseExercise.id eq courseExId)
-                }
+        val query = CourseExercise.select {
+            CourseExercise.course eq courseId and
+                    (CourseExercise.id eq courseExId)
+        }
         if (requireStudentVisible) {
-            query.andWhere { CourseExercise.studentVisible eq true }
+            query.andWhere {
+                CourseExercise.studentVisibleFrom.isNotNull() and
+                        CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
+            }
         }
         query.count() > 0
     }
@@ -184,7 +187,10 @@ fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: 
                         (CourseExercise.exercise eq exerciseId)
             }
         if (requireStudentVisible) {
-            query.andWhere { CourseExercise.studentVisible eq true }
+            query.andWhere {
+                CourseExercise.studentVisibleFrom.isNotNull() and
+                        CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
+            }
         }
         query.count() > 0
     }

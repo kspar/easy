@@ -22,6 +22,8 @@ fun Date.toEstonianString(): String {
     return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
 }
 
+fun Date?.notNullAndConvertedInPast(): Boolean = this != null && this.toEet() <= Date()
+
 operator fun Date.compareTo(other: Date): Int =
         (this.getTime() - other.getTime()).toInt()
 

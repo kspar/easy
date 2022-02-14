@@ -31,16 +31,24 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherCreateCourseExerciseController(private val adocService: AdocService) {
 
-    data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100) val exerciseId: String,
-                   @JsonProperty("threshold", required = true) @field:PositiveOrZero val threshold: Int,
+    data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100)
+                   val exerciseId: String,
+                   @JsonProperty("threshold", required = true) @field:PositiveOrZero
+                   val threshold: Int,
+                   @JsonProperty("student_visible")
+                   val isStudentVisible: Boolean,
                    @JsonDeserialize(using = DateTimeDeserializer::class)
-                   @JsonProperty("soft_deadline", required = false) val softDeadline: DateTime?,
+                   @JsonProperty("soft_deadline", required = false)
+                   val softDeadline: DateTime?,
                    @JsonDeserialize(using = DateTimeDeserializer::class)
-                   @JsonProperty("hard_deadline", required = false) val hardDeadline: DateTime?,
-                   @JsonProperty("student_visible", required = true) val studentVisible: Boolean,
-                   @JsonProperty("assessments_student_visible", required = true) val assStudentVisible: Boolean,
-                   @JsonProperty("instructions_adoc", required = false) @field:Size(max = 300000) val instructionsAdoc: String?,
-                   @JsonProperty("title_alias", required = false) @field:Size(max = 100) val titleAlias: String?)
+                   @JsonProperty("hard_deadline", required = false)
+                   val hardDeadline: DateTime?,
+                   @JsonProperty("assessments_student_visible", required = true)
+                   val assStudentVisible: Boolean,
+                   @JsonProperty("instructions_adoc", required = false) @field:Size(max = 300000)
+                   val instructionsAdoc: String?,
+                   @JsonProperty("title_alias", required = false) @field:Size(max = 100)
+                   val titleAlias: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
@@ -59,6 +67,7 @@ class TeacherCreateCourseExerciseController(private val adocService: AdocService
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
+        // TODO: should probably allow duplicate exercises on course
         if (isExerciseOnCourse(courseId, exerciseId)) {
             throw InvalidRequestException("Exercise $exerciseId is already on course $courseId")
         }
@@ -103,6 +112,8 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
 
         val orderIndex = (currentMaxOrderIdx ?: 0) + IDX_STEP
 
+        val studentVisibleFromTime = if (body.isStudentVisible) DateTime.now() else null
+
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)
             it[exercise] = EntityID(exerciseId, Exercise)
@@ -110,7 +121,7 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
             it[softDeadline] = body.softDeadline
             it[hardDeadline] = body.hardDeadline
             it[orderIdx] = orderIndex
-            it[studentVisible] = body.studentVisible
+            it[studentVisibleFrom] = studentVisibleFromTime
             it[assessmentsStudentVisible] = body.assStudentVisible
             it[instructionsHtml] = html
             it[instructionsAdoc] = body.instructionsAdoc

@@ -66,7 +66,8 @@ private fun selectStudentExercises(courseId: Long, studentId: String): StudentRe
                         .select {
                             CourseExercise.course eq courseId and
                                     ExerciseVer.validTo.isNull() and
-                                    (CourseExercise.studentVisible eq true)
+                                    CourseExercise.studentVisibleFrom.isNotNull() and
+                                    CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
                         }
                         .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                         .map {

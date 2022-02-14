@@ -1153,4 +1153,15 @@
         <dropColumn tableName="executor" columnName="load"/>
     </changeSet>
 
+    <changeSet id="140222-1" author="kspar">
+        <addColumn tableName="course_exercise">
+            <!-- All existing to visible, set invisible ones manually -->
+            <column name="student_visible_from" type="timestamp" valueDate="2018-12-02T12:59:00">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="course_exercise" columnName="student_visible"/>
+    </changeSet>
+
 </databaseChangeLog>

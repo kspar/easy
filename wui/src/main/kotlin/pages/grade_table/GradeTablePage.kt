@@ -1,6 +1,7 @@
 package pages.grade_table
 
 import CONTENT_CONTAINER_ID
+import DateSerializer
 import Icons
 import PageName
 import Role
@@ -15,6 +16,7 @@ import kotlinx.browser.document
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import libheaders.CSV
+import notNullAndConvertedInPast
 import nowTimestamp
 import objOf
 import org.w3c.dom.HTMLAnchorElement
@@ -25,9 +27,13 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import plainDstStr
 import queries.*
-import rip.kspar.ezspa.*
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.encodeURIComponent
 import tmRender
 import toJsObj
+import kotlin.js.Date
 import kotlin.js.Promise
 
 
@@ -180,7 +186,8 @@ class GradeTableTableComp(
             val exercise_id: String,
             val effective_title: String,
             val grade_threshold: Int,
-            val student_visible: Boolean,
+            @Serializable(with = DateSerializer::class)
+            val student_visible_from: Date?,
             val grades: List<Grade>
     )
 
@@ -235,7 +242,10 @@ class GradeTableTableComp(
                 .parseTo(GradeTable.serializer()).await()
 
         val exercises = gradeTable.exercises.map {
-            ExerciseRow(it.effective_title, ExerciseSummaryPage.link(courseId, it.exercise_id), it.student_visible)
+            ExerciseRow(
+                it.effective_title, ExerciseSummaryPage.link(courseId, it.exercise_id),
+                it.student_visible_from.notNullAndConvertedInPast()
+            )
         }
 
         val allStudents = gradeTable.students.map { it.student_id }.toSet()

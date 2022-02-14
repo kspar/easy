@@ -76,10 +76,12 @@ object CourseExercise : LongIdTable("course_exercise") {
     val course = reference("course_id", Course)
     val exercise = reference("exercise_id", Exercise)
     val gradeThreshold = integer("grade_threshold")
+    // if null then permanently invisible
+    // if in past or now then visible, if in future then invisible
+    val studentVisibleFrom = datetime("student_visible_from").nullable()
     val softDeadline = datetime("soft_deadline").nullable()
     val hardDeadline = datetime("hard_deadline").nullable()
     val orderIdx = integer("ordering_index")
-    val studentVisible = bool("student_visible")
     val assessmentsStudentVisible = bool("assessments_student_visible")
     val instructionsHtml = text("instructions_html").nullable()
     val instructionsAdoc = text("instructions_adoc").nullable()
