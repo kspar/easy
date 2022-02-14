@@ -2,10 +2,12 @@ package pages.participants
 
 import Str
 import components.ParagraphsComp
+import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
+import emptyToNull
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import plainDstStr
@@ -19,14 +21,14 @@ import successMessage
 
 @ExperimentalStdlibApi
 class AddStudentsModalComp(
-    val courseId: String,
-    val availableGroups: List<ParticipantsRootComp.Group>,
+    private val courseId: String,
+    private val availableGroups: List<ParticipantsRootComp.Group>,
     parent: Component,
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Lisa õpilasi", Str.doAdd(), Str.cancel(), Str.adding(),
-        primaryAction = { addStudents(studentsFieldComp.getValue()) },
+        primaryAction = { addStudents(groupSelectComp?.getValue().emptyToNull(), studentsFieldComp.getValue()) },
         primaryPostAction = ::reinitialise,
         onOpen = { studentsFieldComp.focus() },
         defaultReturnValue = false,
@@ -43,6 +45,14 @@ class AddStudentsModalComp(
         modalComp
     )
 
+    private val groupSelectComp = if (availableGroups.isNotEmpty())
+        SelectComp(
+            "Lisa rühma",
+            listOf(SelectComp.Option("–", "", true)) +
+                    availableGroups.map { SelectComp.Option(it.name, it.id) },
+            parent = modalComp
+        ) else null
+
     private val studentsFieldComp = TextFieldComp(
         "Õpilaste meiliaadressid",
         true,
@@ -57,7 +67,7 @@ class AddStudentsModalComp(
         get() = listOf(modalComp)
 
     override fun create() = doInPromise {
-        modalComp.setContentComps { listOf(helpTextComp, studentsFieldComp) }
+        modalComp.setContentComps { listOfNotNull(helpTextComp, groupSelectComp, studentsFieldComp) }
     }
 
     override fun render() = plainDstStr(modalComp.dstId)
@@ -84,14 +94,21 @@ class AddStudentsModalComp(
         val pending_accesses_added_updated: Int,
     )
 
-    // TODO: allow adding to group
-    private suspend fun addStudents(studentsString: String): Boolean {
+    private suspend fun addStudents(groupId: String?, studentsString: String): Boolean {
         val students = studentsString.split(" ", "\n")
             .filter { it.isNotBlank() }
 
-        debug { "Adding students $students" }
+        debug { "Adding students (group $groupId): $students" }
+
+        val groups: List<Map<String, String>> = if (groupId != null)
+            listOf(mapOf("id" to groupId))
+        else emptyList()
+
         val newStudents = students.map {
-            mapOf("email" to it, "groups" to emptyList<Nothing>())
+            mapOf(
+                "email" to it,
+                "groups" to groups
+            )
         }
 
         val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(

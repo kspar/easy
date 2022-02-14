@@ -35,4 +35,6 @@ class SelectComp(
             onOptionChange?.invoke(selectElement.value)
         }
     }
+
+    fun getValue() = getElemByIdAs<HTMLSelectElement>(selectId).value
 }
