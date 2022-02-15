@@ -1,5 +1,6 @@
 package core.conf.security
 
+import com.auth0.jwt.JWT
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
@@ -18,6 +19,15 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         val givenName = getOptionalHeader("oidc_claim_given_name", request)
         val familyName = getOptionalHeader("oidc_claim_family_name", request)
         val roles = getOptionalHeader("oidc_claim_easy_role", request)
+
+        val token = getOptionalHeader("OIDC_access_token", request)
+        log.debug { "token: $token" }
+        val jwt = JWT.decode(token)
+        val sub = jwt.subject
+        log.debug { "sub: $sub" }
+        jwt.claims.forEach {
+            log.debug { "claim: ${it.key}: ${it.value}" }
+        }
 
         if (username != null
                 && email != null
