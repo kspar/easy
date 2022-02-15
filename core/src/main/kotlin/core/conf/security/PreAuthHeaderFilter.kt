@@ -21,13 +21,18 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         val roles = getOptionalHeader("oidc_claim_easy_role", request)
 
         val token = getOptionalHeader("OIDC_access_token", request)
-        log.debug { "token: $token" }
         val jwt = JWT.decode(token)
-        val sub = jwt.subject
-        log.debug { "sub: $sub" }
-        jwt.claims.forEach {
-            log.debug { "claim: ${it.key}: ${it.value}" }
-        }
+        val idFromToken = jwt.claims["preferred_username"]
+
+        log.debug { "old: $username" }
+        log.debug { "new: $idFromToken" }
+
+
+
+
+//        jwt.claims.forEach {
+//            log.debug { "claim: ${it.key}: ${it.value}" }
+//        }
 
         if (username != null
                 && email != null
