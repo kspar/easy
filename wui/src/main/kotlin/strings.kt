@@ -27,6 +27,7 @@ abstract class TranslatableStrings {
     abstract fun adding(): String
     abstract fun cancel(): String
     abstract fun solutionCodeTabName(): String
+    abstract fun new(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
     fun translateRole(role: Role) = when (role) {
@@ -225,4 +226,5 @@ private object EstStrings : TranslatableStrings() {
     override fun noCourseAccessPageMsg() = "Sul puudub ligipääs sellele kursusele. :("
     override fun notFoundPageTitle() = "Lehte ei leitud"
     override fun notFoundPageMsg() = "Siin pole midagi kasulikku näha. :("
+    override fun new() = "uus"
 }

@@ -66,6 +66,8 @@ class SidenavCourseSectionComp(
         "exercisesLabel" to "Ülesanded",
         "gradesLabel" to "Hinded",
         "participantsLabel" to "Osalejad",
+        "newLabel" to Str.new(),
+        "participantsLabel" to "Osalejad",
         "oldParticipantsLabel" to "Osalejad",
         "newExerciseLabel" to "Uus ülesanne",
         "addExerciseLabel" to "Lisa ülesanne kogust",
