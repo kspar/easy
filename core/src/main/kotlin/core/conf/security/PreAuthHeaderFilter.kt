@@ -13,7 +13,7 @@ private val log = KotlinLogging.logger {}
 
 class PreAuthHeaderFilter : OncePerRequestFilter() {
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-        val username = getOptionalHeader("oidc_claim_preferred_username", request)
+//        val username = getOptionalHeader("oidc_claim_preferred_username", request)
         val moodleUsername = getOptionalHeader("oidc_claim_ut_uid", request)
         val email = getOptionalHeader("oidc_claim_email", request)
         val givenName = getOptionalHeader("oidc_claim_given_name", request)
@@ -22,10 +22,10 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
 
         val token = getOptionalHeader("OIDC_access_token", request)
         val jwt = JWT.decode(token)
-        val idFromToken = jwt.claims["preferred_username"]
+        val username = jwt.claims["preferred_username"]?.asString()
 
-        log.debug { "old: $username" }
-        log.debug { "new: $idFromToken" }
+//        log.debug { "old: $username" }
+//        log.debug { "new: $idFromToken" }
 
 
 
