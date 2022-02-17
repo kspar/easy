@@ -20,7 +20,9 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         val oldId = getOptionalHeader("oidc_claim_preferred_username", request)
         val oldMoodleUsername = getOptionalHeader("oidc_claim_ut_uid", request)
         val oldEmail = getOptionalHeader("oidc_claim_email", request)
-        val oldRoles = getOptionalHeader("oidc_claim_easy_role", request)
+        val oldRoles = getOptionalHeader("oidc_claim_easy_role", request)?.let {
+            mapHeaderToRoles(it)
+        }
 
         val token = getOptionalHeader("OIDC_access_token", request)
         val jwt = token?.let { JWT.decode(it) }
@@ -30,7 +32,9 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         val newEmail = jwt?.claims?.get("email")?.asString()
         val newGivenName = jwt?.claims?.get("given_name")?.asString()
         val newFamilyName = jwt?.claims?.get("family_name")?.asString()
-        val newRoles = jwt?.claims?.get("easy_role")?.asString()
+        val newRoles = jwt?.claims?.get("easy_role")?.asList(String::class.java)?.let {
+            mapRoleStringsToRoles(it)
+        }
 
         if (newMoodleUsername != oldMoodleUsername ||
             newEmail != oldEmail ||
@@ -57,7 +61,7 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
             }
 
             SecurityContextHolder.getContext().authentication = EasyUser(
-                oldId, id, oldEmail, newGivenName, newFamilyName, mapHeaderToRoles(oldRoles), oldMoodleUsername
+                oldId, id, oldEmail, newGivenName, newFamilyName, oldRoles, oldMoodleUsername
             )
 
             log.debug { "Caller: ${SecurityContextHolder.getContext().authentication}" }
@@ -72,14 +76,15 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
     }
 
     private fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
-        rolesHeader.split(",")
-            .map {
-                when (it) {
-                    "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
-                    "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
-                    "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
-                    else -> throw RuntimeException("Unmapped role $it")
-                }
+        mapRoleStringsToRoles(rolesHeader.split(","))
+
+    private fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
+        roleStrings.map {
+            when (it) {
+                "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
+                "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
+                "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
+                else -> throw RuntimeException("Unmapped role $it")
             }
-            .toSet()
+        }.toSet()
 }
