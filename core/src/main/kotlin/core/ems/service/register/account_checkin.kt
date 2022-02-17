@@ -85,12 +85,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
         // TODO: async update lastSeen
     }
 
-
-    private data class AccountMigrationInfo(
-        val id: String,
-        val migrated: Boolean,
-    )
-
     private fun checkIdMigration(caller: EasyUser, dto: PersonalDataBody) {
         if (caller.oldId != caller.id) {
             log.debug { "Old id '${caller.oldId}' != new id '${caller.id}'" }
@@ -103,16 +97,8 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             // both accounts - error, notify
             // no accounts - nothing
 
-            val oldAccount = transaction {
-                Account.select { Account.id eq caller.oldId }.map {
-                    AccountMigrationInfo(it[Account.id].value, it[Account.idMigrationDone])
-                }.singleOrNull()
-            }
-            val newAccount = transaction {
-                Account.select { Account.id eq caller.id }.map {
-                    AccountMigrationInfo(it[Account.id].value, it[Account.idMigrationDone])
-                }.singleOrNull()
-            }
+            val oldAccount = cachingService.selectAccount(caller.oldId)
+            val newAccount = cachingService.selectAccount(caller.id)
 
             if (oldAccount != null && newAccount != null) {
                 val msg = "Accounts with both old and migrated ids exist. Old: $oldAccount, new: $newAccount"
@@ -122,7 +108,7 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             }
 
             if (oldAccount != null) {
-                if (oldAccount.migrated) {
+                if (oldAccount.isIdMigrated) {
                     val msg = "Non-migrated account with migrated=true: $oldAccount, newId: ${caller.id}"
                     log.error { msg }
                     mailService.sendSystemNotification(msg)
@@ -133,7 +119,7 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             }
 
             if (newAccount != null) {
-                if (newAccount.migrated) {
+                if (newAccount.isIdMigrated) {
                     log.info { "Account already migrated: $newAccount" }
                 } else {
                     log.info { "Account not migrated: $newAccount" }

@@ -10,6 +10,7 @@ import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -170,7 +171,11 @@ class CachingService(val cacheManager: CacheManager) {
         val email: String,
         val moodleUsername: String?,
         val givenName: String,
-        val familyName: String
+        val familyName: String,
+        val createdAt: DateTime,
+        val lastSeen: DateTime,
+        val isIdMigrated: Boolean,
+        val preMigrationId: String?,
     ) : Serializable
 
     @Cacheable(value = [accountCache], unless = "#result == null")
@@ -184,7 +189,11 @@ class CachingService(val cacheManager: CacheManager) {
                         it[Account.email],
                         it[Account.moodleUsername],
                         it[Account.givenName],
-                        it[Account.familyName]
+                        it[Account.familyName],
+                        it[Account.createdAt],
+                        it[Account.lastSeen],
+                        it[Account.idMigrationDone],
+                        it[Account.preMigrationId],
                     )
                 }.singleOrNull()
         }
