@@ -1274,7 +1274,8 @@
 
     <changeSet id="160222-2" author="kspar">
         <addColumn tableName="account">
-            <column name="last_seen" type="timestamp" valueDate="2018-12-02T12:59:00">
+            <!-- Workaround to get computed values for non-nullable new column - add and remove default value -->
+            <column name="last_seen" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
                 <constraints nullable="false"/>
             </column>
             <column name="id_migration_done" type="boolean" defaultValue="false">
@@ -1284,6 +1285,7 @@
                 <constraints nullable="true"/>
             </column>
         </addColumn>
+        <dropDefaultValue tableName="account" columnName="last_seen"/>
     </changeSet>
 
 </databaseChangeLog>
