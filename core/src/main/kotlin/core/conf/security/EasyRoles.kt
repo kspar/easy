@@ -4,10 +4,11 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
 
 
-class EasyUser(val id: String,
+class EasyUser(val oldId: String,
+               val id: String,
                val email: String,
-               val givenName: String,
-               val familyName: String,
+               val givenName: String?,
+               val familyName: String?,
                val roles: Set<EasyGrantedAuthority>,
                val moodleUsername: String?) : AbstractAuthenticationToken(roles) {
 

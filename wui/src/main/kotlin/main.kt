@@ -13,10 +13,7 @@ import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
-import queries.ReqMethod
-import queries.abortAllFetchesAndClear
-import queries.fetchEms
-import queries.http200
+import queries.*
 import rip.kspar.ezspa.*
 
 
@@ -76,6 +73,12 @@ private suspend fun updateAccountData() {
         ReqMethod.POST,
         personalData,
         successChecker = { http200 },
+        errorHandler = {
+            it.handleByCode(RespError.ACCOUNT_MIGRATION_FAILED) {
+                permanentErrorMessage { "Kasutaja andmeid uuendades tekkis viga. Administraatorit on veast teavitatud. Palun proovi mõne aja pärast uuesti." }
+                error("Account migration failed")
+            }
+        },
         cancellable = false
     ).await()
     debug { "Account data updated" }

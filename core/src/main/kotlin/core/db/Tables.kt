@@ -12,10 +12,13 @@ object Account : IdTable<String>("account") {
     override val id = text("username").entityId()
     override val primaryKey = PrimaryKey(id)
     val createdAt = datetime("created_at")
+    val lastSeen = datetime("last_seen")
     val email = text("email")
     val givenName = text("given_name")
     val familyName = text("family_name")
     val moodleUsername = text("moodle_username").nullable()
+    val idMigrationDone = bool("id_migration_done")
+    val preMigrationId = text("pre_migration_id").nullable()
 }
 
 object Student : IdTable<String>("student") {

@@ -1164,4 +1164,126 @@
         <dropColumn tableName="course_exercise" columnName="student_visible"/>
     </changeSet>
 
+    <changeSet id="160222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="admin" constraintName="fk_admin_account"/>
+        <addForeignKeyConstraint baseTableName="admin" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_admin_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article" constraintName="fk_article_admin"/>
+        <addForeignKeyConstraint baseTableName="article" baseColumnNames="owner_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_admin" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article_version" constraintName="fk_article_version_admin"/>
+        <addForeignKeyConstraint baseTableName="article_version" baseColumnNames="author_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_version_admin" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article_alias" constraintName="fk_article_alias_admin"/>
+        <addForeignKeyConstraint baseTableName="article_alias" baseColumnNames="created_by_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_alias_admin" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="student" constraintName="fk_student_account"/>
+        <addForeignKeyConstraint baseTableName="student" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_student_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_access"
+                                  constraintName="fk_student_course_access_student"/>
+        <addForeignKeyConstraint baseTableName="student_course_access" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_student_course_access_student" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_course_group_access_student_course_access"/>
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 constraintName="fk_student_course_group_access_student_course_access"
+                                 onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <addForeignKeyConstraint baseTableName="submission" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_submission_student" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
+        <addForeignKeyConstraint baseTableName="submission_draft" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_submission_draft_student" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="teacher" constraintName="fk_teacher_account"/>
+        <addForeignKeyConstraint baseTableName="teacher" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_teacher_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_student"/>
+        <addForeignKeyConstraint baseTableName="exercise" baseColumnNames="owned_by_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_exercise_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_student"/>
+        <addForeignKeyConstraint baseTableName="exercise_version" baseColumnNames="author_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_exercise_version_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="stored_file" constraintName="fk_stored_file_teacher"/>
+        <addForeignKeyConstraint baseTableName="stored_file" baseColumnNames="created_by_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_stored_file_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_submission" constraintName="fk_testing_draft_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_submission" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_submission_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_assessment_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_access"
+                                  constraintName="fk_teacher_course_access_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_access" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_course_access_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_group_access"
+                                  constraintName="fk_teacher_group_access_teacher_course_access"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_group_access" baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="account_group_access"
+                                  constraintName="fk_account_group_access_account"/>
+        <addForeignKeyConstraint baseTableName="account_group_access" baseColumnNames="account_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_account_group_access_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="log_report" constraintName="fk_account_log_report"/>
+        <addForeignKeyConstraint baseTableName="log_report" baseColumnNames="user_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_log_report_account" onUpdate="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="160222-2" author="kspar">
+        <addColumn tableName="account">
+            <column name="last_seen" type="timestamp" valueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_migration_done" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pre_migration_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

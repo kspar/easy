@@ -1,10 +1,13 @@
 package core.ems.service.register
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.ems.service.cache.countTotalUsersCache
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.cache.CachingService
+import core.ems.service.cache.countTotalUsersCache
+import core.exception.InvalidRequestException
+import core.exception.ReqError
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
@@ -23,7 +26,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateAccountController(val cachingService: CachingService) {
+class UpdateAccountController(val cachingService: CachingService, private val mailService: SendMailService) {
 
     data class PersonalDataBody(
         @JsonProperty("first_name", required = true)
@@ -36,6 +39,8 @@ class UpdateAccountController(val cachingService: CachingService) {
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/account/checkin")
     fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser) {
+
+        checkIdMigration(caller, dto)
 
         val account = AccountData(
             caller.id,
@@ -76,7 +81,99 @@ class UpdateAccountController(val cachingService: CachingService) {
             // Admins should also have a teacher entity to add assessments, exercises etc
             updateTeacher(account)
         }
+
+        // TODO: async update lastSeen
     }
+
+
+    private data class AccountMigrationInfo(
+        val id: String,
+        val migrated: Boolean,
+    )
+
+    private fun checkIdMigration(caller: EasyUser, dto: PersonalDataBody) {
+        if (caller.oldId != caller.id) {
+            log.debug { "Old id '${caller.oldId}' != new id '${caller.id}'" }
+
+            // Possible cases:
+            // only account with old id and migrated=false - migrate
+            // only account with old id and migrated=true - error, notify
+            // only account with new id and migrated=true - nothing
+            // only account with new id and migrated=false - nothing
+            // both accounts - error, notify
+            // no accounts - nothing
+
+            val oldAccount = transaction {
+                Account.select { Account.id eq caller.oldId }.map {
+                    AccountMigrationInfo(it[Account.id].value, it[Account.idMigrationDone])
+                }.singleOrNull()
+            }
+            val newAccount = transaction {
+                Account.select { Account.id eq caller.id }.map {
+                    AccountMigrationInfo(it[Account.id].value, it[Account.idMigrationDone])
+                }.singleOrNull()
+            }
+
+            if (oldAccount != null && newAccount != null) {
+                val msg = "Accounts with both old and migrated ids exist. Old: $oldAccount, new: $newAccount"
+                log.error { msg }
+                mailService.sendSystemNotification(msg)
+                throwMigrationFailed()
+            }
+
+            if (oldAccount != null) {
+                if (oldAccount.migrated) {
+                    val msg = "Non-migrated account with migrated=true: $oldAccount, newId: ${caller.id}"
+                    log.error { msg }
+                    mailService.sendSystemNotification(msg)
+                    throwMigrationFailed()
+                } else {
+                    migrateAccountId(caller.oldId, caller.id)
+                }
+            }
+
+            if (newAccount != null) {
+                if (newAccount.migrated) {
+                    log.info { "Account already migrated: $newAccount" }
+                } else {
+                    log.info { "Account not migrated: $newAccount" }
+                }
+            }
+        }
+
+        if (dto.firstName != caller.givenName ||
+            dto.lastName != caller.familyName
+        ) {
+            val msg = """
+               Account data mismatch from token and checkin:
+                dto.firstName '${dto.firstName}' != caller.givenName '${caller.givenName}'
+                dto.lastName '${dto.lastName}' != caller.familyName '${caller.familyName}'
+            """
+            log.warn { msg }
+        }
+    }
+
+    private fun migrateAccountId(oldId: String, newId: String) {
+        log.info { "Migrating account id '$oldId' -> '$newId'" }
+
+        try {
+            transaction {
+                Account.update({ Account.id eq oldId }) {
+                    it[id] = newId
+                    it[idMigrationDone] = true
+                    it[preMigrationId] = oldId
+                }
+            }
+        } catch (e: Exception) {
+            val msg = "Updating account id failed: $oldId -> $newId"
+            log.error { msg }
+            mailService.sendSystemNotification(msg)
+            throwMigrationFailed()
+        }
+    }
+
+    private fun throwMigrationFailed(): Nothing =
+        throw InvalidRequestException("Account migration failed", ReqError.ACCOUNT_MIGRATION_FAILED, notify = false)
 }
 
 data class AccountData(
@@ -138,6 +235,7 @@ private fun insertAccount(accountData: AccountData) {
         it[givenName] = accountData.givenName
         it[familyName] = accountData.familyName
         it[createdAt] = now
+        it[lastSeen] = now
     }
 
     // Add implicit group for each account

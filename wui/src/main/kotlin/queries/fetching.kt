@@ -23,8 +23,8 @@ enum class ReqMethod {
 
 // Overloading because vararg doesn't work for named params (error handlers)
 fun fetchEms(path: String, method: ReqMethod, data: Map<String, Any?>? = null, headers: Map<String, String> = emptyMap(),
-             successChecker: RespSuccessChecker, errorHandler: RespErrorHandler): Promise<Response> =
-        fetchEms(path, method, data, headers, successChecker, listOf(errorHandler))
+             successChecker: RespSuccessChecker, errorHandler: RespErrorHandler, cancellable: Boolean = true): Promise<Response> =
+        fetchEms(path, method, data, headers, successChecker, listOf(errorHandler), cancellable)
 
 
 fun fetchEms(path: String, method: ReqMethod,
