@@ -75,7 +75,7 @@ private suspend fun updateAccountData() {
         successChecker = { http200 },
         errorHandler = {
             it.handleByCode(RespError.ACCOUNT_MIGRATION_FAILED) {
-                permanentErrorMessage { "Kasutaja andmeid uuendades tekkis viga. Administraatorit on veast teavitatud. Palun proovi mõne aja pärast uuesti." }
+                permanentErrorMessage(false) { "Kasutaja andmeid uuendades tekkis viga. Administraatorit on veast teavitatud. Palun proovi mõne aja pärast uuesti." }
                 error("Account migration failed")
             }
         },
