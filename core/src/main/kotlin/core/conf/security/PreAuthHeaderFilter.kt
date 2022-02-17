@@ -1,6 +1,7 @@
 package core.conf.security
 
 import com.auth0.jwt.JWT
+import core.ems.service.getOptionalHeader
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
@@ -17,14 +18,14 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val oldId = getOptionalHeader("oidc_claim_preferred_username", request)
-        val oldMoodleUsername = getOptionalHeader("oidc_claim_ut_uid", request)
-        val oldEmail = getOptionalHeader("oidc_claim_email", request)
-        val oldRoles = getOptionalHeader("oidc_claim_easy_role", request)?.let {
+        val oldId = request.getOptionalHeader("oidc_claim_preferred_username")
+        val oldMoodleUsername = request.getOptionalHeader("oidc_claim_ut_uid")
+        val oldEmail = request.getOptionalHeader("oidc_claim_email")
+        val oldRoles = request.getOptionalHeader("oidc_claim_easy_role")?.let {
             mapHeaderToRoles(it)
         }
 
-        val token = getOptionalHeader("OIDC_access_token", request)
+        val token = request.getOptionalHeader("OIDC_access_token")
         val jwt = token?.let { JWT.decode(it) }
 
         val newId = jwt?.claims?.get("preferred_username")?.asString()
@@ -63,28 +64,21 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
             SecurityContextHolder.getContext().authentication = EasyUser(
                 oldId, id, oldEmail, newGivenName, newFamilyName, oldRoles, oldMoodleUsername
             )
-
-            log.debug { "Caller: ${SecurityContextHolder.getContext().authentication}" }
         }
 
         filterChain.doFilter(request, response)
     }
-
-    private fun getOptionalHeader(headerName: String, request: HttpServletRequest): String? {
-        val headerValue: String? = request.getHeader(headerName)
-        return if (headerValue.isNullOrBlank()) null else headerValue
-    }
-
-    private fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
-        mapRoleStringsToRoles(rolesHeader.split(","))
-
-    private fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
-        roleStrings.map {
-            when (it) {
-                "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
-                "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
-                "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
-                else -> throw RuntimeException("Unmapped role $it")
-            }
-        }.toSet()
 }
+
+fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
+    mapRoleStringsToRoles(rolesHeader.split(","))
+
+fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
+    roleStrings.map {
+        when (it) {
+            "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
+            "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
+            "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
+            else -> throw RuntimeException("Unmapped role $it")
+        }
+    }.toSet()
