@@ -82,7 +82,7 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             updateTeacher(account)
         }
 
-        // TODO: async update lastSeen
+        updateLastSeen(caller.id)
     }
 
     private fun checkIdMigration(caller: EasyUser, dto: PersonalDataBody) {
@@ -164,6 +164,15 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
 
     private fun throwMigrationFailed(): Nothing =
         throw InvalidRequestException("Account migration failed", ReqError.ACCOUNT_MIGRATION_FAILED, notify = false)
+
+    private fun updateLastSeen(id: String) {
+        // Not evicting cache, so lastSeen shouldn't be included in the cached query, or else it will be false
+        transaction {
+            Account.update({ Account.id eq id }) {
+                it[lastSeen] = DateTime.now()
+            }
+        }
+    }
 }
 
 data class AccountData(

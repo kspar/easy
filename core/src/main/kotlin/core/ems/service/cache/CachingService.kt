@@ -173,7 +173,6 @@ class CachingService(val cacheManager: CacheManager) {
         val givenName: String,
         val familyName: String,
         val createdAt: DateTime,
-        val lastSeen: DateTime,
         val isIdMigrated: Boolean,
         val preMigrationId: String?,
     ) : Serializable
@@ -191,7 +190,6 @@ class CachingService(val cacheManager: CacheManager) {
                         it[Account.givenName],
                         it[Account.familyName],
                         it[Account.createdAt],
-                        it[Account.lastSeen],
                         it[Account.idMigrationDone],
                         it[Account.preMigrationId],
                     )
