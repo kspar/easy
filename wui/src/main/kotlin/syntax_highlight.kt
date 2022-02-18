@@ -1,15 +1,9 @@
 import libheaders.HighlightJS
-import org.w3c.dom.NodeList
-import org.w3c.dom.asList
-import rip.kspar.ezspa.getNodelistBySelector
+import rip.kspar.ezspa.getElemsBySelector
 
-
-fun NodeList.highlightCode() {
-    this.asList().forEach {
-        HighlightJS.highlightBlock(it)
-    }
-}
 
 fun highlightCode() {
-    getNodelistBySelector("pre.highlightjs.highlight code.hljs").highlightCode()
+    getElemsBySelector("pre.highlightjs.highlight code.hljs").forEach {
+        HighlightJS.highlightElement(it)
+    }
 }

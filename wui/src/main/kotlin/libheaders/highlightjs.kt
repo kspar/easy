@@ -1,8 +1,8 @@
 package libheaders
 
-import org.w3c.dom.Node
+import org.w3c.dom.Element
 
 @JsName("hljs")
 external object HighlightJS {
-    fun highlightBlock(node: Node)
+    fun highlightElement(element: Element)
 }
