@@ -165,7 +165,7 @@ class ExerciseTextEditComp(
         editor = CodeEditorComp(listOf(
                 CodeEditorComp.File(ADOC_FILENAME, textAdoc, "asciidoc"),
                 CodeEditorComp.File(HTML_FILENAME, null, objOf("name" to "xml", "htmlMode" to true), CodeEditorComp.Edit.READONLY)
-        ), this)
+        ), true, parent = this)
         preview = ExercisePreviewComp(this)
     }
 

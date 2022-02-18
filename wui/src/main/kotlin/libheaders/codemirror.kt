@@ -1,5 +1,6 @@
 package libheaders
 
+import objOf
 import org.w3c.dom.Element
 
 @JsName("CodeMirror")
@@ -20,7 +21,29 @@ external class CodeMirrorInstance {
     fun setValue(value: String)
     fun setOption(key: String, value: dynamic)
     fun swapDoc(newDoc: CodeMirror.Doc): CodeMirror.Doc
+    fun getMode(): CodeMirrorMode
+    fun execCommand(cmd: String)
+    fun somethingSelected(): Boolean
+}
+
+external class CodeMirrorMode {
+    val name: String?
 }
 
 inline val Element.CodeMirror: CodeMirrorInstance?
     get() = asDynamic().CodeMirror
+
+
+// Move to CodeEditorComp once everything has migrated
+val tabHandler = objOf(
+    "Tab" to { cm: CodeMirrorInstance ->
+        when {
+            cm.getMode().name == null -> cm.execCommand("insertTab")
+            cm.somethingSelected() -> cm.execCommand("indentMore")
+            else -> cm.execCommand("insertSoftTab")
+        }
+    },
+    "Shift-Tab" to { cm: CodeMirrorInstance ->
+        cm.execCommand("indentLess")
+    }
+)

@@ -26,9 +26,7 @@ import kotlinx.dom.addClass
 import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
-import libheaders.CodeMirror
-import libheaders.Materialize
-import libheaders.focus
+import libheaders.*
 import lightboxExerciseImages
 import moveClass
 import objOf
@@ -386,9 +384,9 @@ object ExerciseSummaryPage : EasyPage() {
                         "autoRefresh" to true,
                         "viewportMargin" to 100,
                         "indentUnit" to 4,
+                        "extraKeys" to tabHandler,
+                        "placeholder" to "Kirjuta või lohista lahendus siia...",
                 ))
-        // Replace TAB with 4 spaces
-        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         val submitButton = getElemByIdAs<HTMLButtonElement>("testing-submit")
 
@@ -956,9 +954,10 @@ object ExerciseSummaryPage : EasyPage() {
                         "autoRefresh" to true,
                         "viewportMargin" to 100,
                         "indentUnit" to 4,
+                        "matchBrackets" to true,
+                        "extraKeys" to tabHandler,
+                        "placeholder" to "Kirjuta või lohista lahendus siia...",
                 ))
-        // Replace TAB with 4 spaces
-        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         getElemById("submit-button").onVanillaClick(true) {
             MainScope().launch {

@@ -661,6 +661,14 @@ nav.crumb-wrap .breadcrumb:before {
     background-color: #f6f6f6;
 }
 
+.CodeMirror.cm-s-idea .CodeMirror-matchingbracket {
+    outline: 1px solid #cdcdcd;
+}
+
+.CodeMirror.cm-s-idea .CodeMirror-placeholder {
+    color: #777;
+}
+
 
 /** Participants page **/
 

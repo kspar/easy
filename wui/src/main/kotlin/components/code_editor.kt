@@ -5,6 +5,7 @@ import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
+import libheaders.tabHandler
 import negation
 import objOf
 import rip.kspar.ezspa.*
@@ -13,12 +14,22 @@ import tmRender
 
 class CodeEditorComp(
     files: List<File>,
+    private val softWrap: Boolean = false,
+    private val placeholder: String? = null,
     parent: Component?
 ) : Component(parent) {
 
-    constructor(file: File, parent: Component?) : this(listOf(file), parent)
+    constructor(
+        file: File,
+        softWrap: Boolean = false,
+        placeholder: String? = null,
+        parent: Component?
+    ) : this(listOf(file), softWrap, placeholder, parent)
 
-    data class File(val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE)
+    data class File(
+        val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE
+    )
+
     enum class Edit { EDITABLE, READONLY, TOGGLED }
 
     private data class Tab(
@@ -70,14 +81,18 @@ class CodeEditorComp(
             getElemById(textareaId),
             objOf(
                 "lineNumbers" to true,
+                "lineWrapping" to softWrap,
                 "autoRefresh" to true,
                 "viewportMargin" to 100,
                 "theme" to "idea",
                 "indentUnit" to 4,
+                "matchBrackets" to true,
+                "extraKeys" to tabHandler,
+                "undoDepth" to 500,
+                "cursorScrollMargin" to 1,
+                "placeholder" to placeholder,
             )
         )
-        // Replace TAB with 4 spaces
-        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }
 

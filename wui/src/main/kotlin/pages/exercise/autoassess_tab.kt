@@ -28,7 +28,7 @@ class AutoAssessmentTabComp(
     override fun create(): Promise<*> = doInPromise {
         val gradingScript = CodeEditorComp.File(GRADING_SCRIPT_FILENAME, exercise.grading_script, "shell", CodeEditorComp.Edit.TOGGLED)
         val assets = exercise.assets.orEmpty().map { CodeEditorComp.File(it.file_name, it.file_content, "python", CodeEditorComp.Edit.TOGGLED) }
-        editor = CodeEditorComp(listOf(gradingScript) + assets, this)
+        editor = CodeEditorComp(listOf(gradingScript) + assets, parent = this)
     }
 
     override fun render(): String = tmRender("t-c-exercise-tab-aa",
