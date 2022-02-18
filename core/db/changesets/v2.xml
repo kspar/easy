@@ -1288,4 +1288,14 @@
         <dropDefaultValue tableName="account" columnName="last_seen"/>
     </changeSet>
 
+    <changeSet id="180222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_course_group_access_student_course_access"/>
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 constraintName="fk_student_course_group_access_student_course_access"
+                                 onUpdate="CASCADE" onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>
