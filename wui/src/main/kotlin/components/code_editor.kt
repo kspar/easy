@@ -12,8 +12,8 @@ import tmRender
 
 
 class CodeEditorComp(
-        files: List<File>,
-        parent: Component?
+    files: List<File>,
+    parent: Component?
 ) : Component(parent) {
 
     constructor(file: File, parent: Component?) : this(listOf(file), parent)
@@ -21,7 +21,13 @@ class CodeEditorComp(
     data class File(val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE)
     enum class Edit { EDITABLE, READONLY, TOGGLED }
 
-    private data class Tab(val filename: String, val doc: CodeMirror.Doc, val id: String, var editability: Edit, val lang: dynamic)
+    private data class Tab(
+        val filename: String,
+        val doc: CodeMirror.Doc,
+        val id: String,
+        var editability: Edit,
+        val lang: dynamic
+    )
 
     private val tabs: List<Tab>
     private val textareaId = IdGenerator.nextId()
@@ -52,20 +58,26 @@ class CodeEditorComp(
         get() = listOfNotNull(editToggleComp)
 
     override fun render(): String = tmRender("t-c-code-editor",
-            "textareaId" to textareaId,
-            "toggleId" to editToggleId,
-            "tabs" to tabs.map {
-                mapOf("id" to it.id, "name" to it.filename)
-            }
+        "textareaId" to textareaId,
+        "toggleId" to editToggleId,
+        "tabs" to tabs.map {
+            mapOf("id" to it.id, "name" to it.filename)
+        }
     )
 
     override fun postRender() {
-        editor = CodeMirror.fromTextArea(getElemById(textareaId),
-                objOf("lineNumbers" to true,
-                        "autoRefresh" to true,
-                        "viewportMargin" to 100,
-                        "theme" to "idea"
-                ))
+        editor = CodeMirror.fromTextArea(
+            getElemById(textareaId),
+            objOf(
+                "lineNumbers" to true,
+                "autoRefresh" to true,
+                "viewportMargin" to 100,
+                "theme" to "idea",
+                "indentUnit" to 4,
+            )
+        )
+        // Replace TAB with 4 spaces
+        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }
 

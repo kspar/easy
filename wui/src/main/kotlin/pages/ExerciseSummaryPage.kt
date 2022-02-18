@@ -384,7 +384,11 @@ object ExerciseSummaryPage : EasyPage() {
                         "theme" to "idea",
                         "lineNumbers" to true,
                         "autoRefresh" to true,
-                        "viewportMargin" to 100))
+                        "viewportMargin" to 100,
+                        "indentUnit" to 4,
+                ))
+        // Replace TAB with 4 spaces
+        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         val submitButton = getElemByIdAs<HTMLButtonElement>("testing-submit")
 
@@ -950,7 +954,11 @@ object ExerciseSummaryPage : EasyPage() {
                         "theme" to "idea",
                         "lineNumbers" to true,
                         "autoRefresh" to true,
-                        "viewportMargin" to 100))
+                        "viewportMargin" to 100,
+                        "indentUnit" to 4,
+                ))
+        // Replace TAB with 4 spaces
+        editor.setOption("extraKeys", js("""{ Tab: function(cm) { cm.replaceSelection("    "); } }"""))
 
         getElemById("submit-button").onVanillaClick(true) {
             MainScope().launch {

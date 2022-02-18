@@ -18,7 +18,7 @@ external object CodeMirror {
 external class CodeMirrorInstance {
     fun getValue(): String
     fun setValue(value: String)
-    fun setOption(key: String, value: Any?)
+    fun setOption(key: String, value: dynamic)
     fun swapDoc(newDoc: CodeMirror.Doc): CodeMirror.Doc
 }
 
