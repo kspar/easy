@@ -21,8 +21,9 @@ import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import javax.validation.constraints.NotBlank
-import javax.validation.constraints.PositiveOrZero
 import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
@@ -33,7 +34,7 @@ class TeacherCreateCourseExerciseController(private val adocService: AdocService
 
     data class Req(@JsonProperty("exercise_id", required = true) @field:NotBlank @field:Size(max = 100)
                    val exerciseId: String,
-                   @JsonProperty("threshold", required = true) @field:PositiveOrZero
+                   @JsonProperty("threshold", required = true) @field:Min(0) @field:Max(100)
                    val threshold: Int,
                    @JsonProperty("student_visible")
                    val isStudentVisible: Boolean,
@@ -98,6 +99,7 @@ private fun isCoursePresent(courseId: Long): Boolean {
 
 private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerciseController.Req, html: String?) {
     val exerciseId = body.exerciseId.idToLongOrInvalidReq()
+    val now = DateTime.now()
     transaction {
         val orderIdxMaxColumn = CourseExercise.orderIdx.max()
 
@@ -117,6 +119,8 @@ private fun insertCourseExercise(courseId: Long, body: TeacherCreateCourseExerci
         CourseExercise.insert {
             it[course] = EntityID(courseId, Course)
             it[exercise] = EntityID(exerciseId, Exercise)
+            it[createdAt] = now
+            it[modifiedAt] = now
             it[gradeThreshold] = body.threshold
             it[softDeadline] = body.softDeadline
             it[hardDeadline] = body.hardDeadline

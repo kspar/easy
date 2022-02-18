@@ -78,6 +78,8 @@ object CourseGroup : LongIdTable("course_group") {
 object CourseExercise : LongIdTable("course_exercise") {
     val course = reference("course_id", Course)
     val exercise = reference("exercise_id", Exercise)
+    val createdAt = datetime("created_at")
+    val modifiedAt = datetime("modified_at")
     val gradeThreshold = integer("grade_threshold")
     // if null then permanently invisible
     // if in past or now then visible, if in future then invisible

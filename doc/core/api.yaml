@@ -1358,6 +1358,58 @@ paths:
           description: Removed.
 
 
+  /courses/{courseId}/exercises/{courseExerciseId}:
+    parameters:
+      - $ref: '#/parameters/CourseId'
+      - $ref: '#/parameters/CourseExerciseId'
+
+    patch:
+      summary: Update course exercise.
+      tags:
+        - teacher
+      parameters:
+        - name: course_exercise_update
+          in: body
+          schema:
+            properties:
+              replace:
+                properties:
+                  title_alias:
+                    type: string
+                  instructions_adoc:
+                    type: string
+                  threshold:
+                    type: integer
+                  soft_deadline:
+                    type: string
+                    format: date-time
+                  hard_deadline:
+                    type: string
+                    format: date-time
+                  assessments_student_visible:
+                    type: boolean
+                  student_visible:
+                    type: boolean
+                  student_visible_from:
+                    type: string
+                    format: date-time
+                  moodle_exercise_id:
+                    type: string
+              delete:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - TITLE_ALIAS
+                    - INSTRUCTIONS_ADOC
+                    - SOFT_DEADLINE
+                    - HARD_DEADLINE
+                    - MOODLE_EXERCISE_ID
+      responses:
+        200:
+          description: Updated
+
+
   /courses/{courseId}/exercises/{courseExerciseId}/reorder:
     parameters:
       - $ref: '#/parameters/CourseId'
@@ -1822,17 +1874,17 @@ paths:
   /courses/{courseId}/moodle/students:
     parameters:
       - $ref: '#/parameters/CourseId'
-      post:
-        summary: Pull and replace all course students from Moodle
-        tags:
-          - teacher
-        responses:
-          200:
-            description: Sync finished or already in progress
-            schema:
-              properties:
-                status:
-                  $ref: '#/definitions/MoodleSyncedOperationStatus'
+    post:
+      summary: Pull and replace all course students from Moodle
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Sync finished or already in progress
+          schema:
+            properties:
+              status:
+                $ref: '#/definitions/MoodleSyncedOperationStatus'
 
 
   /exercises:

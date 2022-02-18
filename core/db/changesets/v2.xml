@@ -1298,4 +1298,17 @@
                                  onUpdate="CASCADE" onDelete="CASCADE"/>
     </changeSet>
 
+    <changeSet id="180222-2" author="kspar">
+        <addColumn tableName="course_exercise">
+            <column name="created_at" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="course_exercise" columnName="created_at"/>
+        <dropDefaultValue tableName="course_exercise" columnName="modified_at"/>
+    </changeSet>
+
 </databaseChangeLog>
