@@ -156,6 +156,10 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             mailService.sendSystemNotification(msg)
             throwMigrationFailed()
         }
+
+        cachingService.evictAccountCache(oldId)
+        // Probs not necessary for new account since it was null before and wasn't cached, just precautionary
+        cachingService.evictAccountCache(newId)
     }
 
     private fun throwMigrationFailed(): Nothing =
