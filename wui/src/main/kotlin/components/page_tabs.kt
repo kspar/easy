@@ -63,4 +63,14 @@ class PageTabsComp(
     override fun postChildrenBuilt() {
         mtabs.updateTabIndicator()
     }
+
+    fun getSelectedTab(): Tab = tabs[mtabs.index]
+
+    fun setSelectedTab(tab: Tab) {
+        setSelectedTabById(tab.id)
+    }
+
+    fun setSelectedTabById(tabId: String) {
+        mtabs.select(tabId)
+    }
 }

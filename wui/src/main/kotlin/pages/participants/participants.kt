@@ -12,6 +12,7 @@ import pages.Title
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Date
@@ -96,6 +97,11 @@ class ParticipantsRootComp(
         val sync_grades_in_progress: Boolean,
     )
 
+    private val tabStudentsId = IdGenerator.nextId()
+    private val tabTeachersId = IdGenerator.nextId()
+    private val tabGroupsId = IdGenerator.nextId()
+    private val tabMoodleId = IdGenerator.nextId()
+
     private lateinit var tabsComp: PageTabsComp
     private lateinit var addStudentsModal: AddStudentsModalComp
     private lateinit var addTeachersModal: AddTeachersModalComp
@@ -140,39 +146,49 @@ class ParticipantsRootComp(
         addTeachersModal = AddTeachersModalComp(courseId, groups.groups, this)
         createGroupModal = CreateGroupModalComp(courseId, groups.groups, this)
 
-        // TODO: remove
-        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(1) { a } }
+        // for load testing
+//        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(1) { a } }
 
 
         tabsComp = PageTabsComp(
             buildList {
                 add(
-                    PageTabsComp.Tab("Õpilased", preselected = true) {
+                    PageTabsComp.Tab("Õpilased", preselected = true, id = tabStudentsId) {
                         ParticipantsStudentsListComp(
                             courseId,
-                            multipliedStudentsForTesting,
+                            participants.students,
                             participants.students_pending,
                             participants.students_moodle_pending,
                             groups.groups,
                             !studentsSynced,
+                            {
+                                val t = tabsComp.getSelectedTab()
+                                createAndBuild().await()
+                                tabsComp.setSelectedTab(t)
+                            },
                             it
                         )
                     }
                 )
                 add(
-                    PageTabsComp.Tab("Õpetajad") {
+                    PageTabsComp.Tab("Õpetajad", id = tabTeachersId) {
                         ParticipantsTeachersListComp(
                             courseId,
                             participants.teachers,
                             groups.groups,
                             !groups.self_is_restricted,
+                            {
+                                val t = tabsComp.getSelectedTab()
+                                createAndBuild().await()
+                                tabsComp.setSelectedTab(t)
+                            },
                             it
                         )
                     }
                 )
 
                 if (groups.groups.isNotEmpty()) add(
-                    PageTabsComp.Tab("Rühmad") {
+                    PageTabsComp.Tab("Rühmad", id = tabGroupsId) {
                         ParticipantsGroupsListComp(
                             courseId,
                             groups.groups,
@@ -181,14 +197,18 @@ class ParticipantsRootComp(
                             participants.students_moodle_pending,
                             participants.teachers,
                             !groups.self_is_restricted && !studentsSynced,
-                            { createAndBuild().await() },
+                            {
+                                val t = tabsComp.getSelectedTab()
+                                createAndBuild().await()
+                                tabsComp.setSelectedTab(t)
+                            },
                             it
                         )
                     }
                 )
 
                 if (isMoodleLinked) add(
-                    PageTabsComp.Tab("Moodle") {
+                    PageTabsComp.Tab("Moodle", id = tabMoodleId) {
                         StringComp("Moodle", it)
                     }
                 )
@@ -201,20 +221,29 @@ class ParticipantsRootComp(
         val sideActions = buildList {
             if (!studentsSynced) add(
                 Sidenav.Action(Icons.addParticipant, "Lisa õpilasi") {
-                    if (addStudentsModal.openWithClosePromise().await())
+                    if (addStudentsModal.openWithClosePromise().await()) {
+                        val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
+                        tabsComp.setSelectedTab(t)
+                    }
                 }
             )
             if (!groups.self_is_restricted) add(
                 Sidenav.Action(Icons.addParticipant, "Lisa õpetajaid") {
-                    if (addTeachersModal.openWithClosePromise().await())
+                    if (addTeachersModal.openWithClosePromise().await()) {
+                        val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
+                        tabsComp.setSelectedTab(t)
+                    }
                 }
             )
             if (!groups.self_is_restricted && !studentsSynced) add(
                 Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
-                    if (createGroupModal.openWithClosePromise().await())
+                    if (createGroupModal.openWithClosePromise().await()) {
+                        val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
+                        tabsComp.setSelectedTab(t)
+                    }
                 }
             )
             if (isAdmin && !isMoodleLinked) add(

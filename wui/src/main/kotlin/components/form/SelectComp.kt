@@ -43,5 +43,12 @@ class SelectComp(
         }
     }
 
-    fun getValue() = getElemByIdAs<HTMLSelectElement>(selectId).value.emptyToNull()
+    fun getValue(): String? = getElemByIdAs<HTMLSelectElement>(selectId).value.emptyToNull()
+
+    fun getLabelAndValue(): Pair<String?, String?> = getValue().let { value ->
+        if (value == null)
+            null to null
+        else
+            options.first { it.value == value }.label to value
+    }
 }

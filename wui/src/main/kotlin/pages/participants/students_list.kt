@@ -21,21 +21,24 @@ class ParticipantsStudentsListComp(
     private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
     private val groups: List<ParticipantsRootComp.Group>,
     private val isEditable: Boolean,
+    private val onGroupsChanged: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
     data class StudentProps(
         val firstName: String?, val lastName: String?,
         val email: String, val username: String?, val utUsername: String?,
-        val isActive: Boolean, val groups: List<String>
+        val isActive: Boolean, val groups: List<GroupProp>
     )
 
-    private lateinit var studentsColl: EzCollComp<StudentProps>
+    data class GroupProp(val id: String, val name: String)
 
+    private lateinit var studentsColl: EzCollComp<StudentProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
+    private lateinit var addToGroupModal: AddToGroupModalComp
 
     override val children: List<Component>
-        get() = listOf(studentsColl, removeFromCourseModal)
+        get() = listOf(studentsColl, removeFromCourseModal, addToGroupModal)
 
     override fun create() = doInPromise {
 
@@ -47,20 +50,23 @@ class ParticipantsStudentsListComp(
                 it.id,
                 it.moodle_username,
                 true,
-                // maybe should include ids as well for removing groups
-                it.groups.map { it.name })
+                it.groups.map { GroupProp(it.id, it.name) },
+            )
         }
         val pendingStudentProps = studentsPending.map {
-            StudentProps(null, null, it.email, null, null, false, it.groups.map { it.name })
+            StudentProps(
+                null, null, it.email, null, null, false,
+                it.groups.map { GroupProp(it.id, it.name) })
         }
         val moodlePendingStudentProps = studentsMoodlePending.map {
-            StudentProps(null, null, it.email, null, it.moodle_username, false, it.groups.map { it.name })
+            StudentProps(
+                null, null, it.email, null, it.moodle_username, false,
+                it.groups.map { GroupProp(it.id, it.name) })
         }
 
         val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
 
         val hasGroups = groups.isNotEmpty()
-        val groupNames = groups.map { it.name }.sorted()
 
         val items = studentProps.map { p ->
             EzCollComp.Item(
@@ -70,9 +76,8 @@ class ParticipantsStudentsListComp(
                 if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
                 topAttr = if (hasGroups) EzCollComp.ListAttr(
                     "Rühmad",
-                    p.groups.map { EzCollComp.ListAttrItem(it) }.toMutableList(),
+                    p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
                     Icons.groups,
-//                    onClick = if (isEditable) ::changeGroups else null
                 ) else null,
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
                     add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
@@ -81,8 +86,8 @@ class ParticipantsStudentsListComp(
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
-                    // TODO: add to group and remove from group, same modal as mass action
-//                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
+                    EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup),
+                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::addToGroup), // TODO
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 ) else emptyList(),
             )
@@ -91,7 +96,7 @@ class ParticipantsStudentsListComp(
         val massActions = if (isEditable) buildList {
             if (hasGroups) {
                 add(
-                    EzCollComp.MassAction<StudentProps>(Icons.addToGroup, "Lisa rühma", { TODO() })
+                    EzCollComp.MassAction<StudentProps>(Icons.addToGroup, "Lisa rühma", ::addToGroup)
                 )
                 add(
                     EzCollComp.MassAction<StudentProps>(Icons.removeFromGroup, "Eemalda rühmast", { TODO() })
@@ -120,8 +125,8 @@ class ParticipantsStudentsListComp(
                         EzCollComp.FilterGroup(
                             "Rühm",
                             listOf(EzCollComp.Filter<StudentProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
-                                    groupNames.map { g ->
-                                        EzCollComp.Filter(g) { it.props.groups.contains(g) }
+                                    groups.sortedBy { it.name }.map { g ->
+                                        EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }
                                     }
                         )
                     )
@@ -130,11 +135,11 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.Sorter("Rühma ja nime järgi",
-                            compareBy<EzCollComp.Item<StudentProps>> { it.props.groups.getOrNull(0) }
-                                .thenBy { it.props.groups.getOrNull(1) }
-                                .thenBy { it.props.groups.getOrNull(2) }
-                                .thenBy { it.props.groups.getOrNull(3) }
-                                .thenBy { it.props.groups.getOrNull(4) }
+                            compareBy<EzCollComp.Item<StudentProps>> { it.props.groups.getOrNull(0)?.name }
+                                .thenBy { it.props.groups.getOrNull(1)?.name }
+                                .thenBy { it.props.groups.getOrNull(2)?.name }
+                                .thenBy { it.props.groups.getOrNull(3)?.name }
+                                .thenBy { it.props.groups.getOrNull(4)?.name }
                                 .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
                                 .thenBy { it.props.firstName?.lowercase() })
                     )
@@ -154,10 +159,38 @@ class ParticipantsStudentsListComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
             primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
+
+        addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.STUDENT, parent = this)
     }
 
-    override fun render() = plainDstStr(studentsColl.dstId, removeFromCourseModal.dstId)
+    override fun render() = plainDstStr(studentsColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId)
 
+    private suspend fun addToGroup(item: EzCollComp.Item<StudentProps>) =
+        addToGroup(listOf(item))
+
+    private suspend fun addToGroup(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
+        val text = if (items.size == 1) {
+            val item = items[0]
+            val id = if (item.props.isActive) item.title else item.props.email
+            "Lisa õpilane $id rühma:"
+        } else {
+            "Lisa ${items.size} õpilast rühma:"
+        }
+
+        addToGroupModal.setText(text)
+
+        val (active, pending) = items.partition { it.props.isActive }
+        addToGroupModal.participants =
+            active.map { AddToGroupModalComp.Participant(studentId = it.props.username) } +
+                    pending.map { AddToGroupModalComp.Participant(pendingStudentEmail = it.props.email) }
+
+        val newGroup = addToGroupModal.openWithClosePromise().await()
+
+        if (newGroup != null) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
+    }
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<StudentProps>): EzCollComp.Result =
         removeFromCourse(listOf(item))

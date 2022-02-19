@@ -22,6 +22,7 @@ class ParticipantsTeachersListComp(
     private val teachers: List<ParticipantsRootComp.Teacher>,
     private val groups: List<ParticipantsRootComp.Group>,
     private val isEditable: Boolean,
+    private val onGroupsChanged: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -35,9 +36,10 @@ class ParticipantsTeachersListComp(
 
     private lateinit var teachersColl: EzCollComp<TeacherProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
+    private lateinit var addToGroupModal: AddToGroupModalComp
 
     override val children: List<Component>
-        get() = listOf(teachersColl, removeFromCourseModal)
+        get() = listOf(teachersColl, removeFromCourseModal, addToGroupModal)
 
     override fun create() = doInPromise {
         val props = teachers.map {
@@ -65,7 +67,8 @@ class ParticipantsTeachersListComp(
 
             val actions = if (isEditable)
                 listOf(
-                    // TODO: add to group and remove from group, same modal as mass action
+                    EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup),
+                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::addToGroup), // TODO
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 )
             else emptyList()
@@ -91,7 +94,7 @@ class ParticipantsTeachersListComp(
         val massActions = if (isEditable) buildList {
             if (hasGroups) {
                 add(
-                    EzCollComp.MassAction<TeacherProps>(Icons.addToGroup, "Lisa rühma", { TODO() })
+                    EzCollComp.MassAction<TeacherProps>(Icons.addToGroup, "Lisa rühma", ::addToGroup)
                 )
                 add(
                     EzCollComp.MassAction<TeacherProps>(Icons.removeFromGroup, "Eemalda rühmast", { TODO() })
@@ -146,9 +149,32 @@ class ParticipantsTeachersListComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
             primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
+
+        addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.TEACHER, parent = this)
     }
 
-    override fun render() = plainDstStr(teachersColl.dstId, removeFromCourseModal.dstId)
+    override fun render() = plainDstStr(teachersColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId)
+
+
+    private suspend fun addToGroup(item: EzCollComp.Item<TeacherProps>) =
+        addToGroup(listOf(item))
+
+    private suspend fun addToGroup(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
+        val text = if (items.size == 1)
+            "Lisa õpetaja ${items[0].title} rühma:"
+        else
+            "Lisa ${items.size} õpetajat rühma:"
+
+        addToGroupModal.setText(text)
+        addToGroupModal.participants = items.map { AddToGroupModalComp.Participant(teacherId = it.props.username) }
+
+        val newGroup = addToGroupModal.openWithClosePromise().await()
+
+        if (newGroup != null) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
+    }
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<TeacherProps>) =
         removeFromCourse(listOf(item))
