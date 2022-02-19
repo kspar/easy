@@ -1311,4 +1311,14 @@
         <dropDefaultValue tableName="course_exercise" columnName="modified_at"/>
     </changeSet>
 
+    <changeSet id="190222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="teacher_course_group_access"
+                                  constraintName="fk_teacher_group_access_teacher_course_access"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_group_access" baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access"
+                                 onUpdate="CASCADE" onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>
