@@ -112,7 +112,7 @@ class AddTeachersModalComp(
         }).await().parseTo(AddTeachersResp.serializer()).await()
 
         val added = resp.accesses_added
-        val msg = "Lisatud $added ${if (added == 1) "õpetaja" else "õpilast"}"
+        val msg = "Lisatud $added ${if (added == 1) "õpetaja" else "õpetajat"}"
 
         successMessage { msg }
 

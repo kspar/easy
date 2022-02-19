@@ -2,6 +2,9 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.form.ButtonComp
+import components.modal.ConfirmationTextModalComp
+import debug
 import kotlinx.coroutines.await
 import plainDstStr
 import queries.ReqMethod
@@ -31,9 +34,10 @@ class ParticipantsTeachersListComp(
     data class GroupProp(val id: String, val name: String)
 
     private lateinit var teachersColl: EzCollComp<TeacherProps>
+    private lateinit var removeFromCourseModal: ConfirmationTextModalComp
 
     override val children: List<Component>
-        get() = listOf(teachersColl)
+        get() = listOf(teachersColl, removeFromCourseModal)
 
     override fun create() = doInPromise {
         val props = teachers.map {
@@ -138,25 +142,48 @@ class ParticipantsTeachersListComp(
             parent = this,
         )
 
+        removeFromCourseModal = ConfirmationTextModalComp(
+            null, "Eemalda", "Tühista", "Eemaldan...",
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+        )
     }
 
-    override fun render() = plainDstStr(teachersColl.dstId)
+    override fun render() = plainDstStr(teachersColl.dstId, removeFromCourseModal.dstId)
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<TeacherProps>) =
         removeFromCourse(listOf(item))
 
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
-        val body = mapOf("teachers" to
-                items.map {
-                    mapOf("id" to it.props.username)
-                }
-        )
+        debug { "Removing teachers ${items.map { it.title }}?" }
 
-        fetchEms(
-            "/courses/$courseId/teachers", ReqMethod.DELETE,
-            body, successChecker = { http200 }
-        ).await()
+        val text = if (items.size == 1)
+            "Eemalda õpetaja ${items[0].title}?"
+        else
+            "Eemalda ${items.size} õpetajat?"
 
-        return EzCollComp.ResultModified<TeacherProps>(emptyList())
+        removeFromCourseModal.text = text
+        removeFromCourseModal.primaryAction = {
+            debug { "Remove confirmed" }
+
+            val body = mapOf("teachers" to
+                    items.map {
+                        mapOf("id" to it.props.username)
+                    }
+            )
+
+            fetchEms(
+                "/courses/$courseId/teachers", ReqMethod.DELETE,
+                body, successChecker = { http200 }
+            ).await()
+
+            true
+        }
+
+        val removed = removeFromCourseModal.openWithClosePromise().await()
+
+        return if (removed)
+            EzCollComp.ResultModified<TeacherProps>(emptyList())
+        else
+            EzCollComp.ResultUnmodified
     }
 }
