@@ -29,13 +29,9 @@ html {
 
 body {
     background: url('../img/optimised/bg_v3-op.svg') no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
     background-size: cover;
     min-height: 100%;
     min-width: 320px;
-    transition: all 200ms ease-out;
 }
 
 .subheading-item {
@@ -1904,6 +1900,27 @@ ezc-bottom-attrs > ezc-attr {
 
 /* Container is ezc-bottom-attrs */
 /*noinspection CssInvalidAtRule*/
+@container (width < 400px) {
+    /* first one grows always */
+    ezc-bottom-attrs > ezc-attr:nth-child(1) {
+        flex-grow: 1;
+    }
+}
+
+/*noinspection CssInvalidAtRule*/
+@container (width >= 400px) and (width < 600px) {
+    /* first one grows is there is one */
+    ezc-bottom-attrs[ez-attrs="1"] > ezc-attr:nth-child(1) {
+        flex-grow: 1;
+    }
+    /* second one grows if there are 2 or 3 */
+    ezc-bottom-attrs[ez-attrs="2"] > ezc-attr:nth-child(2),
+    ezc-bottom-attrs[ez-attrs="3"] > ezc-attr:nth-child(2) {
+        flex-grow: 1;
+    }
+}
+
+/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     ezc-bottom-attrs > ezc-attr:nth-child(2) {
         display: inline-block;
@@ -1914,6 +1931,18 @@ ezc-bottom-attrs > ezc-attr {
 @container (width >= 600px) {
     ezc-bottom-attrs > ezc-attr:nth-child(3) {
         display: inline-block;
+    }
+    /* first one grows is there is 1 */
+    ezc-bottom-attrs[ez-attrs="1"] > ezc-attr:nth-child(1) {
+        flex-grow: 1;
+    }
+    /* second one grows if there are 2 */
+    ezc-bottom-attrs[ez-attrs="2"] > ezc-attr:nth-child(2) {
+        flex-grow: 1;
+    }
+    /* third one grows if there are 3 */
+    ezc-bottom-attrs[ez-attrs="3"] > ezc-attr:nth-child(3) {
+        flex-grow: 1;
     }
     ezc-bottom-attrs[ez-attrs="2"] > ezc-attr {
         flex-basis: 300px;

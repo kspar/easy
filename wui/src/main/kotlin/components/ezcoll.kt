@@ -200,8 +200,9 @@ class EzCollComp<P>(
         } else
             items
 
+        val bottomAttrsCount = items.maxOfOrNull { it.bottomAttrs.size } ?: 0
         this.items = specs.mapIndexed { i, spec ->
-            EzCollItemComp(spec, i, ::itemSelectClicked, ::removeItem, this)
+            EzCollItemComp(spec, bottomAttrsCount, i, ::itemSelectClicked, ::removeItem, this)
         }
     }
 
@@ -447,6 +448,7 @@ class EzCollComp<P>(
                 // Item was processed
                 processed != null -> EzCollItemComp(
                     processed,
+                    item.bottomAttrsCount,
                     item.orderingIndex,
                     ::itemSelectClicked,
                     ::removeItem,
@@ -576,6 +578,7 @@ class EzCollComp<P>(
 
 class EzCollItemComp<P>(
     var spec: EzCollComp.Item<P>,
+    val bottomAttrsCount: Int,
     var orderingIndex: Int,
     private val onCheckboxClicked: (EzCollItemComp<P>, Boolean) -> Unit,
     private val onDelete: (EzCollItemComp<P>) -> Unit,
@@ -594,7 +597,7 @@ class EzCollItemComp<P>(
         "itemId" to spec.id,
         "isSelectable" to spec.isSelectable,
         "hasBottomAttrs" to spec.bottomAttrs.isNotEmpty(),
-        "bottomAttrCount" to spec.bottomAttrs.size.toString(),
+        "bottomAttrCount" to bottomAttrsCount,
         "attrWidthS" to spec.attrWidthS.valuePx,
         "attrWidthM" to spec.attrWidthM.valuePx,
         "hasGrowingAttrs" to if (spec.bottomAttrs.size == 1) true else spec.hasGrowingAttrs,
