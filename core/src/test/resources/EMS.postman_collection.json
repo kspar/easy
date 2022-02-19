@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f7552401-9d5a-47b2-bff7-e430fe3b7ea6",
+		"_postman_id": "f74099ec-9a57-490f-b26a-29fb64b66231",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -1127,7 +1127,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"teachers\": [\r\n    {\r\n      \"username\": \"pf\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"teachers\": [\r\n    {\r\n      \"id\": \"pf\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/courses/1/teachers",

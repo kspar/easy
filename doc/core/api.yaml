@@ -828,7 +828,7 @@ paths:
                 type: array
                 items:
                   properties:
-                    username:
+                    id:
                       type: string
       responses:
         200:
