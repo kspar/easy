@@ -1768,11 +1768,11 @@ paths:
       tags:
         - teacher
       parameters:
-        - name: Students
+        - name: students
           in: body
           schema:
             properties:
-              students:
+              active_students:
                 type: array
                 items:
                   properties:
@@ -1780,14 +1780,22 @@ paths:
                       type: string
                   required:
                     - id
-            required:
-              - students
+              pending_students:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                  required:
+                    - email
       responses:
         200:
           description: Students removed.
           schema:
             properties:
-              removed_count:
+              removed_active_count:
+                type: integer
+              removed_pending_count:
                 type: integer
 
 
