@@ -125,7 +125,7 @@ class RemoveStudentsFromCourseController {
                 if (!canAccessStudentsGroup) {
                     throw ForbiddenException(
                         "Not allowed to remove student $studentId from course $courseId due to group restrictions",
-                        ReqError.NO_GROUP_ACCESS
+                        ReqError.NO_GROUP_ACCESS, "studentIdentifier" to studentId
                     )
                 }
             }
