@@ -53,7 +53,11 @@ class ParticipantsGroupsListComp(
                 ),
                 actions = buildList {
                     if (isEditable) add(
-                        EzCollComp.Action(Icons.delete, "Kustuta", onActivate = ::deleteGroup, onResultModified = { onGroupDeleted() })
+                        EzCollComp.Action(
+                            Icons.delete,
+                            "Kustuta",
+                            onActivate = ::deleteGroup,
+                            onResultModified = { onGroupDeleted() })
                     )
                 }
             )

@@ -135,16 +135,18 @@ class ParticipantsRootComp(
         }
 
         val participants = participantsPromise.await().parseTo(Participants.serializer()).await()
-        val groups = groupsPromise.await().parseTo(Groups.serializer()).await()
+        val groupsResp = groupsPromise.await().parseTo(Groups.serializer()).await()
         val moodleStatus = moodleStatusPromise.await().parseTo(MoodleStatus.serializer()).await()
 
+        val groups = groupsResp.groups.sortedBy { it.name }
+        val hasRestrictedGroups = groupsResp.self_is_restricted
         val isMoodleLinked = moodleStatus.moodle_props?.moodle_short_name != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
-        addStudentsModal = AddStudentsModalComp(courseId, groups.groups, this)
-        addTeachersModal = AddTeachersModalComp(courseId, groups.groups, this)
-        createGroupModal = CreateGroupModalComp(courseId, groups.groups, this)
+        addStudentsModal = AddStudentsModalComp(courseId, groups, this)
+        addTeachersModal = AddTeachersModalComp(courseId, groups, this)
+        createGroupModal = CreateGroupModalComp(courseId, groups, this)
 
         // for load testing
 //        val multipliedStudentsForTesting = participants.students.flatMap { a -> List(1) { a } }
@@ -159,7 +161,7 @@ class ParticipantsRootComp(
                             participants.students,
                             participants.students_pending,
                             participants.students_moodle_pending,
-                            groups.groups,
+                            groups,
                             !studentsSynced,
                             {
                                 val t = tabsComp.getSelectedTab()
@@ -175,8 +177,8 @@ class ParticipantsRootComp(
                         ParticipantsTeachersListComp(
                             courseId,
                             participants.teachers,
-                            groups.groups,
-                            !groups.self_is_restricted,
+                            groups,
+                            !hasRestrictedGroups,
                             {
                                 val t = tabsComp.getSelectedTab()
                                 createAndBuild().await()
@@ -187,16 +189,16 @@ class ParticipantsRootComp(
                     }
                 )
 
-                if (groups.groups.isNotEmpty()) add(
+                if (groups.isNotEmpty()) add(
                     PageTabsComp.Tab("Rühmad", id = tabGroupsId) {
                         ParticipantsGroupsListComp(
                             courseId,
-                            groups.groups,
+                            groups,
                             participants.students,
                             participants.students_pending,
                             participants.students_moodle_pending,
                             participants.teachers,
-                            !groups.self_is_restricted && !studentsSynced,
+                            !hasRestrictedGroups && !studentsSynced,
                             {
                                 val t = tabsComp.getSelectedTab()
                                 createAndBuild().await()
@@ -228,7 +230,7 @@ class ParticipantsRootComp(
                     }
                 }
             )
-            if (!groups.self_is_restricted) add(
+            if (!hasRestrictedGroups) add(
                 Sidenav.Action(Icons.addParticipant, "Lisa õpetajaid") {
                     if (addTeachersModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
@@ -237,7 +239,7 @@ class ParticipantsRootComp(
                     }
                 }
             )
-            if (!groups.self_is_restricted && !studentsSynced) add(
+            if (!hasRestrictedGroups && !studentsSynced) add(
                 Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
                     if (createGroupModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()

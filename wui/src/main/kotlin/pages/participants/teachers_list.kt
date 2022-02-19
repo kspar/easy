@@ -110,7 +110,7 @@ class ParticipantsTeachersListComp(
                 EzCollComp.FilterGroup(
                     "Rühm",
                     listOf(EzCollComp.Filter<TeacherProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
-                            groups.sortedBy { it.name }.map { g ->
+                            groups.map { g ->
                                 EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }
                             }
                 )
