@@ -2,17 +2,20 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import debug
+import errorMessage
 import kotlinx.coroutines.await
 import plainDstStr
+import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.sleep
 
 // buildList is experimental
 @ExperimentalStdlibApi
 class ParticipantsStudentsListComp(
+    private val courseId: String,
     private val students: List<ParticipantsRootComp.Student>,
     private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
     private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
@@ -149,53 +152,51 @@ class ParticipantsStudentsListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            parent = this
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
     }
 
-
     override fun render() = plainDstStr(studentsColl.dstId, removeFromCourseModal.dstId)
 
-    override fun postRender() {
-        super.postRender()
-    }
-
-    override fun renderLoading() = "Laen õpilasi..."
-
-    override fun postChildrenBuilt() {
-    }
-
-    private var groupIdx = 1
-    private suspend fun changeGroups(item: EzCollComp.Item<StudentProps>): EzCollComp.Result {
-        // TODO: if hasGroups changed i.e. first student is added to a group then should createAndBuild this
-
-        return if (item.topAttr != null && item.topAttr is EzCollComp.ListAttr<*, *>) {
-            val groupAttr = item.topAttr.unsafeCast<EzCollComp.ListAttr<StudentProps, String>>()
-            // TODO: change groups modal - probs not required in first iter
-            groupAttr.items.add(EzCollComp.ListAttrItem("Rühm ${groupIdx++}"))
-            EzCollComp.ResultModified(listOf(item))
-
-        } else {
-            val groupAttr = EzCollComp.ListAttr(
-                "Rühmad",
-                mutableListOf(EzCollComp.ListAttrItem("Rühm ${groupIdx++}")),
-                Icons.groups,
-                onClick = if (isEditable) ::changeGroups else null
-            )
-            EzCollComp.ResultModified(listOf(item.copy(topAttr = groupAttr)))
-        }
-    }
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<StudentProps>): EzCollComp.Result =
         removeFromCourse(listOf(item))
 
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
-        debug { "Removing ${items.map { it.title }}" }
+        debug { "Removing students ${items.map { it.title }}?" }
 
-        removeFromCourseModal.text = "Eemalda ${items.size} õpilast?"
+        val text = if (items.size == 1) {
+            val item = items[0]
+            val id = if (item.props.isActive) item.title else item.props.email
+            "Eemalda õpilane $id?"
+        } else {
+            "Eemalda ${items.size} õpilast?"
+        }
+
+        removeFromCourseModal.text = text
         removeFromCourseModal.primaryAction = {
-            // TODO: remove
-            sleep(2000).await()
+            debug { "Remove confirmed" }
+
+            val (active, pending) = items.partition { it.props.isActive }
+
+            val body = mapOf(
+                "active_students" to active.map {
+                    mapOf("id" to it.props.username)
+                },
+                "pending_students" to pending.map {
+                    mapOf("email" to it.props.email)
+                }
+            )
+
+            fetchEms(
+                "/courses/$courseId/students", ReqMethod.DELETE, body,
+                successChecker = { http200 }, errorHandler = {
+                    it.handleByCode(RespError.NO_GROUP_ACCESS) {
+                        errorMessage { "Sul pole lubatud õpilast ${it.attrs["studentIdentifier"]} kursuselt eemaldada, sest ta pole sinu rühmas" }
+                    }
+                }
+            ).await()
+
             true
         }
 

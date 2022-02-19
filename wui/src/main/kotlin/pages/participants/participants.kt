@@ -149,6 +149,7 @@ class ParticipantsRootComp(
                 add(
                     PageTabsComp.Tab("Õpilased", preselected = true) {
                         ParticipantsStudentsListComp(
+                            courseId,
                             multipliedStudentsForTesting,
                             participants.students_pending,
                             participants.students_moodle_pending,
