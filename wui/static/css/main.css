@@ -672,11 +672,11 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Participants page **/
 
-.add-students-modal textarea {
+.add-participants-modal textarea {
     min-height: 6rem;
 }
 
-.add-students-modal .input-field {
+.add-participants-modal .input-field {
     margin-top: 4rem;
 }
 
@@ -1233,7 +1233,7 @@ textarea.materialize-textarea {
 }
 
 .modal .modal-content {
-    padding: 2.4rem 2.4rem 1rem 2.4rem;
+    padding: 3rem 3rem 1rem 3rem;
 }
 
 .modal .modal-content h4 {

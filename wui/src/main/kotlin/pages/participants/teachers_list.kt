@@ -2,7 +2,11 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import kotlinx.coroutines.await
 import plainDstStr
+import queries.ReqMethod
+import queries.fetchEms
+import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import toEstonianString
@@ -11,6 +15,7 @@ import kotlin.js.Date
 
 @ExperimentalStdlibApi
 class ParticipantsTeachersListComp(
+    private val courseId: String,
     private val teachers: List<ParticipantsRootComp.Teacher>,
     private val groups: List<ParticipantsRootComp.Group>,
     private val isEditable: Boolean,
@@ -51,14 +56,12 @@ class ParticipantsTeachersListComp(
                     "Piiratud rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
                     Icons.groups,
-//                    onClick = if (isEditable) ::changeGroups else null
                 )
             else null
 
             val actions = if (isEditable)
                 listOf(
                     // TODO: add to group and remove from group, same modal as mass action
-//                    EzCollComp.Action(Icons.groups, "Rühmad...", onActivate = ::changeGroups),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 )
             else emptyList()
@@ -139,14 +142,21 @@ class ParticipantsTeachersListComp(
 
     override fun render() = plainDstStr(teachersColl.dstId)
 
-    private suspend fun changeGroups(item: EzCollComp.Item<TeacherProps>): EzCollComp.Result {
-        TODO()
-    }
-
     private suspend fun removeFromCourse(item: EzCollComp.Item<TeacherProps>) =
         removeFromCourse(listOf(item))
 
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
-        TODO()
+        val body = mapOf("teachers" to
+                items.map {
+                    mapOf("id" to it.props.username)
+                }
+        )
+
+        fetchEms(
+            "/courses/$courseId/teachers", ReqMethod.DELETE,
+            body, successChecker = { http200 }
+        ).await()
+
+        return EzCollComp.ResultModified<TeacherProps>(emptyList())
     }
 }

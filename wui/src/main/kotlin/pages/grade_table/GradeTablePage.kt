@@ -131,7 +131,7 @@ class GradeTableCardComp(
             } else {
                 options.addAll(groups.map { SelectComp.Option(it.name, it.id) })
             }
-            groupSelectComp = SelectComp("Rühm", options, ::handleGroupChange, this)
+            groupSelectComp = SelectComp("Rühm", options, onOptionChange = ::handleGroupChange, parent = this)
         }
 
         tableComp = GradeTableTableComp(courseId,
@@ -145,10 +145,10 @@ class GradeTableCardComp(
             "groupSelectDstId" to groupSelectComp?.dstId,
             "tableDstId" to tableDstId)
 
-    private fun handleGroupChange(newGroupId: String) {
+    private fun handleGroupChange(newGroupId: String?) {
         doInPromise {
             tableComp = GradeTableTableComp(courseId,
-                    groupId = newGroupId.emptyToNull(),
+                    groupId = newGroupId,
                     parent = this,
                     dstId = tableDstId)
             tableComp.createAndBuild().await()

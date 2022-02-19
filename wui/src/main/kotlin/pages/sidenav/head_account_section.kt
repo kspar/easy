@@ -28,7 +28,7 @@ class SidenavHeadAccountSection(
             val roles = availableRoles.map {
                 SelectComp.Option(Str.translateRole(it), it.id, it == activeRole)
             }
-            roleSelectComp = SelectComp(null, roles, ::roleChanged, this)
+            roleSelectComp = SelectComp(null, roles, onOptionChange = ::roleChanged, parent = this)
         }
     }
 
@@ -44,7 +44,7 @@ class SidenavHeadAccountSection(
         "roleSelectId" to roleSelectComp?.dstId,
     )
 
-    private fun roleChanged(newRoleId: String) {
+    private fun roleChanged(newRoleId: String?) {
         debug { "Change role to $newRoleId" }
         val newRole = availableRoles.first { it.id == newRoleId }
         activeRole = newRole

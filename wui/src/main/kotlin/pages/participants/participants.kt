@@ -98,12 +98,13 @@ class ParticipantsRootComp(
 
     private lateinit var tabsComp: PageTabsComp
     private lateinit var addStudentsModal: AddStudentsModalComp
+    private lateinit var addTeachersModal: AddTeachersModalComp
     private lateinit var createGroupModal: CreateGroupModalComp
 
     private lateinit var courseTitle: String
 
     override val children: List<Component>
-        get() = listOf(tabsComp, addStudentsModal, createGroupModal)
+        get() = listOf(tabsComp, addStudentsModal, addTeachersModal, createGroupModal)
 
     override fun create() = doInPromise {
         val courseTitlePromise = BasicCourseInfo.get(courseId)
@@ -136,6 +137,7 @@ class ParticipantsRootComp(
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
         addStudentsModal = AddStudentsModalComp(courseId, groups.groups, this)
+        addTeachersModal = AddTeachersModalComp(courseId, groups.groups, this)
         createGroupModal = CreateGroupModalComp(courseId, groups.groups, this)
 
         // TODO: remove
@@ -159,6 +161,7 @@ class ParticipantsRootComp(
                 add(
                     PageTabsComp.Tab("Õpetajad") {
                         ParticipantsTeachersListComp(
+                            courseId,
                             participants.teachers,
                             groups.groups,
                             !groups.self_is_restricted,
@@ -203,7 +206,8 @@ class ParticipantsRootComp(
             )
             if (!groups.self_is_restricted) add(
                 Sidenav.Action(Icons.addParticipant, "Lisa õpetajaid") {
-                    // TODO
+                    if (addTeachersModal.openWithClosePromise().await())
+                        createAndBuild().await()
                 }
             )
             if (!groups.self_is_restricted && !studentsSynced) add(
@@ -230,6 +234,7 @@ class ParticipantsRootComp(
         "t-c-participants",
         "tabsId" to tabsComp.dstId,
         "addStudentsModalId" to addStudentsModal.dstId,
+        "addTeachersModalId" to addTeachersModal.dstId,
         "createGroupModalId" to createGroupModal.dstId,
         "title" to courseTitle,
     )

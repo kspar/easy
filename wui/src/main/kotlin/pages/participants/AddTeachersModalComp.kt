@@ -7,41 +7,34 @@ import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
-import emptyToNull
+import errorMessage
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import plainDstStr
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
+import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
 @ExperimentalStdlibApi
-class AddStudentsModalComp(
+class AddTeachersModalComp(
     private val courseId: String,
     private val availableGroups: List<ParticipantsRootComp.Group>,
     parent: Component,
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Lisa õpilasi", Str.doAdd(), Str.cancel(), Str.adding(),
-        primaryAction = { addStudents(groupSelectComp?.getValue(), studentsFieldComp.getValue()) },
+        "Lisa õpetajaid", Str.doAdd(), Str.cancel(), Str.adding(),
+        primaryAction = { addTeachers(groupSelectComp?.getValue(), teachersFieldComp.getValue()) },
         primaryPostAction = ::reinitialise,
-        onOpen = { studentsFieldComp.focus() },
+        onOpen = { teachersFieldComp.focus() },
         defaultReturnValue = false,
         fixFooter = true, isWide = true,
         parent = this
     )
 
     private val helpTextComp = ParagraphsComp(
-        listOf(
-            "Õpilaste lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
-            "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja " +
-                    "registreerimise hetkel või siis, kui õpilane muudab oma meiliaadressi vastavaks."
-        ),
+        listOf("Õpetajate lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega."),
         modalComp
     )
 
@@ -51,10 +44,10 @@ class AddStudentsModalComp(
             parent = modalComp
         ) else null
 
-    private val studentsFieldComp = TextFieldComp(
-        "Õpilaste meiliaadressid",
+    private val teachersFieldComp = TextFieldComp(
+        "Õpetajate meiliaadressid",
         true,
-        "oskar@ohakas.ee &#x0a;mari@maasikas.com",
+        "oskar@opetaja.ee &#x0a;mari@opetaja.com",
         startActive = true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 10000)),
         onValidChange = ::updateSubmitBtn,
@@ -65,21 +58,21 @@ class AddStudentsModalComp(
         get() = listOf(modalComp)
 
     override fun create() = doInPromise {
-        modalComp.setContentComps { listOfNotNull(helpTextComp, groupSelectComp, studentsFieldComp) }
+        modalComp.setContentComps { listOfNotNull(helpTextComp, groupSelectComp, teachersFieldComp) }
     }
 
     override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
-        studentsFieldComp.validateInitial()
+        teachersFieldComp.validateInitial()
     }
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
     private fun reinitialise() {
         groupSelectComp?.rebuild()
-        studentsFieldComp.rebuild()
-        studentsFieldComp.validateInitial()
+        teachersFieldComp.rebuild()
+        teachersFieldComp.validateInitial()
     }
 
     private fun updateSubmitBtn(isFieldValid: Boolean) {
@@ -88,37 +81,38 @@ class AddStudentsModalComp(
 
 
     @Serializable
-    private data class AddStudentsResp(
+    private data class AddTeachersResp(
         val accesses_added: Int,
-        val pending_accesses_added_updated: Int,
     )
 
-    private suspend fun addStudents(groupId: String?, studentsString: String): Boolean {
-        val students = studentsString.split(" ", "\n")
+    private suspend fun addTeachers(groupId: String?, teachersString: String): Boolean {
+        val teachers = teachersString.split(" ", "\n")
             .filter { it.isNotBlank() }
 
-        debug { "Adding students (group $groupId): $students" }
+        debug { "Adding teachers (group $groupId): $teachers" }
 
         val groups: List<Map<String, String>> = if (groupId != null)
             listOf(mapOf("id" to groupId))
         else emptyList()
 
-        val newStudents = students.map {
+        val newTeachers = teachers.map {
             mapOf(
                 "email" to it,
                 "groups" to groups
             )
         }
 
-        val resp = fetchEms("/courses/$courseId/students", ReqMethod.POST, mapOf(
-            "students" to newStudents
-        ), successChecker = { http200 }).await()
-            .parseTo(AddStudentsResp.serializer()).await()
+        val resp = fetchEms("/courses/$courseId/teachers", ReqMethod.POST, mapOf(
+            "teachers" to newTeachers
+        ), successChecker = { http200 }, errorHandler = {
+            it.handleByCode(RespError.ACCOUNT_EMAIL_NOT_FOUND) {
+                val notFoundEmail = it.attrs["email"]!!
+                errorMessage { "Ei leidnud õpetajat emailiga '$notFoundEmail'" }
+            }
+        }).await().parseTo(AddTeachersResp.serializer()).await()
 
-        val active = resp.accesses_added
-        val pending = resp.pending_accesses_added_updated
-        val msg = "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"} ja " +
-                "lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}"
+        val added = resp.accesses_added
+        val msg = "Lisatud $added ${if (added == 1) "õpetaja" else "õpilast"}"
 
         successMessage { msg }
 

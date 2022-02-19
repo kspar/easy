@@ -412,6 +412,9 @@
 <script id="t-c-select" type="text/x-handlebars">
     <div class="input-field select-wrap">
         <select id="{{selectId}}">
+            {{#hasEmptyOption}}
+                <option value="">–</option>
+            {{/hasEmptyOption}}
             {{#options}}
                 <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{label}}</option>
             {{/options}}
@@ -685,7 +688,8 @@
 
     <ez-participants-list id="{{tabsId}}"></ez-participants-list>
 
-    <ez-dst class="add-students-modal" id="{{addStudentsModalId}}"></ez-dst>
+    <ez-dst class="add-participants-modal" id="{{addStudentsModalId}}"></ez-dst>
+    <ez-dst class="add-participants-modal" id="{{addTeachersModalId}}"></ez-dst>
     <ez-dst id="{{createGroupModalId}}"></ez-dst>
 </script>
 
