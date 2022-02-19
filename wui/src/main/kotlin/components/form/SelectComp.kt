@@ -9,8 +9,8 @@ import tmRender
 
 class SelectComp(
     private val label: String? = null,
-    private val options: List<Option>,
-    private val hasEmptyOption: Boolean = false,
+    var options: List<Option>,
+    var hasEmptyOption: Boolean = false,
     private val onOptionChange: ((String?) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {

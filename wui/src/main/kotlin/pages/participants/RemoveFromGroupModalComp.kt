@@ -2,9 +2,11 @@ package pages.participants
 
 import Str
 import components.StringComp
+import components.form.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
 import debug
+import errorMessage
 import kotlinx.coroutines.await
 import plainDstStr
 import queries.ReqMethod
@@ -15,11 +17,11 @@ import rip.kspar.ezspa.doInPromise
 import successMessage
 
 @ExperimentalStdlibApi
-class AddToGroupModalComp(
+class RemoveFromGroupModalComp(
     private val courseId: String,
-    private val availableGroups: List<ParticipantsRootComp.Group>,
+    private val accessibleGroups: List<ParticipantsRootComp.Group>,
     private val isFor: For,
-    var participants: List<Participant> = emptyList(),
+    private var participants: List<Participant> = emptyList(),
     parent: Component,
 ) : Component(parent) {
 
@@ -29,25 +31,21 @@ class AddToGroupModalComp(
         val studentId: String? = null,
         val pendingStudentEmail: String? = null,
         val teacherId: String? = null,
+        val groups: List<ParticipantsRootComp.Group>,
     )
 
-    data class AddedGroup(
-        val id: String,
-        val name: String,
-    )
 
-    private val modalComp: BinaryModalComp<AddedGroup?> = BinaryModalComp(
+    private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         null, Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { groupSelectComp.getLabelAndValue().let { addToGroup(it.first, it.second) } },
-        primaryPostAction = ::reinitialise,
-        defaultReturnValue = null, parent = this
+        primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
+        primaryPostAction = ::reinitialise, primaryBtnType = ButtonComp.Type.DANGER,
+        defaultReturnValue = false, parent = this
     )
 
     private val textComp = StringComp("", modalComp)
 
-    // Ideally should be validatable, so we could disable primary btn when empty is selected
     private val groupSelectComp = SelectComp(
-        null, availableGroups.map { SelectComp.Option(it.name, it.id) }, true,
+        null, emptyList(), true,
         parent = modalComp
     )
 
@@ -71,6 +69,24 @@ class AddToGroupModalComp(
         textComp.rebuild()
     }
 
+    fun setParticipants(participants: List<Participant>): Boolean {
+        this.participants = participants
+
+        val participantsGroups = participants.flatMap { it.groups }.toSet()
+        val groupOptions = accessibleGroups.intersect(participantsGroups).map {
+            SelectComp.Option(it.name, it.id)
+        }
+
+        if (groupOptions.isEmpty()) {
+            errorMessage { "Pole midagi eemaldada ¯\\_(ツ)_/¯" }
+            return false
+        }
+
+        groupSelectComp.options = groupOptions
+        groupSelectComp.rebuild()
+        return true
+    }
+
     private fun reinitialise() {
         groupSelectComp.rebuild()
 //        groupSelectComp.validateInitial()
@@ -80,45 +96,45 @@ class AddToGroupModalComp(
         modalComp.primaryButton.setEnabled(isFieldValid)
     }
 
-    private suspend fun addToGroup(groupName: String?, groupId: String?): AddedGroup? {
-        if (groupId == null || groupName == null) {
+    private suspend fun removeFromGroup(groupId: String?): Boolean {
+        if (groupId == null) {
             debug { "No group selected" }
-            return null
+            return false
         }
 
-        debug { "Adding $participants to group $groupName ($groupId)" }
+        debug { "Removing $participants from group $groupId" }
 
         when (isFor) {
             For.STUDENT -> {
                 val (active, pending) = participants.partition { it.studentId != null }
                 val activeIds = active.map { it.studentId }
                 val pendingEmails = pending.map { it.pendingStudentEmail }
-                debug { "Adding active students $activeIds and pending students $pendingEmails to group $groupId" }
+                debug { "Removing active students $activeIds and pending students $pendingEmails from group $groupId" }
 
                 val body = mapOf(
                     "active_students" to activeIds.map { mapOf("id" to it) },
                     "pending_students" to pendingEmails.map { mapOf("email" to it) }
                 )
 
-                fetchEms("/courses/$courseId/groups/$groupId/students", ReqMethod.POST, body,
+                fetchEms("/courses/$courseId/groups/$groupId/students", ReqMethod.DELETE, body,
                     successChecker = { http200 }).await()
 
             }
             For.TEACHER -> {
                 val teacherIds = participants.map { it.teacherId }
-                debug { "Adding teachers $teacherIds to group $groupId" }
+                debug { "Removing teachers $teacherIds from group $groupId" }
 
                 val body = mapOf(
                     "teachers" to teacherIds.map { mapOf("id" to it) }
                 )
 
-                fetchEms("/courses/$courseId/groups/$groupId/teachers", ReqMethod.POST, body,
+                fetchEms("/courses/$courseId/groups/$groupId/teachers", ReqMethod.DELETE, body,
                     successChecker = { http200 }).await()
 
             }
         }
 
-        successMessage { "Lisatud" }
-        return AddedGroup(groupId, groupName)
+        successMessage { "Eemaldatud" }
+        return true
     }
 }

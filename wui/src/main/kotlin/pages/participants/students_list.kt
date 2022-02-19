@@ -36,9 +36,10 @@ class ParticipantsStudentsListComp(
     private lateinit var studentsColl: EzCollComp<StudentProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
     private lateinit var addToGroupModal: AddToGroupModalComp
+    private lateinit var removeFromGroupModal: RemoveFromGroupModalComp
 
     override val children: List<Component>
-        get() = listOf(studentsColl, removeFromCourseModal, addToGroupModal)
+        get() = listOf(studentsColl, removeFromCourseModal, addToGroupModal, removeFromGroupModal)
 
     override fun create() = doInPromise {
 
@@ -87,7 +88,7 @@ class ParticipantsStudentsListComp(
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
                     EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup),
-                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::addToGroup), // TODO
+                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 ) else emptyList(),
             )
@@ -99,7 +100,7 @@ class ParticipantsStudentsListComp(
                     EzCollComp.MassAction<StudentProps>(Icons.addToGroup, "Lisa rühma", ::addToGroup)
                 )
                 add(
-                    EzCollComp.MassAction<StudentProps>(Icons.removeFromGroup, "Eemalda rühmast", { TODO() })
+                    EzCollComp.MassAction<StudentProps>(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup)
                 )
             }
             add(
@@ -161,9 +162,14 @@ class ParticipantsStudentsListComp(
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.STUDENT, parent = this)
+        removeFromGroupModal = RemoveFromGroupModalComp(
+            courseId, groups, RemoveFromGroupModalComp.For.STUDENT, parent = this
+        )
     }
 
-    override fun render() = plainDstStr(studentsColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId)
+    override fun render() = plainDstStr(
+        studentsColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId, removeFromGroupModal.dstId
+    )
 
     private suspend fun addToGroup(item: EzCollComp.Item<StudentProps>) =
         addToGroup(listOf(item))
@@ -191,6 +197,47 @@ class ParticipantsStudentsListComp(
         }
         return EzCollComp.ResultUnmodified
     }
+
+
+    private suspend fun removeFromGroup(item: EzCollComp.Item<StudentProps>) =
+        removeFromGroup(listOf(item))
+
+    private suspend fun removeFromGroup(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
+        val text = if (items.size == 1) {
+            val item = items[0]
+            val id = if (item.props.isActive) item.title else item.props.email
+            "Eemalda õpilane $id rühmast:"
+        } else {
+            "Eemalda ${items.size} õpilast rühmast:"
+        }
+
+        removeFromGroupModal.setText(text)
+        val (active, pending) = items.partition { it.props.isActive }
+        val canRemove = removeFromGroupModal.setParticipants(
+            active.map {
+                RemoveFromGroupModalComp.Participant(
+                    studentId = it.props.username,
+                    groups = it.props.groups.map { ParticipantsRootComp.Group(it.id, it.name) }
+                )
+            } + pending.map {
+                RemoveFromGroupModalComp.Participant(
+                    pendingStudentEmail = it.props.email,
+                    groups = it.props.groups.map { ParticipantsRootComp.Group(it.id, it.name) }
+                )
+            }
+        )
+
+        if (!canRemove) {
+            return EzCollComp.ResultUnmodified
+        }
+
+        val removed = removeFromGroupModal.openWithClosePromise().await()
+        if (removed) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
+    }
+
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<StudentProps>): EzCollComp.Result =
         removeFromCourse(listOf(item))

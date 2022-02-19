@@ -37,9 +37,10 @@ class ParticipantsTeachersListComp(
     private lateinit var teachersColl: EzCollComp<TeacherProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
     private lateinit var addToGroupModal: AddToGroupModalComp
+    private lateinit var removeFromGroupModal: RemoveFromGroupModalComp
 
     override val children: List<Component>
-        get() = listOf(teachersColl, removeFromCourseModal, addToGroupModal)
+        get() = listOf(teachersColl, removeFromCourseModal, addToGroupModal, removeFromGroupModal)
 
     override fun create() = doInPromise {
         val props = teachers.map {
@@ -68,7 +69,7 @@ class ParticipantsTeachersListComp(
             val actions = if (isEditable)
                 listOf(
                     EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup),
-                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::addToGroup), // TODO
+                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup),
                     EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
                 )
             else emptyList()
@@ -97,7 +98,7 @@ class ParticipantsTeachersListComp(
                     EzCollComp.MassAction<TeacherProps>(Icons.addToGroup, "Lisa rühma", ::addToGroup)
                 )
                 add(
-                    EzCollComp.MassAction<TeacherProps>(Icons.removeFromGroup, "Eemalda rühmast", { TODO() })
+                    EzCollComp.MassAction<TeacherProps>(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup)
                 )
             }
             add(
@@ -151,9 +152,14 @@ class ParticipantsTeachersListComp(
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.TEACHER, parent = this)
+        removeFromGroupModal = RemoveFromGroupModalComp(
+            courseId, groups, RemoveFromGroupModalComp.For.TEACHER, parent = this
+        )
     }
 
-    override fun render() = plainDstStr(teachersColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId)
+    override fun render() = plainDstStr(
+        teachersColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId, removeFromGroupModal.dstId
+    )
 
 
     private suspend fun addToGroup(item: EzCollComp.Item<TeacherProps>) =
@@ -175,6 +181,38 @@ class ParticipantsTeachersListComp(
         }
         return EzCollComp.ResultUnmodified
     }
+
+
+    private suspend fun removeFromGroup(item: EzCollComp.Item<TeacherProps>) =
+        removeFromGroup(listOf(item))
+
+    private suspend fun removeFromGroup(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
+        val text = if (items.size == 1)
+            "Eemalda õpetaja ${items[0].title} rühmast:"
+        else
+            "Eemalda ${items.size} õpetajat rühmast:"
+
+        removeFromGroupModal.setText(text)
+        val canRemove = removeFromGroupModal.setParticipants(
+            items.map {
+                RemoveFromGroupModalComp.Participant(
+                    teacherId = it.props.username,
+                    groups = it.props.groups.map { ParticipantsRootComp.Group(it.id, it.name) }
+                )
+            }
+        )
+
+        if (!canRemove) {
+            return EzCollComp.ResultUnmodified
+        }
+
+        val removed = removeFromGroupModal.openWithClosePromise().await()
+        if (removed) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
+    }
+
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<TeacherProps>) =
         removeFromCourse(listOf(item))
