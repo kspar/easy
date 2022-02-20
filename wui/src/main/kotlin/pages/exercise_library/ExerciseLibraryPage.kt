@@ -25,7 +25,6 @@ object ExerciseLibraryPage : EasyPage() {
     override val titleSpec: Title.Spec
         get() = Title.Spec(Str.exerciseLibrary())
 
-    // TODO
     override val pathSchema = "/library"
 
     override fun build(pageStateStr: String?) {
