@@ -10,6 +10,7 @@ import negation
 import objOf
 import rip.kspar.ezspa.*
 import tmRender
+import warn
 
 
 class CodeEditorComp(
@@ -116,6 +117,17 @@ class CodeEditorComp(
     fun setFileEditable(filename: String, isEditable: Boolean) {
         tabs.single { it.filename == filename }.editability = if (isEditable) Edit.EDITABLE else Edit.READONLY
         refreshEditability()
+    }
+
+    fun getActiveTabFilename() = activeTab.filename
+
+    fun setActiveTabByFilename(filename: String) {
+        val tab = tabs.firstOrNull { it.filename == filename }
+        if (tab != null) {
+            switchToTab(tab)
+        } else {
+            warn { "Code editor tab with id $filename not found" }
+        }
     }
 
     private fun switchToTab(tab: Tab = activeTab) {
