@@ -166,9 +166,16 @@ class ReadDirController {
             }.also { log.trace { "accessible dirs: $it" } }
 
 
+            // TODO: refactor, optimise for admin, make sure it works for non-root
+            val dirs = if (caller.isAdmin())
+                selectAllDirsForAdmin(dirId)
+            else
+                accessibleDirs
+
+
             // Extract out implicit dirs and their exercises
             val (implicitDirs, explicitDirs) =
-                accessibleDirs.partition { it.isImplicit }
+                dirs.partition { it.isImplicit }
 
             val childDirs = explicitDirs.map {
                 DirResp(
@@ -240,5 +247,22 @@ class ReadDirController {
                     )
                 }.single()
         } else null
+    }
+
+    private fun selectAllDirsForAdmin(dirId: Long?): List<DirAccess> {
+        return Dir.slice(
+            Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt
+        ).select {
+            Dir.parentDir eq dirId
+        }.map {
+            DirAccess(
+                it[Dir.id].value,
+                it[Dir.name],
+                DirAccessLevel.PRAWM,
+                it[Dir.isImplicit],
+                it[Dir.createdAt],
+                it[Dir.modifiedAt],
+            )
+        }
     }
 }
