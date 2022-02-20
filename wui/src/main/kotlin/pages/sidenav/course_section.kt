@@ -61,7 +61,7 @@ class SidenavCourseSectionComp(
         "exercisesIcon" to Icons.courseExercises,
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
-        "addExerciseIcon" to Icons.addExerciseToCourse,
+        "addExerciseIcon" to Icons.add,
         "newExerciseIcon" to Icons.newExercise,
         "exercisesLabel" to "Ülesanded",
         "gradesLabel" to "Hinded",

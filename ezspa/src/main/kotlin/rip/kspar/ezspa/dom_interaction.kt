@@ -1,6 +1,7 @@
 package rip.kspar.ezspa
 
 import kotlinx.coroutines.await
+import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
@@ -89,3 +90,5 @@ private fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event:
 
     return listener
 }
+
+fun Element.appendHTML(html: String) = this.insertAdjacentHTML("beforeend", html)

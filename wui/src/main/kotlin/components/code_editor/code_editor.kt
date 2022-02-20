@@ -1,5 +1,9 @@
-package components
+package components.code_editor
 
+import Icons
+import components.LinkComp
+import debug
+import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.clear
 import kotlinx.dom.removeClass
@@ -15,23 +19,32 @@ import warn
 
 class CodeEditorComp(
     files: List<File>,
+    private val fileCreator: CreateFile? = null,
     private val softWrap: Boolean = false,
     private val placeholder: String? = null,
     parent: Component?
 ) : Component(parent) {
 
+    // TODO: should have a separate comp for code editor tabs (and/or toolbar) to avoid drawing new tabs like this
+
     constructor(
         file: File,
+        fileCreator: CreateFile? = null,
         softWrap: Boolean = false,
         placeholder: String? = null,
         parent: Component?
-    ) : this(listOf(file), softWrap, placeholder, parent)
+    ) : this(listOf(file), fileCreator, softWrap, placeholder, parent)
 
     data class File(
         val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE
     )
 
     enum class Edit { EDITABLE, READONLY, TOGGLED }
+
+    data class CreateFile(
+        val fileLang: dynamic,
+        val editability: Edit,
+    )
 
     private data class Tab(
         val filename: String,
@@ -41,14 +54,18 @@ class CodeEditorComp(
         val lang: dynamic
     )
 
-    private val tabs: List<Tab>
+    private val tabs: MutableList<Tab>
+    private val editorId = IdGenerator.nextId()
     private val textareaId = IdGenerator.nextId()
+    private val createFileId = IdGenerator.nextId()
     private val editToggleId = IdGenerator.nextId()
     private var activeTab: Tab
     private var toggleEditEnabled = false
 
     private lateinit var editor: CodeMirrorInstance
+
     private var editToggleComp: LinkComp? = null
+    private val createFileModalComp = CreateFileModalComp(this)
 
     init {
         if (files.isEmpty())
@@ -60,21 +77,25 @@ class CodeEditorComp(
             }
         }
 
-        tabs = files.map {
-            Tab(it.name, CodeMirror.Doc(it.content.orEmpty(), it.lang), IdGenerator.nextId(), it.editability, it.lang)
-        }
+        tabs = files.map { fileToTab(it) }.toMutableList()
         activeTab = tabs[0]
     }
 
     override val children: List<Component>
-        get() = listOfNotNull(editToggleComp)
+        get() = listOfNotNull(editToggleComp, createFileModalComp)
 
-    override fun render(): String = tmRender("t-c-code-editor",
+    override fun render(): String = tmRender(
+        "t-c-code-editor",
+        "editorId" to editorId,
         "textareaId" to textareaId,
         "toggleId" to editToggleId,
         "tabs" to tabs.map {
-            mapOf("id" to it.id, "name" to it.filename)
-        }
+            mapOf("tab" to tabToHtml(it))
+        },
+        "canCreate" to (fileCreator != null),
+        "createId" to createFileId,
+        "createIcon" to Icons.add,
+        "createModalId" to createFileModalComp.dstId,
     )
 
     override fun postRender() {
@@ -95,13 +116,16 @@ class CodeEditorComp(
             )
         )
 
-        tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }
+        switchToTab(activeTab)
 
-        switchToTab()
+        refreshTabActions()
 
-        tabs.forEach { tab ->
-            getElemById(tab.id).onVanillaClick(true) {
-                switchToTab(tab)
+        if (fileCreator != null) {
+            getElemById(createFileId).onVanillaClick(true) {
+                val filename = createFileModalComp.openWithClosePromise().await()
+                if (filename != null) {
+                    createFile(filename)
+                }
             }
         }
     }
@@ -130,7 +154,39 @@ class CodeEditorComp(
         }
     }
 
-    private fun switchToTab(tab: Tab = activeTab) {
+    private fun getEditorElement() = getElemById(editorId)
+
+    private fun fileToTab(f: File): Tab =
+        Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), f.lang), IdGenerator.nextId(), f.editability, f.lang)
+
+    private fun tabToHtml(tab: Tab) =
+        tmRender("t-code-editor-tab", mapOf("id" to tab.id, "name" to tab.filename))
+
+    private fun refreshTabActions() {
+        tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }
+
+        tabs.forEach { tab ->
+            getElemById(tab.id).onVanillaClick(true) {
+                switchToTab(tab)
+            }
+        }
+    }
+
+    private fun createFile(filename: String) {
+        debug { "Creating new file: $filename" }
+        fileCreator!!
+
+        val file = File(filename, null, fileCreator.fileLang, fileCreator.editability)
+        val tab = fileToTab(file)
+        tabs.add(tab)
+
+        getEditorElement().getElemBySelector("ez-code-edit-tabs").appendHTML(tabToHtml(tab))
+
+        refreshTabActions()
+        switchToTab(tab)
+    }
+
+    private fun switchToTab(tab: Tab) {
         val previousTab = activeTab
         activeTab = tab
 

@@ -1,6 +1,6 @@
 package pages.exercise
 
-import components.CodeEditorComp
+import components.code_editor.CodeEditorComp
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
 import rip.kspar.ezspa.Component
@@ -29,10 +29,13 @@ class AutoAssessmentTabComp(
         val gradingScript = CodeEditorComp.File(
             GRADING_SCRIPT_FILENAME, exercise.grading_script, "shell", CodeEditorComp.Edit.TOGGLED
         )
-        val assets = exercise.assets.orEmpty().map {
+        val assets = exercise.assets.orEmpty().sortedBy { it.file_name }.map {
             CodeEditorComp.File(it.file_name, it.file_content, "python", CodeEditorComp.Edit.TOGGLED)
         }
-        editor = CodeEditorComp(listOf(gradingScript) + assets, parent = this)
+        editor = CodeEditorComp(
+            listOf(gradingScript) + assets,
+            fileCreator = CodeEditorComp.CreateFile("python", CodeEditorComp.Edit.TOGGLED), parent = this
+        )
     }
 
     override fun render(): String = tmRender(

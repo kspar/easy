@@ -190,19 +190,29 @@
 </script>
 
 <script id="t-c-code-editor" type="text/x-handlebars">
-    <div class="editor-wrapper">
+    <div id="{{editorId}}" class="editor-wrapper">
         <div class="editor-top">
             <div class="left-side">
-                {{#tabs}}
-                    <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
-                {{/tabs}}
+                <ez-code-edit-tabs>
+                    {{#tabs}}
+                        {{{tab}}}
+                    {{/tabs}}
+                </ez-code-edit-tabs>
+                {{#canCreate}}
+                    <ez-icon-action id="{{createId}}">{{{createIcon}}}</ez-icon-action>
+                {{/canCreate}}
             </div>
             <div class="right-side">
                 <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
             </div>
         </div>
         <textarea id="{{textareaId}}"></textarea>
+        <ez-dst id="{{createModalId}}"></ez-dst>
     </div>
+</script>
+
+<script id="t-code-editor-tab" type="text/x-handlebars">
+    <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
 </script>
 
 <script id="t-c-modal" type="text/x-handlebars">

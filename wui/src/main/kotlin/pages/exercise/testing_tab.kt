@@ -1,7 +1,7 @@
 package pages.exercise
 
 import Str
-import components.CodeEditorComp
+import components.code_editor.CodeEditorComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import onSingleClickWithDisabled

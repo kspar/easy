@@ -24,7 +24,7 @@ class CreateCourseModalComp(
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createCourse(courseTitleFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise,
+        primaryPostAction = ::reinitialise, onOpen = { courseTitleFieldComp.focus() },
         defaultReturnValue = null, parent = this
     )
 
