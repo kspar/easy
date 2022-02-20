@@ -29,26 +29,26 @@ private val log = KotlinLogging.logger {}
 class CreateExerciseCont(private val adocService: AdocService) {
 
     data class Req(
-            @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
-            @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-            @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
-            @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
-            @JsonProperty("public", required = true) val public: Boolean,
-            @JsonProperty("grader_type", required = true) val graderType: GraderType,
-            @JsonProperty("grading_script", required = false) val gradingScript: String?,
-            @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
-            @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
-            @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
-            @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
-            @JsonProperty("executors", required = false) val executors: List<ReqExecutor>?,
+        @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
+        @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
+        @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
+        @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @JsonProperty("public", required = true) val public: Boolean,
+        @JsonProperty("grader_type", required = true) val graderType: GraderType,
+        @JsonProperty("grading_script", required = false) val gradingScript: String?,
+        @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
+        @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
+        @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
+        @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
     )
 
-    data class ReqAsset(@JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
-                        @JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String)
-
-    data class ReqExecutor(@JsonProperty("executor_id", required = true) @field:Size(max = 100) val executorId: String)
+    data class ReqAsset(
+        @JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
+        @JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String
+    )
 
     data class Resp(@JsonProperty("id") val id: String)
+
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/exercises")
@@ -77,12 +77,11 @@ private fun insertExercise(caller: EasyUser, req: CreateExerciseCont.Req, html: 
     return transaction {
 
         val newAutoExerciseId =
-                if (req.graderType == GraderType.AUTO) {
-                    insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
-                            req.assets?.map { it.fileName to it.fileContent },
-                            req.executors?.map { it.executorId.idToLongOrInvalidReq() })
+            if (req.graderType == GraderType.AUTO) {
+                insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
+                    req.assets?.map { it.fileName to it.fileContent })
 
-                } else null
+            } else null
 
         val implicitDirId = Dir.insertAndGetId {
             // ChickenEgg: name = exercise ID but that's not known yet
@@ -130,9 +129,9 @@ private fun insertExercise(caller: EasyUser, req: CreateExerciseCont.Req, html: 
 
         if (html != null) {
             val inUse = StoredFile.slice(StoredFile.id)
-                    .select { StoredFile.usageConfirmed eq false }
-                    .map { it[StoredFile.id].value }
-                    .filter { html.contains(it) }
+                .select { StoredFile.usageConfirmed eq false }
+                .map { it[StoredFile.id].value }
+                .filter { html.contains(it) }
 
             StoredFile.update({ StoredFile.id inList inUse }) {
                 it[usageConfirmed] = true

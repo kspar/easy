@@ -1,6 +1,8 @@
 package core.aas
 
-import core.db.*
+import core.db.Asset
+import core.db.AutoExercise
+import core.db.ContainerImage
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.dao.id.EntityID
@@ -21,7 +23,6 @@ fun insertAutoExercise(
     maxTime: Int?,
     maxMem: Int?,
     assets: List<Pair<String, String>>?,
-    executors: List<Long>?
 ): EntityID<Long> {
 
     return transaction {
@@ -30,25 +31,10 @@ fun insertAutoExercise(
             containerImage == null ||
             maxTime == null ||
             maxMem == null ||
-            assets == null ||
-            executors == null
+            assets == null
         ) {
-
             throw InvalidRequestException("Parameters for autoassessable exercise are missing.")
         }
-
-        if (executors.isEmpty()) {
-            throw InvalidRequestException("Autoassessable exercise must have at least 1 executor")
-        }
-
-        val executorIds = executors.map {
-            val executorId = EntityID(it, Executor)
-            if (Executor.select { Executor.id eq executorId }.count() == 0L) {
-                throw InvalidRequestException("Executor $executorId does not exist")
-            }
-            executorId
-        }
-
 
         if (ContainerImage.select { ContainerImage.id eq containerImage }.count() == 0L) {
             throw InvalidRequestException(
@@ -57,7 +43,6 @@ fun insertAutoExercise(
                 "container_image" to containerImage
             )
         }
-
 
         val autoExerciseId = AutoExercise.insertAndGetId {
             it[AutoExercise.gradingScript] = gradingScript
@@ -70,11 +55,6 @@ fun insertAutoExercise(
             this[Asset.autoExercise] = autoExerciseId
             this[Asset.fileName] = it.first
             this[Asset.fileContent] = it.second
-        }
-
-        ExecutorContainerImage.batchInsert(executorIds, ignore = true) {
-            this[ExecutorContainerImage.containerImage] = containerImage
-            this[ExecutorContainerImage.executor] = it
         }
 
         autoExerciseId
