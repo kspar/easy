@@ -130,7 +130,7 @@ class ExerciseLibRootComp(
                 EzCollComp.Sorter("Nime järgi", compareBy { it.props.title }),
                 // TODO: Date to comparable
 //                EzCollComp.Sorter("Muutmisaja järgi", compareBy { it.props.modifiedAt }),
-                EzCollComp.Sorter("ID järgi", compareBy { it.props.id }),
+                EzCollComp.Sorter("ID järgi", compareBy { it.props.id.toInt() }),
                 EzCollComp.Sorter("Populaarsuse järgi", compareBy<EzCollComp.Item<ExerciseProps>> { it.props.coursesCount }.reversed()),
             ),
             parent = this
