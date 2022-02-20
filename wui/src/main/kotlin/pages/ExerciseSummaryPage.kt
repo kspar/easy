@@ -26,7 +26,10 @@ import kotlinx.dom.addClass
 import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
-import libheaders.*
+import libheaders.CodeMirror
+import libheaders.Materialize
+import libheaders.focus
+import libheaders.tabHandler
 import lightboxExerciseImages
 import moveClass
 import objOf
@@ -34,6 +37,7 @@ import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.exercise.ExercisePage
+import pages.exercise.TestingTabComp
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -361,7 +365,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
 
-    private fun buildTeacherTesting(courseId: String, exerciseId: String) {
+    private suspend fun buildTeacherTesting(courseId: String, exerciseId: String) {
 
         suspend fun postSolution(solution: String): AutoassResult {
             debug { "Posting submission ${solution.substring(0, 15)}..." }
@@ -374,9 +378,20 @@ object ExerciseSummaryPage : EasyPage() {
 
 
         val fl = debugFunStart("buildTeacherTesting")
-        getElemById("testing").innerHTML = tmRender("tm-teach-exercise-testing", mapOf(
-                "checkLabel" to Str.doAutoAssess()
-        ))
+
+        val latestSubmission =
+            fetchEms("/exercises/$exerciseId/testing/autoassess/submissions${createQueryString("limit" to "1")}",
+                ReqMethod.GET,
+                successChecker = { http200 }
+            ).await().parseTo(TestingTabComp.LatestSubmissions.serializer()).await()
+                .submissions.getOrNull(0)?.solution
+
+        getElemById("testing").innerHTML = tmRender(
+            "tm-teach-exercise-testing", mapOf(
+                "latestSubmission" to latestSubmission,
+                "checkLabel" to Str.doAutoAssess(),
+            )
+        )
         val editor = CodeMirror.fromTextArea(getElemById("testing-submission"),
                 objOf("mode" to "python",
                         "theme" to "idea",

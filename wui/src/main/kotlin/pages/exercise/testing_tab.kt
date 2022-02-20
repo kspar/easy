@@ -1,20 +1,19 @@
 package pages.exercise
 
+import DateSerializer
 import Str
 import components.code_editor.CodeEditorComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
+import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdAs
 import tmRender
+import kotlin.js.Date
 import kotlin.js.Promise
 
 
@@ -22,6 +21,20 @@ class TestingTabComp(
     private val exerciseId: String,
     parent: Component?
 ) : Component(parent) {
+
+    @Serializable
+    data class LatestSubmissions(
+        val count: Int,
+        val submissions: List<LatestSubmission>,
+    )
+
+    @Serializable
+    data class LatestSubmission(
+        val id: String,
+        val solution: String,
+        @Serializable(with = DateSerializer::class)
+        val created_at: Date,
+    )
 
     @Serializable
     data class AutoAssessmentDTO(
@@ -39,9 +52,15 @@ class TestingTabComp(
         get() = listOfNotNull(editor, assessment)
 
     override fun create(): Promise<*> = doInPromise {
-        // TODO: get last submission
+        val submissions =
+            fetchEms("/exercises/$exerciseId/testing/autoassess/submissions${createQueryString("limit" to "1")}",
+                ReqMethod.GET,
+                successChecker = { http200 }
+            ).await().parseTo(LatestSubmissions.serializer()).await()
+        val latestSubmission = submissions.submissions.getOrNull(0)?.solution
+
         editor = CodeEditorComp(
-            CodeEditorComp.File(editorTabName, null, "python"),
+            CodeEditorComp.File(editorTabName, latestSubmission, "python"),
             placeholder = "Kirjuta või lohista lahendus siia...", parent = this
         )
     }
