@@ -18,7 +18,8 @@ object ExercisePage : EasyPage() {
     override val allowedRoles: List<Role>
         get() = listOf(Role.ADMIN)
 
-    override val pathSchema = "/exerciselib/{exerciseId}/details"
+    // /library/{exerciseId}/summary/dir1-name/dir2-name/ex-name?
+    override val pathSchema = "/library/{exerciseId}/summary"
 
     private val exerciseId: String
         get() = parsePathParams()["exerciseId"]
