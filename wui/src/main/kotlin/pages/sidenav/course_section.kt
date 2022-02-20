@@ -85,7 +85,16 @@ class SidenavCourseSectionComp(
             debug { "Saving new exercise with title $exerciseTitle" }
             val exerciseId = fetchEms("/exercises",
                 ReqMethod.POST,
-                mapOf("title" to exerciseTitle, "public" to false, "grader_type" to "TEACHER"),
+                mapOf(
+                    "title" to exerciseTitle,
+                    "public" to true,
+                    "grader_type" to "AUTO",
+                    "grading_script" to "",
+                    "container_image" to "pygrader",
+                    "max_time_sec" to 7,
+                    "max_mem_mb" to 30,
+                    "assets" to emptyList<Map<String, String>>(),
+                ),
                 successChecker = { http200 }).await().parseTo(NewExerciseDTO.serializer()).await().id
             debug { "Saved new exercise with id $exerciseId" }
             modal.close()
