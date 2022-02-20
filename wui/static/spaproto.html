@@ -703,6 +703,27 @@
     <ez-dst id="{{createGroupModalId}}"></ez-dst>
 </script>
 
+<script id="t-c-participants-moodle" type="text/x-handlebars">
+    <div class="card">
+        <div class="card-content">
+            <p class="subheading-item"><span class="subheading">{{moodleShortnameLabel}}:</span>{{moodleShortname}}</p>
+
+            <ez-block-container>
+                <ez-block>
+                    <p class="subheading-item"><span class="subheading">{{studentsSyncedLabel}}:</span>{{studentsSynced}}</p>
+                    <p>{{studentsExplanation}}</p>
+                    <ez-dst id="{{studentsBtnId}}"></ez-dst>
+                </ez-block>
+                <ez-block>
+                    <p class="subheading-item"><span class="subheading">{{gradesSyncedLabel}}:</span>{{gradesSynced}}</p>
+                    <p>{{gradesExplanation}}</p>
+                    <ez-dst id="{{gradesBtnId}}"></ez-dst>
+                </ez-block>
+            </ez-block-container>
+        </div>
+    </div>
+</script>
+
 
 <!-- Snippets -->
 <script id="t-s-missing-content-wandering-eyes" type="text/x-handlebars">

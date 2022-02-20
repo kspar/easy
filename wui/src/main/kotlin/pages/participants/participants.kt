@@ -5,7 +5,6 @@ import Icons
 import Str
 import cache.BasicCourseInfo
 import components.PageTabsComp
-import components.StringComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.Title
@@ -140,7 +139,7 @@ class ParticipantsRootComp(
 
         val groups = groupsResp.groups.sortedBy { it.name }
         val hasRestrictedGroups = groupsResp.self_is_restricted
-        val isMoodleLinked = moodleStatus.moodle_props?.moodle_short_name != null
+        val isMoodleLinked = moodleStatus.moodle_props != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
         val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
@@ -209,9 +208,18 @@ class ParticipantsRootComp(
                     }
                 )
 
-                if (isMoodleLinked) add(
+                if (moodleStatus.moodle_props != null) add(
                     PageTabsComp.Tab("Moodle", id = tabMoodleId) {
-                        StringComp("Moodle", it)
+                        ParticipantsMoodleTabComp(
+                            courseId,
+                            moodleStatus.moodle_props,
+                            {
+                                val t = tabsComp.getSelectedTab()
+                                createAndBuild().await()
+                                tabsComp.setSelectedTab(t)
+                            },
+                            it
+                        )
                     }
                 )
             },

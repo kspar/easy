@@ -742,6 +742,16 @@ ez-participants-list ez-coll-wrap:not([has-selection]) ezc-ctrl {
     padding-top: 0;
 }
 
+ez-participants-list ez-block {
+    width: 50rem;
+    padding-right: 3rem;
+    margin: 2rem 0;
+}
+
+ez-participants-list .card .card-content p {
+    margin-bottom: 1rem;
+}
+
 
 /** Grade table page **/
 
@@ -1956,6 +1966,18 @@ ezc-bottom-attrs > ezc-attr {
     ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
         flex-basis: 300px;
     }
+}
+
+
+/** Ez block container **/
+
+ez-block-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+ez-block-container ez-block {
+    flex-grow: 1;
 }
 
 

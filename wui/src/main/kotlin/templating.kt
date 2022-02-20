@@ -11,6 +11,7 @@ private fun render(template: String, data: Map<String, Any?>): String {
     return Mustache.render(template, data.toJsObj())
 }
 
-fun plainDstStr(vararg dstIds: String): String {
-    return dstIds.joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }
-}
+fun plainDstStr(vararg dstIds: String): String = plainDstStr(dstIds.toList())
+
+fun plainDstStr(dstIds: List<String>): String =
+    dstIds.joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }
