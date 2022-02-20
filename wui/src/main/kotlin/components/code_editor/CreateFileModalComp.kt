@@ -2,6 +2,8 @@ package components.code_editor
 
 import Str
 import components.form.StringFieldComp
+import components.form.validation.ConstraintViolation
+import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import plainDstStr
@@ -9,8 +11,20 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
 class CreateFileModalComp(
+    existingFilenames: List<String>,
     parent: Component,
 ) : Component(parent) {
+
+    private var disallowedInputs: List<String> = setExistingFilenames(existingFilenames)
+
+    private val nonDuplicateNameConstraint: FieldConstraint<String> = object : FieldConstraint<String>() {
+        override fun validate(value: String, fieldNameForMessage: String): ConstraintViolation<String>? {
+            return when {
+                disallowedInputs.contains(value.lowercase()) -> violation("Selle nimega fail juba eksisteerib")
+                else -> null
+            }
+        }
+    }
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus fail", Str.doSave(), Str.cancel(),
@@ -22,7 +36,7 @@ class CreateFileModalComp(
     private val filenameField = StringFieldComp(
         "Faili nimi",
         true, paintRequiredOnInput = false,
-        constraints = listOf(StringConstraints.Length(max = 50)),
+        constraints = listOf(StringConstraints.Length(max = 50), nonDuplicateNameConstraint),
         onValidChange = ::updateSubmitBtn,
         parent = modalComp
     )
@@ -41,6 +55,11 @@ class CreateFileModalComp(
     }
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
+
+    fun setExistingFilenames(existingFilenames: List<String>): List<String> {
+        disallowedInputs = existingFilenames.map { it.lowercase() }
+        return disallowedInputs
+    }
 
     private fun reinitialise() {
         filenameField.rebuild()

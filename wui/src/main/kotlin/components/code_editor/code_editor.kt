@@ -59,26 +59,25 @@ class CodeEditorComp(
     private val textareaId = IdGenerator.nextId()
     private val createFileId = IdGenerator.nextId()
     private val editToggleId = IdGenerator.nextId()
-    private var activeTab: Tab
+    private var activeTab: Tab?
     private var toggleEditEnabled = false
 
     private lateinit var editor: CodeMirrorInstance
 
     private var editToggleComp: LinkComp? = null
-    private val createFileModalComp = CreateFileModalComp(this)
+    private val createFileModalComp: CreateFileModalComp
 
     init {
-        if (files.isEmpty())
-            throw IllegalStateException("Editor must have at east one file")
-
         files.groupingBy { it.name }.eachCount().forEach { (filename, count) ->
             if (count > 1) {
-                throw IllegalStateException("Non-unique filename: $filename (count: $count)")
+                warn { "Non-unique filename: $filename (count: $count)" }
             }
         }
 
         tabs = files.map { fileToTab(it) }.toMutableList()
-        activeTab = tabs[0]
+        activeTab = tabs.getOrNull(0)
+
+        createFileModalComp = CreateFileModalComp(tabs.map { it.filename }, this)
     }
 
     override val children: List<Component>
@@ -116,12 +115,15 @@ class CodeEditorComp(
             )
         )
 
-        switchToTab(activeTab)
+        activeTab?.let {
+            switchToTab(it)
+        }
 
         refreshTabActions()
 
         if (fileCreator != null) {
             getElemById(createFileId).onVanillaClick(true) {
+                createFileModalComp.setExistingFilenames(tabs.map { it.filename })
                 val filename = createFileModalComp.openWithClosePromise().await()
                 if (filename != null) {
                     createFile(filename)
@@ -143,7 +145,7 @@ class CodeEditorComp(
         refreshEditability()
     }
 
-    fun getActiveTabFilename() = activeTab.filename
+    fun getActiveTabFilename() = activeTab?.filename
 
     fun setActiveTabByFilename(filename: String) {
         val tab = tabs.firstOrNull { it.filename == filename }
@@ -179,6 +181,7 @@ class CodeEditorComp(
         val file = File(filename, null, fileCreator.fileLang, fileCreator.editability)
         val tab = fileToTab(file)
         tabs.add(tab)
+        createFileModalComp.setExistingFilenames(tabs.map { it.filename })
 
         getEditorElement().getElemBySelector("ez-code-edit-tabs").appendHTML(tabToHtml(tab))
 
@@ -190,10 +193,11 @@ class CodeEditorComp(
         val previousTab = activeTab
         activeTab = tab
 
-        getElemById(previousTab.id).apply {
-            removeClass("active")
-            setAttribute("href", "#!")
-        }
+        if (previousTab != null)
+            getElemById(previousTab.id).apply {
+                removeClass("active")
+                setAttribute("href", "#!")
+            }
 
         getElemById(tab.id).apply {
             addClass("active")
@@ -206,7 +210,7 @@ class CodeEditorComp(
     }
 
     private fun refreshEditability() {
-        when (activeTab.editability) {
+        when (activeTab?.editability) {
             Edit.EDITABLE -> {
                 setEditable(true)
                 removeEditToggle()
