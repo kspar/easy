@@ -24,18 +24,20 @@ private val log = KotlinLogging.logger {}
 class ReadDirParentsController {
 
     data class Resp(
-            @JsonProperty("parents") val parents: List<ParentDirResp>,
+        @JsonProperty("parents") val parents: List<ParentDirResp>,
     )
 
     data class ParentDirResp(
-            @JsonProperty("id") val id: String,
-            @JsonProperty("name") val name: String,
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/lib/dirs/{dirId}/parents")
-    fun controller(@PathVariable("dirId") dirIdString: String,
-                   caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("dirId") dirIdString: String,
+        caller: EasyUser
+    ): Resp {
 
         log.debug { "Read parents for dir $dirIdString by ${caller.id}" }
 
@@ -45,39 +47,40 @@ class ReadDirParentsController {
 
         return selectParents(dirId)
     }
-}
 
-private fun selectParents(dirId: Long): ReadDirParentsController.Resp {
-    val currentDir = selectDir(dirId)
-    val parents = mutableListOf<ParentDir>()
 
-    var parentDir = currentDir.parentId
-    while (parentDir != null) {
-        val dir = selectDir(parentDir)
-        parents.add(dir)
-        parentDir = dir.parentId
+    private fun selectParents(dirId: Long): Resp {
+        val currentDir = selectDir(dirId)
+        val parents = mutableListOf<ParentDir>()
+
+        var parentDir = currentDir.parentId
+        while (parentDir != null) {
+            val dir = selectDir(parentDir)
+            parents.add(dir)
+            parentDir = dir.parentId
+        }
+
+        return Resp(
+            parents.map {
+                ParentDirResp(it.id.toString(), it.name)
+            }
+        )
     }
 
-    return ReadDirParentsController.Resp(
-            parents.map {
-                ReadDirParentsController.ParentDirResp(it.id.toString(), it.name)
-            }
-    )
-}
+    private data class ParentDir(val id: Long, val name: String, val parentId: Long?)
 
-private data class ParentDir(val id: Long, val name: String, val parentId: Long?)
-
-private fun selectDir(dirId: Long): ParentDir {
-    return transaction {
-        Dir.slice(Dir.name, Dir.parentDir)
+    private fun selectDir(dirId: Long): ParentDir {
+        return transaction {
+            Dir.slice(Dir.name, Dir.parentDir)
                 .select {
                     Dir.id eq dirId
                 }.map {
                     ParentDir(
-                            dirId,
-                            it[Dir.name],
-                            it[Dir.parentDir]?.value,
+                        dirId,
+                        it[Dir.name],
+                        it[Dir.parentDir]?.value,
                     )
                 }.single()
+        }
     }
 }

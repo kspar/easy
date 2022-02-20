@@ -9,6 +9,7 @@ import core.ems.service.assertDirExists
 import core.ems.service.getAccountDirAccessLevel
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
+import core.util.maxOfOrNull
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
@@ -29,40 +30,42 @@ private val log = KotlinLogging.logger {}
 class ReadDirController {
 
     data class Resp(
-            @JsonProperty("current_dir") val currentDir: DirResp?, // null for root dir
-            @JsonProperty("child_dirs") val childDirs: List<DirResp>,
-            @JsonProperty("child_exercises") val childExercises: List<ExerciseResp>,
+        @JsonProperty("current_dir") val currentDir: DirResp?, // null for root dir
+        @JsonProperty("child_dirs") val childDirs: List<DirResp>,
+        @JsonProperty("child_exercises") val childExercises: List<ExerciseResp>,
     )
 
     data class ExerciseResp(
-            @JsonProperty("exercise_id") val exerciseId: String,
-            @JsonProperty("dir_id") val implicitDirId: String,
-            @JsonProperty("title") val title: String,
-            @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-            @JsonProperty("grader_type") val graderType: GraderType,
-            @JsonProperty("courses_count") val coursesCount: Int,
-            // TODO: do we need last modifier? creator?
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("created_at") val createdAt: DateTime,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("modified_at") val modifiedAt: DateTime,
+        @JsonProperty("exercise_id") val exerciseId: String,
+        @JsonProperty("dir_id") val implicitDirId: String,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        @JsonProperty("grader_type") val graderType: GraderType,
+        @JsonProperty("courses_count") val coursesCount: Int,
+        // TODO: do we need last modifier? creator?
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("created_at") val createdAt: DateTime,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("modified_at") val modifiedAt: DateTime,
     )
 
     data class DirResp(
-            @JsonProperty("id") val id: String,
-            @JsonProperty("name") val name: String,
-            @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("created_at") val createdAt: DateTime,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("modified_at") val modifiedAt: DateTime,
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String,
+        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("created_at") val createdAt: DateTime,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("modified_at") val modifiedAt: DateTime,
     )
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/lib/dirs/{dirId}")
-    fun controller(@PathVariable("dirId") dirIdString: String,
-                   caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("dirId") dirIdString: String,
+        caller: EasyUser
+    ): Resp {
 
         log.debug { "Read dir $dirIdString by ${caller.id}" }
 
@@ -77,44 +80,51 @@ class ReadDirController {
 
         return selectDir(caller, dirId)
     }
-}
 
 
-private data class PotentialDirAccess(val id: Long, val name: String, val directAccess: DirAccessLevel?,
-                                      val isImplicit: Boolean, val createdAt: DateTime, val modifiedAt: DateTime)
+    private data class PotentialDirAccess(
+        val id: Long, val name: String, val directAccess: DirAccessLevel?,
+        val isImplicit: Boolean, val createdAt: DateTime, val modifiedAt: DateTime
+    )
 
-private data class DirAccess(val id: Long, val name: String, val access: DirAccessLevel,
-                             val isImplicit: Boolean, val createdAt: DateTime, val modifiedAt: DateTime)
+    private data class DirAccess(
+        val id: Long, val name: String, val access: DirAccessLevel,
+        val isImplicit: Boolean, val createdAt: DateTime, val modifiedAt: DateTime
+    )
 
-private data class DirExercise(val id: String, val title: String, val graderType: GraderType,
-                               val createdAt: DateTime, val modifiedAt: DateTime, val usedOnCourse: Boolean)
+    private data class DirExercise(
+        val id: String, val title: String, val graderType: GraderType,
+        val createdAt: DateTime, val modifiedAt: DateTime, val usedOnCourse: Boolean
+    )
 
-private fun selectDir(caller: EasyUser, dirId: Long?): ReadDirController.Resp {
-    // Can be null only if this dir is root
-    val currentDirAccess = if (dirId != null) {
-        getAccountDirAccessLevel(caller.id, dirId)
+    private fun selectDir(caller: EasyUser, dirId: Long?): Resp {
+        // Can be null only if this dir is root
+        val currentDirAccess = if (dirId != null) {
+            getAccountDirAccessLevel(caller.id, dirId)
                 ?: throw IllegalStateException("User ${caller.id} reading dir $dirId but has no access to it")
-    } else null
+        } else null
 
-    return transaction {
-        // Get current dir
-        val currentDir = selectThisDir(dirId, currentDirAccess)
+        return transaction {
+            // Get current dir
+            val currentDir = selectThisDir(dirId, currentDirAccess)
 
-        // Get child dirs
-        val potentialDirs = (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
-                .slice(Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
-                        GroupDirAccess.level)
+            // Get child dirs
+            val potentialDirs = (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
+                .slice(
+                    Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
+                    GroupDirAccess.level
+                )
                 .select {
                     Dir.parentDir eq dirId and
                             (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
                 }.map {
                     PotentialDirAccess(
-                            it[Dir.id].value,
-                            it[Dir.name],
-                            listOfNotNull(it[GroupDirAccess.level], it[Dir.anyAccess]).maxOrNull(),
-                            it[Dir.isImplicit],
-                            it[Dir.createdAt],
-                            it[Dir.modifiedAt],
+                        it[Dir.id].value,
+                        it[Dir.name],
+                        maxOfOrNull(it[GroupDirAccess.level], it[Dir.anyAccess]),
+                        it[Dir.isImplicit],
+                        it[Dir.createdAt],
+                        it[Dir.modifiedAt],
                     )
                 }
                 .also { log.trace { "potential accesses: $it" } }
@@ -134,63 +144,61 @@ private fun selectDir(caller: EasyUser, dirId: Long?): ReadDirController.Resp {
                 }.also { log.trace { "best accesses: $it" } }
 
 
-        // If this dir is root or only has P, then need to return only children with at least P
-        val accessibleDirs = if (currentDirAccess == null || currentDirAccess == DirAccessLevel.P) {
-            potentialDirs.filter {
-                it.directAccess != null
-            }
-        } else {
-            potentialDirs
-        }.map {
-            val effectiveAccess = when {
-                currentDirAccess == null -> it.directAccess
-                it.directAccess == null -> currentDirAccess
-                currentDirAccess > it.directAccess -> currentDirAccess
-                else -> it.directAccess
-            } ?: throw IllegalStateException("User ${caller.id} listing child dir ${it.id} but has no access to it")
+            // If this dir is root or only has P, then need to return only children with at least P
+            val accessibleDirs = if (currentDirAccess == null || currentDirAccess == DirAccessLevel.P) {
+                potentialDirs.filter {
+                    it.directAccess != null
+                }
+            } else {
+                potentialDirs
+            }.map {
+                val effectiveAccess = maxOfOrNull(currentDirAccess, it.directAccess)
+                    ?: throw IllegalStateException("User ${caller.id} listing child dir ${it.id} but has no access")
 
-            DirAccess(
+                DirAccess(
                     it.id,
                     it.name,
                     effectiveAccess,
                     it.isImplicit,
                     it.createdAt,
                     it.modifiedAt
-            )
-        }.also { log.trace { "accessible dirs: $it" } }
+                )
+            }.also { log.trace { "accessible dirs: $it" } }
 
 
-        // Extract out implicit dirs and their exercises
-        val (implicitDirs, explicitDirs) =
+            // Extract out implicit dirs and their exercises
+            val (implicitDirs, explicitDirs) =
                 accessibleDirs.partition { it.isImplicit }
 
-        val childDirs = explicitDirs.map {
-            ReadDirController.DirResp(
+            val childDirs = explicitDirs.map {
+                DirResp(
                     it.id.toString(),
                     it.name,
                     it.access,
                     it.createdAt,
                     it.modifiedAt
-            )
-        }
+                )
+            }
 
-        val exerciseIds = implicitDirs.map { it.name.toLong() }
+            val exerciseIds = implicitDirs.map { it.name.toLong() }
 
-        val childExercises = (Exercise innerJoin ExerciseVer leftJoin CourseExercise)
-                .slice(Exercise.id, Exercise.createdAt, ExerciseVer.title, ExerciseVer.graderType,
-                        ExerciseVer.validFrom, CourseExercise.id)
+            val childExercises = (Exercise innerJoin ExerciseVer leftJoin CourseExercise)
+                .slice(
+                    Exercise.id, Exercise.createdAt, ExerciseVer.title, ExerciseVer.graderType,
+                    ExerciseVer.validFrom, CourseExercise.id
+                )
                 .select {
                     Exercise.id inList exerciseIds and
                             ExerciseVer.validTo.isNull()
                 }.map {
                     @Suppress("SENSELESS_COMPARISON") // Nullability fails for left join
                     DirExercise(
-                            it[Exercise.id].value.toString(),
-                            it[ExerciseVer.title],
-                            it[ExerciseVer.graderType],
-                            it[Exercise.createdAt],
-                            it[ExerciseVer.validFrom],
-                            it[CourseExercise.id] != null
+                        it[Exercise.id].value.toString(),
+                        it[ExerciseVer.title],
+                        it[ExerciseVer.graderType],
+                        it[Exercise.createdAt],
+                        it[ExerciseVer.validFrom],
+                        it[CourseExercise.id] != null
                     )
                 }
                 .also { log.trace { "ungrouped exercises: $it" } }
@@ -201,35 +209,36 @@ private fun selectDir(caller: EasyUser, dirId: Long?): ReadDirController.Resp {
                 .also { log.trace { "grouped exercises: $it" } }
                 .map { (ex, courseCount) ->
                     val dir = implicitDirs.first { it.name == ex.id }
-                    ReadDirController.ExerciseResp(
-                            ex.id,
-                            dir.id.toString(),
-                            ex.title,
-                            dir.access,
-                            ex.graderType,
-                            if (ex.usedOnCourse) courseCount else 0,
-                            ex.createdAt,
-                            ex.modifiedAt
+                    ExerciseResp(
+                        ex.id,
+                        dir.id.toString(),
+                        ex.title,
+                        dir.access,
+                        ex.graderType,
+                        if (ex.usedOnCourse) courseCount else 0,
+                        ex.createdAt,
+                        ex.modifiedAt
                     )
                 }
 
-        ReadDirController.Resp(currentDir, childDirs, childExercises)
+            Resp(currentDir, childDirs, childExercises)
+        }
     }
-}
 
-private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): ReadDirController.DirResp? {
-    return if (dirId != null) {
-        Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
+    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
+        return if (dirId != null) {
+            Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
                 .select {
                     Dir.id eq dirId
                 }.map {
-                    ReadDirController.DirResp(
-                            it[Dir.id].value.toString(),
-                            it[Dir.name],
-                            currentDirAccess!!, // not null if this is not root dir
-                            it[Dir.createdAt],
-                            it[Dir.modifiedAt],
+                    DirResp(
+                        it[Dir.id].value.toString(),
+                        it[Dir.name],
+                        currentDirAccess!!, // not null if this is not root dir
+                        it[Dir.createdAt],
+                        it[Dir.modifiedAt],
                     )
                 }.single()
-    } else null
+        } else null
+    }
 }
