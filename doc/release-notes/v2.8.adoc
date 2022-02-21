@@ -1,0 +1,50 @@
+
+
+= Release notes: v2.8
+
+* Debuting *ezcoll*, a versatile and capable collection component, in participants page v3.
+* Participants page v3 with new features:
+** add and remove students
+** add and remove teachers
+** create and delete groups
+** add/remove students and teachers to/from groups
+** Moodle-sync both students and grades
+** sort and filter students, teachers and groups
+** teachers who have restricted groups can no longer see students in other groups or other groups in the groups list, but can still see all teachers
+
+* Grades table v3 with new features:
+** sticky header as well as a sticky first column
+** export the table in CSV
+** row- and column-summaries of successful submissions
+** exercise titles are now direct links to exercises
+** hidden exercises' titles are grey
+** teacher grades are marked with an *
+
+* Code editor improvements:
+** TAB is now worth 4 spaces and row indenting and unindenting works more consistently
+** matching parens/brackets are highlighted
+** placeholders
+** component now allows creating new files
+
+* HTML titles (tab titles) are now customised per-page, helping to differentiate between open tabs.
+* Mangled unicode usernames are now automatically migrated to correctly encoded ones on checkin.
+* Grade field is now prefilled with the currently effective grade when adding a teacher assessment.
+* Making course exercises visible can now be scheduled.
+* New scheduling system for autoassessments, now without any polling.
+* Exercise library page, admin-only for now.
+* New exercises are now autograded by default.
+* Library exercise page restores selected tabs on save.
+* Courses are ordered alphabetically on my courses page.
+* Autoassessment is automatically retried once if it fails i.e. executor throws.
+* Moodle syncing is now itself synced and related services have been refactored.
+* Optimised basic course info cache.
+* Site is no longer automatically refreshed if a refresh to required for login.
+* Optimised login - a redirect is now performed only when necessary.
+* Loading status is now displayed on splash screen.
+* Sidenav is now fixed on large screens and sections are more dynamic and capable, active page is highlighted.
+* Teachers who have no access to an exercise in library can still autoassess solutions to it if they have access to a course where the exercise is on.
+* Remove previous workaround to Exposed's bug, now student_course_access, student_pending_access and student_moodle_pending_access are properly weak entities.
+* Updated various dependencies.
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.8[here].
