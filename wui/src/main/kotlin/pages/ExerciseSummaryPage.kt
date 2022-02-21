@@ -399,6 +399,7 @@ object ExerciseSummaryPage : EasyPage() {
                         "autoRefresh" to true,
                         "viewportMargin" to 100,
                         "indentUnit" to 4,
+                        "matchBrackets" to true,
                         "extraKeys" to tabHandler,
                         "placeholder" to "Kirjuta või lohista lahendus siia...",
                 ))
