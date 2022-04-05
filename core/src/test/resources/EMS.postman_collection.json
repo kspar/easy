@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f74099ec-9a57-490f-b26a-29fb64b66231",
+		"_postman_id": "3b487d8f-6d88-4f14-922d-efbd07f1d6c7",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -637,13 +637,13 @@
 					"raw": "{\r\n  \"name\": \"string2\",\r\n  \"base_url\": \"http://localhost:8080/\",\r\n  \"max_load\": 100,\r\n  \"drain\": false,\r\n  \"containers\": [\"sample-container-image\"]\r\n}"
 				},
 				"url": {
-					"raw": "{{EMSBASE}}/executors/2",
+					"raw": "{{EMSBASE}}/executors/1",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"executors",
-						"2"
+						"1"
 					]
 				}
 			},
