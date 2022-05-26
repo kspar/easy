@@ -1,0 +1,30 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu2
+# 4. Masintõlge.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu4.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu4.py
+  tests:
+    - type: program_calls_print
+programExecutionCheck:
+  - fileName: kodu4.py
+    userInputs:
+      - inglise.txt
+      - eesti.txt
+    inputFiles:
+      - fileName: inglise.txt
+        fileContent: Hello!\nHello Kitty\nHello-Hello
+    outputFiles:
+      - fileName: eesti.txt
+        fileContent: Tere!\nTere Kitty\nTere-Tere
+    expectedOutput: 4
+    tests:
+      - type: program_input_count_correct
+      - type: program_output_correct
+      - type: program_output_file_correct

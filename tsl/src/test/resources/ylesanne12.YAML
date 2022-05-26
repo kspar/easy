@@ -1,0 +1,25 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu7
+# 2. Taksohinnad
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu2.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu2.py
+  tests:
+    - type: program_calls_print
+programExecutionCheck:
+  - fileName: kodu2.py
+    userInputs:
+      - 7
+    inputFiles:
+      - fileName: taksohinnad.txt
+        fileContent: Maksitaksi,2.0,0.6\nSõps veab,10,0\nWaldo takso,1.0,1.0
+    expectedOutput: Maksitaksi
+    tests:
+      - type: program_input_count_correct
+      - type: program_output_correct

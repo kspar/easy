@@ -1,0 +1,34 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu7
+# 1. Poiste ja tüdrukute arv.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu1.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu1.py
+  tests:
+    - type: program_defines_function
+      functionName: poisse_ja_tüdrukuid
+    - type: program_contains_loop
+functionStaticCheck:
+  - fileName: kodu1.py
+    functionName: poisse_ja_tüdrukuid
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 1
+      - type: function_contains_loop
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu1.py
+    functionName: poisse_ja_tüdrukuid
+    expectedOutput: '[(3, 2)]'
+    arguments: "[['Mati P', 'Kati T', 'Siim Aleksander P', 'Jüri P', 'Veronika T']]"
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: tuple

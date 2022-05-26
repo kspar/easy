@@ -1,0 +1,88 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu4
+# 1. Pagarikoja kassaaparaat.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu1.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu1.py
+  tests:
+    - type: program_defines_function
+      functionName: koogi_hind
+    - type: program_calls_function
+      functionName: koogi_hind
+    - type: program_calls_print
+programExecutionCheck:
+  - fileName: kodu1.py
+    userInputs:
+      - šokolaadikook
+      - 10
+      - ""
+    expectedOutput: 0.4
+    tests:
+      - type: program_output_correct
+      - type: program_input_count_correct
+  - fileName: kodu1.py
+    userInputs:
+      - šokolaadikook
+      - 10
+      - šokolaadikook
+      - 10
+      - ""
+    expectedOutput: 0.4
+    tests:
+      - type: program_output_correct
+      - type: program_input_count_correct
+  - fileName: kodu1.py
+    userInputs:
+      - šokolaadikook
+      - 10
+      - šokolaadikook
+      - 10
+      - ""
+    expectedOutput: 0.4
+    tests:
+      - type: program_output_correct
+      - type: program_input_count_correct
+  - fileName: kodu1.py
+    expectedOutput: Sellist kooki andmebaasist ei leitud
+    userInputs:
+      - vaarikakook
+      - 10
+      - ""
+    tests:
+      - type: program_output_correct
+functionStaticCheck:
+  - fileName: kodu1.py
+    functionName: koogi_hind
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 2
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu1.py
+    userInputsProgram:
+      - šokolaadikook
+      - 10
+      - ""
+    functionName: koogi_hind
+    expectedOutput: '[440]'
+    arguments: '["šokolaadikook", 10]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: float
+  - fileName: kodu1.py
+    userInputsProgram:
+      - šokolaadikook
+      - 10
+      - ""
+    functionName: koogi_hind
+    arguments: '["vaarikakook", 15]'
+    tests:
+      - type: function_raised_exception

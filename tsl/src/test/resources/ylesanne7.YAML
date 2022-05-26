@@ -1,0 +1,51 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu4
+# 2. Einsteini erirelatiivsusteooria.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu2.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu2.py
+  tests:
+    - type: program_defines_function
+      functionName: summa
+    - type: program_calls_function
+      functionName: summa
+    - type: program_calls_print
+programExecutionCheck:
+  - fileName: kodu2.py
+    userInputs:
+      - 100000
+      - 150000
+      - 200000
+      - 250000
+    expectedOutput: 297993.41836837644
+    tests:
+      - type: program_input_count_correct
+      - type: program_output_correct
+functionStaticCheck:
+  - fileName: kodu2.py
+    functionName: summa
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 2
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu2.py
+    userInputsProgram:
+      - 100000
+      - 150000
+      - 200000
+      - 250000
+    functionName: summa
+    expectedOutput: '[245392.74884785622]'
+    arguments: '[100000, 200000]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: float

@@ -1,0 +1,66 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu10
+# 1. Teksti analüüs
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu1.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu1.py
+  tests:
+    - type: program_defines_function
+      functionName: erinevad_sümbolid
+    - type: program_defines_function
+      functionName: sümbolite_sagedus
+    - type: program_defines_function
+      functionName: grupeeri
+functionStaticCheck:
+  - fileName: kodu1.py
+    functionName: erinevad_sümbolid
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 1
+      - type: function_contains_return
+  - fileName: kodu1.py
+    functionName: sümbolite_sagedus
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 1
+      - type: function_contains_return
+  - fileName: kodu1.py
+    functionName: grupeeri
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 1
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu1.py
+    functionName: erinevad_sümbolid
+    expectedOutput: "[{'h', 'e', 'r', 'v', 'l', 'k', 'i', 'g', 't', 'd', 's', 'u', 'a', ' ', 'm', 'o', 'n'}]"
+    arguments: '["hulk ei sisalda kunagi korduvaid elemente"]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: set
+  - fileName: kodu1.py
+    functionName: sümbolite_sagedus
+    expectedOutput: "[{'H': 1, 'e': 3, 'i': 3, ' ': 2, 'h': 1, 'o': 1, 'p': 1, 's': 1, 't': 1, ',': 1, 'v': 2, 'ä': 1, 'k': 1, 'n': 1, 'd': 1, '!': 1}]"
+    arguments: '["Hei hopsti, väikevend!"]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: dict
+  - fileName: kodu1.py
+    functionName: grupeeri
+    expectedOutput: "[{'Täishäälikud': {('a', 4), ('e', 1), ('i', 2), ('õ', 1), ('ü', 1)}, 'Kaashäälikud': {('d', 1), ('l', 3), ('t', 1), ('s', 3)}, 'Muud': {(' ', 3)}}]"
+    arguments: '["sõida tasa üle silla"]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: dict

@@ -3,4 +3,5 @@ rootProject.name = 'easy'
 include 'wui',
         'core',
         'aae',
-        'ezspa'
+        'ezspa',
+        'tsl'

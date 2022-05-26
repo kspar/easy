@@ -1,0 +1,63 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu5
+# Moosi keetmine.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu3.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu3.py
+  tests:
+    - type: program_defines_function
+      functionName: moos
+programExecutionCheck:
+  - fileName: kodu3.py
+    tests:
+      - type: program_input_count_correct
+functionStaticCheck:
+  - fileName: kodu3.py
+    functionName: moos
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 3
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu3.py
+    functionName: moos
+    expectedOutput: "[6]"
+    arguments: "[2, 6, 14]"
+    tests:
+      - type: function_returned
+      - type: function_return_type_correct
+        expectedReturnType: int
+      - type: function_return_value_correct
+  - fileName: kodu3.py
+    functionName: moos
+    expectedOutput: "[4]"
+    arguments: "[3, 3, 8]"
+    tests:
+      - type: function_returned
+      - type: function_return_type_correct
+        expectedReturnType: int
+      - type: function_return_value_correct
+  - fileName: kodu3.py
+    functionName: moos
+    expectedOutput: "[-1]"
+    arguments: "[1, 2, 10]"
+    tests:
+      - type: function_returned
+      - type: function_return_type_correct
+        expectedReturnType: int
+      - type: function_return_value_correct
+  - fileName: kodu3.py
+    functionName: moos
+    expectedOutput: "[-1]"
+    arguments: "[5, 1, 9]"
+    tests:
+      - type: function_returned
+      - type: function_return_type_correct
+        expectedReturnType: int
+      - type: function_return_value_correct

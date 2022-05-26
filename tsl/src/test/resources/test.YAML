@@ -1,0 +1,101 @@
+language: python3
+tslVersion: 1.0.0
+
+fileCheck:
+  fileName: solution.py
+  tests:
+    - type: file_exists
+      id: 5
+      beforeMessage: Enne testi sõnum
+      failedMessage: Faili nimega {file_name} ei eksisteeri
+      passedMessage: Well done!
+      points: 5.1
+      name: Faili olemasolu kontroll
+      inputs: "[Sisend 1, Sisend 2] - NB - ei ole tegelik sisend!"
+      visibleToUser: False
+    - type: file_not_empty
+    - type: file_is_python
+
+programStaticCheck:
+  fileName: kodu1.py
+  tests:
+    - type: program_defines_function
+      functionName: funktsiooni_nimi
+    - type: program_defines_any_function
+    - type: program_imports_module
+      moduleName: turtle
+    - type: program_imports_module_from_set
+      moduleNames:
+        - turtle
+        - round
+        - matplotlib
+    - type: program_imports_any_module
+    - type: program_calls_function
+      functionName: funktsiooni_nimi
+    - type: program_calls_function_from_set
+      functionsList:
+        - funktsioon_1
+        - funktsioon_2
+        - funktsioon_3
+    - type: program_contains_loop
+    - type: program_contains_try_except
+    - type: program_calls_print
+
+programExecutionCheck:
+  - fileName: kodu1.py
+    userInputs:
+      - Sisend 1
+      - Sisend 2
+    expectedOutput: Oodatav väljund või osa sellest
+    inputFiles:
+      - fileName: reisid.txt
+        fileContent: Helsingi päevakruiis;29\nmatk Tokyo mägedes;700\nromantiline nädalalõpp Pärnus;150\nPraha pubiralli;400
+    outputFiles:
+      - fileName: users.txt
+        fileContent: kasutaja:loorap
+    tests:
+      - type: program_input_count_correct
+      - type: program_output_correct
+      - type: program_raised_exception
+
+functionStaticCheck:
+  - fileName: kodu1.py
+    functionName: funktsiooni_nimi
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 2
+      - type: function_calls_function
+        functionName: funktsiooni_nimi
+      - type: function_calls_function_from_set
+        functionsList:
+          - funktsioon_1
+          - funktsioon_2
+      - type: function_imports_module
+        moduleName: turtle
+      - type: function_imports_any_module
+      - type: function_defines_function
+        functionName: funktsiooni_nimi
+      - type: function_defines_any_function
+      - type: function_calls_print
+      - type: function_contains_return
+      - type: function_contains_loop
+      - type: function_is_recursive
+
+functionExecutionCheck:
+  - fileName: kodu1.py
+    functionName: funktsiooni_nimi
+    expectedOutput: '["Funktsiooni väljund"]'
+    arguments: '[["Argument_1", "Argument_2"]]'
+    userInputsProgram:
+      - Kasutaja sisend programmile A
+      - Kasutaja sisend programmile B
+    userInputsFunction:
+      - Kasutaja sisend funktsioonis A
+      - Kasutaja sisend funktsioonis B
+    tests:
+      - type: function_returned
+      - type: function_input_count_correct
+      - type: function_return_type_correct
+        expectedReturnType: int
+      - type: function_return_value_correct
+      - type: function_raised_exception

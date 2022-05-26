@@ -1,0 +1,72 @@
+# https://courses.cs.ut.ee/2021/programmeerimine/fall/Main/Kodu11
+# 1. Lapsed ja vanemad.
+language: python3
+tslVersion: 1.0.0
+fileCheck:
+  fileName: kodu1.py
+  tests:
+    - type: file_exists
+    - type: file_not_empty
+    - type: file_is_python
+programStaticCheck:
+  fileName: kodu1.py
+  tests:
+    - type: program_defines_function
+      functionName: seosta_lapsed_ja_vanemad
+    - type: program_calls_function
+      functionName: seosta_lapsed_ja_vanemad
+    - type: program_calls_print
+programExecutionCheck:
+  - fileName: kodu1.py
+    inputFiles:
+      - fileName: lapsed.txt
+        fileContent: 47853062345 60907062342\n46906183451 38504014543\n34105139833 36512129874\n36512129874 38504014543\n46906183451 48708252344\n36512129874 48708252344
+      - fileName: nimed.txt
+        fileContent: 47853062345 Kadri Kalkun\n36512129874 Peeter Peedumets\n38504014543 Maria Peedumets\n46906183451 Madli Peedumets\n34105139833 Karl Peedumets\n48708252344 Robert Peedumets\n60907062342 Liisa-Maria Jaaniste
+    expectedOutput: 'Robert Peedumets: Madli Peedumets, Peeter Peedumets'
+    tests:
+      - type: program_output_correct
+  - fileName: kodu1.py
+    inputFiles:
+      - fileName: lapsed.txt
+        fileContent: 47853062345 60907062342\n46906183451 38504014543\n34105139833 36512129874\n36512129874 38504014543\n46906183451 48708252344\n36512129874 48708252344
+      - fileName: nimed.txt
+        fileContent: 47853062345 Kadri Kalkun\n36512129874 Peeter Peedumets\n38504014543 Maria Peedumets\n46906183451 Madli Peedumets\n34105139833 Karl Peedumets\n48708252344 Robert Peedumets\n60907062342 Liisa-Maria Jaaniste
+    expectedOutput: 'Maria Peedumets: Madli Peedumets, Peeter Peedumets'
+    tests:
+      - type: program_output_correct
+  - fileName: kodu1.py
+    inputFiles:
+      - fileName: lapsed.txt
+        fileContent: 47853062345 60907062342\n46906183451 38504014543\n34105139833 36512129874\n36512129874 38504014543\n46906183451 48708252344\n36512129874 48708252344
+      - fileName: nimed.txt
+        fileContent: 47853062345 Kadri Kalkun\n36512129874 Peeter Peedumets\n38504014543 Maria Peedumets\n46906183451 Madli Peedumets\n34105139833 Karl Peedumets\n48708252344 Robert Peedumets\n60907062342 Liisa-Maria Jaaniste
+    expectedOutput: 'Liisa-Maria Jaaniste: Kadri Kalkun'
+    tests:
+      - type: program_output_correct
+  - fileName: kodu1.py
+    inputFiles:
+      - fileName: lapsed.txt
+        fileContent: 47853062345 60907062342\n46906183451 38504014543\n34105139833 36512129874\n36512129874 38504014543\n46906183451 48708252344\n36512129874 48708252344
+      - fileName: nimed.txt
+        fileContent: 47853062345 Kadri Kalkun\n36512129874 Peeter Peedumets\n38504014543 Maria Peedumets\n46906183451 Madli Peedumets\n34105139833 Karl Peedumets\n48708252344 Robert Peedumets\n60907062342 Liisa-Maria Jaaniste
+    expectedOutput: 'Peeter Peedumets: Karl Peedumets'
+    tests:
+      - type: program_output_correct
+functionStaticCheck:
+  - fileName: kodu1.py
+    functionName: seosta_lapsed_ja_vanemad
+    tests:
+      - type: function_params_count_correct
+        numberOfParams: 2
+      - type: function_contains_return
+functionExecutionCheck:
+  - fileName: kodu1.py
+    functionName: seosta_lapsed_ja_vanemad
+    expectedOutput: "[{'Robert Peedumets': {'Madli Peedumets', 'Peeter Peedumets'}, 'Maria Peedumets': {'Madli Peedumets', 'Peeter Peedumets'}, 'Liisa-Maria Jaaniste': {'Kadri Kalkun'}, 'Peeter Peedumets': {'Karl Peedumets'}}]"
+    arguments: '["lapsed.txt", "nimed.txt"]'
+    tests:
+      - type: function_returned
+      - type: function_return_value_correct
+      - type: function_return_type_correct
+        expectedReturnType: dict
