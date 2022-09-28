@@ -30,6 +30,12 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class TeacherCheckSimilarityController {
 
+    /**
+     * How to call this service:
+     * 1) exerciseId only - compare over all courses and all submissions
+     * 2) exerciseId, courseId(s) - compare over all given courses and all submissions
+     * 3) exerciseId, courseId(s), submissionIds - compare over all given submissions (must be on given courses)
+     */
     data class Req(@JsonProperty("courses", required = false) val courses: List<ReqCourse>,
                    @JsonProperty("submissions", required = false) val submissions: List<ReqSubmission>?)
 
@@ -132,6 +138,8 @@ private fun selectSubmissions(exerciseId: Long, courses: List<Long>, submissions
     }
 }
 
+// TODO: 28.09.2022 add diff-match-batch Google's diff algorithm
+// TODO: 28.09.2022 set some timeout
 private fun calculateScores(submissions: List<TeacherCheckSimilarityController.RespSubmission>): List<TeacherCheckSimilarityController.RespScore> {
     return submissions.toSet()
             .combinations(2)
