@@ -3,6 +3,7 @@ package core.ems.service
 import core.db.*
 import core.ems.service.cache.CachingService
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.stereotype.Service
@@ -20,6 +21,18 @@ fun courseExists(courseId: Long): Boolean {
         Course.select { Course.id eq courseId }
                 .count() > 0
     }
+}
+
+fun assertExerciseIsAutoGradable(exerciseId: Long) {
+    val autograded = transaction {
+        (Exercise innerJoin ExerciseVer).slice(ExerciseVer.graderType)
+            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.graderType] }.single() == GraderType.AUTO
+    }
+    if (!autograded) throw InvalidRequestException(
+        "Exercise $exerciseId GraderType is not AUTO.",
+        ReqError.EXERCISE_NOT_AUTOASSESSABLE
+    )
 }
 
 data class Grade(val submissionId: String,

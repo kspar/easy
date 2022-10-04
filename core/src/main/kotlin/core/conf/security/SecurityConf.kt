@@ -31,8 +31,13 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
-                // All services require auth == any role by default
-                .anyRequest().authenticated()
+            .antMatchers(
+                // Allow unauth to anonymous autoassess
+                "/unauth/exercises/*/anonymous/autoassess",
+                "/unauth/exercises/*/anonymous/details"
+            ).permitAll()
+            // All services require auth == any role by default
+            .anyRequest().authenticated()
 
         http.addFilterAfter(
                 if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),

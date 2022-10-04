@@ -44,6 +44,7 @@ object Exercise : LongIdTable("exercise") {
     val owner = reference("owned_by_id", Teacher)
     val createdAt = datetime("created_at")
     val public = bool("public")
+    val anonymousAutoassessEnabled = bool("anonymous_autoassess_enabled")
 }
 
 object ExerciseVer : LongIdTable("exercise_version") {
@@ -173,6 +174,13 @@ object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val feedback = text("feedback").nullable()
 }
 
+object AnonymousSubmission : LongIdTable("anonymous_submission"){
+    val exercise = reference("exercise_id", Exercise)
+    val createdAt = datetime("created_at")
+    val solution = text("solution")
+    val grade = integer("grade")
+    val feedback = text("feedback").nullable()
+}
 
 object ManagementNotification : LongIdTable("management_notification") {
     val message = text("message")
