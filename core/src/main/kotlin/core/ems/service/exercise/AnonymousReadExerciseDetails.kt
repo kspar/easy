@@ -6,8 +6,7 @@ import core.db.ExerciseVer
 import core.ems.service.assertExerciseIsAutoGradable
 import core.ems.service.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
-import core.exception.ReqError
+import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
@@ -36,25 +35,21 @@ class AnonymousReadExerciseDetails {
 
         return selectAnonymousExerciseDetails(exerciseId)
     }
-}
 
-private fun selectAnonymousExerciseDetails(exerciseId: Long): AnonymousReadExerciseDetails.Resp = transaction {
-    (Exercise innerJoin ExerciseVer)
-        .slice(
-            ExerciseVer.title, ExerciseVer.textHtml
-        )
-        .select {
-            Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
-        }
-        .map {
-            AnonymousReadExerciseDetails.Resp(
-                it[ExerciseVer.title],
-                it[ExerciseVer.textHtml]
+    private fun selectAnonymousExerciseDetails(exerciseId: Long): Resp = transaction {
+        (Exercise innerJoin ExerciseVer)
+            .slice(
+                ExerciseVer.title, ExerciseVer.textHtml
             )
-        }
-        .singleOrNull() ?: throw InvalidRequestException(
-        "Exercise $exerciseId not found or it is hidden",
-        ReqError.ENTITY_WITH_ID_NOT_FOUND
-    )
+            .select {
+                Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
+            }
+            .map {
+                Resp(
+                    it[ExerciseVer.title],
+                    it[ExerciseVer.textHtml]
+                )
+            }
+            .singleOrInvalidRequest()
+    }
 }
-
