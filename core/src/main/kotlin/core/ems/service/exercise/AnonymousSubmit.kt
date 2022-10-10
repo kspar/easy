@@ -14,8 +14,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
@@ -26,6 +28,8 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
+    @Value("\${anonymous-submissions-to-keep}")
+    private lateinit var submissionToKeep: String
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
@@ -51,16 +55,23 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     private fun autoGradeSolution(courseExId: Long, solution: String, autoGradeScheduler: AutoGradeScheduler) =
         runBlocking {
             autoGradeScheduler.submitAndAwait(
-                selectAutoExIdOrIllegalStateException(courseExId),
-                solution,
-                PriorityLevel.ANONYMOUS
+                selectAutoExIdOrIllegalStateException(courseExId), solution, PriorityLevel.ANONYMOUS
             )
         }
 
     private fun insertAnonymousSubmission(exerciseId: Long, solution: String, grade: Int, feedback: String) {
-        // TODO: delete the oldest submission from that table if required (max saved submissions is in conf - 50 for now), update statistics
         CoroutineScope(EmptyCoroutineContext).launch {
             transaction {
+
+                Exercise.update({ Exercise.id eq exerciseId }) {
+                    if (grade == 100) {
+                        it.update(successfulAnonymousSubmissionCount, successfulAnonymousSubmissionCount + 1)
+                    } else {
+                        it.update(unsuccessfulAnonymousSubmissionCount, unsuccessfulAnonymousSubmissionCount + 1)
+                    }
+                }
+
+
                 AnonymousSubmission.insert {
                     it[AnonymousSubmission.exercise] = exerciseId
                     it[AnonymousSubmission.createdAt] = DateTime.now()
@@ -71,30 +82,23 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
 
                 val deleteAfter = AnonymousSubmission.select {
                     AnonymousSubmission.exercise eq exerciseId
-                }
-                    .orderBy(
-                        AnonymousSubmission.createdAt,
-                        SortOrder.DESC
-                    ) // TODO: first must be latest, last is oldest
-                    .limit(50) // TODO: conf
-                    .map {
-                        it[AnonymousSubmission.createdAt]
-                    }
-                    .lastOrNull()
+                }.orderBy(
+                    AnonymousSubmission.createdAt, SortOrder.DESC
+                ).limit(submissionToKeep.toInt()).map {
+                    it[AnonymousSubmission.createdAt]
+                }.lastOrNull()
 
-                if (deleteAfter != null)
-                    AnonymousSubmission.deleteWhere {
-                        AnonymousSubmission.exercise.eq(exerciseId) and
-                                AnonymousSubmission.createdAt.less(deleteAfter)
-                    }
+                if (deleteAfter != null) AnonymousSubmission.deleteWhere {
+                    AnonymousSubmission.exercise.eq(exerciseId) and AnonymousSubmission.createdAt.less(deleteAfter)
+                }
             }
         }
     }
-
-    private fun selectAutoExIdOrIllegalStateException(exerciseId: Long): Long = transaction {
-        (Exercise innerJoin ExerciseVer).slice(ExerciseVer.autoExerciseId)
-            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
-            .map { it[ExerciseVer.autoExerciseId] }.single()?.value
-            ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-    }
 }
+
+private fun selectAutoExIdOrIllegalStateException(exerciseId: Long): Long = transaction {
+    (Exercise innerJoin ExerciseVer).slice(ExerciseVer.autoExerciseId)
+        .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }.map { it[ExerciseVer.autoExerciseId] }
+        .single()?.value ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+}
+

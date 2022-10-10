@@ -1974,6 +1974,8 @@ paths:
                 type: string
               public:
                 type: boolean
+              anonymous_autoassess_enabled:
+                type: boolean
               grader_type:
                 $ref: '#/definitions/GraderType'
               grading_script:
@@ -2003,6 +2005,7 @@ paths:
             required:
               - title
               - public
+              - anonymous_autoassess_enabled
               - grader_type
       responses:
         200:

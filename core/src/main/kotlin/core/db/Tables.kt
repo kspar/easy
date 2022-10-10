@@ -45,6 +45,8 @@ object Exercise : LongIdTable("exercise") {
     val createdAt = datetime("created_at")
     val public = bool("public")
     val anonymousAutoassessEnabled = bool("anonymous_autoassess_enabled")
+    val successfulAnonymousSubmissionCount = integer("successful_anonymous_submission_count")
+    val unsuccessfulAnonymousSubmissionCount = integer("unsuccessful_anonymous_submission_count")
 }
 
 object ExerciseVer : LongIdTable("exercise_version") {

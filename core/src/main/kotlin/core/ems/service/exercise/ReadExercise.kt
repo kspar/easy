@@ -29,6 +29,7 @@ class TeacherReadExerciseController {
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("created_at") val created_at: DateTime,
             @JsonProperty("is_public") val public: Boolean,
+            @JsonProperty("is_anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
             @JsonProperty("owner_id") val ownerUsername: String,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("last_modified") val lastModified: DateTime,
@@ -43,7 +44,9 @@ class TeacherReadExerciseController {
             @JsonProperty("max_mem_mb") val maxMem: Int?,
             @JsonProperty("assets") val assets: List<RespAsset>?,
             @JsonProperty("executors") val executors: List<RespExecutor>?,
-            @JsonProperty("on_courses") val courses: List<RespCourse>)
+            @JsonProperty("on_courses") val courses: List<RespCourse>,
+            @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
+            @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int)
 
     data class RespAsset(@JsonProperty("file_name") val fileName: String,
                          @JsonProperty("file_content") val fileContent: String)
@@ -105,6 +108,7 @@ class TeacherReadExerciseController {
                         Resp(
                                 it[Exercise.createdAt],
                                 it[Exercise.public],
+                                it[Exercise.anonymousAutoassessEnabled],
                                 it[Exercise.owner].value,
                                 it[ExerciseVer.validFrom],
                                 it[ExerciseVer.author].value,
@@ -118,7 +122,9 @@ class TeacherReadExerciseController {
                                 autoExercise?.maxMem,
                                 autoExercise?.assets?.map { RespAsset(it.first, it.second) },
                                 autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
-                                usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) }
+                                usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) } ,
+                                it[Exercise.successfulAnonymousSubmissionCount],
+                                it[Exercise.unsuccessfulAnonymousSubmissionCount]
                         )
                     }.singleOrNull()
         }
