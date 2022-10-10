@@ -1,0 +1,26 @@
+# Example TSL file.
+
+language: python3
+validateFiles: false
+requiredFiles:
+  - kodu1.py
+tslVersion: 1.0.0
+
+tests:
+  - type: function_execution_test
+    functionName: test
+    arguments: arguments
+    standardInputData: standardInputData
+    inputFiles:
+      - fileName: file.txt
+        fileContent: file content \n line number 2
+    returnValue: returnValue
+    standardOutputChecks:
+      - stringCheckType: ALL_OF_THESE
+        expectedOutput: Output
+        considerElementsOrder: true
+    outputFileChecks:
+      - fileName: file2.txt
+        stringCheckType: ALL_OF_THESE
+        expectedOutput: Output2
+        considerElementsOrder: false

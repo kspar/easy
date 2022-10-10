@@ -1,337 +1,231 @@
 package com.example.demo
 
-import kotlin.reflect.full.memberProperties
+// class Compiler(private val irTree: IRTree) {
+class Compiler(private val irTree: TSL) { // TODO: RemoveMe
 
-class Compiler(private val irTree: IRTree) {
-
-    private fun <T> formatField(item: T): Any {
-        return when (item) {
-            // TODO issue: doesn't work when string contains ' or "?
-            // TODO: add tests where this is the case
-            is String -> {
-                "'$item'"
-            }
-            null -> {
-                "None"
-            }
-            // TODO issue: does it work with all notations, e.g. scientific?
-            //  val a = 100000000000.99999999999
-            //  a.toString()  // 1.00000000001E11
-            is Float, is Int, is Double -> {
-                item
-            }
-            is List<*> -> {
-                var builder = "["
-                item.map { element ->
-                    // TODO issue: elements always strings?
-                    builder = builder.plus("'${element}',")
-                }
-                // TODO bad style - don't append , at all for last element instead of deleting it afterwards
-                builder.dropLast(1).plus("]")
-            }
-            // TODO which cases does this handle?
-            else -> "'$item'"
-        }
+    fun generateAssessmentCodes(): String {
+        var a = this.irTree.tests.map {
+            println(generateAssessmentCode(it))
+        }.joinToString { "\n" }
+        println(a)
+        return ""
+        //return generateAssessmentCode(FunctionUsesOnlyLocalVarsTest(ContainsCheck(true, true)))
     }
 
-    private fun <T> formatNullField(item: T): Any {
-        return when (item) {
-            null -> {
-                "None"
-            }
-            else -> item
-        }
-    }
-
-    // Generate FileCheck code
-    private fun generateFileCheckCode(fileCheck: IRFileCheck): String {
-        return "file_test = File(${formatField(fileCheck.fileName)})\n" +
-                generateTestCode(fileCheck.tests.filterIsInstance<IRFileExists>(), "file_test", null) +
-                generateTestCode(fileCheck.tests.filterIsInstance<IRFileNotEmpty>(), "file_test", null) +
-                generateTestCode(fileCheck.tests.filterIsInstance<IRFileIsPython>(), "file_test", null)
-    }
-
-    // Generate ProgramCheck code
-    private fun generateProgramStaticCheckCode(programCheck: IRProgramStaticCheck): String {
-        return "program_test = Program('${programCheck.fileName}')\n" + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramDefinesFunction>(), "program_test", listOf("functionName")
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramDefinesAnyFunction>(), "program_test", null
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramImportsModule>(), "program_test", listOf("moduleName")
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramImportsModuleFromSet>(), "program_test", listOf("moduleNames")
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramImportsAnyModule>(), "program_test", null
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramCallsFunction>(), "program_test", listOf("functionName")
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramCallsFunctionFromSet>(),
-            "program_test", listOf("functionsList")
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramContainsLoop>(), "program_test", null
-        ) + generateTestCode(
-            programCheck.tests.filterIsInstance<IRProgramContainsTryExcept>(), "program_test", null
-        ) + generateTestCode(programCheck.tests.filterIsInstance<IRProgramCallsPrint>(), "program_test", null)
-    }
-
-    // Generate ProgramCheck code
-    private fun generateProgramExecutionCheckCode(programChecks: List<IRProgramExecutionCheck>?): String {
-        if (programChecks == null) {
-            return ""
-        }
-        val builder = StringBuilder()
-        programChecks.map { programCheck ->
-            if (programCheck.inputFiles != null) {
-                programCheck.inputFiles.map { inputFile ->
-                    builder.append("create_input_file(${formatField(inputFile.fileName)}, ${formatField(inputFile.fileContent)})\n")
-                }
-            }
-            builder.append("program = Program('${programCheck.fileName}')\n")
-            builder.append(
-                "program_execution = ProgramExecution(program, ${formatField(programCheck.userInputs)}, ${
-                    formatField(
-                        programCheck.expectedOutput
+    fun generateAssessmentCode(test: Test): String {
+        return when (test) {
+            is FunctionExecutionTest -> {
+                PyExecuteTest(
+                    "function_execution_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(test.functionName),
+                        "arguments" to PyStr(test.arguments),
+                        "standard_input_data" to PyStr(test.standardInputData),
+                        "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
+                            ?.let { PyList(it) },
+                        "return_value" to PyStr(test.returnValue),
+                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
+                        "output_file_checks" to PyOutputTests(test.outputFileChecks)
                     )
-                })\n"
-            )
-            builder.append("execute_test(program_execution.program_execution_and_input_count, 0.0, None, None, None, None, None)\n")
-            val programTest = "program_execution"
-            // builder.append(generateTestCode(programCheck.tests.filterIsInstance<IRProgramDefinesFunction>(), programTest, listOf("functionName")))
-            builder.append(
-                generateTestCode(
-                    programCheck.tests.filterIsInstance<IRProgramInputCountCorrect>(),
-                    programTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    programCheck.tests.filterIsInstance<IRProgramOutputCorrect>(),
-                    programTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    programCheck.tests.filterIsInstance<IRProgramRaisedException>(),
-                    programTest,
-                    null
-                )
-            )
-            if (programCheck.outputFiles != null) {
-                programCheck.outputFiles.map { outputFile ->
-                    builder.append(
-                        generateOutputFileTestCode(
-                            programCheck.tests.filterIsInstance<IRProgramOutputFileCorrect>(),
-                            programTest,
-                            outputFile
-                        )
-                    )
-                }
+                ).generatePyString()
             }
-        }
-        return builder.toString()
-    }
-
-    // Generate FunctionCheck code
-    private fun generateFunctionStaticCheckCode(functionCheck: List<IRFunctionStaticCheck>?): String {
-        if (functionCheck == null) {
-            return ""
-        }
-        val builder = StringBuilder()
-
-        functionCheck.map { function ->
-            builder.append("program_test = Program('${function.fileName}')\n")
-            val functionTest = "function_test"
-            builder.append("$functionTest = Function(${formatField(function.functionName)}, program_test.get_syntax_tree())\n")
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionParamsCountCorrect>(),
-                    functionTest,
-                    listOf("numberOfParams")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionCallsFunction>(),
-                    functionTest,
-                    listOf("functionName")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionCallsFunctionFromSet>(),
-                    functionTest,
-                    listOf("functionsList")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionImportsModule>(),
-                    functionTest,
-                    listOf("moduleName")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionImportsAnyModule>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionDefinesFunction>(),
-                    functionTest,
-                    listOf("functionName")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionDefinesAnyFunction>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionCallsPrint>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionContainsReturn>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionContainsLoop>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionIsRecursive>(),
-                    functionTest,
-                    null
-                )
-            )
-        }
-
-        return builder.toString()
-    }
-
-    // Generate FunctionCheck code (can be multiple functionChecks per TSL)
-    private fun generateFunctionExecutionCheckCode(functionCheck: List<IRFunctionExecutionCheck>?): String {
-        if (functionCheck == null) {
-            return ""
-        }
-        val builder = StringBuilder()
-
-        functionCheck.map { function ->
-            builder.append("program_test = Program('${function.fileName}')\n")
-            builder.append("program_execution = ProgramExecution(program_test, ${formatField(function.userInputsProgram)})\n")
-            builder.append("execute_test(program_execution.program_execution_and_input_count, 0.0, None, None, None, None, None)\n")
-            builder.append("function_object = program_execution.globals_dict.get(${formatField(function.functionName)}, None)\n")
-            builder.append(
-                "function_execution = FunctionExecution(function_object, ${function.arguments}, ${
-                    formatField(
-                        function.userInputsFunction
+            is FunctionContainsLoopTest -> {
+                PyExecuteTest(
+                    "function_contains_loop_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "contains_check" to PyPair(
+                            PyBool(test.containsLoop.mustContain),
+                            PyBool(test.containsLoop.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
                     )
-                }, ${formatNullField(function.expectedOutput)})\n"
-            )
-            builder.append("execute_test(function_execution.function_execution_and_input_count, 0.0, None, None, None, None, None)\n")
-            val functionTest = "function_execution"
-            // builder.append("$functionTest = FunctionExecution(${formatField(function.functionName)}, program_test.get_syntax_tree())\n")
-            builder.append(generateTestCode(function.tests.filterIsInstance<IRFunctionReturned>(), functionTest, null))
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionInputCountCorrect>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionReturnTypeCorrect>(),
-                    functionTest,
-                    listOf("expectedReturnType")
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionReturnValueCorrect>(),
-                    functionTest,
-                    null
-                )
-            )
-            builder.append(
-                generateTestCode(
-                    function.tests.filterIsInstance<IRFunctionRaisedException>(),
-                    functionTest,
-                    null
-                )
-            )
-        }
-
-        return builder.toString()
-    }
-
-    private fun generateTestCode(tests: List<IRTest>, testObject: String, fieldsToPass: List<String>?): String {
-        if (tests.isEmpty()) {
-            return ""
-        }
-        val builder = StringBuilder()
-        tests.map { test ->
-            builder.append(
-                "execute_test($testObject.${test.testNamePython}, ${formatField(test.points)}, " +
-                        "${formatField(test.beforeMessage)}, ${formatField(test.failedMessage)}, " +
-                        "${formatField(test.passedMessage)}, ${formatField(test.name)}, " +
-                        "${formatField(test.inputs)}"
-            )
-            if (!fieldsToPass.isNullOrEmpty()) {
-                fieldsToPass.map { field ->
-                    builder.append(
-                        ", ${
-                            formatField(test.javaClass.kotlin.memberProperties.first { it.name == field }.get(test))
-                        }"
-                    )
-                }
+                ).generatePyString()
             }
-            builder.append(")\n")
+            is FunctionContainsKeywordTest -> {
+                PyExecuteTest(
+                    "function_contains_keyword_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "standard_output_checks" to PyStandardOutputChecks(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is FunctionContainsReturnTest -> {
+                PyExecuteTest(
+                    "function_contains_return_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "contains_check" to PyPair(
+                            PyBool(test.containsReturn.mustContain),
+                            PyBool(test.containsReturn.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is FunctionCallsFunctionTest -> {
+                PyExecuteTest(
+                    "function_calls_function_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is FunctionIsRecursiveTest -> {
+                PyExecuteTest(
+                    "function_is_recursive_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "contains_check" to PyPair(
+                            PyBool(test.isRecursive.mustBeRecursive),
+                            PyBool(test.isRecursive.cannotBeRecursive)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is FunctionDefinesFunctionTest -> {
+                PyExecuteTest(
+                    "function_defines_function_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is FunctionImportsModuleTest -> {
+                PyExecuteTest(
+                    "function_imports_module_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is FunctionContainsTryExceptTest -> {
+                PyExecuteTest(
+                    "function_contains_try_except_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "contains_check" to PyPair(
+                            PyBool(test.containsTryExcept.mustContain),
+                            PyBool(test.containsTryExcept.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is FunctionUsesOnlyLocalVarsTest -> {
+                PyExecuteTest(
+                    "function_uses_only_local_vars_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "contains_check" to PyPair(
+                            PyBool(test.containsLocalVars.mustContain),
+                            PyBool(test.containsLocalVars.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is ProgramExecutionTest -> {
+                PyExecuteTest(
+                    "program_execution_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "standard_input_data" to PyStr(test.standardInputData),
+                        "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
+                            ?.let { PyList(it) },
+                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
+                        "output_file_checks" to PyOutputTests(test.outputFileChecks),
+                        "exception_check" to PyPair(
+                            PyBool(test.exceptionCheck?.mustThrowException),
+                            PyBool(test.exceptionCheck?.cannotThrowException)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is ProgramContainsTryExceptTest -> {
+                PyExecuteTest(
+                    "program_contains_try_except_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "contains_check" to PyPair(
+                            PyBool(test.programContainsTryExcept.mustContain),
+                            PyBool(test.programContainsTryExcept.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is ProgramCallsPrintTest -> {
+                PyExecuteTest(
+                    "program_calls_print_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "contains_check" to PyPair(
+                            PyBool(test.programCallsPrint.mustContain),
+                            PyBool(test.programCallsPrint.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is ProgramContainsLoopTest -> {
+                PyExecuteTest(
+                    "program_contains_loop_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "contains_check" to PyPair(
+                            PyBool(test.programContainsLoop.mustContain),
+                            PyBool(test.programContainsLoop.cannotContain)
+                        ) // TODO: Kas teha eraldi PyTest?
+                    )
+                ).generatePyString()
+            }
+            is ProgramImportsModuleTest -> {
+                PyExecuteTest(
+                    "program_imports_module_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is ProgramContainsKeywordTest -> {
+                PyExecuteTest(
+                    "program_contains_keyword_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "standard_output_checks" to PyStandardOutputChecks(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is ProgramCallsFunctionTest -> {
+                PyExecuteTest(
+                    "program_calls_function_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+            is ProgramDefinesFunctionTest -> {
+                PyExecuteTest(
+                    "program_defines_function_test",
+                    mapOf(
+                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                    )
+                ).generatePyString()
+            }
+
+            else -> "Unknown Test"
         }
-        return builder.toString()
     }
-
-    private fun generateOutputFileTestCode(
-        tests: List<IRTest>,
-        testObject: String,
-        outputFile: TestFile
-    ): String { // TODO: Create IRTestFile
-        if (tests.isEmpty()) {
-            return ""
-        }
-
-        return "execute_test($testObject.${tests[0].testNamePython}, ${formatField(tests[0].points)}, " +
-                "${formatField(tests[0].beforeMessage)}, ${formatField(tests[0].failedMessage)}, " +
-                "${formatField(tests[0].passedMessage)}, ${formatField(tests[0].name)}, " +
-                "${formatField(tests[0].inputs)}, ${formatField(outputFile.fileName)}, ${formatField(outputFile.fileContent)})\n"
-    }
-
-    fun generateAssessmentCode(): String {
-        return "from lib import *\n" +
-                generateFileCheckCode(irTree.fileCheck) +
-                generateProgramStaticCheckCode(irTree.programStaticCheck) +
-                generateProgramExecutionCheckCode(irTree.programExecutionCheck) +
-                generateFunctionStaticCheckCode(irTree.functionStaticCheck) +
-                generateFunctionExecutionCheckCode(irTree.functionExecutionCheck) +
-                "print(Results(None).val)\n"
-    }
-
 }

@@ -4,85 +4,57 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("program_imports_module")
-data class ProgramImportsModule(
-    val moduleName: String
+@SerialName("program_execution_test") // Tulemuse test
+data class ProgramExecutionTest(
+    val standardInputData: String? = null,
+    val inputFiles: List<FileData>? = null, // Sama nii input kui output data-le
+    val standardOutputChecks: List<StandardOutputCheck>? = null,
+    val outputFileChecks: List<OutputFileCheck>? = null,
+    val exceptionCheck: ExceptionCheck? = null,
+) : Test()
+
+// TODO: Programmi täitmise kontroll = 1 test,
+// mis tähendab, et punktid lähevad terve "programmi täitmise kontrolli" ploki kohta.
+// TODO: "tühi test" on võimalik, kõik väljad on "null"-id ja peaks ka Tiibade poole pealt võimaldama
+
+@Serializable
+@SerialName("program_contains_try_except_test")
+data class ProgramContainsTryExceptTest(
+    val programContainsTryExcept: ContainsCheck
 ) : Test()
 
 @Serializable
-@SerialName("program_imports_module_from_set")
-data class ProgramImportsModuleFromSet(
-    val moduleNames: List<String>
+@SerialName("program_calls_print_test")
+data class ProgramCallsPrintTest(
+    val programCallsPrint: ContainsCheck
 ) : Test()
 
 @Serializable
-@SerialName("program_imports_any_module")
-data class ProgramImportsAnyModule(
-    val defaultValue: String? = null
+@SerialName("program_contains_loop_test")
+data class ProgramContainsLoopTest(
+    val programContainsLoop: ContainsCheck
 ) : Test()
 
 @Serializable
-@SerialName("program_defines_function")
-data class ProgramDefinesFunction(
-    val functionName: String
+@SerialName("program_imports_module_test")
+data class ProgramImportsModuleTest(
+    val standardOutputCheck: StandardOutputCheckLong
 ) : Test()
 
 @Serializable
-@SerialName("program_defines_any_function")
-data class ProgramDefinesAnyFunction(
-    val defaultValue: String? = null
+@SerialName("program_contains_keyword_test")
+data class ProgramContainsKeywordTest(
+    val standardOutputCheck: StandardOutputCheck
 ) : Test()
 
 @Serializable
-@SerialName("program_contains_loop")
-data class ProgramContainsLoop(
-    val defaultValue: String? = null
+@SerialName("program_calls_function_test")
+data class ProgramCallsFunctionTest(
+    val standardOutputCheck: StandardOutputCheckLong
 ) : Test()
 
 @Serializable
-@SerialName("program_calls_function")
-data class ProgramCallsFunction(
-    val functionName: String
-) : Test()
-
-@Serializable
-@SerialName("program_calls_function_from_set")
-data class ProgramCallsFunctionFromSet(
-    val functionsList: List<String>
-) : Test()
-
-@Serializable
-@SerialName("program_calls_print")
-data class ProgramCallsPrint(
-    val defaultValue: String? = null
-) : Test()
-
-@Serializable
-@SerialName("program_input_count_correct")
-data class ProgramInputCountCorrect(
-    val defaultValue: String? = null
-) : Test()
-
-@Serializable
-@SerialName("program_raised_exception")
-data class ProgramRaisedException(
-    val defaultValue: String? = null
-) : Test()
-
-@Serializable
-@SerialName("program_contains_try_except")
-data class ProgramContainsTryExcept(
-    val defaultValue: String? = null
-) : Test()
-
-@Serializable
-@SerialName("program_output_correct")
-data class ProgramOutputCorrect(
-    val defaultValue: String? = null
-) : Test()
-
-@Serializable
-@SerialName("program_output_file_correct")
-data class ProgramOutputFileCorrect(
-    val defaultValue: String? = null
+@SerialName("program_defines_function_test")
+data class ProgramDefinesFunctionTest(
+    val standardOutputCheck: StandardOutputCheckLong
 ) : Test()
