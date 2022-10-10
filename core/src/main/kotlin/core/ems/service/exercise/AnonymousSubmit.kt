@@ -28,7 +28,7 @@ private val log = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/v2")
 class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
-    @Value("\${anonymous-submissions-to-keep}")
+    @Value("\${easy.core.auto-assess.anonymous-submissions-to-keep}")
     private lateinit var submissionToKeep: String
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
