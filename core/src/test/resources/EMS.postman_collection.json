@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "3b487d8f-6d88-4f14-922d-efbd07f1d6c7",
+		"_postman_id": "6e658429-39c8-4d1f-a000-a80569019fff",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -1408,7 +1408,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"sample-container-image\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"anonymous_autoassess_enabled\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"sample-container-image\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/exercises",
@@ -1483,7 +1483,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string2\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"sample-container-image\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"title\": \"string2\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"anonymous_autoassess_enabled\": true,\r\n  \"grader_type\": \"AUTO\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"sample-container-image\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"name\",\r\n      \"file_content\": \"content\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    {\r\n      \"executor_id\": \"1\"\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/exercises",
@@ -3354,6 +3354,174 @@
 						"1",
 						"exercises",
 						"1",
+						"submissions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: unuauth: post: submit anonymous submission: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"solution\": \"string\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/unauth/exercises/2/anonymous/autoassess",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"unauth",
+						"exercises",
+						"2",
+						"anonymous",
+						"autoassess"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: unuauth: get: exercise details for anonymous",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/unauth/exercises/2/anonymous/details",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"unauth",
+						"exercises",
+						"2",
+						"anonymous",
+						"details"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get: read anonymous submissions: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response should be okay to process\", function () { \r",
+							"    pm.response.to.not.be.error; \r",
+							"    pm.response.to.have.jsonBody(\"students\");\r",
+							"    pm.response.to.not.jsonBody(\"teachers\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/exercises/2/anonymous/submissions",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"exercises",
+						"2",
+						"anonymous",
 						"submissions"
 					]
 				}
@@ -5440,7 +5608,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"grader_type\": \"TEACHER\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \r\n    \r\n    \r\n  ]\r\n}",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"anonymous_autoassess_enabled\": true,\r\n  \"grader_type\": \"TEACHER\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \r\n    \r\n    \r\n  ]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
