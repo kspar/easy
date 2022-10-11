@@ -4,21 +4,28 @@ package com.example.demo
 class Compiler(private val irTree: TSL) { // TODO: RemoveMe
 
     fun generateAssessmentCodes(): String {
-        var a = this.irTree.tests.map {
-            println(generateAssessmentCode(it))
+        if (irTree.validateFiles) {
+            val validationCode = generateValidationCode(irTree.requiredFiles)
+            println(validationCode)
+        }
+        val a = this.irTree.tests.map {
+            println(generateAssessmentCode(it, irTree.requiredFiles[0]))
         }.joinToString { "\n" }
         println(a)
         return ""
-        //return generateAssessmentCode(FunctionUsesOnlyLocalVarsTest(ContainsCheck(true, true)))
     }
 
-    fun generateAssessmentCode(test: Test): String {
+    private fun generateValidationCode(filesToValidate: List<String>): String {
+        return filesToValidate.joinToString(", ", "validate_files([", "])") { PyStr(it).generatePyString() }
+    }
+
+    private fun generateAssessmentCode(test: Test, file_name: String): String {
         return when (test) {
             is FunctionExecutionTest -> {
                 PyExecuteTest(
                     "function_execution_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "file_name" to PyStr(file_name),
                         "function_name" to PyStr(test.functionName),
                         "arguments" to PyStr(test.arguments),
                         "standard_input_data" to PyStr(test.standardInputData),
@@ -34,12 +41,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_contains_loop_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
                         "contains_check" to PyPair(
                             PyBool(test.containsLoop.mustContain),
                             PyBool(test.containsLoop.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -47,9 +54,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_contains_keyword_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
-                        "standard_output_checks" to PyStandardOutputChecks(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
+                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -57,12 +64,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_contains_return_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
                         "contains_check" to PyPair(
                             PyBool(test.containsReturn.mustContain),
                             PyBool(test.containsReturn.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -70,9 +77,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_calls_function_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -80,12 +87,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_is_recursive_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
                         "contains_check" to PyPair(
                             PyBool(test.isRecursive.mustBeRecursive),
                             PyBool(test.isRecursive.cannotBeRecursive)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -93,9 +100,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_defines_function_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -103,9 +110,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_imports_module_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck))// TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -113,12 +120,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_contains_try_except_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
                         "contains_check" to PyPair(
                             PyBool(test.containsTryExcept.mustContain),
                             PyBool(test.containsTryExcept.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -126,12 +133,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "function_uses_only_local_vars_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "function_name" to PyStr(""), // TODO: Funktsiooni nimi
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
                         "contains_check" to PyPair(
                             PyBool(test.containsLocalVars.mustContain),
                             PyBool(test.containsLocalVars.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -139,7 +146,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_execution_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "file_name" to PyStr(file_name),
                         "standard_input_data" to PyStr(test.standardInputData),
                         "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
                             ?.let { PyList(it) },
@@ -148,7 +155,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "exception_check" to PyPair(
                             PyBool(test.exceptionCheck?.mustThrowException),
                             PyBool(test.exceptionCheck?.cannotThrowException)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -156,11 +163,11 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_contains_try_except_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "file_name" to PyStr(file_name),
                         "contains_check" to PyPair(
                             PyBool(test.programContainsTryExcept.mustContain),
                             PyBool(test.programContainsTryExcept.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -168,11 +175,11 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_calls_print_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "file_name" to PyStr(file_name),
                         "contains_check" to PyPair(
                             PyBool(test.programCallsPrint.mustContain),
                             PyBool(test.programCallsPrint.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -180,11 +187,11 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_contains_loop_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
+                        "file_name" to PyStr(file_name),
                         "contains_check" to PyPair(
                             PyBool(test.programContainsLoop.mustContain),
                             PyBool(test.programContainsLoop.cannotContain)
-                        ) // TODO: Kas teha eraldi PyTest?
+                        )
                     )
                 ).generatePyString()
             }
@@ -192,8 +199,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_imports_module_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -201,8 +208,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_contains_keyword_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "standard_output_checks" to PyStandardOutputChecks(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -210,8 +217,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_calls_function_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }
@@ -219,8 +226,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(
                     "program_defines_function_test",
                     mapOf(
-                        "file_name" to PyStr(""), // TODO: Kuidas me saame siin mitte testi, vaid TSL elemendi "requiredFiles" väljale ligi? Kas tuleb ülevalt koguaeg kaasas kanda?
-                        "standard_output_checks" to PyStandardOutputChecksLong(listOf(test.standardOutputCheck)) // TODO: Kas on OK kasutada listi oma kuigi teame, et on ainult 1 element?
+                        "file_name" to PyStr(file_name),
+                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
                     )
                 ).generatePyString()
             }

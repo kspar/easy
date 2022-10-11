@@ -1,9 +1,11 @@
 # Example TSL file.
 
 language: python3
-validateFiles: false
+validateFiles: true
 requiredFiles:
   - kodu1.py
+  - kodu2.py
+  - kodu3.py
 tslVersion: 1.0.0
 
 tests:

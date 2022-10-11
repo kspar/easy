@@ -12,14 +12,12 @@ import java.nio.file.Paths
 @Serializable
 data class TSL(
     val language: String = "python3",
-    val validateFiles: Boolean, // TODO - Need oleks siis fikseeritud eelkontrollid faili(de?)le. Kompilaator peab
-    // TODO genereerima mingi funktsiooni väljakutse, mis valideerib failid (exists, not empty ja is_python).
-    // Root TSL elemendis võiks olla failide list, mille kohta lepime kokku, et esimene fail on alati käivitatav peafail.
-    // Võib ka praegu TSL tasemel eeldada, et listis on alati vähemalt üks element - teeme nii,
-    // et UI täidab selle eelduse (kui on tühi, siis kompilaatori error).
-    // Execution-tüüpi testide puhul pole vaja faili nime, alati kasutatakse peafaili listist.
-    // Static tüüpi testide puhul oleks tarvis vajadusel määrata faili nimi, vastasel juhul otsitakse üle kõigi.
-    val requiredFiles: List<String>, // TODO: Esimene fail oleks põhifail (mida käivitatakse)
+    val validateFiles: Boolean,
+    // The first file in the requiredFiles list is always the file to be executed.
+    // We can expect from UI that there is always at least one file in the list.
+    // TODO: Execution-tüüpi testide puhul pole vaja faili nime, alati kasutatakse peafaili listist.
+    // TODO: Static tüüpi testide puhul oleks tarvis vajadusel määrata faili nimi, vastasel juhul otsitakse üle kõigi.
+    val requiredFiles: List<String>,
     val tslVersion: String,
     val tests: List<Test>
 )
