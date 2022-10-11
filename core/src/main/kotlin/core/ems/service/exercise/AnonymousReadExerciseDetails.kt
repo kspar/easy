@@ -22,12 +22,15 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class AnonymousReadExerciseDetails {
 
-    data class Resp(@JsonProperty("title") val title: String, @JsonProperty("text_html") val textHtml: String?)
+    data class Resp(
+        @JsonProperty("title") val title: String,
+        @JsonProperty("text_html") val textHtml: String?
+    )
 
     @GetMapping("/unauth/exercises/{exerciseId}/anonymous/details")
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String): Resp {
 
-        log.debug { "Getting exercise details for anonymous for exercise $exerciseIdStr" }
+        log.debug { "Getting anonymous exercise details for exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)
@@ -37,19 +40,15 @@ class AnonymousReadExerciseDetails {
     }
 
     private fun selectAnonymousExerciseDetails(exerciseId: Long): Resp = transaction {
-        (Exercise innerJoin ExerciseVer)
-            .slice(
-                ExerciseVer.title, ExerciseVer.textHtml
+        (Exercise innerJoin ExerciseVer).slice(
+            ExerciseVer.title, ExerciseVer.textHtml
+        ).select {
+            Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
+        }.map {
+            Resp(
+                it[ExerciseVer.title],
+                it[ExerciseVer.textHtml]
             )
-            .select {
-                Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
-            }
-            .map {
-                Resp(
-                    it[ExerciseVer.title],
-                    it[ExerciseVer.textHtml]
-                )
-            }
-            .singleOrInvalidRequest()
+        }.singleOrInvalidRequest()
     }
 }

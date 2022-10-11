@@ -46,15 +46,18 @@ class TeacherReadAnonymousSubmissionsController {
     }
 
     private fun selectAllAnonymousSubmissions(exerciseId: Long): Resp = transaction {
-        Resp(AnonymousSubmission.slice(
-            AnonymousSubmission.id,
-            AnonymousSubmission.solution,
-            AnonymousSubmission.createdAt,
-            AnonymousSubmission.grade,
-            AnonymousSubmission.feedback
-        ).select { AnonymousSubmission.exercise eq exerciseId }
-            .orderBy(AnonymousSubmission.createdAt, SortOrder.DESC)
-            .map {
+        Resp(
+            AnonymousSubmission.slice(
+                AnonymousSubmission.id,
+                AnonymousSubmission.solution,
+                AnonymousSubmission.createdAt,
+                AnonymousSubmission.grade,
+                AnonymousSubmission.feedback
+            ).select {
+                AnonymousSubmission.exercise eq exerciseId
+            }.orderBy(
+                AnonymousSubmission.createdAt, SortOrder.DESC
+            ).map {
                 SubmissionResp(
                     it[AnonymousSubmission.id].value.toString(),
                     it[AnonymousSubmission.solution],
@@ -62,9 +65,7 @@ class TeacherReadAnonymousSubmissionsController {
                     it[AnonymousSubmission.grade],
                     it[AnonymousSubmission.feedback],
                 )
-            })
+            }
+        )
     }
-
 }
-
-

@@ -31,17 +31,20 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     @Value("\${easy.core.auto-assess.anonymous-submissions-to-keep}")
     private lateinit var submissionToKeep: String
 
-    data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
+    data class Req(
+        @JsonProperty("solution") @field:Size(max = 300000) val solution: String
+    )
 
     data class Resp(
-        @JsonProperty("grade", required = true) val grade: Int,
-        @JsonProperty("feedback", required = true) val feedback: String
+        @JsonProperty("grade") val grade: Int,
+        @JsonProperty("feedback") val feedback: String
     )
 
 
     @PostMapping("/unauth/exercises/{exerciseId}/anonymous/autoassess")
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String, @Valid @RequestBody solutionBody: Req): Resp {
-        log.debug { "Autograding anonymous submission of exercise $exerciseIdStr" }
+
+        log.debug { "Anonymous submission to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)
@@ -70,7 +73,6 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
                         it.update(unsuccessfulAnonymousSubmissionCount, unsuccessfulAnonymousSubmissionCount + 1)
                     }
                 }
-
 
                 AnonymousSubmission.insert {
                     it[AnonymousSubmission.exercise] = exerciseId

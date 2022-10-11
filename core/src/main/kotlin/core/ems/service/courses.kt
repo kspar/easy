@@ -24,13 +24,13 @@ fun courseExists(courseId: Long): Boolean {
 }
 
 fun assertExerciseIsAutoGradable(exerciseId: Long) {
-    val autograded = transaction {
+    val autoGradable = transaction {
         (Exercise innerJoin ExerciseVer).slice(ExerciseVer.graderType)
             .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.graderType] }.single() == GraderType.AUTO
     }
-    if (!autograded) throw InvalidRequestException(
-        "Exercise $exerciseId GraderType is not AUTO.",
+    if (!autoGradable) throw InvalidRequestException(
+        "Exercise $exerciseId is not automatically assessable",
         ReqError.EXERCISE_NOT_AUTOASSESSABLE
     )
 }
