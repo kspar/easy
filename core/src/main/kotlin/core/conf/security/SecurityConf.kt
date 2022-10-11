@@ -32,26 +32,27 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
             .antMatchers(
-                // Allow unauth to anonymous autoassess
-                "/v2/unauth/exercises/*/anonymous/autoassess",
-                "/v2/unauth/exercises/*/anonymous/details"
+                // Allow unauthenticated access to anonymous auto-assess services
+                "/*/unauth/exercises/*/anonymous/autoassess",
+                "/*/unauth/exercises/*/anonymous/details"
             ).permitAll()
-            // All services require auth == any role by default
+            // All other services require auth == any role by default
             .anyRequest().authenticated()
 
         http.addFilterAfter(
-                if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
-                RequestHeaderAuthenticationFilter::class.java)
+            if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
+            RequestHeaderAuthenticationFilter::class.java
+        )
 
         http.exceptionHandling()
-                .accessDeniedHandler { request, response, _ ->
-                    log.info { "Forbidden for ${makeRequestLogMsg(request)}" }
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN)
-                }
-                .authenticationEntryPoint { request, response, _ ->
-                    log.info { "Unauthorized for ${makeRequestLogMsg(request)}" }
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
-                }
+            .accessDeniedHandler { request, response, _ ->
+                log.info { "Forbidden for ${makeRequestLogMsg(request)}" }
+                response.sendError(HttpServletResponse.SC_FORBIDDEN)
+            }
+            .authenticationEntryPoint { request, response, _ ->
+                log.info { "Unauthorized for ${makeRequestLogMsg(request)}" }
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+            }
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 
