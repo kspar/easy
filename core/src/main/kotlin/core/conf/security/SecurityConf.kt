@@ -33,8 +33,8 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
         http.authorizeRequests()
             .antMatchers(
                 // Allow unauth to anonymous autoassess
-                "/unauth/exercises/*/anonymous/autoassess",
-                "/unauth/exercises/*/anonymous/details"
+                "/v2/unauth/exercises/*/anonymous/autoassess",
+                "/v2/unauth/exercises/*/anonymous/details"
             ).permitAll()
             // All services require auth == any role by default
             .anyRequest().authenticated()
