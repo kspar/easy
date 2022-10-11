@@ -92,7 +92,8 @@ class TeacherReadExerciseController {
             (Exercise innerJoin ExerciseVer)
                     .slice(Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
                             ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
-                            ExerciseVer.autoExerciseId)
+                            ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled,
+                        Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount)
                     .select {
                         Exercise.id eq exerciseId and
                                 ExerciseVer.validTo.isNull()
