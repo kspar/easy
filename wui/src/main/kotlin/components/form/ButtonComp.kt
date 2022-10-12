@@ -1,6 +1,5 @@
 package components.form
 
-import debug
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
 import rip.kspar.ezspa.Component
