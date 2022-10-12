@@ -1,0 +1,82 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lahendus</title>
+    <script src="js/pace.min.js"></script>
+    <link rel="stylesheet" href="css/pace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500|Sniglet&amp;display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.css"/>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/exercise.css">
+
+    <style>
+
+
+    </style>
+</head>
+<body class="embedded light bordered" style="background-color: #eee">
+
+<main>
+    <div id="content-container" class="container">
+        <div>
+            <h2>1.1. Tervitus</h2>
+            <div id="exercise-text">
+                <div class="paragraph">
+                    <p>Koostada programm, mis väljastaks ekraanile teksti <code><strong>Tere, maailm!</strong></code>
+                        täpselt sellisel kujul - koma ja hüüumärgiga.</p>
+                </div>
+                <details>
+                    <summary class="title">Näide programmi tööst</summary>
+                    <div class="content">
+                        <div class="listingblock">
+                            <div class="content">
+                                <pre class="highlightjs highlight"><code class="language-python hljs"
+                                                                         data-lang="python"><span class="hljs-meta">&gt;&gt;&gt; </span><span
+                                        class="codehl run">%Run lahendus.py</span>
+Tere, maailm!</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+                <div class="paragraph">
+                    <p>Automaatkontroll on nii korraldatud, et tõesti pole vähimadki kõrvalekalded tekstis lubatud. Nii
+                        võib teil programm täiesti töötada Thonnys ilma igasuguste veateadeteta, aga kui väljastatakse
+                        näiteks <code><strong>tere, maailm</strong></code>, siis automaatkontroll seda õigeks ei loe.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- TODO -->
+
+
+    </div>
+</main>
+<footer>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/autorefresh.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/mode/loadmode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/placeholder.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.7.2/build/styles/idea.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.7.2/build/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<script type="text/javascript">
+    <!-- TODO -->
+    window.addEventListener('message', function(event) {
+        console.log("Message received from the child: " + event.data); // Message received from child
+        if(event.data!="0")document.querySelector("[standby=\"1\"]").setAttribute("height",event.data+"px");
+    });
+</script>
+
+</script>
+
+</body>
+</html>
