@@ -19,6 +19,8 @@ object EzSpa {
         private var pages: List<Page> = emptyList()
         private var currentPage: Page? = null
 
+        fun getCurrentPage() = pageFromPath(window.location.pathname)
+
         fun updatePage(pageState: String? = null) {
             preUpdateHook?.invoke()
 

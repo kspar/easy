@@ -22,6 +22,8 @@ class CodeEditorComp(
     private val fileCreator: CreateFile? = null,
     private val softWrap: Boolean = false,
     private val placeholder: String? = null,
+    private val showLineNumbers: Boolean = true,
+    private val showTabs: Boolean = true,
     parent: Component?
 ) : Component(parent) {
 
@@ -32,8 +34,10 @@ class CodeEditorComp(
         fileCreator: CreateFile? = null,
         softWrap: Boolean = false,
         placeholder: String? = null,
+        showLineNumbers: Boolean = true,
+        showTabs: Boolean = true,
         parent: Component?
-    ) : this(listOf(file), fileCreator, softWrap, placeholder, parent)
+    ) : this(listOf(file), fileCreator, softWrap, placeholder, showLineNumbers, showTabs, parent)
 
     data class File(
         val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE
@@ -88,9 +92,9 @@ class CodeEditorComp(
         "editorId" to editorId,
         "textareaId" to textareaId,
         "toggleId" to editToggleId,
-        "tabs" to tabs.map {
+        "tabs" to if (showTabs) tabs.map {
             mapOf("tab" to tabToHtml(it))
-        },
+        } else emptyList(),
         "canCreate" to (fileCreator != null),
         "createId" to createFileId,
         "createIcon" to Icons.add,
@@ -101,7 +105,7 @@ class CodeEditorComp(
         editor = CodeMirror.fromTextArea(
             getElemById(textareaId),
             objOf(
-                "lineNumbers" to true,
+                "lineNumbers" to showLineNumbers,
                 "lineWrapping" to softWrap,
                 "autoRefresh" to true,
                 "viewportMargin" to 100,
@@ -147,6 +151,8 @@ class CodeEditorComp(
 
     fun getActiveTabFilename() = activeTab?.filename
 
+    fun getActiveTabContent() = getActiveTabFilename()?.let { getFileValue(it) }
+
     fun setActiveTabByFilename(filename: String) {
         val tab = tabs.firstOrNull { it.filename == filename }
         if (tab != null) {
@@ -167,9 +173,11 @@ class CodeEditorComp(
     private fun refreshTabActions() {
         tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }
 
-        tabs.forEach { tab ->
-            getElemById(tab.id).onVanillaClick(true) {
-                switchToTab(tab)
+        if (showTabs) {
+            tabs.forEach { tab ->
+                getElemById(tab.id).onVanillaClick(true) {
+                    switchToTab(tab)
+                }
             }
         }
     }
@@ -193,15 +201,17 @@ class CodeEditorComp(
         val previousTab = activeTab
         activeTab = tab
 
-        if (previousTab != null)
-            getElemById(previousTab.id).apply {
-                removeClass("active")
-                setAttribute("href", "#!")
-            }
+        if (showTabs) {
+            if (previousTab != null)
+                getElemById(previousTab.id).apply {
+                    removeClass("active")
+                    setAttribute("href", "#!")
+                }
 
-        getElemById(tab.id).apply {
-            addClass("active")
-            removeAttribute("href")
+            getElemById(tab.id).apply {
+                addClass("active")
+                removeAttribute("href")
+            }
         }
 
         editor.swapDoc(tab.doc)

@@ -59,7 +59,6 @@ class ButtonComp(
     fun enable() = setEnabled(true)
 
     fun setEnabled(isEnabled: Boolean) {
-        debug { "Set button $label enabled: $isEnabled" }
         element.disabled = !isEnabled
     }
 }

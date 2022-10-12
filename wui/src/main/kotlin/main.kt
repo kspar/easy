@@ -3,11 +3,13 @@ import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
+import pages.EasyPage
 import pages.ExerciseSummaryPage
 import pages.Navbar
 import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
+import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
 import pages.exercise.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
@@ -20,7 +22,8 @@ import rip.kspar.ezspa.*
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
     OldParticipantsPage, ParticipantsPage,
-    ExerciseLibraryPage, ExercisePage
+    ExerciseLibraryPage, ExercisePage,
+    EmbedAnonAutoassessPage,
 )
 
 fun main() {
@@ -28,18 +31,22 @@ fun main() {
 
     // Start authentication as soon as possible
     doInPromise {
-        setSplashText("Login sisse")
-        initAuthentication()
-        setSplashText("Uuendan andmeid")
-        updateAccountData()
+        if (isAuthRequired()) {
+            setSplashText("Login sisse")
+            initAuthentication()
+            setSplashText("Uuendan andmeid")
+            updateAccountData()
+        }
         buildStatics()
         EzSpa.PageManager.updatePage()
     }
 
     // Do stuff that does not require auth
     initApplication()
-    EzSpa.Navigation.enableAnchorLinkInterception()
-    EzSpa.Navigation.enableHistoryNavInterception()
+    if (!isEmbedded()) {
+        EzSpa.Navigation.enableAnchorLinkInterception()
+        EzSpa.Navigation.enableHistoryNavInterception()
+    }
 
     funLog?.end()
 }
@@ -50,12 +57,17 @@ fun setSplashText(text: String) {
 
 suspend fun buildStatics() {
     getElemById("loading-splash-container").clear()
-    getHeader().innerHTML = """<div id="nav-wrap"></div>"""
-    getMain().innerHTML = """<div id="sidenav-wrap"></div><div id="content-container" class="container"></div>"""
-    Navbar.build()
-    Sidenav.build()
+    if (!isEmbedded()) {
+        getHeader().innerHTML = """<div id="nav-wrap"></div>"""
+        getMain().innerHTML = """<div id="sidenav-wrap"></div>"""
+        Navbar.build()
+        Sidenav.build()
+    }
+    getMain().innerHTML += """<div id="content-container" class="container"></div>"""
 }
 
+private fun isAuthRequired() = (EzSpa.PageManager.getCurrentPage() as EasyPage).doesRequireAuthentication
+private fun isEmbedded() = (EzSpa.PageManager.getCurrentPage() as EasyPage).isEmbedded
 
 private suspend fun updateAccountData() {
     val funLog = debugFunStart("updateAccountData")
@@ -118,7 +130,7 @@ private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
 
 private fun loadContainerQueries() {
     val supportsContainerQueries = try {
-         document.documentElement?.asDynamic().style.container != null
+        document.documentElement?.asDynamic().style.container != null
     } catch (e: Throwable) {
         false
     }

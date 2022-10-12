@@ -27,11 +27,30 @@ html {
     letter-spacing: 0.03rem;
 }
 
+html.embedded.light.bordered {
+    border: 1px solid #ccc;
+}
+
 body {
     background: url('../img/optimised/bg_v3-op.svg') no-repeat center center fixed;
     background-size: cover;
     min-height: 100%;
     min-width: 320px;
+}
+
+html.embedded body {
+    background: none;
+    min-height: 0;
+    min-width: 0;
+    padding: 1rem;
+}
+
+html.embedded.light body {
+    background-color: white !important;
+}
+
+html.embedded main {
+    padding: 0;
 }
 
 .subheading-item {
@@ -274,6 +293,13 @@ div.container {
 #content-container {
     font-size: 1.6rem;
     padding-bottom: 3rem;
+}
+
+html.embedded #content-container {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
 }
 
 

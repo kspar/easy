@@ -13,6 +13,20 @@ import tmRender
 
 abstract class EasyPage : Page() {
 
+    /**
+     * Hint to application whether authentication should be required/started before the user navigates to it.
+     * Changing this value provides no security. Setting it to false will allow unauthenticated users to navigate
+     * to this page; setting it to true will cause the application to start authentication for unauthenticated users
+     * before navigating here.
+     */
+    open val doesRequireAuthentication = true
+
+    /**
+     * Whether the page is meant to be embedded i.e. not independently visited in the browser.
+     * If true, static elements like the navbar are not rendered.
+     */
+    open val isEmbedded = false
+
     // All roles allowed by default
     open val allowedRoles: List<Role> = Role.values().asList()
 
@@ -25,7 +39,7 @@ abstract class EasyPage : Page() {
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
-        if (allowedRoles.none { it == Auth.activeRole }) {
+        if (doesRequireAuthentication && allowedRoles.none { it == Auth.activeRole }) {
             getContainer().innerHTML = tmRender(
                 "tm-no-access-page", mapOf(
                     "title" to Str.noPermissionForPageTitle(),
@@ -43,8 +57,10 @@ abstract class EasyPage : Page() {
     }
 
     override fun build(pageStateStr: String?) {
-        Title.replace { titleSpec }
-        Sidenav.refresh(sidenavSpec)
+        if (!isEmbedded) {
+            Title.replace { titleSpec }
+            Sidenav.refresh(sidenavSpec)
+        }
     }
 
     override fun destruct() {

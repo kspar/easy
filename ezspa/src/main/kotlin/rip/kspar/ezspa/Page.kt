@@ -36,7 +36,7 @@ abstract class Page {
             } else {
                 PathString(it)
             }
-        }.also { EzSpa.Logger.debug { "Path schema $pathSchema parsed to $it" } }
+        }
     }
 
     private val pathRegex: String by lazy {
@@ -67,7 +67,6 @@ abstract class Page {
         if (match != null && match.size == expectedParamKeys.size + 1) {
             val paramValues = match.drop(1).map { decodeURIComponent(it) }
             return expectedParamKeys.zip(paramValues).toMap().toCertainMap()
-                .also { EzSpa.Logger.debug { "Path: $path, extracted params: $it" } }
         } else {
             error(
                 "Incorrect match on path $path. Expected ${expectedParamKeys.size} params, " +

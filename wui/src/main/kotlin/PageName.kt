@@ -8,4 +8,5 @@ enum class PageName {
     NEW_EXERCISE,
     EXERCISE_LIBRARY,
     EXERCISE,
+    EMBED_ANON_AUTOASSESS,
 }
