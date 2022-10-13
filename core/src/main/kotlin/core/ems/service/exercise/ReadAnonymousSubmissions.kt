@@ -47,13 +47,7 @@ class TeacherReadAnonymousSubmissionsController {
 
     private fun selectAllAnonymousSubmissions(exerciseId: Long): Resp = transaction {
         Resp(
-            AnonymousSubmission.slice(
-                AnonymousSubmission.id,
-                AnonymousSubmission.solution,
-                AnonymousSubmission.createdAt,
-                AnonymousSubmission.grade,
-                AnonymousSubmission.feedback
-            ).select {
+            AnonymousSubmission.select {
                 AnonymousSubmission.exercise eq exerciseId
             }.orderBy(
                 AnonymousSubmission.createdAt, SortOrder.DESC

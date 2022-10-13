@@ -88,19 +88,21 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
                     AnonymousSubmission.createdAt, SortOrder.DESC
                 ).limit(submissionToKeep.toInt()).map {
                     it[AnonymousSubmission.createdAt]
-                }.lastOrNull()
+                }.last()
 
-                if (deleteAfter != null) AnonymousSubmission.deleteWhere {
+                AnonymousSubmission.deleteWhere {
                     AnonymousSubmission.exercise.eq(exerciseId) and AnonymousSubmission.createdAt.less(deleteAfter)
                 }
             }
         }
     }
+
+    private fun selectAutoExIdOrIllegalStateException(exerciseId: Long): Long = transaction {
+        (Exercise innerJoin ExerciseVer).slice(ExerciseVer.autoExerciseId)
+            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.autoExerciseId] }
+            .single()?.value ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+    }
 }
 
-private fun selectAutoExIdOrIllegalStateException(exerciseId: Long): Long = transaction {
-    (Exercise innerJoin ExerciseVer).slice(ExerciseVer.autoExerciseId)
-        .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }.map { it[ExerciseVer.autoExerciseId] }
-        .single()?.value ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-}
 
