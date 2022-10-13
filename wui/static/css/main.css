@@ -27,10 +27,6 @@ html {
     letter-spacing: 0.03rem;
 }
 
-html.embedded.light.bordered {
-    border: 1px solid #ccc;
-}
-
 body {
     background: url('../img/optimised/bg_v3-op.svg') no-repeat center center fixed;
     background-size: cover;
@@ -47,6 +43,7 @@ html.embedded body {
 
 html.embedded.light body {
     background-color: white !important;
+    border: 1px solid #ccc;
 }
 
 html.embedded main {
@@ -561,19 +558,23 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
+/*  */
+#anonauto button {
+    padding-bottom: .4rem;
+}
+
+
 /* Code editor */
 
 .editor-wrapper {
-    margin-top: 3rem;
-    margin-bottom: 3rem;
-    padding: 0 0.3rem 0.3rem 0.3rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    padding: .1rem;
     background-color: #eee;
 }
 
-@media only screen and (min-width: 601px) {
-    .editor-wrapper {
-        padding: 0 1rem 1rem 1rem;
-    }
+.editor-wrapper.no-gutter {
+    padding-left: 1.5rem;
 }
 
 .editor-top {
@@ -926,11 +927,8 @@ ez-participants-list .card .card-content p {
 
 /** Buttons **/
 
-.btn {
-    background-color: #4DAB54;
-}
-
-.btn:hover {
+.btn, .btn:hover,
+.btn-floating, .btn-floating:hover {
     background-color: #4DAB54;
 }
 
@@ -939,12 +937,23 @@ ez-participants-list .card .card-content p {
     background-color: var(--ez-btn-danger-col);
 }
 
+ez-btn-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+ez-btn-content > ez-icon {
+    color: #fff;
+}
+
+ez-btn-content > ez-icon > svg {
+    width: 2rem;
+    height: 2rem;
+}
+
 
 /** Links **/
-
-/*a[href]:hover {*/
-/*    text-decoration: underline;*/
-/*}*/
 
 .toggle-link {
     display: block;

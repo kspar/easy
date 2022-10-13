@@ -1,6 +1,7 @@
 package pages.embed_anon_autoassess
 
 import CONTENT_CONTAINER_ID
+import Icons
 import PageName
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
@@ -37,6 +38,7 @@ object EmbedAnonAutoassessPage : EasyPage() {
         val showTitle = getCurrentQueryParamValue("title") != null
         val showTemplate = getCurrentQueryParamValue("template") != null
         val sendIframeHeightId = getCurrentQueryParamValue("dynamic-height-id")
+        val sendIframeHeightDelay = getCurrentQueryParamValue("dynamic-height-delay")?.toIntOrNull()
 
         doInPromise {
             rootComp = EmbedAnonAutoassessRootComp(
@@ -44,6 +46,7 @@ object EmbedAnonAutoassessPage : EasyPage() {
                 showTitle,
                 showTemplate,
                 sendIframeHeightId,
+                sendIframeHeightDelay,
                 CONTENT_CONTAINER_ID
             ).also {
                 it.createAndBuild().await()
@@ -57,6 +60,7 @@ class EmbedAnonAutoassessRootComp(
     private val showTitle: Boolean,
     private val showTemplate: Boolean,
     private val frameId: String?,
+    private val framePollDelay: Int?,
     dstId: String
 ) : Component(null, dstId) {
 
@@ -78,12 +82,13 @@ class EmbedAnonAutoassessRootComp(
             file, placeholder = "Kirjuta lahendus siia...",
             showLineNumbers = false, showTabs = false, parent = this
         )
-        submitBtn = ButtonComp(ButtonComp.Type.FLAT, "Kontrolli", { assess() }, parent = this)
+        submitBtn = ButtonComp(ButtonComp.Type.PRIMARY_ROUND, Icons.robot, { assess() }, parent = this)
         feedback = EmbedAnonAutoassessFeedbackComp(parent = this, dstId = feedbackDstId)
     }
 
     override fun render() = tmRender(
         "t-c-anonauto",
+        "exerciseId" to exerciseId,
         "title" to if (showTitle) "1.1 Tervitus" else null,
         "text" to """
             <div class="paragraph">
@@ -119,11 +124,11 @@ Tere, maailm!</code></pre>
         if (frameId != null) {
             doInPromise {
                 while (true) {
-                    val h = getBody().scrollHeight
+                    val h = getBody().offsetHeight
                     if (h != 0) {
-                        window.parent.postMessage("$frameId|${h + 15}", "*")
+                        window.parent.postMessage("$frameId|${h + 1}", "*")
                     }
-                    sleep(250).await()
+                    sleep(framePollDelay ?: 200).await()
                 }
             }
         }
@@ -149,7 +154,7 @@ Tere, maailm!</code></pre>
     }
 }
 
-// TODO: should be able to close feedback?
+// TODO: should be able to close feedback? Should wait for new TSL HTML-style feedback
 class EmbedAnonAutoassessFeedbackComp(
     private val grade: String = "",
     private val feedback: String = "",

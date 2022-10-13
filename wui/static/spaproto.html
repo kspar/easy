@@ -192,22 +192,24 @@
 </script>
 
 <script id="t-c-code-editor" type="text/x-handlebars">
-    <div id="{{editorId}}" class="editor-wrapper">
-        <div class="editor-top">
-            <div class="left-side">
-                <ez-code-edit-tabs>
-                    {{#tabs}}
-                        {{{tab}}}
-                    {{/tabs}}
-                </ez-code-edit-tabs>
-                {{#canCreate}}
-                    <ez-icon-action id="{{createId}}">{{{createIcon}}}</ez-icon-action>
-                {{/canCreate}}
+    <div id="{{editorId}}" class="editor-wrapper {{^showLineNums}}no-gutter{{/showLineNums}}">
+        {{#showTabs}}
+            <div class="editor-top">
+                <div class="left-side">
+                    <ez-code-edit-tabs>
+                        {{#tabs}}
+                            {{{tab}}}
+                        {{/tabs}}
+                    </ez-code-edit-tabs>
+                    {{#canCreate}}
+                        <ez-icon-action id="{{createId}}">{{{createIcon}}}</ez-icon-action>
+                    {{/canCreate}}
+                </div>
+                <div class="right-side">
+                    <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
+                </div>
             </div>
-            <div class="right-side">
-                <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
-            </div>
-        </div>
+        {{/showTabs}}
         <textarea id="{{textareaId}}"></textarea>
         <ez-dst id="{{createModalId}}"></ez-dst>
     </div>
@@ -438,8 +440,8 @@
 </script>
 
 <script id="t-c-button" type="text/x-handlebars">
-    <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} waves-effect">
-        <ez-btn-content>{{text}}</ez-btn-content>
+    <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} waves-effect">
+        <ez-btn-content>{{{contentHtml}}}</ez-btn-content>
     </button>
 </script>
 
@@ -733,7 +735,7 @@
 
 <!-- Embedded anon autoassess page -->
 <script id="t-c-anonauto" type="text/x-handlebars">
-    <div>
+    <div id="anonauto">
         {{#title}}<h2>{{title}}</h2>{{/title}}
         <div id="exercise-text">
             {{{text}}}
@@ -745,6 +747,11 @@
             <ez-dst id="{{editorId}}"></ez-dst>
         </div>
         <ez-dst id="{{feedbackId}}"></ez-dst>
+        <div style="display: flex; align-items: center; justify-content: end; font-size: 1rem;">
+            <!-- TODO: svg -->
+            <img src="/static/favicon/mstile-70x70.png" style="width: 1.7rem; height: 1.7rem; margin-right: 3px;">
+            Lahendus |<a href="/library/{{exerciseId}}/summary" target="_blank" style="margin-left: 3px; color: #bbb">#{{exerciseId}}</a>
+        </div>
     </div>
 </script>
 

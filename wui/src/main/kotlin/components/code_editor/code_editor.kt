@@ -92,6 +92,8 @@ class CodeEditorComp(
         "editorId" to editorId,
         "textareaId" to textareaId,
         "toggleId" to editToggleId,
+        "showLineNums" to showLineNumbers,
+        "showTabs" to showTabs,
         "tabs" to if (showTabs) tabs.map {
             mapOf("tab" to tabToHtml(it))
         } else emptyList(),
@@ -125,7 +127,7 @@ class CodeEditorComp(
 
         refreshTabActions()
 
-        if (fileCreator != null) {
+        if (fileCreator != null && showTabs) {
             getElemById(createFileId).onVanillaClick(true) {
                 createFileModalComp.setExistingFilenames(tabs.map { it.filename })
                 val filename = createFileModalComp.openWithClosePromise().await()
@@ -246,6 +248,12 @@ class CodeEditorComp(
     }
 
     private fun addEditToggle(isCurrentlyEditable: Boolean) {
+        if (!showTabs) {
+            // Toggle is located in tabs top bar
+            warn { "Tabs are disabled, toggling won't work" }
+            return
+        }
+
         editToggleComp = if (isCurrentlyEditable)
             LinkComp("Keela muutmine", null, null, ::toggleEdit, this, editToggleId)
         else
@@ -260,7 +268,8 @@ class CodeEditorComp(
     }
 
     private fun removeEditToggle() {
-        getElemById(editToggleId).clear()
+        if (showTabs)
+            getElemById(editToggleId).clear()
     }
 
 }

@@ -10,7 +10,7 @@ import tmRender
 
 class ButtonComp(
     private val type: Type,
-    private val label: String,
+    private val labelHtml: String,
     private val onClick: suspend (() -> Unit),
     private val disabledLabel: String? = null,
     private val postClick: (suspend (() -> Unit))? = null,
@@ -18,7 +18,7 @@ class ButtonComp(
 ) : Component(parent) {
 
     enum class Type {
-        PRIMARY, FLAT, DANGER
+        PRIMARY, FLAT, DANGER, PRIMARY_ROUND,
     }
 
     private val btnId = IdGenerator.nextId()
@@ -29,10 +29,11 @@ class ButtonComp(
     override fun render() = tmRender(
         "t-c-button",
         "id" to btnId,
-        "text" to label,
+        "contentHtml" to labelHtml,
         "isPrimary" to (type == Type.PRIMARY),
         "isSecondary" to (type == Type.FLAT),
         "isDanger" to (type == Type.DANGER),
+        "isPrimaryRound" to (type == Type.PRIMARY_ROUND),
     )
 
     override fun postRender() {
