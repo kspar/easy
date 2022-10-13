@@ -59,11 +59,13 @@ suspend fun buildStatics() {
     getElemById("loading-splash-container").clear()
     if (!isEmbedded()) {
         getHeader().innerHTML = """<div id="nav-wrap"></div>"""
-        getMain().innerHTML = """<div id="sidenav-wrap"></div>"""
+        getMain().innerHTML = """<div id="sidenav-wrap"></div><div id="content-container" class="container"></div>"""
         Navbar.build()
         Sidenav.build()
+    } else {
+        // Note that appending += to innerHTML would destroy existing event handlers
+        getMain().innerHTML = """<div id="content-container" class="container"></div>"""
     }
-    getMain().innerHTML += """<div id="content-container" class="container"></div>"""
 }
 
 private fun isAuthRequired() = (EzSpa.PageManager.getCurrentPage() as EasyPage).doesRequireAuthentication
