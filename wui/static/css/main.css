@@ -1112,9 +1112,10 @@ textarea.materialize-textarea {
     padding: 1.1rem 0 1.1rem 0;
 }
 
-.input-field {
-    margin-top: 2rem;
-}
+/* TODO: Hopefully not needed for anything, remove at some point */
+/*.input-field {*/
+/*    margin-top: 2rem;*/
+/*}*/
 
 .input-field input:not(.invalid) ~ .helper-text:not(.has-text) {
     display: none;
@@ -1179,6 +1180,8 @@ textarea.materialize-textarea {
 
 [type="checkbox"] + span:not(.lever) {
     font-size: 1.4rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
 [type="checkbox"].filled-in:not(:checked) + span:not(.lever)::after {
