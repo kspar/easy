@@ -35,6 +35,7 @@ easy:
           ms: "3000"
         fixed-delay-observer-clear:
           ms: "3000"
+        anonymous-submissions-to-keep: "50"
     statistics:
       fixed-delay:
         ms: "1000"

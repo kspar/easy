@@ -10,6 +10,12 @@ fun String.idToLongOrInvalidReq(): Long = this.toLongOrNull() ?: throw InvalidRe
     ReqError.ENTITY_WITH_ID_NOT_FOUND, "id" to this
 )
 
+fun <T> List<T>.singleOrInvalidRequest(): T {
+    return this.singleOrNull() ?: throw InvalidRequestException(
+        "Entity not found", ReqError.ENTITY_WITH_ID_NOT_FOUND
+    )
+}
+
 
 fun HttpServletRequest.getOptionalHeader(headerName: String): String? {
     val headerValue: String? = this.getHeader(headerName)

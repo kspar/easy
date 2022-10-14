@@ -20,9 +20,85 @@ tags:
   - name: teacher
   - name: admin
   - name: common
-
+  - name: unauth
 
 paths:
+
+  /unauth/exercises/{exerciseId}/anonymous/details:
+    get:
+      summary: Service for fetching exercise details unauth
+      tags:
+        - unauth
+      responses:
+        200:
+          description: Exercise details for anonymous autoassess
+          schema:
+            properties:
+              title:
+                type: string
+              text_html:
+                type: string
+            required:
+              - title
+        403:
+          description: Exercise anonymous autoassess not enabled
+
+
+  /unauth/exercises/{exerciseId}/anonymous/autoassess:
+    post:
+      summary: Service for anonymous autograding.
+      tags:
+        - unauth
+      responses:
+        200:
+          description: Autogrades and returns autoassessed grade and feedback
+          schema:
+            properties:
+              grade:
+                type: integer
+              feedback:
+                type: string
+            required:
+              - grade
+              - feedback
+        403:
+          description: Exercise anonymous autoassess not enabled
+
+
+  /exercises/{exerciseId}/anonymous/submissions:
+    parameters:
+      - $ref: '#/parameters/ExerciseId'
+    get:
+      summary: Get anonymous submissions for this exercise.
+      tags:
+        - teacher
+      responses:
+        200:
+          description: Submissions.
+          schema:
+            properties:
+              submissions:
+                type: array
+                items:
+                  properties:
+                    id:
+                      type: string
+                    solution:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    grade:
+                      type: integer
+                    feedback:
+                      type: string
+                  required:
+                    - id
+                    - solution
+                    - created_at
+                    - grade
+            required:
+              - submissions
 
   /remove-cache:
     post:
@@ -1974,6 +2050,8 @@ paths:
                 type: string
               public:
                 type: boolean
+              anonymous_autoassess_enabled:
+                type: boolean
               grader_type:
                 $ref: '#/definitions/GraderType'
               grading_script:
@@ -2003,6 +2081,7 @@ paths:
             required:
               - title
               - public
+              - anonymous_autoassess_enabled
               - grader_type
       responses:
         200:
