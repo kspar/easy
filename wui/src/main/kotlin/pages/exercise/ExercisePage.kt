@@ -7,6 +7,8 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import pages.EasyPage
+import pages.sidenav.ActivePage
+import pages.sidenav.Sidenav
 import queries.createQueryString
 import queries.getCurrentQueryParamValue
 
@@ -20,6 +22,9 @@ object ExercisePage : EasyPage() {
 
     // /library/{exerciseId}/summary/dir1-name/dir2-name/ex-name?
     override val pathSchema = "/library/{exerciseId}/summary"
+
+    override val sidenavSpec: Sidenav.Spec
+        get() = Sidenav.Spec(activePage = ActivePage.LIBRARY)
 
     private val exerciseId: String
         get() = parsePathParams()["exerciseId"]
