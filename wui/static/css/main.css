@@ -1198,10 +1198,13 @@ textarea.materialize-textarea {
 }
 
 
-[type="checkbox"] + span:not(.lever) {
-    font-size: 1.4rem;
+ez-checkbox input[type="checkbox"] + span:not(.lever) {
     margin-top: 1rem;
     margin-bottom: 1rem;
+}
+
+[type="checkbox"] + span:not(.lever) {
+    font-size: 1.4rem;
 }
 
 [type="checkbox"].filled-in:not(:checked) + span:not(.lever)::after {
