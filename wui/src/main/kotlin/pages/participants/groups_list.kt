@@ -2,6 +2,7 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import errorMessage
@@ -87,7 +88,7 @@ class ParticipantsGroupsListComp(
             return EzCollComp.ResultUnmodified
         }
 
-        deleteGroupModal.text = "Kustuta ${group.props.name}?"
+        deleteGroupModal.setText(StringComp.boldTriple("Kustuta ", group.props.name, "?"))
         deleteGroupModal.primaryAction = {
             fetchEms("/courses/$courseId/groups/${group.props.id}", ReqMethod.DELETE, successChecker = { http200 },
                 errorHandler = {

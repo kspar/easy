@@ -2,6 +2,7 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import debug
@@ -167,9 +168,9 @@ class ParticipantsTeachersListComp(
 
     private suspend fun addToGroup(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
         val text = if (items.size == 1)
-            "Lisa õpetaja ${items[0].title} rühma:"
+            StringComp.boldTriple("Lisa õpetaja ", items[0].title, " rühma:")
         else
-            "Lisa ${items.size} õpetajat rühma:"
+            StringComp.boldTriple("Lisa ", items.size.toString(), " õpetajat rühma:")
 
         addToGroupModal.setText(text)
         addToGroupModal.participants = items.map { AddToGroupModalComp.Participant(teacherId = it.props.username) }
@@ -188,9 +189,9 @@ class ParticipantsTeachersListComp(
 
     private suspend fun removeFromGroup(items: List<EzCollComp.Item<TeacherProps>>): EzCollComp.Result {
         val text = if (items.size == 1)
-            "Eemalda õpetaja ${items[0].title} rühmast:"
+            StringComp.boldTriple("Eemalda õpetaja ", items[0].title, " rühmast:")
         else
-            "Eemalda ${items.size} õpetajat rühmast:"
+            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpetajat rühmast:")
 
         removeFromGroupModal.setText(text)
         val canRemove = removeFromGroupModal.setParticipants(
@@ -221,11 +222,11 @@ class ParticipantsTeachersListComp(
         debug { "Removing teachers ${items.map { it.title }}?" }
 
         val text = if (items.size == 1)
-            "Eemalda õpetaja ${items[0].title}?"
+            StringComp.boldTriple("Eemalda õpetaja ", items[0].title, "?")
         else
-            "Eemalda ${items.size} õpetajat?"
+            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpetajat?")
 
-        removeFromCourseModal.text = text
+        removeFromCourseModal.setText(text)
         removeFromCourseModal.primaryAction = {
             debug { "Remove confirmed" }
 

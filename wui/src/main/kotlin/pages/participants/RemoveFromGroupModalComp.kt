@@ -64,8 +64,8 @@ class RemoveFromGroupModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    fun setText(text: String) {
-        textComp.text = text
+    fun setText(parts: List<StringComp.Part>) {
+        textComp.parts = parts
         textComp.rebuild()
     }
 

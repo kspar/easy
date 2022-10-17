@@ -1016,6 +1016,17 @@ a i.pre-link-icon {
 }
 
 
+/** Strings **/
+
+ez-string.semibold {
+    font-weight: 500;
+}
+
+ez-string.bold {
+    font-weight: 600;
+}
+
+
 /** Form elements **/
 
 input:not([type]),
