@@ -2,7 +2,7 @@ package pages.courses
 
 import Str
 import cache.BasicCourseInfo
-import dao.CoursesTeacher
+import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import rip.kspar.ezspa.CacheableComponent
@@ -64,7 +64,7 @@ class TeacherCourseListComp(
         get() = courseItems
 
     override fun create(): Promise<*> = doInPromise {
-        courseItems = CoursesTeacher.getMyCourses().map {
+        courseItems = CoursesTeacherDAO.getMyCourses().map {
             TeacherCourseItemComp(it.id, it.title, it.student_count, this)
         }
     }

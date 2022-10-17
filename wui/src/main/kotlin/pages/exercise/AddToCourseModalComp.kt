@@ -4,13 +4,9 @@ import Str
 import components.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
-import dao.CoursesTeacher
-import debug
-import kotlinx.coroutines.await
+import dao.CoursesTeacherDAO
+import dao.ExerciseDAO
 import plainDstStr
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
@@ -52,19 +48,7 @@ class AddToCourseModalComp(
     }
 
     private suspend fun addToCourse(courseId: String) {
-        debug { "Adding exercise $exerciseId to course $courseId" }
-
-        fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.POST,
-            mapOf(
-                "exercise_id" to exerciseId,
-                "threshold" to 100,
-                "student_visible" to false,
-                "assessments_student_visible" to true,
-            ),
-            successChecker = { http200 }
-        ).await()
-        debug { "Successfully added exercise $exerciseId to course $courseId" }
-
+        ExerciseDAO.addExerciseToCourse(exerciseId, courseId)
         successMessage { "Lisatud" }
     }
 }
@@ -80,7 +64,7 @@ class AddToCourseModalCoursesListComp(
         get() = listOf(radioButtons)
 
     override fun create() = doInPromise {
-        val courses = CoursesTeacher.getMyCourses()
+        val courses = CoursesTeacherDAO.getMyCourses()
 
         val buttons = courses.map {
             RadioButtonsComp.Button(
@@ -95,7 +79,6 @@ class AddToCourseModalCoursesListComp(
             parent = this,
         )
     }
-
 
     override fun render() = plainDstStr(radioButtons.dstId)
 

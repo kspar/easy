@@ -5,6 +5,7 @@ import components.form.CheckboxComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -93,18 +94,7 @@ class CreateExerciseModalComp(
 
         if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
             allowAddingToCourseId!!
-            debug { "Adding exercise $exerciseId to course $allowAddingToCourseId" }
-
-            fetchEms("/teacher/courses/$allowAddingToCourseId/exercises", ReqMethod.POST,
-                mapOf(
-                    "exercise_id" to exerciseId,
-                    "threshold" to 100,
-                    "student_visible" to false,
-                    "assessments_student_visible" to true,
-                ),
-                successChecker = { http200 }
-            ).await()
-            debug { "Successfully added exercise $exerciseId to course $allowAddingToCourseId" }
+            ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId)
         }
 
         return exerciseId
