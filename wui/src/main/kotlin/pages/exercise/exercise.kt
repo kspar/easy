@@ -112,7 +112,10 @@ class ExerciseRootComp(
             Sidenav.PageSection(
                 exercise.title, listOf(
                     Sidenav.Action(Icons.add, "Lisa kursusele") {
-                        addToCourseModal.openWithClosePromise().await()
+                        val r = addToCourseModal.openWithClosePromise().await()
+                        if (r != null) {
+                            recreate()
+                        }
                     }
                 )
             )
@@ -178,6 +181,10 @@ class ExerciseRootComp(
         fetchEms("/exercises/$exerciseId", ReqMethod.PUT, body, successChecker = { http200 }).await()
         successMessage { "Ülesanne salvestatud" }
 
+        recreate()
+    }
+
+    private suspend fun recreate() {
         val editorTabId = autoassessComp?.getEditorActiveTabId()
         createAndBuild().await()
         editorTabId?.let { autoassessComp?.setEditorActiveTabId(editorTabId) }
