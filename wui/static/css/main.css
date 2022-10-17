@@ -1482,7 +1482,7 @@ ez-spinner .circle-clipper .circle {
 ez-coll-wrap {
     display: block;
     width: 100%;
-    container: inline-size;
+    container-type: inline-size;
 }
 
 ezc-ctrl {
@@ -1985,7 +1985,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 
 ezc-bottom-attrs {
     width: 100%;
-    container: inline-size;
+    container-type: inline-size;
 }
 
 ezc-bottom-attrs > ezc-attr {
