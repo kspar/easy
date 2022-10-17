@@ -25,5 +25,7 @@ object CoursesTeacher {
         return getMyCoursesQuery().await()
             .parseTo(Courses.serializer()).await()
             .courses
+            // Temp hack to sort by created time - newer on top
+            .sortedByDescending { it.id.toInt() }
     }
 }
