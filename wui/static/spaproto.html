@@ -440,7 +440,7 @@
 </script>
 
 <script id="t-c-button" type="text/x-handlebars">
-    <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} waves-effect">
+    <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} {{#isDisabled}}disabled{{/isDisabled}} waves-effect">
         <ez-btn-content>{{{contentHtml}}}</ez-btn-content>
     </button>
 </script>
@@ -463,6 +463,18 @@
 
 <script id="t-c-checkbox" type="text/x-handlebars">
     <label for="{{id}}"><input id="{{id}}" type="checkbox"><span>{{label}}</span></label>
+</script>
+
+<script id="t-c-radio-buttons" type="text/x-handlebars">
+    <ez-radio-buttons id="{{elementId}}">
+        {{#buttons}}
+            <label for="{{id}}">
+                <input id="{{id}}" value="{{id}}" name="{{groupId}}" type="radio" {{#isSelected}}checked{{/isSelected}} {{#isDisabled}}disabled="disabled"{{/isDisabled}}>
+                <span>{{label}}</span>
+            </label>
+        {{/buttons}}
+        <span id="field-helper-{{elementId}}" class="helper-text"></span>
+    </ez-radio-buttons>
 </script>
 
 
@@ -596,6 +608,7 @@
     <div id="global-exercise">
         <ez-dst id="{{crumbsDstId}}"></ez-dst>
         <ez-dst id="{{cardDstId}}"></ez-dst>
+        <ez-dst id="{{addToCourseModalDstId}}"></ez-dst>
     </div>
 </script>
 

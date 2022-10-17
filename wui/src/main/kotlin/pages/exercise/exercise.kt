@@ -1,6 +1,7 @@
 package pages.exercise
 
 import DateSerializer
+import Icons
 import Str
 import blankToNull
 import components.BreadcrumbsComp
@@ -9,6 +10,7 @@ import components.Crumb
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.Title
+import pages.sidenav.Sidenav
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -83,13 +85,14 @@ class ExerciseRootComp(
 
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: CardTabsComp
+    private lateinit var addToCourseModal: AddToCourseModalComp
 
     private var autoassessComp: AutoAssessmentTabComp? = null
 
     private var selectedTabId: String? = preselectedTabId
 
     override val children: List<Component>
-        get() = listOf(crumbs, tabs)
+        get() = listOf(crumbs, tabs, addToCourseModal)
 
     override fun create(): Promise<*> = doInPromise {
         val exercise = fetchEms("/exercises/$exerciseId", ReqMethod.GET,
@@ -98,11 +101,22 @@ class ExerciseRootComp(
 
         crumbs = BreadcrumbsComp(listOf(Crumb.exercises, Crumb(exercise.title)), this)
         tabs = CardTabsComp(this, ::onTabSelected)
+        addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
 
         Title.update {
             it.pageTitle = exercise.title
             it.parentPageTitle = Str.exerciseLibrary()
         }
+
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                exercise.title, listOf(
+                    Sidenav.Action(Icons.add, "Lisa kursusele") {
+                        addToCourseModal.openWithClosePromise().await()
+                    }
+                )
+            )
+        )
 
         val tabsList = mutableListOf<CardTabsComp.Tab>()
 
@@ -136,7 +150,8 @@ class ExerciseRootComp(
     override fun render(): String = tmRender(
         "t-c-exercise",
         "crumbsDstId" to crumbs.dstId,
-        "cardDstId" to tabs.dstId
+        "cardDstId" to tabs.dstId,
+        "addToCourseModalDstId" to addToCourseModal.dstId,
     )
 
     private fun onTabSelected(tabId: String) {
