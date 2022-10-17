@@ -32,6 +32,7 @@ class UpdateExerciseCont(private val adocService: AdocService) {
         @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
         @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
         @JsonProperty("public", required = true) val public: Boolean,
+        @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @JsonProperty("grader_type", required = true) val graderType: GraderType,
         @JsonProperty("grading_script", required = false) val gradingScript: String?,
         @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
@@ -76,6 +77,7 @@ private fun updateExercise(exerciseId: Long, authorId: String, req: UpdateExerci
 
         Exercise.update({ Exercise.id eq exerciseId }) {
             it[public] = req.public
+            it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
         }
 
         val lastVersionId = ExerciseVer

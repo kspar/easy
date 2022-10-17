@@ -114,6 +114,21 @@ fun assertStudentHasAccessToCourse(studentId: String, courseId: Long) {
     }
 }
 
+fun assertUnauthAccessToExercise(exerciseId: Long) {
+    val unauthEnabled = transaction {
+        Exercise.slice(Exercise.anonymousAutoassessEnabled)
+            .select { Exercise.id.eq(exerciseId) }
+            .map { it[Exercise.anonymousAutoassessEnabled] }
+            .singleOrNull() ?: throw ForbiddenException(
+            "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
+        )
+    }
+
+    if (!unauthEnabled) {
+        throw ForbiddenException("No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
+
 fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean {
     return transaction {
         StudentCourseAccess

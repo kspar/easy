@@ -26,46 +26,58 @@ private val log = KotlinLogging.logger {}
 class TeacherReadExerciseController {
 
     data class Resp(
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("created_at") val created_at: DateTime,
-            @JsonProperty("is_public") val public: Boolean,
-            @JsonProperty("owner_id") val ownerUsername: String,
-            @JsonSerialize(using = DateTimeSerializer::class)
-            @JsonProperty("last_modified") val lastModified: DateTime,
-            @JsonProperty("last_modified_by_id") val lastModifiedBy: String,
-            @JsonProperty("grader_type") val grader: GraderType,
-            @JsonProperty("title") val title: String,
-            @JsonProperty("text_html") val textHtml: String?,
-            @JsonProperty("text_adoc") val textAdoc: String?,
-            @JsonProperty("grading_script") val gradingScript: String?,
-            @JsonProperty("container_image") val containerImage: String?,
-            @JsonProperty("max_time_sec") val maxTime: Int?,
-            @JsonProperty("max_mem_mb") val maxMem: Int?,
-            @JsonProperty("assets") val assets: List<RespAsset>?,
-            @JsonProperty("executors") val executors: List<RespExecutor>?,
-            @JsonProperty("on_courses") val courses: List<RespCourse>)
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("created_at") val created_at: DateTime,
+        @JsonProperty("is_public") val public: Boolean,
+        @JsonProperty("is_anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean,
+        @JsonProperty("owner_id") val ownerUsername: String,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("last_modified") val lastModified: DateTime,
+        @JsonProperty("last_modified_by_id") val lastModifiedBy: String,
+        @JsonProperty("grader_type") val grader: GraderType,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("text_html") val textHtml: String?,
+        @JsonProperty("text_adoc") val textAdoc: String?,
+        @JsonProperty("grading_script") val gradingScript: String?,
+        @JsonProperty("container_image") val containerImage: String?,
+        @JsonProperty("max_time_sec") val maxTime: Int?,
+        @JsonProperty("max_mem_mb") val maxMem: Int?,
+        @JsonProperty("assets") val assets: List<RespAsset>?,
+        @JsonProperty("executors") val executors: List<RespExecutor>?,
+        @JsonProperty("on_courses") val courses: List<RespCourse>,
+        @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
+        @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int
+    )
 
-    data class RespAsset(@JsonProperty("file_name") val fileName: String,
-                         @JsonProperty("file_content") val fileContent: String)
+    data class RespAsset(
+        @JsonProperty("file_name") val fileName: String,
+        @JsonProperty("file_content") val fileContent: String
+    )
 
-    data class RespExecutor(@JsonProperty("id") val id: String,
-                            @JsonProperty("name") val name: String)
+    data class RespExecutor(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String
+    )
 
-    data class RespCourse(@JsonProperty("id") val id: String,
-                          @JsonProperty("title") val title: String,
-                          @JsonProperty("course_exercise_id") val courseExId: String,
-                          @JsonProperty("course_exercise_title_alias") val titleAlias: String?)
+    data class RespCourse(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("course_exercise_id") val courseExId: String,
+        @JsonProperty("course_exercise_title_alias") val titleAlias: String?
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/exercises/{exerciseId}")
-    fun controller(@PathVariable("exerciseId") exIdString: String,
-                   caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("exerciseId") exIdString: String,
+        caller: EasyUser
+    ): Resp {
 
         log.debug { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
         return selectExerciseDetails(exerciseId)
-                ?: throw InvalidRequestException("No exercise found with id $exerciseId")
+            ?: throw InvalidRequestException("No exercise found with id $exerciseId")
     }
 
     private fun selectExerciseDetails(exerciseId: Long): Resp? {
@@ -74,53 +86,59 @@ class TeacherReadExerciseController {
         return transaction {
 
             val usedOnCourses = (CourseExercise innerJoin Course)
-                    .slice(Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias)
-                    .select {
-                        CourseExercise.exercise eq exerciseId
-                    }.map {
-                        UsedOnCourse(
-                                it[Course.id].value.toString(),
-                                it[Course.title],
-                                it[CourseExercise.id].value.toString(),
-                                it[CourseExercise.titleAlias]
-                        )
-                    }
+                .slice(Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias)
+                .select {
+                    CourseExercise.exercise eq exerciseId
+                }.map {
+                    UsedOnCourse(
+                        it[Course.id].value.toString(),
+                        it[Course.title],
+                        it[CourseExercise.id].value.toString(),
+                        it[CourseExercise.titleAlias]
+                    )
+                }
 
             (Exercise innerJoin ExerciseVer)
-                    .slice(Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
-                            ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
-                            ExerciseVer.autoExerciseId)
-                    .select {
-                        Exercise.id eq exerciseId and
-                                ExerciseVer.validTo.isNull()
-                    }.map {
-                        val graderType = it[ExerciseVer.graderType]
-                        val autoExercise =
-                                if (graderType == GraderType.AUTO) {
-                                    val autoExerciseId = it[ExerciseVer.autoExerciseId]
-                                            ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-                                    selectAutoExercise(autoExerciseId)
-                                } else null
+                .slice(
+                    Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
+                    ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
+                    ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled,
+                    Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount
+                )
+                .select {
+                    Exercise.id eq exerciseId and
+                            ExerciseVer.validTo.isNull()
+                }.map {
+                    val graderType = it[ExerciseVer.graderType]
+                    val autoExercise =
+                        if (graderType == GraderType.AUTO) {
+                            val autoExerciseId = it[ExerciseVer.autoExerciseId]
+                                ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+                            selectAutoExercise(autoExerciseId)
+                        } else null
 
-                        Resp(
-                                it[Exercise.createdAt],
-                                it[Exercise.public],
-                                it[Exercise.owner].value,
-                                it[ExerciseVer.validFrom],
-                                it[ExerciseVer.author].value,
-                                it[ExerciseVer.graderType],
-                                it[ExerciseVer.title],
-                                it[ExerciseVer.textHtml],
-                                it[ExerciseVer.textAdoc],
-                                autoExercise?.gradingScript,
-                                autoExercise?.containerImage,
-                                autoExercise?.maxTime,
-                                autoExercise?.maxMem,
-                                autoExercise?.assets?.map { RespAsset(it.first, it.second) },
-                                autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
-                                usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) }
-                        )
-                    }.singleOrNull()
+                    Resp(
+                        it[Exercise.createdAt],
+                        it[Exercise.public],
+                        it[Exercise.anonymousAutoassessEnabled],
+                        it[Exercise.owner].value,
+                        it[ExerciseVer.validFrom],
+                        it[ExerciseVer.author].value,
+                        it[ExerciseVer.graderType],
+                        it[ExerciseVer.title],
+                        it[ExerciseVer.textHtml],
+                        it[ExerciseVer.textAdoc],
+                        autoExercise?.gradingScript,
+                        autoExercise?.containerImage,
+                        autoExercise?.maxTime,
+                        autoExercise?.maxMem,
+                        autoExercise?.assets?.map { RespAsset(it.first, it.second) },
+                        autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
+                        usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
+                        it[Exercise.successfulAnonymousSubmissionCount],
+                        it[Exercise.unsuccessfulAnonymousSubmissionCount]
+                    )
+                }.singleOrNull()
         }
     }
 }

@@ -10,8 +10,7 @@ import core.db.GraderType
 import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
-import core.exception.ReqError
+import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -56,39 +55,33 @@ class StudentReadExerciseDetailsController {
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         return selectStudentExerciseDetails(courseId, courseExId)
-            ?: throw InvalidRequestException(
-                "Exercise $courseExId not found on course $courseId or it is hidden",
-                ReqError.ENTITY_WITH_ID_NOT_FOUND
-            )
     }
-}
 
-
-private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long):
-        StudentReadExerciseDetailsController.Resp? {
-    return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
-                ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
-                CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
-                CourseExercise.titleAlias
-            )
-            .select {
-                CourseExercise.course eq courseId and
-                        (CourseExercise.id eq courseExId) and
-                        ExerciseVer.validTo.isNull()
-            }
-            .map {
-                StudentReadExerciseDetailsController.Resp(
-                    it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
-                    it[ExerciseVer.textHtml],
-                    it[CourseExercise.softDeadline],
-                    it[ExerciseVer.graderType],
-                    it[CourseExercise.gradeThreshold],
-                    it[CourseExercise.instructionsHtml]
+    private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long): Resp {
+        return transaction {
+            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(
+                    ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
+                    CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
+                    CourseExercise.titleAlias
                 )
-            }
-            .singleOrNull()
+                .select {
+                    CourseExercise.course eq courseId and
+                            (CourseExercise.id eq courseExId) and
+                            ExerciseVer.validTo.isNull()
+                }
+                .map {
+                    Resp(
+                        it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
+                        it[ExerciseVer.textHtml],
+                        it[CourseExercise.softDeadline],
+                        it[ExerciseVer.graderType],
+                        it[CourseExercise.gradeThreshold],
+                        it[CourseExercise.instructionsHtml]
+                    )
+                }
+                .singleOrInvalidRequest()
+        }
     }
 }
 

@@ -1321,4 +1321,42 @@
                                  onUpdate="CASCADE" onDelete="CASCADE"/>
     </changeSet>
 
+    <changeSet id="031022-1" author="priit">
+        <addColumn tableName="exercise">
+            <column name="anonymous_autoassess_enabled" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="successful_anonymous_submission_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unsuccessful_anonymous_submission_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="031022-2" author="priit">
+        <createTable tableName="anonymous_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_anonymous_submission_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="grade" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="feedback" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
 </databaseChangeLog>
