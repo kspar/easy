@@ -35,6 +35,7 @@ abstract class TranslatableStrings {
         Role.TEACHER -> roleTeacher()
         Role.ADMIN -> roleAdmin()
     }
+    fun translateStudents(count: Int) = if (count == 1) coursesStudent() else coursesStudents()
 
 
     // Navbar

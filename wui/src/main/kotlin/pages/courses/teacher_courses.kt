@@ -104,6 +104,6 @@ class TeacherCourseItemComp(
         "id" to id,
         "title" to title,
         "count" to studentCount,
-        "studentsLabel" to if (studentCount == 1) Str.coursesStudent() else Str.coursesStudents()
+        "studentsLabel" to Str.translateStudents(studentCount),
     )
 }

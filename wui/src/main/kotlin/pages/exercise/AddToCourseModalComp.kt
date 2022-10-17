@@ -83,7 +83,10 @@ class AddToCourseModalCoursesListComp(
         val courses = CoursesTeacher.getMyCourses()
 
         val buttons = courses.map {
-            RadioButtonsComp.Button("${it.title} - ${it.student_count} õpilast", it.id)
+            RadioButtonsComp.Button(
+                "${it.title} - ${it.student_count} ${Str.translateStudents(it.student_count)}",
+                it.id
+            )
         }
 
         radioButtons = RadioButtonsComp(
