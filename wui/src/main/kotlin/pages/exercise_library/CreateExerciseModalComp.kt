@@ -1,4 +1,4 @@
-package pages.sidenav
+package pages.exercise_library
 
 import Str
 import components.form.CheckboxComp
