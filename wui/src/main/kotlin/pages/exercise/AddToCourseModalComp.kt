@@ -82,7 +82,7 @@ class AddToCourseModalCoursesListComp(
     override fun create() = doInPromise {
         val courses = CoursesTeacher.getMyCourses()
 
-        val buttons = courses.subList(0, 3).map {
+        val buttons = courses.map {
             RadioButtonsComp.Button("${it.title} - ${it.student_count} õpilast", it.id)
         }
 
