@@ -7,6 +7,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.component1
 import core.util.component2
+import core.util.maxOfOrNull
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
@@ -238,6 +239,7 @@ fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
     }
 }
 
+// TODO: rename to user
 fun assertAccountHasDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel) {
     if (!hasAccountDirAccess(user, dirId, level)) {
         throw ForbiddenException("User ${user.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS)
@@ -270,11 +272,11 @@ private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, t
                 }.firstOrNull()
     }
 
-    val initialDirectBestLevel = listOfNotNull(currentDirGroupLevel, currentAnyAccessLevel).maxOrNull()
+    val initialDirectBestLevel = maxOfOrNull(currentDirGroupLevel, currentAnyAccessLevel)
     // P is not inherited - if current dir has P and it's not direct then don't count it
     val directBestLevel = if (!isDirect && initialDirectBestLevel == DirAccessLevel.P) null else initialDirectBestLevel
     log.trace { "directBestLevel: $directBestLevel" }
-    val bestLevel = listOfNotNull(directBestLevel, previousBestLevel).maxOrNull()
+    val bestLevel = maxOfOrNull(directBestLevel, previousBestLevel)
     log.trace { "bestLevel: $bestLevel" }
 
     return when {
@@ -296,5 +298,24 @@ fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel?
                     it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
                 }.maxOrNull()
                 .also { log.trace { "best group access: $it" } }
+    }
+}
+
+fun hasUserGroupAccess(user: EasyUser, groupId: Long, requireManager: Boolean): Boolean {
+    return when {
+        user.isAdmin() -> true
+        else -> hasAccountGroupAccess(user.id, groupId, requireManager)
+    }
+}
+
+private fun hasAccountGroupAccess(accountId: String, groupId: Long, requireManager: Boolean): Boolean {
+    return transaction {
+        val q = AccountGroup.select {
+            AccountGroup.account eq accountId and (AccountGroup.group eq groupId)
+        }
+        if (requireManager) {
+            q.andWhere { AccountGroup.isManager eq true }
+        }
+        q.count() >= 1L
     }
 }
