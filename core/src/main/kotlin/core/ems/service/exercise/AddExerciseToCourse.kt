@@ -69,7 +69,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
-        if (isExerciseOnCourse(courseId, exerciseId, false)) {
+        if (isExerciseOnCourse(exerciseId, courseId, false)) {
             throw InvalidRequestException("Exercise $exerciseId is already on course $courseId", ReqError.EXERCISE_ALREADY_ON_COURSE)
         }
 
