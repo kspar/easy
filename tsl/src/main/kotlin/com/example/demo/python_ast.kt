@@ -14,13 +14,13 @@ class PyFunctionCall(val name: String, val namedArgs: Map<String, PyASTPrimitive
             "${it.key.trim()}=${it.value?.generatePyString()}"
         }.joinToString(", ")
 
-        return "$name($argsString)\n"
+        return "$name($argsString)"
     }
 }
 
 // TODO: .generatePyString() võiks toimuda hiljem, mitte igas harus
 
-class PyInt(val value: Long) : PyASTPrimitive() {
+class PyInt(val value: Long?) : PyASTPrimitive() {
     // Long.toString() is always a valid Python integer primitive?
     override fun generatePyString() = value.toString()
 }
@@ -30,7 +30,7 @@ class PyStr(val value: String?) : PyASTPrimitive() {
 }
 
 class PyFloat(val value: Double) : PyASTPrimitive() {
-    override fun generatePyString() = TODO("Not yet implemented")
+    override fun generatePyString() = value.toString()
 }
 
 class PyList(val values: List<PyASTPrimitive>) : PyASTPrimitive() {

@@ -21,8 +21,21 @@ tests:
       - stringCheckType: ALL_OF_THESE
         expectedOutput: Output
         considerElementsOrder: true
+        beforeMessage: This is before message for standardOutputChecks
+        passedMessage: This is passed message for standardOutputChecks
+        failedMessage: This is failed message for standardOutputChecks
     outputFileChecks:
       - fileName: file2.txt
         stringCheckType: ALL_OF_THESE
         expectedOutput: Output2
         considerElementsOrder: false
+        beforeMessage: This is before message for outputFileChecks
+        passedMessage: This is passed message for outputFileChecks
+        failedMessage: This is failed message for outputFileChecks
+    points: 0.1
+    id: 1
+    name: Test name
+    inputs: Test inputs in other format
+    passedNext: 2
+    failedNext: 3
+    visibleToUser: true
