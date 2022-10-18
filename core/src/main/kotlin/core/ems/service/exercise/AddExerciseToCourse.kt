@@ -9,6 +9,7 @@ import core.db.Exercise
 import core.db.StoredFile
 import core.ems.service.*
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -66,6 +67,10 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
 
         if (!isCoursePresent(courseId)) {
             throw InvalidRequestException("Course $courseId does not exist")
+        }
+
+        if (isExerciseOnCourse(courseId, exerciseId, false)) {
+            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId", ReqError.EXERCISE_ALREADY_ON_COURSE)
         }
 
         when (body.instructionsAdoc) {
