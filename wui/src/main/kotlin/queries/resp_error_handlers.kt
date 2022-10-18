@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 import org.w3c.fetch.Response
 import tmRender
 import truncate
+import kotlin.js.Promise
 
 
 typealias RespSuccessChecker = Response.() -> Boolean
@@ -73,6 +74,7 @@ enum class RespError(val code: String) {
     NO_GROUP_ACCESS("NO_GROUP_ACCESS"),
     GROUP_NOT_EMPTY("GROUP_NOT_EMPTY"),
     ENTITY_WITH_ID_NOT_FOUND("ENTITY_WITH_ID_NOT_FOUND"),
+    EXERCISE_ALREADY_ON_COURSE("EXERCISE_ALREADY_ON_COURSE"),
 
     ACCOUNT_MIGRATION_FAILED("ACCOUNT_MIGRATION_FAILED"),
 }
@@ -87,8 +89,9 @@ data class ErrorBody(
 
 /**
  * Used to indicate that an erroneous (i.e. not successful) response was obtained from a fetch, but it was handled by an error handler.
+ * @param errorHandlerException - an exception from the error handler if one was thrown by the handler
  */
-class HandledResponseError : Exception()
+class HandledResponseError(val errorHandlerException: Promise<Throwable>) : Exception()
 
 
 fun ErrorBody?.handleByCode(respError: RespError, errorHandler: (ErrorBody) -> Unit): Boolean =

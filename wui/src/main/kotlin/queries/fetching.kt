@@ -56,7 +56,7 @@ fun fetchEms(path: String, method: ReqMethod,
                                     if (successChecker(resp.clone())) {
                                         resolve(resp)
                                     } else {
-                                        resp.clone().parseTo(ErrorBody.serializer())
+                                        val handlerException = resp.clone().parseTo(ErrorBody.serializer())
                                                 .catch {
                                                     if (it is SerializationException) {
                                                         debug { "SerializationException: $it" }
@@ -72,8 +72,12 @@ fun fetchEms(path: String, method: ReqMethod,
                                                         ErrorHandlers.defaultMsg(resp, errorBody)
                                                     }
                                                 }
+                                                .catch {
+                                                    // error handler threw
+                                                    it
+                                                }
 
-                                        throw HandledResponseError()
+                                        throw HandledResponseError(handlerException)
                                     }
                                 }
 
