@@ -9,11 +9,13 @@ import kotlinx.serialization.json.Json
 import kotlin.js.Date
 
 
-val JsonUtil = Json
+val JsonUtil = Json {
+    ignoreUnknownKeys = true
+}
 
 
 fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =
-        JsonUtil.decodeFromString(deserializer, this)
+    JsonUtil.decodeFromString(deserializer, this)
 
 fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.encodeToString(this, obj)
 
