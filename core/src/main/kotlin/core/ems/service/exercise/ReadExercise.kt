@@ -38,6 +38,7 @@ class TeacherReadExerciseController {
         @JsonProperty("title") val title: String,
         @JsonProperty("text_html") val textHtml: String?,
         @JsonProperty("text_adoc") val textAdoc: String?,
+        @JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
         @JsonProperty("grading_script") val gradingScript: String?,
         @JsonProperty("container_image") val containerImage: String?,
         @JsonProperty("max_time_sec") val maxTime: Int?,
@@ -102,7 +103,7 @@ class TeacherReadExerciseController {
                 .slice(
                     Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
                     ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
-                    ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled,
+                    ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled, Exercise.anonymousAutoassessTemplate,
                     Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount
                 )
                 .select {
@@ -128,6 +129,7 @@ class TeacherReadExerciseController {
                         it[ExerciseVer.title],
                         it[ExerciseVer.textHtml],
                         it[ExerciseVer.textAdoc],
+                        it[Exercise.anonymousAutoassessTemplate],
                         autoExercise?.gradingScript,
                         autoExercise?.containerImage,
                         autoExercise?.maxTime,

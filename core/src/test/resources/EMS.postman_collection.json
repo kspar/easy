@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "6e658429-39c8-4d1f-a000-a80569019fff",
+		"_postman_id": "a21b1df1-a2b8-47be-b216-77b88f21acd5",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -2599,6 +2599,69 @@
 			"response": []
 		},
 		{
+			"name": "EMS: teacher: get: read exercise: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "admin"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/exercises/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"exercises",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "EMS: student: get: course summaries: success",
 			"event": [
 				{
@@ -3439,14 +3502,14 @@
 					}
 				],
 				"url": {
-					"raw": "{{EMSBASE}}/unauth/exercises/2/anonymous/details",
+					"raw": "{{EMSBASE}}/unauth/exercises/1/anonymous/details",
 					"host": [
 						"{{EMSBASE}}"
 					],
 					"path": [
 						"unauth",
 						"exercises",
-						"2",
+						"1",
 						"anonymous",
 						"details"
 					]
@@ -5603,7 +5666,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"anonymous_autoassess_enabled\": true,\r\n  \"grader_type\": \"TEACHER\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \r\n    \r\n    \r\n  ]\r\n}",
+					"raw": "{\r\n  \"title\": \"string\",\r\n  \"text_html\": \"string\",\r\n  \"text_adoc\": \"string\",\r\n  \"public\": true,\r\n  \"anonymous_autoassess_enabled\": true,\r\n  \"anonymous_autoassess_template\": \"template\",\r\n  \"grader_type\": \"TEACHER\",\r\n  \"grading_script\": \"string\",\r\n  \"container_image\": \"string\",\r\n  \"max_time_sec\": 0,\r\n  \"max_mem_mb\": 0,\r\n  \"assets\": [\r\n    {\r\n      \"file_name\": \"string\",\r\n      \"file_content\": \"string\"\r\n    }\r\n  ],\r\n  \"executors\": [\r\n    \r\n    \r\n    \r\n  ]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"

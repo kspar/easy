@@ -1359,4 +1359,12 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="181022-1" author="priit">
+        <addColumn tableName="exercise">
+            <column name="anonymous_autoassess_template" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

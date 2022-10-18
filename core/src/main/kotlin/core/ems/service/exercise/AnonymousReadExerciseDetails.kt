@@ -24,7 +24,8 @@ class AnonymousReadExerciseDetails {
 
     data class Resp(
         @JsonProperty("title") val title: String,
-        @JsonProperty("text_html") val textHtml: String?
+        @JsonProperty("text_html") val textHtml: String?,
+        @JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?
     )
 
     @GetMapping("/unauth/exercises/{exerciseId}/anonymous/details")
@@ -41,13 +42,14 @@ class AnonymousReadExerciseDetails {
 
     private fun selectAnonymousExerciseDetails(exerciseId: Long): Resp = transaction {
         (Exercise innerJoin ExerciseVer).slice(
-            ExerciseVer.title, ExerciseVer.textHtml
+            ExerciseVer.title, ExerciseVer.textHtml, Exercise.anonymousAutoassessTemplate
         ).select {
             Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
         }.map {
             Resp(
                 it[ExerciseVer.title],
-                it[ExerciseVer.textHtml]
+                it[ExerciseVer.textHtml],
+                it[Exercise.anonymousAutoassessTemplate]
             )
         }.singleOrInvalidRequest()
     }
