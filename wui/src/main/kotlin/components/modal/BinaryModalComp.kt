@@ -15,6 +15,7 @@ open class BinaryModalComp<T>(
     secondaryBtnLoadingText: String? = null,
     defaultReturnValue: T,
     primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
+    val primaryButtonEnabledInitial: Boolean = true,
     fixFooter: Boolean = false,
     isWide: Boolean = false,
     open var primaryAction: (suspend () -> T)? = null,
@@ -33,13 +34,12 @@ open class BinaryModalComp<T>(
     val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
-    }, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
+    }, primaryButtonEnabledInitial, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
 
     val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
-    }, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
-
+    }, true, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
 
     override fun create() = doInPromise {
         super.create()?.await()

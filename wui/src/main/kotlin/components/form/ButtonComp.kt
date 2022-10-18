@@ -1,5 +1,7 @@
 package components.form
 
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
 import rip.kspar.ezspa.Component
@@ -12,6 +14,7 @@ class ButtonComp(
     private val type: Type,
     private val labelHtml: String,
     private val onClick: suspend (() -> Unit),
+    private val isEnabledInitial: Boolean = true,
     private val disabledLabel: String? = null,
     private val postClick: (suspend (() -> Unit))? = null,
     parent: Component
@@ -34,6 +37,7 @@ class ButtonComp(
         "isSecondary" to (type == Type.FLAT),
         "isDanger" to (type == Type.DANGER),
         "isPrimaryRound" to (type == Type.PRIMARY_ROUND),
+        "isDisabled" to !isEnabledInitial,
     )
 
     override fun postRender() {
@@ -59,6 +63,10 @@ class ButtonComp(
     fun enable() = setEnabled(true)
 
     fun setEnabled(isEnabled: Boolean) {
-        element.disabled = !isEnabled
+        element.let {
+            it.disabled = !isEnabled
+            if (isEnabled) it.removeClass("disabled")
+            else it.addClass("disabled")
+        }
     }
 }

@@ -31,8 +31,11 @@ fun getElemBySelector(selector: String): Element? =
     document.querySelector(selector)
 
 fun Element.getElemBySelector(selector: String): Element =
-    this.querySelector(selector)
+    getElemBySelectorOrNull(selector)
         ?: throw ElementNotFoundException("No element with selector '$selector' under ${this.localName}#${this.id}.${this.className}")
+
+fun Element.getElemBySelectorOrNull(selector: String): Element? =
+    this.querySelector(selector)
 
 fun getElemsByClass(className: String): List<Element> =
     document.getElementsByClassName(className).asList()

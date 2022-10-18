@@ -1016,6 +1016,17 @@ a i.pre-link-icon {
 }
 
 
+/** Strings **/
+
+ez-string.semibold {
+    font-weight: 500;
+}
+
+ez-string.bold {
+    font-weight: 600;
+}
+
+
 /** Form elements **/
 
 input:not([type]),
@@ -1187,10 +1198,13 @@ textarea.materialize-textarea {
 }
 
 
-[type="checkbox"] + span:not(.lever) {
-    font-size: 1.4rem;
+ez-checkbox input[type="checkbox"] + span:not(.lever) {
     margin-top: 1rem;
     margin-bottom: 1rem;
+}
+
+[type="checkbox"] + span:not(.lever) {
+    font-size: 1.4rem;
 }
 
 [type="checkbox"].filled-in:not(:checked) + span:not(.lever)::after {
@@ -1235,6 +1249,36 @@ textarea.materialize-textarea {
     border-bottom-color: var(--ez-checkbox-fill-col);
 }
 
+ez-radio-buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+ez-radio-buttons > label {
+    margin-bottom: .5rem;
+}
+
+ez-radio-buttons > .helper-text {
+    position: relative;
+    min-height: 18px;
+    display: block;
+    font-size: 12px;
+}
+
+ez-radio-buttons:not(.invalid) > .helper-text {
+    display: none;
+}
+
+ez-radio-buttons.invalid > .helper-text:after {
+    content: attr(data-error);
+    color: #F44336;
+}
+
+ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:before,
+ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
+    border-color: #F44336;
+}
+
 [type="radio"]:not(:checked)+span,
 [type="radio"]:checked+span {
     font-size: 1.4rem;
@@ -1255,6 +1299,11 @@ textarea.materialize-textarea {
 [type="radio"].with-gap:checked+span:after {
     border-color: var(--ez-checkbox-fill-col);
 }
+
+[type="radio"]:checked+span {
+    color: #000;
+}
+
 
 /** Modals **/
 
@@ -1436,7 +1485,7 @@ ez-spinner .circle-clipper .circle {
 ez-coll-wrap {
     display: block;
     width: 100%;
-    container: inline-size;
+    container-type: inline-size;
 }
 
 ezc-ctrl {
@@ -1939,7 +1988,7 @@ ez-coll-wrap *[ez-show-max="599"] {
 
 ezc-bottom-attrs {
     width: 100%;
-    container: inline-size;
+    container-type: inline-size;
 }
 
 ezc-bottom-attrs > ezc-attr {

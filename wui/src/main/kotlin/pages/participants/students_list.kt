@@ -2,6 +2,7 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
+import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import debug
@@ -178,9 +179,9 @@ class ParticipantsStudentsListComp(
         val text = if (items.size == 1) {
             val item = items[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            "Lisa õpilane $id rühma:"
+            StringComp.boldTriple("Lisa õpilane ", id, " rühma:")
         } else {
-            "Lisa ${items.size} õpilast rühma:"
+            StringComp.boldTriple("Lisa ", items.size.toString(), " õpilast rühma:")
         }
 
         addToGroupModal.setText(text)
@@ -206,9 +207,9 @@ class ParticipantsStudentsListComp(
         val text = if (items.size == 1) {
             val item = items[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            "Eemalda õpilane $id rühmast:"
+            StringComp.boldTriple("Eemalda õpilane ", id, " rühmast:")
         } else {
-            "Eemalda ${items.size} õpilast rühmast:"
+            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpilast rühmast:")
         }
 
         removeFromGroupModal.setText(text)
@@ -248,12 +249,12 @@ class ParticipantsStudentsListComp(
         val text = if (items.size == 1) {
             val item = items[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            "Eemalda õpilane $id?"
+            StringComp.boldTriple("Eemalda õpilane ", id, "?")
         } else {
-            "Eemalda ${items.size} õpilast?"
+            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpilast?")
         }
 
-        removeFromCourseModal.text = text
+        removeFromCourseModal.setText(text)
         removeFromCourseModal.primaryAction = {
             debug { "Remove confirmed" }
 

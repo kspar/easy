@@ -8,6 +8,7 @@ import kotlinx.coroutines.await
 import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.exercise.ExercisePage
+import pages.exercise_library.CreateExerciseModalComp
 import pages.grade_table.GradeTablePage
 import pages.participants.ParticipantsPage
 import rip.kspar.ezspa.*

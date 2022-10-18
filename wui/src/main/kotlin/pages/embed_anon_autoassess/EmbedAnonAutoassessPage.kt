@@ -1,5 +1,6 @@
 package pages.embed_anon_autoassess
 
+import AppProperties
 import CONTENT_CONTAINER_ID
 import Icons
 import PageName
@@ -118,6 +119,7 @@ Tere, maailm!</code></pre>
         "editorId" to editor.dstId,
         "submitBtnId" to submitBtn.dstId,
         "feedbackId" to feedback.dstId,
+        "lahendus" to AppProperties.AppName,
     )
 
     override fun postRender() {

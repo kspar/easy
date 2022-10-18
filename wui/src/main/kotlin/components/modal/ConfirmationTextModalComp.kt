@@ -24,19 +24,19 @@ class ConfirmationTextModalComp(
     title,
     primaryBtnText, secondaryBtnText,
     primaryBtnLoadingText, secondaryBtnLoadingText,
-    false, primaryBtnType, fixFooter, false,
+    false, primaryBtnType, true, fixFooter, false,
     primaryAction, secondaryAction, primaryPostAction, secondaryPostAction,
     parent = parent
 ) {
 
     private val stringComp = StringComp("", this)
 
-    var text: String
-        get() = stringComp.text
-        set(value) {
-            stringComp.text = value
-            stringComp.rebuild()
-        }
+    fun setText(parts: List<StringComp.Part>) {
+        stringComp.parts = parts
+        stringComp.rebuild()
+    }
+
+    fun setText(text: String) = setText(StringComp.simpleText(text))
 
     override fun create() = doInPromise {
         super.create().await()

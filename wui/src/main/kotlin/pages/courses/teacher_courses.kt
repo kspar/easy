@@ -2,12 +2,9 @@ package pages.courses
 
 import Str
 import cache.BasicCourseInfo
+import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
 import rip.kspar.ezspa.CacheableComponent
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -60,12 +57,6 @@ class TeacherCourseListComp(
     @Serializable
     data class SCourse(val id: String, val title: String, val studentCount: Int)
 
-    @Serializable
-    data class CoursesDto(val courses: List<CourseDto>)
-
-    @Serializable
-    data class CourseDto(val id: String, val title: String, val student_count: Int)
-
 
     private var courseItems: List<TeacherCourseItemComp> = emptyList()
 
@@ -73,12 +64,9 @@ class TeacherCourseListComp(
         get() = courseItems
 
     override fun create(): Promise<*> = doInPromise {
-        courseItems = fetchEms("/teacher/courses", ReqMethod.GET, successChecker = { http200 }).await()
-            .parseTo(CoursesDto.serializer()).await()
-            .courses
-            // Temp hack to sort by created time - newer on top
-            .sortedByDescending { it.id.toInt() }
-            .map { TeacherCourseItemComp(it.id, it.title, it.student_count, this) }
+        courseItems = CoursesTeacherDAO.getMyCourses().map {
+            TeacherCourseItemComp(it.id, it.title, it.student_count, this)
+        }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
@@ -116,6 +104,6 @@ class TeacherCourseItemComp(
         "id" to id,
         "title" to title,
         "count" to studentCount,
-        "studentsLabel" to if (studentCount == 1) Str.coursesStudent() else Str.coursesStudents()
+        "studentsLabel" to Str.translateStudents(studentCount),
     )
 }
