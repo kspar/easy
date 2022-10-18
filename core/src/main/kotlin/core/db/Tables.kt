@@ -48,6 +48,7 @@ object Exercise : LongIdTable("exercise") {
     val anonymousAutoassessTemplate = text("anonymous_autoassess_template").nullable()
     val successfulAnonymousSubmissionCount = integer("successful_anonymous_submission_count")
     val unsuccessfulAnonymousSubmissionCount = integer("unsuccessful_anonymous_submission_count")
+    val removedSubmissionsCount = integer("removed_submissions_count")
 }
 
 object ExerciseVer : LongIdTable("exercise_version") {

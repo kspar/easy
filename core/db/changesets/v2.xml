@@ -1367,4 +1367,12 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="181022-2" author="priit">
+        <addColumn tableName="exercise">
+            <column name="removed_submissions_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>
