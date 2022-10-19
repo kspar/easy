@@ -133,10 +133,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
                 val cause = ex.cause as MismatchedInputException
                 cause.originalMessage
             }
-            is InvalidFormatException -> {
-                val cause = ex.cause as InvalidFormatException
-                "Cannot parse parameter '${cause.value}' to '${cause.targetType}'"
-            }
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
             else -> ex.message ?: "Invalid request!"
         }
