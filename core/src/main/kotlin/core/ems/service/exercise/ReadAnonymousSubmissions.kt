@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadAnonymousSubmissionsController {
+class ReadAnonymousSubmissions {
 
     data class SubmissionResp(
         @JsonProperty("id") val submissionId: String,
