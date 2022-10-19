@@ -7,6 +7,7 @@ import core.db.GroupDirAccess
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -14,11 +15,28 @@ import org.jetbrains.exposed.sql.transactions.transaction
 private val log = KotlinLogging.logger {}
 
 
+fun getImplicitDirFromExercise(exerciseId: Long): Long = transaction {
+    Dir
+        .slice(Dir.id)
+        .select {
+            Dir.name.eq(exerciseId.toString()) and Dir.isImplicit
+        }.map {
+            it[Dir.id]
+        }
+        .single().value
+}
+
+fun getExerciseFromImplicitDir(implicitDirId: Long): Long = transaction {
+    TODO("Should it return exercise ID or more attrs like for groups?")
+}
+
 fun assertDirExists(dirId: Long, allowImplicit: Boolean = false) {
     if (!dirExists(dirId, allowImplicit)) {
         val explicit = if (!allowImplicit) "explicit" else ""
-        throw InvalidRequestException("No $explicit dir with id $dirId",
-                ReqError.ENTITY_WITH_ID_NOT_FOUND, "id" to dirId.toString())
+        throw InvalidRequestException(
+            "No $explicit dir with id $dirId",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND, "id" to dirId.toString()
+        )
     }
 }
 
@@ -54,15 +72,15 @@ private fun printDir(dirId: Long? = null, level: Int = 0) {
             data class GroupAccess(val groupId: Long, val groupName: String, val access: DirAccessLevel)
 
             val accesses = (GroupDirAccess innerJoin Group)
-                    .select {
-                        GroupDirAccess.dir eq id
-                    }.map {
-                        GroupAccess(
-                                it[Group.id].value,
-                                it[Group.name],
-                                it[GroupDirAccess.level]
-                        )
-                    }
+                .select {
+                    GroupDirAccess.dir eq id
+                }.map {
+                    GroupAccess(
+                        it[Group.id].value,
+                        it[Group.name],
+                        it[GroupDirAccess.level]
+                    )
+                }
 
             log.debug { "${" ".repeat(level * 4)}| $implicit: $name [$id] $anyAccess" }
             accesses.forEach {

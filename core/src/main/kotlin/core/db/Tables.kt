@@ -86,6 +86,7 @@ object CourseExercise : LongIdTable("course_exercise") {
     val createdAt = datetime("created_at")
     val modifiedAt = datetime("modified_at")
     val gradeThreshold = integer("grade_threshold")
+
     // if null then permanently invisible
     // if in past or now then visible, if in future then invisible
     val studentVisibleFrom = datetime("student_visible_from").nullable()
@@ -178,7 +179,7 @@ object AutomaticAssessment : LongIdTable("automatic_assessment") {
     val feedback = text("feedback").nullable()
 }
 
-object AnonymousSubmission : LongIdTable("anonymous_submission"){
+object AnonymousSubmission : LongIdTable("anonymous_submission") {
     val exercise = reference("exercise_id", Exercise)
     val createdAt = datetime("created_at")
     val solution = text("solution")
@@ -307,6 +308,9 @@ object Dir : LongIdTable("exercise_dir") {
     val name = text("name")
     val isImplicit = bool("implicit").clientDefault { false }
     val parentDir = reference("parent", Dir).nullable()
+
+    // Access level given to any account for this dir,
+    // i.e. anyAccess == R would give all accounts read access without any other explicit permissions
     val anyAccess = enumerationByName("any_account_access_level", 10, DirAccessLevel::class).nullable()
     val createdAt = datetime("created_at")
     val modifiedAt = datetime("modified_at")

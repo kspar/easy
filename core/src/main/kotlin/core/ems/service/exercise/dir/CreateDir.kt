@@ -6,7 +6,7 @@ import core.db.Dir
 import core.db.DirAccessLevel
 import core.db.GroupDirAccess
 import core.ems.service.assertAccountHasDirAccess
-import core.ems.service.getAccountImplicitGroupId
+import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.hasAccountDirAccess
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
@@ -68,7 +68,7 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
         // If caller doesn't have full access by inheritance, add it explicitly
         if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
             GroupDirAccess.insert {
-                it[group] = getAccountImplicitGroupId(caller.id)
+                it[group] = getImplicitGroupFromAccount(caller.id)
                 it[dir] = newDirId
                 it[level] = DirAccessLevel.PRAWM
                 it[createdAt] = now
