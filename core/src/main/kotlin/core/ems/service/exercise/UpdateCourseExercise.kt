@@ -78,7 +78,6 @@ class UpdateCourseExercise(private val adocService: AdocService) {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         updateCourseExercise(courseExId, req)
