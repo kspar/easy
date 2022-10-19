@@ -49,16 +49,6 @@ class RemoveExerciseFromCourse {
                 it.update(removedSubmissionsCount, removedSubmissionsCount + submissionCount)
             }
 
-            val submissionsToDelete = Submission
-                .slice(Submission.id)
-                .select { Submission.courseExercise eq courseExId }
-                .map { it[Submission.id].value }
-
-
-            TeacherAssessment.deleteWhere { TeacherAssessment.submission inList submissionsToDelete }
-            AutomaticAssessment.deleteWhere { AutomaticAssessment.submission inList submissionsToDelete }
-            Submission.deleteWhere { Submission.courseExercise eq courseExId }
-            SubmissionDraft.deleteWhere { SubmissionDraft.courseExercise eq courseExId }
             CourseExercise.deleteWhere { CourseExercise.id eq courseExId }
         }
     }

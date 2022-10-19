@@ -1375,4 +1375,45 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="191022-1" author="priit">
+        <dropForeignKeyConstraint baseTableName="submission"
+                                  constraintName="fk_submission_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="submission_draft"
+                                  constraintName="fk_submission_draft_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission_draft"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_draft_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment"
+                                  constraintName="fk_teacher_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_teacher_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="automatic_assessment"
+                                  constraintName="fk_automatic_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="automatic_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_automatic_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+
 </databaseChangeLog>
