@@ -280,11 +280,17 @@ fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boo
  * the real highest access level; this parameter is used for optimisation - if the target level is achieved then we can
  * return early, without calculating other inherited accesses (even though these might increase the access level)
  */
-fun getAccountDirAccessLevel(userId: String, dirId: Long, target: DirAccessLevel = DirAccessLevel.PRAWM): DirAccessLevel? =
-        getEffectiveDirAccessLevelRec(userId, dirId, target, null, true)
+fun getAccountDirAccessLevel(
+    userId: String,
+    dirId: Long,
+    target: DirAccessLevel = DirAccessLevel.PRAWM
+): DirAccessLevel? =
+    getEffectiveDirAccessLevelRec(userId, dirId, target, null, true)
 
-private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, target: DirAccessLevel,
-                                                  previousBestLevel: DirAccessLevel?, isDirect: Boolean): DirAccessLevel? {
+private tailrec fun getEffectiveDirAccessLevelRec(
+    userId: String, dirId: Long, target: DirAccessLevel,
+    previousBestLevel: DirAccessLevel?, isDirect: Boolean
+): DirAccessLevel? {
     log.trace { "dir: $dirId, previous: $previousBestLevel" }
 
     // Get best direct (non-inherited) access level for current dir, accounting for groups
@@ -294,10 +300,11 @@ private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, t
     // Get parent dir id and current "any access" level
     val (parentDirId, currentAnyAccessLevel) = transaction {
         Dir.slice(Dir.parentDir, Dir.anyAccess)
-                .select { Dir.id eq dirId }
-                .map {
-                    it[Dir.parentDir] to it[Dir.anyAccess]
-                }.firstOrNull()
+            .select { Dir.id eq dirId }
+            .map {
+                it[Dir.parentDir] to it[Dir.anyAccess]
+            }
+            .firstOrNull()
     }
 
     // The best direct access level is either one that comes from group accesses or "any access"
@@ -312,7 +319,7 @@ private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, t
     log.trace { "bestLevel: $bestLevel" }
 
     return when {
-        // Desired level achieved
+        // Target level achieved, can return early
         bestLevel != null && bestLevel >= target -> bestLevel.also { log.trace { "finish, target $target achieved" } }
         // Finished search, return best access even though target was not achieved
         parentDirId == null -> bestLevel.also { log.trace { "finish, parent null" } }
@@ -324,14 +331,14 @@ private tailrec fun getEffectiveDirAccessLevelRec(userId: String, dirId: Long, t
 fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel? {
     return transaction {
         (AccountGroup innerJoin Group innerJoin GroupDirAccess)
-                .slice(GroupDirAccess.level)
-                .select {
-                    AccountGroup.account eq userId and
-                            (GroupDirAccess.dir eq dirId)
-                }.map {
-                    it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
-                }.maxOrNull()
-                .also { log.trace { "best group access: $it" } }
+            .slice(GroupDirAccess.level)
+            .select {
+                AccountGroup.account eq userId and
+                        (GroupDirAccess.dir eq dirId)
+            }.map {
+                it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
+            }.maxOrNull()
+            .also { log.trace { "best group access: $it" } }
     }
 }
 
