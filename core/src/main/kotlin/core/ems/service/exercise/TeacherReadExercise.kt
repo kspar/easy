@@ -47,7 +47,8 @@ class TeacherReadExerciseController {
         @JsonProperty("executors") val executors: List<RespExecutor>?,
         @JsonProperty("on_courses") val courses: List<RespCourse>,
         @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
-        @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int
+        @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int,
+        @JsonProperty("removed_submissions_count") val removedSubmissionsCount: Int
     )
 
     data class RespAsset(
@@ -104,7 +105,8 @@ class TeacherReadExerciseController {
                     Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
                     ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
                     ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled, Exercise.anonymousAutoassessTemplate,
-                    Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount
+                    Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount,
+                    Exercise.removedSubmissionsCount
                 )
                 .select {
                     Exercise.id eq exerciseId and
@@ -138,7 +140,8 @@ class TeacherReadExerciseController {
                         autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
                         usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
                         it[Exercise.successfulAnonymousSubmissionCount],
-                        it[Exercise.unsuccessfulAnonymousSubmissionCount]
+                        it[Exercise.unsuccessfulAnonymousSubmissionCount],
+                        it[Exercise.removedSubmissionsCount]
                     )
                 }.singleOrNull()
         }
