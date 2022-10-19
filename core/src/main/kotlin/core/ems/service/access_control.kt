@@ -19,8 +19,6 @@ import org.joda.time.DateTime
 private val log = KotlinLogging.logger {}
 
 
-// TODO: most of these could be extension funs on EasyUser
-
 fun assertUserHasAccessToCourse(user: EasyUser, courseId: Long) {
     when {
         user.isAdmin() -> assertCourseExists(courseId)
@@ -56,7 +54,7 @@ fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: 
 
 fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean {
     return transaction {
-        val hasGroups = teacherHasRestrictedGroupsOnCourse(user, courseId)
+        val hasGroups = teacherHasRestrictedGroupsOnCourse(user.id, courseId)
         if (!hasGroups) {
             true
         } else {
@@ -73,7 +71,7 @@ fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: 
     when {
         user.isAdmin() -> return
         user.isTeacher() -> {
-            if (teacherHasRestrictedGroupsOnCourse(user, courseId)) {
+            if (teacherHasRestrictedGroupsOnCourse(user.id, courseId)) {
                 throw ForbiddenException("Teacher ${user.id} has restricted groups on course $courseId",
                         ReqError.HAS_RESTRICTED_GROUPS)
             }
@@ -81,12 +79,12 @@ fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: 
     }
 }
 
-fun teacherHasRestrictedGroupsOnCourse(user: EasyUser, courseId: Long): Boolean {
+fun teacherHasRestrictedGroupsOnCourse(teacherId: String, courseId: Long): Boolean {
     return transaction {
         TeacherCourseGroup
                 .select {
                     TeacherCourseGroup.course eq courseId and
-                            (TeacherCourseGroup.teacher eq user.id)
+                            (TeacherCourseGroup.teacher eq teacherId)
                 }.count() > 0
     }
 }
@@ -185,16 +183,6 @@ fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVis
     }
 }
 
-fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean = false) {
-    if (!isExerciseOnCourse(exerciseId, courseId, requireStudentVisible)) {
-        throw InvalidRequestException(
-            "Exercise $exerciseId not found on course $courseId " +
-                    if (requireStudentVisible) "or it is hidden" else "",
-            ReqError.ENTITY_WITH_ID_NOT_FOUND
-        )
-    }
-}
-
 fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean {
     return transaction {
         val query = CourseExercise
@@ -255,6 +243,7 @@ fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
 }
 
 // TODO: rename to user
+// TODO: remove
 fun assertAccountHasDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel) {
     if (!hasAccountDirAccess(user, dirId, level)) {
         throw ForbiddenException("User ${user.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS)

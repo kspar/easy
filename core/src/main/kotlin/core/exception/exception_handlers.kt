@@ -92,18 +92,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
 
-    @ExceptionHandler(value = [AwaitTimeoutException::class])
-    fun handleAwaitTimeoutException(ex: AwaitTimeoutException, request: WebRequest): ResponseEntity<Any> {
-        val id = UUID.randomUUID().toString()
-        log.info("AwaitTimeoutException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
-        mailService.sendSystemNotification(ex.stackTraceString, id)
-
-        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
-        return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-
     // https://www.baeldung.com/spring-boot-bean-validation and
     // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
     override fun handleMethodArgumentNotValid(
