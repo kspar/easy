@@ -26,8 +26,8 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateGroupController {
     data class Req(
-            @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
-            @JsonProperty("color", required = false) @field:Size(min = 1, max = 100) val color: String?
+        @JsonProperty("name") @field:NotBlank @field:Size(max = 100) val name: String,
+        @JsonProperty("color") @field:Size(min = 1, max = 100) val color: String?,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -54,6 +54,7 @@ private fun insertGroup(newGroup: CreateGroupController.Req, caller: EasyUser): 
             it[createdAt] = now
         }
 
+        // admins have full access to any group anyway
         if (!caller.isAdmin()) {
             AccountGroup.insert {
                 it[account] = EntityID(caller.id, Account)

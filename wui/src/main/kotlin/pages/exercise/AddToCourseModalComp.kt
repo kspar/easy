@@ -6,6 +6,7 @@ import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
+import errorMessage
 import plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -48,8 +49,11 @@ class AddToCourseModalComp(
     }
 
     private suspend fun addToCourse(courseId: String) {
-        ExerciseDAO.addExerciseToCourse(exerciseId, courseId)
-        successMessage { "Lisatud" }
+        val success = ExerciseDAO.addExerciseToCourse(exerciseId, courseId)
+        if (success)
+            successMessage { "Lisatud" }
+        else
+            errorMessage { "See ülesanne on juba kursusel olemas" }
     }
 }
 

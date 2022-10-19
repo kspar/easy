@@ -32,11 +32,11 @@ abstract class Check {
 @Serializable
 abstract class Test {
     val points: Double = 1.0
-    val id: Int? = null
+    val id: Long? = null
     val name: String? = null
     val inputs: String? = null // TODO: Kaspar, kas selle jätame?
-    val passedNext: String? = null
-    val failedNext: String? = null
+    val passedNext: Long? = null
+    val failedNext: Long? = null
     val visibleToUser: Boolean? = null
     // val programOutput: String? = null
     //output_files
