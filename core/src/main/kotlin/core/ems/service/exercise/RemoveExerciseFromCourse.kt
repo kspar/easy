@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/v2")
-class TeacherDeleteCourseExercise {
+class RemoveExerciseFromCourse {
     private val log = KotlinLogging.logger {}
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -30,27 +30,23 @@ class TeacherDeleteCourseExercise {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         deleteCourseExercise(courseExId)
     }
 
-
     private fun deleteCourseExercise(courseExId: Long) {
-
         transaction {
-            val submissionCount: Long = Submission.select { Submission.courseExercise eq courseExId }.count()
+            val submissionCount = Submission.select { Submission.courseExercise eq courseExId }.count().toInt()
 
-            val exerciseId: Long =
-                CourseExercise.slice(CourseExercise.exercise)
-                    .select { CourseExercise.id eq courseExId }
-                    .map { it[CourseExercise.exercise].value }
-                    .single()
-
+            val exerciseId = CourseExercise
+                .slice(CourseExercise.exercise)
+                .select { CourseExercise.id eq courseExId }
+                .map { it[CourseExercise.exercise].value }
+                .single()
 
             Exercise.update({ Exercise.id eq exerciseId }) {
-                it.update(removedSubmissionsCount, removedSubmissionsCount + submissionCount.toInt())
+                it.update(removedSubmissionsCount, removedSubmissionsCount + submissionCount)
             }
 
             val submissionsToDelete = Submission

@@ -23,7 +23,7 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadExerciseController {
+class ReadExercise {
 
     data class Resp(
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -48,7 +48,6 @@ class TeacherReadExerciseController {
         @JsonProperty("on_courses") val courses: List<RespCourse>,
         @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
         @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int,
-        @JsonProperty("removed_submissions_count") val removedSubmissionsCount: Int
     )
 
     data class RespAsset(
@@ -106,7 +105,6 @@ class TeacherReadExerciseController {
                     ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
                     ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled, Exercise.anonymousAutoassessTemplate,
                     Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount,
-                    Exercise.removedSubmissionsCount
                 )
                 .select {
                     Exercise.id eq exerciseId and
@@ -141,7 +139,6 @@ class TeacherReadExerciseController {
                         usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
                         it[Exercise.successfulAnonymousSubmissionCount],
                         it[Exercise.unsuccessfulAnonymousSubmissionCount],
-                        it[Exercise.removedSubmissionsCount]
                     )
                 }.singleOrNull()
         }
