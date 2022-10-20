@@ -31,7 +31,7 @@ object ExerciseLibraryPage : EasyPage() {
         super.build(pageStateStr)
 
         doInPromise {
-            ExerciseLibRootComp(CONTENT_CONTAINER_ID)
+            ExerciseLibRootComp(null, CONTENT_CONTAINER_ID)
                 .createAndBuild().await()
         }
     }

@@ -18,7 +18,8 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
 class CreateExerciseModalComp(
-    private val allowAddingToCourseId: String? = null,
+    private val dirId: String?,
+    private val allowAddingToCourseId: String?,
     parent: Component,
     dstId: String,
 ) : Component(parent, dstId) {
@@ -78,6 +79,7 @@ class CreateExerciseModalComp(
         val exerciseId = fetchEms("/exercises",
             ReqMethod.POST,
             mapOf(
+                "parent_dir_id" to dirId,
                 "title" to title,
                 "public" to true,
                 // TODO: should be TEACHER initially when we have the feature to change it afterwards
@@ -87,6 +89,7 @@ class CreateExerciseModalComp(
                 "max_time_sec" to 7,
                 "max_mem_mb" to 30,
                 "assets" to emptyList<Map<String, String>>(),
+                "anonymous_autoassess_enabled" to false,
             ),
             successChecker = { http200 }).await()
             .parseTo(NewExerciseDTO.serializer()).await().id

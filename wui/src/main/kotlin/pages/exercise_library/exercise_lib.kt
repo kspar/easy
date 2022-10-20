@@ -2,6 +2,7 @@ package pages.exercise_library
 
 import DateSerializer
 import Icons
+import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
@@ -9,18 +10,22 @@ import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.exercise.ExercisePage
 import pages.exercise.GraderType
+import pages.sidenav.Sidenav
 import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
+import successMessage
 import toEstonianString
 import kotlin.js.Date
 
 
 class ExerciseLibRootComp(
+    private val dirId: String?,
     dstId: String
 ) : Component(null, dstId) {
 
@@ -72,15 +77,40 @@ class ExerciseLibRootComp(
 
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<ExerciseProps>
+    private val newExerciseModal = CreateExerciseModalComp(dirId, null, this, "new-exercise-modal-dst-id")
 
     override val children: List<Component>
-        get() = listOf(breadcrumbs, ezcoll)
+        get() = listOf(breadcrumbs, ezcoll, newExerciseModal)
 
     override fun create() = doInPromise {
-        breadcrumbs = BreadcrumbsComp(listOf(Crumb("Ülesandekogu")), this)
 
         val libResp = fetchEms("/lib/dirs/root", ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(Lib.serializer()).await()
+
+        if (dirId != null) {
+            // todo: get parents in parallel
+            breadcrumbs = BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+        } else {
+            breadcrumbs = BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+        }
+
+        // can create new exercise only if current dir is root, or we have at least PRA
+        val currentDirAccess = libResp.current_dir?.effective_access
+        if (currentDirAccess == null || currentDirAccess >= DirAccess.PRA) {
+            Sidenav.replacePageSection(
+                Sidenav.PageSection(
+                    Str.exerciseLibrary(), listOf(
+                        Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                            val exerciseId = newExerciseModal.openWithClosePromise().await()
+                            if (exerciseId != null) {
+                                EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
+                                successMessage { "Ülesanne loodud" }
+                            }
+                        }
+                    )
+                )
+            )
+        }
 
         val props = libResp.child_exercises.map {
             ExerciseProps(
@@ -104,6 +134,7 @@ class ExerciseLibRootComp(
                 titleLink = ExercisePage.link(p.id),
                 topAttr = EzCollComp.SimpleAttr("Viimati muudetud", p.modifiedAt.toEstonianString(), Icons.pending),
                 bottomAttrs = listOf(
+                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
                     EzCollComp.SimpleAttr("Kasutusel", "${p.coursesCount} kursusel", Icons.courses),
                     EzCollComp.SimpleAttr(
                         "Mul on lubatud",
@@ -111,7 +142,6 @@ class ExerciseLibRootComp(
                         Icons.exercisePermissions,
                         translateDirAccess(p.access)
                     ),
-                    EzCollComp.SimpleAttr("ID", p.id, Icons.id)
                 ),
             )
         }
@@ -131,15 +161,16 @@ class ExerciseLibRootComp(
                 // TODO: Date to comparable
 //                EzCollComp.Sorter("Muutmisaja järgi", compareBy { it.props.modifiedAt }),
                 EzCollComp.Sorter("ID järgi", compareBy { it.props.id.toInt() }),
-                EzCollComp.Sorter("Populaarsuse järgi", compareBy<EzCollComp.Item<ExerciseProps>> { it.props.coursesCount }.reversed()),
+                EzCollComp.Sorter(
+                    "Populaarsuse järgi",
+                    compareBy<EzCollComp.Item<ExerciseProps>> { it.props.coursesCount }.reversed()
+                ),
             ),
             parent = this
         )
     }
 
     override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId)
-
-    override fun renderLoading() = "Loading..."
 
     private fun translateDirAccess(access: DirAccess): String {
         return when (access) {

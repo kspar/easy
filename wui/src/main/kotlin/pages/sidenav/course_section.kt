@@ -30,7 +30,7 @@ class SidenavCourseSectionComp(
     private val participantsItemId = IdGenerator.nextId()
     private val oldParticipantsItemId = IdGenerator.nextId()
 
-    private val newExerciseModal = CreateExerciseModalComp(courseId, this, "new-exercise-modal-dst-id")
+    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this, "new-exercise-modal-dst-id")
     private val newExerciseLinkId = IdGenerator.nextId()
 
     override val children = listOf(newExerciseModal)
@@ -71,7 +71,7 @@ class SidenavCourseSectionComp(
     override fun postRender() {
         getElemByIdOrNull(newExerciseLinkId)?.onVanillaClick(true) {
             val exerciseId = newExerciseModal.openWithClosePromise().await()
-            exerciseId?.let {
+            if (exerciseId != null) {
                 EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
                 successMessage { "Ülesanne loodud" }
             }
