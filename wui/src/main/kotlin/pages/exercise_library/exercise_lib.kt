@@ -8,6 +8,7 @@ import components.Crumb
 import components.EzCollComp
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise.GraderType
 import pages.sidenav.Sidenav
@@ -78,9 +79,10 @@ class ExerciseLibRootComp(
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<ExerciseProps>
     private val newExerciseModal = CreateExerciseModalComp(dirId, null, this, "new-exercise-modal-dst-id")
+    private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
 
     override val children: List<Component>
-        get() = listOf(breadcrumbs, ezcoll, newExerciseModal)
+        get() = listOf(breadcrumbs, ezcoll, newExerciseModal, addToCourseModal)
 
     override fun create() = doInPromise {
 
@@ -112,6 +114,7 @@ class ExerciseLibRootComp(
             )
         }
 
+        // TODO: dirs
         val props = libResp.child_exercises.map {
             ExerciseProps(
                 it.exercise_id,
@@ -131,6 +134,7 @@ class ExerciseLibRootComp(
                 else
                     EzCollComp.ItemTypeIcon(Icons.user),
                 p.title,
+                isSelectable = true,
                 titleLink = ExercisePage.link(p.id),
                 topAttr = EzCollComp.SimpleAttr("Viimati muudetud", p.modifiedAt.toEstonianString(), Icons.pending),
                 bottomAttrs = listOf(
@@ -143,11 +147,17 @@ class ExerciseLibRootComp(
                         translateDirAccess(p.access)
                     ),
                 ),
+                actions = listOf(
+                    EzCollComp.Action(Icons.add, "Lisa kursusele...", onActivate = ::addToCourse)
+                ),
             )
         }
 
         ezcoll = EzCollComp(
             items, EzCollComp.Strings("ülesanne", "ülesannet"),
+            massActions = listOf(
+                EzCollComp.MassAction(Icons.add, "Lisa kursusele...", ::addToCourse)
+            ),
             filterGroups = listOf(
                 EzCollComp.FilterGroup(
                     "Hindamine", listOf(
@@ -170,7 +180,7 @@ class ExerciseLibRootComp(
         )
     }
 
-    override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId)
+    override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId, addToCourseModal.dstId)
 
     private fun translateDirAccess(access: DirAccess): String {
         return when (access) {
@@ -180,5 +190,29 @@ class ExerciseLibRootComp(
             DirAccess.PRAW -> "vaadata ja muuta"
             DirAccess.PRAWM -> "kõike teha"
         }
+    }
+
+    private suspend fun addToCourse(item: EzCollComp.Item<ExerciseProps>): EzCollComp.Result {
+        addToCourseModal.setSingleExercise(item.props.id, item.props.title)
+        return openAddToCourse()
+    }
+
+    private suspend fun addToCourse(items: List<EzCollComp.Item<ExerciseProps>>): EzCollComp.Result {
+        if (items.size == 1) {
+            val item = items.single()
+            addToCourseModal.setSingleExercise(item.props.id, item.props.title)
+        } else {
+            addToCourseModal.setMultipleExercises(items.map { it.props.id })
+        }
+        return openAddToCourse()
+    }
+
+    private suspend fun openAddToCourse(): EzCollComp.Result {
+        val added = addToCourseModal.openWithClosePromise().await() != null
+
+        if (added) {
+            createAndBuild().await()
+        }
+        return EzCollComp.ResultUnmodified
     }
 }
