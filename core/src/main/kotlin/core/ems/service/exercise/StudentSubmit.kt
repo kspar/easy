@@ -6,8 +6,9 @@ import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.studentOnCourse
 import core.ems.service.assertCourseExerciseIsOnCourse
-import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
@@ -36,6 +36,7 @@ class StudentSubmitCont(
     private val autoGradeScheduler: AutoGradeScheduler,
     private val moodleGradesSyncService: MoodleGradesSyncService
 ) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
@@ -51,7 +52,7 @@ class StudentSubmitCont(
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        assertStudentHasAccessToCourse(caller.id, courseId)
+        caller.assertAccess { studentOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         submitSolution(courseExId, solutionBody.solution, caller.id)
@@ -63,6 +64,7 @@ class StudentSubmitCont(
                 log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
                 insertSubmission(courseExId, solution, studentId, AutoGradeStatus.NONE, cachingService)
             }
+
             GraderType.AUTO -> {
                 log.debug { "Creating new submission to autograded exercise $courseExId by $studentId" }
                 val submissionId =
@@ -105,68 +107,78 @@ class StudentSubmitCont(
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 
-}
 
-
-private fun selectGraderType(courseExId: Long): GraderType {
-    return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(ExerciseVer.graderType)
-            .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-            .map { it[ExerciseVer.graderType] }
-            .single()
-    }
-}
-
-private fun selectAutoExId(courseExId: Long): Long? {
-    return transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(ExerciseVer.autoExerciseId)
-            .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-            .map { it[ExerciseVer.autoExerciseId] }
-            .single()?.value
-    }
-}
-
-private fun insertSubmission(
-    courseExId: Long,
-    submission: String,
-    studentId: String,
-    autoAss: AutoGradeStatus,
-    cachingService: CachingService
-): Long {
-    val id = transaction {
-        Submission.insertAndGetId {
-            it[courseExercise] = EntityID(courseExId, CourseExercise)
-            it[student] = EntityID(studentId, Student)
-            it[createdAt] = DateTime.now()
-            it[solution] = submission
-            it[autoGradeStatus] = autoAss
-        }.value
+    private fun selectGraderType(courseExId: Long): GraderType {
+        return transaction {
+            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(ExerciseVer.graderType)
+                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+                .map { it[ExerciseVer.graderType] }
+                .single()
+        }
     }
 
-    cachingService.invalidate(countSubmissionsCache)
-    cachingService.evictSelectLatestValidGrades(courseExId)
-    return id
-}
+    private fun selectAutoExId(courseExId: Long): Long? {
+        return transaction {
+            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(ExerciseVer.autoExerciseId)
+                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+                .map { it[ExerciseVer.autoExerciseId] }
+                .single()?.value
+        }
+    }
 
-private fun insertAutoAssessment(
-    newGrade: Int,
-    newFeedback: String?,
-    submissionId: Long,
-    cachingService: CachingService,
-    courseExId: Long
-) {
-    transaction {
-        AutomaticAssessment.insert {
-            it[submission] = EntityID(submissionId, Submission)
-            it[createdAt] = DateTime.now()
-            it[grade] = newGrade
-            it[feedback] = newFeedback
+    private fun insertSubmission(
+        courseExId: Long,
+        submission: String,
+        studentId: String,
+        autoAss: AutoGradeStatus,
+        cachingService: CachingService
+    ): Long {
+        val id = transaction {
+            Submission.insertAndGetId {
+                it[courseExercise] = EntityID(courseExId, CourseExercise)
+                it[student] = EntityID(studentId, Student)
+                it[createdAt] = DateTime.now()
+                it[solution] = submission
+                it[autoGradeStatus] = autoAss
+            }.value
         }
 
-        Submission.update({ Submission.id eq submissionId }) {
-            it[autoGradeStatus] = AutoGradeStatus.COMPLETED
+        cachingService.invalidate(countSubmissionsCache)
+        cachingService.evictSelectLatestValidGrades(courseExId)
+        return id
+    }
+
+    private fun insertAutoAssessment(
+        newGrade: Int,
+        newFeedback: String?,
+        submissionId: Long,
+        cachingService: CachingService,
+        courseExId: Long
+    ) {
+        transaction {
+            AutomaticAssessment.insert {
+                it[submission] = EntityID(submissionId, Submission)
+                it[createdAt] = DateTime.now()
+                it[grade] = newGrade
+                it[feedback] = newFeedback
+            }
+
+            Submission.update({ Submission.id eq submissionId }) {
+                it[autoGradeStatus] = AutoGradeStatus.COMPLETED
+            }
+
+            cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
+            cachingService.evictSelectLatestValidGrades(courseExId)
+        }
+    }
+
+    private fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, courseExId: Long) {
+        transaction {
+            Submission.update({ Submission.id eq submissionId }) {
+                it[autoGradeStatus] = AutoGradeStatus.FAILED
+            }
         }
 
         cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
@@ -174,13 +186,3 @@ private fun insertAutoAssessment(
     }
 }
 
-private fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, courseExId: Long) {
-    transaction {
-        Submission.update({ Submission.id eq submissionId }) {
-            it[autoGradeStatus] = AutoGradeStatus.FAILED
-        }
-    }
-
-    cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
-    cachingService.evictSelectLatestValidGrades(courseExId)
-}

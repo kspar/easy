@@ -7,7 +7,8 @@ import core.db.AutomaticAssessment
 import core.db.CourseExercise
 import core.db.Submission
 import core.db.TeacherAssessment
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -52,18 +53,14 @@ class TeacherReadSubmissionsController {
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
 
         return selectTeacherAllSubmissions(courseId, courseExId, studentId, limitStr?.toIntOrNull(), offsetStr?.toLongOrNull())
     }
-}
 
-
-private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Long?):
-        TeacherReadSubmissionsController.Resp {
-    return transaction {
-
-        val query = (CourseExercise innerJoin Submission)
+    private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String, limit: Int?, offset: Long?): Resp =
+        transaction {
+            val query = (CourseExercise innerJoin Submission)
                 .slice(Submission.createdAt, Submission.id, Submission.solution)
                 .select {
                     CourseExercise.course eq courseId and
@@ -71,38 +68,38 @@ private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studen
                             (Submission.student eq studentId)
                 }
 
-        val count = query.count()
+            val count = query.count()
 
-        TeacherReadSubmissionsController.Resp(
+            Resp(
                 query.orderBy(Submission.createdAt, SortOrder.DESC)
-                        .limit(limit ?: count.toInt(), offset ?: 0)
-                        .map {
-                            val id = it[Submission.id].value
-                            val autoAssessment = lastAutoAssessment(id)
-                            val teacherAssessment = lastTeacherAssessment(id)
+                    .limit(limit ?: count.toInt(), offset ?: 0)
+                    .map {
+                        val id = it[Submission.id].value
+                        val autoAssessment = lastAutoAssessment(id)
+                        val teacherAssessment = lastTeacherAssessment(id)
 
-                            TeacherReadSubmissionsController.SubmissionResp(
-                                    id.toString(),
-                                    it[Submission.solution],
-                                    it[Submission.createdAt],
-                                    autoAssessment?.first,
-                                    autoAssessment?.second,
-                                    teacherAssessment?.first,
-                                    teacherAssessment?.second)
-                        }, count)
-    }
-}
+                        SubmissionResp(
+                            id.toString(),
+                            it[Submission.solution],
+                            it[Submission.createdAt],
+                            autoAssessment?.first,
+                            autoAssessment?.second,
+                            teacherAssessment?.first,
+                            teacherAssessment?.second
+                        )
+                    }, count
+            )
+        }
 
-private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? {
-    return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
+    private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? =
+        AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
             .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }
             .firstOrNull()
-}
 
-private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? {
-    return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
+    private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? =
+        TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
             .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
             .limit(1)
             .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }

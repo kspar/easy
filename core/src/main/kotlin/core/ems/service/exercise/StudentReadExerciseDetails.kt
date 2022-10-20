@@ -7,8 +7,9 @@ import core.db.CourseExercise
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.studentOnCourse
 import core.ems.service.assertCourseExerciseIsOnCourse
-import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
@@ -23,11 +24,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class StudentReadExerciseDetailsController {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("effective_title") val title: String,
@@ -51,37 +52,35 @@ class StudentReadExerciseDetailsController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        assertStudentHasAccessToCourse(caller.id, courseId)
+        caller.assertAccess { studentOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         return selectStudentExerciseDetails(courseId, courseExId)
     }
 
-    private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long): Resp {
-        return transaction {
-            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(
-                    ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
-                    CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
-                    CourseExercise.titleAlias
+    private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long): Resp = transaction {
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+            .slice(
+                ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
+                CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
+                CourseExercise.titleAlias
+            )
+            .select {
+                CourseExercise.course eq courseId and
+                        (CourseExercise.id eq courseExId) and
+                        ExerciseVer.validTo.isNull()
+            }
+            .map {
+                Resp(
+                    it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
+                    it[ExerciseVer.textHtml],
+                    it[CourseExercise.softDeadline],
+                    it[ExerciseVer.graderType],
+                    it[CourseExercise.gradeThreshold],
+                    it[CourseExercise.instructionsHtml]
                 )
-                .select {
-                    CourseExercise.course eq courseId and
-                            (CourseExercise.id eq courseExId) and
-                            ExerciseVer.validTo.isNull()
-                }
-                .map {
-                    Resp(
-                        it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
-                        it[ExerciseVer.textHtml],
-                        it[CourseExercise.softDeadline],
-                        it[ExerciseVer.graderType],
-                        it[CourseExercise.gradeThreshold],
-                        it[CourseExercise.instructionsHtml]
-                    )
-                }
-                .singleOrInvalidRequest()
-        }
+            }
+            .singleOrInvalidRequest()
     }
 }
 

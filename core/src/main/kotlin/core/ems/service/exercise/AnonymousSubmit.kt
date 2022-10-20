@@ -23,17 +23,16 @@ import javax.validation.Valid
 import javax.validation.constraints.Size
 import kotlin.coroutines.EmptyCoroutineContext
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
+    private val log = KotlinLogging.logger {}
+
     @Value("\${easy.core.auto-assess.anonymous-submissions-to-keep}")
     private lateinit var submissionToKeep: String
 
-    data class Req(
-        @JsonProperty("solution") @field:Size(max = 300000) val solution: String
-    )
+    data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
 
     data class Resp(
         @JsonProperty("grade") val grade: Int,

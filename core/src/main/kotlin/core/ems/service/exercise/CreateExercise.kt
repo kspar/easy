@@ -5,6 +5,8 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -22,11 +24,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class CreateExercise(private val adocService: AdocService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
@@ -59,7 +61,7 @@ class CreateExercise(private val adocService: AdocService) {
         val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
 
         if (parentDirId != null) {
-            assertAccountHasDirAccess(caller, parentDirId, DirAccessLevel.PRA)
+            caller.assertAccess { libraryDir(parentDirId, DirAccessLevel.PRA) }
             assertDirExists(parentDirId)
         }
 
@@ -69,7 +71,7 @@ class CreateExercise(private val adocService: AdocService) {
         }
     }
 
-    private fun insertExercise(caller: EasyUser, req: CreateExercise.Req, html: String?, parentDirId: Long?): Long {
+    private fun insertExercise(caller: EasyUser, req: Req, html: String?, parentDirId: Long?): Long {
         val teacherId = EntityID(caller.id, Teacher)
         val now = DateTime.now()
 

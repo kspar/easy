@@ -1,9 +1,7 @@
 package core.ems.service.access_control
 
 import core.conf.security.EasyUser
-import core.ems.service.canTeacherAccessCourse
-import core.ems.service.isExerciseOnCourse
-import core.ems.service.teacherHasRestrictedGroupsOnCourse
+import core.ems.service.*
 import core.exception.ForbiddenException
 import core.exception.ReqError
 
@@ -23,6 +21,14 @@ fun AccessChecksBuilder.teacherOnCourse(courseId: Long, allowRestrictedGroups: B
 
         else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
     }
+}
+
+fun AccessChecksBuilder.courseGroupAccessible(courseId: Long, groupId: Long) = add { caller: EasyUser ->
+    assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
+}
+
+fun AccessChecksBuilder.studentOnCourse(courseId: Long) = add { caller: EasyUser ->
+    assertStudentHasAccessToCourse(caller.id, courseId)
 }
 
 /**

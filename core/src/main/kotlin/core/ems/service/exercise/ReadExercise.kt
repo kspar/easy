@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.singleOrInvalidRequest
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -19,11 +22,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadExercise {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -69,19 +72,17 @@ class ReadExercise {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/exercises/{exerciseId}")
-    fun controller(
-        @PathVariable("exerciseId") exIdString: String,
-        caller: EasyUser
-    ): Resp {
+    fun controller(@PathVariable("exerciseId") exIdString: String, caller: EasyUser): Resp {
 
         log.debug { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
+        caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }
+
         return selectExerciseDetails(exerciseId)
-            ?: throw InvalidRequestException("No exercise found with id $exerciseId")
     }
 
-    private fun selectExerciseDetails(exerciseId: Long): Resp? {
+    private fun selectExerciseDetails(exerciseId: Long): Resp {
         data class UsedOnCourse(val id: String, val title: String, val courseExId: String, val titleAlias: String?)
 
         return transaction {
@@ -101,10 +102,20 @@ class ReadExercise {
 
             (Exercise innerJoin ExerciseVer)
                 .slice(
-                    Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
-                    ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
-                    ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled, Exercise.anonymousAutoassessTemplate,
-                    Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount,
+                    Exercise.createdAt,
+                    Exercise.public,
+                    Exercise.owner,
+                    ExerciseVer.validFrom,
+                    ExerciseVer.author,
+                    ExerciseVer.graderType,
+                    ExerciseVer.title,
+                    ExerciseVer.textHtml,
+                    ExerciseVer.textAdoc,
+                    ExerciseVer.autoExerciseId,
+                    Exercise.anonymousAutoassessEnabled,
+                    Exercise.anonymousAutoassessTemplate,
+                    Exercise.successfulAnonymousSubmissionCount,
+                    Exercise.unsuccessfulAnonymousSubmissionCount,
                 )
                 .select {
                     Exercise.id eq exerciseId and
@@ -140,7 +151,7 @@ class ReadExercise {
                         it[Exercise.successfulAnonymousSubmissionCount],
                         it[Exercise.unsuccessfulAnonymousSubmissionCount],
                     )
-                }.singleOrNull()
+                }.singleOrInvalidRequest()
         }
     }
 }

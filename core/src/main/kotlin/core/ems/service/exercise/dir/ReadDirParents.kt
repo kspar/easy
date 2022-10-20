@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Dir
 import core.db.DirAccessLevel
-import core.ems.service.assertAccountHasDirAccess
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import core.ems.service.assertDirExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
@@ -42,7 +43,7 @@ class ReadDirParentsController {
         log.debug { "Read parents for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
-        assertAccountHasDirAccess(caller, dirId, DirAccessLevel.P)
+        caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRA) }
         assertDirExists(dirId, true)
 
         return selectParents(dirId)

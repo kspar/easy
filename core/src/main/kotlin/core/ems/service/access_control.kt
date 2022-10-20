@@ -242,13 +242,6 @@ fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
     }
 }
 
-// TODO: rename to user
-// TODO: remove
-fun assertAccountHasDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel) {
-    if (!hasAccountDirAccess(user, dirId, level)) {
-        throw ForbiddenException("User ${user.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS)
-    }
-}
 
 fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boolean {
     return when {

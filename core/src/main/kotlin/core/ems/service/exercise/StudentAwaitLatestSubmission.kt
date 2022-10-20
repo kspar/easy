@@ -6,8 +6,9 @@ import core.aas.AutoAssessStatusObserver
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.studentOnCourse
 import core.ems.service.assertCourseExerciseIsOnCourse
-import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import kotlinx.coroutines.runBlocking
@@ -25,12 +26,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletResponse
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserver: AutoAssessStatusObserver) {
-
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("id") val submissionId: String,
@@ -57,7 +57,7 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
-        assertStudentHasAccessToCourse(caller.id, courseId)
+        caller.assertAccess { studentOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         val submission = runBlocking {
@@ -76,57 +76,60 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
             null
         }
     }
-}
 
-private suspend fun selectLatestStudentSubmission(
-    courseId: Long,
-    courseExId: Long,
-    studentId: String,
-    autoAssessStatusObserver: AutoAssessStatusObserver
-): StudentAwaitLatestSubmissionController.Resp? {
+    private suspend fun selectLatestStudentSubmission(
+        courseId: Long,
+        courseExId: Long,
+        studentId: String,
+        autoAssessStatusObserver: AutoAssessStatusObserver
+    ): Resp? {
 
-    data class SubmissionPartial(val id: Long, val solution: String, val time: DateTime, val status: AutoGradeStatus)
+        data class SubmissionPartial(
+            val id: Long,
+            val solution: String,
+            val time: DateTime,
+            val status: AutoGradeStatus
+        )
 
-    val latestSubmissionId = lastSubmissionId(courseId, courseExId, studentId) ?: return null
+        val latestSubmissionId = lastSubmissionId(courseId, courseExId, studentId) ?: return null
 
-    // Wait while automatic grading in progress
-    autoAssessStatusObserver.get(latestSubmissionId, ObserverCallerType.STUDENT)?.join()
+        // Wait while automatic grading in progress
+        autoAssessStatusObserver.get(latestSubmissionId, ObserverCallerType.STUDENT)?.join()
 
-    val lastSubmission = transaction {
-        Submission
-            .slice(Submission.createdAt, Submission.id, Submission.solution, Submission.autoGradeStatus)
-            .select { Submission.id eq latestSubmissionId }
-            .map {
-                SubmissionPartial(
-                    it[Submission.id].value,
-                    it[Submission.solution],
-                    it[Submission.createdAt],
-                    it[Submission.autoGradeStatus]
-                )
-            }
-            .singleOrNull()
-    } ?: return null
-
-
-    val autoAssessment = transaction { lastAutoAssessment(lastSubmission.id) }
-    // Get teacher assessment after auto assessment because it might change during auto assessment
-    val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
+        val lastSubmission = transaction {
+            Submission
+                .slice(Submission.createdAt, Submission.id, Submission.solution, Submission.autoGradeStatus)
+                .select { Submission.id eq latestSubmissionId }
+                .map {
+                    SubmissionPartial(
+                        it[Submission.id].value,
+                        it[Submission.solution],
+                        it[Submission.createdAt],
+                        it[Submission.autoGradeStatus]
+                    )
+                }
+                .singleOrNull()
+        } ?: return null
 
 
-    return StudentAwaitLatestSubmissionController.Resp(
-        lastSubmission.id.toString(),
-        lastSubmission.solution,
-        lastSubmission.time,
-        lastSubmission.status,
-        autoAssessment?.first,
-        autoAssessment?.second,
-        teacherAssessment?.first,
-        teacherAssessment?.second
-    )
-}
+        val autoAssessment = transaction { lastAutoAssessment(lastSubmission.id) }
+        // Get teacher assessment after auto assessment because it might change during auto assessment
+        val teacherAssessment = transaction { lastTeacherAssessment(lastSubmission.id) }
 
-private fun lastSubmissionId(courseId: Long, courseExId: Long, studentId: String): Long? {
-    return transaction {
+
+        return Resp(
+            lastSubmission.id.toString(),
+            lastSubmission.solution,
+            lastSubmission.time,
+            lastSubmission.status,
+            autoAssessment?.first,
+            autoAssessment?.second,
+            teacherAssessment?.first,
+            teacherAssessment?.second
+        )
+    }
+
+    private fun lastSubmissionId(courseId: Long, courseExId: Long, studentId: String): Long? = transaction {
         (CourseExercise innerJoin Submission)
             .slice(Submission.id)
             .select {
@@ -139,20 +142,18 @@ private fun lastSubmissionId(courseId: Long, courseExId: Long, studentId: String
             .map { it[Submission.id].value }
             .firstOrNull()
     }
-}
 
-private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? {
-    return AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
-        .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-        .limit(1)
-        .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }
-        .firstOrNull()
-}
+    private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? =
+        AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
+            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
+            .limit(1)
+            .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }
+            .firstOrNull()
 
-private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? {
-    return TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-        .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-        .limit(1)
-        .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }
-        .firstOrNull()
+    private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? =
+        TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
+            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
+            .limit(1)
+            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }
+            .firstOrNull()
 }

@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertAccountHasDirAccess
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import core.ems.service.assertDirExists
 import core.ems.service.getAccountDirAccessLevel
 import core.ems.service.idToLongOrInvalidReq
@@ -73,7 +74,7 @@ class ReadDirController {
             null
         } else {
             val id = dirIdString.idToLongOrInvalidReq()
-            assertAccountHasDirAccess(caller, id, DirAccessLevel.P)
+            caller.assertAccess { libraryDir(id, DirAccessLevel.P) }
             assertDirExists(id)
             id
         }

@@ -6,8 +6,9 @@ import core.db.CourseExercise
 import core.db.Student
 import core.db.SubmissionDraft
 import core.db.insertOrUpdate
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.studentOnCourse
 import core.ems.service.assertCourseExerciseIsOnCourse
-import core.ems.service.assertStudentHasAccessToCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -18,36 +19,37 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class StudentSubmitDraftController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/draft")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @PathVariable("courseExerciseId") courseExIdStr: String,
-                   @Valid @RequestBody solutionBody: Req, caller: EasyUser) {
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        @PathVariable("courseExerciseId") courseExIdStr: String,
+        @Valid @RequestBody solutionBody: Req, caller: EasyUser
+    ) {
 
         log.debug { "Creating new submission draft by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        assertStudentHasAccessToCourse(caller.id, courseId)
+        caller.assertAccess { studentOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         insertOrUpdateSubmissionDraft(courseExId, solutionBody.solution, caller.id)
     }
-}
 
-
-private fun insertOrUpdateSubmissionDraft(courseExId: Long, submission: String, studentId: String) {
-    return transaction {
-        SubmissionDraft.insertOrUpdate(listOf(SubmissionDraft.courseExercise, SubmissionDraft.student),
-                listOf(SubmissionDraft.courseExercise, SubmissionDraft.student)) {
+    private fun insertOrUpdateSubmissionDraft(courseExId: Long, submission: String, studentId: String) = transaction {
+        SubmissionDraft.insertOrUpdate(
+            listOf(SubmissionDraft.courseExercise, SubmissionDraft.student),
+            listOf(SubmissionDraft.courseExercise, SubmissionDraft.student)
+        ) {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
             it[student] = EntityID(studentId, Student)
             it[createdAt] = DateTime.now()
@@ -55,5 +57,3 @@ private fun insertOrUpdateSubmissionDraft(courseExId: Long, submission: String, 
         }
     }
 }
-
-

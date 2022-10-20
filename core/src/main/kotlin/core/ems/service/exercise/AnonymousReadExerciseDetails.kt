@@ -16,11 +16,10 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class AnonymousReadExerciseDetails {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("title") val title: String,

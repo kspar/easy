@@ -16,11 +16,11 @@ import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.servlet.http.HttpServletResponse
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadLatestTeacherSubmissions {
+    private val log = KotlinLogging.logger {}
 
     data class RespSubmission(
         @JsonProperty("id") val id: String,
@@ -46,7 +46,6 @@ class ReadLatestTeacherSubmissions {
     ): Resp? {
 
         log.debug { "Getting latest teacher submissions for ${caller.id} on exercise $exerciseIdStr" }
-
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
         return selectLatestTeacherSubmissions(exerciseId, caller.id, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())
     }

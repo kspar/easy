@@ -5,7 +5,8 @@ import core.conf.security.EasyUser
 import core.db.Dir
 import core.db.DirAccessLevel
 import core.db.GroupDirAccess
-import core.ems.service.assertAccountHasDirAccess
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.hasAccountDirAccess
 import core.ems.service.idToLongOrInvalidReq
@@ -45,7 +46,7 @@ class CreateDirController {
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
         if (parentId != null) {
-            assertAccountHasDirAccess(caller, parentId, DirAccessLevel.PRA)
+            caller.assertAccess { libraryDir(parentId, DirAccessLevel.PRA) }
         }
 
         return Resp(insertDir(body.name, parentId, caller).toString())
