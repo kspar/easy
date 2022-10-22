@@ -34,7 +34,7 @@ class SidenavGeneralSectionComp(
         "libId" to libItemId,
         "articlesId" to articlesItemId,
         "coursesLink" to CoursesPage.link(),
-        "libLink" to ExerciseLibraryPage.link(),
+        "libLink" to ExerciseLibraryPage.linkToRoot(),
         "articlesLink" to "#!",
         "newCourseLinkId" to newCourseLinkId,
         "coursesIcon" to Icons.courses,

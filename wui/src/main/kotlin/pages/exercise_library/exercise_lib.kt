@@ -177,7 +177,7 @@ class ExerciseLibRootComp(
                 p,
                 EzCollComp.ItemTypeIcon(Icons.library),
                 p.title,
-                titleLink = ExerciseLibraryPage.link(), // TODO
+                titleLink = ExerciseLibraryPage.linkToDir(p.id),
                 bottomAttrs = listOf(
                     EzCollComp.SimpleAttr("ID", p.id, Icons.id),
                     EzCollComp.SimpleAttr(
