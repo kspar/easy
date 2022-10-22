@@ -193,7 +193,6 @@ class ExerciseLibRootComp(
 
         ezcoll = EzCollComp<Props>(
             items, EzCollComp.Strings("asi", "asja"),
-            // TODO: all checkbox doesn't respect not selectable items - what to do?
             massActions = listOf(
                 EzCollComp.MassAction<Props>(Icons.add, "Lisa kursusele...", ::addToCourse)
             ),
