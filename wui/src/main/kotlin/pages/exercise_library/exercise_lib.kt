@@ -1,22 +1,17 @@
 package pages.exercise_library
 
-import DateSerializer
 import Icons
 import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
+import dao.LibraryDAO
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise.GraderType
 import pages.sidenav.Sidenav
 import plainDstStr
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
@@ -25,47 +20,14 @@ import toEstonianString
 import kotlin.js.Date
 
 
+enum class DirAccess {
+    P, PR, PRA, PRAW, PRAWM
+}
+
 class ExerciseLibRootComp(
     private val dirId: String?,
     dstId: String
 ) : Component(null, dstId) {
-
-
-    @Serializable
-    data class Lib(
-        val current_dir: Dir?,
-        val child_dirs: List<Dir>,
-        val child_exercises: List<Exercise>,
-    )
-
-    @Serializable
-    data class Dir(
-        val id: String,
-        val name: String,
-        val effective_access: DirAccess,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date,
-        @Serializable(with = DateSerializer::class)
-        val modified_at: Date,
-    )
-
-    @Serializable
-    data class Exercise(
-        val exercise_id: String,
-        val dir_id: String,
-        val title: String,
-        val effective_access: DirAccess,
-        val grader_type: GraderType,
-        val courses_count: Int,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date,
-        @Serializable(with = DateSerializer::class)
-        val modified_at: Date,
-    )
-
-    enum class DirAccess {
-        P, PR, PRA, PRAW, PRAWM
-    }
 
     abstract class Props(
         open val id: String,
@@ -100,8 +62,7 @@ class ExerciseLibRootComp(
 
     override fun create() = doInPromise {
 
-        val libResp = fetchEms("/lib/dirs/root", ReqMethod.GET, successChecker = { http200 }).await()
-            .parseTo(Lib.serializer()).await()
+        val libResp = LibraryDAO.getLibraryContent(dirId)
 
         if (dirId != null) {
             // todo: get parents in parallel
