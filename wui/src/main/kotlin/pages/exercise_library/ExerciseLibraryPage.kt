@@ -25,9 +25,9 @@ object ExerciseLibraryPage : EasyPage() {
     override val titleSpec: Title.Spec
         get() = Title.Spec(Str.exerciseLibrary())
 
-    // root - /library/root
-    // dir - /library/{dirId}/parent1/parent2/dir
-    override val pathSchema = "/library/{dirId}/**"
+    // root - /library/dir/root
+    // dir - /library/dir/{dirId}/parent1/parent2/dir
+    override val pathSchema = "/library/dir/{dirId}/**"
 
     private fun getDirId() = parsePathParams()["dirId"]
 
