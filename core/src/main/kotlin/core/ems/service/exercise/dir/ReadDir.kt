@@ -100,7 +100,7 @@ class ReadDirController {
     private fun selectDir(caller: EasyUser, dirId: Long?): Resp {
         // Can be null only if this dir is root
         val currentDirAccess = if (dirId != null) {
-            getAccountDirAccessLevel(caller.id, dirId)
+            getAccountDirAccessLevel(caller, dirId)
                 ?: throw IllegalStateException("User ${caller.id} reading dir $dirId but has no access to it")
         } else null
 
