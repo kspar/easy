@@ -35,6 +35,7 @@ data class ExerciseDTO(
     var max_mem_mb: Int? = null,
     var assets: List<AssetDTO>? = null,
     var executors: List<ExecutorDTO>? = null,
+    val dir_id: String,
     @Serializable(with = DateSerializer::class)
     val created_at: Date,
     val owner_id: String,
@@ -42,7 +43,7 @@ data class ExerciseDTO(
     val last_modified: Date,
     val last_modified_by_id: String,
     val text_html: String? = null,
-    val on_courses: List<OnCourseDTO>
+    val on_courses: List<OnCourseDTO>,
 )
 
 @Serializable

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
@@ -26,6 +27,7 @@ private val log = KotlinLogging.logger {}
 class ReadExercise {
 
     data class Resp(
+        @JsonProperty("dir_id") val implicitDirId: String,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val created_at: DateTime,
         @JsonProperty("is_public") val public: Boolean,
@@ -45,7 +47,9 @@ class ReadExercise {
         @JsonProperty("max_mem_mb") val maxMem: Int?,
         @JsonProperty("assets") val assets: List<RespAsset>?,
         @JsonProperty("executors") val executors: List<RespExecutor>?,
+        // TODO: should only contain courses that the caller has access to
         @JsonProperty("on_courses") val courses: List<RespCourse>,
+        // TODO: add on_courses_no_access - number of courses where the exercise is on but which the caller does not have access to
         @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
         @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int,
     )
@@ -101,10 +105,20 @@ class ReadExercise {
 
             (Exercise innerJoin ExerciseVer)
                 .slice(
-                    Exercise.createdAt, Exercise.public, Exercise.owner, ExerciseVer.validFrom, ExerciseVer.author,
-                    ExerciseVer.graderType, ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.textAdoc,
-                    ExerciseVer.autoExerciseId, Exercise.anonymousAutoassessEnabled, Exercise.anonymousAutoassessTemplate,
-                    Exercise.successfulAnonymousSubmissionCount, Exercise.unsuccessfulAnonymousSubmissionCount,
+                    Exercise.createdAt,
+                    Exercise.public,
+                    Exercise.owner,
+                    ExerciseVer.validFrom,
+                    ExerciseVer.author,
+                    ExerciseVer.graderType,
+                    ExerciseVer.title,
+                    ExerciseVer.textHtml,
+                    ExerciseVer.textAdoc,
+                    ExerciseVer.autoExerciseId,
+                    Exercise.anonymousAutoassessEnabled,
+                    Exercise.anonymousAutoassessTemplate,
+                    Exercise.successfulAnonymousSubmissionCount,
+                    Exercise.unsuccessfulAnonymousSubmissionCount,
                 )
                 .select {
                     Exercise.id eq exerciseId and
@@ -119,6 +133,7 @@ class ReadExercise {
                         } else null
 
                     Resp(
+                        getImplicitDirFromExercise(exerciseId).toString(),
                         it[Exercise.createdAt],
                         it[Exercise.public],
                         it[Exercise.anonymousAutoassessEnabled],
