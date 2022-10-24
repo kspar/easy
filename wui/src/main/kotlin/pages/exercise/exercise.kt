@@ -99,7 +99,7 @@ class ExerciseRootComp(
             successChecker = { http200 }).await()
             .parseTo(ExerciseDTO.serializer()).await()
 
-        crumbs = BreadcrumbsComp(listOf(Crumb.exercises, Crumb(exercise.title)), this)
+        crumbs = BreadcrumbsComp(listOf(Crumb.libraryRoot, Crumb(exercise.title)), this)
         tabs = CardTabsComp(this, ::onTabSelected)
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
 

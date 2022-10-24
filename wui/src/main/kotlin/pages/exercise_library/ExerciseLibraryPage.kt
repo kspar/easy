@@ -37,7 +37,7 @@ object ExerciseLibraryPage : EasyPage() {
         val dirId = getDirId().let { if (it == "root") null else it }
 
         doInPromise {
-            ExerciseLibRootComp(dirId, CONTENT_CONTAINER_ID)
+            ExerciseLibRootComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
                 .createAndBuild().await()
         }
     }
@@ -45,4 +45,8 @@ object ExerciseLibraryPage : EasyPage() {
     fun linkToRoot() = linkToDir("root")
 
     fun linkToDir(dirId: String) = constructPathLink(mapOf("dirId" to dirId))
+
+    private fun setWildcardPath(wildcardPathSuffix: String) {
+        updateUrl(linkToDir(getDirId()) + wildcardPathSuffix)
+    }
 }

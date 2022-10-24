@@ -8,6 +8,8 @@ import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.encodeURIComponent
 import kotlin.js.Promise
 
 object LibraryDirDAO {
@@ -30,4 +32,21 @@ object LibraryDirDAO {
         createDirQuery(name, parentDirId).await()
             .parseTo(NewDirDTO.serializer()).await().id
 
+
+    @Serializable
+    private data class ParentsRespDTO(
+        val parents: List<ParentsDTO>,
+    )
+
+    @Serializable
+    data class ParentsDTO(
+        val id: String,
+        val name: String,
+    )
+
+    fun getDirParents(dirId: String): Promise<List<ParentsDTO>> = doInPromise {
+        debug { "Getting parents for dir $dirId" }
+        fetchEms("/lib/dirs/${dirId.encodeURIComponent()}/parents", ReqMethod.GET, successChecker = { http200 }).await()
+            .parseTo(ParentsRespDTO.serializer()).await().parents
+    }
 }

@@ -4,13 +4,13 @@ import DateSerializer
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import org.w3c.fetch.Response
 import pages.exercise.GraderType
 import pages.exercise_library.DirAccess
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
+import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
 import kotlin.js.Date
 import kotlin.js.Promise
@@ -49,14 +49,10 @@ object LibraryDAO {
         val modified_at: Date,
     )
 
-    fun getLibraryContentQuery(parentDirId: String?): Promise<Response> {
+    fun getLibraryContent(parentDirId: String?): Promise<Lib> = doInPromise {
         debug { "Getting library content under dir $parentDirId" }
         val dirId = parentDirId?.encodeURIComponent() ?: "root"
-        return fetchEms("/lib/dirs/$dirId", ReqMethod.GET, successChecker = { http200 })
-    }
-
-    suspend fun getLibraryContent(parentDirId: String?): Lib =
-        getLibraryContentQuery(parentDirId).await()
+        fetchEms("/lib/dirs/$dirId", ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(Lib.serializer()).await()
-
+    }
 }

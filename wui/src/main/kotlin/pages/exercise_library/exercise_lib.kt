@@ -6,6 +6,7 @@ import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
 import dao.LibraryDAO
+import dao.LibraryDirDAO
 import kotlinx.coroutines.await
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
@@ -26,6 +27,7 @@ enum class DirAccess {
 
 class ExerciseLibRootComp(
     private val dirId: String?,
+    private val setPathSuffix: (String) -> Unit,
     dstId: String
 ) : Component(null, dstId) {
 
@@ -57,19 +59,35 @@ class ExerciseLibRootComp(
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
+    private val pathWhitelistRegex = Regex("[^A-Za-z0-9ÕÄÖÜŠŽõäöüšž_ ]")
+
     override val children: List<Component>
         get() = listOf(breadcrumbs, ezcoll, newExerciseModal, addToCourseModal, newDirModal)
 
     override fun create() = doInPromise {
 
-        val libResp = LibraryDAO.getLibraryContent(dirId)
+        val libRespPromise = LibraryDAO.getLibraryContent(dirId)
 
         if (dirId != null) {
-            // todo: get parents in parallel
-            breadcrumbs = BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+            val parents = LibraryDirDAO.getDirParents(dirId).await().reversed()
+            // Current dir must exist in response if dirId != null
+            val currentDir = libRespPromise.await().current_dir!!
+
+            val pathSuffix = (parents.map { it.name } + currentDir.name)
+                .joinToString("/", "/") {
+                    it.replace(pathWhitelistRegex, "").replace(' ', '-')
+                }
+
+            setPathSuffix(pathSuffix)
+
+            val crumbs = parents.map { Crumb(it.name, ExerciseLibraryPage.linkToDir(it.id)) } + Crumb(currentDir.name)
+            breadcrumbs = BreadcrumbsComp(listOf(Crumb.libraryRoot) + crumbs, this)
+
         } else {
             breadcrumbs = BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
         }
+
+        val libResp = libRespPromise.await()
 
         // can create new exercise only if current dir is root, or we have at least PRA
         val currentDirAccess = libResp.current_dir?.effective_access
