@@ -6,10 +6,12 @@ import Str
 import blankToNull
 import components.BreadcrumbsComp
 import components.CardTabsComp
-import components.Crumb
+import dao.LibraryDirDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.Title
+import pages.exercise_library.createDirChainCrumbs
+import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
 import queries.ReqMethod
 import queries.fetchEms
@@ -74,6 +76,7 @@ enum class GraderType {
 class ExerciseRootComp(
     private val exerciseId: String,
     preselectedTabId: String?,
+    private val setPathSuffix: (String) -> Unit,
     private val onActivateTab: (String) -> Unit,
     dstId: String
 ) : Component(null, dstId) {
@@ -95,12 +98,16 @@ class ExerciseRootComp(
     override val children: List<Component>
         get() = listOf(crumbs, tabs, addToCourseModal)
 
-    override fun create(): Promise<*> = doInPromise {
+    override fun create() = doInPromise {
         val exercise = fetchEms("/exercises/$exerciseId", ReqMethod.GET,
             successChecker = { http200 }).await()
             .parseTo(ExerciseDTO.serializer()).await()
 
-        crumbs = BreadcrumbsComp(listOf(Crumb.libraryRoot, Crumb(exercise.title)), this)
+        val parents = LibraryDirDAO.getDirParents(exercise.dir_id).await().reversed()
+
+        setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
+
+        crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
         tabs = CardTabsComp(this, ::onTabSelected)
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
 

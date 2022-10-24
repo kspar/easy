@@ -21,10 +21,6 @@ import toEstonianString
 import kotlin.js.Date
 
 
-enum class DirAccess {
-    P, PR, PRA, PRAW, PRAWM
-}
-
 class ExerciseLibRootComp(
     private val dirId: String?,
     private val setPathSuffix: (String) -> Unit,
@@ -59,8 +55,6 @@ class ExerciseLibRootComp(
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
-    private val pathWhitelistRegex = Regex("[^A-Za-z0-9ÕÄÖÜŠŽõäöüšž_ ]")
-
     override val children: List<Component>
         get() = listOf(breadcrumbs, ezcoll, newExerciseModal, addToCourseModal, newDirModal)
 
@@ -68,23 +62,17 @@ class ExerciseLibRootComp(
 
         val libRespPromise = LibraryDAO.getLibraryContent(dirId)
 
-        if (dirId != null) {
+        breadcrumbs = if (dirId != null) {
             val parents = LibraryDirDAO.getDirParents(dirId).await().reversed()
             // Current dir must exist in response if dirId != null
             val currentDir = libRespPromise.await().current_dir!!
 
-            val pathSuffix = (parents.map { it.name } + currentDir.name)
-                .joinToString("/", "/") {
-                    it.replace(pathWhitelistRegex, "").replace(' ', '-')
-                }
+            setPathSuffix(createPathChainSuffix(parents.map { it.name } + currentDir.name))
 
-            setPathSuffix(pathSuffix)
-
-            val crumbs = parents.map { Crumb(it.name, ExerciseLibraryPage.linkToDir(it.id)) } + Crumb(currentDir.name)
-            breadcrumbs = BreadcrumbsComp(listOf(Crumb.libraryRoot) + crumbs, this)
+            BreadcrumbsComp(createDirChainCrumbs(parents, currentDir.name), this)
 
         } else {
-            breadcrumbs = BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+            BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
         }
 
         val libResp = libRespPromise.await()

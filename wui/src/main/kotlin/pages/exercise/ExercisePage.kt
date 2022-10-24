@@ -20,7 +20,7 @@ object ExercisePage : EasyPage() {
     override val allowedRoles: List<Role>
         get() = listOf(Role.ADMIN)
 
-    // TODO: /library/exercise/{exerciseId}/dir1-name/dir2-name/ex-name
+    // /library/exercise/{exerciseId}/dir1-name/dir2-name/ex-name
     override val pathSchema = "/library/exercise/{exerciseId}/**"
 
     override val sidenavSpec: Sidenav.Spec
@@ -36,6 +36,7 @@ object ExercisePage : EasyPage() {
             ExerciseRootComp(
                 exerciseId,
                 getCurrentQueryParamValue("tab"),
+                ::setWildcardPath,
                 { updateUrl(createQueryString("tab" to it)) },
                 CONTENT_CONTAINER_ID
             ).createAndBuild().await()
@@ -43,4 +44,8 @@ object ExercisePage : EasyPage() {
     }
 
     fun link(exerciseId: String): String = constructPathLink(mapOf("exerciseId" to exerciseId))
+
+    private fun setWildcardPath(wildcardPathSuffix: String) {
+        updateUrl(link(exerciseId) + wildcardPathSuffix)
+    }
 }
