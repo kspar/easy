@@ -457,7 +457,7 @@ class EzCollComp<P>(
                 // Item was processed
                 processed != null -> EzCollItemComp(
                     processed,
-                    item.bottomAttrsCount,
+                    item.maxBottomAttrsCount,
                     item.orderingIndex,
                     ::itemSelectClicked,
                     ::removeItem,
@@ -590,7 +590,7 @@ class EzCollComp<P>(
 
 class EzCollItemComp<P>(
     var spec: EzCollComp.Item<P>,
-    val bottomAttrsCount: Int,
+    val maxBottomAttrsCount: Int,
     var orderingIndex: Int,
     private val onCheckboxClicked: (EzCollItemComp<P>, Boolean) -> Unit,
     private val onDelete: (EzCollItemComp<P>) -> Unit,
@@ -609,7 +609,9 @@ class EzCollItemComp<P>(
         "itemId" to spec.id,
         "isSelectable" to spec.isSelectable,
         "hasBottomAttrs" to spec.bottomAttrs.isNotEmpty(),
-        "bottomAttrCount" to bottomAttrsCount,
+        "bottomAttrCount" to maxBottomAttrsCount,
+        // This item does not have bottom attrs but others do
+        "expandPlaceholder" to (spec.bottomAttrs.isEmpty() && maxBottomAttrsCount > 0),
         "attrWidthS" to spec.attrWidthS.valuePx,
         "attrWidthM" to spec.attrWidthM.valuePx,
         "hasGrowingAttrs" to if (spec.bottomAttrs.size == 1) true else spec.hasGrowingAttrs,
@@ -653,7 +655,11 @@ class EzCollItemComp<P>(
     )
 
     public override fun postRender() {
-        initExpanding()
+        if (spec.bottomAttrs.isNotEmpty()) {
+            initExpanding()
+            updateExpanded()
+        }
+
         initActions()
         initActionableAttrs()
 
@@ -661,11 +667,6 @@ class EzCollItemComp<P>(
             initSelection()
             updateSelectionState()
         }
-
-        // TODO: atm item is expandable if there are bottom attrs
-        // TODO: but should also be expandable if there is a top attr which doesn't fit
-
-        updateExpanded()
     }
 
 

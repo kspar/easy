@@ -404,6 +404,9 @@
                 </ezc-expand-trailer>
             </ezc-trailer>
         {{/hasBottomAttrs}}
+        {{#expandPlaceholder}}
+            <ezc-trailer class="placeholder"></ezc-trailer>
+        {{/expandPlaceholder}}
         <!-- Action menu structure -->
         <ul id="ezc-item-action-dropdown-{{itemId}}" class="dropdown-content">
             {{#actions}}
