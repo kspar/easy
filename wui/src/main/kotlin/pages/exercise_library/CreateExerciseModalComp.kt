@@ -97,7 +97,7 @@ class CreateExerciseModalComp(
 
         if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
             allowAddingToCourseId!!
-            ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId)
+            ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId).await()
         }
 
         return exerciseId

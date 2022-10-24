@@ -2,35 +2,32 @@ package dao
 
 import debug
 import kotlinx.coroutines.await
-import org.w3c.fetch.Response
 import queries.*
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.encodeURIComponent
 import kotlin.js.Promise
 
 object ExerciseDAO {
 
-    class ExerciseAlreadyOnCourseException : Exception()
+    private class ExerciseAlreadyOnCourseException : Exception()
 
-    fun addExerciseToCourseQuery(exerciseId: String, courseId: String): Promise<Response> {
+    fun addExerciseToCourse(exerciseId: String, courseId: String): Promise<Boolean> = doInPromise {
         debug { "Adding exercise $exerciseId to course $courseId" }
-        return fetchEms("/teacher/courses/$courseId/exercises", ReqMethod.POST,
-            mapOf(
-                "exercise_id" to exerciseId,
-                "threshold" to 100,
-                "student_visible" to false,
-                "assessments_student_visible" to true,
-            ),
-            successChecker = { http200 },
-            errorHandler = {
-                it.handleByCode(RespError.EXERCISE_ALREADY_ON_COURSE) {
-                    throw ExerciseAlreadyOnCourseException()
+        try {
+            fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises", ReqMethod.POST,
+                mapOf(
+                    "exercise_id" to exerciseId,
+                    "threshold" to 100,
+                    "student_visible" to false,
+                    "assessments_student_visible" to true,
+                ),
+                successChecker = { http200 },
+                errorHandler = {
+                    it.handleByCode(RespError.EXERCISE_ALREADY_ON_COURSE) {
+                        throw ExerciseAlreadyOnCourseException()
+                    }
                 }
-            }
-        )
-    }
-
-    suspend fun addExerciseToCourse(exerciseId: String, courseId: String): Boolean {
-        return try {
-            addExerciseToCourseQuery(exerciseId, courseId).await()
+            ).await()
             true
         } catch (e: HandledResponseError) {
             if (e.errorHandlerException.await() is ExerciseAlreadyOnCourseException) {

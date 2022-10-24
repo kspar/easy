@@ -7,9 +7,11 @@ import components.modal.BinaryModalComp
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import errorMessage
+import kotlinx.coroutines.await
 import plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.unionPromise
 import successMessage
 
 class AddToCourseModalComp(
@@ -82,7 +84,7 @@ class AddToCourseModalComp(
     private suspend fun addToCourse(courseId: String) {
         val successes = exerciseIds.map {
             ExerciseDAO.addExerciseToCourse(it, courseId)
-        }
+        }.unionPromise().await()
         // show fail message only if one exercise was added
         if (successes.size == 1) {
             if (successes.first())
@@ -106,7 +108,7 @@ class AddToCourseModalCoursesListComp(
         get() = listOf(radioButtons)
 
     override fun create() = doInPromise {
-        val courses = CoursesTeacherDAO.getMyCourses()
+        val courses = CoursesTeacherDAO.getMyCourses().await()
 
         val buttons = courses.map {
             RadioButtonsComp.Button(

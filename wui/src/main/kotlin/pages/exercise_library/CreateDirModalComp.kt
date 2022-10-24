@@ -5,6 +5,7 @@ import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import dao.LibraryDirDAO
+import kotlinx.coroutines.await
 import plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -55,6 +56,6 @@ class CreateDirModalComp(
     }
 
     private suspend fun createDir(name: String): String {
-        return LibraryDirDAO.createDir(name, parentDirId)
+        return LibraryDirDAO.createDir(name, parentDirId).await()
     }
 }
