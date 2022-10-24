@@ -1,5 +1,6 @@
 package pages.exercise_library
 
+import CompDate
 import Icons
 import Str
 import components.BreadcrumbsComp
@@ -7,6 +8,7 @@ import components.Crumb
 import components.EzCollComp
 import dao.LibraryDAO
 import dao.LibraryDirDAO
+import debug
 import kotlinx.coroutines.await
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
@@ -17,8 +19,8 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import successMessage
+import toComparable
 import toEstonianString
-import kotlin.js.Date
 
 
 class ExerciseLibRootComp(
@@ -40,7 +42,7 @@ class ExerciseLibRootComp(
         override val access: DirAccess,
         val graderType: GraderType,
         val coursesCount: Int,
-        val modifiedAt: Date,
+        val modifiedAt: CompDate,
     ) : Props(id, title, access, 1)
 
     data class DirProps(
@@ -106,7 +108,7 @@ class ExerciseLibRootComp(
                 it.effective_access,
                 it.grader_type,
                 it.courses_count,
-                it.modified_at,
+                it.modified_at.toComparable(),
             )
         }
 
@@ -123,16 +125,20 @@ class ExerciseLibRootComp(
                     EzCollComp.ItemTypeIcon(Icons.user),
                 p.title,
                 titleLink = ExercisePage.link(p.id),
-                topAttr = EzCollComp.SimpleAttr("Viimati muudetud", p.modifiedAt.toEstonianString(), Icons.pending),
+                topAttr = EzCollComp.SimpleAttr(
+                    "Viimati muudetud",
+                    p.modifiedAt.date.toEstonianString(),
+                    Icons.pending
+                ),
                 bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
+//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
                     EzCollComp.SimpleAttr("Kasutusel", "${p.coursesCount} kursusel", Icons.courses),
-                    EzCollComp.SimpleAttr(
-                        "Mul on lubatud",
-                        p.access.toString(),
-                        Icons.exercisePermissions,
-                        translateDirAccess(p.access)
-                    ),
+//                    EzCollComp.SimpleAttr(
+//                        "Mul on lubatud",
+//                        p.access.toString(),
+//                        Icons.exercisePermissions,
+//                        translateDirAccess(p.access)
+//                    ),
                 ),
                 isSelectable = true,
                 actions = listOf(
@@ -145,16 +151,23 @@ class ExerciseLibRootComp(
                 EzCollComp.ItemTypeIcon(Icons.library),
                 p.title,
                 titleLink = ExerciseLibraryPage.linkToDir(p.id),
-                bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
-                    EzCollComp.SimpleAttr(
-                        "Mul on lubatud",
-                        p.access.toString(),
-                        Icons.exercisePermissions,
-                        translateDirAccess(p.access)
-                    ),
-                ),
+//                bottomAttrs = listOf(
+//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
+//                    EzCollComp.SimpleAttr(
+//                        "Mul on lubatud",
+//                        p.access.toString(),
+//                        Icons.exercisePermissions,
+//                        translateDirAccess(p.access)
+//                    ),
+//                ),
                 isSelectable = false,
+                actions = listOf(
+                    EzCollComp.Action(Icons.delete, "Kustuta", onActivate = {
+                        // TODO
+                        debug { "delete" }
+                        EzCollComp.ResultUnmodified
+                    })
+                ),
             )
         }
 
@@ -187,17 +200,28 @@ class ExerciseLibRootComp(
             ),
             sorters = listOf(
                 EzCollComp.Sorter<Props>("Nime järgi",
-                    compareBy<EzCollComp.Item<Props>> { it.props.type }.thenBy { it.props.title }
+                    compareBy<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) 1 else 0
+                    }.thenBy {
+                        it.props.title
+                    }
                 ),
-                // TODO: Date to comparable
-//                EzCollComp.Sorter("Muutmisaja järgi", compareBy { it.props.modifiedAt }),
-                EzCollComp.Sorter<Props>("ID järgi",
-                    compareBy<EzCollComp.Item<Props>> { it.props.type }.thenBy { it.props.id.toInt() }
+                EzCollComp.Sorter("Muutmisaja järgi",
+                    compareByDescending<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) it.props.modifiedAt else CompDate.future()
+                    }.thenBy {
+                        it.props.title
+                    }
                 ),
+//                EzCollComp.Sorter<Props>("ID järgi",
+//                    compareBy<EzCollComp.Item<Props>> { it.props.type }.thenBy { it.props.id.toInt() }
+//                ),
                 EzCollComp.Sorter<Props>("Populaarsuse järgi",
-                    compareBy<EzCollComp.Item<Props>> { it.props.type }.reversed().thenBy {
-                        if (it.props is ExerciseProps) it.props.coursesCount else 0
-                    }.reversed()
+                    compareByDescending<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
+                    }.thenBy {
+                        it.props.title
+                    }
                 ),
             ),
             parent = this
@@ -206,15 +230,15 @@ class ExerciseLibRootComp(
 
     override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId, addToCourseModal.dstId, newDirModal.dstId)
 
-    private fun translateDirAccess(access: DirAccess): String {
-        return when (access) {
-            DirAccess.P -> "vaadata"
-            DirAccess.PR -> "vaadata"
-            DirAccess.PRA -> "vaadata ja lisada"
-            DirAccess.PRAW -> "vaadata ja muuta"
-            DirAccess.PRAWM -> "kõike teha"
-        }
-    }
+//    private fun translateDirAccess(access: DirAccess): String {
+//        return when (access) {
+//            DirAccess.P -> "vaadata"
+//            DirAccess.PR -> "vaadata"
+//            DirAccess.PRA -> "vaadata ja lisada"
+//            DirAccess.PRAW -> "vaadata ja muuta"
+//            DirAccess.PRAWM -> "kõike teha"
+//        }
+//    }
 
     private suspend fun addToCourse(item: EzCollComp.Item<Props>): EzCollComp.Result {
         addToCourseModal.setSingleExercise(item.props.id, item.props.title)
