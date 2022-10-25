@@ -92,7 +92,7 @@ class ExerciseLibRootComp(
                                 successMessage { "Ülesanne loodud" }
                             }
                         },
-                        Sidenav.Action(Icons.library, "Uus kaust") { // TODO: icon
+                        Sidenav.Action(Icons.newFolder, "Uus kaust") {
                             if (newDirModal.openWithClosePromise().await() != null)
                                 createAndBuild().await()
                         },
@@ -131,14 +131,15 @@ class ExerciseLibRootComp(
                     Icons.pending
                 ),
                 bottomAttrs = listOf(
-//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
                     EzCollComp.SimpleAttr("Kasutusel", "${p.coursesCount} kursusel", Icons.courses),
+//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
 //                    EzCollComp.SimpleAttr(
 //                        "Mul on lubatud",
 //                        p.access.toString(),
 //                        Icons.exercisePermissions,
 //                        translateDirAccess(p.access)
 //                    ),
+                // TODO: is shared -> attr "shared" with Icons.teacher
                 ),
                 isSelectable = true,
                 actions = listOf(
@@ -148,6 +149,7 @@ class ExerciseLibRootComp(
         } + dirProps.map { p ->
             EzCollComp.Item<Props>(
                 p,
+                // TODO: is shared -> Icons.sharedFolder
                 EzCollComp.ItemTypeIcon(Icons.library),
                 p.title,
                 titleLink = ExerciseLibraryPage.linkToDir(p.id),
@@ -213,9 +215,6 @@ class ExerciseLibRootComp(
                         it.props.title
                     }
                 ),
-//                EzCollComp.Sorter<Props>("ID järgi",
-//                    compareBy<EzCollComp.Item<Props>> { it.props.type }.thenBy { it.props.id.toInt() }
-//                ),
                 EzCollComp.Sorter<Props>("Populaarsuse järgi",
                     compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
@@ -229,16 +228,6 @@ class ExerciseLibRootComp(
     }
 
     override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId, addToCourseModal.dstId, newDirModal.dstId)
-
-//    private fun translateDirAccess(access: DirAccess): String {
-//        return when (access) {
-//            DirAccess.P -> "vaadata"
-//            DirAccess.PR -> "vaadata"
-//            DirAccess.PRA -> "vaadata ja lisada"
-//            DirAccess.PRAW -> "vaadata ja muuta"
-//            DirAccess.PRAWM -> "kõike teha"
-//        }
-//    }
 
     private suspend fun addToCourse(item: EzCollComp.Item<Props>): EzCollComp.Result {
         addToCourseModal.setSingleExercise(item.props.id, item.props.title)
