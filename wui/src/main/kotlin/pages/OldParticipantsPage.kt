@@ -111,7 +111,7 @@ object OldParticipantsPage : EasyPage() {
         get() = PageName.PARTICIPANTS
 
     override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(courseId, ActivePage.COURSE_PARTICIPANTS_OLD)
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_PARTICIPANTS)
 
     override val allowedRoles: List<Role>
         get() = listOf(Role.TEACHER, Role.ADMIN)
