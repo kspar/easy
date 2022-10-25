@@ -3,6 +3,7 @@ package dao
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.exercise_library.DirAccess
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -44,5 +45,52 @@ object LibraryDirDAO {
         debug { "Getting parents for dir $dirId" }
         fetchEms("/lib/dirs/${dirId.encodeURIComponent()}/parents", ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(ParentsRespDTO.serializer()).await().parents
+    }
+
+
+    @Serializable
+    data class Accesses(
+        val direct_any: AnyAccess?,
+        val direct_accounts: List<AccountAccess>,
+        val direct_groups: List<GroupAccess>,
+        val inherited_any: AnyAccess?,
+        val inherited_accounts: List<AccountAccess>,
+        val inherited_groups: List<GroupAccess>,
+    )
+
+    @Serializable
+    data class AnyAccess(
+        val access: DirAccess,
+        val inherited_from: InheritingDir? = null,
+    )
+
+    @Serializable
+    data class AccountAccess(
+        val username: String,
+        val group_id: String,
+        val given_name: String,
+        val family_name: String,
+        val access: DirAccess,
+        val inherited_from: InheritingDir? = null,
+    )
+
+    @Serializable
+    data class GroupAccess(
+        val id: String,
+        val name: String,
+        val access: DirAccess,
+        val inherited_from: InheritingDir? = null,
+    )
+
+    @Serializable
+    data class InheritingDir(
+        val id: String,
+        val name: String,
+    )
+
+    fun getDirAccesses(dirId: String): Promise<Accesses> = doInPromise {
+        debug { "Getting dir accesses for dir $dirId" }
+        fetchEms("/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.GET, successChecker = { http200 }).await()
+            .parseTo(Accesses.serializer()).await()
     }
 }
