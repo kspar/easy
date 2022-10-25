@@ -40,9 +40,9 @@ class ReadDirAccesses {
 
     data class AccountAccessResp(
         @JsonProperty("username") val username: String,
-        @JsonProperty("group_id") val implicitGroupId: String,
         @JsonProperty("given_name") val givenName: String,
         @JsonProperty("family_name") val familyName: String,
+        @JsonProperty("group_id") val implicitGroupId: String,
         @JsonProperty("access") val access: DirAccessLevel,
         // TODO: modified_at
         @JsonInclude(JsonInclude.Include.NON_NULL)
