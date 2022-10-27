@@ -50,6 +50,18 @@ html.embedded main {
     padding: 0;
 }
 
+/* wui 3 design - remove wui3 class when migrated */
+
+html.wui3 body {
+    background: none;
+}
+
+html.wui3 .container {
+    width: 100%;
+    padding: 0 4rem 4rem 4rem;
+}
+
+/*TODO: remove*/
 .subheading-item {
     display: flex;
     flex-wrap: wrap;
