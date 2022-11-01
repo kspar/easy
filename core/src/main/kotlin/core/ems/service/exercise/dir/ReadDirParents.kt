@@ -44,7 +44,6 @@ class ReadDirParentsController {
 
         val dirId = dirIdString.idToLongOrInvalidReq()
         caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRA) }
-        assertDirExists(dirId, true)
 
         return selectParents(dirId)
     }

@@ -60,9 +60,10 @@ class CreateExercise(private val adocService: AdocService) {
 
         val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
 
-        if (parentDirId != null) {
-            caller.assertAccess { libraryDir(parentDirId, DirAccessLevel.PRA) }
-            assertDirExists(parentDirId)
+        caller.assertAccess {
+            if (parentDirId != null) {
+                libraryDir(parentDirId, DirAccessLevel.PRA)
+            }
         }
 
         return when (dto.textAdoc) {
