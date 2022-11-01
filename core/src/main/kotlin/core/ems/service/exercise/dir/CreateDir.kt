@@ -45,8 +45,9 @@ class CreateDirController {
 
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
-        if (parentId != null) {
-            caller.assertAccess { libraryDir(parentId, DirAccessLevel.PRA) }
+        caller.assertAccess {
+            if (parentId != null)
+                libraryDir(parentId, DirAccessLevel.PRA)
         }
 
         return Resp(insertDir(body.name, parentId, caller).toString())
