@@ -73,14 +73,8 @@ class ReadDirController {
 
         log.debug { "Read dir $dirIdString by ${caller.id}" }
 
-        val dirId = if (dirIdString.equals("root", true)) {
-            null
-        } else {
-            val id = dirIdString.idToLongOrInvalidReq()
-            caller.assertAccess { libraryDir(id, DirAccessLevel.P) }
-            assertDirExists(id)
-            id
-        }
+        val dirId = if (dirIdString.equals("root", true)) null else dirIdString.idToLongOrInvalidReq()
+        caller.assertAccess { if (dirId != null) libraryDir(dirId, DirAccessLevel.P) }
 
         return selectDir(caller, dirId)
     }
