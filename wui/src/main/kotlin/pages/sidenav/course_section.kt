@@ -2,10 +2,8 @@ package pages.sidenav
 
 import Icons
 import Role
-import Str
 import cache.BasicCourseInfo
 import kotlinx.coroutines.await
-import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.exercise.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp
@@ -28,9 +26,8 @@ class SidenavCourseSectionComp(
     private val exercisesItemId = IdGenerator.nextId()
     private val gradesItemId = IdGenerator.nextId()
     private val participantsItemId = IdGenerator.nextId()
-    private val oldParticipantsItemId = IdGenerator.nextId()
 
-    private val newExerciseModal = CreateExerciseModalComp(courseId, this, "new-exercise-modal-dst-id")
+    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this, "new-exercise-modal-dst-id")
     private val newExerciseLinkId = IdGenerator.nextId()
 
     override val children = listOf(newExerciseModal)
@@ -47,11 +44,9 @@ class SidenavCourseSectionComp(
         "exercisesId" to exercisesItemId,
         "gradesId" to gradesItemId,
         "participantsId" to participantsItemId,
-        "oldParticipantsId" to oldParticipantsItemId,
         "exercisesLink" to CourseExercisesPage.link(courseId),
         "gradesLink" to GradeTablePage.link(courseId),
         "participantsLink" to ParticipantsPage.link(courseId),
-        "oldParticipantsLink" to OldParticipantsPage.link(courseId),
         "exercisesIcon" to Icons.courseExercises,
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
@@ -60,9 +55,7 @@ class SidenavCourseSectionComp(
         "exercisesLabel" to "Ülesanded",
         "gradesLabel" to "Hinded",
         "participantsLabel" to "Osalejad",
-        "newLabel" to Str.new(),
         "participantsLabel" to "Osalejad",
-        "oldParticipantsLabel" to "Osalejad",
         "newExerciseLabel" to "Uus ülesanne",
         "newExerciseLinkId" to newExerciseLinkId,
         "addExerciseLabel" to "Lisa ülesanne kogust",
@@ -71,7 +64,7 @@ class SidenavCourseSectionComp(
     override fun postRender() {
         getElemByIdOrNull(newExerciseLinkId)?.onVanillaClick(true) {
             val exerciseId = newExerciseModal.openWithClosePromise().await()
-            exerciseId?.let {
+            if (exerciseId != null) {
                 EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
                 successMessage { "Ülesanne loodud" }
             }
@@ -82,6 +75,5 @@ class SidenavCourseSectionComp(
         ActivePage.COURSE_EXERCISES to exercisesItemId,
         ActivePage.COURSE_GRADES to gradesItemId,
         ActivePage.COURSE_PARTICIPANTS to participantsItemId,
-        ActivePage.COURSE_PARTICIPANTS_OLD to oldParticipantsItemId,
     )
 }

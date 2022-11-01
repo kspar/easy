@@ -247,7 +247,7 @@ fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boo
     return when {
         user.isAdmin() -> true
         else -> {
-            val effectiveLevel = getAccountDirAccessLevel(user.id, dirId, level)
+            val effectiveLevel = getAccountDirAccessLevel(user, dirId, level)
             log.trace { "effective level: $effectiveLevel" }
             return effectiveLevel != null && effectiveLevel >= level
         }
@@ -263,11 +263,12 @@ fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boo
  * return early, without calculating other inherited accesses (even though these might increase the access level)
  */
 fun getAccountDirAccessLevel(
-    userId: String,
+    user: EasyUser,
     dirId: Long,
     target: DirAccessLevel = DirAccessLevel.PRAWM
 ): DirAccessLevel? =
-    getEffectiveDirAccessLevelRec(userId, dirId, target, null, true)
+    if (user.isAdmin()) DirAccessLevel.PRAWM
+    else getEffectiveDirAccessLevelRec(user.id, dirId, target, null, true)
 
 private tailrec fun getEffectiveDirAccessLevelRec(
     userId: String, dirId: Long, target: DirAccessLevel,

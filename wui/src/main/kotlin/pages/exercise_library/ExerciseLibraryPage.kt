@@ -25,16 +25,28 @@ object ExerciseLibraryPage : EasyPage() {
     override val titleSpec: Title.Spec
         get() = Title.Spec(Str.exerciseLibrary())
 
-    override val pathSchema = "/library"
+    // root - /library/dir/root
+    // dir - /library/dir/{dirId}/parent1/parent2/dir
+    override val pathSchema = "/library/dir/{dirId}/**"
+
+    private fun getDirId() = parsePathParams()["dirId"]
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 
+        val dirId = getDirId().let { if (it == "root") null else it }
+
         doInPromise {
-            ExerciseLibRootComp(CONTENT_CONTAINER_ID)
+            ExerciseLibRootComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
                 .createAndBuild().await()
         }
     }
 
-    fun link() = constructPathLink(emptyMap())
+    fun linkToRoot() = linkToDir("root")
+
+    fun linkToDir(dirId: String) = constructPathLink(mapOf("dirId" to dirId))
+
+    private fun setWildcardPath(wildcardPathSuffix: String) {
+        updateUrl(linkToDir(getDirId()) + wildcardPathSuffix)
+    }
 }

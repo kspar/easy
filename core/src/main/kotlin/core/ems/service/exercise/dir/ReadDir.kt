@@ -41,19 +41,22 @@ class ReadDirController {
         @JsonProperty("dir_id") val implicitDirId: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        // TODO: add is_shared - whether anyone else has any access to this exercise (can be direct/inherited, user/group)
         @JsonProperty("grader_type") val graderType: GraderType,
         @JsonProperty("courses_count") val coursesCount: Int,
-        // TODO: do we need last modifier? creator?
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime,
+        // TODO: add created_by - username of creator
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("modified_at") val modifiedAt: DateTime,
+        // TODO: add modified_by - username of last modifier
     )
 
     data class DirResp(
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String,
         @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        // TODO: add is_shared - whether anyone else has any access to this dir (can be direct/inherited, user/group)
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime,
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -101,7 +104,7 @@ class ReadDirController {
     private fun selectDir(caller: EasyUser, dirId: Long?): Resp {
         // Can be null only if this dir is root
         val currentDirAccess = if (dirId != null) {
-            getAccountDirAccessLevel(caller.id, dirId)
+            getAccountDirAccessLevel(caller, dirId)
                 ?: throw IllegalStateException("User ${caller.id} reading dir $dirId but has no access to it")
         } else null
 
@@ -167,7 +170,7 @@ class ReadDirController {
             }.also { log.trace { "accessible dirs: $it" } }
 
 
-            // TODO: refactor, optimise for admin, make sure it works for non-root
+            // TODO: refactor, optimise for admin
             val dirs = if (caller.isAdmin())
                 selectAllDirsForAdmin(dirId)
             else

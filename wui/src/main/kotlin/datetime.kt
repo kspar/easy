@@ -1,8 +1,22 @@
 import kotlin.js.Date
+import kotlin.math.roundToInt
 
 
 val MONTHS = listOf("jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
         "juuli", "august", "september", "oktoober", "november", "detsember")
+
+data class CompDate(val date: Date) : Comparable<CompDate> {
+    // this is before other - this < other
+    override fun compareTo(other: CompDate): Int =
+        (this.date.getTime() - other.date.getTime()).roundToInt()
+
+    companion object {
+        fun epoch() = CompDate(Date(0))
+        fun future() = CompDate(Date(32529329048000))
+    }
+}
+
+fun Date.toComparable() = CompDate(this)
 
 /**
  * Convert to Eastern European time.

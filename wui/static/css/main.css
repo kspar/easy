@@ -50,6 +50,18 @@ html.embedded main {
     padding: 0;
 }
 
+/* wui 3 design - remove wui3 class when migrated */
+
+html.wui3 body {
+    background: none;
+}
+
+html.wui3 .container {
+    width: 100%;
+    padding: 0 4rem 4rem 4rem;
+}
+
+/*TODO: remove*/
 .subheading-item {
     display: flex;
     flex-wrap: wrap;
@@ -1691,6 +1703,7 @@ ezc-item-type {
     display: flex;
     justify-content: center;
     width: 3rem;
+    padding-bottom: .6rem;
 }
 
 ezc-item-type-text {
@@ -1722,6 +1735,7 @@ ezc-left .ezc-item-checkbox {
     width: 3rem;
     padding: .1rem 0 0 .5rem;
     cursor: pointer;
+    font-size: 1rem;
 }
 
 ezc-left .ezc-item-checkbox span.dummy,
@@ -1890,6 +1904,9 @@ ezc-fold-value {
 
 ezc-trailer {
     display: flex;
+}
+ezc-trailer.placeholder {
+    width: 2.4rem;
 }
 
 ezc-expand-trailer {

@@ -67,7 +67,7 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
         }
 
         // If caller doesn't have full access by inheritance, add it explicitly
-        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
+        if (!caller.isAdmin() && (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM))) {
             GroupDirAccess.insert {
                 it[group] = getImplicitGroupFromAccount(caller.id)
                 it[dir] = newDirId
