@@ -36,37 +36,6 @@ fun assertTeacherOrAdminHasAccessToCourse(user: EasyUser, courseId: Long) {
     }
 }
 
-fun assertTeacherOrAdminHasAccessToCourseGroup(user: EasyUser, courseId: Long, groupId: Long) {
-    if (!canTeacherOrAdminAccessCourseGroup(user, courseId, groupId)) {
-        throw ForbiddenException("Teacher or admin ${user.id} does not have access to group $groupId on course $courseId", ReqError.NO_GROUP_ACCESS)
-    }
-}
-
-fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean =
-        when {
-            user.isAdmin() -> true
-            user.isTeacher() -> canTeacherAccessCourseGroup(user, courseId, groupId)
-            else -> {
-                log.warn { "User ${user.id} is not admin or teacher" }
-                false
-            }
-        }
-
-fun canTeacherAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean {
-    return transaction {
-        val hasGroups = teacherHasRestrictedGroupsOnCourse(user.id, courseId)
-        if (!hasGroups) {
-            true
-        } else {
-            TeacherCourseGroup.select {
-                TeacherCourseGroup.course eq courseId and
-                        (TeacherCourseGroup.teacher eq user.id) and
-                        (TeacherCourseGroup.courseGroup eq groupId)
-            }.count() > 0
-        }
-    }
-}
-
 fun assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(user: EasyUser, courseId: Long) {
     when {
         user.isAdmin() -> return
@@ -218,21 +187,6 @@ fun canTeacherOrAdminHasAccessExercise(user: EasyUser, exerciseId: Long): Boolea
 fun assertTeacherOrAdminHasAccessToExercise(user: EasyUser, exerciseId: Long) {
     if (!canTeacherOrAdminHasAccessExercise(user, exerciseId)) {
         throw ForbiddenException("User ${user.id} does not have access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
-    }
-}
-
-fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
-    return when {
-        user.isAdmin() -> true
-        user.isTeacher() -> transaction {
-            Exercise.select {
-                Exercise.id eq exerciseId and (Exercise.owner eq user.id)
-            }.count() == 1L
-        }
-        else -> {
-            log.warn { "User ${user.id} is not admin or teacher" }
-            false
-        }
     }
 }
 

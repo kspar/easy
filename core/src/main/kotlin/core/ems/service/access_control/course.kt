@@ -1,9 +1,16 @@
 package core.ems.service.access_control
 
 import core.conf.security.EasyUser
-import core.ems.service.*
+import core.db.TeacherCourseGroup
+import core.ems.service.assertStudentHasAccessToCourse
+import core.ems.service.canTeacherAccessCourse
+import core.ems.service.isExerciseOnCourse
+import core.ems.service.teacherHasRestrictedGroupsOnCourse
 import core.exception.ForbiddenException
 import core.exception.ReqError
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
 
 
 /**
@@ -23,10 +30,22 @@ fun AccessChecksBuilder.teacherOnCourse(courseId: Long, allowRestrictedGroups: B
     }
 }
 
+/**
+ *  Assert that teacher has access to course group.
+ */
 fun AccessChecksBuilder.courseGroupAccessible(courseId: Long, groupId: Long) = add { caller: EasyUser ->
-    assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
-}
 
+    when {
+        caller.isAdmin() -> {}
+
+        caller.isTeacher() -> assertTeacherHasAccessToCourseGroup(caller.id, courseId, groupId)
+
+        else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
+    }
+}
+/**
+ *  Assert that student has access to course.
+ */
 fun AccessChecksBuilder.studentOnCourse(courseId: Long) = add { caller: EasyUser ->
     assertStudentHasAccessToCourse(caller.id, courseId)
 }
@@ -47,6 +66,27 @@ fun AccessChecksBuilder.exerciseViaCourse(exerciseId: Long, courseId: Long) = ad
     }
 }
 
+fun assertTeacherHasAccessToCourseGroup(userId: String, courseId: Long, groupId: Long) {
+    if (!canTeacherAccessCourseGroup(userId, courseId, groupId)) {
+        throw ForbiddenException(
+            "Teacher or admin $userId does not have access to group $groupId on course $courseId",
+            ReqError.NO_GROUP_ACCESS
+        )
+    }
+}
+
+fun canTeacherAccessCourseGroup(userId: String, courseId: Long, groupId: Long): Boolean = transaction {
+    val hasGroups = teacherHasRestrictedGroupsOnCourse(userId, courseId)
+    if (!hasGroups) {
+        true
+    } else {
+        TeacherCourseGroup.select {
+            TeacherCourseGroup.course eq courseId and
+                    (TeacherCourseGroup.teacher eq userId) and
+                    (TeacherCourseGroup.courseGroup eq groupId)
+        }.count() > 0
+    }
+}
 
 fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
     if (!canTeacherAccessCourse(teacherId, courseId)) {
