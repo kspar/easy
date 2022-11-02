@@ -6,7 +6,6 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
@@ -45,16 +44,17 @@ class TeacherDownloadSubmissionsController {
 
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
-        // Check access to courses and groups
-        req.courses.forEach { course ->
-            val courseId = course.id.idToLongOrInvalidReq()
-            assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess {
+            req.courses.forEach { course ->
+                val courseId = course.id.idToLongOrInvalidReq()
 
-            caller.assertAccess { teacherOnCourse(courseId, true) }
-            course.groups?.forEach {
-                caller.assertAccess { courseGroupAccessible(courseId, it.id.idToLongOrInvalidReq()) }
+                teacherOnCourse(courseId, true)
+                course.groups?.forEach {
+                     courseGroupAccessible(courseId, it.id.idToLongOrInvalidReq())
+                }
             }
         }
+        // Check access to courses and groups
 
         response.contentType = "application/zip"
         response.setHeader("Content-disposition", "attachment; filename=submissions.zip")

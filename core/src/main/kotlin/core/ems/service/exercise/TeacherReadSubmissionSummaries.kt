@@ -7,7 +7,6 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
 import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -89,9 +88,12 @@ class TeacherReadSubmissionSummariesController {
             else -> throw InvalidRequestException("Invalid value for order parameter", ReqError.INVALID_PARAMETER_VALUE)
         }
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
-        if (groupId != null) {
-            caller.assertAccess { courseGroupAccessible(courseId, groupId) }
+        caller.assertAccess {
+            teacherOnCourse(courseId, true)
+
+            if (groupId != null) {
+                caller.assertAccess { courseGroupAccessible(courseId, groupId) }
+            }
         }
 
         val queryWords = searchString.trim().lowercase().split(" ").filter { it.isNotEmpty() }

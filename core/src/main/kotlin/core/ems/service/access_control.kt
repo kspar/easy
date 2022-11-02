@@ -236,13 +236,6 @@ fun canTeacherOrAdminUpdateExercise(user: EasyUser, exerciseId: Long): Boolean {
     }
 }
 
-fun assertTeacherOrAdminCanUpdateExercise(user: EasyUser, exerciseId: Long) {
-    if (!canTeacherOrAdminUpdateExercise(user, exerciseId)) {
-        throw ForbiddenException("User ${user.id} does not have access to update exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
-    }
-}
-
-
 fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boolean {
     return when {
         user.isAdmin() -> true
