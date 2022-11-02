@@ -37,6 +37,7 @@ fun main() {
             setSplashText("Uuendan andmeid")
             updateAccountData()
         }
+        refreshCurrentPathFromBrowser()
         buildStatics()
         EzSpa.PageManager.updatePage()
     }

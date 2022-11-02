@@ -8,7 +8,7 @@ import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.Materialize
 import libheaders.closePromise
-import objOf
+import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement

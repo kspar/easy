@@ -79,6 +79,8 @@ abstract class Component(
         postChildrenBuilt()
     }
 
+    open fun hasUnsavedChanges(): Boolean = children.any { it.hasUnsavedChanges() }
+
     open fun createAndBuild3(): Promise<*>? {
         paintLoading()
         val p = create()

@@ -223,7 +223,7 @@ class ParticipantsRootComp(
                     }
                 )
             },
-            this
+            parent = this
         )
 
 

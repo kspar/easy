@@ -162,10 +162,10 @@ abstract class Page {
     }
 
     /**
-     * Update current page URL. Takes a URL fragment that can be relative ('foo') or absolute ('/foo') or
-     * only query string ('?foo') or only hash string ('#foo') or a combination of these.
+     * Update current page URL path. The given path should be absolute. It can include a query string and hash.
      */
-    fun updateUrl(urlFragment: String) {
-        window.history.replaceState(null, "", urlFragment)
+    fun updateUrl(path: String) {
+        window.history.replaceState(null, "", path)
+        refreshCurrentPathFromBrowser()
     }
 }

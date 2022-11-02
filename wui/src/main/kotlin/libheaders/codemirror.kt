@@ -1,6 +1,6 @@
 package libheaders
 
-import objOf
+import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
 
 @JsName("CodeMirror")

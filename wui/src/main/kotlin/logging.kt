@@ -1,6 +1,7 @@
 import libheaders.Materialize
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.objOf
 import rip.kspar.ezspa.onVanillaClick
 import kotlin.js.Date
 
@@ -34,7 +35,11 @@ fun debugFunStart(funName: String): FunLog? {
 }
 
 
-data class UserMessageAction(val label: String, val id: String = IdGenerator.nextId(), val onActivate: suspend () -> Unit)
+data class UserMessageAction(
+    val label: String,
+    val id: String = IdGenerator.nextId(),
+    val onActivate: suspend () -> Unit
+)
 
 fun permanentErrorMessage(isDismissable: Boolean = true, action: UserMessageAction? = null, msgProvider: () -> String) =
     userMessage(msgProvider, MsgType.PERMANENT_ERROR, action, isDismissable)

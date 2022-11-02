@@ -8,7 +8,7 @@ import highlightCode
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import lightboxExerciseImages
-import objOf
+import rip.kspar.ezspa.objOf
 import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLAnchorElement

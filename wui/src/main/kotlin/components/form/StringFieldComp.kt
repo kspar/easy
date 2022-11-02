@@ -52,4 +52,6 @@ class StringFieldComp(
             onValueChange?.invoke(getValue())
         }
     }
+
+    override fun hasUnsavedChanges() = getValue() != initialValue
 }

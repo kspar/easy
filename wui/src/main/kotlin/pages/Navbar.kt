@@ -1,12 +1,13 @@
 package pages
 
 import Auth
+import Icons
 import Str
 import libheaders.Materialize
 import rip.kspar.ezspa.getBody
 import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.toJsObj
 import tmRender
-import toJsObj
 
 object Navbar {
 

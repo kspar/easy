@@ -7,7 +7,6 @@ import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
-import objOf
 import rip.kspar.ezspa.*
 import tmRender
 import kotlin.js.Promise
