@@ -6,6 +6,7 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.ems.service.*
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging

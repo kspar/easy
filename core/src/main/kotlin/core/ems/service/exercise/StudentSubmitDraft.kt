@@ -7,8 +7,8 @@ import core.db.Student
 import core.db.SubmissionDraft
 import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID

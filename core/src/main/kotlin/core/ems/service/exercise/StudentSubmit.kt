@@ -7,8 +7,8 @@ import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache

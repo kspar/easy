@@ -8,6 +8,8 @@ import core.db.DirAccessLevel
 import core.db.Group
 import core.db.GroupDirAccess
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -63,6 +65,14 @@ class ReadDirAccesses {
         @JsonProperty("name") val name: String,
     )
 
+    private data class AccessDir(
+        val id: Long, val name: String, val parent: Long?,
+        val anyAccess: DirAccessLevel?, val groupAccesses: List<AccessGroup>
+    )
+
+    private data class AccessGroup(val id: Long, val name: String, val access: DirAccessLevel, val isImplicit: Boolean)
+
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/lib/dirs/{dirId}/access")
     fun controller(
@@ -74,20 +84,14 @@ class ReadDirAccesses {
         log.debug { "Read accesses for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
-        // TODO: new access control
-        assertAccountHasDirAccess(caller, dirId, DirAccessLevel.PRAWM)
-        assertDirExists(dirId, true)
+
+        caller.assertAccess {
+            libraryDir(dirId, DirAccessLevel.PRAWM)
+            assertDirExists(dirId, true)
+        }
 
         return selectAccesses(caller, dirId)
     }
-
-
-    private data class AccessDir(
-        val id: Long, val name: String, val parent: Long?,
-        val anyAccess: DirAccessLevel?, val groupAccesses: List<AccessGroup>
-    )
-
-    private data class AccessGroup(val id: Long, val name: String, val access: DirAccessLevel, val isImplicit: Boolean)
 
 
     private fun selectAccesses(caller: EasyUser, dirId: Long): Resp {
@@ -116,6 +120,7 @@ class ReadDirAccesses {
                 dir.anyAccess == null -> inheritedAny
                 inheritedAny == null || dir.anyAccess > inheritedAny.access ->
                     AccessAny(dir.anyAccess, dir.id, dir.name)
+
                 else -> inheritedAny
             }
 
@@ -211,34 +216,32 @@ class ReadDirAccesses {
         )
     }
 
-    private fun selectGroupDirAccesses(dirId: Long): AccessDir {
-        return transaction {
-            val accesses = (GroupDirAccess innerJoin Group)
-                .slice(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
-                .select {
-                    GroupDirAccess.dir eq dirId
-                }.map {
-                    // Can only have one access for this dir per group, so don't need to aggregate
-                    AccessGroup(
-                        it[Group.id].value,
-                        it[Group.name],
-                        it[GroupDirAccess.level],
-                        it[Group.isImplicit],
-                    )
-                }
-
-            Dir.select {
-                Dir.id eq dirId
+    private fun selectGroupDirAccesses(dirId: Long): AccessDir = transaction {
+        val accesses = (GroupDirAccess innerJoin Group)
+            .slice(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
+            .select {
+                GroupDirAccess.dir eq dirId
             }.map {
-                AccessDir(
-                    it[Dir.id].value,
-                    it[Dir.name],
-                    it[Dir.parentDir]?.value,
-                    it[Dir.anyAccess],
-                    accesses
+                // Can only have one access for this dir per group, so don't need to aggregate
+                AccessGroup(
+                    it[Group.id].value,
+                    it[Group.name],
+                    it[GroupDirAccess.level],
+                    it[Group.isImplicit],
                 )
-            }.single()
-        }
+            }
+
+        Dir.select {
+            Dir.id eq dirId
+        }.map {
+            AccessDir(
+                it[Dir.id].value,
+                it[Dir.name],
+                it[Dir.parentDir]?.value,
+                it[Dir.anyAccess],
+                accesses
+            )
+        }.single()
     }
 }
 

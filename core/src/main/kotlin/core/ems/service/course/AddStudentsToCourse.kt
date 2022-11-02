@@ -3,9 +3,9 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertGroupExistsOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.courseGroupAccessible
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -18,72 +18,69 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AddStudentsToCourseController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("students") @field:Valid val students: List<StudentEmailReq>)
 
     data class StudentEmailReq(
-            @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val studentEmail: String,
-            @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList())
+        @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val studentEmail: String,
+        @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList()
+    )
 
     data class GroupReq(@JsonProperty("id") @field:NotBlank @field:Size(max = 100) val groupId: String)
 
-    data class Resp(@JsonProperty("accesses_added") val accessesAdded: Int,
-                    @JsonProperty("pending_accesses_added_updated") val pendingAccessesAddedUpdated: Int)
+    data class Resp(
+        @JsonProperty("accesses_added") val accessesAdded: Int,
+        @JsonProperty("pending_accesses_added_updated") val pendingAccessesAddedUpdated: Int
+    )
+
+    private data class StudentWithAccount(val id: String, val email: String, val groups: Set<Long>)
+    private data class StudentNoAccount(val email: String, val groups: Set<Long>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/students")
-    fun controller(@PathVariable("courseId") courseIdStr: String,
-                   @RequestBody @Valid body: Req, caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("courseId") courseIdStr: String,
+        @RequestBody @Valid body: Req, caller: EasyUser
+    ): Resp {
 
         log.debug { "Adding access to course $courseIdStr to students $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-
         val students = body.students.map {
             StudentNoAccount(
-                    it.studentEmail.lowercase(),
-                    it.groups.map {
-                        it.groupId.idToLongOrInvalidReq()
-                    }.toSet()
+                it.studentEmail.lowercase(),
+                it.groups.map {
+                    it.groupId.idToLongOrInvalidReq()
+                }.toSet()
             )
         }.distinctBy { it.email }
 
-        students.flatMap { it.groups }
-                .toSet()
-                .forEach {
-                    assertGroupExistsOnCourse(it, courseId)
-                    assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, it)
-                }
+        caller.assertAccess {
+            teacherOnCourse(courseId, true)
+            students.flatMap { it.groups }.toSet().forEach { courseGroupAccessible(courseId, it) }
+        }
 
         return insertStudentCourseAccesses(courseId, students)
     }
-}
 
-private data class StudentWithAccount(val id: String, val email: String, val groups: Set<Long>)
-private data class StudentNoAccount(val email: String, val groups: Set<Long>)
+    private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNoAccount>): Resp = transaction {
+        val now = DateTime.now()
+        val courseEntity = EntityID(courseId, Course)
 
-private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNoAccount>):
-        AddStudentsToCourseController.Resp {
-
-    val now = DateTime.now()
-    val courseEntity = EntityID(courseId, Course)
-
-    return transaction {
         val studentsWithAccount = mutableSetOf<StudentWithAccount>()
         val studentsNoAccount = mutableSetOf<StudentNoAccount>()
 
         students.forEach {
             val studentId = (Student innerJoin Account)
-                    .slice(Student.id)
-                    .select { Account.email.lowerCase() eq it.email }
-                    .map { it[Student.id].value }
-                    .singleOrNull()
+                .slice(Student.id)
+                .select { Account.email.lowerCase() eq it.email }
+                .map { it[Student.id].value }
+                .singleOrNull()
 
             if (studentId != null) {
                 studentsWithAccount.add(StudentWithAccount(studentId, it.email, it.groups))
@@ -134,6 +131,7 @@ private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNo
             }
         }
 
-        AddStudentsToCourseController.Resp(newStudentsWithAccount.size, studentsNoAccount.size)
+        Resp(newStudentsWithAccount.size, studentsNoAccount.size)
     }
 }
+

@@ -6,7 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -89,7 +90,7 @@ class ReadParticipantsOnCourseController {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
 
         val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
 

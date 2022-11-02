@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.canTeacherAccessCourse
+import core.ems.service.access_control.teacherOnCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
@@ -18,11 +21,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AddTeachersToCourse {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
@@ -41,6 +44,8 @@ class AddTeachersToCourse {
         @JsonProperty("accesses_added") val accessesAdded: Int
     )
 
+    private data class TeacherNewAccess(val id: String, val email: String, val groups: Set<Long>)
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/teachers")
     fun controller(
@@ -52,8 +57,9 @@ class AddTeachersToCourse {
         log.debug { "Adding access to course $courseIdStr to teachers $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+        caller.assertAccess {
+            teacherOnCourse(courseId, false)
+        }
 
         val accesses = body.teachers.distinctBy { it.email }.map {
             val id = getUsernameByEmail(it.email)
@@ -71,50 +77,50 @@ class AddTeachersToCourse {
 
         return insertTeacherCourseAccesses(courseId, accesses)
     }
-}
 
-private data class TeacherNewAccess(val id: String, val email: String, val groups: Set<Long>)
 
-private fun insertTeacherCourseAccesses(courseId: Long, newTeachers: List<TeacherNewAccess>): AddTeachersToCourse.Resp {
-    val time = DateTime.now()
+    private fun insertTeacherCourseAccesses(courseId: Long, newTeachers: List<TeacherNewAccess>): Resp {
+        val time = DateTime.now()
 
-    val accessesAdded = transaction {
+        val accessesAdded = transaction {
 
-        newTeachers.forEach {
-            if (!teacherExists(it.id)) {
-                log.debug { "No teacher entity found for account ${it.id} (email: ${it.email}), creating it" }
-                insertTeacher(it.id)
+            newTeachers.forEach {
+                if (!teacherExists(it.id)) {
+                    log.debug { "No teacher entity found for account ${it.id} (email: ${it.email}), creating it" }
+                    insertTeacher(it.id)
+                }
             }
-        }
 
-        val teachersWithoutAccess = newTeachers.filter {
-            !canTeacherAccessCourse(it.id, courseId)
-        }
-
-        log.debug { "Granting access to teachers (the rest already have access): $teachersWithoutAccess" }
-
-        TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
-            this[TeacherCourseAccess.teacher] = EntityID(it.id, Teacher)
-            this[TeacherCourseAccess.course] = EntityID(courseId, Course)
-            this[TeacherCourseAccess.createdAt] = time
-        }
-
-        teachersWithoutAccess.forEach { teacher ->
-            TeacherCourseGroup.batchInsert(teacher.groups) { groupId ->
-                this[TeacherCourseGroup.teacher] = EntityID(teacher.id, Teacher)
-                this[TeacherCourseGroup.course] = EntityID(courseId, Course)
-                this[TeacherCourseGroup.courseGroup] = EntityID(groupId, CourseGroup)
+            val teachersWithoutAccess = newTeachers.filter {
+                !canTeacherAccessCourse(it.id, courseId)
             }
+
+            log.debug { "Granting access to teachers (the rest already have access): $teachersWithoutAccess" }
+
+            TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
+                this[TeacherCourseAccess.teacher] = EntityID(it.id, Teacher)
+                this[TeacherCourseAccess.course] = EntityID(courseId, Course)
+                this[TeacherCourseAccess.createdAt] = time
+            }
+
+            teachersWithoutAccess.forEach { teacher ->
+                TeacherCourseGroup.batchInsert(teacher.groups) { groupId ->
+                    this[TeacherCourseGroup.teacher] = EntityID(teacher.id, Teacher)
+                    this[TeacherCourseGroup.course] = EntityID(courseId, Course)
+                    this[TeacherCourseGroup.courseGroup] = EntityID(groupId, CourseGroup)
+                }
+            }
+
+            teachersWithoutAccess.size
         }
-
-        teachersWithoutAccess.size
+        return Resp(accessesAdded)
     }
-    return AddTeachersToCourse.Resp(accessesAdded)
-}
 
-private fun insertTeacher(teacherId: String) {
-    Teacher.insert {
-        it[id] = EntityID(teacherId, Teacher)
-        it[createdAt] = DateTime.now()
+    private fun insertTeacher(teacherId: String) {
+        Teacher.insert {
+            it[id] = EntityID(teacherId, Teacher)
+            it[createdAt] = DateTime.now()
+        }
     }
 }
+

@@ -6,6 +6,7 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.isExerciseOnCourse
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.access_control.teacherOnCourse
 import core.exception.InvalidRequestException

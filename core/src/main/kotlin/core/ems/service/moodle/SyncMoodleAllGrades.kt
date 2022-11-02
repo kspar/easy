@@ -1,7 +1,8 @@
 package core.ems.service.moodle
 
 import core.conf.security.EasyUser
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.ResourceLockedException
 import mu.KotlinLogging
@@ -12,11 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyncService) {
+    private val log = KotlinLogging.logger {}
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/moodle/grades")
@@ -28,7 +28,7 @@ class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyn
         log.debug { "Syncing all grades for course $courseIdStr with Moodle by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
         assertCourseIsMoodleLinked(courseId)
 
         return try {

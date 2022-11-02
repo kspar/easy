@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.marcinmoskala.math.combinations
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToExercise
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryExercise
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -87,12 +88,12 @@ class TeacherCheckSimilarityController {
 
         log.debug { "Calculate similarity for exercise '$exIdString' by ${caller.id} with body: $body" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
-        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
-
-
         val courses = body.courses.map { it.id.idToLongOrInvalidReq() }
-        courses.forEach { assertTeacherOrAdminHasAccessToCourse(caller, it) }
 
+        caller.assertAccess {
+            libraryExercise(exerciseId, DirAccessLevel.PR)
+            courses.forEach { teacherOnCourse(it, true) }
+        }
 
         val submissions = body.submissions?.map { it.id.idToLongOrInvalidReq() } ?: emptyList()
 

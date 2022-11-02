@@ -8,8 +8,8 @@ import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.assertCourseExerciseIsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer

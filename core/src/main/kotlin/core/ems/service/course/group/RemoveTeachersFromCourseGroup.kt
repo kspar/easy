@@ -3,9 +3,9 @@ package core.ems.service.course.group
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.TeacherCourseGroup
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -17,11 +17,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class RemoveTeachersFromCourseGroupController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
@@ -49,17 +49,15 @@ class RemoveTeachersFromCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+        caller.assertAccess {
+            teacherOnCourse(courseId, false)
+        }
         assertGroupExistsOnCourse(groupId, courseId)
 
         val deletedCount = removeTeachersFromGroup(courseId, groupId, teacherIds)
         return Resp(deletedCount)
     }
-}
-
-private fun removeTeachersFromGroup(courseId: Long, groupId: Long, teachers: List<String>): Int {
-    return transaction {
+    private fun removeTeachersFromGroup(courseId: Long, groupId: Long, teachers: List<String>): Int = transaction {
         TeacherCourseGroup.deleteWhere {
             TeacherCourseGroup.teacher.inList(teachers) and
                     TeacherCourseGroup.courseGroup.eq(groupId) and
@@ -67,3 +65,4 @@ private fun removeTeachersFromGroup(courseId: Long, groupId: Long, teachers: Lis
         }
     }
 }
+

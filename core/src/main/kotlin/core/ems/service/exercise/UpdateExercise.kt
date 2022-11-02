@@ -7,7 +7,6 @@ import core.db.*
 import core.ems.service.AdocService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
-import core.ems.service.assertTeacherOrAdminCanUpdateExercise
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
