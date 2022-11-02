@@ -11,7 +11,6 @@ import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
 import libheaders.tabHandler
 import negation
-import objOf
 import rip.kspar.ezspa.*
 import tmRender
 import warn
@@ -222,18 +221,20 @@ class CodeEditorComp(
     }
 
     private fun refreshEditability() {
-        when (activeTab?.editability) {
-            Edit.EDITABLE -> {
-                setEditable(true)
-                removeEditToggle()
-            }
-            Edit.READONLY -> {
-                setEditable(false)
-                removeEditToggle()
-            }
-            Edit.TOGGLED -> {
-                setEditable(toggleEditEnabled)
-                addEditToggle(toggleEditEnabled)
+        activeTab?.let {
+            when (it.editability) {
+                Edit.EDITABLE -> {
+                    setEditable(true)
+                    removeEditToggle()
+                }
+                Edit.READONLY -> {
+                    setEditable(false)
+                    removeEditToggle()
+                }
+                Edit.TOGGLED -> {
+                    setEditable(toggleEditEnabled)
+                    addEditToggle(toggleEditEnabled)
+                }
             }
         }
     }

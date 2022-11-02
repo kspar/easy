@@ -73,6 +73,8 @@ enum class GraderType {
 }
 
 
+// buildList is experimental - TODO not anymore
+@ExperimentalStdlibApi
 class ExerciseRootComp(
     private val exerciseId: String,
     preselectedTabId: String?,
