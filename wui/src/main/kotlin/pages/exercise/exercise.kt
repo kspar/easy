@@ -5,8 +5,11 @@ import Icons
 import Str
 import blankToNull
 import components.BreadcrumbsComp
-import components.CardTabsComp
+import components.EditModeButtonsComp
+import components.PageTabsComp
 import dao.LibraryDirDAO
+import debug
+import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.Title
@@ -18,11 +21,11 @@ import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import successMessage
 import tmRender
 import kotlin.js.Date
-import kotlin.js.Promise
 
 
 @Serializable
@@ -73,29 +76,23 @@ enum class GraderType {
 }
 
 
-// buildList is experimental - TODO not anymore
-@ExperimentalStdlibApi
 class ExerciseRootComp(
     private val exerciseId: String,
-    preselectedTabId: String?,
     private val setPathSuffix: (String) -> Unit,
-    private val onActivateTab: (String) -> Unit,
     dstId: String
 ) : Component(null, dstId) {
 
-    companion object {
-        private const val EXERCISE_TAB_ID = "exercise"
-        private const val AA_TAB_ID = "autoassess"
-        private const val TESTING_TAB_ID = "testing"
-    }
+    private val exerciseTabId = IdGenerator.nextId()
+    private val autoassessTabId = IdGenerator.nextId()
+    private val testingTabId = IdGenerator.nextId()
 
     private lateinit var crumbs: BreadcrumbsComp
-    private lateinit var tabs: CardTabsComp
+    private lateinit var tabs: PageTabsComp
+    private val editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
     private lateinit var addToCourseModal: AddToCourseModalComp
 
-    private var autoassessComp: AutoAssessmentTabComp? = null
-
-    private var selectedTabId: String? = preselectedTabId
+    private lateinit var exerciseTab: ExerciseTabComp
+    private lateinit var autoassessTab: AutoAssessmentTabComp
 
     override val children: List<Component>
         get() = listOf(crumbs, tabs, addToCourseModal)
@@ -110,7 +107,41 @@ class ExerciseRootComp(
         setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
 
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
-        tabs = CardTabsComp(this, ::onTabSelected)
+        tabs = PageTabsComp(
+            buildList {
+                add(
+                    PageTabsComp.Tab("Ülesanne", preselected = true, id = exerciseTabId) {
+                        ExerciseTabComp(exercise, it)
+                            .also { exerciseTab = it }
+                    }
+                )
+
+                add(
+                    PageTabsComp.Tab("Automaatkontroll", id = autoassessTabId) {
+                        val aaProps = if (exercise.grading_script != null) {
+                            AutoAssessmentTabComp.AutoAssessProps(
+                                exercise.grading_script!!,
+                                exercise.assets!!.associate { it.file_name to it.file_content },
+                                exercise.container_image!!, exercise.max_time_sec!!, exercise.max_mem_mb!!
+                            )
+                        } else null
+
+                        AutoAssessmentTabComp(aaProps, ::validChanged, it)
+                            .also { autoassessTab = it }
+                    }
+                )
+
+                if (exercise.grader_type == GraderType.AUTO) {
+                    add(
+                        PageTabsComp.Tab("Katsetamine", id = testingTabId) {
+                            TestingTabComp(exerciseId, it)
+                        }
+                    )
+                }
+            },
+            trailerComp = editModeBtns,
+            parent = this
+        )
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
 
         Title.update {
@@ -130,49 +161,21 @@ class ExerciseRootComp(
                 )
             )
         )
-
-        val tabsList = mutableListOf<CardTabsComp.Tab>()
-
-        tabsList.add(
-            CardTabsComp.Tab(
-                EXERCISE_TAB_ID,
-                "Ülesanne",
-                ExerciseTabComp(exercise, ::saveExercise, tabs),
-                selectedTabId == EXERCISE_TAB_ID
-            )
-        )
-
-        if (exercise.grader_type == GraderType.AUTO) {
-            val autoComp = AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs)
-            autoassessComp = autoComp
-
-            tabsList.add(CardTabsComp.Tab(AA_TAB_ID, "Automaatkontroll", autoComp, selectedTabId == AA_TAB_ID))
-            tabsList.add(
-                CardTabsComp.Tab(
-                    TESTING_TAB_ID,
-                    "Katsetamine",
-                    TestingTabComp(exerciseId, this.tabs),
-                    selectedTabId == TESTING_TAB_ID
-                )
-            )
-        }
-
-        tabs.setTabs(tabsList)
     }
+
+    override fun hasUnsavedChanges(): Boolean =
+        exerciseTab.hasUnsavedChanges() ||
+                autoassessTab.hasUnsavedChanges()
 
     override fun render(): String = tmRender(
         "t-c-exercise",
         "crumbsDstId" to crumbs.dstId,
-        "cardDstId" to tabs.dstId,
+        "tabsDstId" to tabs.dstId,
         "addToCourseModalDstId" to addToCourseModal.dstId,
     )
 
-    private fun onTabSelected(tabId: String) {
-        selectedTabId = tabId
-        onActivateTab(tabId)
-    }
 
-    private suspend fun saveExercise(exercise: ExerciseDTO) {
+    private suspend fun saveExerciseOld(exercise: ExerciseDTO) {
         val body = exercise.let {
             mapOf(
                 "title" to it.title,
@@ -195,8 +198,45 @@ class ExerciseRootComp(
     }
 
     private suspend fun recreate() {
-        val editorTabId = autoassessComp?.getEditorActiveTabId()
+        val selectedTab = tabs.getSelectedTab()
+//        val editorTabId = autoassessTab.getEditorActiveTabId()
         createAndBuild().await()
-        editorTabId?.let { autoassessComp?.setEditorActiveTabId(editorTabId) }
+        tabs.setSelectedTab(selectedTab)
+//        editorTabId?.let { autoassessTab.setEditorActiveTabId(editorTabId) }
     }
+
+    private fun validChanged(isValid: Boolean) {
+        // TODO: enable/disable edit mode save btn
+        debug { "Exercise edit now valid: $isValid" }
+
+    }
+
+    private suspend fun editModeChanged(nowEditing: Boolean) {
+        // indicator
+        tabs.refreshIndicator()
+
+        // exercise tab: title, text editor
+        exerciseTab.setEditable(nowEditing)
+
+        // aa tab: attrs, editor
+        autoassessTab.setEditable(nowEditing)
+    }
+
+    private suspend fun saveExercise(): Boolean {
+        // get attrs from exercise tab
+
+        // get attrs from aa tab
+
+        // save
+
+        successMessage { "Ülesanne salvestatud" }
+        recreate()
+        return true
+    }
+
+    private suspend fun wishesToCancel() =
+        // TODO: modal
+        if (hasUnsavedChanges())
+            window.confirm("Siin lehel on salvestamata muudatusi. Kas oled kindel, et soovid muutmise lõpetada ilma salvestamata?")
+        else true
 }

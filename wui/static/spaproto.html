@@ -177,10 +177,15 @@
 </script>
 
 <script id="t-c-page-tabs" type="text/x-handlebars">
-    <ul id="{{tabsId}}" class="tabs ez-tabs">
-        <!-- On one line, avoid whitespace between items -->
-        {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
-    </ul>
+    <ez-tabs-header>
+        <ul id="{{tabsId}}" class="tabs ez-tabs">
+            <!-- On one line, avoid whitespace between items -->
+            {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
+        </ul>
+        {{#trailerElementId}}
+            <ez-tabs-trailer id="{{trailerElementId}}"></ez-tabs-trailer>
+        {{/trailerElementId}}
+    </ez-tabs-header>
     <ez-tabs-content>
         {{#tabs}}
         <ez-tab-content id="{{id}}">
@@ -455,6 +460,14 @@
     </div>
 </script>
 
+<script id="t-c-int-field" type="text/x-handlebars">
+    <div class="input-field">
+        <input id="{{id}}" type="number" min="{{min}}" max="{{max}}" value="{{value}}">
+        <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+    </div>
+</script>
+
 <script id="t-c-text-field" type="text/x-handlebars">
     <div class="input-field">
         <textarea id="{{id}}" class="materialize-textarea" placeholder="{{{placeholder}}}"></textarea>
@@ -614,37 +627,33 @@
 <script id="t-c-exercise" type="text/x-handlebars">
     <div id="global-exercise">
         <ez-dst id="{{crumbsDstId}}"></ez-dst>
-        <ez-dst id="{{cardDstId}}"></ez-dst>
+        <ez-dst id="{{tabsDstId}}"></ez-dst>
         <ez-dst id="{{addToCourseModalDstId}}"></ez-dst>
     </div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
-    <p class="subheading-item"><span class="subheading">{{createdAtLabel}}:</span>{{createdAt}} ({{createdBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{modifiedAtLabel}}:</span>{{modifiedAt}} ({{modifiedBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{isPublicLabel}}:</span>{{isPublic}}</p>
-    <p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>
-    <p class="subheading-item"><span class="subheading">{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</span>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</p>
+    <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</ez-attr>
     <ul class="browser-default" style="margin-top: 0;">
         {{#onCourses}}
             <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
         {{/onCourses}}
     </ul>
+    <div id="{{titleDstId}}" style="margin-top: 3rem;"></div>
+</script>
+
+<script id="t-c-exercise-tab-title-view" type="text/x-handlebars">
     <h2>{{title}}</h2>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-view" type="text/x-handlebars">
-    <div class="pre-exercise-text-wrap">
-        <a id="exercise-text-enable-edit" href="#!"><i class="material-icons" style="font-size: 19px; margin-right: .5rem;">create</i>{{doEditLabel}}</a>
-    </div>
     <div id="exercise-text">{{{html}}}</div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-exercise" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
     <ez-dst id="{{previewDstId}}"></ez-dst>
 </script>
 
@@ -654,11 +663,15 @@
 </script>
 
 <script id="t-c-exercise-tab-aa" type="text/x-handlebars">
-    <h2>{{aaLabel}}</h2>
+    <ez-dst id="{{typeSelectDstId}}"></ez-dst>
+    <ez-dst id="{{attrsDstId}}"></ez-dst>
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-aa" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-read" type="text/x-handlebars">
+    <ez-attr><ez-attr-label>{{typeLabel}}:</ez-attr-label>{{type}}</ez-attr>
+    {{#maxTime}}<ez-attr><ez-attr-label>{{maxTimeLabel}}:</ez-attr-label>{{maxTime}}</ez-attr>{{/maxTime}}
+    {{#maxMem}}<ez-attr><ez-attr-label>{{maxMemLabel}}:</ez-attr-label>{{maxMem}}</ez-attr>{{/maxMem}}
 </script>
 
 <script id="t-c-exercise-tab-testing" type="text/x-handlebars">

@@ -23,7 +23,7 @@ class CodeEditorComp(
     private val placeholder: String? = null,
     private val showLineNumbers: Boolean = true,
     private val showTabs: Boolean = true,
-    parent: Component?
+    parent: Component?,
 ) : Component(parent) {
 
     // TODO: should have a separate comp for code editor tabs (and/or toolbar) to avoid drawing new tabs like this
@@ -46,7 +46,7 @@ class CodeEditorComp(
 
     data class CreateFile(
         val fileLang: dynamic,
-        val editability: Edit,
+        val newFileEditability: Edit,
     )
 
     private data class Tab(
@@ -187,7 +187,7 @@ class CodeEditorComp(
         debug { "Creating new file: $filename" }
         fileCreator!!
 
-        val file = File(filename, null, fileCreator.fileLang, fileCreator.editability)
+        val file = File(filename, null, fileCreator.fileLang, fileCreator.newFileEditability)
         val tab = fileToTab(file)
         tabs.add(tab)
         createFileModalComp.setExistingFilenames(tabs.map { it.filename })

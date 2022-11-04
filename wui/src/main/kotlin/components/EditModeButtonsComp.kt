@@ -12,6 +12,7 @@ import rip.kspar.ezspa.getElemById
 class EditModeButtonsComp(
     private val onModeChanged: suspend (Boolean) -> Unit,
     private val onSave: suspend () -> Boolean,
+    private val canCancel: suspend () -> Boolean = { true },
     startAsEditing: Boolean = false,
     parent: Component?
 ) : Component(parent) {
@@ -26,7 +27,10 @@ class EditModeButtonsComp(
         )
     private val cancelBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Tühista", { changeEditMode(false) }, parent = this
+            ButtonComp.Type.FLAT, "Tühista", {
+                if (canCancel())
+                    changeEditMode(false)
+            }, parent = this
         )
     private val saveBtn =
         ButtonComp(

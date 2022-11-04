@@ -34,6 +34,8 @@ body {
     min-width: 320px;
 }
 
+/* Embedded - when displaying page in embed */
+
 html.embedded body {
     background: none;
     min-height: 0;
@@ -61,13 +63,24 @@ html.wui3 .container {
     padding: 0 4rem 4rem 4rem;
 }
 
-/*TODO: remove*/
+/* TODO: remove */
 .subheading-item {
     display: flex;
     flex-wrap: wrap;
 }
 
 .subheading {
+    color: #4DAB54;
+    font-weight: 500;
+    margin-right: 0.6rem;
+}
+
+ez-attr {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+ez-attr-label {
     color: #4DAB54;
     font-weight: 500;
     margin-right: 0.6rem;
@@ -564,9 +577,8 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#global-exercise .pre-exercise-text-wrap {
-    display: flex;
-    justify-content: flex-end;
+#global-exercise ez-tabs-content {
+    margin-top: 3rem;
 }
 
 
@@ -955,11 +967,17 @@ ez-btn-content {
     justify-content: center;
 }
 
-ez-btn-content > ez-icon {
+.btn ez-btn-content > ez-icon,
+.btn-floating ez-btn-content > ez-icon {
     color: #fff;
 }
 
-ez-btn-content > ez-icon > svg {
+.btn-flat ez-btn-content > ez-icon {
+    color: var(--ez-icon-action-col);
+    padding-right: 0.6rem;
+}
+
+.btn-floating ez-btn-content > ez-icon > svg {
     width: 2rem;
     height: 2rem;
 }
@@ -2221,9 +2239,14 @@ div.title-wrap > .title-button > i.material-icons {
 
 /** Tabs **/
 
+ez-tabs-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
 .ez-tabs {
     background-color: transparent;
-    border-bottom: 1px solid #ccc;
 }
 
 .ez-tabs .indicator {
@@ -2248,6 +2271,10 @@ div.title-wrap > .title-button > i.material-icons {
 .ez-tabs .tab a:focus,
 .ez-tabs .tab a:focus.active {
     background-color: transparent;
+}
+
+ez-tabs-trailer {
+    flex-shrink: 0;
 }
 
 ez-tabs-content {

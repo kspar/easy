@@ -46,7 +46,7 @@ fun List<Node>.onVanillaClick(preventDefault: Boolean, f: suspend (event: MouseE
     }
 }
 
-fun Node.onChange(f: (event: Event) -> Unit): ActiveListener {
+fun Node.onChange(f: suspend (event: Event) -> Unit): ActiveListener {
     val listener: (Event) -> Unit = { event: Event ->
         doInPromise {
             f(event)

@@ -1,18 +1,14 @@
 package pages.exercise
 
 import MathJax
-import Str
 import components.code_editor.CodeEditorComp
-import debug
+import components.form.StringFieldComp
+import components.form.validation.StringConstraints
 import highlightCode
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import lightboxExerciseImages
-import rip.kspar.ezspa.objOf
 import observeValueChange
-import onSingleClickWithDisabled
-import org.w3c.dom.HTMLAnchorElement
-import org.w3c.dom.HTMLButtonElement
 import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
@@ -26,7 +22,6 @@ import kotlin.js.Promise
 
 class ExerciseTabComp(
     private val exercise: ExerciseDTO,
-    private val onSaveUpdatedExercise: suspend (exercise: ExerciseDTO) -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -37,40 +32,45 @@ class ExerciseTabComp(
         get() = listOf(attributes, textView)
 
     override fun create(): Promise<*> = doInPromise {
-        attributes = ExerciseAttributesComp(exercise, onSaveUpdatedExercise, this)
-        textView = ExerciseTextComp(exercise.text_adoc, exercise.text_html, ::handleAdocUpdate, this)
+        attributes = ExerciseAttributesComp(exercise, this)
+        textView = ExerciseTextComp(exercise.text_adoc, exercise.text_html, this)
     }
 
     override fun render(): String = plainDstStr(attributes.dstId, textView.dstId)
 
-    private suspend fun handleAdocUpdate(textAdoc: String) {
-        exercise.text_adoc = textAdoc
-        onSaveUpdatedExercise(exercise)
+    suspend fun setEditable(nowEditable: Boolean) {
+        attributes.setEditable(nowEditable)
+        textView.setEditable(nowEditable)
     }
 }
 
 
 class ExerciseAttributesComp(
     private val exercise: ExerciseDTO,
-    private val onSaveUpdatedExercise: suspend (exercise: ExerciseDTO) -> Unit,
     parent: Component?
 ) : Component(parent) {
+
+    private lateinit var titleComp: Component
+
+    override val children: List<Component>
+        get() = listOf(titleComp)
+
+    override fun create() = doInPromise {
+        titleComp = ExerciseTitleViewComp(exercise.title, this)
+    }
 
     override fun render(): String = tmRender(
         "t-c-exercise-tab-exercise-attrs",
         "createdAtLabel" to "Loodud",
         "modifiedAtLabel" to "Viimati muudetud",
-        "isPublicLabel" to "Avalik",
-        "graderTypeLabel" to "Hindamine",
         "onCoursesLabel" to "Kasutusel kursustel",
         "notUsedOnAnyCoursesLabel" to "Mitte ühelgi!",
+        // TODO: alias italic etc without label?
         "aliasLabel" to "alias",
         "createdAt" to exercise.created_at.toEstonianString(),
         "createdBy" to exercise.owner_id,
         "modifiedAt" to exercise.last_modified.toEstonianString(),
         "modifiedBy" to exercise.last_modified_by_id,
-        "isPublic" to Str.translateBoolean(exercise.is_public),
-        "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
         "onCourses" to exercise.on_courses.map {
             mapOf(
                 "name" to it.title,
@@ -80,7 +80,35 @@ class ExerciseAttributesComp(
             )
         },
         "onCoursesCount" to exercise.on_courses.size,
-        "title" to exercise.title
+        "titleDstId" to titleComp.dstId,
+    )
+
+    suspend fun setEditable(nowEditable: Boolean) {
+        if (nowEditable) {
+            titleComp = StringFieldComp(
+                "Ülesande pealkiri", true,
+                initialValue = exercise.title,
+                constraints = listOf(StringConstraints.Length(max = 100)),
+                onValidChange = {
+
+                },
+                parent = this
+            )
+            rebuild()
+        } else {
+            createAndBuild().await()
+        }
+    }
+}
+
+class ExerciseTitleViewComp(
+    private val title: String,
+    parent: Component?
+) : Component(parent) {
+
+    override fun render() = tmRender(
+        "t-c-exercise-tab-title-view",
+        "title" to title
     )
 }
 
@@ -88,7 +116,6 @@ class ExerciseAttributesComp(
 class ExerciseTextComp(
     private val textAdoc: String?,
     private val textHtml: String?,
-    private val onSaveUpdatedAdoc: suspend (textAdoc: String) -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -100,44 +127,34 @@ class ExerciseTextComp(
         get() = listOf(modeComp)
 
     override fun create(): Promise<*> = doInPromise {
-        modeComp = ExerciseTextViewComp(textHtml, ::enableEditMode, this)
+        modeComp = ExerciseTextViewComp(textHtml, this)
     }
 
     override fun render(): String = plainDstStr(modeComp.dstId)
 
-    private suspend fun enableEditMode() {
-        debug { "Enable edit mode" }
-        editEnabled = true
-        modeComp = ExerciseTextEditComp(textAdoc, onSaveUpdatedAdoc, ::disableEditMode, this)
-        rebuildAndRecreateChildren().await()
-        onStateChanged()
-    }
-
-    private suspend fun disableEditMode() {
-        debug { "Disable edit mode" }
-        editEnabled = false
-        createAndBuild().await()
-        onStateChanged()
+    suspend fun setEditable(nowEditable: Boolean) {
+        editEnabled = nowEditable
+        if (nowEditable) {
+            modeComp = ExerciseTextEditComp(textAdoc, this)
+            rebuildAndRecreateChildren().await()
+        } else {
+            createAndBuild().await()
+        }
     }
 }
 
 
 class ExerciseTextViewComp(
     private val textHtml: String?,
-    private val onEnableEditMode: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
     override fun render(): String = tmRender(
         "t-c-exercise-tab-exercise-text-view",
-        "doEditLabel" to "Muuda teksti",
         "html" to textHtml
     )
 
     override fun postRender() {
-        getElemByIdAs<HTMLAnchorElement>("exercise-text-enable-edit").onSingleClickWithDisabled(null) {
-            onEnableEditMode()
-        }
         highlightCode()
         MathJax.formatPageIfNeeded(textHtml.orEmpty())
         lightboxExerciseImages()
@@ -147,8 +164,6 @@ class ExerciseTextViewComp(
 
 class ExerciseTextEditComp(
     private val textAdoc: String?,
-    private val onSaveUpdatedAdoc: suspend (textAdoc: String) -> Unit,
-    private val onCancelEdit: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -200,17 +215,12 @@ class ExerciseTextEditComp(
                 }
             )
         }
-
-        getElemByIdAs<HTMLButtonElement>("update-submit-exercise").onSingleClickWithDisabled("Salvestan...") {
-            onSaveUpdatedAdoc(getCurrentAdoc())
-        }
     }
 
     override fun render(): String = tmRender(
         "t-c-exercise-tab-exercise-text-edit",
         "editorDstId" to editor.dstId,
         "previewDstId" to preview.dstId,
-        "doUpdateLabel" to "Salvesta"
     )
 
     private fun getCurrentAdoc() = editor.getFileValue(ADOC_FILENAME)

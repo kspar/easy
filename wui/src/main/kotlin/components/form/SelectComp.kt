@@ -2,7 +2,6 @@ package components.form
 
 import emptyToNull
 import libheaders.Materialize
-import rip.kspar.ezspa.objOf
 import org.w3c.dom.HTMLSelectElement
 import rip.kspar.ezspa.*
 import tmRender
@@ -11,13 +10,14 @@ class SelectComp(
     private val label: String? = null,
     var options: List<Option>,
     var hasEmptyOption: Boolean = false,
-    private val onOptionChange: ((String?) -> Unit)? = null,
+    private val onOptionChange: (suspend (String?) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {
 
     data class Option(val label: String, val value: String, val preselected: Boolean = false)
 
     private val selectId = IdGenerator.nextId()
+    private var initialValue: String? = null
 
     override fun render() = tmRender("t-c-select",
         "selectId" to selectId,
@@ -37,10 +37,13 @@ class SelectComp(
                 )
             )
         )
+
         val selectElement = getElemByIdAs<HTMLSelectElement>(selectId)
         selectElement.onChange {
-            onOptionChange?.invoke(selectElement.value.emptyToNull())
+            onOptionChange?.invoke(getValue())
         }
+
+        initialValue = getValue()
     }
 
     fun getValue(): String? = getElemByIdAs<HTMLSelectElement>(selectId).value.emptyToNull()
@@ -51,4 +54,6 @@ class SelectComp(
         else
             options.first { it.value == value }.label to value
     }
+
+    override fun hasUnsavedChanges() = getValue() != initialValue
 }

@@ -1,5 +1,6 @@
 package components.form.validation
 
+// TODO: fun interface?
 abstract class FieldConstraint<FieldValueType> {
     abstract fun validate(value: FieldValueType, fieldNameForMessage: String): ConstraintViolation<FieldValueType>?
 

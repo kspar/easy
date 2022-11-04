@@ -58,6 +58,9 @@ fun setSplashText(text: String) {
 
 suspend fun buildStatics() {
     getElemById("loading-splash-container").clear()
+    // Clear bg color now that background has loaded
+    getBody().setAttribute("style", "")
+
     if (!isEmbedded()) {
         getHeader().innerHTML = """<div id="nav-wrap"></div>"""
         getMain().innerHTML = """<div id="sidenav-wrap"></div><div id="content-container" class="container"></div>"""
