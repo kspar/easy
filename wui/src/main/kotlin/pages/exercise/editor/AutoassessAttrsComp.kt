@@ -22,7 +22,6 @@ class AutoassessAttrsComp(
 
     private lateinit var attrs: Component
 
-
     override val children: List<Component>
         get() = listOf(attrs)
 
@@ -40,6 +39,8 @@ class AutoassessAttrsComp(
         isEditable = nowEditable
         createAndBuild().await()
     }
+
+    fun isValid() = attrs.let { if (it is AutoassessAttrsEditComp) it.isValid() else true }
 
     fun getEditedContainerImage() =
         (attrs as? AutoassessAttrsEditComp)?.getContainerImage()

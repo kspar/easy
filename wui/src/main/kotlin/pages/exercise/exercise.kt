@@ -3,7 +3,6 @@ package pages.exercise
 import DateSerializer
 import Icons
 import Str
-import blankToNull
 import components.BreadcrumbsComp
 import components.EditModeButtonsComp
 import components.PageTabsComp
@@ -182,8 +181,8 @@ class ExerciseRootComp(
 //        editorTabId?.let { autoassessTab.setEditorActiveTabId(editorTabId) }
     }
 
-    private fun validChanged(isValid: Boolean) {
-        editModeBtns.setSaveEnabled(isValid)
+    private fun validChanged(_notUsed: Boolean) {
+        editModeBtns.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
     }
 
     private suspend fun editModeChanged(nowEditing: Boolean) {
@@ -219,7 +218,7 @@ class ExerciseRootComp(
         ).await()
 
         successMessage { "Ülesanne salvestatud" }
-        createAndBuild().await()
+        recreate()
         return true
     }
 

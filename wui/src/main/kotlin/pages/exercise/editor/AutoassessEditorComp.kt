@@ -13,4 +13,6 @@ abstract class AutoassessEditorComp(
     abstract fun getEvalScript(): String
 
     abstract fun getAssets(): Map<String, String>
+
+    abstract fun isValid(): Boolean
 }

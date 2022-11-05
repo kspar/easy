@@ -37,4 +37,5 @@ class AutoassessTSLEditorComp(
         return emptyMap()
     }
 
+    override fun isValid() = true
 }

@@ -126,6 +126,8 @@ class AutoAssessmentTabComp(
         } else null
     }
 
+    fun isValid() = attrs.isValid() && (editor?.isValid() ?: true)
+
     // TODO
 //    fun getEditorActiveTabId() = (editor as? CodeEditorComp)?.getActiveTabFilename()
 //    fun setEditorActiveTabId(editorTabId: String?) {

@@ -52,7 +52,7 @@ class AutoassessAttrsEditComp(
     )
 
     private fun onElementValidChange(_notUsed: Boolean = true) {
-        val nowValid = (timeField?.isValid ?: true) && (memField?.isValid ?: true)
+        val nowValid = isValid()
         // callback on every field valid change, does produce duplicate callbacks
         onValidChanged(nowValid)
     }
@@ -61,10 +61,13 @@ class AutoassessAttrsEditComp(
     fun getTime() = timeField?.getIntValue()
     fun getMem() = memField?.getIntValue()
 
+    fun isValid() = (timeField?.isValid ?: true) && (memField?.isValid ?: true)
+
     fun validateInitial() {
         timeField?.validateInitial()
         memField?.validateInitial()
         // If there's no fields, then there's also no automatic callbacks from the fields
+        // Note to self: it's a lot easier to *not* recreate form elements because this messes up validation logic
         onElementValidChange()
     }
 }

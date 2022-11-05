@@ -52,6 +52,9 @@ class AutoassessCodeEditorComp(
         return files - EVAL_SCRIPT_FILENAME
     }
 
+    // Not checking anything in editor
+    override fun isValid() = true
+
     private fun editorEditable(isEditable: Boolean) =
         if (isEditable) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
 

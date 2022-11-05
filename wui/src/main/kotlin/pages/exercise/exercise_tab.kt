@@ -51,6 +51,8 @@ class ExerciseTabComp(
         textView.setEditable(nowEditable)
     }
 
+    fun isValid() = attributes.isValid()
+
     fun getEditedProps() = ExerciseProps(
         attributes.getEditedTitle().also { it ?: warn { "editedTitle == null" } }.orEmpty(),
         textView.getEditedAdoc().also { it ?: warn { "editedAdoc == null" } }.orEmpty(),
@@ -118,6 +120,8 @@ class ExerciseAttributesComp(
     }
 
     fun getEditedTitle() = (titleComp as? StringFieldComp)?.getValue()
+
+    fun isValid() = titleComp.let { if (it is StringFieldComp) it.isValid else true }
 }
 
 class ExerciseTitleViewComp(
