@@ -43,7 +43,7 @@ class AutoAssessmentTabComp(
         val props = aaProps
         if (props != null) {
             // Has autoassessment already
-            val type = AutoassessTypes.templates.singleOrNull { it.container == props.containerImage }
+            val type = AutoEvalTypes.templates.singleOrNull { it.container == props.containerImage }
             val typeName = type?.name ?: props.containerImage
 
             attrs = AutoassessAttrsComp(
@@ -52,13 +52,13 @@ class AutoAssessmentTabComp(
             )
 
             when (val editorType = type?.editor) {
-                AutoassessTypes.TypeEditor.TSL_COMPOSE -> {
+                AutoEvalTypes.TypeEditor.TSL_COMPOSE -> {
                     editor = AutoassessTSLEditorComp(
                         props.evalScript, props.assets,
                         isEditable, this
                     )
                 }
-                AutoassessTypes.TypeEditor.CODE_EDITOR -> {
+                AutoEvalTypes.TypeEditor.CODE_EDITOR -> {
                     editor = AutoassessCodeEditorComp(
                         props.evalScript, props.assets,
                         isEditable, this
@@ -119,7 +119,7 @@ class AutoAssessmentTabComp(
             }
             props == null -> {
                 // No aa previously selected, get from template
-                val template = AutoassessTypes.templates.single { it.container == typeId }
+                val template = AutoEvalTypes.templates.single { it.container == typeId }
                 AutoAssessProps(
                     template.evaluateScript, template.assets, template.container,
                     template.allowedTime, template.allowedMemory

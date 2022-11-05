@@ -2,7 +2,7 @@ package pages.exercise.editor
 
 import components.form.IntFieldComp
 import components.form.SelectComp
-import pages.exercise.AutoassessTypes
+import pages.exercise.AutoEvalTypes
 import plainDstStr
 import rip.kspar.ezspa.Component
 
@@ -17,7 +17,7 @@ class AutoassessAttrsEditComp(
 ) : Component(parent) {
 
     private val typeSelect = SelectComp(
-        "Automaatkontrolli tüüp", AutoassessTypes.templates.map {
+        "Automaatkontrolli tüüp", AutoEvalTypes.templates.map {
             SelectComp.Option(it.name, it.container, it.container == containerImage)
         }, true, onTypeChanged, this
     )
