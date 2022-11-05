@@ -28,6 +28,14 @@ class AutoAssessmentTabComp(
         val maxMem: Int?,
     )
 
+    data class SavableProps(
+        val evalScript: String,
+        val assets: Map<String, String>,
+        val containerImage: String,
+        val maxTime: Int,
+        val maxMem: Int,
+    )
+
     private var aaProps: AutoAssessProps? = savedProps
     private var isEditable = false
 
@@ -105,6 +113,19 @@ class AutoAssessmentTabComp(
         editor?.setEditable(nowEditable)
     }
 
+    fun getEditedProps(): SavableProps? {
+        val container = attrs.getEditedContainerImage()
+        return if (container != null) {
+            SavableProps(
+                editor!!.getEvalScript(),
+                editor!!.getAssets(),
+                container,
+                attrs.getEditedTime()!!,
+                attrs.getEditedMem()!!,
+            )
+        } else null
+    }
+
     // TODO
 //    fun getEditorActiveTabId() = (editor as? CodeEditorComp)?.getActiveTabFilename()
 //    fun setEditorActiveTabId(editorTabId: String?) {
@@ -133,14 +154,13 @@ class AutoAssessmentTabComp(
             else -> {
                 // Type changed, only change container image respecting any changes made
 
-                debug { "time: ${attrs.getTime()}" }
                 // Assume editor exists
                 AutoAssessProps(
                     editor!!.getEvalScript(),
                     editor!!.getAssets(),
                     typeId,
-                    attrs.getTime(),
-                    attrs.getMem(),
+                    attrs.getEditedTime(),
+                    attrs.getEditedMem(),
                 )
             }
         }

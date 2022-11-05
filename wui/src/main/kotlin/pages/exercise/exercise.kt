@@ -7,6 +7,7 @@ import blankToNull
 import components.BreadcrumbsComp
 import components.EditModeButtonsComp
 import components.PageTabsComp
+import dao.ExerciseDAO
 import dao.LibraryDirDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -173,29 +174,6 @@ class ExerciseRootComp(
         "addToCourseModalDstId" to addToCourseModal.dstId,
     )
 
-
-    private suspend fun saveExerciseOld(exercise: ExerciseDTO) {
-        val body = exercise.let {
-            mapOf(
-                "title" to it.title,
-                "text_adoc" to it.text_adoc.blankToNull(),
-                "text_html" to it.text_html,
-                "public" to it.is_public,
-                "grader_type" to it.grader_type.name,
-                "grading_script" to it.grading_script,
-                "container_image" to it.container_image,
-                "max_time_sec" to it.max_time_sec,
-                "max_mem_mb" to it.max_mem_mb,
-                "assets" to it.assets?.map { mapOf("file_name" to it.file_name, "file_content" to it.file_content) },
-                "executors" to it.executors?.map { mapOf("executor_id" to it.id) }
-            )
-        }
-        fetchEms("/exercises/$exerciseId", ReqMethod.PUT, body, successChecker = { http200 }).await()
-        successMessage { "Ülesanne salvestatud" }
-
-        recreate()
-    }
-
     private suspend fun recreate() {
         val selectedTab = tabs.getSelectedTab()
 //        val editorTabId = autoassessTab.getEditorActiveTabId()
@@ -219,14 +197,29 @@ class ExerciseRootComp(
     }
 
     private suspend fun saveExercise(): Boolean {
-        // get attrs from exercise tab
+        val exerciseProps = exerciseTab.getEditedProps()
+        val autoevalProps = autoassessTab.getEditedProps()
 
-        // get attrs from aa tab
-
-        // save
+        ExerciseDAO.updateExercise(
+            exerciseId,
+            ExerciseDAO.UpdatedExercise(
+                exerciseProps.title,
+                exerciseProps.textAdoc,
+                exerciseProps.textHtml,
+                if (autoevalProps != null)
+                    ExerciseDAO.Autoeval(
+                        autoevalProps.containerImage,
+                        autoevalProps.evalScript,
+                        autoevalProps.assets,
+                        autoevalProps.maxTime,
+                        autoevalProps.maxMem,
+                    )
+                else null
+            )
+        ).await()
 
         successMessage { "Ülesanne salvestatud" }
-        recreate()
+        createAndBuild().await()
         return true
     }
 

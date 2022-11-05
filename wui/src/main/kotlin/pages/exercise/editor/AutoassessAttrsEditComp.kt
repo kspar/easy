@@ -57,6 +57,7 @@ class AutoassessAttrsEditComp(
         onValidChanged(nowValid)
     }
 
+    fun getContainerImage() = typeSelect.getValue()
     fun getTime() = timeField?.getIntValue()
     fun getMem() = memField?.getIntValue()
 

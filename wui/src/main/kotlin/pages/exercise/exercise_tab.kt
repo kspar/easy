@@ -17,6 +17,7 @@ import queries.parseTo
 import rip.kspar.ezspa.*
 import tmRender
 import toEstonianString
+import warn
 import kotlin.js.Promise
 
 
@@ -25,6 +26,12 @@ class ExerciseTabComp(
     private val onValidChanged: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
+
+    data class ExerciseProps(
+        val title: String,
+        val textAdoc: String,
+        val textHtml: String,
+    )
 
     private lateinit var attributes: ExerciseAttributesComp
     private lateinit var textView: ExerciseTextComp
@@ -43,6 +50,12 @@ class ExerciseTabComp(
         attributes.setEditable(nowEditable)
         textView.setEditable(nowEditable)
     }
+
+    fun getEditedProps() = ExerciseProps(
+        attributes.getEditedTitle().also { it ?: warn { "editedTitle == null" } }.orEmpty(),
+        textView.getEditedAdoc().also { it ?: warn { "editedAdoc == null" } }.orEmpty(),
+        textView.getEditedHtml().also { it ?: warn { "editedHtml == null" } }.orEmpty(),
+    )
 }
 
 
@@ -103,6 +116,8 @@ class ExerciseAttributesComp(
             createAndBuild().await()
         }
     }
+
+    fun getEditedTitle() = (titleComp as? StringFieldComp)?.getValue()
 }
 
 class ExerciseTitleViewComp(
@@ -139,12 +154,15 @@ class ExerciseTextComp(
     suspend fun setEditable(nowEditable: Boolean) {
         editEnabled = nowEditable
         if (nowEditable) {
-            modeComp = ExerciseTextEditComp(textAdoc, this)
+            modeComp = ExerciseTextEditComp(textAdoc, textHtml, this)
             rebuildAndRecreateChildren().await()
         } else {
             createAndBuild().await()
         }
     }
+
+    fun getEditedAdoc() = (modeComp as? ExerciseTextEditComp)?.getCurrentAdoc()
+    fun getEditedHtml() = (modeComp as? ExerciseTextEditComp)?.getCurrentHtml()
 }
 
 
@@ -168,6 +186,7 @@ class ExerciseTextViewComp(
 
 class ExerciseTextEditComp(
     private val textAdoc: String?,
+    private val textHtml: String?,
     parent: Component?
 ) : Component(parent) {
 
@@ -193,7 +212,7 @@ class ExerciseTextEditComp(
                 CodeEditorComp.File(ADOC_FILENAME, textAdoc, "asciidoc"),
                 CodeEditorComp.File(
                     HTML_FILENAME,
-                    null,
+                    textHtml,
                     objOf("name" to "xml", "htmlMode" to true),
                     CodeEditorComp.Edit.READONLY
                 )
@@ -205,7 +224,6 @@ class ExerciseTextEditComp(
     override fun postRender() {
         doInPromise {
             observeValueChange(500, 250,
-                doActionFirst = true,
                 valueProvider = { getCurrentAdoc() },
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 action = {
@@ -227,7 +245,8 @@ class ExerciseTextEditComp(
         "previewDstId" to preview.dstId,
     )
 
-    private fun getCurrentAdoc() = editor.getFileValue(ADOC_FILENAME)
+    fun getCurrentAdoc() = editor.getFileValue(ADOC_FILENAME)
+    fun getCurrentHtml() = editor.getFileValue(HTML_FILENAME)
 
     private suspend fun fetchAdocPreview(adoc: String): String {
         return fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc),

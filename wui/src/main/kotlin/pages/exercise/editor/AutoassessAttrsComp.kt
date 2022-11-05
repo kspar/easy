@@ -41,10 +41,13 @@ class AutoassessAttrsComp(
         createAndBuild().await()
     }
 
-    fun getTime() =
+    fun getEditedContainerImage() =
+        (attrs as? AutoassessAttrsEditComp)?.getContainerImage()
+
+    fun getEditedTime() =
         (attrs as? AutoassessAttrsEditComp)?.getTime()
 
-    fun getMem() =
+    fun getEditedMem() =
         (attrs as? AutoassessAttrsEditComp)?.getMem()
 
     fun validateInitial() {
