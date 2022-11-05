@@ -23,8 +23,9 @@ class AutoAssessmentTabComp(
         val evalScript: String,
         val assets: Map<String, String>,
         val containerImage: String,
-        val maxTime: Int,
-        val maxMem: Int,
+        // null when invalid value entered
+        val maxTime: Int?,
+        val maxMem: Int?,
     )
 
     private var aaProps: AutoAssessProps? = savedProps
@@ -84,6 +85,10 @@ class AutoAssessmentTabComp(
         "editorDstId" to editor?.dstId,
     )
 
+    override fun postChildrenBuilt() {
+        attrs.validateInitial()
+    }
+
     override fun hasUnsavedChanges(): Boolean {
         // children have changes or props have changed
         return super.hasUnsavedChanges() || aaProps != savedProps
@@ -128,13 +133,14 @@ class AutoAssessmentTabComp(
             else -> {
                 // Type changed, only change container image respecting any changes made
 
-                // Assume editor exists and attrs don't have null values
+                debug { "time: ${attrs.getTime()}" }
+                // Assume editor exists
                 AutoAssessProps(
                     editor!!.getEvalScript(),
                     editor!!.getAssets(),
                     typeId,
-                    attrs.getTime()!!,
-                    attrs.getMem()!!,
+                    attrs.getTime(),
+                    attrs.getMem(),
                 )
             }
         }

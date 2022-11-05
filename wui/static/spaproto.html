@@ -641,7 +641,7 @@
             <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
         {{/onCourses}}
     </ul>
-    <div id="{{titleDstId}}" style="margin-top: 3rem;"></div>
+    <div id="{{titleDstId}}" style="margin-top: 4rem;"></div>
 </script>
 
 <script id="t-c-exercise-tab-title-view" type="text/x-handlebars">
@@ -672,6 +672,16 @@
     <ez-attr><ez-attr-label>{{typeLabel}}:</ez-attr-label>{{type}}</ez-attr>
     {{#maxTime}}<ez-attr><ez-attr-label>{{maxTimeLabel}}:</ez-attr-label>{{maxTime}}</ez-attr>{{/maxTime}}
     {{#maxMem}}<ez-attr><ez-attr-label>{{maxMemLabel}}:</ez-attr-label>{{maxMem}}</ez-attr>{{/maxMem}}
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-edit" type="text/x-handlebars">
+    <ez-exercise-autoeval>
+        <div id="{{typeDstId}}"></div>
+        <ez-block-container>
+            {{#timeDstId}}<ez-block id="{{timeDstId}}"></ez-block>{{/timeDstId}}
+            {{#memDstId}}<ez-block id="{{memDstId}}"></ez-block>{{/memDstId}}
+        </ez-block-container>
+    </ez-exercise-autoeval>
 </script>
 
 <script id="t-c-exercise-tab-testing" type="text/x-handlebars">

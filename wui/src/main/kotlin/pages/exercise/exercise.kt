@@ -8,7 +8,6 @@ import components.BreadcrumbsComp
 import components.EditModeButtonsComp
 import components.PageTabsComp
 import dao.LibraryDirDAO
-import debug
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -111,7 +110,7 @@ class ExerciseRootComp(
             buildList {
                 add(
                     PageTabsComp.Tab("Ülesanne", preselected = true, id = exerciseTabId) {
-                        ExerciseTabComp(exercise, it)
+                        ExerciseTabComp(exercise, ::validChanged, it)
                             .also { exerciseTab = it }
                     }
                 )
@@ -206,13 +205,10 @@ class ExerciseRootComp(
     }
 
     private fun validChanged(isValid: Boolean) {
-        // TODO: enable/disable edit mode save btn
-        debug { "Exercise edit now valid: $isValid" }
-
+        editModeBtns.setSaveEnabled(isValid)
     }
 
     private suspend fun editModeChanged(nowEditing: Boolean) {
-        // indicator
         tabs.refreshIndicator()
 
         // exercise tab: title, text editor

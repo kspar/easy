@@ -22,6 +22,7 @@ import kotlin.js.Promise
 
 class ExerciseTabComp(
     private val exercise: ExerciseDTO,
+    private val onValidChanged: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -32,7 +33,7 @@ class ExerciseTabComp(
         get() = listOf(attributes, textView)
 
     override fun create(): Promise<*> = doInPromise {
-        attributes = ExerciseAttributesComp(exercise, this)
+        attributes = ExerciseAttributesComp(exercise, onValidChanged, this)
         textView = ExerciseTextComp(exercise.text_adoc, exercise.text_html, this)
     }
 
@@ -47,6 +48,7 @@ class ExerciseTabComp(
 
 class ExerciseAttributesComp(
     private val exercise: ExerciseDTO,
+    private val onValidChange: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -83,15 +85,17 @@ class ExerciseAttributesComp(
         "titleDstId" to titleComp.dstId,
     )
 
+    override fun postChildrenBuilt() {
+        (titleComp as? StringFieldComp)?.validateInitial()
+    }
+
     suspend fun setEditable(nowEditable: Boolean) {
         if (nowEditable) {
             titleComp = StringFieldComp(
                 "Ülesande pealkiri", true,
                 initialValue = exercise.title,
                 constraints = listOf(StringConstraints.Length(max = 100)),
-                onValidChange = {
-
-                },
+                onValidChange = onValidChange,
                 parent = this
             )
             rebuild()

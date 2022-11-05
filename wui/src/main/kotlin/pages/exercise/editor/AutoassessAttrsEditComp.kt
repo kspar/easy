@@ -3,8 +3,8 @@ package pages.exercise.editor
 import components.form.IntFieldComp
 import components.form.SelectComp
 import pages.exercise.AutoEvalTypes
-import plainDstStr
 import rip.kspar.ezspa.Component
+import tmRender
 
 
 class AutoassessAttrsEditComp(
@@ -22,34 +22,48 @@ class AutoassessAttrsEditComp(
         }, true, onTypeChanged, this
     )
 
-    private val timeField = IntFieldComp(
-        "Lubatud käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
-        onValidChange = ::onElementValidChange,
-        parent = this
-    )
+    private val timeField = if (containerImage != null)
+        IntFieldComp(
+            "Lubatud käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
+            // autofilled from template, should only be edited by user, not inserted
+            // but is recreated on type change, so invalid/missing value should be painted on create
+            paintRequiredOnCreate = true,
+            onValidChange = ::onElementValidChange,
+            parent = this
+        ) else null
 
-    private val memField = IntFieldComp(
-        "Lubatud mälukasutus (MB)", true, 1, 50, initialValue = maxMem,
-        onValidChange = ::onElementValidChange,
-        parent = this
-    )
+    private val memField = if (containerImage != null)
+        IntFieldComp(
+            "Lubatud mälukasutus (MB)", true, 1, 50, initialValue = maxMem,
+            paintRequiredOnCreate = true,
+            onValidChange = ::onElementValidChange,
+            parent = this
+        ) else null
 
-    // Must be valid when starting editing
-    private var isValid = true
 
     override val children: List<Component>
-        get() = listOf(typeSelect, timeField, memField)
+        get() = listOfNotNull(typeSelect, timeField, memField)
 
-    override fun render() = plainDstStr(typeSelect.dstId, timeField.dstId, memField.dstId)
+    override fun render() = tmRender(
+        "t-c-exercise-tab-aa-attrs-edit",
+        "typeDstId" to typeSelect.dstId,
+        "timeDstId" to timeField?.dstId,
+        "memDstId" to memField?.dstId
+    )
 
-    private fun onElementValidChange(_notUsed: Boolean) {
-        val nowValid = timeField.isValid && memField.isValid
-        if (isValid != nowValid) {
-            isValid = nowValid
-            onValidChanged(isValid)
-        }
+    private fun onElementValidChange(_notUsed: Boolean = true) {
+        val nowValid = (timeField?.isValid ?: true) && (memField?.isValid ?: true)
+        // callback on every field valid change, does produce duplicate callbacks
+        onValidChanged(nowValid)
     }
 
-    fun getTime() = timeField.getIntValue()
-    fun getMem() = memField.getIntValue()
+    fun getTime() = timeField?.getIntValue()
+    fun getMem() = memField?.getIntValue()
+
+    fun validateInitial() {
+        timeField?.validateInitial()
+        memField?.validateInitial()
+        // If there's no fields, then there's also no automatic callbacks from the fields
+        onElementValidChange()
+    }
 }

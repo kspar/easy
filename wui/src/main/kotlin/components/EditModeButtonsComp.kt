@@ -3,11 +3,9 @@ package components
 import Icons
 import components.form.ButtonComp
 import debug
-import kotlinx.dom.addClass
-import kotlinx.dom.removeClass
 import plainDstStr
 import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.getElemById
+import show
 
 class EditModeButtonsComp(
     private val onModeChanged: suspend (Boolean) -> Unit,
@@ -57,6 +55,10 @@ class EditModeButtonsComp(
         }
     }
 
+    fun setSaveEnabled(nowEnabled: Boolean) {
+        saveBtn.setEnabled(nowEnabled)
+    }
+
     private fun updateBtnVisibility() {
         startEditBtn.show(state == State.NOT_EDITING)
         saveBtn.show(state == State.EDITING)
@@ -67,15 +69,4 @@ class EditModeButtonsComp(
         if (onSave())
             changeEditMode(false)
     }
-}
-
-fun Component.hide() {
-    getElemById(dstId).addClass("display-none")
-}
-
-fun Component.show(show: Boolean = true) {
-    if (show)
-        getElemById(dstId).removeClass("display-none")
-    else
-        hide()
 }

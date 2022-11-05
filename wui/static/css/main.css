@@ -227,6 +227,10 @@ svg {
     width: 15rem;
 }
 
+.sidenav .role-select-wrap .input-field {
+    margin-bottom: 1rem;
+}
+
 .sidenav li {
     line-height: unset;
 }
@@ -581,6 +585,11 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 3rem;
 }
 
+ez-exercise-autoeval ez-block {
+    width: 25rem;
+    padding-right: 3rem;
+}
+
 
 /*  */
 #anonauto button {
@@ -802,6 +811,9 @@ ez-participants-list ez-block {
 ez-participants-list .card .card-content p {
     margin-bottom: 1rem;
 }
+
+
+
 
 
 /** Grade table page **/
@@ -1162,10 +1174,9 @@ textarea.materialize-textarea {
     padding: 1.1rem 0 1.1rem 0;
 }
 
-/* TODO: Hopefully not needed for anything, remove at some point */
-/*.input-field {*/
-/*    margin-top: 2rem;*/
-/*}*/
+.input-field {
+    margin-bottom: 2rem;
+}
 
 .input-field input:not(.invalid) ~ .helper-text:not(.has-text) {
     display: none;
@@ -1206,6 +1217,8 @@ textarea.materialize-textarea {
 .select-wrap {
     width: fit-content;
     width: -moz-fit-content;
+    /* Margin from bottom border to end for all form elements - 28px */
+    margin-bottom: 2.8rem;
 }
 
 .select-dropdown li.optgroup {

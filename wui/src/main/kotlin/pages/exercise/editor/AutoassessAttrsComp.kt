@@ -43,9 +43,11 @@ class AutoassessAttrsComp(
 
     fun getTime() =
         (attrs as? AutoassessAttrsEditComp)?.getTime()
-            ?: maxTime
 
     fun getMem() =
         (attrs as? AutoassessAttrsEditComp)?.getMem()
-            ?: maxMem
+
+    fun validateInitial() {
+        (attrs as? AutoassessAttrsEditComp)?.validateInitial()
+    }
 }
