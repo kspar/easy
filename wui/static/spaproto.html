@@ -38,9 +38,14 @@
         </div>
     </div>
 </div>
-<header>
+<header class="display-none">
+    <div id="nav-wrap"></div>
 </header>
-<main>
+<main class="display-none">
+    <div id="sidenav-wrap"></div>
+    <div class="container">
+        <div id="content-container" class="content-container"></div>
+    </div>
 </main>
 <footer>
 </footer>
@@ -448,7 +453,7 @@
 
 <script id="t-c-button" type="text/x-handlebars">
     <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} {{#isDisabled}}disabled{{/isDisabled}} waves-effect">
-        <ez-btn-content>{{{contentHtml}}}</ez-btn-content>
+        <ez-btn-content>{{#iconHtml}}<ez-btn-icon>{{{iconHtml}}}</ez-btn-icon>{{/iconHtml}}<ez-btn-text>{{text}}</ez-btn-text></ez-btn-content>
     </button>
 </script>
 
@@ -495,6 +500,14 @@
         {{/buttons}}
         <span id="field-helper-{{elementId}}" class="helper-text"></span>
     </ez-radio-buttons>
+</script>
+
+<script id="t-c-edit-mode" type="text/x-handlebars">
+    <ez-edit-mode-bar>
+        <ez-dst id="{{startEditDst}}"></ez-dst>
+        <ez-dst id="{{cancelDst}}"></ez-dst>
+        <ez-dst id="{{saveDst}}"></ez-dst>
+    </ez-edit-mode-bar>
 </script>
 
 
@@ -682,8 +695,8 @@
             </ez-block>
             <ez-block style="flex-grow: 0">
                 <ez-block-container>
-                    {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 25rem; padding-right: 3rem;"></ez-block>{{/timeDstId}}
-                    {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 25rem; padding-right: 3rem;"></ez-block>{{/memDstId}}
+                    {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
+                    {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/memDstId}}
                 </ez-block-container>
             </ez-block>
         </ez-block-container>
@@ -875,22 +888,24 @@
 <script id="tm-navbar" type="text/x-handlebars-template">
     <nav class="navbar">
         <div class="topnav container" role="navigation">
-            <div class="left-cluster">
-                <div>
-                    <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
-                </div>
-                <a href="/courses" class="logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
-                    <span class="text">LAHENDUS</span>
-                </a>
-            </div>
-            <!-- Search here -->
-            <div class="right-cluster">
-                <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
-                    <a href="#!">
-                        <i class="profile-logo left material-icons">account_circle</i>
-                        <span class="profile-name">{{userName}}</span>
+            <div class="content-container">
+                <div class="left-cluster">
+                    <div>
+                        <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
+                    </div>
+                    <a href="/courses" class="logo">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
+                        <span class="text">LAHENDUS</span>
                     </a>
+                </div>
+                <!-- Search here -->
+                <div class="right-cluster">
+                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                        <a href="#!">
+                            <i class="profile-logo left material-icons">account_circle</i>
+                            <span class="profile-name">{{userName}}</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

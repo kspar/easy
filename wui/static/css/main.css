@@ -60,9 +60,38 @@ html.wui3 body {
 
 html.wui3 .container {
     width: 100%;
+    container-type: inline-size;
+    container-name: container;
+}
+
+html.wui3 .content-container {
     padding-left: 4rem;
     padding-right: 4rem;
+    transition: padding 200ms ease-out;
 }
+
+@container container (width < 830px) {
+    html.wui3 .content-container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+@container container (width < 700px) {
+    html.wui3 .content-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@container container (width < 500px) {
+    html.wui3 .content-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+
 
 /* TODO: remove */
 .subheading-item {
@@ -111,7 +140,7 @@ svg {
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
-.topnav {
+.topnav .content-container {
     height: 100%;
     display: flex;
     justify-content: space-between;
@@ -586,6 +615,12 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 3rem;
 }
 
+@container tabs (width < 750px) {
+    #global-exercise ez-tabs-trailer ez-btn-content ez-btn-text {
+        display: none;
+    }
+}
+
 
 /** Anonymous autoeval embed **/
 
@@ -976,17 +1011,21 @@ ez-btn-content {
     justify-content: center;
 }
 
-.btn ez-btn-content > ez-icon,
-.btn-floating ez-btn-content > ez-icon {
+.btn ez-btn-content ez-icon,
+.btn-floating ez-btn-content ez-icon {
     color: #fff;
 }
 
-.btn-flat ez-btn-content > ez-icon {
+.btn-flat ez-btn-content ez-icon {
     color: var(--ez-icon-action-col);
-    padding-right: 0.6rem;
 }
 
-.btn-floating ez-btn-content > ez-icon > svg {
+/* if icon with text, add space between */
+ez-btn-content ez-btn-icon ~ ez-btn-text {
+    padding-left: .6rem;
+}
+
+.btn-floating ez-btn-content ez-icon > svg {
     width: 2rem;
     height: 2rem;
 }
@@ -1972,7 +2011,6 @@ ez-coll-wrap *[ez-show-max="599"] {
 }
 
 /* Container is ez-coll-wrap */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
     ezc-ctrl-shown-icon {
@@ -1990,7 +2028,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-ctrl {
         padding-left: 2.2rem;
@@ -2017,7 +2054,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width < 600px) {
     ez-coll-wrap *[ez-show-max="599"] {
         display: flex;
@@ -2041,7 +2077,6 @@ ezc-bottom-attrs > ezc-attr {
 }
 
 /* Container is ezc-bottom-attrs */
-/*noinspection CssInvalidAtRule*/
 @container (width < 400px) {
     /* first one grows always */
     ezc-bottom-attrs > ezc-attr:nth-child(1) {
@@ -2049,7 +2084,6 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) and (width < 600px) {
     /* first one grows is there is one */
     ezc-bottom-attrs[ez-attrs="1"] > ezc-attr:nth-child(1) {
@@ -2062,14 +2096,12 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     ezc-bottom-attrs > ezc-attr:nth-child(2) {
         display: inline-block;
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-bottom-attrs > ezc-attr:nth-child(3) {
         display: inline-block;
@@ -2093,7 +2125,6 @@ ezc-bottom-attrs > ezc-attr {
 
 /* Increase attr width if there's more space. Note that if items have a different number of attrs, they will resize differently.
    This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 900px) {
     ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
         flex-basis: 300px;
@@ -2253,10 +2284,19 @@ ez-tabs-header {
     display: flex;
     align-items: center;
     border-bottom: 1px solid #ccc;
+    container-type: inline-size;
+    container-name: tabs
 }
 
 .ez-tabs {
     background-color: transparent;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+
+.ez-tabs::-webkit-scrollbar { /* WebKit */
+    width: 0;
+    height: 0;
 }
 
 .ez-tabs .indicator {

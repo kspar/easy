@@ -83,7 +83,7 @@ class EmbedAnonAutoassessRootComp(
             file, placeholder = "Kirjuta lahendus siia...",
             showLineNumbers = false, showTabs = false, parent = this
         )
-        submitBtn = ButtonComp(ButtonComp.Type.PRIMARY_ROUND, Icons.robot, { assess() }, parent = this)
+        submitBtn = ButtonComp(ButtonComp.Type.PRIMARY_ROUND, "", Icons.robot, { assess() }, parent = this)
         feedback = EmbedAnonAutoassessFeedbackComp(parent = this, dstId = feedbackDstId)
     }
 

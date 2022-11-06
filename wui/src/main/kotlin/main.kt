@@ -61,14 +61,16 @@ suspend fun buildStatics() {
     // Clear bg color now that background has loaded
     getBody().setAttribute("style", "")
 
+    getMain().show()
+    getHeader().show()
+
     if (!isEmbedded()) {
-        getHeader().innerHTML = """<div id="nav-wrap"></div>"""
-        getMain().innerHTML = """<div id="sidenav-wrap"></div><div id="content-container" class="container"></div>"""
         Navbar.build()
         Sidenav.build()
     } else {
         // Note that appending += to innerHTML would destroy existing event handlers
-        getMain().innerHTML = """<div id="content-container" class="container"></div>"""
+        // TODO: is there an issue with having sidenav-wrap in main as well here?
+//        getMain().innerHTML = """<div id="content-container" class="container"></div>"""
     }
 }
 

@@ -21,18 +21,20 @@ class EditModeButtonsComp(
 
     private val startEditBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, Icons.edit + "Muuda", { changeEditMode(true) }, parent = this
+            ButtonComp.Type.FLAT, "Muuda", Icons.edit,
+            { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Tühista", {
+            ButtonComp.Type.FLAT, "Tühista", Icons.close, {
                 if (canCancel())
                     changeEditMode(false)
             }, parent = this
         )
     private val saveBtn =
         ButtonComp(
-            ButtonComp.Type.PRIMARY, "Salvesta", disabledLabel = "Salvestan...", onClick = { onSave() }, parent = this
+            ButtonComp.Type.PRIMARY, "Salvesta", Icons.check, disabledLabel = "Salvestan...",
+            onClick = { onSave() }, parent = this
         )
 
     override val children = listOf(startEditBtn, cancelBtn, saveBtn)
