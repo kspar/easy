@@ -25,6 +25,7 @@ class AutoassessAttrsEditComp(
     private val timeField = if (containerImage != null)
         IntFieldComp(
             "Lubatud käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
+            fieldNameForMessage = "Väärtus",
             // autofilled from template, should only be edited by user, not inserted
             // but is recreated on type change, so invalid/missing value should be painted on create
             paintRequiredOnCreate = true,
@@ -35,6 +36,7 @@ class AutoassessAttrsEditComp(
     private val memField = if (containerImage != null)
         IntFieldComp(
             "Lubatud mälukasutus (MB)", true, 1, 50, initialValue = maxMem,
+            fieldNameForMessage = "Väärtus",
             paintRequiredOnCreate = true,
             onValidChange = ::onElementValidChange,
             parent = this

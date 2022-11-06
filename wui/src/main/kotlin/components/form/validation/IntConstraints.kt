@@ -16,8 +16,7 @@ object IntConstraints {
         override fun validate(value: String, fieldNameForMessage: String): ConstraintViolation<String>? {
             val int = value.toIntOrNull() ?: return null
             return when {
-                int < min -> violation("$fieldNameForMessage minimaalne väärtus on $min")
-                int > max -> violation("$fieldNameForMessage maksimaalne väärtus on $max")
+                int < min || int > max -> violation("$fieldNameForMessage peab olema vahemikus $min–$max")
                 else -> null
             }
         }

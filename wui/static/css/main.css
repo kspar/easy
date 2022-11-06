@@ -586,13 +586,9 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 3rem;
 }
 
-ez-exercise-autoeval ez-block {
-    width: 25rem;
-    padding-right: 3rem;
-}
 
+/** Anonymous autoeval embed **/
 
-/*  */
 #anonauto button {
     padding-bottom: .4rem;
 }

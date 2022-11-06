@@ -676,10 +676,16 @@
 
 <script id="t-c-exercise-tab-aa-attrs-edit" type="text/x-handlebars">
     <ez-exercise-autoeval>
-        <div id="{{typeDstId}}"></div>
         <ez-block-container>
-            {{#timeDstId}}<ez-block id="{{timeDstId}}"></ez-block>{{/timeDstId}}
-            {{#memDstId}}<ez-block id="{{memDstId}}"></ez-block>{{/memDstId}}
+            <ez-block style="padding-right: 5rem;">
+                <div id="{{typeDstId}}"></div>
+            </ez-block>
+            <ez-block style="flex-grow: 0">
+                <ez-block-container>
+                    {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 25rem; padding-right: 3rem;"></ez-block>{{/timeDstId}}
+                    {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 25rem; padding-right: 3rem;"></ez-block>{{/memDstId}}
+                </ez-block-container>
+            </ez-block>
         </ez-block-container>
     </ez-exercise-autoeval>
 </script>
