@@ -60,7 +60,8 @@ html.wui3 body {
 
 html.wui3 .container {
     width: 100%;
-    padding: 0 4rem 4rem 4rem;
+    padding-left: 4rem;
+    padding-right: 4rem;
 }
 
 /* TODO: remove */

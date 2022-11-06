@@ -228,6 +228,8 @@ class ExerciseTextEditComp(
     override fun postRender() {
         doInPromise {
             observeValueChange(500, 250,
+                // if adoc exists, then show preview at start as well, else keep legacy html in editor
+                doActionFirst = textAdoc != null,
                 valueProvider = { getCurrentAdoc() },
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 action = {
