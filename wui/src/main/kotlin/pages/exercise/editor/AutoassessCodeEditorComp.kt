@@ -58,4 +58,14 @@ class AutoassessCodeEditorComp(
     private fun editorEditable(isEditable: Boolean) =
         if (isEditable) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
 
+
+    data class ActiveView(
+        val editorTabId: String?,
+    ) : AutoassessEditorComp.ActiveView
+
+    override fun getActiveView() = ActiveView(codeEditorComp.getActiveTabFilename())
+
+    override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {
+        (view as? ActiveView)?.editorTabId?.let { codeEditorComp.setActiveTabByFilename(it) }
+    }
 }

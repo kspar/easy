@@ -15,4 +15,10 @@ abstract class AutoassessEditorComp(
     abstract fun getAssets(): Map<String, String>
 
     abstract fun isValid(): Boolean
+
+
+    interface ActiveView
+
+    abstract fun getActiveView(): ActiveView
+    abstract fun setActiveView(view: ActiveView?)
 }

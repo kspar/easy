@@ -38,4 +38,9 @@ class AutoassessTSLEditorComp(
     }
 
     override fun isValid() = true
+
+
+    object ActiveView : AutoassessEditorComp.ActiveView
+    override fun getActiveView() = ActiveView
+    override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {}
 }

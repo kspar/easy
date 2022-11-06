@@ -87,7 +87,7 @@ class ExerciseRootComp(
 
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: PageTabsComp
-    private val editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+    private lateinit var editModeBtns: EditModeButtonsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
 
     private lateinit var exerciseTab: ExerciseTabComp
@@ -106,6 +106,10 @@ class ExerciseRootComp(
         setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
 
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
+
+        // TODO: wrong parent
+        editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+
         tabs = PageTabsComp(
             buildList {
                 add(
@@ -175,10 +179,12 @@ class ExerciseRootComp(
 
     private suspend fun recreate() {
         val selectedTab = tabs.getSelectedTab()
-//        val editorTabId = autoassessTab.getEditorActiveTabId()
+        val editorView = autoassessTab.getEditorActiveView()
+
         createAndBuild().await()
+
         tabs.setSelectedTab(selectedTab)
-//        editorTabId?.let { autoassessTab.setEditorActiveTabId(editorTabId) }
+        autoassessTab.setEditorActiveView(editorView)
     }
 
     private fun validChanged(_notUsed: Boolean) {
@@ -192,7 +198,9 @@ class ExerciseRootComp(
         exerciseTab.setEditable(nowEditing)
 
         // aa tab: attrs, editor
+        val editorView = autoassessTab.getEditorActiveView()
         autoassessTab.setEditable(nowEditing)
+        autoassessTab.setEditorActiveView(editorView)
     }
 
     private suspend fun saveExercise(): Boolean {

@@ -32,7 +32,7 @@ class EditModeButtonsComp(
         )
     private val saveBtn =
         ButtonComp(
-            ButtonComp.Type.PRIMARY, "Salvesta", disabledLabel = "Salvestan...", onClick = ::saveHandler, parent = this
+            ButtonComp.Type.PRIMARY, "Salvesta", disabledLabel = "Salvestan...", onClick = { onSave() }, parent = this
         )
 
     override val children = listOf(startEditBtn, cancelBtn, saveBtn)
@@ -63,10 +63,5 @@ class EditModeButtonsComp(
         startEditBtn.show(state == State.NOT_EDITING)
         saveBtn.show(state == State.EDITING)
         cancelBtn.show(state == State.EDITING)
-    }
-
-    private suspend fun saveHandler() {
-        if (onSave())
-            changeEditMode(false)
     }
 }

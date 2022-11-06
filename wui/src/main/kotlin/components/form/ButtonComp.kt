@@ -4,10 +4,7 @@ import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.getElemByIdAs
-import rip.kspar.ezspa.onVanillaClick
+import rip.kspar.ezspa.*
 import tmRender
 
 class ButtonComp(
@@ -51,8 +48,11 @@ class ButtonComp(
             try {
                 onClick()
             } finally {
-                btnContent.innerHTML = activeHtml
-                enable()
+                // element might've been destroyed on click
+                if (getElemByIdOrNull(btnId) != null) {
+                    btnContent.innerHTML = activeHtml
+                    enable()
+                }
             }
             postClick?.invoke()
         }

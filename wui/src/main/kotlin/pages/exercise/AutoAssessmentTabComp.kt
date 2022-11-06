@@ -102,6 +102,9 @@ class AutoAssessmentTabComp(
         return super.hasUnsavedChanges() || aaProps != savedProps
     }
 
+    fun getEditorActiveView() = editor?.getActiveView()
+    fun setEditorActiveView(view: AutoassessEditorComp.ActiveView?) = editor?.setActiveView(view)
+
     suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
         if (!nowEditable) {
@@ -127,14 +130,6 @@ class AutoAssessmentTabComp(
     }
 
     fun isValid() = attrs.isValid() && (editor?.isValid() ?: true)
-
-    // TODO
-//    fun getEditorActiveTabId() = (editor as? CodeEditorComp)?.getActiveTabFilename()
-//    fun setEditorActiveTabId(editorTabId: String?) {
-//        val e = editor
-//        if (editorTabId != null && e is CodeEditorComp)
-//            e.setActiveTabByFilename(editorTabId)
-//    }
 
     private suspend fun changeType(typeId: String?) {
         debug { "Set type to $typeId" }
