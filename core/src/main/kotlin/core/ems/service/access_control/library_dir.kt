@@ -4,12 +4,12 @@ import core.conf.security.EasyUser
 import core.db.Dir
 import core.db.DirAccessLevel
 import core.db.GroupDirAccess
+import core.db.insertOrUpdate
 import core.ems.service.assertDirExists
 import core.ems.service.hasAccountDirAccess
 import core.exception.ForbiddenException
 import core.exception.ReqError
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -29,10 +29,13 @@ fun AccessChecksBuilder.libraryDir(dirId: Long, level: DirAccessLevel) = add { c
  */
 fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
     transaction {
-        assertDirExists(dirId)
+        assertDirExists(dirId, true)
 
         //Add given access to given group G.
-        GroupDirAccess.insert {
+        GroupDirAccess.insertOrUpdate(
+            listOf(GroupDirAccess.group, GroupDirAccess.dir),
+            listOf(GroupDirAccess.group, GroupDirAccess.dir)
+        ) {
             it[GroupDirAccess.group] = groupId
             it[GroupDirAccess.dir] = dirId
             it[GroupDirAccess.level] = level
