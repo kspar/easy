@@ -10,13 +10,11 @@ import components.BreadcrumbsComp
 import components.Crumb
 import components.form.SelectComp
 import debug
-import emptyToNull
 import kotlinx.browser.document
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import libheaders.CSV
 import nowTimestamp
-import objOf
 import org.w3c.dom.HTMLAnchorElement
 import pages.EasyPage
 import pages.ExerciseSummaryPage
@@ -25,12 +23,8 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import plainDstStr
 import queries.*
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.encodeURIComponent
+import rip.kspar.ezspa.*
 import tmRender
-import toJsObj
 import kotlin.js.Promise
 
 
@@ -64,8 +58,8 @@ object GradeTablePage : EasyPage() {
 }
 
 class GradeTableRootComponent(
-        private val courseId: String,
-        dstId: String
+    private val courseId: String,
+    dstId: String
 ) : Component(null, dstId) {
 
     private lateinit var crumbsComp: BreadcrumbsComp
@@ -77,7 +71,13 @@ class GradeTableRootComponent(
     override fun create(): Promise<*> = doInPromise {
         val courseTitle = BasicCourseInfo.get(courseId).await().title
 
-        crumbsComp = BreadcrumbsComp(listOf(Crumb.myCourses, Crumb(courseTitle, "/courses/$courseId/exercises"), Crumb(Str.gradesLabel())), this)
+        crumbsComp = BreadcrumbsComp(
+            listOf(
+                Crumb.myCourses,
+                Crumb(courseTitle, "/courses/$courseId/exercises"),
+                Crumb(Str.gradesLabel())
+            ), this
+        )
         cardComp = GradeTableCardComp(courseId, courseTitle, this)
 
         Title.update {
@@ -91,21 +91,21 @@ class GradeTableRootComponent(
 
 
 class GradeTableCardComp(
-        private val courseId: String,
-        private val courseTitle: String,
-        parent: Component?
+    private val courseId: String,
+    private val courseTitle: String,
+    parent: Component?
 ) : Component(parent) {
 
     @Serializable
     data class Groups(
-            val groups: List<Group>,
-            val self_is_restricted: Boolean,
+        val groups: List<Group>,
+        val self_is_restricted: Boolean,
     )
 
     @Serializable
     data class Group(
-            val id: String,
-            val name: String
+        val id: String,
+        val name: String
     )
 
     private var groupSelectComp: SelectComp? = null
@@ -118,10 +118,12 @@ class GradeTableCardComp(
         get() = listOfNotNull(groupSelectComp, tableComp)
 
     override fun create() = doInPromise {
-        val groups = fetchEms("/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
-                errorHandler = ErrorHandlers.noCourseAccessPage).await()
-                .parseTo(Groups.serializer()).await()
-                .groups.sortedBy { it.name }
+        val groups = fetchEms(
+            "/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
+            errorHandler = ErrorHandlers.noCourseAccessPage
+        ).await()
+            .parseTo(Groups.serializer()).await()
+            .groups.sortedBy { it.name }
 
         if (groups.isNotEmpty()) {
             val options = mutableListOf(SelectComp.Option("Kõik õpilased", ""))
@@ -134,65 +136,71 @@ class GradeTableCardComp(
             groupSelectComp = SelectComp("Rühm", options, onOptionChange = ::handleGroupChange, parent = this)
         }
 
-        tableComp = GradeTableTableComp(courseId,
-                groupId = if (groups.size == 1) groups[0].id else null,
-                parent = this,
-                dstId = tableDstId)
+        tableComp = GradeTableTableComp(
+            courseId,
+            groupId = if (groups.size == 1) groups[0].id else null,
+            parent = this,
+            dstId = tableDstId
+        )
     }
 
-    override fun render() = tmRender("t-c-grades-card",
-            "title" to courseTitle,
-            "groupSelectDstId" to groupSelectComp?.dstId,
-            "tableDstId" to tableDstId)
+    override fun render() = tmRender(
+        "t-c-grades-card",
+        "title" to courseTitle,
+        "groupSelectDstId" to groupSelectComp?.dstId,
+        "tableDstId" to tableDstId
+    )
 
     private fun handleGroupChange(newGroupId: String?) {
         doInPromise {
-            tableComp = GradeTableTableComp(courseId,
-                    groupId = newGroupId,
-                    parent = this,
-                    dstId = tableDstId)
+            tableComp = GradeTableTableComp(
+                courseId,
+                groupId = newGroupId,
+                parent = this,
+                dstId = tableDstId
+            )
             tableComp.createAndBuild().await()
         }
     }
 }
 
 class GradeTableTableComp(
-        private val courseId: String,
-        private val groupId: String?,
-        parent: Component,
-        dstId: String = IdGenerator.nextId()
+    private val courseId: String,
+    private val groupId: String?,
+    parent: Component,
+    dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
 
     @Serializable
     data class GradeTable(
-            val student_count: Int,
-            val students: List<Student>,
-            val exercises: List<Exercise>
+        val student_count: Int,
+        val students: List<Student>,
+        val exercises: List<Exercise>
     )
 
     @Serializable
     data class Student(
-            val student_id: String,
-            val given_name: String,
-            val family_name: String,
-            val email: String
+        val student_id: String,
+        val given_name: String,
+        val family_name: String,
+        val email: String
     )
 
     @Serializable
     data class Exercise(
-            val exercise_id: String,
-            val effective_title: String,
-            val grade_threshold: Int,
-            val student_visible: Boolean,
-            val grades: List<Grade>
+        val exercise_id: String,
+        val effective_title: String,
+        val grade_threshold: Int,
+        val student_visible: Boolean,
+        val grades: List<Grade>
     )
 
     @Serializable
     data class Grade(
-            val student_id: String,
-            val grade: Int? = null,
-            val grader_type: GraderType? = null,
-            val feedback: String? = null
+        val student_id: String,
+        val grade: Int? = null,
+        val grader_type: GraderType? = null,
+        val feedback: String? = null
     )
 
     enum class GraderType {
@@ -232,10 +240,11 @@ class GradeTableTableComp(
         debug { "Building grade table for course $courseId, group $groupId" }
         val q = createQueryString("group" to groupId)
         val gradesPromise = fetchEms("/courses/teacher/$courseId/grades$q", ReqMethod.GET,
-                successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage)
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+        )
 
         val gradeTable = gradesPromise.await()
-                .parseTo(GradeTable.serializer()).await()
+            .parseTo(GradeTable.serializer()).await()
 
         val exercises = gradeTable.exercises.map {
             ExerciseRow(it.effective_title, ExerciseSummaryPage.link(courseId, it.exercise_id), it.student_visible)
@@ -254,7 +263,7 @@ class GradeTableTableComp(
                     else -> GradeWithInfo(it.grade, ExerciseStatus.UNFINISHED, it.grader_type)
                 }
                 gradesMap.getOrPut(it.student_id) { mutableListOf() }
-                        .add(gradeInfo)
+                    .add(gradeInfo)
             }
             // Add "grade missing" grades
             val missingStudents = allStudents - ex.grades.map { it.student_id }.toSet()
@@ -276,8 +285,12 @@ class GradeTableTableComp(
         table = Table(exercises, students)
 
 
-        Sidenav.replacePageSection(Sidenav.PageSection("Hinded",
-            listOf(Sidenav.Action(Icons.download, "Ekspordi hindetabel", ::downloadGradesCSV))))
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                "Hinded",
+                listOf(Sidenav.Action(Icons.download, "Ekspordi hindetabel", ::downloadGradesCSV))
+            )
+        )
     }
 
     override fun renderLoading(): String = "Laen hindeid..."
@@ -294,12 +307,12 @@ class GradeTableTableComp(
         val students = table.students.map { student ->
             val grades = student.grades.map {
                 objOf(
-                        "grade" to (it.grade?.toString() ?: "-"),
-                        "teacherGraded" to (it.grader == GraderType.TEACHER),
-                        "unstarted" to (it.status == ExerciseStatus.UNSTARTED),
-                        "ungraded" to (it.status == ExerciseStatus.UNGRADED),
-                        "unfinished" to (it.status == ExerciseStatus.UNFINISHED),
-                        "finished" to (it.status == ExerciseStatus.FINISHED)
+                    "grade" to (it.grade?.toString() ?: "-"),
+                    "teacherGraded" to (it.grader == GraderType.TEACHER),
+                    "unstarted" to (it.status == ExerciseStatus.UNSTARTED),
+                    "ungraded" to (it.status == ExerciseStatus.UNGRADED),
+                    "unfinished" to (it.status == ExerciseStatus.UNFINISHED),
+                    "finished" to (it.status == ExerciseStatus.FINISHED)
                 )
             }.toTypedArray()
 
@@ -355,10 +368,12 @@ class GradeTableTableComp(
             }).toMap().toJsObj()
         }
 
-        val csv = CSV.serialize(objOf(
-            "fields" to fields.toTypedArray(),
-            "records" to records.toTypedArray(),
-        ), objOf("delimiter" to ";"))
+        val csv = CSV.serialize(
+            objOf(
+                "fields" to fields.toTypedArray(),
+                "records" to records.toTypedArray(),
+            ), objOf("delimiter" to ";")
+        )
 
         val downloadLink = document.createElement("a") as HTMLAnchorElement
         downloadLink.setAttribute("href", "data:text/plain;charset=utf-8,${csv.encodeURIComponent()}")

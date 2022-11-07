@@ -2,7 +2,7 @@ package components.modal
 
 import libheaders.MModalInstance
 import libheaders.Materialize
-import objOf
+import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator

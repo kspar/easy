@@ -30,7 +30,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getNodelistBySelector
 import tmRender
 import toEstonianString
-import toJsObj
+import rip.kspar.ezspa.toJsObj
 import kotlin.js.Date
 import kotlin.js.Promise
 import kotlin.math.max

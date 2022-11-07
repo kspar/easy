@@ -38,9 +38,14 @@
         </div>
     </div>
 </div>
-<header>
+<header class="display-none">
+    <div id="nav-wrap"></div>
 </header>
-<main>
+<main class="display-none">
+    <div id="sidenav-wrap"></div>
+    <div class="container">
+        <div id="content-container" class="content-container"></div>
+    </div>
 </main>
 <footer>
 </footer>
@@ -177,10 +182,15 @@
 </script>
 
 <script id="t-c-page-tabs" type="text/x-handlebars">
-    <ul id="{{tabsId}}" class="tabs ez-tabs">
-        <!-- On one line, avoid whitespace between items -->
-        {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
-    </ul>
+    <ez-tabs-header>
+        <ul id="{{tabsId}}" class="tabs ez-tabs">
+            <!-- On one line, avoid whitespace between items -->
+            {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
+        </ul>
+        {{#trailerElementId}}
+            <ez-tabs-trailer id="{{trailerElementId}}"></ez-tabs-trailer>
+        {{/trailerElementId}}
+    </ez-tabs-header>
     <ez-tabs-content>
         {{#tabs}}
         <ez-tab-content id="{{id}}">
@@ -443,13 +453,21 @@
 
 <script id="t-c-button" type="text/x-handlebars">
     <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} {{#isDisabled}}disabled{{/isDisabled}} waves-effect">
-        <ez-btn-content>{{{contentHtml}}}</ez-btn-content>
+        <ez-btn-content>{{#iconHtml}}<ez-btn-icon>{{{iconHtml}}}</ez-btn-icon>{{/iconHtml}}<ez-btn-text>{{text}}</ez-btn-text></ez-btn-content>
     </button>
 </script>
 
 <script id="t-c-string-field" type="text/x-handlebars">
     <div class="input-field">
         <input id="{{id}}" type="text" value="{{value}}">
+        <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+    </div>
+</script>
+
+<script id="t-c-int-field" type="text/x-handlebars">
+    <div class="input-field">
+        <input id="{{id}}" type="number" min="{{min}}" max="{{max}}" value="{{value}}">
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
@@ -482,6 +500,14 @@
         {{/buttons}}
         <span id="field-helper-{{elementId}}" class="helper-text"></span>
     </ez-radio-buttons>
+</script>
+
+<script id="t-c-edit-mode" type="text/x-handlebars">
+    <ez-edit-mode-bar>
+        <ez-dst id="{{startEditDst}}"></ez-dst>
+        <ez-dst id="{{cancelDst}}"></ez-dst>
+        <ez-dst id="{{saveDst}}"></ez-dst>
+    </ez-edit-mode-bar>
 </script>
 
 
@@ -614,37 +640,33 @@
 <script id="t-c-exercise" type="text/x-handlebars">
     <div id="global-exercise">
         <ez-dst id="{{crumbsDstId}}"></ez-dst>
-        <ez-dst id="{{cardDstId}}"></ez-dst>
+        <ez-dst id="{{tabsDstId}}"></ez-dst>
         <ez-dst id="{{addToCourseModalDstId}}"></ez-dst>
     </div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
-    <p class="subheading-item"><span class="subheading">{{createdAtLabel}}:</span>{{createdAt}} ({{createdBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{modifiedAtLabel}}:</span>{{modifiedAt}} ({{modifiedBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{isPublicLabel}}:</span>{{isPublic}}</p>
-    <p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>
-    <p class="subheading-item"><span class="subheading">{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</span>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</p>
+    <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</ez-attr>
     <ul class="browser-default" style="margin-top: 0;">
         {{#onCourses}}
             <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
         {{/onCourses}}
     </ul>
+    <div id="{{titleDstId}}" style="margin-top: 4rem;"></div>
+</script>
+
+<script id="t-c-exercise-tab-title-view" type="text/x-handlebars">
     <h2>{{title}}</h2>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-view" type="text/x-handlebars">
-    <div class="pre-exercise-text-wrap">
-        <a id="exercise-text-enable-edit" href="#!"><i class="material-icons" style="font-size: 19px; margin-right: .5rem;">create</i>{{doEditLabel}}</a>
-    </div>
     <div id="exercise-text">{{{html}}}</div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-exercise" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
     <ez-dst id="{{previewDstId}}"></ez-dst>
 </script>
 
@@ -654,11 +676,31 @@
 </script>
 
 <script id="t-c-exercise-tab-aa" type="text/x-handlebars">
-    <h2>{{aaLabel}}</h2>
+    <ez-dst id="{{typeSelectDstId}}"></ez-dst>
+    <ez-dst id="{{attrsDstId}}"></ez-dst>
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-aa" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-read" type="text/x-handlebars">
+    <ez-attr><ez-attr-label>{{typeLabel}}:</ez-attr-label>{{type}}</ez-attr>
+    {{#maxTime}}<ez-attr><ez-attr-label>{{maxTimeLabel}}:</ez-attr-label>{{maxTime}}</ez-attr>{{/maxTime}}
+    {{#maxMem}}<ez-attr><ez-attr-label>{{maxMemLabel}}:</ez-attr-label>{{maxMem}}</ez-attr>{{/maxMem}}
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-edit" type="text/x-handlebars">
+    <ez-exercise-autoeval>
+        <ez-block-container>
+            <ez-block style="padding-right: 5rem;">
+                <div id="{{typeDstId}}"></div>
+            </ez-block>
+            <ez-block style="flex-grow: 0">
+                <ez-block-container>
+                    {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
+                    {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/memDstId}}
+                </ez-block-container>
+            </ez-block>
+        </ez-block-container>
+    </ez-exercise-autoeval>
 </script>
 
 <script id="t-c-exercise-tab-testing" type="text/x-handlebars">
@@ -846,22 +888,24 @@
 <script id="tm-navbar" type="text/x-handlebars-template">
     <nav class="navbar">
         <div class="topnav container" role="navigation">
-            <div class="left-cluster">
-                <div>
-                    <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
-                </div>
-                <a href="/courses" class="logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
-                    <span class="text">LAHENDUS</span>
-                </a>
-            </div>
-            <!-- Search here -->
-            <div class="right-cluster">
-                <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
-                    <a href="#!">
-                        <i class="profile-logo left material-icons">account_circle</i>
-                        <span class="profile-name">{{userName}}</span>
+            <div class="content-container">
+                <div class="left-cluster">
+                    <div>
+                        <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
+                    </div>
+                    <a href="/courses" class="logo">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
+                        <span class="text">LAHENDUS</span>
                     </a>
+                </div>
+                <!-- Search here -->
+                <div class="right-cluster">
+                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                        <a href="#!">
+                            <i class="profile-logo left material-icons">account_circle</i>
+                            <span class="profile-name">{{userName}}</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

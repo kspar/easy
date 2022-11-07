@@ -2,7 +2,7 @@ package components
 
 import libheaders.MTabsInstance
 import libheaders.Materialize
-import objOf
+import rip.kspar.ezspa.objOf
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
@@ -12,6 +12,7 @@ import tmRender
 
 class PageTabsComp(
     private val tabs: List<Tab>,
+    private val trailerComp: Component? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -31,7 +32,7 @@ class PageTabsComp(
     private lateinit var mtabs: MTabsInstance
 
     override val children: List<Component>
-        get() = tabComps
+        get() = tabComps + listOfNotNull(trailerComp)
 
     override fun create() = doInPromise {
         tabComps = tabs.map { it.compProvider(this) }
@@ -47,7 +48,8 @@ class PageTabsComp(
                 "isPreselected" to tab.preselected,
             )
         },
-        "tabsId" to tabsId
+        "tabsId" to tabsId,
+        "trailerElementId" to trailerComp?.dstId,
     )
 
     override fun postRender() {
@@ -73,4 +75,6 @@ class PageTabsComp(
     fun setSelectedTabById(tabId: String) {
         mtabs.select(tabId)
     }
+
+    fun refreshIndicator() = mtabs.updateTabIndicator()
 }

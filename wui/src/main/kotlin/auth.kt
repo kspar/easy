@@ -1,6 +1,7 @@
 import kotlinx.browser.localStorage
 import org.w3c.dom.get
 import org.w3c.dom.set
+import rip.kspar.ezspa.objOf
 import kotlin.js.Promise
 
 enum class Role(val id: String) {
@@ -69,7 +70,10 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                     }
                 }
             }.catch {
-                permanentErrorMessage(false, UserMessageAction("Proovi uuesti", onActivate = ::login)) { "Autentimine ebaõnnestus." }
+                permanentErrorMessage(
+                    false,
+                    UserMessageAction("Proovi uuesti", onActivate = ::login)
+                ) { "Autentimine ebaõnnestus." }
                 reject(RuntimeException("Authentication error"))
             }
         }
@@ -82,7 +86,10 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 resolve(refreshed)
             }.catch {
                 debug { "Token refresh failed" }
-                permanentErrorMessage(true, UserMessageAction("Logi sisse", onActivate = ::login)) { "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida." }
+                permanentErrorMessage(
+                    true,
+                    UserMessageAction("Logi sisse", onActivate = ::login)
+                ) { "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida." }
                 reject(RuntimeException("Token refresh failed"))
             }
         }

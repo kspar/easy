@@ -38,6 +38,7 @@ object EzSpa {
         fun navigateTo(path: String) {
             preNavigate()
             window.history.pushState(null, "", path)
+            refreshCurrentPathFromBrowser()
             updatePage()
         }
 

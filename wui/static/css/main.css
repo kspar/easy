@@ -34,6 +34,8 @@ body {
     min-width: 320px;
 }
 
+/* Embedded - when displaying page in embed */
+
 html.embedded body {
     background: none;
     min-height: 0;
@@ -58,16 +60,57 @@ html.wui3 body {
 
 html.wui3 .container {
     width: 100%;
-    padding: 0 4rem 4rem 4rem;
+    container-type: inline-size;
+    container-name: container;
 }
 
-/*TODO: remove*/
+html.wui3 .content-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+    transition: padding 200ms ease-out;
+}
+
+@container container (width < 830px) {
+    html.wui3 .content-container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+@container container (width < 700px) {
+    html.wui3 .content-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@container container (width < 500px) {
+    html.wui3 .content-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+
+
+/* TODO: remove */
 .subheading-item {
     display: flex;
     flex-wrap: wrap;
 }
 
 .subheading {
+    color: #4DAB54;
+    font-weight: 500;
+    margin-right: 0.6rem;
+}
+
+ez-attr {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+ez-attr-label {
     color: #4DAB54;
     font-weight: 500;
     margin-right: 0.6rem;
@@ -97,7 +140,7 @@ svg {
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
-.topnav {
+.topnav .content-container {
     height: 100%;
     display: flex;
     justify-content: space-between;
@@ -212,6 +255,10 @@ svg {
 .sidenav .role-select-wrap {
     margin-top: .5rem;
     width: 15rem;
+}
+
+.sidenav .role-select-wrap .input-field {
+    margin-bottom: 1rem;
 }
 
 .sidenav li {
@@ -564,13 +611,19 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#global-exercise .pre-exercise-text-wrap {
-    display: flex;
-    justify-content: flex-end;
+#global-exercise ez-tabs-content {
+    margin-top: 3rem;
+}
+
+@container tabs (width < 750px) {
+    #global-exercise ez-tabs-trailer ez-btn-content ez-btn-text {
+        display: none;
+    }
 }
 
 
-/*  */
+/** Anonymous autoeval embed **/
+
 #anonauto button {
     padding-bottom: .4rem;
 }
@@ -792,6 +845,9 @@ ez-participants-list .card .card-content p {
 }
 
 
+
+
+
 /** Grade table page **/
 
 .grade-table-wrap {
@@ -955,11 +1011,21 @@ ez-btn-content {
     justify-content: center;
 }
 
-ez-btn-content > ez-icon {
+.btn ez-btn-content ez-icon,
+.btn-floating ez-btn-content ez-icon {
     color: #fff;
 }
 
-ez-btn-content > ez-icon > svg {
+.btn-flat ez-btn-content ez-icon {
+    color: var(--ez-icon-action-col);
+}
+
+/* if icon with text, add space between */
+ez-btn-content ez-btn-icon ~ ez-btn-text {
+    padding-left: .6rem;
+}
+
+.btn-floating ez-btn-content ez-icon > svg {
     width: 2rem;
     height: 2rem;
 }
@@ -1144,10 +1210,9 @@ textarea.materialize-textarea {
     padding: 1.1rem 0 1.1rem 0;
 }
 
-/* TODO: Hopefully not needed for anything, remove at some point */
-/*.input-field {*/
-/*    margin-top: 2rem;*/
-/*}*/
+.input-field {
+    margin-bottom: 2rem;
+}
 
 .input-field input:not(.invalid) ~ .helper-text:not(.has-text) {
     display: none;
@@ -1188,6 +1253,8 @@ textarea.materialize-textarea {
 .select-wrap {
     width: fit-content;
     width: -moz-fit-content;
+    /* Margin from bottom border to end for all form elements - 28px */
+    margin-bottom: 2.8rem;
 }
 
 .select-dropdown li.optgroup {
@@ -1944,7 +2011,6 @@ ez-coll-wrap *[ez-show-max="599"] {
 }
 
 /* Container is ez-coll-wrap */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
     ezc-ctrl-shown-icon {
@@ -1962,7 +2028,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-ctrl {
         padding-left: 2.2rem;
@@ -1989,7 +2054,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width < 600px) {
     ez-coll-wrap *[ez-show-max="599"] {
         display: flex;
@@ -2013,7 +2077,6 @@ ezc-bottom-attrs > ezc-attr {
 }
 
 /* Container is ezc-bottom-attrs */
-/*noinspection CssInvalidAtRule*/
 @container (width < 400px) {
     /* first one grows always */
     ezc-bottom-attrs > ezc-attr:nth-child(1) {
@@ -2021,7 +2084,6 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) and (width < 600px) {
     /* first one grows is there is one */
     ezc-bottom-attrs[ez-attrs="1"] > ezc-attr:nth-child(1) {
@@ -2034,14 +2096,12 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     ezc-bottom-attrs > ezc-attr:nth-child(2) {
         display: inline-block;
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-bottom-attrs > ezc-attr:nth-child(3) {
         display: inline-block;
@@ -2065,7 +2125,6 @@ ezc-bottom-attrs > ezc-attr {
 
 /* Increase attr width if there's more space. Note that if items have a different number of attrs, they will resize differently.
    This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 900px) {
     ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
         flex-basis: 300px;
@@ -2221,9 +2280,23 @@ div.title-wrap > .title-button > i.material-icons {
 
 /** Tabs **/
 
+ez-tabs-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    container-type: inline-size;
+    container-name: tabs
+}
+
 .ez-tabs {
     background-color: transparent;
-    border-bottom: 1px solid #ccc;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+
+.ez-tabs::-webkit-scrollbar { /* WebKit */
+    width: 0;
+    height: 0;
 }
 
 .ez-tabs .indicator {
@@ -2248,6 +2321,10 @@ div.title-wrap > .title-button > i.material-icons {
 .ez-tabs .tab a:focus,
 .ez-tabs .tab a:focus.active {
     background-color: transparent;
+}
+
+ez-tabs-trailer {
+    flex-shrink: 0;
 }
 
 ez-tabs-content {

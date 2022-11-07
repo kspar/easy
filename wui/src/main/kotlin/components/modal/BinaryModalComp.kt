@@ -31,12 +31,12 @@ open class BinaryModalComp<T>(
     parent = parent, dstId = dstId
 ) {
 
-    val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, {
+    val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, null, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
     }, primaryButtonEnabledInitial, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
 
-    val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, {
+    val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, null, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
     }, true, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)

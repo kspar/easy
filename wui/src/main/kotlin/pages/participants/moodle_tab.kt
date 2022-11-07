@@ -46,11 +46,11 @@ class ParticipantsMoodleTabComp(
 
     override fun create() = doInPromise {
         syncStudentsBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", ::syncStudents,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", null, ::syncStudents,
             true, "Sünkroniseerin...", parent = this
         )
         syncGradesBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", ::syncGrades,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", null, ::syncGrades,
             true, "Sünkroniseerin...", parent = this
         )
     }

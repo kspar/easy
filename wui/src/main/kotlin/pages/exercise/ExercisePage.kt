@@ -6,11 +6,13 @@ import Role
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import pages.EasyPage
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
-import queries.createQueryString
-import queries.getCurrentQueryParamValue
+import rip.kspar.ezspa.Navigation
+import rip.kspar.ezspa.getHtml
 
 object ExercisePage : EasyPage() {
 
@@ -32,15 +34,26 @@ object ExercisePage : EasyPage() {
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 
+        getHtml().addClass("wui3")
+
         MainScope().launch {
-            ExerciseRootComp(
+            val root = ExerciseRootComp(
                 exerciseId,
-                getCurrentQueryParamValue("tab"),
                 ::setWildcardPath,
-                { updateUrl(createQueryString("tab" to it)) },
                 CONTENT_CONTAINER_ID
-            ).createAndBuild().await()
+            )
+            root.createAndBuild().await()
+
+            Navigation.catchNavigation {
+                root.hasUnsavedChanges()
+            }
         }
+    }
+
+    override fun destruct() {
+        super.destruct()
+        Navigation.stopNavigationCatching()
+        getHtml().removeClass("wui3")
     }
 
     fun link(exerciseId: String): String = constructPathLink(mapOf("exerciseId" to exerciseId))
