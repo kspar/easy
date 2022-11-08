@@ -46,7 +46,7 @@ class IntFieldComp(
         "id" to inputId,
         "min" to minValue.toString(),
         "max" to maxValue.toString(),
-        "value" to initialValue.toString(),
+        "value" to initialValue?.toString(),
         "label" to label,
         "helpText" to helpText,
     )

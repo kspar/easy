@@ -134,30 +134,52 @@ class AutoAssessmentTabComp(
     private suspend fun changeType(typeId: String?) {
         debug { "Set type to $typeId" }
 
-        val props = aaProps
+        val oldProps = aaProps
+        val oldType = AutoEvalTypes.templates.singleOrNull { it.container == oldProps?.containerImage }
+        val newType = AutoEvalTypes.templates.singleOrNull { it.container == typeId }
+
         aaProps = when {
-            typeId == null -> {
-                // Deselected aa
+            // Deselected autoeval
+            newType == null -> {
+                // Scripts and attrs are cleared
                 null
             }
-            props == null -> {
-                // No aa previously selected, get from template
-                val template = AutoEvalTypes.templates.single { it.container == typeId }
+            // No autoeval previously selected or editor types are different
+            oldType == null || oldType.editor != newType.editor -> {
+                // Get from template
                 AutoAssessProps(
-                    template.evaluateScript, template.assets, template.container,
-                    template.allowedTime, template.allowedMemory
+                    newType.evaluateScript, newType.assets, newType.container,
+                    newType.allowedTime, newType.allowedMemory
                 )
             }
+            // Container changed, editor type same
             else -> {
-                // Type changed, only change container image respecting any changes made
+                // Check if scripts have changed from previous template - then keep current, else from new template
+                // Can assume editor exists
+                val currentEval = editor!!.getEvalScript()
+                val currentAssets = editor!!.getAssets()
 
-                // Assume editor exists
+                val (eval, assets) =
+                    if (currentEval != oldType.evaluateScript || currentAssets != oldType.assets)
+                        currentEval to currentAssets
+                    else
+                        newType.evaluateScript to newType.assets
+
+                // Check if attrs have changed from previous template - then keep current, else from new template
+                val currentTime = attrs.getEditedTime()
+                val currentMem = attrs.getEditedMem()
+                val (time, mem) = if (currentTime != oldType.allowedTime || currentMem != oldType.allowedMemory)
+                    currentTime to currentMem
+                else
+                    newType.allowedTime to newType.allowedMemory
+
+
                 AutoAssessProps(
-                    editor!!.getEvalScript(),
-                    editor!!.getAssets(),
-                    typeId,
-                    attrs.getEditedTime(),
-                    attrs.getEditedMem(),
+                    eval,
+                    assets,
+                    newType.container,
+                    time,
+                    mem,
                 )
             }
         }

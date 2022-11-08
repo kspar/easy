@@ -11,6 +11,7 @@
     --ez-flat-btn-disabled-border-col: rgba(0, 0, 0, .1);
     --ez-flat-btn-border-col: rgba(0, 0, 0, .3);
     --ez-btn-danger-col: #df483d;
+    --ez-btn-disabled-text: #9f9f9f;
 
     --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
@@ -1014,6 +1015,11 @@ ez-btn-content {
 .btn ez-btn-content ez-icon,
 .btn-floating ez-btn-content ez-icon {
     color: #fff;
+}
+
+.btn.disabled ez-btn-content ez-icon,
+.btn-floating.disabled ez-btn-content ez-icon {
+    color: var(--ez-btn-disabled-text);
 }
 
 .btn-flat ez-btn-content ez-icon {
