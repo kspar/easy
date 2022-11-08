@@ -3,7 +3,6 @@ package components.modal
 import components.form.ButtonComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 
 
@@ -24,11 +23,10 @@ open class BinaryModalComp<T>(
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
     onOpen: (() -> Unit)? = null,
     parent: Component?,
-    dstId: String = IdGenerator.nextId(),
 ) : ModalComp<T>(
     title, defaultReturnValue,
     fixFooter = fixFooter, isWide = isWide, onOpen = onOpen,
-    parent = parent, dstId = dstId
+    parent = parent,
 ) {
 
     val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, null, {

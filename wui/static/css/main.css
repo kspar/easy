@@ -92,6 +92,10 @@ html.wui3 .content-container {
     }
 }
 
+main {
+    font-size: 1.5rem;
+}
+
 
 
 /* TODO: remove */
@@ -348,7 +352,6 @@ div.container {
 }
 
 #content-container {
-    font-size: 1.5rem;
     padding-bottom: 3rem;
 }
 
