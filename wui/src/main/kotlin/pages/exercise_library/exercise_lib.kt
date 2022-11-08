@@ -53,7 +53,7 @@ class ExerciseLibRootComp(
 
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
-    private val newExerciseModal = CreateExerciseModalComp(dirId, null, this, "new-exercise-modal-dst-id")
+    private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
@@ -139,7 +139,7 @@ class ExerciseLibRootComp(
 //                        Icons.exercisePermissions,
 //                        translateDirAccess(p.access)
 //                    ),
-                // TODO: is shared -> attr "shared" with Icons.teacher
+                    // TODO: is shared -> attr "shared" with Icons.teacher
                 ),
                 isSelectable = true,
                 actions = listOf(
@@ -227,7 +227,8 @@ class ExerciseLibRootComp(
         )
     }
 
-    override fun render() = plainDstStr(breadcrumbs.dstId, ezcoll.dstId, addToCourseModal.dstId, newDirModal.dstId)
+    override fun render() =
+        plainDstStr(breadcrumbs.dstId, ezcoll.dstId, newExerciseModal.dstId, addToCourseModal.dstId, newDirModal.dstId)
 
     private suspend fun addToCourse(item: EzCollComp.Item<Props>): EzCollComp.Result {
         addToCourseModal.setSingleExercise(item.props.id, item.props.title)

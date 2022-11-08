@@ -21,9 +21,7 @@ class CreateExerciseModalComp(
     private val dirId: String?,
     private val allowAddingToCourseId: String?,
     parent: Component,
-    dstId: String,
-) : Component(parent, dstId) {
-
+) : Component(parent) {
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus ülesanne", Str.doSave(), Str.cancel(), Str.saving(),

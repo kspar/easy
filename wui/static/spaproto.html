@@ -63,27 +63,6 @@
         <ez-dst id="{{pageSectionId}}"></ez-dst>
         <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
     </ul>
-
-    <!-- Workaround: modals cannot be inside elements that have transforms like sidenav: -->
-    <!-- Elements with transforms act as a containing block for fixed position descendants, so position:fixed under something with a transform no longer has fixed behavior. -->
-    <ez-dst id="new-course-modal-dst-id"></ez-dst>
-    <ez-dst id="new-exercise-modal-dst-id"></ez-dst>
-
-    <!-- New exercise modal -->
-    <div id="new-exercise-modal" class="modal">
-        <div class="modal-content">
-            <h4>{{newExerciseLabel}}</h4>
-            <div class="form-fields">
-                <div class="input-field">
-                    <input id="new-exercise-name-input" type="text">
-                    <label for="new-exercise-name-input">{{newExerciseTitleLabel}}</label>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
-        </div>
-    </div>
 </script>
 
 <script id="t-c-sidenav-head-account-section" type="text/x-handlebars">
@@ -114,6 +93,7 @@
         <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
         <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
     {{/isAdmin}}
+    <ez-dst id="{{newCourseModalDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-course-section" type="text/x-handlebars">
@@ -127,8 +107,8 @@
     {{#isAdmin}}
         <li><a id="{{newExerciseLinkId}}" class="waves-effect sidenav-close">{{{newExerciseIcon}}}{{newExerciseLabel}}</a></li>
 <!--        <li><a class="waves-effect sidenav-close">{{{addExerciseIcon}}}{{addExerciseLabel}}</a></li>-->
-
     {{/isAdmin}}
+    <ez-dst id="{{newExerciseDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-page-section" type="text/x-handlebars">
