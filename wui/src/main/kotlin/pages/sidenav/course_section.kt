@@ -27,7 +27,7 @@ class SidenavCourseSectionComp(
     private val gradesItemId = IdGenerator.nextId()
     private val participantsItemId = IdGenerator.nextId()
 
-    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this, "new-exercise-modal-dst-id")
+    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this)
     private val newExerciseLinkId = IdGenerator.nextId()
 
     override val children = listOf(newExerciseModal)
@@ -59,6 +59,7 @@ class SidenavCourseSectionComp(
         "newExerciseLabel" to "Uus ülesanne",
         "newExerciseLinkId" to newExerciseLinkId,
         "addExerciseLabel" to "Lisa ülesanne kogust",
+        "newExerciseDst" to newExerciseModal.dstId,
     )
 
     override fun postRender() {

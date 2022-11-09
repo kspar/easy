@@ -20,7 +20,7 @@ class SidenavGeneralSectionComp(
     private val libItemId = IdGenerator.nextId()
     private val articlesItemId = IdGenerator.nextId()
 
-    private val newCourseModal = CreateCourseModalComp(this, "new-course-modal-dst-id")
+    private val newCourseModal = CreateCourseModalComp(this)
 
     private val newCourseLinkId = IdGenerator.nextId()
 
@@ -45,6 +45,7 @@ class SidenavGeneralSectionComp(
         "libLabel" to Str.exerciseLibrary(),
         "articlesLabel" to "Artiklid",
         "newCourseLabel" to "Uus kursus",
+        "newCourseModalDst" to newCourseModal.dstId,
     )
 
     override fun postRender() {

@@ -18,8 +18,7 @@ import successMessage
 
 class CreateCourseModalComp(
     parent: Component,
-    dstId: String,
-) : Component(parent, dstId) {
+) : Component(parent) {
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
