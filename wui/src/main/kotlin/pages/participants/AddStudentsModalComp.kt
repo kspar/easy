@@ -6,8 +6,8 @@ import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
-import emptyToNull
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import plainDstStr
@@ -33,7 +33,7 @@ class AddStudentsModalComp(
         onOpen = { studentsFieldComp.focus() },
         defaultReturnValue = false,
         fixFooter = true, isWide = true,
-        parent = this
+        id = Modal.ADD_STUDENTS_TO_COURSE, parent = this
     )
 
     private val helpTextComp = ParagraphsComp(

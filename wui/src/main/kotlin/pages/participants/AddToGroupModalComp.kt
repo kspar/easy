@@ -4,6 +4,7 @@ import Str
 import components.StringComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import plainDstStr
@@ -40,7 +41,9 @@ class AddToGroupModalComp(
         null, Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { groupSelectComp.getLabelAndValue().let { addToGroup(it.first, it.second) } },
         primaryPostAction = ::reinitialise,
-        defaultReturnValue = null, parent = this
+        defaultReturnValue = null,
+        id = if (isFor == For.STUDENT) Modal.ADD_STUDENTS_TO_COURSE_GROUP else Modal.ADD_TEACHERS_TO_COURSE_GROUP,
+        parent = this
     )
 
     private val textComp = StringComp("", modalComp)

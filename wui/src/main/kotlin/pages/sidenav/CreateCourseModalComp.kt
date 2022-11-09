@@ -4,6 +4,7 @@ import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -24,7 +25,8 @@ class CreateCourseModalComp(
         "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createCourse(courseTitleFieldComp.getValue()) },
         primaryPostAction = ::reinitialise, onOpen = { courseTitleFieldComp.focus() },
-        defaultReturnValue = null, parent = this
+        defaultReturnValue = null,
+        id = Modal.CREATE_COURSE, parent = this
     )
 
     private val courseTitleFieldComp = StringFieldComp(

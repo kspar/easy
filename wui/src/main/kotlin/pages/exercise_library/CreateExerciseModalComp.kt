@@ -5,6 +5,7 @@ import components.form.CheckboxComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
@@ -27,7 +28,7 @@ class CreateExerciseModalComp(
         "Uus ülesanne", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createExercise(titleField.getValue()) },
         primaryPostAction = ::reinitialise, onOpen = { titleField.focus() },
-        defaultReturnValue = null, parent = this
+        defaultReturnValue = null, id = Modal.CREATE_EXERCISE, parent = this
     )
 
     private val titleField = StringFieldComp(

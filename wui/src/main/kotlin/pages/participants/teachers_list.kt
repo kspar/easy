@@ -5,6 +5,7 @@ import components.EzCollComp
 import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
+import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import plainDstStr
@@ -149,7 +150,8 @@ class ParticipantsTeachersListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER,
+            id = Modal.REMOVE_TEACHERS_FROM_COURSE, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.TEACHER, parent = this)

@@ -5,6 +5,7 @@ import components.EzCollComp
 import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
+import components.modal.Modal
 import errorMessage
 import kotlinx.coroutines.await
 import plainDstStr
@@ -74,7 +75,8 @@ class ParticipantsGroupsListComp(
 
         deleteGroupModal = ConfirmationTextModalComp(
             null, "Kustuta", "Tühista", "Kustutan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER,
+            id = Modal.DELETE_COURSE_GROUP, parent = this
         )
     }
 

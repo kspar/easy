@@ -5,6 +5,7 @@ import components.StringComp
 import components.form.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -39,7 +40,9 @@ class RemoveFromGroupModalComp(
         null, Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
         primaryPostAction = ::reinitialise, primaryBtnType = ButtonComp.Type.DANGER,
-        defaultReturnValue = false, parent = this
+        defaultReturnValue = false,
+        id = if (isFor == For.STUDENT) Modal.REMOVE_STUDENTS_FROM_COURSE_GROUP else Modal.REMOVE_TEACHERS_FROM_COURSE_GROUP,
+        parent = this
     )
 
     private val textComp = StringComp("", modalComp)

@@ -18,8 +18,9 @@ open class ModalComp<T>(
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     private val onOpen: (() -> Unit)? = null,
     parent: Component?,
+    private val id: Modal,
     private val modalId: String = IdGenerator.nextId(),
-) : Component(parent) {
+) : Component(parent, id.name) {
 
     private val modalElement: Element
         get() = getElemById(modalId)
@@ -42,10 +43,9 @@ open class ModalComp<T>(
 
     override fun create() = doInPromise {
         // Create dst in modals container
-        // TODO: destinations and their content are not removed from DOM. Is this a performance issue?
-        //  Components don't have a destroy event but could implement if Page.destroy calls root comp's destroy.
-        //  Requires storing root comp in Page. :(
-        getElemById("ez-modals").appendHTML(plainDstStr(dstId))
+        val dstId = id.name
+        if (getElemBySelector("#ez-modals #$dstId") == null)
+            getElemById("ez-modals").appendHTML(plainDstStr(dstId))
     }
 
     override fun render(): String = tmRender(

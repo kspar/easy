@@ -22,11 +22,12 @@ open class BinaryModalComp<T>(
     open var primaryPostAction: (suspend () -> Unit)? = null,
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
     onOpen: (() -> Unit)? = null,
+    id: Modal,
     parent: Component?,
 ) : ModalComp<T>(
     title, defaultReturnValue,
     fixFooter = fixFooter, isWide = isWide, onOpen = onOpen,
-    parent = parent,
+    parent = parent, id = id,
 ) {
 
     val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, null, {
