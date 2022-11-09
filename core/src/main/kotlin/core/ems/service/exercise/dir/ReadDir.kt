@@ -6,8 +6,8 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
-import core.ems.service.assertDirExists
 import core.ems.service.getAccountDirAccessLevel
+import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
@@ -41,22 +41,22 @@ class ReadDirController {
         @JsonProperty("dir_id") val implicitDirId: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-        // TODO: add is_shared - whether anyone else has any access to this exercise (can be direct/inherited, user/group)
+        @JsonProperty("is_shared") val isShared: Boolean,
         @JsonProperty("grader_type") val graderType: GraderType,
         @JsonProperty("courses_count") val coursesCount: Int,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime,
-        // TODO: add created_by - username of creator
+        @JsonProperty("created_by") val createdBy: String,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("modified_at") val modifiedAt: DateTime,
-        // TODO: add modified_by - username of last modifier
+        @JsonProperty("modified_by") val modifiedBy: String,
     )
 
     data class DirResp(
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String,
         @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-        // TODO: add is_shared - whether anyone else has any access to this dir (can be direct/inherited, user/group)
+        @JsonProperty("is_shared") val isShared: Boolean,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime,
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -91,7 +91,7 @@ class ReadDirController {
     )
 
     private data class DirExercise(
-        val id: String, val title: String, val graderType: GraderType,
+        val id: String, val title: String, val createdBy: String, val modifiedBy: String, val graderType: GraderType,
         val createdAt: DateTime, val modifiedAt: DateTime, val usedOnCourse: Boolean
     )
 
@@ -104,7 +104,7 @@ class ReadDirController {
 
         return transaction {
             // Get current dir
-            val currentDir = selectThisDir(dirId, currentDirAccess)
+            val currentDir = selectThisDir(dirId, currentDirAccess, caller)
 
             // Get child dirs
             val potentialDirs = (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
@@ -143,43 +143,45 @@ class ReadDirController {
 
 
             // If this dir is root or only has P, then need to return only children with at least P
-            val accessibleDirs = if (currentDirAccess == null || currentDirAccess == DirAccessLevel.P) {
-                potentialDirs.filter {
-                    it.directAccess != null
+            val dirs = when {
+                caller.isAdmin() -> selectAllDirsForAdmin(dirId)
+                // If caller is not admin return accessibleDirs
+                else -> {
+                    if (currentDirAccess == null || currentDirAccess == DirAccessLevel.P) {
+                        potentialDirs.filter {
+                            it.directAccess != null
+                        }
+                    } else {
+                        potentialDirs
+                    }.map {
+                        val effectiveAccess = maxOfOrNull(currentDirAccess, it.directAccess)
+                            ?: throw IllegalStateException("User ${caller.id} listing child dir ${it.id} but has no access")
+
+                        DirAccess(
+                            it.id,
+                            it.name,
+                            effectiveAccess,
+                            it.isImplicit,
+                            it.createdAt,
+                            it.modifiedAt
+                        )
+                    }.also { log.trace { "accessible dirs: $it" } }
                 }
-            } else {
-                potentialDirs
-            }.map {
-                val effectiveAccess = maxOfOrNull(currentDirAccess, it.directAccess)
-                    ?: throw IllegalStateException("User ${caller.id} listing child dir ${it.id} but has no access")
-
-                DirAccess(
-                    it.id,
-                    it.name,
-                    effectiveAccess,
-                    it.isImplicit,
-                    it.createdAt,
-                    it.modifiedAt
-                )
-            }.also { log.trace { "accessible dirs: $it" } }
-
-
-            // TODO: refactor, optimise for admin
-            val dirs = if (caller.isAdmin())
-                selectAllDirsForAdmin(dirId)
-            else
-                accessibleDirs
+            }
 
 
             // Extract out implicit dirs and their exercises
             val (implicitDirs, explicitDirs) =
                 dirs.partition { it.isImplicit }
 
+
             val childDirs = explicitDirs.map {
                 DirResp(
                     it.id.toString(),
                     it.name,
                     it.access,
+                    // If current dir is shared, then children is also shared. Root dir is not shared.
+                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id, caller),
                     it.createdAt,
                     it.modifiedAt
                 )
@@ -190,7 +192,7 @@ class ReadDirController {
             val childExercises = (Exercise innerJoin ExerciseVer leftJoin CourseExercise)
                 .slice(
                     Exercise.id, Exercise.createdAt, ExerciseVer.title, ExerciseVer.graderType,
-                    ExerciseVer.validFrom, CourseExercise.id
+                    ExerciseVer.validFrom, CourseExercise.id, Exercise.owner, ExerciseVer.author
                 )
                 .select {
                     Exercise.id inList exerciseIds and
@@ -200,6 +202,8 @@ class ReadDirController {
                     DirExercise(
                         it[Exercise.id].value.toString(),
                         it[ExerciseVer.title],
+                        it[Exercise.owner].value,
+                        it[ExerciseVer.author].value,
                         it[ExerciseVer.graderType],
                         it[Exercise.createdAt],
                         it[ExerciseVer.validFrom],
@@ -219,10 +223,14 @@ class ReadDirController {
                         dir.id.toString(),
                         ex.title,
                         dir.access,
+                        // If current dir is shared, then children is also shared. Root dir is not shared.
+                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id, caller),
                         ex.graderType,
                         if (ex.usedOnCourse) courseCount else 0,
                         ex.createdAt,
-                        ex.modifiedAt
+                        ex.createdBy,
+                        ex.modifiedAt,
+                        ex.modifiedBy
                     )
                 }
 
@@ -230,7 +238,24 @@ class ReadDirController {
         }
     }
 
-    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
+    private tailrec fun isDirectoryShared(dirId: Long, caller: EasyUser): Boolean {
+        val callerGroupId = getImplicitGroupFromAccount(caller.id)
+        val accessCountNotZero = GroupDirAccess
+            .select { GroupDirAccess.dir eq dirId and (GroupDirAccess.group neq callerGroupId) }
+            .count() > 0
+
+        val anyAccess = Dir.select { Dir.id eq dirId }.firstNotNullOfOrNull { it[Dir.anyAccess] } != null
+        val parent = Dir.select { Dir.id eq dirId }.firstNotNullOfOrNull { it[Dir.parentDir]?.value }
+
+
+        return when {
+            parent == null -> accessCountNotZero || anyAccess
+            anyAccess || accessCountNotZero -> true
+            else -> isDirectoryShared(parent, caller)
+        }
+    }
+
+    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?, caller: EasyUser): DirResp? {
         return if (dirId != null) {
             Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
                 .select {
@@ -240,6 +265,7 @@ class ReadDirController {
                         it[Dir.id].value.toString(),
                         it[Dir.name],
                         currentDirAccess!!, // not null if this is not root dir
+                        isDirectoryShared(dirId, caller),
                         it[Dir.createdAt],
                         it[Dir.modifiedAt],
                     )
