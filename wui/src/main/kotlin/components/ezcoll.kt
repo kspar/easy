@@ -8,7 +8,6 @@ import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.Materialize
 import libheaders.closePromise
-import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement
@@ -36,6 +35,7 @@ class EzCollComp<P>(
         val titleLink: String? = null,
         val topAttr: Attr<P>? = null,
         val bottomAttrs: List<Attr<P>> = emptyList(),
+        val progressBar: ProgressBar? = null,
         val isSelectable: Boolean = false,
         val actions: List<Action<P>> = emptyList(),
         val attrWidthS: AttrWidthS = AttrWidthS.W200,
@@ -150,6 +150,11 @@ class EzCollComp<P>(
     }
 
     data class ListAttrItem<ItemType : Any>(val shortValue: ItemType, val longValue: ItemType = shortValue)
+
+    data class ProgressBar(
+        val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0,
+        val showAttr: Boolean = false
+    )
 
     enum class TitleStatus { NORMAL, INACTIVE }
 
@@ -639,6 +644,22 @@ class EzCollItemComp<P>(
                 "value" to it.getLongValue(),
                 "shortValueHtml" to it.getShortValueHtml(),
                 "isActionable" to (it.onClick != null),
+            )
+        },
+        "progressBar" to spec.progressBar?.let {
+            objOf(
+                "green" to it.green,
+                "yellow" to it.yellow,
+                "blue" to it.blue,
+                "grey" to it.grey,
+                "showAttr" to it.showAttr,
+                "label" to "Progress",
+                "labelValue" to buildList {
+                    if (it.green > 0) add("${it.green} lahendatud")
+                    if (it.yellow > 0) add("${it.yellow} nässu läinud")
+                    if (it.blue > 0) add("${it.blue} hindamata")
+                    if (it.grey > 0) add("${it.grey} esitamata")
+                }.joinToString(" / ")
             )
         },
         "actions" to spec.actions.map {
