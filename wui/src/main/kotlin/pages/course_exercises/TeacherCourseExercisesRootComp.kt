@@ -43,8 +43,6 @@ class TeacherCourseExercisesRootComp(
         courseTitle = BasicCourseInfo.get(courseId).await().title
         val exercises = exercisesPromise.await()
 
-        sleep(4000).await()
-
         val props = exercises.map {
             ExProps(
                 it.id, it.ordering_idx, it.effective_title, it.grader_type == ExerciseDAO.GraderType.AUTO,
