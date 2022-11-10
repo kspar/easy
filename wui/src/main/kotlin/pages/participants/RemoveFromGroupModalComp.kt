@@ -17,7 +17,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class RemoveFromGroupModalComp(
     private val courseId: String,
     private val accessibleGroups: List<ParticipantsRootComp.Group>,

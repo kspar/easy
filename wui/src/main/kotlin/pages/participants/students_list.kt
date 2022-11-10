@@ -14,8 +14,6 @@ import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
-// buildList is experimental
-@ExperimentalStdlibApi
 class ParticipantsStudentsListComp(
     private val courseId: String,
     private val students: List<ParticipantsRootComp.Student>,

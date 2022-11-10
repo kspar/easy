@@ -31,7 +31,6 @@ object ParticipantsPage : EasyPage() {
         get() = parsePathParams()["courseId"]
 
 
-    @OptIn(ExperimentalStdlibApi::class)
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 

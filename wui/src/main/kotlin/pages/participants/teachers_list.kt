@@ -18,7 +18,6 @@ import toEstonianString
 import kotlin.js.Date
 
 
-@ExperimentalStdlibApi
 class ParticipantsTeachersListComp(
     private val courseId: String,
     private val teachers: List<ParticipantsRootComp.Teacher>,

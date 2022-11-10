@@ -14,7 +14,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class ParticipantsGroupsListComp(
     private val courseId: String,
     private val groups: List<ParticipantsRootComp.Group>,

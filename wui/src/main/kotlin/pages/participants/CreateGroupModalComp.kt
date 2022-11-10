@@ -17,7 +17,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class CreateGroupModalComp(
     val courseId: String,
     val existingGroups: List<ParticipantsRootComp.Group>,
