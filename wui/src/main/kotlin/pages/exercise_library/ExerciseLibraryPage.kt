@@ -5,11 +5,14 @@ import PageName
 import Role
 import Str
 import kotlinx.coroutines.await
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import pages.EasyPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getHtml
 
 object ExerciseLibraryPage : EasyPage() {
 
@@ -33,6 +36,7 @@ object ExerciseLibraryPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
+        getHtml().addClass("wui3")
 
         val dirId = getDirId().let { if (it == "root") null else it }
 
@@ -40,6 +44,11 @@ object ExerciseLibraryPage : EasyPage() {
             ExerciseLibRootComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
                 .createAndBuild().await()
         }
+    }
+
+    override fun destruct() {
+        super.destruct()
+        getHtml().removeClass("wui3")
     }
 
     fun linkToRoot() = linkToDir("root")
