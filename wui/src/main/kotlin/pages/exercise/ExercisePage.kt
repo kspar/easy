@@ -25,9 +25,6 @@ object ExercisePage : EasyPage() {
     // /library/exercise/{exerciseId}/dir1-name/dir2-name/ex-name
     override val pathSchema = "/library/exercise/{exerciseId}/**"
 
-    override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(activePage = ActivePage.LIBRARY)
-
     private val exerciseId: String
         get() = parsePathParams()["exerciseId"]
 
