@@ -11,26 +11,22 @@ import cache.BasicCourseInfo
 import components.BreadcrumbsComp
 import components.Crumb
 import debug
-import debugFunStart
 import getContainer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import pages.EasyPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
-import parseTo
 import queries.*
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getNodelistBySelector
+import rip.kspar.ezspa.*
 import tmRender
 import toEstonianString
-import rip.kspar.ezspa.toJsObj
 import kotlin.js.Date
 import kotlin.js.Promise
 import kotlin.math.max
@@ -124,23 +120,27 @@ object CourseExercisesPage : EasyPage() {
     }
 
     override fun build(pageStateStr: String?) {
-        val funLog = debugFunStart("ExercisesPage.build")
         super.build(pageStateStr)
+        getHtml().addClass("wui3")
 
-        val pageState = pageStateStr?.parseTo(State.serializer())
-        if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
-            debug { "Got exercises html from state" }
-            getContainer().innerHTML = pageState.exercisesHtml
-            initTooltips()
-            return
-        }
+//        val pageState = pageStateStr?.parseTo(State.serializer())
+//        if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
+//            debug { "Got exercises html from state" }
+//            getContainer().innerHTML = pageState.exercisesHtml
+//            initTooltips()
+//            return
+//        }
 
         when (Auth.activeRole) {
             Role.STUDENT -> buildStudentExercises(courseId)
-            Role.TEACHER, Role.ADMIN -> buildTeacherExercises(courseId)
+            Role.TEACHER, Role.ADMIN -> TeacherCourseExercisesRootComp(courseId).createAndBuild()
         }
 
-        funLog?.end()
+    }
+
+    override fun destruct() {
+        super.destruct()
+        getHtml().removeClass("wui3")
     }
 
     fun link(courseId: String): String = constructPathLink(mapOf("courseId" to courseId))

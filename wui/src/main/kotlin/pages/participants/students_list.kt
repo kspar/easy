@@ -75,7 +75,7 @@ class ParticipantsStudentsListComp(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isActive) Icons.user else Icons.pending),
                 if (p.isActive) "${p.firstName} ${p.lastName}" else "(Kutse ootel)",
-                if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
+                titleStatus = if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
                 topAttr = if (hasGroups) EzCollComp.ListAttr(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),

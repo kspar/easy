@@ -2,6 +2,7 @@
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
     --ez-checkbox-fill-col: #4DAB54;
     --ez-icon-col: rgba(0, 0, 0, .38);
+    --ez-icon-inactive-col: rgba(0, 0, 0, .28);
     --ez-icon-action-col: rgba(0, 0, 0, .54);
     --ez-icon-action-active-col: rgba(0, 0, 0, .87);
     --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
@@ -14,12 +15,12 @@
     --ez-btn-disabled-text: #9f9f9f;
 
     --ezc-link-hover-col: #429748;
-    --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
+    --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
     --ezc-bar-green: #4DAB54;
     --ezc-bar-yellow: #ffd052;
     --ezc-bar-blue: #688ffd;
-    --ezc-bar-grey: #c1c1c1;
+    --ezc-bar-grey: #d5d5d5;
 }
 
 /** Page, body, general **/
@@ -1808,6 +1809,10 @@ ezc-item[selected] .ezc-item-checkbox {
     display: block;
 }
 
+ezc-item.inactive ezc-left ez-icon {
+    color: var(--ez-icon-inactive-col);
+}
+
 ezc-left ez-icon > svg {
     width: 2.4rem;
     height: 2.4rem;
@@ -1865,14 +1870,17 @@ ezc-title {
     flex: 1 1 auto;
     padding-right: 1rem;
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
-ezc-title.inactive {
+ezc-item.inactive ezc-title {
     color: var(--ezc-attr-immutable-col);
 }
 
 ezc-title > a {
     color: inherit;
+    padding: .5rem 1rem .5rem 0;
 }
 
 ezc-title > a:hover[href] {
@@ -1882,7 +1890,6 @@ ezc-title > a:hover[href] {
 ezc-second {
     display: flex;
     justify-content: space-between;
-    margin-top: .5rem;
     min-height: 24px;
 }
 

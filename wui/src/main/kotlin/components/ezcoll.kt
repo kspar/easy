@@ -31,6 +31,8 @@ class EzCollComp<P>(
         val props: P,
         val type: ItemType,
         val title: String,
+        val titleIcon: String? = null,
+        val titleIconLabel: String? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
         val titleLink: String? = null,
         val topAttr: Attr<P>? = null,
@@ -622,8 +624,10 @@ class EzCollItemComp<P>(
         "isTypeIcon" to spec.type.isIcon,
         "typeHtml" to spec.type.html,
         "title" to spec.title,
+        "titleIcon" to spec.titleIcon,
+        "titleIconLabel" to spec.titleIconLabel,
         "titleLink" to spec.titleLink,
-        "titleInactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
+        "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
                 "id" to it.id,
@@ -645,20 +649,22 @@ class EzCollItemComp<P>(
             )
         },
         "progressBar" to spec.progressBar?.let {
-            objOf(
-                "green" to it.green,
-                "yellow" to it.yellow,
-                "blue" to it.blue,
-                "grey" to it.grey,
-                "showAttr" to it.showAttr,
-                "label" to "Progress",
-                "labelValue" to buildList {
-                    if (it.green > 0) add("${it.green} lahendatud")
-                    if (it.yellow > 0) add("${it.yellow} nässu läinud")
-                    if (it.blue > 0) add("${it.blue} hindamata")
-                    if (it.grey > 0) add("${it.grey} esitamata")
-                }.joinToString(" / ")
-            )
+            if (it.green + it.yellow + it.blue + it.grey > 0)
+                objOf(
+                    "green" to it.green,
+                    "yellow" to it.yellow,
+                    "blue" to it.blue,
+                    "grey" to it.grey,
+                    "showAttr" to it.showAttr,
+                    "label" to "Progress",
+                    "labelValue" to buildList {
+                        if (it.green > 0) add("${it.green} lahendatud")
+                        if (it.yellow > 0) add("${it.yellow} nässu läinud")
+                        if (it.blue > 0) add("${it.blue} hindamata")
+                        if (it.grey > 0) add("${it.grey} esitamata")
+                    }.joinToString(" / ")
+                )
+            else null
         },
         "actions" to spec.actions.map {
             mapOf(
