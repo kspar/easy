@@ -13,6 +13,7 @@ import plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 
 class ParticipantsStudentsListComp(
     private val courseId: String,
@@ -78,12 +79,12 @@ class ParticipantsStudentsListComp(
                 topAttr = if (hasGroups) EzCollComp.ListAttr(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
-                    Icons.groups,
+                    Icons.groupsUnf,
                 ) else null,
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
-                    add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
-                    p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user)) }
-                    p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUser)) }
+                    add(EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf))
+                    p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf)) }
+                    p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUserUnf)) }
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
@@ -277,6 +278,8 @@ class ParticipantsStudentsListComp(
                     }
                 }
             ).await()
+
+            successMessage { "Eemaldatud" }
 
             true
         }

@@ -553,8 +553,6 @@ class EzCollComp<P>(
             allCheckboxEl.checked = newStatus.first
             allCheckboxEl.indeterminate = newStatus.second
             allCheckboxEl.dispatchEvent(Event("change"))
-        } else {
-            debug { "All checkbox status unchanged: $currentStatus" }
         }
     }
 

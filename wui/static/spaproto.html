@@ -42,7 +42,10 @@
     <div id="nav-wrap"></div>
 </header>
 <main class="display-none">
-    <ez-modals id="ez-modals"></ez-modals>
+    <ez-modals id="ez-modals">
+        <ez-dst id="ADD_STUDENTS_TO_COURSE" class="add-participants-modal"></ez-dst>
+        <ez-dst id="ADD_TEACHERS_TO_COURSE" class="add-participants-modal"></ez-dst>
+    </ez-modals>
     <div id="sidenav-wrap"></div>
     <div class="container">
         <div id="content-container" class="content-container"></div>
@@ -765,8 +768,8 @@
 
     <ez-participants-list id="{{tabsId}}"></ez-participants-list>
 
-    <ez-dst class="add-participants-modal" id="{{addStudentsModalId}}"></ez-dst>
-    <ez-dst class="add-participants-modal" id="{{addTeachersModalId}}"></ez-dst>
+    <ez-dst id="{{addStudentsModalId}}"></ez-dst>
+    <ez-dst id="{{addTeachersModalId}}"></ez-dst>
     <ez-dst id="{{createGroupModalId}}"></ez-dst>
 </script>
 

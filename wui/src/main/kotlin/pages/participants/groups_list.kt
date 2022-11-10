@@ -48,9 +48,8 @@ class ParticipantsGroupsListComp(
             EzCollComp.Item(
                 p, EzCollComp.ItemTypeIcon(Icons.groups), p.name,
                 bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.user),
-                    EzCollComp.SimpleAttr("Õpetajaid", p.teachersCount, Icons.teacher),
-                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
+                    EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.userUnf),
+                    EzCollComp.SimpleAttr("Õpetajaid", p.teachersCount, Icons.teacherUnf),
                 ),
                 actions = buildList {
                     if (isEditable) add(
@@ -102,7 +101,7 @@ class ParticipantsGroupsListComp(
         }
 
         return if (deleteGroupModal.openWithClosePromise().await()) {
-            successMessage { "${group.props.name} kustutatud" }
+            successMessage { "Rühm ${group.props.name} kustutatud" }
             EzCollComp.ResultModified<GroupProp>(emptyList())
         } else {
             EzCollComp.ResultUnmodified

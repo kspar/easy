@@ -116,8 +116,11 @@ class AddStudentsModalComp(
 
         val active = resp.accesses_added
         val pending = resp.pending_accesses_added_updated
-        val msg = "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"} ja " +
-                "lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}"
+        val msg = (if (active > 0)
+            "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"}. " else "") +
+                if (pending > 0)
+                    "Lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}."
+                else ""
 
         successMessage { msg }
 

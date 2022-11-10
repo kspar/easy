@@ -14,6 +14,7 @@ import queries.fetchEms
 import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 import toEstonianString
 import kotlin.js.Date
 
@@ -81,11 +82,11 @@ class ParticipantsTeachersListComp(
                 "${p.firstName} ${p.lastName}",
                 topAttr = groupsAttr,
                 bottomAttrs = listOfNotNull(
-                    EzCollComp.SimpleAttr("Email", p.email, Icons.email),
-                    EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user),
+                    EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf),
+                    EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf),
                     p.createdAt?.let {
                         // TODO: date attr
-                        EzCollComp.SimpleAttr("Kursusele lisatud", p.createdAt.toEstonianString(), Icons.joinedTime)
+                        EzCollComp.SimpleAttr("Kursusele lisatud", p.createdAt.toEstonianString(), Icons.joinedTimeUnf)
                     }
                 ),
                 isSelectable = isEditable,
@@ -241,6 +242,8 @@ class ParticipantsTeachersListComp(
                 "/courses/$courseId/teachers", ReqMethod.DELETE,
                 body, successChecker = { http200 }
             ).await()
+
+            successMessage { "Eemaldatud" }
 
             true
         }
