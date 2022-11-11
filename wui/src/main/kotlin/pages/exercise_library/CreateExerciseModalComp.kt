@@ -81,13 +81,7 @@ class CreateExerciseModalComp(
                 "parent_dir_id" to dirId,
                 "title" to title,
                 "public" to true,
-                // TODO: should be TEACHER initially when we have the feature to change it afterwards
-                "grader_type" to "AUTO",
-                "grading_script" to "",
-                "container_image" to "pygrader",
-                "max_time_sec" to 7,
-                "max_mem_mb" to 30,
-                "assets" to emptyList<Map<String, String>>(),
+                "grader_type" to "TEACHER",
                 "anonymous_autoassess_enabled" to false,
             ),
             successChecker = { http200 }).await()

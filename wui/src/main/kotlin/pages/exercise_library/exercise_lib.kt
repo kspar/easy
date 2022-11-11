@@ -122,7 +122,7 @@ class ExerciseLibRootComp(
                 if (p.graderType == GraderType.AUTO)
                     EzCollComp.ItemTypeIcon(Icons.robot)
                 else
-                    EzCollComp.ItemTypeIcon(Icons.user),
+                    EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
                 titleLink = ExercisePage.link(p.id),
                 topAttr = EzCollComp.SimpleAttr(
@@ -139,7 +139,7 @@ class ExerciseLibRootComp(
 //                        Icons.exercisePermissions,
 //                        translateDirAccess(p.access)
 //                    ),
-                    // TODO: is shared -> attr "shared" with Icons.teacher
+                    // TODO: is shared -> title icon Icons.teacher
                 ),
                 isSelectable = true,
                 actions = listOf(
