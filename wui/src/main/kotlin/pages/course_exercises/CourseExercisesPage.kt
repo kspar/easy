@@ -121,7 +121,6 @@ object CourseExercisesPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
-        getHtml().addClass("wui3")
 
 //        val pageState = pageStateStr?.parseTo(State.serializer())
 //        if (pageState != null && pageState.courseId == courseId && pageState.role == Auth.activeRole) {
@@ -133,7 +132,10 @@ object CourseExercisesPage : EasyPage() {
 
         when (Auth.activeRole) {
             Role.STUDENT -> buildStudentExercises(courseId)
-            Role.TEACHER, Role.ADMIN -> TeacherCourseExercisesRootComp(courseId).createAndBuild()
+            Role.TEACHER, Role.ADMIN -> {
+                getHtml().addClass("wui3")
+                TeacherCourseExercisesRootComp(courseId).createAndBuild()
+            }
         }
 
     }
