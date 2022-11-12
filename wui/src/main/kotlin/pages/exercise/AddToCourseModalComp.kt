@@ -91,7 +91,7 @@ class AddToCourseModalComp(
             if (successes.first())
                 successMessage { "Lisatud" }
             else
-                errorMessage { "See ülesanne on juba kursusel olemas" }
+                errorMessage { "See ülesanne on kursusel juba olemas" }
         } else {
             successMessage { "Lisatud" }
         }

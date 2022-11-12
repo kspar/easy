@@ -86,9 +86,9 @@ class ExerciseLibRootComp(
                 Sidenav.PageSection(
                     Str.exerciseLibrary(), listOf(
                         Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
-                            val exerciseId = newExerciseModal.openWithClosePromise().await()
-                            if (exerciseId != null) {
-                                EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
+                            val ids = newExerciseModal.openWithClosePromise().await()
+                            if (ids != null) {
+                                EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
                                 successMessage { "Ülesanne loodud" }
                             }
                         },

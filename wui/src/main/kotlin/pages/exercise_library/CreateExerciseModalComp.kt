@@ -24,7 +24,9 @@ class CreateExerciseModalComp(
     parent: Component,
 ) : Component(parent) {
 
-    private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
+    data class ExIds(val exerciseId: String, val courseExerciseId: String?)
+
+    private val modalComp: BinaryModalComp<ExIds?> = BinaryModalComp(
         "Uus ülesanne", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createExercise(titleField.getValue()) },
         primaryPostAction = ::reinitialise, onOpen = { titleField.focus() },
@@ -73,7 +75,7 @@ class CreateExerciseModalComp(
     @Serializable
     private data class NewExerciseDTO(val id: String)
 
-    private suspend fun createExercise(title: String): String {
+    private suspend fun createExercise(title: String): ExIds {
         debug { "Saving new exercise with title $title" }
         val exerciseId = fetchEms("/exercises",
             ReqMethod.POST,
@@ -86,13 +88,15 @@ class CreateExerciseModalComp(
             ),
             successChecker = { http200 }).await()
             .parseTo(NewExerciseDTO.serializer()).await().id
+
         debug { "Saved new exercise with id $exerciseId" }
 
-        if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
+        val courseExId = if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
             allowAddingToCourseId!!
             ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId).await()
-        }
+        } else null
 
-        return exerciseId
+        // TODO: dao should return courseExId
+        return ExIds(exerciseId, null)
     }
 }

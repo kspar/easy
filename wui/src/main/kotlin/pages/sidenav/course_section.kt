@@ -2,8 +2,10 @@ package pages.sidenav
 
 import Icons
 import Role
+import UserMessageAction
 import cache.BasicCourseInfo
 import kotlinx.coroutines.await
+import pages.ExerciseSummaryPage
 import pages.course_exercises.CourseExercisesPage
 import pages.exercise.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp
@@ -64,10 +66,18 @@ class SidenavCourseSectionComp(
 
     override fun postRender() {
         getElemByIdOrNull(newExerciseLinkId)?.onVanillaClick(true) {
-            val exerciseId = newExerciseModal.openWithClosePromise().await()
-            if (exerciseId != null) {
-                EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
-                successMessage { "Ülesanne loodud" }
+            val ids = newExerciseModal.openWithClosePromise().await()
+            if (ids != null) {
+                if (ids.courseExerciseId != null) {
+                    // was added to course
+                    EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
+                    successMessage { "Ülesanne loodud" }
+                } else {
+                    val action = UserMessageAction("Ava ülesandekogus") {
+                        EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
+                    }
+                    successMessage(action = action) { "Ülesanne loodud" }
+                }
             }
         }
     }
