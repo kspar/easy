@@ -32,8 +32,8 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateDirController {
     data class Req(
-            @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
-            @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentId: String?,
+        @JsonProperty("name") @field:NotBlank @field:Size(max = 100) val name: String,
+        @JsonProperty("parent_dir_id") @field:Size(max = 100) val parentId: String?,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -41,7 +41,7 @@ class CreateDirController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/lib/dirs")
     fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
-        log.debug { "Creating lib dir $body by ${caller.id}" }
+        log.debug { "Creating lib dir ${body.name} in dir ${body.parentId} by ${caller.id}" }
 
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
@@ -68,7 +68,9 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
         }
 
         // If caller doesn't have full access by inheritance, add it explicitly
-        if (!caller.isAdmin() && (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM))) {
+        if (!caller.isAdmin() &&
+            (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM))
+        ) {
             GroupDirAccess.insert {
                 it[group] = getImplicitGroupFromAccount(caller.id)
                 it[dir] = newDirId

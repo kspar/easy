@@ -29,7 +29,8 @@ class ReadCourseGroupsController {
     )
 
     data class GroupResp(
-        @JsonProperty("id") val id: String, @JsonProperty("name") val name: String
+        @JsonProperty("id") val id: String,
+        @JsonProperty("name") val name: String
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

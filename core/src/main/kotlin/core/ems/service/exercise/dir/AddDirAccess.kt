@@ -19,8 +19,8 @@ class AddDirController {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("groupId", required = true) val groupId: Long,
-        @JsonProperty("access_level", required = false) val level: DirAccessLevel
+        @JsonProperty("group_id") val groupId: Long,
+        @JsonProperty("access_level") val level: DirAccessLevel,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -33,7 +33,7 @@ class AddDirController {
         caller: EasyUser
     ) {
 
-        log.debug { "Add dir access '$body' for dir '$dirIdString' by '${caller.id}'" }
+        log.debug { "Add dir access ${body.level} to group ${body.groupId} for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
 

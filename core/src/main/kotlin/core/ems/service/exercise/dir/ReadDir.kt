@@ -104,7 +104,7 @@ class ReadDirController {
 
         return transaction {
             // Get current dir
-            val currentDir = selectThisDir(dirId, currentDirAccess, caller)
+            val currentDir = selectThisDir(dirId, currentDirAccess, caller.id)
 
             // Get child dirs
             val potentialDirs = (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
@@ -180,8 +180,8 @@ class ReadDirController {
                     it.id.toString(),
                     it.name,
                     it.access,
-                    // If current dir is shared, then children is also shared. Root dir is not shared.
-                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id, caller),
+                    // If current dir is shared, then children are also shared
+                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id, caller.id),
                     it.createdAt,
                     it.modifiedAt
                 )
@@ -223,8 +223,8 @@ class ReadDirController {
                         dir.id.toString(),
                         ex.title,
                         dir.access,
-                        // If current dir is shared, then children is also shared. Root dir is not shared.
-                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id, caller),
+                        // If current dir is shared, then children are also shared
+                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id, caller.id),
                         ex.graderType,
                         if (ex.usedOnCourse) courseCount else 0,
                         ex.createdAt,
@@ -238,8 +238,8 @@ class ReadDirController {
         }
     }
 
-    private tailrec fun isDirectoryShared(dirId: Long, caller: EasyUser): Boolean {
-        val callerGroupId = getImplicitGroupFromAccount(caller.id)
+    private tailrec fun isDirectoryShared(dirId: Long, callerId: String): Boolean {
+        val callerGroupId = getImplicitGroupFromAccount(callerId)
         val accessCountNotZero = GroupDirAccess
             .select { GroupDirAccess.dir eq dirId and (GroupDirAccess.group neq callerGroupId) }
             .count() > 0
@@ -249,13 +249,13 @@ class ReadDirController {
 
 
         return when {
-            parent == null -> accessCountNotZero || anyAccess
             anyAccess || accessCountNotZero -> true
-            else -> isDirectoryShared(parent, caller)
+            parent == null -> false
+            else -> isDirectoryShared(parent, callerId)
         }
     }
 
-    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?, caller: EasyUser): DirResp? {
+    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?, callerId: String): DirResp? {
         return if (dirId != null) {
             Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
                 .select {
@@ -265,7 +265,7 @@ class ReadDirController {
                         it[Dir.id].value.toString(),
                         it[Dir.name],
                         currentDirAccess!!, // not null if this is not root dir
-                        isDirectoryShared(dirId, caller),
+                        isDirectoryShared(dirId, callerId),
                         it[Dir.createdAt],
                         it[Dir.modifiedAt],
                     )
