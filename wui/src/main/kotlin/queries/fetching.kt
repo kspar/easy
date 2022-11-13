@@ -16,6 +16,7 @@ enum class ReqMethod {
     GET,
     POST,
     PUT,
+    PATCH,
     DELETE,
 }
 

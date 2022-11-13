@@ -1,6 +1,6 @@
 package pages.exercise_library
 
-import CompDate
+import EzDate
 import Icons
 import Str
 import components.BreadcrumbsComp
@@ -42,7 +42,7 @@ class ExerciseLibRootComp(
         override val access: DirAccess,
         val graderType: GraderType,
         val coursesCount: Int,
-        val modifiedAt: CompDate,
+        val modifiedAt: EzDate,
     ) : Props(id, title, access, 1)
 
     data class DirProps(
@@ -210,7 +210,7 @@ class ExerciseLibRootComp(
                 ),
                 EzCollComp.Sorter("Muutmisaja järgi",
                     compareByDescending<EzCollComp.Item<Props>> {
-                        if (it.props is ExerciseProps) it.props.modifiedAt else CompDate.future()
+                        if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.future()
                     }.thenBy {
                         it.props.title
                     }

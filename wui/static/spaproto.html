@@ -45,6 +45,7 @@
     <ez-modals id="ez-modals">
         <ez-dst id="ADD_STUDENTS_TO_COURSE" class="add-participants-modal"></ez-dst>
         <ez-dst id="ADD_TEACHERS_TO_COURSE" class="add-participants-modal"></ez-dst>
+        <ez-dst id="UPDATE_COURSE_EXERCISE_TITLE_ALIAS" class="update-course-ex-title-modal"></ez-dst>
     </ez-modals>
     <div id="sidenav-wrap"></div>
     <div class="container">
@@ -519,6 +520,12 @@
     </ez-edit-mode-bar>
 </script>
 
+<script id="t-c-attrs" type="text/x-handlebars">
+    {{#attrs}}
+        <ez-attr><ez-attr-label>{{label}}:</ez-attr-label>{{value}}</ez-attr>
+    {{/attrs}}
+</script>
+
 
 <!-- Courses page -->
 
@@ -592,63 +599,13 @@
 
 <!-- Course exercises page -->
 
-<script id="t-c-stud-course-exercises" type="text/x-handlebars">
-    <ez-dst id="{{crumbDstId}}"></ez-dst>
-    <div class="title-wrap">
-        <h2 class="title">{{courseTitle}}</h2>
-    </div>
-    <ez-dst id="{{listDstId}}"></ez-dst>
-</script>
-
-<script id="t-c-stud-course-exercises-list" type="text/x-handlebars">
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-            <a class="collection-item bb-wrap" href="{{href}}">
-                <div class="exercise-item">
-                    <span>{{title}}</span>
-                    <span class="exercise-item">
-                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-                    <span class="grade">
-                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                       >{{#evalAuto
-}}<img class="tooltipped eval-logo-auto" src="/static/img/inline-icons/optimised/robot-op.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}{{#evalTeacher
-}}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                    {{/evalTeacher}}{{#evalMissing
-}}<img class="tooltipped eval-logo-missing" src="/static/img/inline-icons/optimised/missing-ass-op.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                    {{/evalMissing}}
-                    </span>
-                </span>
-                </div>
-                <div class="bb">
-                    {{#completed}}
-                        <span class="bb-item bb-green"></span>
-                    {{/completed}}
-    {{#started}}
-                        <span class="bb-item bb-yellow"></span>
-                    {{/started}}
-    {{#evalMissing}}
-                        <span class="bb-item bb-blue"></span>
-                    {{/evalMissing}}
-    {{#unstarted}}
-                        <span class="bb-item bb-grey"></span>
-                    {{/unstarted}}
-                </div>
-            </a>
-        {{/exercises}}
-    </div>
-</script>
-
-<script id="t-c-stud-course-exercises-item" type="text/x-handlebars">
-
-</script>
-
 <script id="t-c-course-exercises-teacher" type="text/x-handlebars">
     <div class="title-wrap no-crumb">
         <h2 class="title">{{title}}</h2>
     </div>
     <ez-dst id="{{collDst}}"></ez-dst>
     <ez-dst id="{{reorderModalDst}}"></ez-dst>
+    <ez-dst id="{{updateTitleAliasModalDst}}"></ez-dst>
 </script>
 
 

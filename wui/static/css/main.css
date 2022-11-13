@@ -580,7 +580,11 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-/** Exercises page **/
+/** Course exercises page **/
+
+.update-course-ex-title-modal ez-attr {
+    padding-bottom: 2rem;
+}
 
 #exercises-list .exercise-item {
     display: flex;

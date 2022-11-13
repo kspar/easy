@@ -2,27 +2,30 @@ import kotlin.js.Date
 import kotlin.math.roundToInt
 
 
-val MONTHS = listOf("jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
-        "juuli", "august", "september", "oktoober", "november", "detsember")
+val MONTHS = listOf(
+    "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
+    "juuli", "august", "september", "oktoober", "november", "detsember"
+)
 
-data class CompDate(val date: Date) : Comparable<CompDate> {
+data class EzDate(val date: Date) : Comparable<EzDate> {
     // this is before other - this < other
-    override fun compareTo(other: CompDate): Int =
+    override fun compareTo(other: EzDate): Int =
         (this.date.getTime() - other.date.getTime()).roundToInt()
 
     companion object {
-        fun epoch() = CompDate(Date(0))
-        fun future() = CompDate(Date(32529329048000))
+        fun now() = EzDate(Date())
+        fun epoch() = EzDate(Date(0))
+        fun future() = EzDate(Date(32529329048000))
     }
 }
 
-fun Date.toComparable() = CompDate(this)
+fun Date.toComparable() = EzDate(this)
 
 /**
  * Convert to Eastern European time.
  */
 fun Date.toEet() =
-        Date(this.toLocaleString("en-us", dateLocaleOptions { timeZone = "Europe/Tallinn" }))
+    Date(this.toLocaleString("en-us", dateLocaleOptions { timeZone = "Europe/Tallinn" }))
 
 fun nowTimestamp() = Date().toLocaleString("sv").replace(" ", "_")
 
@@ -37,5 +40,5 @@ fun Date.toEstonianString(): String {
 }
 
 operator fun Date.compareTo(other: Date): Int =
-        (this.getTime() - other.getTime()).toInt()
+    (this.getTime() - other.getTime()).toInt()
 
