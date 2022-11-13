@@ -28,7 +28,8 @@ private val log = KotlinLogging.logger {}
 class TeacherReadCourseExercisesController(val courseService: CourseService) {
 
     data class CourseExerciseResp(@JsonProperty("id") val id: String,
-                                  @JsonProperty("effective_title") val title: String,
+                                  @JsonProperty("library_title") val libraryTitle: String,
+                                  @JsonProperty("title_alias") val titleAlias: String?,
                                   @JsonSerialize(using = DateTimeSerializer::class)
                                   @JsonProperty("soft_deadline") val softDeadline: DateTime?,
                                   @JsonProperty("grader_type") val graderType: GraderType,
@@ -97,7 +98,8 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, caller: EasyUser, cou
 
                     CourseExerciseResp(
                             ex[CourseExercise.id].value.toString(),
-                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                            ex[ExerciseVer.title],
+                            ex[CourseExercise.titleAlias],
                             ex[CourseExercise.softDeadline],
                             ex[ExerciseVer.graderType],
                             i,
