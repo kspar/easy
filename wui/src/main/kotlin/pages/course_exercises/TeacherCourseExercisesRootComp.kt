@@ -11,8 +11,10 @@ import components.modal.Modal
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
 import debug
+import getWindowScrollPosition
 import kotlinx.coroutines.await
 import pages.ExerciseSummaryPage
+import restoreWindowScroll
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
@@ -39,10 +41,11 @@ class TeacherCourseExercisesRootComp(
 
     private lateinit var courseTitle: String
     private lateinit var coll: EzCollComp<ExProps>
-    private lateinit var confirmRemoveFromCourseModal: ConfirmationTextModalComp
+    private lateinit var removeModal: ConfirmationTextModalComp
+    private lateinit var reorderModal: ReorderCourseExerciseModalComp
 
     override val children: List<Component>
-        get() = listOf(coll, confirmRemoveFromCourseModal)
+        get() = listOf(coll, removeModal, reorderModal)
 
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
@@ -76,6 +79,7 @@ class TeacherCourseExercisesRootComp(
                 progressBar = EzCollComp.ProgressBar(it.completed, it.started, it.ungraded, it.unstarted, true),
                 isSelectable = true,
                 actions = listOf(
+                    EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
                     EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
                 ),
             )
@@ -88,11 +92,13 @@ class TeacherCourseExercisesRootComp(
             ), filterGroups = listOf(), parent = this
         )
 
-        confirmRemoveFromCourseModal = ConfirmationTextModalComp(
+        removeModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
             primaryBtnType = ButtonComp.Type.DANGER,
             id = Modal.REMOVE_EXERCISE_FROM_COURSE, parent = this
         )
+
+        reorderModal = ReorderCourseExerciseModalComp(courseId, this)
     }
 
     override fun renderLoading() = tmRender(
@@ -104,7 +110,25 @@ class TeacherCourseExercisesRootComp(
         "t-c-course-exercises-teacher",
         "title" to courseTitle,
         "collDst" to coll.dstId,
+        "reorderModalDst" to reorderModal.dstId,
     )
+
+    private suspend fun move(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
+        reorderModal.movableExercise =
+            ReorderCourseExerciseModalComp.CourseExercise(item.props.id, item.props.title, item.props.idx)
+        reorderModal.allExercises = CourseExercisesTeacherDAO.getCourseExercises(courseId).await().map {
+            ReorderCourseExerciseModalComp.CourseExercise(it.id, it.effective_title, it.ordering_idx)
+        }
+        reorderModal.setText(StringComp.boldTriple("Liiguta ", item.props.title, "..."))
+        reorderModal.createAndBuild().await()
+        val modalReturn = reorderModal.openWithClosePromise().await()
+        if (modalReturn != null) {
+            val s = getWindowScrollPosition()
+            createAndBuild().await()
+            restoreWindowScroll(s)
+        }
+        return EzCollComp.ResultUnmodified
+    }
 
     private suspend fun removeFromCourse(item: EzCollComp.Item<ExProps>): EzCollComp.Result =
         removeFromCourse(listOf(item))
@@ -122,8 +146,8 @@ class TeacherCourseExercisesRootComp(
             StringComp.boldTriple("Eemalda ", items.size.toString(), " ülesannet? $submissionWarning")
         }
 
-        confirmRemoveFromCourseModal.setText(text)
-        confirmRemoveFromCourseModal.primaryAction = {
+        removeModal.setText(text)
+        removeModal.primaryAction = {
             debug { "Remove confirmed" }
 
             items.forEach {
@@ -135,7 +159,7 @@ class TeacherCourseExercisesRootComp(
             true
         }
 
-        val removed = confirmRemoveFromCourseModal.openWithClosePromise().await()
+        val removed = removeModal.openWithClosePromise().await()
 
         return if (removed)
             EzCollComp.ResultModified<ExProps>(emptyList())

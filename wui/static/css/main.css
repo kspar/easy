@@ -1,5 +1,6 @@
 :root {
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
+    --ez-checkbox-disabled-border-col: rgba(0, 0, 0, .15);
     --ez-checkbox-fill-col: #4DAB54;
     --ez-icon-col: rgba(0, 0, 0, .38);
     --ez-icon-inactive-col: rgba(0, 0, 0, .22);
@@ -1351,6 +1352,31 @@ ez-radio-buttons > label {
     margin-bottom: .5rem;
 }
 
+ez-radio-buttons label.line span{
+    width: 100%;
+}
+
+ez-radio-buttons ez-radio-line {
+    width: 100%;
+    height: 1px;
+    background-color: #ccc;
+    transition: background-color 200ms ease-out;
+}
+
+[type="radio"]:checked + span ez-radio-line {
+    background-color: #777;
+}
+
+[type="radio"]:disabled + span ez-radio-line {
+    background-color: #e5e5e5;
+}
+
+ez-radio-buttons ez-radio-line-label {
+    display: block;
+    margin-left: 35px;
+    font-size: 1.4rem;
+}
+
 ez-radio-buttons > .helper-text {
     position: relative;
     min-height: 18px;
@@ -1374,6 +1400,8 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:not(:checked)+span,
 [type="radio"]:checked+span {
+    display: inline-flex;
+    align-items: center;
     font-size: 1.4rem;
 }
 
@@ -1395,6 +1423,10 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:checked+span {
     color: #000;
+}
+
+[type="radio"]:disabled:not(:checked)+span:before {
+    border-color: var(--ez-checkbox-disabled-border-col);
 }
 
 

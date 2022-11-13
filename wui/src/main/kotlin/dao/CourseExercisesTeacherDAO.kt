@@ -39,9 +39,16 @@ object CourseExercisesTeacherDAO {
             .sortedBy { it.ordering_idx }
     }
 
-    fun removeExerciseFromCourse(courseId: String, courseExerciseId: String): Promise<Unit> = doInPromise {
+    fun removeExerciseFromCourse(courseId: String, courseExerciseId: String) = doInPromise {
         fetchEms("/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}",
             ReqMethod.DELETE,
+            successChecker = { http200 }).await()
+    }
+
+    fun reorderCourseExercise(courseId: String, courseExerciseId: String, newIdx: Int) = doInPromise {
+        fetchEms("/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/reorder",
+            ReqMethod.POST,
+            mapOf("new_index" to newIdx),
             successChecker = { http200 }).await()
     }
 }
