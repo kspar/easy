@@ -31,6 +31,8 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                                   @JsonProperty("library_title") val libraryTitle: String,
                                   @JsonProperty("title_alias") val titleAlias: String?,
                                   @JsonSerialize(using = DateTimeSerializer::class)
+                                  @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+                                  @JsonSerialize(using = DateTimeSerializer::class)
                                   @JsonProperty("soft_deadline") val softDeadline: DateTime?,
                                   @JsonProperty("grader_type") val graderType: GraderType,
                                   @JsonProperty("ordering_idx") val orderingIndex: Int,
@@ -70,6 +72,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, caller: EasyUser, cou
                 .slice(CourseExercise.id,
                         CourseExercise.gradeThreshold,
                         CourseExercise.softDeadline,
+                        CourseExercise.studentVisibleFrom,
                         ExerciseVer.graderType,
                         ExerciseVer.title,
                         CourseExercise.titleAlias)
@@ -100,6 +103,7 @@ private fun selectTeacherExercisesOnCourse(courseId: Long, caller: EasyUser, cou
                             ex[CourseExercise.id].value.toString(),
                             ex[ExerciseVer.title],
                             ex[CourseExercise.titleAlias],
+                            ex[CourseExercise.studentVisibleFrom],
                             ex[CourseExercise.softDeadline],
                             ex[ExerciseVer.graderType],
                             i,
