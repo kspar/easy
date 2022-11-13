@@ -59,7 +59,7 @@ class ReorderCourseExerciseModalComp(
 
         exercisesRadioBtns = RadioButtonsComp(
             buttons, selectLineAfterButtons = true,
-            onValidChange = { debug { it }; modalComp.primaryButton.setEnabled(it) },
+            onValidChange = { modalComp.primaryButton.setEnabled(it) },
             parent = modalComp
         )
 
