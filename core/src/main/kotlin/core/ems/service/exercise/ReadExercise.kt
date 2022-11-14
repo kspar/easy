@@ -11,6 +11,7 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -47,9 +48,8 @@ class ReadExercise {
         @JsonProperty("max_mem_mb") val maxMem: Int?,
         @JsonProperty("assets") val assets: List<RespAsset>?,
         @JsonProperty("executors") val executors: List<RespExecutor>?,
-        // TODO: should only contain courses that the caller has access to
         @JsonProperty("on_courses") val courses: List<RespCourse>,
-        // TODO: add on_courses_no_access - number of courses where the exercise is on but which the caller does not have access to
+        @JsonProperty("on_courses_no_access") val coursesNoAccessCount: Int,
         @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
         @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int,
     )
@@ -81,27 +81,38 @@ class ReadExercise {
         log.debug { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
-        return selectExerciseDetails(exerciseId)
+        return selectExerciseDetails(exerciseId, caller.id)
             ?: throw InvalidRequestException("No exercise found with id $exerciseId")
     }
 
-    private fun selectExerciseDetails(exerciseId: Long): Resp? {
-        data class UsedOnCourse(val id: String, val title: String, val courseExId: String, val titleAlias: String?)
+    private fun selectExerciseDetails(exerciseId: Long, callerId: String): Resp? {
+        data class UsedOnCourse(
+            val id: String, val title: String, val courseExId: String, val titleAlias: String?,
+            val callerHasAccess: Boolean,
+        )
 
         return transaction {
 
-            val usedOnCourses = (CourseExercise innerJoin Course)
-                .slice(Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias)
+            val usedOnCourses = (CourseExercise innerJoin Course leftJoin TeacherCourseAccess)
+                .slice(
+                    Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias,
+                    TeacherCourseAccess.teacher
+                )
                 .select {
-                    CourseExercise.exercise eq exerciseId
+                    CourseExercise.exercise eq exerciseId and
+                            (TeacherCourseAccess.teacher eq callerId or TeacherCourseAccess.teacher.isNull())
                 }.map {
+                    @Suppress("SENSELESS_COMPARISON") // leftJoin
                     UsedOnCourse(
                         it[Course.id].value.toString(),
                         it[Course.title],
                         it[CourseExercise.id].value.toString(),
-                        it[CourseExercise.titleAlias]
+                        it[CourseExercise.titleAlias],
+                        it[TeacherCourseAccess.teacher] != null,
                     )
                 }
+
+            val (onCoursesAccess, onCoursesNoAccess) = usedOnCourses.partition { it.callerHasAccess }
 
             (Exercise innerJoin ExerciseVer)
                 .slice(
@@ -151,7 +162,8 @@ class ReadExercise {
                         autoExercise?.maxMem,
                         autoExercise?.assets?.map { RespAsset(it.first, it.second) },
                         autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
-                        usedOnCourses.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
+                        onCoursesAccess.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
+                        onCoursesNoAccess.count(),
                         it[Exercise.successfulAnonymousSubmissionCount],
                         it[Exercise.unsuccessfulAnonymousSubmissionCount],
                     )
