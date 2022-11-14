@@ -40,6 +40,7 @@ class CreateFileModalComp(
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 50), nonDuplicateNameConstraint),
         onValidChange = ::updateSubmitBtn,
+        onENTER = { modalComp.primaryButton.click() },
         parent = modalComp
     )
 

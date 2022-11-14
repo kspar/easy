@@ -46,6 +46,7 @@ class CreateGroupModalComp(
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 50), nonDuplicateGroupConstraint),
         onValidChange = ::updateSubmitBtn,
+        onENTER = { modalComp.primaryButton.click() },
         parent = modalComp
     )
 

@@ -38,6 +38,7 @@ class CreateExerciseModalComp(
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
+        onENTER = { modalComp.primaryButton.click() },
         parent = modalComp
     )
 
