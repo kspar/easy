@@ -11,7 +11,7 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.leftJoin
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -93,14 +93,14 @@ class ReadExercise {
 
         return transaction {
 
-            val usedOnCourses = (CourseExercise innerJoin Course leftJoin TeacherCourseAccess)
-                .slice(
+            val usedOnCourses =
+                (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
+                    onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
+                    additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).slice(
                     Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias,
                     TeacherCourseAccess.teacher
-                )
-                .select {
-                    CourseExercise.exercise eq exerciseId and
-                            (TeacherCourseAccess.teacher eq caller.id or TeacherCourseAccess.teacher.isNull())
+                ).select {
+                    CourseExercise.exercise eq exerciseId
                 }.map {
                     @Suppress("SENSELESS_COMPARISON") // leftJoin
                     UsedOnCourse(
