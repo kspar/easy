@@ -18,7 +18,13 @@ fun Map<String, Any?>.toJsObj(): dynamic {
         // Hope that nested lists have & maps are Map<String, Any?>
         val jsValue =
             when (val value = it.value) {
-                is List<*> -> value.map { (it as Map<String, Any?>).toJsObj() }.toTypedArray()
+                is List<*> -> value.map {
+                    when (it) {
+                        is Map<*, *> -> (it as Map<String, Any?>).toJsObj()
+                        // Enums
+                        else -> it.toString()
+                    }
+                }.toTypedArray()
                 is Map<*, *> -> (value as Map<String, Any?>).toJsObj()
                 else -> value
             }

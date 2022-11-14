@@ -5,6 +5,7 @@ import components.EzCollComp
 import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
+import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import plainDstStr
@@ -13,11 +14,11 @@ import queries.fetchEms
 import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 import toEstonianString
 import kotlin.js.Date
 
 
-@ExperimentalStdlibApi
 class ParticipantsTeachersListComp(
     private val courseId: String,
     private val teachers: List<ParticipantsRootComp.Teacher>,
@@ -81,11 +82,11 @@ class ParticipantsTeachersListComp(
                 "${p.firstName} ${p.lastName}",
                 topAttr = groupsAttr,
                 bottomAttrs = listOfNotNull(
-                    EzCollComp.SimpleAttr("Email", p.email, Icons.email),
-                    EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user),
+                    EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf),
+                    EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf),
                     p.createdAt?.let {
                         // TODO: date attr
-                        EzCollComp.SimpleAttr("Kursusele lisatud", p.createdAt.toEstonianString(), Icons.joinedTime)
+                        EzCollComp.SimpleAttr("Kursusele lisatud", p.createdAt.toEstonianString(), Icons.joinedTimeUnf)
                     }
                 ),
                 isSelectable = isEditable,
@@ -149,7 +150,8 @@ class ParticipantsTeachersListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER,
+            id = Modal.REMOVE_TEACHERS_FROM_COURSE, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.TEACHER, parent = this)
@@ -240,6 +242,8 @@ class ParticipantsTeachersListComp(
                 "/courses/$courseId/teachers", ReqMethod.DELETE,
                 body, successChecker = { http200 }
             ).await()
+
+            successMessage { "Eemaldatud" }
 
             true
         }

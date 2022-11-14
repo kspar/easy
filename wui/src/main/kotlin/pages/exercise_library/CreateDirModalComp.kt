@@ -4,6 +4,7 @@ import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import dao.LibraryDirDAO
 import kotlinx.coroutines.await
 import plainDstStr
@@ -20,7 +21,7 @@ class CreateDirModalComp(
         "Uus kaust", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createDir(nameField.getValue()) },
         primaryPostAction = ::reinitialise, onOpen = { nameField.focus() },
-        defaultReturnValue = null, parent = this
+        defaultReturnValue = null, id = Modal.CREATE_DIR, parent = this
     )
 
     private val nameField = StringFieldComp(

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Add page generation time to html
-d=$(date)
-s="s#<div id=\"date\">.*</div>#<div id=\"date\">$d</div>#g"
-sed -i "$s" static/spaproto.html
+#d=$(date)
+#s="s#<div id=\"date\">.*</div>#<div id=\"date\">$d</div>#g"
+#sed -i "$s" static/spaproto.html
 
 
 scp static/spaproto.html devgate:/var/www/wui/index.html
@@ -20,5 +20,5 @@ scp build/distributions/wui.js devgate:/var/www/wui/static/js/
 
 
 # Remove page generation time
-b="s+<div id=\"date\">.*</div>+<div id=\"date\"></div>+g"
-sed -i "$b" static/spaproto.html
+#b="s+<div id=\"date\">.*</div>+<div id=\"date\"></div>+g"
+#sed -i "$b" static/spaproto.html

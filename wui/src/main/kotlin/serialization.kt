@@ -32,3 +32,15 @@ object DateSerializer : KSerializer<Date> {
         return Date(Date.parse(decoder.decodeString()))
     }
 }
+
+object EzDateSerializer : KSerializer<EzDate> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("EzDate", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): EzDate {
+        return EzDate(Date(Date.parse(decoder.decodeString())))
+    }
+
+    override fun serialize(encoder: Encoder, value: EzDate) {
+        TODO("Not yet implemented")
+    }
+}

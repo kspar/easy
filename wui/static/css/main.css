@@ -1,7 +1,9 @@
 :root {
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
+    --ez-checkbox-disabled-border-col: rgba(0, 0, 0, .15);
     --ez-checkbox-fill-col: #4DAB54;
     --ez-icon-col: rgba(0, 0, 0, .38);
+    --ez-icon-inactive-col: rgba(0, 0, 0, .22);
     --ez-icon-action-col: rgba(0, 0, 0, .54);
     --ez-icon-action-active-col: rgba(0, 0, 0, .87);
     --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
@@ -14,8 +16,12 @@
     --ez-btn-disabled-text: #9f9f9f;
 
     --ezc-link-hover-col: #429748;
-    --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
+    --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
+    --ezc-bar-green: #4DAB54;
+    --ezc-bar-yellow: #ffd052;
+    --ezc-bar-blue: #688ffd;
+    --ezc-bar-grey: #d5d5d5;
 }
 
 /** Page, body, general **/
@@ -574,7 +580,11 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-/** Exercises page **/
+/** Course exercises page **/
+
+.update-course-ex-title-modal ez-attr {
+    padding-bottom: 2rem;
+}
 
 #exercises-list .exercise-item {
     display: flex;
@@ -1346,6 +1356,31 @@ ez-radio-buttons > label {
     margin-bottom: .5rem;
 }
 
+ez-radio-buttons label.line span{
+    width: 100%;
+}
+
+ez-radio-buttons ez-radio-line {
+    width: 100%;
+    height: 1px;
+    background-color: #ccc;
+    transition: background-color 200ms ease-out;
+}
+
+[type="radio"]:checked + span ez-radio-line {
+    background-color: #777;
+}
+
+[type="radio"]:disabled + span ez-radio-line {
+    background-color: #e5e5e5;
+}
+
+ez-radio-buttons ez-radio-line-label {
+    display: block;
+    margin-left: 35px;
+    font-size: 1.4rem;
+}
+
 ez-radio-buttons > .helper-text {
     position: relative;
     min-height: 18px;
@@ -1369,6 +1404,8 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:not(:checked)+span,
 [type="radio"]:checked+span {
+    display: inline-flex;
+    align-items: center;
     font-size: 1.4rem;
 }
 
@@ -1390,6 +1427,10 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:checked+span {
     color: #000;
+}
+
+[type="radio"]:disabled:not(:checked)+span:before {
+    border-color: var(--ez-checkbox-disabled-border-col);
 }
 
 
@@ -1752,20 +1793,27 @@ ez-coll[no-matched-items] > ezc-no-match-placeholder {
 
 ezc-item {
     display: flex;
-    margin-bottom: 1rem;
     min-height: 5rem;
+}
+
+ezc-bar-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 ezc-item-container {
     flex: 1 1 auto;
     display: flex;
     min-width: 0;
-    padding: .8rem .8rem .8rem .2rem;
-    background-color: #fff;
-    box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
-    0 2px 1px -2px rgba(0, 0, 0, 0.09),
-    0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    padding: 1.1rem .8rem 1.1rem .2rem;
+    border-bottom: 1px solid #ccc;
+}
+
+ezc-item.has-bar ezc-item-container {
+    padding-top: 2rem;
+    padding-bottom: .6rem;
+    border: none;
 }
 
 ezc-left {
@@ -1795,6 +1843,10 @@ ezc-item[selected] ezc-item-type {
 ezc-item[selectable] ezc-left:hover .ezc-item-checkbox,
 ezc-item[selected] .ezc-item-checkbox {
     display: block;
+}
+
+ezc-item.inactive ezc-left ez-icon {
+    color: var(--ez-icon-inactive-col);
 }
 
 ezc-left ez-icon > svg {
@@ -1853,15 +1905,18 @@ ezc-first {
 ezc-title {
     flex: 1 1 auto;
     padding-right: 1rem;
-    font-size: 1.7rem;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
-ezc-title.inactive {
+ezc-item.inactive ezc-title {
     color: var(--ezc-attr-immutable-col);
 }
 
 ezc-title > a {
     color: inherit;
+    padding: .5rem 1rem .5rem 0;
 }
 
 ezc-title > a:hover[href] {
@@ -1871,7 +1926,6 @@ ezc-title > a:hover[href] {
 ezc-second {
     display: flex;
     justify-content: space-between;
-    margin-top: .5rem;
     min-height: 24px;
 }
 
@@ -1978,6 +2032,15 @@ ezc-fold-value {
     padding-left: .6rem;
 }
 
+ezc-progress-bar {
+    display: flex;
+}
+
+ezc-progress-bar-part {
+    display: inline-flex;
+    height: .4rem;
+}
+
 ezc-trailer {
     display: flex;
 }
@@ -1986,7 +2049,11 @@ ezc-trailer.placeholder {
 }
 
 ezc-expand-trailer {
-    padding-top: 1.1rem;
+    padding-top: .8rem;
+}
+
+ezc-item.has-bar ezc-expand-trailer {
+    padding-top: 1.6rem;
 }
 
 ezc-expand-trailer > ez-icon-action {

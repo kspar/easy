@@ -1,6 +1,6 @@
 package pages.exercise_library
 
-import CompDate
+import EzDate
 import Icons
 import Str
 import components.BreadcrumbsComp
@@ -42,7 +42,7 @@ class ExerciseLibRootComp(
         override val access: DirAccess,
         val graderType: GraderType,
         val coursesCount: Int,
-        val modifiedAt: CompDate,
+        val modifiedAt: EzDate,
     ) : Props(id, title, access, 1)
 
     data class DirProps(
@@ -86,9 +86,9 @@ class ExerciseLibRootComp(
                 Sidenav.PageSection(
                     Str.exerciseLibrary(), listOf(
                         Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
-                            val exerciseId = newExerciseModal.openWithClosePromise().await()
-                            if (exerciseId != null) {
-                                EzSpa.PageManager.navigateTo(ExercisePage.link(exerciseId))
+                            val ids = newExerciseModal.openWithClosePromise().await()
+                            if (ids != null) {
+                                EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
                                 successMessage { "Ülesanne loodud" }
                             }
                         },
@@ -122,7 +122,7 @@ class ExerciseLibRootComp(
                 if (p.graderType == GraderType.AUTO)
                     EzCollComp.ItemTypeIcon(Icons.robot)
                 else
-                    EzCollComp.ItemTypeIcon(Icons.user),
+                    EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
                 titleLink = ExercisePage.link(p.id),
                 topAttr = EzCollComp.SimpleAttr(
@@ -139,7 +139,7 @@ class ExerciseLibRootComp(
 //                        Icons.exercisePermissions,
 //                        translateDirAccess(p.access)
 //                    ),
-                    // TODO: is shared -> attr "shared" with Icons.teacher
+                    // TODO: is shared -> title icon Icons.teacher
                 ),
                 isSelectable = true,
                 actions = listOf(
@@ -210,7 +210,7 @@ class ExerciseLibRootComp(
                 ),
                 EzCollComp.Sorter("Muutmisaja järgi",
                     compareByDescending<EzCollComp.Item<Props>> {
-                        if (it.props is ExerciseProps) it.props.modifiedAt else CompDate.future()
+                        if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.future()
                     }.thenBy {
                         it.props.title
                     }

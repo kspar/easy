@@ -5,6 +5,7 @@ import components.EzCollComp
 import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
+import components.modal.Modal
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -12,9 +13,8 @@ import plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import successMessage
 
-// buildList is experimental
-@ExperimentalStdlibApi
 class ParticipantsStudentsListComp(
     private val courseId: String,
     private val students: List<ParticipantsRootComp.Student>,
@@ -75,16 +75,16 @@ class ParticipantsStudentsListComp(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isActive) Icons.user else Icons.pending),
                 if (p.isActive) "${p.firstName} ${p.lastName}" else "(Kutse ootel)",
-                if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
+                titleStatus = if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
                 topAttr = if (hasGroups) EzCollComp.ListAttr(
                     "Rühmad",
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
-                    Icons.groups,
+                    Icons.groupsUnf,
                 ) else null,
                 bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
-                    add(EzCollComp.SimpleAttr("Email", p.email, Icons.email))
-                    p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.user)) }
-                    p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUser)) }
+                    add(EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf))
+                    p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf)) }
+                    p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUserUnf)) }
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) listOf(
@@ -159,7 +159,8 @@ class ParticipantsStudentsListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER,
+            id = Modal.REMOVE_STUDENTS_FROM_COURSE, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.STUDENT, parent = this)
@@ -277,6 +278,8 @@ class ParticipantsStudentsListComp(
                     }
                 }
             ).await()
+
+            successMessage { "Eemaldatud" }
 
             true
         }

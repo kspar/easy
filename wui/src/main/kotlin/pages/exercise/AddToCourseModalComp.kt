@@ -4,6 +4,7 @@ import Str
 import components.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import errorMessage
@@ -31,7 +32,7 @@ class AddToCourseModalComp(
         primaryAction = { list.getSelectedCourseId()?.let { addToCourse(it) } },
         primaryPostAction = ::reinitialise,
         primaryButtonEnabledInitial = false, defaultReturnValue = null, fixFooter = true,
-        parent = this
+        id = Modal.ADD_EXERCISE_TO_COURSE, parent = this
     )
 
     private lateinit var list: AddToCourseModalCoursesListComp
@@ -90,7 +91,7 @@ class AddToCourseModalComp(
             if (successes.first())
                 successMessage { "Lisatud" }
             else
-                errorMessage { "See ülesanne on juba kursusel olemas" }
+                errorMessage { "See ülesanne on kursusel juba olemas" }
         } else {
             successMessage { "Lisatud" }
         }

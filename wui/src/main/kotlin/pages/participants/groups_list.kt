@@ -5,6 +5,7 @@ import components.EzCollComp
 import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
+import components.modal.Modal
 import errorMessage
 import kotlinx.coroutines.await
 import plainDstStr
@@ -13,7 +14,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class ParticipantsGroupsListComp(
     private val courseId: String,
     private val groups: List<ParticipantsRootComp.Group>,
@@ -48,9 +48,8 @@ class ParticipantsGroupsListComp(
             EzCollComp.Item(
                 p, EzCollComp.ItemTypeIcon(Icons.groups), p.name,
                 bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.user),
-                    EzCollComp.SimpleAttr("Õpetajaid", p.teachersCount, Icons.teacher),
-                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
+                    EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.userUnf),
+                    EzCollComp.SimpleAttr("Õpetajaid", p.teachersCount, Icons.teacherUnf),
                 ),
                 actions = buildList {
                     if (isEditable) add(
@@ -74,7 +73,8 @@ class ParticipantsGroupsListComp(
 
         deleteGroupModal = ConfirmationTextModalComp(
             null, "Kustuta", "Tühista", "Kustutan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER,
+            id = Modal.DELETE_COURSE_GROUP, parent = this
         )
     }
 
@@ -101,7 +101,7 @@ class ParticipantsGroupsListComp(
         }
 
         return if (deleteGroupModal.openWithClosePromise().await()) {
-            successMessage { "${group.props.name} kustutatud" }
+            successMessage { "Rühm ${group.props.name} kustutatud" }
             EzCollComp.ResultModified<GroupProp>(emptyList())
         } else {
             EzCollComp.ResultUnmodified

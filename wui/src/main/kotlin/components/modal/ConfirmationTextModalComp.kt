@@ -19,6 +19,7 @@ class ConfirmationTextModalComp(
     override var secondaryAction: (suspend () -> Unit)? = null,
     override var primaryPostAction: (suspend () -> Unit)? = null,
     override var secondaryPostAction: (suspend () -> Unit)? = null,
+    id: Modal,
     parent: Component?,
 ) : BinaryModalComp<Boolean>(
     title,
@@ -26,7 +27,7 @@ class ConfirmationTextModalComp(
     primaryBtnLoadingText, secondaryBtnLoadingText,
     false, primaryBtnType, true, fixFooter, false,
     primaryAction, secondaryAction, primaryPostAction, secondaryPostAction,
-    parent = parent
+    parent = parent, id = id,
 ) {
 
     private val stringComp = StringComp("", this)

@@ -26,18 +26,19 @@ import org.springframework.web.bind.annotation.RestController
 class TeacherReadCourseExercisesController(val courseService: CourseService) {
     private val log = KotlinLogging.logger {}
 
-    data class CourseExerciseResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("effective_title") val title: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-        @JsonProperty("grader_type") val graderType: GraderType,
-        @JsonProperty("ordering_idx") val orderingIndex: Int,
-        @JsonProperty("unstarted_count") val unstartedCount: Int,
-        @JsonProperty("ungraded_count") val ungradedCount: Int,
-        @JsonProperty("started_count") val startedCount: Int,
-        @JsonProperty("completed_count") val completedCount: Int
-    )
+    data class CourseExerciseResp(@JsonProperty("id") val id: String,
+                                  @JsonProperty("library_title") val libraryTitle: String,
+                                  @JsonProperty("title_alias") val titleAlias: String?,
+                                  @JsonSerialize(using = DateTimeSerializer::class)
+                                  @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+                                  @JsonSerialize(using = DateTimeSerializer::class)
+                                  @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+                                  @JsonProperty("grader_type") val graderType: GraderType,
+                                  @JsonProperty("ordering_idx") val orderingIndex: Int,
+                                  @JsonProperty("unstarted_count") val unstartedCount: Int,
+                                  @JsonProperty("ungraded_count") val ungradedCount: Int,
+                                  @JsonProperty("started_count") val startedCount: Int,
+                                  @JsonProperty("completed_count") val completedCount: Int)
 
     data class Resp(@JsonProperty("exercises") val courseExercises: List<CourseExerciseResp>)
 
@@ -69,20 +70,19 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
         val students = studentQuery.map { it[Student.id].value }
 
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
-                CourseExercise.id,
-                CourseExercise.gradeThreshold,
-                CourseExercise.softDeadline,
-                ExerciseVer.graderType,
-                ExerciseVer.title,
-                CourseExercise.titleAlias
-            )
-            .select {
-                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
-            }
-            .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-            .mapIndexed { i, ex ->
-                val ceId = ex[CourseExercise.id].value
+                .slice(CourseExercise.id,
+                        CourseExercise.gradeThreshold,
+                        CourseExercise.softDeadline,
+                        CourseExercise.studentVisibleFrom,
+                        ExerciseVer.graderType,
+                        ExerciseVer.title,
+                        CourseExercise.titleAlias)
+                .select {
+                    CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
+                }
+                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                .mapIndexed { i, ex ->
+                    val ceId = ex[CourseExercise.id].value
 
                 val latestSubmissionValidGrades =
                     courseService.selectLatestValidGrades(ceId, students).map { it.grade }
@@ -101,17 +101,19 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                                 "started: $startedCount, completed: $completedCount, students in course: $studentCount"
                     }
 
-                CourseExerciseResp(
-                    ex[CourseExercise.id].value.toString(),
-                    ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                    ex[CourseExercise.softDeadline],
-                    ex[ExerciseVer.graderType],
-                    i,
-                    unstartedCount,
-                    ungradedCount,
-                    startedCount,
-                    completedCount
-                )
-            }
+                    CourseExerciseResp(
+                            ex[CourseExercise.id].value.toString(),
+                            ex[ExerciseVer.title],
+                            ex[CourseExercise.titleAlias],
+                            ex[CourseExercise.studentVisibleFrom],
+                            ex[CourseExercise.softDeadline],
+                            ex[ExerciseVer.graderType],
+                            i,
+                            unstartedCount,
+                            ungradedCount,
+                            startedCount,
+                            completedCount
+                    )
+                }
     }
 }

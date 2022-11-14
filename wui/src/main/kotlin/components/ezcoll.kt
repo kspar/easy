@@ -8,7 +8,6 @@ import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.Materialize
 import libheaders.closePromise
-import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement
@@ -32,10 +31,13 @@ class EzCollComp<P>(
         val props: P,
         val type: ItemType,
         val title: String,
+        val titleIcon: String? = null,
+        val titleIconLabel: String? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
         val titleLink: String? = null,
         val topAttr: Attr<P>? = null,
         val bottomAttrs: List<Attr<P>> = emptyList(),
+        val progressBar: ProgressBar? = null,
         val isSelectable: Boolean = false,
         val actions: List<Action<P>> = emptyList(),
         val attrWidthS: AttrWidthS = AttrWidthS.W200,
@@ -150,6 +152,11 @@ class EzCollComp<P>(
     }
 
     data class ListAttrItem<ItemType : Any>(val shortValue: ItemType, val longValue: ItemType = shortValue)
+
+    data class ProgressBar(
+        val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0,
+        val showAttr: Boolean = false
+    )
 
     enum class TitleStatus { NORMAL, INACTIVE }
 
@@ -548,8 +555,6 @@ class EzCollComp<P>(
             allCheckboxEl.checked = newStatus.first
             allCheckboxEl.indeterminate = newStatus.second
             allCheckboxEl.dispatchEvent(Event("change"))
-        } else {
-            debug { "All checkbox status unchanged: $currentStatus" }
         }
     }
 
@@ -619,8 +624,10 @@ class EzCollItemComp<P>(
         "isTypeIcon" to spec.type.isIcon,
         "typeHtml" to spec.type.html,
         "title" to spec.title,
+        "titleIcon" to spec.titleIcon,
+        "titleIconLabel" to spec.titleIconLabel,
         "titleLink" to spec.titleLink,
-        "titleInactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
+        "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
                 "id" to it.id,
@@ -640,6 +647,24 @@ class EzCollItemComp<P>(
                 "shortValueHtml" to it.getShortValueHtml(),
                 "isActionable" to (it.onClick != null),
             )
+        },
+        "progressBar" to spec.progressBar?.let {
+            if (it.green + it.yellow + it.blue + it.grey > 0)
+                objOf(
+                    "green" to it.green,
+                    "yellow" to it.yellow,
+                    "blue" to it.blue,
+                    "grey" to it.grey,
+                    "showAttr" to it.showAttr,
+                    "label" to "Progress",
+                    "labelValue" to buildList {
+                        if (it.green > 0) add("${it.green} lahendatud")
+                        if (it.yellow > 0) add("${it.yellow} nässu läinud")
+                        if (it.blue > 0) add("${it.blue} hindamata")
+                        if (it.grey > 0) add("${it.grey} esitamata")
+                    }.joinToString(" / ")
+                )
+            else null
         },
         "actions" to spec.actions.map {
             mapOf(

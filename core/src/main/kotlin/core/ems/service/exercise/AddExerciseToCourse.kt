@@ -50,13 +50,15 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         val titleAlias: String?
     )
 
+    data class Resp(@JsonProperty("id") val id: String)
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
     fun controller(
         @PathVariable("courseId") courseIdString: String,
         @Valid @RequestBody body: Req,
         caller: EasyUser
-    ) {
+    ): Resp {
         log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
 
         val courseId = courseIdString.idToLongOrInvalidReq()
@@ -78,10 +80,11 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
             )
         }
 
-        when (body.instructionsAdoc) {
+        val id = when (body.instructionsAdoc) {
             null -> insertCourseExercise(courseId, body, null)
             else -> insertCourseExercise(courseId, body, adocService.adocToHtml(body.instructionsAdoc))
         }
+        return Resp(id.toString())
     }
 
     private fun isCoursePresent(courseId: Long): Boolean = transaction {
@@ -90,10 +93,10 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         }.count() > 0
     }
 
-    private fun insertCourseExercise(courseId: Long, body: Req, html: String?) {
-        val exerciseId = body.exerciseId.idToLongOrInvalidReq()
-        val now = DateTime.now()
+    private fun insertCourseExercise(courseId: Long, body: Req, html: String?): Long =
         transaction {
+            val exerciseId = body.exerciseId.idToLongOrInvalidReq()
+            val now = DateTime.now()
             val orderIdxMaxColumn = CourseExercise.orderIdx.max()
 
             val currentMaxOrderIdx = CourseExercise
@@ -109,7 +112,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
 
             val studentVisibleFromTime = if (body.isStudentVisible) DateTime.now() else null
 
-            CourseExercise.insert {
+            val id = CourseExercise.insertAndGetId {
                 it[course] = EntityID(courseId, Course)
                 it[exercise] = EntityID(exerciseId, Exercise)
                 it[createdAt] = now
@@ -136,6 +139,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
                     it[StoredFile.exercise] = EntityID(exerciseId, Exercise)
                 }
             }
+
+            id.value
         }
-    }
 }

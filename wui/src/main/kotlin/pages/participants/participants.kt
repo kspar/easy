@@ -16,8 +16,6 @@ import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Date
 
-// buildList is experimental
-@ExperimentalStdlibApi
 class ParticipantsRootComp(
     private val courseId: String,
     private val isAdmin: Boolean,
