@@ -87,6 +87,7 @@ object CourseExercisesTeacherDAO {
     }
 
     fun updateCourseExercise(courseId: String, courseExerciseId: String, update: CourseExerciseUpdate) = doInPromise {
+        debug { "Update course $courseId exercise $courseExerciseId with $update" }
         val replaceField = update.replace?.let {
             mapOf(
                 "title_alias" to it.titleAlias,
@@ -108,5 +109,7 @@ object CourseExercisesTeacherDAO {
                 "delete" to update.delete.toList()
             ),
             successChecker = { http200 }).await()
+
+        Unit
     }
 }
