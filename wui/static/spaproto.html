@@ -108,10 +108,6 @@
         <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
         <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
     {{/isTeacherOrAdmin}}
-    {{#isAdmin}}
-        <li><a id="{{newExerciseLinkId}}" class="waves-effect sidenav-close">{{{newExerciseIcon}}}{{newExerciseLabel}}</a></li>
-<!--        <li><a class="waves-effect sidenav-close">{{{addExerciseIcon}}}{{addExerciseLabel}}</a></li>-->
-    {{/isAdmin}}
     <ez-dst id="{{newExerciseDst}}"></ez-dst>
 </script>
 
@@ -606,6 +602,7 @@
     <ez-dst id="{{collDst}}"></ez-dst>
     <ez-dst id="{{reorderModalDst}}"></ez-dst>
     <ez-dst id="{{updateTitleAliasModalDst}}"></ez-dst>
+    <ez-dst id="{{newExerciseModalDst}}"></ez-dst>
 </script>
 
 

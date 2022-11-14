@@ -3,6 +3,7 @@ package dao
 import blankToNull
 import debug
 import kotlinx.coroutines.await
+import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
@@ -55,9 +56,12 @@ object ExerciseDAO {
             successChecker = { http200 }).await()
     }
 
+    @Serializable
+    data class CourseExerciseId(val id: String)
+
     private class ExerciseAlreadyOnCourseException : Exception()
 
-    fun addExerciseToCourse(exerciseId: String, courseId: String): Promise<Boolean> = doInPromise {
+    fun addExerciseToCourse(exerciseId: String, courseId: String): Promise<String?> = doInPromise {
         debug { "Adding exercise $exerciseId to course $courseId" }
         try {
             fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises", ReqMethod.POST,
@@ -73,11 +77,10 @@ object ExerciseDAO {
                         throw ExerciseAlreadyOnCourseException()
                     }
                 }
-            ).await()
-            true
+            ).await().parseTo(CourseExerciseId.serializer()).await().id
         } catch (e: HandledResponseError) {
             if (e.errorHandlerException.await() is ExerciseAlreadyOnCourseException) {
-                false
+                null
             } else {
                 throw e
             }

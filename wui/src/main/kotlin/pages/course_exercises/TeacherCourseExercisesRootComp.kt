@@ -3,6 +3,7 @@ package pages.course_exercises
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
+import UserMessageAction
 import cache.BasicCourseInfo
 import components.EzCollComp
 import components.StringComp
@@ -16,8 +17,12 @@ import getWindowScrollPosition
 import kotlinx.coroutines.await
 import pages.ExerciseSummaryPage
 import pages.Title
+import pages.exercise.ExercisePage
+import pages.exercise_library.CreateExerciseModalComp
+import pages.sidenav.Sidenav
 import restore
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.unionPromise
 import successMessage
@@ -50,8 +55,10 @@ class TeacherCourseExercisesRootComp(
     private lateinit var updateTitleAliasModal: UpdateCourseExerciseTitleModalComp
     private lateinit var removeModal: ConfirmationTextModalComp
 
+    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this)
+
     override val children: List<Component>
-        get() = listOf(coll, reorderModal, updateTitleAliasModal, removeModal)
+        get() = listOf(coll, reorderModal, updateTitleAliasModal, removeModal, newExerciseModal)
 
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
@@ -115,6 +122,28 @@ class TeacherCourseExercisesRootComp(
             primaryBtnType = ButtonComp.Type.DANGER,
             id = Modal.REMOVE_EXERCISE_FROM_COURSE, parent = this
         )
+
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                "Ülesanded", listOf(
+                    Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                        val ids = newExerciseModal.openWithClosePromise().await()
+                        if (ids != null) {
+                            if (ids.courseExerciseId != null) {
+                                // was added to course
+                                EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
+                                successMessage { "Ülesanne loodud" }
+                            } else {
+                                val action = UserMessageAction("Ava ülesandekogus") {
+                                    EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
+                                }
+                                successMessage(action = action) { "Ülesanne loodud" }
+                            }
+                        }
+                    }
+                )
+            )
+        )
     }
 
     override fun renderLoading() = tmRender(
@@ -128,6 +157,7 @@ class TeacherCourseExercisesRootComp(
         "collDst" to coll.dstId,
         "reorderModalDst" to reorderModal.dstId,
         "updateTitleAliasModalDst" to updateTitleAliasModal.dstId,
+        "newExerciseModalDst" to newExerciseModal.dstId,
     )
 
 

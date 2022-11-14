@@ -97,7 +97,6 @@ class CreateExerciseModalComp(
             ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId).await()
         } else null
 
-        // TODO: dao should return courseExId
-        return ExIds(exerciseId, null)
+        return ExIds(exerciseId, courseExId)
     }
 }
