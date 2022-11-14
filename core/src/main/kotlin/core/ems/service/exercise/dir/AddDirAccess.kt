@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.DirAccessLevel
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
+import core.ems.service.assertDirExists
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.libraryDirAddAccess
 import mu.KotlinLogging
@@ -38,6 +39,7 @@ class AddDirController {
         val dirId = dirIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRAWM) }
+        assertDirExists(dirId, true)
         libraryDirAddAccess(dirId, body.groupId, body.level)
     }
 }

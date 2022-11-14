@@ -22,8 +22,6 @@ private val log = KotlinLogging.logger {}
  */
 fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
     transaction {
-        assertDirExists(dirId, true)
-
         //Add given access to given group G.
         GroupDirAccess.insertOrUpdate(
             listOf(GroupDirAccess.group, GroupDirAccess.dir),
