@@ -1273,37 +1273,6 @@
     </div>
 </script>
 
-<script id="tm-teach-exercises-list" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
-        <a class="breadcrumb truncate">{{title}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h2 class="title">{{title}}</h2>
-        <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
-            <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
-        </a>
-    </div>
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}}" href="{{href}}">
-            <div class="exercise-item" style="align-items: baseline;">
-                <span>{{title}}</span>
-                <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-            </div>
-            {{#studentsExist}}
-            <div class="bb">
-                <span class="bb-green bb-item tooltipped" style="width: {{completedPc}}%" data-position="bottom" data-tooltip="{{completedLabel}}: {{completedCount}}"></span
-                ><span class="bb-yellow bb-item tooltipped" style="width: {{startedPc}}%" data-position="bottom" data-tooltip="{{startedLabel}}: {{startedCount}}"></span
-                ><span class="bb-blue bb-item tooltipped" style="width: {{ungradedPc}}%" data-position="bottom" data-tooltip="{{ungradedLabel}}: {{ungradedCount}}"></span
-                ><span class="bb-grey bb-item tooltipped" style="width: {{unstartedPc}}%" data-position="bottom" data-tooltip="{{unstartedLabel}}: {{unstartedCount}}"></span>
-            </div>
-            {{/studentsExist}}
-        </a>
-        {{/exercises}}
-    </div>
-</script>
-
 <script id="tm-teach-participants" type="text/x-handlebars-template">
     <div id="participants-container">
         <nav class="crumb-wrap">

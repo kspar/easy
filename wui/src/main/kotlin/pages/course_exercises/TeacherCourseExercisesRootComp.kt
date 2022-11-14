@@ -15,7 +15,8 @@ import debug
 import getWindowScrollPosition
 import kotlinx.coroutines.await
 import pages.ExerciseSummaryPage
-import restoreWindowScroll
+import pages.Title
+import restore
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
@@ -53,6 +54,8 @@ class TeacherCourseExercisesRootComp(
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
         courseTitle = BasicCourseInfo.get(courseId).await().title
+        Title.update { it.parentPageTitle = courseTitle }
+
         val exercises = exercisesPromise.await()
 
         val props = exercises.map {
@@ -188,6 +191,6 @@ class TeacherCourseExercisesRootComp(
     private suspend fun recreate() {
         val s = getWindowScrollPosition()
         createAndBuild().await()
-        restoreWindowScroll(s)
+        s.restore()
     }
 }
