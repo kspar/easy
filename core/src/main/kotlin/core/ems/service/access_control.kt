@@ -37,7 +37,8 @@ fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
         val parentDirId = Dir
             .slice(Dir.parentDir)
             .select { Dir.id eq dirId }
-            .firstNotNullOfOrNull { it[Dir.parentDir]?.value } ?: return@transaction
+            .map { it[Dir.parentDir]?.value }
+            .single() ?: return@transaction
 
         //  If G has at least P access to D, end.
         val parentDirAccessLevel = GroupDirAccess
