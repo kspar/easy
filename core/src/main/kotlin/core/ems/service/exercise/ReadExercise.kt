@@ -81,11 +81,11 @@ class ReadExercise {
         log.debug { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
-        return selectExerciseDetails(exerciseId, caller.id)
+        return selectExerciseDetails(exerciseId, caller)
             ?: throw InvalidRequestException("No exercise found with id $exerciseId")
     }
 
-    private fun selectExerciseDetails(exerciseId: Long, callerId: String): Resp? {
+    private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp? {
         data class UsedOnCourse(
             val id: String, val title: String, val courseExId: String, val titleAlias: String?,
             val callerHasAccess: Boolean,
@@ -100,7 +100,7 @@ class ReadExercise {
                 )
                 .select {
                     CourseExercise.exercise eq exerciseId and
-                            (TeacherCourseAccess.teacher eq callerId or TeacherCourseAccess.teacher.isNull())
+                            (TeacherCourseAccess.teacher eq caller.id or TeacherCourseAccess.teacher.isNull())
                 }.map {
                     @Suppress("SENSELESS_COMPARISON") // leftJoin
                     UsedOnCourse(
@@ -112,7 +112,8 @@ class ReadExercise {
                     )
                 }
 
-            val (onCoursesAccess, onCoursesNoAccess) = usedOnCourses.partition { it.callerHasAccess }
+            val (onCoursesAccess, onCoursesNoAccess) =
+                usedOnCourses.partition { it.callerHasAccess || caller.isAdmin() }
 
             (Exercise innerJoin ExerciseVer)
                 .slice(
