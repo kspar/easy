@@ -27,7 +27,7 @@ class AddDirController {
     data class Resp(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/lib/dirs/{dirId}/access")
+    @PutMapping("/lib/dirs/{dirId}/access")
     fun controller(
         @Valid @RequestBody body: Req,
         @PathVariable("dirId") dirIdString: String,

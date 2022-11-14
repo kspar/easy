@@ -6522,7 +6522,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: teacher: post: library dir change to PR access: success",
+			"name": "EMS: teacher: put: library dir change to PR access: success",
 			"event": [
 				{
 					"listen": "test",
@@ -6541,7 +6541,7 @@
 				"auth": {
 					"type": "noauth"
 				},
-				"method": "POST",
+				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
