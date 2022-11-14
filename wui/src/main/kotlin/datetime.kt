@@ -19,6 +19,8 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
     }
 }
 
+fun EzDate.toEstonianString(): String = date.toEstonianString()
+
 fun Date.toComparable() = EzDate(this)
 
 /**

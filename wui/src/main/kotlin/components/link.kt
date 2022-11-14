@@ -10,7 +10,7 @@ import tmRender
 
 class LinkComp(
         private val label: String,
-        private val icon: String?,
+        private val icon: String? = null,
         private val loadingLabel: String? = null,
         private val onClick: () -> Unit,
         parent: Component?,
@@ -21,7 +21,7 @@ class LinkComp(
 
     override fun render(): String = tmRender("t-c-link",
             "id" to id,
-            "icon" to icon,
+            "iconHtml" to icon,
             "label" to label
     )
 

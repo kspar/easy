@@ -635,6 +635,10 @@ nav.crumb-wrap .breadcrumb:before {
     }
 }
 
+.attr-list ul {
+    margin-top: 0;
+}
+
 
 /** Anonymous autoeval embed **/
 
@@ -1074,7 +1078,8 @@ ez-btn-content ez-btn-icon ~ ez-btn-text {
     }
 }
 
-a.uncolored {
+a.uncolored,
+a:not([href]) {
     color: inherit;
 }
 

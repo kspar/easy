@@ -6,13 +6,13 @@ import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
+import dao.ExerciseDAO
 import dao.LibraryDAO
 import dao.LibraryDirDAO
 import debug
 import kotlinx.coroutines.await
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
-import pages.exercise.GraderType
 import pages.sidenav.Sidenav
 import plainDstStr
 import rip.kspar.ezspa.Component
@@ -40,7 +40,7 @@ class ExerciseLibRootComp(
         override val id: String,
         override val title: String,
         override val access: DirAccess,
-        val graderType: GraderType,
+        val graderType: ExerciseDAO.GraderType,
         val coursesCount: Int,
         val modifiedAt: EzDate,
     ) : Props(id, title, access, 1)
@@ -119,7 +119,7 @@ class ExerciseLibRootComp(
         val items: List<EzCollComp.Item<Props>> = exerciseProps.map { p ->
             EzCollComp.Item<Props>(
                 p,
-                if (p.graderType == GraderType.AUTO)
+                if (p.graderType == ExerciseDAO.GraderType.AUTO)
                     EzCollComp.ItemTypeIcon(Icons.robot)
                 else
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
@@ -192,10 +192,10 @@ class ExerciseLibRootComp(
                 EzCollComp.FilterGroup<Props>(
                     "Hindamine", listOf(
                         EzCollComp.Filter("Automaatkontrolliga") {
-                            it.props is ExerciseProps && it.props.graderType == GraderType.AUTO
+                            it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.AUTO
                         },
                         EzCollComp.Filter("Käsitsi hinnatavad") {
-                            it.props is ExerciseProps && it.props.graderType == GraderType.TEACHER
+                            it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.TEACHER
                         },
                     )
                 ),

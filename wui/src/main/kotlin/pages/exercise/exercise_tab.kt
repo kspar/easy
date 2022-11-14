@@ -1,14 +1,17 @@
 package pages.exercise
 
 import MathJax
+import components.UnorderedListComp
 import components.code_editor.CodeEditorComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
+import dao.ExerciseDAO
 import highlightCode
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import lightboxExerciseImages
 import observeValueChange
+import pages.ExerciseSummaryPage
 import plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
@@ -22,7 +25,7 @@ import kotlin.js.Promise
 
 
 class ExerciseTabComp(
-    private val exercise: ExerciseDTO,
+    private val exercise: ExerciseDAO.Exercise,
     private val onValidChanged: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
@@ -62,17 +65,30 @@ class ExerciseTabComp(
 
 
 class ExerciseAttributesComp(
-    private val exercise: ExerciseDTO,
+    private val exercise: ExerciseDAO.Exercise,
     private val onValidChange: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
 
+    private lateinit var onCoursesList: UnorderedListComp
     private lateinit var titleComp: Component
 
     override val children: List<Component>
-        get() = listOf(titleComp)
+        get() = listOf(onCoursesList, titleComp)
 
     override fun create() = doInPromise {
+        onCoursesList = UnorderedListComp(
+            exercise.on_courses.map {
+                UnorderedListComp.Item(
+                    it.title + (it.course_exercise_title_alias?.let { " ($it)" } ?: ""),
+                    ExerciseSummaryPage.link(it.id, it.course_exercise_id)
+                )
+            } + if (exercise.on_courses_no_access > 0)
+                listOf(UnorderedListComp.Item("(+ ${exercise.on_courses_no_access} peidetud kursust)"))
+            else emptyList(),
+            maxItemsToShow = 5,
+            parent = this
+        )
         titleComp = ExerciseTitleViewComp(exercise.title, this)
     }
 
@@ -83,19 +99,11 @@ class ExerciseAttributesComp(
         "onCoursesLabel" to "Kasutusel kursustel",
         "notUsedOnAnyCoursesLabel" to "Mitte ühelgi!",
         // TODO: alias italic etc without label?
-        "aliasLabel" to "alias",
         "createdAt" to exercise.created_at.toEstonianString(),
         "createdBy" to exercise.owner_id,
         "modifiedAt" to exercise.last_modified.toEstonianString(),
         "modifiedBy" to exercise.last_modified_by_id,
-        "onCourses" to exercise.on_courses.map {
-            mapOf(
-                "name" to it.title,
-                "alias" to it.course_exercise_title_alias,
-                "courseId" to it.id,
-                "courseExerciseId" to it.course_exercise_id
-            )
-        },
+        "onCoursesListDst" to onCoursesList.dstId,
         "onCoursesCount" to exercise.on_courses.size,
         "titleDstId" to titleComp.dstId,
     )

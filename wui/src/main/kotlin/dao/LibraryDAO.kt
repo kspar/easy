@@ -4,7 +4,6 @@ import DateSerializer
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import pages.exercise.GraderType
 import pages.exercise_library.DirAccess
 import queries.ReqMethod
 import queries.fetchEms
@@ -41,7 +40,7 @@ object LibraryDAO {
         val dir_id: String,
         val title: String,
         val effective_access: DirAccess,
-        val grader_type: GraderType,
+        val grader_type: ExerciseDAO.GraderType,
         val courses_count: Int,
         @Serializable(with = DateSerializer::class)
         val created_at: Date,

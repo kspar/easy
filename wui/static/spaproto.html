@@ -91,10 +91,10 @@
     <li><div class="divider"></div></li>
     <li id="{{coursesId}}"><a href="{{coursesLink}}" class="waves-effect sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
     {{#isTeacherOrAdmin}}
+        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
     {{/isTeacherOrAdmin}}
     {{#isAdmin}}
 <!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="waves-effect sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
-        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
         <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
     {{/isAdmin}}
     <ez-dst id="{{newCourseModalDst}}"></ez-dst>
@@ -426,7 +426,7 @@
 </script>
 
 <script id="t-c-link" type="text/x-handlebars">
-    <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
+    <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>
 
 <script id="t-c-assessment-view" type="text/x-handlebars">
@@ -520,6 +520,15 @@
     {{#attrs}}
         <ez-attr><ez-attr-label>{{label}}:</ez-attr-label>{{value}}</ez-attr>
     {{/attrs}}
+</script>
+
+<script id="t-c-unordered-list" type="text/x-handlebars">
+    <ul class="browser-default">
+        {{#items}}
+            <li><a {{#href}}href="{{href}}"{{/href}}>{{title}}</a></li>
+        {{/items}}
+        <li class="{{^hasLink}}display-none{{/hasLink}}" style="list-style: none"><ez-dst id="{{expandLinkDst}}"></ez-dst></li>
+    </ul>
 </script>
 
 
@@ -619,12 +628,8 @@
 <script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
     <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
     <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
-    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</ez-attr>
-    <ul class="browser-default" style="margin-top: 0;">
-        {{#onCourses}}
-            <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
-        {{/onCourses}}
-    </ul>
+    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCoursesCount}}{{notUsedOnAnyCoursesLabel}}{{/onCoursesCount}}</ez-attr>
+    <ez-dst class="attr-list" id="{{onCoursesListDst}}"></ez-dst>
     <div id="{{titleDstId}}" style="margin-top: 4rem;"></div>
 </script>
 
