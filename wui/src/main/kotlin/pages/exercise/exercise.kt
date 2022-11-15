@@ -10,6 +10,7 @@ import dao.LibraryDirDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import pages.Title
+import pages.exercise_library.DirAccess
 import pages.exercise_library.createDirChainCrumbs
 import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
@@ -32,8 +33,10 @@ class ExerciseRootComp(
 
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: PageTabsComp
-    private lateinit var editModeBtns: EditModeButtonsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
+
+    // null if no write access
+    private var editModeBtns: EditModeButtonsComp? = null
 
     private lateinit var exerciseTab: ExerciseTabComp
     private lateinit var autoassessTab: AutoAssessmentTabComp
@@ -49,8 +52,10 @@ class ExerciseRootComp(
 
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
 
-        // TODO: wrong parent
-        editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+        if (exercise.effective_access >= DirAccess.PRAW) {
+            // TODO: wrong parent
+            editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+        }
 
         tabs = PageTabsComp(
             buildList {
@@ -130,7 +135,7 @@ class ExerciseRootComp(
     }
 
     private fun validChanged(_notUsed: Boolean) {
-        editModeBtns.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
+        editModeBtns?.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
     }
 
     private suspend fun editModeChanged(nowEditing: Boolean) {

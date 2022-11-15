@@ -103,7 +103,7 @@ class ExerciseAttributesComp(
         "modifiedAt" to exercise.last_modified.toEstonianString(),
         "modifiedBy" to exercise.last_modified_by_id,
         "onCoursesListDst" to onCoursesList.dstId,
-        "onCoursesCount" to exercise.on_courses.size,
+        "onCoursesCount" to (exercise.on_courses.size + exercise.on_courses_no_access),
         "titleDstId" to titleComp.dstId,
     )
 

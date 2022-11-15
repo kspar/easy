@@ -6,6 +6,7 @@ import blankToNull
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.exercise_library.DirAccess
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
@@ -26,6 +27,7 @@ object ExerciseDAO {
         var assets: List<Asset>? = null,
         var executors: List<Executor>? = null,
         val dir_id: String,
+        val effective_access: DirAccess,
         @Serializable(with = EzDateSerializer::class)
         val created_at: EzDate,
         val owner_id: String,
