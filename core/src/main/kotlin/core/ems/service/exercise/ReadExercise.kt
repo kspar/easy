@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.getAccountDirAccessLevel
 import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -29,6 +30,7 @@ class ReadExercise {
 
     data class Resp(
         @JsonProperty("dir_id") val implicitDirId: String,
+        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val created_at: DateTime,
         @JsonProperty("is_public") val public: Boolean,
@@ -115,6 +117,10 @@ class ReadExercise {
             val (onCoursesAccess, onCoursesNoAccess) =
                 usedOnCourses.partition { it.callerHasAccess || caller.isAdmin() }
 
+            val dirId = getImplicitDirFromExercise(exerciseId)
+            val access = getAccountDirAccessLevel(caller, dirId)
+                ?: throw IllegalStateException("No access for ${caller.id} to dir $dirId")
+
             (Exercise innerJoin ExerciseVer)
                 .slice(
                     Exercise.createdAt,
@@ -145,7 +151,8 @@ class ReadExercise {
                         } else null
 
                     Resp(
-                        getImplicitDirFromExercise(exerciseId).toString(),
+                        dirId.toString(),
+                        access,
                         it[Exercise.createdAt],
                         it[Exercise.public],
                         it[Exercise.anonymousAutoassessEnabled],
