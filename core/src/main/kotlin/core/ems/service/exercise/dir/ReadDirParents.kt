@@ -43,7 +43,7 @@ class ReadDirParentsController {
         log.debug { "Read parents for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
-        caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRA) }
+        caller.assertAccess { libraryDir(dirId, DirAccessLevel.P) }
 
         return selectParents(dirId)
     }
