@@ -78,7 +78,7 @@ class ExerciseAttributesComp(
 
     override fun create() = doInPromise {
         onCoursesList = UnorderedListComp(
-            exercise.on_courses.map {
+            exercise.on_courses.sortedByDescending { it.id.toInt() }.map {
                 UnorderedListComp.Item(
                     it.title + (it.course_exercise_title_alias?.let { " ($it)" } ?: ""),
                     ExerciseSummaryPage.link(it.id, it.course_exercise_id)
@@ -98,7 +98,6 @@ class ExerciseAttributesComp(
         "modifiedAtLabel" to "Viimati muudetud",
         "onCoursesLabel" to "Kasutusel kursustel",
         "notUsedOnAnyCoursesLabel" to "Mitte ühelgi!",
-        // TODO: alias italic etc without label?
         "createdAt" to exercise.created_at.toEstonianString(),
         "createdBy" to exercise.owner_id,
         "modifiedAt" to exercise.last_modified.toEstonianString(),
