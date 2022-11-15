@@ -67,6 +67,14 @@ open class ModalComp<T>(
         this.footerComps = componentsProvider(this)
     }
 
+    fun setTitle(title: String?) {
+        if (title != null) {
+            modalElement.getElemBySelector(".modal-title").textContent = title
+        } else {
+            modalElement.getElemBySelector(".modal-title").remove()
+        }
+    }
+
 //    fun addListener(listenerProducer: () -> ActiveListener) {
 //        listenerProducers.add(listenerProducer)
 //        activeListeners.add(listenerProducer())

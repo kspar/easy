@@ -4,7 +4,7 @@ import rip.kspar.ezspa.Component
 import tmRender
 
 class UnorderedListComp(
-    private val allItems: List<Item>,
+    val allItems: List<Item>,
     private val maxItemsToShow: Int = Int.MAX_VALUE,
     parent: Component
 ) : Component(parent) {

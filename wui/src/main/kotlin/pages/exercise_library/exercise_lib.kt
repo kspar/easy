@@ -9,7 +9,6 @@ import components.EzCollComp
 import dao.ExerciseDAO
 import dao.LibraryDAO
 import dao.LibraryDirDAO
-import debug
 import kotlinx.coroutines.await
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
@@ -30,35 +29,37 @@ class ExerciseLibRootComp(
 ) : Component(null, dstId) {
 
     abstract class Props(
-        open val id: String,
+        open val dirId: String,
         open val title: String,
         open val access: DirAccess,
         val type: Int,
     )
 
     data class ExerciseProps(
-        override val id: String,
+        val exerciseId: String,
+        override val dirId: String,
         override val title: String,
         override val access: DirAccess,
         val graderType: ExerciseDAO.GraderType,
         val coursesCount: Int,
         val modifiedAt: EzDate,
-    ) : Props(id, title, access, 1)
+    ) : Props(dirId, title, access, 1)
 
     data class DirProps(
-        override val id: String,
+        override val dirId: String,
         override val title: String,
         override val access: DirAccess,
-    ) : Props(id, title, access, 0)
+    ) : Props(dirId, title, access, 0)
 
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
-    private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
+    private val permissionsModal = PermissionsModalComp(parent = this)
+    private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
     override val children: List<Component>
-        get() = listOf(breadcrumbs, ezcoll, newExerciseModal, addToCourseModal, newDirModal)
+        get() = listOf(breadcrumbs, ezcoll, addToCourseModal, permissionsModal, newExerciseModal, newDirModal)
 
     override fun create() = doInPromise {
 
@@ -104,6 +105,7 @@ class ExerciseLibRootComp(
         val exerciseProps = libResp.child_exercises.map {
             ExerciseProps(
                 it.exercise_id,
+                it.dir_id,
                 it.title,
                 it.effective_access,
                 it.grader_type,
@@ -124,7 +126,7 @@ class ExerciseLibRootComp(
                 else
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
-                titleLink = ExercisePage.link(p.id),
+                titleLink = ExercisePage.link(p.exerciseId),
                 topAttr = EzCollComp.SimpleAttr(
                     "Viimati muudetud",
                     p.modifiedAt.date.toEstonianString(),
@@ -142,9 +144,11 @@ class ExerciseLibRootComp(
                     // TODO: is shared -> title icon Icons.teacher
                 ),
                 isSelectable = true,
-                actions = listOf(
-                    EzCollComp.Action(Icons.add, "Lisa kursusele...", onActivate = ::addToCourse)
-                ),
+                actions = buildList {
+                    add(EzCollComp.Action(Icons.add, "Lisa kursusele", onActivate = ::addToCourse))
+                    if (p.access == DirAccess.PRAWM)
+                        add(EzCollComp.Action(Icons.addPerson, "Jagamine", onActivate = ::permissions))
+                },
             )
         } + dirProps.map { p ->
             EzCollComp.Item<Props>(
@@ -152,7 +156,7 @@ class ExerciseLibRootComp(
                 // TODO: is shared -> Icons.sharedFolder
                 EzCollComp.ItemTypeIcon(Icons.library),
                 p.title,
-                titleLink = ExerciseLibraryPage.linkToDir(p.id),
+                titleLink = ExerciseLibraryPage.linkToDir(p.dirId),
 //                bottomAttrs = listOf(
 //                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
 //                    EzCollComp.SimpleAttr(
@@ -163,20 +167,18 @@ class ExerciseLibRootComp(
 //                    ),
 //                ),
                 isSelectable = false,
-                actions = listOf(
-                    EzCollComp.Action(Icons.delete, "Kustuta", onActivate = {
-                        // TODO
-                        debug { "delete" }
-                        EzCollComp.ResultUnmodified
-                    })
-                ),
+                actions = buildList {
+                    if (p.access == DirAccess.PRAWM)
+                        add(EzCollComp.Action(Icons.addPerson, "Jagamine", onActivate = ::permissions))
+//                    EzCollComp.Action(Icons.delete, "Kustuta", onActivate = {}),
+                },
             )
         }
 
         ezcoll = EzCollComp<Props>(
             items, EzCollComp.Strings("asi", "asja"),
             massActions = listOf(
-                EzCollComp.MassAction<Props>(Icons.add, "Lisa kursusele...", ::addToCourse)
+                EzCollComp.MassAction<Props>(Icons.add, "Lisa kursusele", ::addToCourse)
             ),
             filterGroups = listOf(
                 EzCollComp.FilterGroup<Props>(
@@ -228,19 +230,26 @@ class ExerciseLibRootComp(
     }
 
     override fun render() =
-        plainDstStr(breadcrumbs.dstId, ezcoll.dstId, newExerciseModal.dstId, addToCourseModal.dstId, newDirModal.dstId)
+        plainDstStr(
+            breadcrumbs.dstId, ezcoll.dstId,
+            addToCourseModal.dstId, permissionsModal.dstId,
+            newExerciseModal.dstId, newDirModal.dstId
+        )
 
-    private suspend fun addToCourse(item: EzCollComp.Item<Props>): EzCollComp.Result {
-        addToCourseModal.setSingleExercise(item.props.id, item.props.title)
-        return openAddToCourse()
-    }
+    private suspend fun addToCourse(item: EzCollComp.Item<Props>) = addToCourse(listOf(item))
 
     private suspend fun addToCourse(items: List<EzCollComp.Item<Props>>): EzCollComp.Result {
         if (items.size == 1) {
             val item = items.single()
-            addToCourseModal.setSingleExercise(item.props.id, item.props.title)
+            item.props as ExerciseProps
+            addToCourseModal.setSingleExercise(item.props.exerciseId, item.props.title)
         } else {
-            addToCourseModal.setMultipleExercises(items.map { it.props.id })
+            addToCourseModal.setMultipleExercises(
+                items.map {
+                    it.props as ExerciseProps
+                    it.props.exerciseId
+                }
+            )
         }
         return openAddToCourse()
     }
@@ -251,6 +260,15 @@ class ExerciseLibRootComp(
         if (added) {
             createAndBuild().await()
         }
+        return EzCollComp.ResultUnmodified
+    }
+
+    private suspend fun permissions(item: EzCollComp.Item<Props>): EzCollComp.Result {
+        permissionsModal.dirId = item.props.dirId
+        permissionsModal.setTitle(item.props.title)
+        val saved = permissionsModal.refreshAndOpen().await()
+        if (saved)
+            createAndBuild().await()
         return EzCollComp.ResultUnmodified
     }
 }

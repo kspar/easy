@@ -4,7 +4,7 @@ import rip.kspar.ezspa.Component
 import tmRender
 
 class AttrsComp(
-    private val attrs: Map<String, String>,
+    val attrs: Map<String, String>,
     parent: Component,
 ) : Component(parent) {
 
