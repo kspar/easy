@@ -1415,5 +1415,21 @@
                                  onDelete="CASCADE"/>
     </changeSet>
 
+    <changeSet id="171122-1" author="kspar">
+        <!-- Cascade container image changes -->
+        <dropForeignKeyConstraint baseTableName="executor_container_image"
+                                  constraintName="fk_executor_container_image_container_image"/>
+        <addForeignKeyConstraint baseTableName="executor_container_image" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_executor_container_image_container_image"
+                                 onUpdate="CASCADE"/>
+        <dropForeignKeyConstraint baseTableName="automatic_exercise"
+                                  constraintName="fk_automatic_exercise_container_image"/>
+        <addForeignKeyConstraint baseTableName="automatic_exercise" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_automatic_exercise_container_image"
+                                 onUpdate="CASCADE"/>
+    </changeSet>
+
 
 </databaseChangeLog>
