@@ -7,7 +7,6 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getAccountDirAccessLevel
-import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
@@ -23,12 +22,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
-
 
 @RestController
 @RequestMapping("/v2")
 class ReadDirController {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("current_dir") val currentDir: DirResp?, // null for root dir
@@ -104,7 +102,7 @@ class ReadDirController {
 
         return transaction {
             // Get current dir
-            val currentDir = selectThisDir(dirId, currentDirAccess, caller.id)
+            val currentDir = selectThisDir(dirId, currentDirAccess)
 
             // If this dir is root or only has P, then need to return only children with at least P
             val dirs = when {
@@ -148,7 +146,7 @@ class ReadDirController {
                     it.name,
                     it.access,
                     // If current dir is shared, then children are also shared
-                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id, caller.id),
+                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id),
                     it.createdAt,
                     it.modifiedAt
                 )
@@ -191,7 +189,7 @@ class ReadDirController {
                         ex.title,
                         dir.access,
                         // If current dir is shared, then children are also shared
-                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id, caller.id),
+                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id),
                         ex.graderType,
                         if (ex.usedOnCourse) courseCount else 0,
                         ex.createdAt,
@@ -241,24 +239,23 @@ class ReadDirController {
             }.also { log.trace { "best accesses: $it" } }
     }
 
-    private tailrec fun isDirectoryShared(dirId: Long, callerId: String): Boolean {
-        val callerGroupId = getImplicitGroupFromAccount(callerId)
-        val accessCountNotZero = GroupDirAccess
-            .select { GroupDirAccess.dir eq dirId and (GroupDirAccess.group neq callerGroupId) }
-            .count() > 0
+    private fun isDirectoryShared(dirId: Long): Boolean {
+        /*
+        0 accesses - teachers don't have access to this dir, so not shared
+        1 access - one teacher has access (in addition to admins), so not shared
+        more than 1 access - is shared
+        */
+        val multipleAccess = (GroupDirAccess leftJoin Dir)
+            .slice(Dir.anyAccess)
+            .select { GroupDirAccess.dir eq dirId }
+            .map { it[Dir.anyAccess] }
 
-        val anyAccess = Dir.select { Dir.id eq dirId }.firstNotNullOfOrNull { it[Dir.anyAccess] } != null
-        val parent = Dir.select { Dir.id eq dirId }.firstNotNullOfOrNull { it[Dir.parentDir]?.value }
+        val anyAccess = multipleAccess.firstOrNull() != null
 
-
-        return when {
-            anyAccess || accessCountNotZero -> true
-            parent == null -> false
-            else -> isDirectoryShared(parent, callerId)
-        }
+        return anyAccess || multipleAccess.count() > 1
     }
 
-    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?, callerId: String): DirResp? {
+    private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
         return if (dirId != null) {
             Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
                 .select {
@@ -268,7 +265,7 @@ class ReadDirController {
                         it[Dir.id].value.toString(),
                         it[Dir.name],
                         currentDirAccess!!, // not null if this is not root dir
-                        isDirectoryShared(dirId, callerId),
+                        isDirectoryShared(dirId),
                         it[Dir.createdAt],
                         it[Dir.modifiedAt],
                     )

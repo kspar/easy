@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "aa57d5bd-105e-4100-af68-5393fddd6b41",
+		"_postman_id": "aab584b8-da47-49f0-b2f5-64fa4d1ed2ae",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -6577,7 +6577,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"groupId\": \"1\",\r\n  \"access_level\" : \"PR\"\r\n}"
+					"raw": "{\r\n  \"group_id\": \"1\",\r\n  \"access_level\" : \"PR\"\r\n}"
 				},
 				"url": {
 					"raw": "{{EMSBASE}}/lib/dirs/1/access",
