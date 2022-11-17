@@ -40,6 +40,7 @@ class AddDirController {
 
         caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRAWM) }
         assertDirExists(dirId, true)
+        // TODO should assert if group exists?
         libraryDirAddAccess(dirId, body.groupId, body.level)
     }
 }

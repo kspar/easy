@@ -32,6 +32,7 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     @Value("\${easy.core.auto-assess.anonymous-submissions-to-keep}")
     private lateinit var submissionToKeep: String
 
+    // TODO should be required = true?
     data class Req(
         @JsonProperty("solution") @field:Size(max = 300000) val solution: String
     )
