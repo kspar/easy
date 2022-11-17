@@ -6,6 +6,7 @@ class StringComp(
     var parts: List<Part>,
     parent: Component
 ) : Component(parent) {
+    constructor(part: Part, parent: Component) : this(listOf(part), parent)
     constructor(text: String, parent: Component) : this(simpleText(text), parent)
 
     companion object {

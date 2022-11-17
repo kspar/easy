@@ -5,6 +5,7 @@ import components.form.validation.StringConstraints
 import components.form.validation.ValidatableFieldComp
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.events.KeyboardEvent
 import rip.kspar.ezspa.*
 import tmRender
 
@@ -20,6 +21,7 @@ class StringFieldComp(
     constraints: List<FieldConstraint<String>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
     private val onValueChange: ((String) -> Unit)? = null,
+    private val onENTER: (() -> Unit)? = null,
     private val trimValue: Boolean = true,
     parent: Component
 ) : ValidatableFieldComp<String>(
@@ -50,6 +52,11 @@ class StringFieldComp(
         getElement().onInput {
             validateAndPaint(paintRequiredOnInput)
             onValueChange?.invoke(getValue())
+        }
+        if (onENTER != null) {
+            getElement().onENTER {
+                onENTER.invoke()
+            }
         }
     }
 

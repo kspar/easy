@@ -1,6 +1,5 @@
 package pages.exercise
 
-import DateSerializer
 import Icons
 import Str
 import components.BreadcrumbsComp
@@ -10,69 +9,16 @@ import dao.ExerciseDAO
 import dao.LibraryDirDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import pages.Title
+import pages.exercise_library.DirAccess
 import pages.exercise_library.createDirChainCrumbs
 import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import successMessage
 import tmRender
-import kotlin.js.Date
-
-
-@Serializable
-data class ExerciseDTO(
-    var is_public: Boolean,
-    var grader_type: GraderType,
-    var title: String,
-    var text_adoc: String? = null,
-    var grading_script: String? = null,
-    var container_image: String? = null,
-    var max_time_sec: Int? = null,
-    var max_mem_mb: Int? = null,
-    var assets: List<AssetDTO>? = null,
-    var executors: List<ExecutorDTO>? = null,
-    val dir_id: String,
-    @Serializable(with = DateSerializer::class)
-    val created_at: Date,
-    val owner_id: String,
-    @Serializable(with = DateSerializer::class)
-    val last_modified: Date,
-    val last_modified_by_id: String,
-    val text_html: String? = null,
-    val on_courses: List<OnCourseDTO>,
-)
-
-@Serializable
-data class AssetDTO(
-    val file_name: String,
-    val file_content: String
-)
-
-@Serializable
-data class ExecutorDTO(
-    val id: String,
-    val name: String
-)
-
-@Serializable
-data class OnCourseDTO(
-    val id: String,
-    val title: String,
-    val course_exercise_id: String,
-    val course_exercise_title_alias: String?
-)
-
-enum class GraderType {
-    AUTO, TEACHER
-}
 
 
 class ExerciseRootComp(
@@ -87,8 +33,10 @@ class ExerciseRootComp(
 
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: PageTabsComp
-    private lateinit var editModeBtns: EditModeButtonsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
+
+    // null if no write access
+    private var editModeBtns: EditModeButtonsComp? = null
 
     private lateinit var exerciseTab: ExerciseTabComp
     private lateinit var autoassessTab: AutoAssessmentTabComp
@@ -97,18 +45,17 @@ class ExerciseRootComp(
         get() = listOf(crumbs, tabs, addToCourseModal)
 
     override fun create() = doInPromise {
-        val exercise = fetchEms("/exercises/$exerciseId", ReqMethod.GET,
-            successChecker = { http200 }).await()
-            .parseTo(ExerciseDTO.serializer()).await()
-
+        val exercise = ExerciseDAO.getExercise(exerciseId).await()
         val parents = LibraryDirDAO.getDirParents(exercise.dir_id).await().reversed()
 
         setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
 
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
 
-        // TODO: wrong parent
-        editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+        if (exercise.effective_access >= DirAccess.PRAW) {
+            // TODO: wrong parent
+            editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+        }
 
         tabs = PageTabsComp(
             buildList {
@@ -134,7 +81,7 @@ class ExerciseRootComp(
                     }
                 )
 
-                if (exercise.grader_type == GraderType.AUTO) {
+                if (exercise.grader_type == ExerciseDAO.GraderType.AUTO) {
                     add(
                         PageTabsComp.Tab("Katsetamine", id = testingTabId) {
                             TestingTabComp(exerciseId, it)
@@ -188,7 +135,7 @@ class ExerciseRootComp(
     }
 
     private fun validChanged(_notUsed: Boolean) {
-        editModeBtns.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
+        editModeBtns?.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
     }
 
     private suspend fun editModeChanged(nowEditing: Boolean) {
@@ -231,7 +178,6 @@ class ExerciseRootComp(
     }
 
     private suspend fun wishesToCancel() =
-        // TODO: modal
         if (hasUnsavedChanges())
             window.confirm("Siin lehel on salvestamata muudatusi. Kas oled kindel, et soovid muutmise lõpetada ilma salvestamata?")
         else true

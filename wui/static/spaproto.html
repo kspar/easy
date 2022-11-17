@@ -91,10 +91,10 @@
     <li><div class="divider"></div></li>
     <li id="{{coursesId}}"><a href="{{coursesLink}}" class="waves-effect sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
     {{#isTeacherOrAdmin}}
+        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
     {{/isTeacherOrAdmin}}
     {{#isAdmin}}
 <!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="waves-effect sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
-        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
         <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
     {{/isAdmin}}
     <ez-dst id="{{newCourseModalDst}}"></ez-dst>
@@ -108,10 +108,6 @@
         <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
         <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
     {{/isTeacherOrAdmin}}
-    {{#isAdmin}}
-        <li><a id="{{newExerciseLinkId}}" class="waves-effect sidenav-close">{{{newExerciseIcon}}}{{newExerciseLabel}}</a></li>
-<!--        <li><a class="waves-effect sidenav-close">{{{addExerciseIcon}}}{{addExerciseLabel}}</a></li>-->
-    {{/isAdmin}}
     <ez-dst id="{{newExerciseDst}}"></ez-dst>
 </script>
 
@@ -216,7 +212,7 @@
 <script id="t-c-modal" type="text/x-handlebars">
     <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}}">
         <div class="modal-content">
-            {{#title}}<h4>{{title}}</h4>{{/title}}
+            {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
             {{#bodyComps}}
                 <ez-dst id="{{id}}"></ez-dst>
             {{/bodyComps}}
@@ -430,7 +426,7 @@
 </script>
 
 <script id="t-c-link" type="text/x-handlebars">
-    <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
+    <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>
 
 <script id="t-c-assessment-view" type="text/x-handlebars">
@@ -526,6 +522,15 @@
     {{/attrs}}
 </script>
 
+<script id="t-c-unordered-list" type="text/x-handlebars">
+    <ul class="browser-default">
+        {{#items}}
+            <li><a {{#href}}href="{{href}}"{{/href}}>{{title}}</a></li>
+        {{/items}}
+        <li class="{{^hasLink}}display-none{{/hasLink}}" style="list-style: none"><ez-dst id="{{expandLinkDst}}"></ez-dst></li>
+    </ul>
+</script>
+
 
 <!-- Courses page -->
 
@@ -606,6 +611,7 @@
     <ez-dst id="{{collDst}}"></ez-dst>
     <ez-dst id="{{reorderModalDst}}"></ez-dst>
     <ez-dst id="{{updateTitleAliasModalDst}}"></ez-dst>
+    <ez-dst id="{{newExerciseModalDst}}"></ez-dst>
 </script>
 
 
@@ -622,12 +628,8 @@
 <script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
     <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
     <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
-    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</ez-attr>
-    <ul class="browser-default" style="margin-top: 0;">
-        {{#onCourses}}
-            <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
-        {{/onCourses}}
-    </ul>
+    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCoursesCount}}{{notUsedOnAnyCoursesLabel}}{{/onCoursesCount}}</ez-attr>
+    <ez-dst class="attr-list" id="{{onCoursesListDst}}"></ez-dst>
     <div id="{{titleDstId}}" style="margin-top: 4rem;"></div>
 </script>
 
@@ -1270,37 +1272,6 @@
             <div id="exercise"></div>
             <div id="submit"></div>
         </div>
-    </div>
-</script>
-
-<script id="tm-teach-exercises-list" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
-        <a class="breadcrumb truncate">{{title}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h2 class="title">{{title}}</h2>
-        <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
-            <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
-        </a>
-    </div>
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}}" href="{{href}}">
-            <div class="exercise-item" style="align-items: baseline;">
-                <span>{{title}}</span>
-                <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-            </div>
-            {{#studentsExist}}
-            <div class="bb">
-                <span class="bb-green bb-item tooltipped" style="width: {{completedPc}}%" data-position="bottom" data-tooltip="{{completedLabel}}: {{completedCount}}"></span
-                ><span class="bb-yellow bb-item tooltipped" style="width: {{startedPc}}%" data-position="bottom" data-tooltip="{{startedLabel}}: {{startedCount}}"></span
-                ><span class="bb-blue bb-item tooltipped" style="width: {{ungradedPc}}%" data-position="bottom" data-tooltip="{{ungradedLabel}}: {{ungradedCount}}"></span
-                ><span class="bb-grey bb-item tooltipped" style="width: {{unstartedPc}}%" data-position="bottom" data-tooltip="{{unstartedLabel}}: {{unstartedCount}}"></span>
-            </div>
-            {{/studentsExist}}
-        </a>
-        {{/exercises}}
     </div>
 </script>
 

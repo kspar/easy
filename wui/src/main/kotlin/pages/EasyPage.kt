@@ -2,13 +2,18 @@ package pages
 
 import Auth
 import Role
+import ScrollPosition
 import Str
 import getContainer
+import getWindowScrollPosition
 import kotlinx.dom.clear
+import kotlinx.serialization.Serializable
 import libheaders.Materialize
 import pages.sidenav.Sidenav
+import parseTo
 import rip.kspar.ezspa.Page
 import rip.kspar.ezspa.getElemsByClass
+import stringify
 import tmRender
 
 abstract class EasyPage : Page() {
@@ -74,4 +79,16 @@ abstract class EasyPage : Page() {
         // Dismiss toasts
         Materialize.Toast.dismissAll()
     }
+
+
+    @Serializable
+    data class ScrollPosState(val scrollPosition: ScrollPosition)
+
+    fun updateStateWithScrollPos() {
+        updateState(ScrollPosState.serializer().stringify(ScrollPosState(getWindowScrollPosition())))
+    }
+
+    fun String?.getScrollPosFromState(): ScrollPosition? =
+        this?.parseTo(ScrollPosState.serializer())?.scrollPosition
+
 }

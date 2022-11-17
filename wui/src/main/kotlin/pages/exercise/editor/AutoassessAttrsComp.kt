@@ -1,5 +1,6 @@
 package pages.exercise.editor
 
+import components.AttrsComp
 import kotlinx.coroutines.await
 import plainDstStr
 import rip.kspar.ezspa.Component
@@ -29,7 +30,15 @@ class AutoassessAttrsComp(
         attrs = if (isEditable)
             AutoassessAttrsEditComp(containerImage, maxTime, maxMem, onTypeChanged, onValidChanged, this)
         else
-            AutoassessAttrsReadComp(visualTypeName, maxTime, maxMem, this)
+            AttrsComp(
+                buildMap {
+                    set("Tüüp", visualTypeName)
+                    if (maxTime != null)
+                        set("Lubatud käivitusaeg", "$maxTime s")
+                    if (maxMem != null)
+                        set("Lubatud mälukasutus", "$maxMem MB")
+                }, this
+            )
     }
 
     override fun render() = plainDstStr(attrs.dstId)

@@ -18,7 +18,7 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
 import plainDstStr
-import restoreWindowScroll
+import restore
 import rip.kspar.ezspa.CacheableComponent
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -58,7 +58,7 @@ object CoursesPage : EasyPage() {
                 root.createAndBuild().await()
             } else {
                 root.createAndBuildFromState(state.rootState).await()
-                restoreWindowScroll(state.scrollPosition)
+                state.scrollPosition.restore()
             }
 
             funLog?.end()

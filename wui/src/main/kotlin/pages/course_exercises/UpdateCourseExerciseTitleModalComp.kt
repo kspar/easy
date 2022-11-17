@@ -54,6 +54,7 @@ class UpdateCourseExerciseTitleModalComp(
             initialValue = updatableCourseExercise?.alias.orEmpty(),
             constraints = listOf(StringConstraints.Length(max = 100)),
             onValidChange = { modalComp.primaryButton.setEnabled(it) },
+            onENTER = { modalComp.primaryButton.click() },
             parent = modalComp
         )
 

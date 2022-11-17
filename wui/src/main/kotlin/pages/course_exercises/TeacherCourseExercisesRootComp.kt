@@ -3,6 +3,7 @@ package pages.course_exercises
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
+import UserMessageAction
 import cache.BasicCourseInfo
 import components.EzCollComp
 import components.StringComp
@@ -15,11 +16,18 @@ import debug
 import getWindowScrollPosition
 import kotlinx.coroutines.await
 import pages.ExerciseSummaryPage
-import restoreWindowScroll
+import pages.Title
+import pages.exercise.ExercisePage
+import pages.exercise_library.CreateExerciseModalComp
+import pages.sidenav.Sidenav
+import restore
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.unionPromise
 import successMessage
 import tmRender
+import kotlin.js.Promise
 
 class TeacherCourseExercisesRootComp(
     private val courseId: String,
@@ -47,12 +55,16 @@ class TeacherCourseExercisesRootComp(
     private lateinit var updateTitleAliasModal: UpdateCourseExerciseTitleModalComp
     private lateinit var removeModal: ConfirmationTextModalComp
 
+    private val newExerciseModal = CreateExerciseModalComp(null, courseId, this)
+
     override val children: List<Component>
-        get() = listOf(coll, reorderModal, updateTitleAliasModal, removeModal)
+        get() = listOf(coll, reorderModal, updateTitleAliasModal, removeModal, newExerciseModal)
 
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
         courseTitle = BasicCourseInfo.get(courseId).await().title
+        Title.update { it.parentPageTitle = courseTitle }
+
         val exercises = exercisesPromise.await()
 
         val props = exercises.map {
@@ -81,6 +93,10 @@ class TeacherCourseExercisesRootComp(
                 progressBar = EzCollComp.ProgressBar(it.completed, it.started, it.ungraded, it.unstarted, true),
                 isSelectable = true,
                 actions = listOf(
+                    EzCollComp.Action(
+                        if (it.isVisible) Icons.hidden else Icons.visible,
+                        if (it.isVisible) "Peida" else "Avalikusta", onActivate = ::showHide
+                    ),
                     EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
                     EzCollComp.Action(Icons.edit, "Muuda pealkirja", onActivate = ::updateTitleAlias),
                     EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
@@ -91,7 +107,9 @@ class TeacherCourseExercisesRootComp(
         coll = EzCollComp(
             items, EzCollComp.Strings("ülesanne", "ülesannet"),
             massActions = listOf(
-                EzCollComp.MassAction(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
+                EzCollComp.MassAction(Icons.visible, "Avalikusta", onActivate = { setVisibility(it, true) }),
+                EzCollComp.MassAction(Icons.hidden, "Peida", onActivate = { setVisibility(it, false) }),
+                EzCollComp.MassAction(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse),
             ), filterGroups = listOf(), parent = this
         )
 
@@ -103,6 +121,28 @@ class TeacherCourseExercisesRootComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
             primaryBtnType = ButtonComp.Type.DANGER,
             id = Modal.REMOVE_EXERCISE_FROM_COURSE, parent = this
+        )
+
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                "Ülesanded", listOf(
+                    Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                        val ids = newExerciseModal.openWithClosePromise().await()
+                        if (ids != null) {
+                            if (ids.courseExerciseId != null) {
+                                // was added to course
+                                EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
+                                successMessage { "Ülesanne loodud" }
+                            } else {
+                                val action = UserMessageAction("Ava ülesandekogus") {
+                                    EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
+                                }
+                                successMessage(action = action) { "Ülesanne loodud" }
+                            }
+                        }
+                    }
+                )
+            )
         )
     }
 
@@ -117,7 +157,29 @@ class TeacherCourseExercisesRootComp(
         "collDst" to coll.dstId,
         "reorderModalDst" to reorderModal.dstId,
         "updateTitleAliasModalDst" to updateTitleAliasModal.dstId,
+        "newExerciseModalDst" to newExerciseModal.dstId,
     )
+
+
+    private suspend fun showHide(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
+        val nowVisible = !item.props.isVisible
+        return setVisibility(listOf(item), nowVisible)
+    }
+
+    private suspend fun setVisibility(items: List<EzCollComp.Item<ExProps>>, nowVisible: Boolean): EzCollComp.Result {
+        val promises = items.map {
+            if (it.props.isVisible != nowVisible) {
+                val u = CourseExercisesTeacherDAO.CourseExerciseUpdate(
+                    replace = CourseExercisesTeacherDAO.CourseExerciseReplace(isStudentVisible = nowVisible)
+                )
+                CourseExercisesTeacherDAO.updateCourseExercise(courseId, it.props.id, u)
+            } else Promise.resolve(Unit)
+        }
+        promises.unionPromise().await()
+        successMessage { if (nowVisible) "Avalikustatud" else "Peidetud" }
+        recreate()
+        return EzCollComp.ResultUnmodified
+    }
 
     private suspend fun move(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
         reorderModal.movableExercise =
@@ -188,6 +250,6 @@ class TeacherCourseExercisesRootComp(
     private suspend fun recreate() {
         val s = getWindowScrollPosition()
         createAndBuild().await()
-        restoreWindowScroll(s)
+        s.restore()
     }
 }

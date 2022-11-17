@@ -83,12 +83,12 @@ class AddToCourseModalComp(
     }
 
     private suspend fun addToCourse(courseId: String) {
-        val successes = exerciseIds.map {
+        val courseExIds = exerciseIds.map {
             ExerciseDAO.addExerciseToCourse(it, courseId)
         }.unionPromise().await()
         // show fail message only if one exercise was added
-        if (successes.size == 1) {
-            if (successes.first())
+        if (courseExIds.size == 1) {
+            if (courseExIds.first() != null)
                 successMessage { "Lisatud" }
             else
                 errorMessage { "See ülesanne on kursusel juba olemas" }

@@ -257,7 +257,8 @@ object ExerciseSummaryPage : EasyPage() {
     ): TeacherExercise {
         val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
 
-        val exercisePromise = fetchEms("/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
+        val exercisePromise = fetchEms(
+            "/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
@@ -272,14 +273,13 @@ object ExerciseSummaryPage : EasyPage() {
             it.parentPageTitle = courseTitle
         }
 
-        if (isAdmin)
-            Sidenav.replacePageSection(
-                Sidenav.PageSection(
-                    effectiveTitle, listOf(
-                        Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
-                    )
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                effectiveTitle, listOf(
+                    Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
                 )
             )
+        )
 
         debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 

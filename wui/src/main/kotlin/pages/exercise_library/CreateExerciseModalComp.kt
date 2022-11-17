@@ -38,6 +38,7 @@ class CreateExerciseModalComp(
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
+        onENTER = { modalComp.primaryButton.click() },
         parent = modalComp
     )
 
@@ -96,7 +97,6 @@ class CreateExerciseModalComp(
             ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId).await()
         } else null
 
-        // TODO: dao should return courseExId
-        return ExIds(exerciseId, null)
+        return ExIds(exerciseId, courseExId)
     }
 }

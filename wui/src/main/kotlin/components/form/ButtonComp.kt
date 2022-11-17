@@ -73,4 +73,6 @@ class ButtonComp(
             else it.addClass("disabled")
         }
     }
+
+    fun click() = element.click()
 }

@@ -268,7 +268,7 @@ class CodeEditorComp(
         editToggleComp = if (isCurrentlyEditable)
             LinkComp("Keela muutmine", null, null, ::toggleEdit, this, editToggleId)
         else
-            LinkComp("Muuda", "create", null, ::toggleEdit, this, editToggleId)
+            LinkComp("Muuda", null, null, ::toggleEdit, this, editToggleId)
 
         editToggleComp?.createAndBuild()
     }

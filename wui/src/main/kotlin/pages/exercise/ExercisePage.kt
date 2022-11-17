@@ -20,7 +20,7 @@ object ExercisePage : EasyPage() {
         get() = PageName.EXERCISE
 
     override val allowedRoles: List<Role>
-        get() = listOf(Role.ADMIN)
+        get() = listOf(Role.ADMIN, Role.TEACHER)
 
     // /library/exercise/{exerciseId}/dir1-name/dir2-name/ex-name
     override val pathSchema = "/library/exercise/{exerciseId}/**"
