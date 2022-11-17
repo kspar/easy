@@ -31,6 +31,8 @@ class TeacherDownloadSubmissionsController {
 
     data class GroupReq(@JsonProperty("id") val id: String)
 
+    private data class Course(val id: Long, val groups: List<Long>?)
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/export/exercises/{exerciseId}/submissions/latest")
     fun controller(
@@ -44,13 +46,17 @@ class TeacherDownloadSubmissionsController {
 
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
-        caller.assertAccess {
-            req.courses.forEach { course ->
-                val courseId = course.id.idToLongOrInvalidReq()
+        val courses = req.courses.map {
+            Course(it.id.idToLongOrInvalidReq(),
+                it.groups?.map { group -> group.id.idToLongOrInvalidReq() }
+            )
+        }
 
-                teacherOnCourse(courseId, true)
-                course.groups?.forEach {
-                     courseGroupAccessible(courseId, it.id.idToLongOrInvalidReq())
+        caller.assertAccess {
+            courses.forEach { course ->
+                teacherOnCourse(course.id, true)
+                course.groups?.forEach { group ->
+                    courseGroupAccessible(course.id, group)
                 }
             }
         }
@@ -60,8 +66,8 @@ class TeacherDownloadSubmissionsController {
         response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
 
         writeZipFile(
-            req.courses.map { course ->
-                course.id.idToLongOrInvalidReq() to course.groups.orEmpty().map { it.id.idToLongOrInvalidReq() }
+            courses.map {
+                it.id to it.groups.orEmpty()
             }.flatMap { (courseId, groupIds) ->
                 selectSubmission(exerciseId, courseId, groupIds, caller)
             },
