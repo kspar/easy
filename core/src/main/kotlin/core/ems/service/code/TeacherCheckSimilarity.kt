@@ -91,7 +91,6 @@ class TeacherCheckSimilarityController {
         val courses = body.courses.map { it.id.idToLongOrInvalidReq() }
 
         caller.assertAccess {
-            libraryExercise(exerciseId, DirAccessLevel.PR)
             courses.forEach { teacherOnCourse(it, true) }
         }
 
