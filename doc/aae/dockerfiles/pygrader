@@ -4,6 +4,9 @@ ENV PYTHONIOENCODING utf-8
 
 COPY python-grader /python-grader
 
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache-dir numpy~=1.23.4
+
 RUN cd /python-grader \
     && python3 /python-grader/setup.py install \
     && cd /
