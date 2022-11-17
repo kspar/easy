@@ -106,47 +106,14 @@ class ReadDirController {
             // Get current dir
             val currentDir = selectThisDir(dirId, currentDirAccess, caller.id)
 
-            // Get child dirs
-            val potentialDirs = (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
-                .slice(
-                    Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
-                    GroupDirAccess.level
-                )
-                .select {
-                    Dir.parentDir eq dirId and
-                            (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
-                }.map {
-                    PotentialDirAccess(
-                        it[Dir.id].value,
-                        it[Dir.name],
-                        maxOfOrNull(it[GroupDirAccess.level], it[Dir.anyAccess]),
-                        it[Dir.isImplicit],
-                        it[Dir.createdAt],
-                        it[Dir.modifiedAt],
-                    )
-                }
-                .also { log.trace { "potential accesses: $it" } }
-                .groupBy { it.id }
-                .also { log.trace { "grouped accesses: $it" } }
-                .map { (_, accesses) ->
-                    accesses.reduce { best, current ->
-                        val bestAccess = best.directAccess
-                        val currentAccess = current.directAccess
-                        when {
-                            currentAccess == null -> best
-                            bestAccess == null -> current
-                            currentAccess > bestAccess -> current
-                            else -> best
-                        }
-                    }
-                }.also { log.trace { "best accesses: $it" } }
-
-
             // If this dir is root or only has P, then need to return only children with at least P
             val dirs = when {
                 caller.isAdmin() -> selectAllDirsForAdmin(dirId)
                 // If caller is not admin return accessibleDirs
                 else -> {
+                    // Get child dirs
+                    val potentialDirs: List<PotentialDirAccess> = getPotentialDirs(dirId, caller)
+
                     if (currentDirAccess == null || currentDirAccess == DirAccessLevel.P) {
                         potentialDirs.filter {
                             it.directAccess != null
@@ -236,6 +203,42 @@ class ReadDirController {
 
             Resp(currentDir, childDirs, childExercises)
         }
+    }
+
+    private fun getPotentialDirs(dirId: Long?, caller: EasyUser): List<PotentialDirAccess> {
+        return (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
+            .slice(
+                Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
+                GroupDirAccess.level
+            )
+            .select {
+                Dir.parentDir eq dirId and
+                        (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
+            }.map {
+                PotentialDirAccess(
+                    it[Dir.id].value,
+                    it[Dir.name],
+                    maxOfOrNull(it[GroupDirAccess.level], it[Dir.anyAccess]),
+                    it[Dir.isImplicit],
+                    it[Dir.createdAt],
+                    it[Dir.modifiedAt],
+                )
+            }
+            .also { log.trace { "potential accesses: $it" } }
+            .groupBy { it.id }
+            .also { log.trace { "grouped accesses: $it" } }
+            .map { (_, accesses) ->
+                accesses.reduce { best, current ->
+                    val bestAccess = best.directAccess
+                    val currentAccess = current.directAccess
+                    when {
+                        currentAccess == null -> best
+                        bestAccess == null -> current
+                        currentAccess > bestAccess -> current
+                        else -> best
+                    }
+                }
+            }.also { log.trace { "best accesses: $it" } }
     }
 
     private tailrec fun isDirectoryShared(dirId: Long, callerId: String): Boolean {
