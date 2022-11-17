@@ -6,8 +6,8 @@ import core.db.AnonymousSubmission
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.PriorityLevel
+import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
-import core.ems.service.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

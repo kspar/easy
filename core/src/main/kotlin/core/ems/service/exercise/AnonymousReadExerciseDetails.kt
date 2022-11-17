@@ -3,8 +3,8 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Exercise
 import core.db.ExerciseVer
+import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
-import core.ems.service.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
