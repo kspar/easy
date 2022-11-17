@@ -129,13 +129,18 @@ fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: 
 
 
 private fun canTeacherAccessCourseGroup(userId: String, courseId: Long, groupId: Long): Boolean = transaction {
-    val hasGroups = teacherHasRestrictedGroupsOnCourse(userId, courseId)
+    val groupsOnCourse = TeacherCourseGroup
+        .slice(TeacherCourseGroup.courseGroup)
+        .select {
+            TeacherCourseGroup.course eq courseId and (TeacherCourseGroup.teacher eq userId)
+        }.map { it[TeacherCourseGroup.courseGroup] }
+
+    val hasGroups = groupsOnCourse.isNotEmpty()
+
     if (!hasGroups) {
         true
     } else {
-        TeacherCourseGroup.select {
-            TeacherCourseGroup.course eq courseId and (TeacherCourseGroup.teacher eq userId) and (TeacherCourseGroup.courseGroup eq groupId)
-        }.count() > 0
+        groupsOnCourse.any { it.equals(groupId) }
     }
 }
 
