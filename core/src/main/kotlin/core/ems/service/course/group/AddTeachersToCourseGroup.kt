@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.TeacherCourseGroup
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.canTeacherAccessCourse
+import core.ems.service.access_control.teacherOnCourse
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.batchInsert
@@ -14,11 +17,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AddTeachersToCourseGroupController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
@@ -46,8 +49,11 @@ class AddTeachersToCourseGroupController {
         if (teacherIds.contains(caller.id)) {
             throw InvalidRequestException("You cannot add yourself to a group")
         }
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+
+        caller.assertAccess {
+            teacherOnCourse(courseId, false)
+        }
+
         assertGroupExistsOnCourse(groupId, courseId)
 
         teacherIds.forEach {
@@ -58,14 +64,16 @@ class AddTeachersToCourseGroupController {
 
         addTeachersToGroup(courseId, groupId, teacherIds)
     }
-}
 
-private fun addTeachersToGroup(courseId: Long, groupId: Long, teacherIds: List<String>) {
-    transaction {
-        TeacherCourseGroup.batchInsert(teacherIds, ignore = true) {
-            this[TeacherCourseGroup.teacher] = it
-            this[TeacherCourseGroup.courseGroup] = groupId
-            this[TeacherCourseGroup.course] = courseId
+    private fun addTeachersToGroup(courseId: Long, groupId: Long, teacherIds: List<String>) {
+        transaction {
+            TeacherCourseGroup.batchInsert(teacherIds, ignore = true) {
+                this[TeacherCourseGroup.teacher] = it
+                this[TeacherCourseGroup.courseGroup] = groupId
+                this[TeacherCourseGroup.course] = courseId
+            }
         }
     }
+
 }
+

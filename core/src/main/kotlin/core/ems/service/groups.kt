@@ -1,12 +1,34 @@
 package core.ems.service
 
+import core.conf.security.EasyUser
 import core.db.Account
 import core.db.AccountGroup
 import core.db.Group
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+
+
+fun hasUserGroupAccess(user: EasyUser, groupId: Long, requireManager: Boolean): Boolean {
+    return when {
+        user.isAdmin() -> true
+        else -> hasAccountGroupAccess(user.id, groupId, requireManager)
+    }
+}
+
+private fun hasAccountGroupAccess(accountId: String, groupId: Long, requireManager: Boolean): Boolean {
+    return transaction {
+        val q = AccountGroup.select {
+            AccountGroup.account eq accountId and (AccountGroup.group eq groupId)
+        }
+        if (requireManager) {
+            q.andWhere { AccountGroup.isManager eq true }
+        }
+        q.count() >= 1L
+    }
+}
 
 fun getImplicitGroupFromAccount(accountId: String): Long = transaction {
     Group

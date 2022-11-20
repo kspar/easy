@@ -5,7 +5,8 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.AdocService
-import core.ems.service.assertTeacherOrAdminCanUpdateExercise
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -21,11 +22,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class UpdateExercise(private val adocService: AdocService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
@@ -54,7 +55,8 @@ class UpdateExercise(private val adocService: AdocService) {
 
         log.debug { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
-        assertTeacherOrAdminCanUpdateExercise(caller, exerciseId)
+
+        caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }
 
         val html = req.textAdoc?.let { adocService.adocToHtml(it) } ?: req.textHtml
         updateExercise(exerciseId, caller.id, req, html)

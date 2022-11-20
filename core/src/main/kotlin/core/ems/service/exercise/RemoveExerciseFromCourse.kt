@@ -3,6 +3,9 @@ package core.ems.service.exercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
+import core.ems.service.access_control.teacherOnCourse
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.deleteWhere
@@ -29,7 +32,7 @@ class RemoveExerciseFromCourse {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         deleteCourseExercise(courseExId)

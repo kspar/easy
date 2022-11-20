@@ -3,7 +3,8 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
@@ -22,15 +23,11 @@ import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController(
-    val moodleGradesSyncService: MoodleGradesSyncService,
-    val cachingService: CachingService
-) {
-
+class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncService, val cacheService: CachingService) {
+    private val log = KotlinLogging.logger {}
     data class Req(
         @JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
         @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?
@@ -52,44 +49,39 @@ class TeacherAssessController(
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
         val submissionId = submissionIdString.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
 
         if (!submissionExists(submissionId, courseExId, courseId)) {
             throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
         }
 
-        insertTeacherAssessment(callerId, submissionId, assessment, cachingService, courseExId)
+        insertTeacherAssessment(callerId, submissionId, assessment, courseExId)
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
-}
 
-
-private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean {
-    return transaction {
-        (Course innerJoin CourseExercise innerJoin Submission)
-            .select {
-                Course.id eq courseId and
-                        (CourseExercise.id eq courseExId) and
-                        (Submission.id eq submissionId)
-            }.count() == 1L
-    }
-}
-
-private fun insertTeacherAssessment(
-    teacherId: String,
-    submissionId: Long,
-    assessment: TeacherAssessController.Req,
-    cachingService: CachingService,
-    courseExId: Long
-) {
-    transaction {
-        TeacherAssessment.insert {
-            it[submission] = EntityID(submissionId, Submission)
-            it[teacher] = EntityID(teacherId, Teacher)
-            it[createdAt] = DateTime.now()
-            it[grade] = assessment.grade
-            it[feedback] = assessment.feedback
+    private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean {
+        return transaction {
+            (Course innerJoin CourseExercise innerJoin Submission)
+                .select {
+                    Course.id eq courseId and
+                            (CourseExercise.id eq courseExId) and
+                            (Submission.id eq submissionId)
+                }.count() == 1L
         }
     }
-    cachingService.evictSelectLatestValidGrades(courseExId)
+
+    private fun insertTeacherAssessment(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) {
+        transaction {
+            TeacherAssessment.insert {
+                it[submission] = EntityID(submissionId, Submission)
+                it[teacher] = EntityID(teacherId, Teacher)
+                it[createdAt] = DateTime.now()
+                it[grade] = assessment.grade
+                it[feedback] = assessment.feedback
+            }
+        }
+        cacheService.evictSelectLatestValidGrades(courseExId)
+    }
 }
+
+

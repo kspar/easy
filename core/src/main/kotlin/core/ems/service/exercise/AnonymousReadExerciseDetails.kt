@@ -3,8 +3,8 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Exercise
 import core.db.ExerciseVer
+import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
-import core.ems.service.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
@@ -16,11 +16,10 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class AnonymousReadExerciseDetails {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("title") val title: String,

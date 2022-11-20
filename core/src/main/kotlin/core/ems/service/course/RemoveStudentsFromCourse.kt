@@ -6,8 +6,9 @@ import core.db.StudentCourseAccess
 import core.db.StudentCourseGroup
 import core.db.StudentPendingAccess
 import core.db.StudentPendingCourseGroup
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.canTeacherOrAdminAccessCourseGroup
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.canTeacherOrAdminAccessCourseGroup
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.ForbiddenException
 import core.exception.ReqError
@@ -22,11 +23,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class RemoveStudentsFromCourseController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("active_students") @field:Valid
@@ -72,7 +73,7 @@ class RemoveStudentsFromCourseController {
         - not be in a group or if they are in any groups, at least one of the groups must be accessible to the user.
          */
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
 
         val studentIds = body.activeStudents.map { it.id }
         val pendingStudentEmails = body.pendingStudents.map { it.email }

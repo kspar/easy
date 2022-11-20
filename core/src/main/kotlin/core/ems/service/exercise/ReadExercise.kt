@@ -7,8 +7,10 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.getAccountDirAccessLevel
 import core.ems.service.getImplicitDirFromExercise
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
+import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -22,11 +24,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadExercise {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("dir_id") val implicitDirId: String,
@@ -75,19 +77,17 @@ class ReadExercise {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/exercises/{exerciseId}")
-    fun controller(
-        @PathVariable("exerciseId") exIdString: String,
-        caller: EasyUser
-    ): Resp {
+    fun controller(@PathVariable("exerciseId") exIdString: String, caller: EasyUser): Resp {
 
         log.debug { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
+        caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }
+
         return selectExerciseDetails(exerciseId, caller)
-            ?: throw InvalidRequestException("No exercise found with id $exerciseId")
     }
 
-    private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp? {
+    private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp {
         data class UsedOnCourse(
             val id: String, val title: String, val courseExId: String, val titleAlias: String?,
             val callerHasAccess: Boolean,
@@ -175,7 +175,7 @@ class ReadExercise {
                         it[Exercise.successfulAnonymousSubmissionCount],
                         it[Exercise.unsuccessfulAnonymousSubmissionCount],
                     )
-                }.singleOrNull()
+                }.singleOrInvalidRequest()
         }
     }
 }

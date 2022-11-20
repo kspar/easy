@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("solution") @field:Size(max = 300000) val solution: String
@@ -68,11 +68,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
             )
 
         val aaResult = runBlocking {
-            autoGradeScheduler.submitAndAwait(
-                aaId,
-                dto.solution,
-                PriorityLevel.AUTHENTICATED
-            )
+            autoGradeScheduler.submitAndAwait(aaId, dto.solution, PriorityLevel.AUTHENTICATED)
         }
         // TODO: maybe should save auto assessments as well and follow the scheme as with student submit:
         // this service submits and returns
