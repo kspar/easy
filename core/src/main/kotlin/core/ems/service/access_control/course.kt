@@ -129,25 +129,16 @@ fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: 
 
 
 private fun canTeacherAccessCourseGroup(userId: String, courseId: Long, groupId: Long): Boolean = transaction {
-    val groupsOnCourse = TeacherCourseGroup
-        .slice(TeacherCourseGroup.courseGroup)
-        .select {
-            TeacherCourseGroup.course eq courseId and (TeacherCourseGroup.teacher eq userId)
-        }.map { it[TeacherCourseGroup.courseGroup] }
-
-    val hasGroups = groupsOnCourse.isNotEmpty()
-
-    if (!hasGroups) {
-        true
-    } else {
-        groupsOnCourse.any { it.equals(groupId) }
-    }
+    val restrictedGroups = getTeacherRestrictedCourseGroups(userId, courseId)
+    restrictedGroups.isEmpty() || restrictedGroups.contains(groupId)
 }
 
-private fun teacherHasRestrictedGroupsOnCourse(teacherId: String, courseId: Long): Boolean = transaction {
+private fun getTeacherRestrictedCourseGroups(teacherId: String, courseId: Long): List<Long> = transaction {
     TeacherCourseGroup.select {
         TeacherCourseGroup.course eq courseId and (TeacherCourseGroup.teacher eq teacherId)
-    }.count() > 0
+    }.map {
+        it[TeacherCourseGroup.courseGroup].value
+    }
 }
 
 private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean =
@@ -181,7 +172,7 @@ private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
 }
 
 private fun assertTeacherHasNoRestrictedGroups(teacherId: String, courseId: Long) {
-    if (teacherHasRestrictedGroupsOnCourse(teacherId, courseId)) {
+    if (getTeacherRestrictedCourseGroups(teacherId, courseId).isNotEmpty()) {
         throw ForbiddenException(
             "Teacher $teacherId has restricted groups on course $courseId", ReqError.HAS_RESTRICTED_GROUPS
         )
