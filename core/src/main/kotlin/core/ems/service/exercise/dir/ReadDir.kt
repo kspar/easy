@@ -240,19 +240,22 @@ class ReadDirController {
     }
 
     private fun isDirectoryShared(dirId: Long): Boolean {
-        /*
-        0 accesses - teachers don't have access to this dir, so not shared
-        1 access - one teacher has access (in addition to admins), so not shared
-        more than 1 access - is shared
-        */
-        val multipleAccess = (GroupDirAccess leftJoin Dir)
+        // Get the number of direct accesses and anyAccess for this dir in one query
+        // TODO: innerJoin and select Dir.id eq dirId?
+        val directAccesses = (GroupDirAccess leftJoin Dir)
             .slice(Dir.anyAccess)
             .select { GroupDirAccess.dir eq dirId }
             .map { it[Dir.anyAccess] }
 
-        val anyAccess = multipleAccess.firstOrNull() != null
+        val anyAccessible = directAccesses.firstOrNull() != null
 
-        return anyAccess || multipleAccess.count() > 1
+        /*
+            - 0 accesses - teachers don't have access to this dir, so not shared
+            - 1 access - one teacher has access (in addition to admins), so not shared
+            - more than 1 access - is shared
+            Note: if one group has access then it is considered not shared, though the group may contain > 1 account
+        */
+        return anyAccessible || directAccesses.count() > 1
     }
 
     private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
