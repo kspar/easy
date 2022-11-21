@@ -7,6 +7,7 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getAccountDirAccessLevel
+import core.ems.service.getDirParentId
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
@@ -146,7 +147,7 @@ class ReadDirController {
                     it.name,
                     it.access,
                     // If current dir is shared, then children are also shared
-                    if (currentDir?.isShared == true) true else isDirectoryShared(it.id),
+                    if (currentDir?.isShared == true) true else isDirDirectlyShared(it.id),
                     it.createdAt,
                     it.modifiedAt
                 )
@@ -189,7 +190,7 @@ class ReadDirController {
                         ex.title,
                         dir.access,
                         // If current dir is shared, then children are also shared
-                        if (currentDir?.isShared == true) true else isDirectoryShared(dir.id),
+                        if (currentDir?.isShared == true) true else isDirDirectlyShared(dir.id),
                         ex.graderType,
                         if (ex.usedOnCourse) courseCount else 0,
                         ex.createdAt,
@@ -239,12 +240,12 @@ class ReadDirController {
             }.also { log.trace { "best accesses: $it" } }
     }
 
-    private fun isDirectoryShared(dirId: Long): Boolean {
+    private fun isDirDirectlyShared(dirId: Long): Boolean {
         // Get the number of direct accesses and anyAccess for this dir in one query
-        // TODO: innerJoin and select Dir.id eq dirId?
-        val directAccesses = (GroupDirAccess leftJoin Dir)
+        // leftJoin because there might be 0 accesses on it
+        val directAccesses = (Dir leftJoin GroupDirAccess)
             .slice(Dir.anyAccess)
-            .select { GroupDirAccess.dir eq dirId }
+            .select { Dir.id eq dirId }
             .map { it[Dir.anyAccess] }
 
         val anyAccessible = directAccesses.firstOrNull() != null
@@ -258,6 +259,13 @@ class ReadDirController {
         return anyAccessible || directAccesses.count() > 1
     }
 
+    private fun isDirSharedRec(dirId: Long?): Boolean {
+        if (dirId == null) {
+            return false
+        }
+        return isDirDirectlyShared(dirId) || isDirSharedRec(getDirParentId(dirId))
+    }
+
     private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
         return if (dirId != null) {
             Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
@@ -268,7 +276,7 @@ class ReadDirController {
                         it[Dir.id].value.toString(),
                         it[Dir.name],
                         currentDirAccess!!, // not null if this is not root dir
-                        isDirectoryShared(dirId),
+                        isDirSharedRec(dirId),
                         it[Dir.createdAt],
                         it[Dir.modifiedAt],
                     )
