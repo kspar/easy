@@ -34,11 +34,7 @@ fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
         }
 
         // Look at parent dir D if it exists (if not, end).
-        val parentDirId = Dir
-            .slice(Dir.parentDir)
-            .select { Dir.id eq dirId }
-            .map { it[Dir.parentDir]?.value }
-            .single() ?: return@transaction
+        val parentDirId = getDirParentId(dirId) ?: return@transaction
 
         //  If G has at least P access to D, end.
         val parentDirAccessLevel = GroupDirAccess
@@ -71,6 +67,13 @@ fun getExerciseFromImplicitDir(implicitDirId: Long): Long = transaction {
     TODO("Should it return exercise ID or more attrs like for groups?")
 }
 
+fun getDirParentId(dirId: Long): Long? = transaction {
+    Dir.slice(Dir.parentDir)
+        .select { Dir.id eq dirId }
+        .map { it[Dir.parentDir]?.value }
+        .single()
+}
+
 fun assertDirExists(dirId: Long, allowImplicit: Boolean = false) {
     if (!dirExists(dirId, allowImplicit)) {
         val explicit = if (!allowImplicit) "explicit" else ""
@@ -93,13 +96,6 @@ fun dirExists(dirId: Long, allowImplicit: Boolean = false): Boolean {
         q.count() == 1L
     }
 }
-
-@Deprecated("For debugging only")
-fun debugPrintDir(dirId: Long? = null) {
-    log.warn { "For debugging only" }
-    printDir(dirId, 0)
-}
-
 
 fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boolean {
     return when {
@@ -169,18 +165,23 @@ private tailrec fun getEffectiveDirAccessLevelRec(
     }
 }
 
-fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel? {
-    return transaction {
-        (AccountGroup innerJoin Group innerJoin GroupDirAccess)
-            .slice(GroupDirAccess.level)
-            .select {
-                AccountGroup.account eq userId and
-                        (GroupDirAccess.dir eq dirId)
-            }.map {
-                it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
-            }.maxOrNull()
-            .also { log.trace { "best group access: $it" } }
-    }
+fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel? = transaction {
+    (AccountGroup innerJoin Group innerJoin GroupDirAccess)
+        .slice(GroupDirAccess.level)
+        .select {
+            AccountGroup.account eq userId and
+                    (GroupDirAccess.dir eq dirId)
+        }.maxOfOrNull {
+            it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
+        }
+        .also { log.trace { "best group access: $it" } }
+}
+
+
+@Deprecated("For debugging only")
+fun debugPrintDir(dirId: Long? = null) {
+    log.warn { "For debugging only" }
+    printDir(dirId, 0)
 }
 
 private fun printDir(dirId: Long? = null, level: Int = 0) {
