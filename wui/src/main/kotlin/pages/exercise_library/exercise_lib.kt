@@ -18,8 +18,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import successMessage
-import toComparable
-import toEstonianString
 
 
 class ExerciseLibRootComp(
@@ -32,6 +30,7 @@ class ExerciseLibRootComp(
         open val dirId: String,
         open val title: String,
         open val access: DirAccess,
+        open val isShared: Boolean,
         val type: Int,
     )
 
@@ -40,16 +39,19 @@ class ExerciseLibRootComp(
         override val dirId: String,
         override val title: String,
         override val access: DirAccess,
+        override val isShared: Boolean,
         val graderType: ExerciseDAO.GraderType,
         val coursesCount: Int,
         val modifiedAt: EzDate,
-    ) : Props(dirId, title, access, 1)
+        val modifiedBy: String,
+    ) : Props(dirId, title, access, isShared, 1)
 
     data class DirProps(
         override val dirId: String,
         override val title: String,
         override val access: DirAccess,
-    ) : Props(dirId, title, access, 0)
+        override val isShared: Boolean,
+    ) : Props(dirId, title, access, isShared, 0)
 
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
@@ -104,18 +106,14 @@ class ExerciseLibRootComp(
 
         val exerciseProps = libResp.child_exercises.map {
             ExerciseProps(
-                it.exercise_id,
-                it.dir_id,
-                it.title,
-                it.effective_access,
-                it.grader_type,
-                it.courses_count,
-                it.modified_at.toComparable(),
+                it.exercise_id, it.dir_id, it.title,
+                it.effective_access, it.is_shared, it.grader_type, it.courses_count,
+                it.modified_at, it.modified_by,
             )
         }
 
         val dirProps = libResp.child_dirs.map {
-            DirProps(it.id, it.name, it.effective_access)
+            DirProps(it.id, it.name, it.effective_access, it.is_shared)
         }
 
         val items: List<EzCollComp.Item<Props>> = exerciseProps.map { p ->
@@ -126,11 +124,12 @@ class ExerciseLibRootComp(
                 else
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
+                titleIcon = if (p.isShared) EzCollComp.TitleIcon(Icons.teacher, "Jagatud") else null,
                 titleLink = ExercisePage.link(p.exerciseId),
                 topAttr = EzCollComp.SimpleAttr(
                     "Viimati muudetud",
-                    p.modifiedAt.date.toEstonianString(),
-                    Icons.pending
+                    "${p.modifiedAt.toHumanString(EzDate.Format.DATE)} · ${p.modifiedBy}",
+                    longValue = "${p.modifiedAt.toHumanString(EzDate.Format.FULL)} · ${p.modifiedBy}"
                 ),
                 bottomAttrs = listOf(
                     EzCollComp.SimpleAttr("Kasutusel", "${p.coursesCount} kursusel", Icons.courses),
@@ -141,7 +140,6 @@ class ExerciseLibRootComp(
 //                        Icons.exercisePermissions,
 //                        translateDirAccess(p.access)
 //                    ),
-                    // TODO: is shared -> title icon Icons.teacher
                 ),
                 isSelectable = true,
                 actions = buildList {
@@ -153,8 +151,7 @@ class ExerciseLibRootComp(
         } + dirProps.map { p ->
             EzCollComp.Item<Props>(
                 p,
-                // TODO: is shared -> Icons.sharedFolder
-                EzCollComp.ItemTypeIcon(Icons.library),
+                EzCollComp.ItemTypeIcon(if (p.isShared) Icons.sharedFolder else Icons.library),
                 p.title,
                 titleLink = ExerciseLibraryPage.linkToDir(p.dirId),
 //                bottomAttrs = listOf(
@@ -182,13 +179,9 @@ class ExerciseLibRootComp(
             ),
             filterGroups = listOf(
                 EzCollComp.FilterGroup<Props>(
-                    "Tüüp", listOf(
-                        EzCollComp.Filter("Kaustad") {
-                            it.props is DirProps
-                        },
-                        EzCollComp.Filter("Ülesanded") {
-                            it.props is ExerciseProps
-                        },
+                    "Jagamine", listOf(
+                        EzCollComp.Filter("Jagatud") { it.props.isShared },
+                        EzCollComp.Filter("Privaatsed") { !it.props.isShared },
                     )
                 ),
                 EzCollComp.FilterGroup<Props>(

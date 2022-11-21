@@ -80,8 +80,7 @@ class TeacherCourseExercisesRootComp(
                 it,
                 if (it.isAutoeval) EzCollComp.ItemTypeIcon(Icons.robot) else EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 it.effectiveTitle,
-                titleIcon = if (!it.isVisible) Icons.hiddenUnf else null,
-                titleIconLabel = if (!it.isVisible) "Peidetud" else null,
+                titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, "Peidetud") else null,
                 titleStatus = if (!it.isVisible) EzCollComp.TitleStatus.INACTIVE else EzCollComp.TitleStatus.NORMAL,
                 titleLink = ExerciseSummaryPage.link(courseId, it.id),
                 // TODO: date attr

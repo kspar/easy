@@ -31,8 +31,7 @@ class EzCollComp<P>(
         val props: P,
         val type: ItemType,
         val title: String,
-        val titleIcon: String? = null,
-        val titleIconLabel: String? = null,
+        val titleIcon: TitleIcon? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
         val titleLink: String? = null,
         val topAttr: Attr<P>? = null,
@@ -60,6 +59,8 @@ class EzCollComp<P>(
         override val isIcon = false
         override val html = text
     }
+
+    data class TitleIcon(val icon: String, val label: String)
 
     data class Action<P>(
         val iconHtml: String,
@@ -624,8 +625,8 @@ class EzCollItemComp<P>(
         "isTypeIcon" to spec.type.isIcon,
         "typeHtml" to spec.type.html,
         "title" to spec.title,
-        "titleIcon" to spec.titleIcon,
-        "titleIconLabel" to spec.titleIconLabel,
+        "titleIcon" to spec.titleIcon?.icon,
+        "titleIconLabel" to spec.titleIcon?.label,
         "titleLink" to spec.titleLink,
         "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {

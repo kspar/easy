@@ -1,6 +1,7 @@
 package dao
 
-import DateSerializer
+import EzDate
+import EzDateSerializer
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -11,7 +12,6 @@ import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
-import kotlin.js.Date
 import kotlin.js.Promise
 
 object LibraryDAO {
@@ -28,10 +28,11 @@ object LibraryDAO {
         val id: String,
         val name: String,
         val effective_access: DirAccess,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date,
-        @Serializable(with = DateSerializer::class)
-        val modified_at: Date,
+        val is_shared: Boolean,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        @Serializable(with = EzDateSerializer::class)
+        val modified_at: EzDate,
     )
 
     @Serializable
@@ -40,12 +41,15 @@ object LibraryDAO {
         val dir_id: String,
         val title: String,
         val effective_access: DirAccess,
+        val is_shared: Boolean,
         val grader_type: ExerciseDAO.GraderType,
         val courses_count: Int,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date,
-        @Serializable(with = DateSerializer::class)
-        val modified_at: Date,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        val created_by: String,
+        @Serializable(with = EzDateSerializer::class)
+        val modified_at: EzDate,
+        val modified_by: String,
     )
 
     fun getLibraryContent(parentDirId: String?): Promise<Lib> = doInPromise {
