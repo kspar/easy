@@ -311,7 +311,7 @@ object Dir : LongIdTable("exercise_dir") {
 
     // Access level given to any account for this dir,
     // i.e. anyAccess == R would give all accounts read access without any other explicit permissions
-    val anyAccess = enumerationByName("any_account_access_level", 10, DirAccessLevel::class).nullable()
+    val anyAccess = enumeration("any_account_access_level", DirAccessLevel::class).nullable()
     val createdAt = datetime("created_at")
     val modifiedAt = datetime("modified_at")
 }
@@ -319,7 +319,7 @@ object Dir : LongIdTable("exercise_dir") {
 object GroupDirAccess : Table("group_exercise_dir_access") {
     val group = reference("group_id", Group)
     val dir = reference("dir_id", Dir)
-    val level = enumerationByName("access_level", 10, DirAccessLevel::class)
+    val level = enumeration("access_level", DirAccessLevel::class)
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(group, dir)
 }

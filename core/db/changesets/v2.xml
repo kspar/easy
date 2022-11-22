@@ -1431,5 +1431,13 @@
                                  onUpdate="CASCADE"/>
     </changeSet>
 
+    <changeSet id="221122-1" author="kspar">
+        <modifyDataType tableName="group_exercise_dir_access" columnName="access_level" newDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="221122-2" author="kspar">
+        <modifyDataType tableName="exercise_dir" columnName="any_account_access_level" newDataType="integer"/>
+    </changeSet>
+
 
 </databaseChangeLog>
