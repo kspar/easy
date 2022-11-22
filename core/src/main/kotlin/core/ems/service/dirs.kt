@@ -22,21 +22,12 @@ private val log = KotlinLogging.logger {}
  */
 fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
     transaction {
-        //Add given access to given group G.
-        GroupDirAccess.insertOrUpdate(
-            listOf(GroupDirAccess.group, GroupDirAccess.dir),
-            listOf(GroupDirAccess.group, GroupDirAccess.dir)
-        ) {
-            it[group] = groupId
-            it[dir] = dirId
-            it[GroupDirAccess.level] = level
-            it[createdAt] = DateTime.now()
-        }
+        // Add given access to given group G
+        upsertGroupDirAccess(groupId, dirId, level)
 
-        // Look at parent dir D if it exists (if not, end).
+        // Look at parent dir D if it exists (if not, end)
         val parentDirId = getDirParentId(dirId) ?: return@transaction
 
-        //  If G has at least P access to D, end.
         val parentDirAccessLevel = GroupDirAccess
             .slice(GroupDirAccess.level)
             .select {
@@ -44,8 +35,9 @@ fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
             }.map { it[GroupDirAccess.level] }
             .firstOrNull()
 
-        // Add P access for G to D -> repeat
+        //  If G has at least P access to D, end
         if (parentDirAccessLevel == null) {
+            // Add P access for G to D -> repeat
             libraryDirAddAccess(parentDirId, groupId, DirAccessLevel.P)
         }
     }
@@ -175,6 +167,18 @@ fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel?
             it[GroupDirAccess.level].also { log.trace { "has group access: $it" } }
         }
         .also { log.trace { "best group access: $it" } }
+}
+
+fun upsertGroupDirAccess(groupId: Long, dirId: Long, level: DirAccessLevel) = transaction {
+    GroupDirAccess.insertOrUpdate(
+        listOf(GroupDirAccess.group, GroupDirAccess.dir),
+        listOf(GroupDirAccess.group, GroupDirAccess.dir)
+    ) {
+        it[group] = groupId
+        it[dir] = dirId
+        it[GroupDirAccess.level] = level
+        it[createdAt] = DateTime.now()
+    }
 }
 
 

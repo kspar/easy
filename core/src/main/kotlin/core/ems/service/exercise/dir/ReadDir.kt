@@ -13,7 +13,7 @@ import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.leftJoin
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -205,14 +205,16 @@ class ReadDirController {
     }
 
     private fun getPotentialDirs(dirId: Long?, caller: EasyUser): List<PotentialDirAccess> {
-        return (Dir leftJoin (GroupDirAccess innerJoin Group innerJoin AccountGroup))
-            .slice(
-                Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
-                GroupDirAccess.level
-            )
+        return Dir.leftJoin((GroupDirAccess innerJoin Group innerJoin AccountGroup),
+            onColumn = { Dir.id },
+            otherColumn = { GroupDirAccess.dir },
+            additionalConstraint = { AccountGroup.account.eq(caller.id) }
+        ).slice(
+            Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
+            GroupDirAccess.level
+        )
             .select {
-                Dir.parentDir eq dirId and
-                        (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
+                Dir.parentDir eq dirId //and (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
             }.map {
                 PotentialDirAccess(
                     it[Dir.id].value,
@@ -241,22 +243,26 @@ class ReadDirController {
     }
 
     private fun isDirDirectlyShared(dirId: Long): Boolean {
-        // Get the number of direct accesses and anyAccess for this dir in one query
+        data class DirectAccess(val isGroupImplicit: Boolean?, val anyAccess: DirAccessLevel?)
+
+        // Get direct accesses (>= PR) and anyAccess for this dir in one query
         // leftJoin because there might be 0 accesses on it
-        val directAccesses = (Dir leftJoin GroupDirAccess)
-            .slice(Dir.anyAccess)
-            .select { Dir.id eq dirId }
-            .map { it[Dir.anyAccess] }
+        val directAccesses = Dir.leftJoin((GroupDirAccess innerJoin Group), { Dir.id }, { GroupDirAccess.dir },
+            { GroupDirAccess.level.greaterEq(DirAccessLevel.PR) })
+            .slice(Dir.anyAccess, Group.isImplicit)
+            .select { Dir.id.eq(dirId) }
+            .map {
+                DirectAccess(
+                    it[Group.isImplicit], // could be null due to leftJoin
+                    it[Dir.anyAccess],
+                )
+            }
 
-        val anyAccessible = directAccesses.firstOrNull() != null
+        val anyAccessible = directAccesses.firstOrNull()?.anyAccess != null
+        val hasExplicitGroupAccess = directAccesses.any { it.isGroupImplicit == false }
 
-        /*
-            - 0 accesses - teachers don't have access to this dir, so not shared
-            - 1 access - one teacher has access (in addition to admins), so not shared
-            - more than 1 access - is shared
-            Note: if one group has access then it is considered not shared, though the group may contain > 1 account
-        */
-        return anyAccessible || directAccesses.count() > 1
+        // (anyAccess != null) || (number of >= R accesses on item > 1) || (1 access on item is for an explicit group)
+        return anyAccessible || directAccesses.count() > 1 || hasExplicitGroupAccess
     }
 
     private fun isDirSharedRec(dirId: Long?): Boolean {

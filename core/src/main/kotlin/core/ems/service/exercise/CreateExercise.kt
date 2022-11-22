@@ -96,15 +96,7 @@ class CreateExercise(private val adocService: AdocService) {
                 it[modifiedAt] = now
             }
 
-            // If caller doesn't have full access by inheritance, add it explicitly
-            if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
-                GroupDirAccess.insert {
-                    it[group] = getImplicitGroupFromAccount(caller.id)
-                    it[dir] = implicitDirId
-                    it[level] = DirAccessLevel.PRAWM
-                    it[createdAt] = now
-                }
-            }
+            upsertGroupDirAccess(getImplicitGroupFromAccount(caller.id), implicitDirId.value, DirAccessLevel.PRAWM)
 
             val exerciseId = Exercise.insertAndGetId {
                 it[owner] = teacherId

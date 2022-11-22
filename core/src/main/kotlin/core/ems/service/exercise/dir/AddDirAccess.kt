@@ -20,8 +20,8 @@ class AddDirController {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("group_id", required = true) val groupId: Long,
-        @JsonProperty("access_level", required = true) val level: DirAccessLevel,
+        @JsonProperty("group_id") val groupId: Long,
+        @JsonProperty("access_level") val level: DirAccessLevel,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -39,6 +39,7 @@ class AddDirController {
         val dirId = dirIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRAWM) }
+
         assertDirExists(dirId, true)
         // TODO should assert if group exists?
         libraryDirAddAccess(dirId, body.groupId, body.level)

@@ -4,15 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Dir
 import core.db.DirAccessLevel
-import core.db.GroupDirAccess
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getImplicitGroupFromAccount
-import core.ems.service.hasAccountDirAccess
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.upsertGroupDirAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -65,20 +63,10 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
             }
             it[createdAt] = now
             it[modifiedAt] = now
-        }
+        }.value
 
-        // If caller doesn't have full access by inheritance, add it explicitly
-        if (!caller.isAdmin() &&
-            (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM))
-        ) {
-            GroupDirAccess.insert {
-                it[group] = getImplicitGroupFromAccount(caller.id)
-                it[dir] = newDirId
-                it[level] = DirAccessLevel.PRAWM
-                it[createdAt] = now
-            }
-        }
+        upsertGroupDirAccess(getImplicitGroupFromAccount(caller.id), newDirId, DirAccessLevel.PRAWM)
 
-        newDirId.value
+        newDirId
     }
 }
