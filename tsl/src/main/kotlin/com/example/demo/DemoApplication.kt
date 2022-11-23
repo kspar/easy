@@ -97,7 +97,7 @@ data class CompiledResult(
 
 fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): CompiledResult {
     when (backendID) {
-        "Tiivad" -> {
+        "tiivad" -> {
             val parseTree = f.decodeFromString<Check>(tslSpec)
 
             // val irTree = IRTree(parseTree) TODO: Uncomment me
