@@ -3,11 +3,12 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
-import core.db.Course
-import core.db.CourseExercise
-import core.db.Exercise
-import core.db.StoredFile
+import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.isExerciseOnCourse
+import core.ems.service.access_control.libraryExercise
+import core.ems.service.access_control.teacherOnCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeDeserializer
@@ -23,11 +24,10 @@ import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class AddExerciseToCourseCont(private val adocService: AdocService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("exercise_id") @field:Size(max = 100)
@@ -50,47 +50,53 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         val titleAlias: String?
     )
 
+    data class Resp(@JsonProperty("id") val id: String)
+
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")
     fun controller(
         @PathVariable("courseId") courseIdString: String,
         @Valid @RequestBody body: Req,
         caller: EasyUser
-    ) {
+    ): Resp {
         log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
 
         val courseId = courseIdString.idToLongOrInvalidReq()
         val exerciseId = body.exerciseId.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        caller.assertAccess {
+            teacherOnCourse(courseId, true)
+            libraryExercise(exerciseId, DirAccessLevel.PR)
+        }
 
         if (!isCoursePresent(courseId)) {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
         if (isExerciseOnCourse(exerciseId, courseId, false)) {
-            throw InvalidRequestException("Exercise $exerciseId is already on course $courseId", ReqError.EXERCISE_ALREADY_ON_COURSE)
+            throw InvalidRequestException(
+                "Exercise $exerciseId is already on course $courseId",
+                ReqError.EXERCISE_ALREADY_ON_COURSE
+            )
         }
 
-        when (body.instructionsAdoc) {
+        val id = when (body.instructionsAdoc) {
             null -> insertCourseExercise(courseId, body, null)
             else -> insertCourseExercise(courseId, body, adocService.adocToHtml(body.instructionsAdoc))
         }
+        return Resp(id.toString())
     }
 
-    private fun isCoursePresent(courseId: Long): Boolean {
-        return transaction {
-            Course.select {
-                Course.id eq courseId
-            }.count() > 0
-        }
+    private fun isCoursePresent(courseId: Long): Boolean = transaction {
+        Course.select {
+            Course.id eq courseId
+        }.count() > 0
     }
 
-    private fun insertCourseExercise(courseId: Long, body: Req, html: String?) {
-        val exerciseId = body.exerciseId.idToLongOrInvalidReq()
-        val now = DateTime.now()
+    private fun insertCourseExercise(courseId: Long, body: Req, html: String?): Long =
         transaction {
+            val exerciseId = body.exerciseId.idToLongOrInvalidReq()
+            val now = DateTime.now()
             val orderIdxMaxColumn = CourseExercise.orderIdx.max()
 
             val currentMaxOrderIdx = CourseExercise
@@ -106,7 +112,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
 
             val studentVisibleFromTime = if (body.isStudentVisible) DateTime.now() else null
 
-            CourseExercise.insert {
+            val id = CourseExercise.insertAndGetId {
                 it[course] = EntityID(courseId, Course)
                 it[exercise] = EntityID(exerciseId, Exercise)
                 it[createdAt] = now
@@ -133,6 +139,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
                     it[StoredFile.exercise] = EntityID(exerciseId, Exercise)
                 }
             }
+
+            id.value
         }
-    }
 }

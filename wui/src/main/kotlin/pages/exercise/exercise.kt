@@ -1,106 +1,97 @@
 package pages.exercise
 
-import DateSerializer
 import Icons
 import Str
-import blankToNull
 import components.BreadcrumbsComp
-import components.CardTabsComp
-import components.Crumb
+import components.EditModeButtonsComp
+import components.PageTabsComp
+import dao.ExerciseDAO
+import dao.LibraryDirDAO
+import kotlinx.browser.window
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import pages.Title
+import pages.exercise_library.DirAccess
+import pages.exercise_library.createDirChainCrumbs
+import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import successMessage
 import tmRender
-import kotlin.js.Date
-import kotlin.js.Promise
-
-
-@Serializable
-data class ExerciseDTO(
-    var is_public: Boolean,
-    var grader_type: GraderType,
-    var title: String,
-    var text_adoc: String? = null,
-    var grading_script: String? = null,
-    var container_image: String? = null,
-    var max_time_sec: Int? = null,
-    var max_mem_mb: Int? = null,
-    var assets: List<AssetDTO>? = null,
-    var executors: List<ExecutorDTO>? = null,
-    @Serializable(with = DateSerializer::class)
-    val created_at: Date,
-    val owner_id: String,
-    @Serializable(with = DateSerializer::class)
-    val last_modified: Date,
-    val last_modified_by_id: String,
-    val text_html: String? = null,
-    val on_courses: List<OnCourseDTO>
-)
-
-@Serializable
-data class AssetDTO(
-    val file_name: String,
-    val file_content: String
-)
-
-@Serializable
-data class ExecutorDTO(
-    val id: String,
-    val name: String
-)
-
-@Serializable
-data class OnCourseDTO(
-    val id: String,
-    val title: String,
-    val course_exercise_id: String,
-    val course_exercise_title_alias: String?
-)
-
-enum class GraderType {
-    AUTO, TEACHER
-}
 
 
 class ExerciseRootComp(
     private val exerciseId: String,
-    preselectedTabId: String?,
-    private val onActivateTab: (String) -> Unit,
+    private val setPathSuffix: (String) -> Unit,
     dstId: String
 ) : Component(null, dstId) {
 
-    companion object {
-        private const val EXERCISE_TAB_ID = "exercise"
-        private const val AA_TAB_ID = "autoassess"
-        private const val TESTING_TAB_ID = "testing"
-    }
+    private val exerciseTabId = IdGenerator.nextId()
+    private val autoassessTabId = IdGenerator.nextId()
+    private val testingTabId = IdGenerator.nextId()
 
     private lateinit var crumbs: BreadcrumbsComp
-    private lateinit var tabs: CardTabsComp
+    private lateinit var tabs: PageTabsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
 
-    private var autoassessComp: AutoAssessmentTabComp? = null
+    // null if no write access
+    private var editModeBtns: EditModeButtonsComp? = null
 
-    private var selectedTabId: String? = preselectedTabId
+    private lateinit var exerciseTab: ExerciseTabComp
+    private lateinit var autoassessTab: AutoAssessmentTabComp
 
     override val children: List<Component>
         get() = listOf(crumbs, tabs, addToCourseModal)
 
-    override fun create(): Promise<*> = doInPromise {
-        val exercise = fetchEms("/exercises/$exerciseId", ReqMethod.GET,
-            successChecker = { http200 }).await()
-            .parseTo(ExerciseDTO.serializer()).await()
+    override fun create() = doInPromise {
+        val exercise = ExerciseDAO.getExercise(exerciseId).await()
+        val parents = LibraryDirDAO.getDirParents(exercise.dir_id).await().reversed()
 
-        crumbs = BreadcrumbsComp(listOf(Crumb.exercises, Crumb(exercise.title)), this)
-        tabs = CardTabsComp(this, ::onTabSelected)
+        setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
+
+        crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
+
+        if (exercise.effective_access >= DirAccess.PRAW) {
+            // TODO: wrong parent
+            editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
+        }
+
+        tabs = PageTabsComp(
+            buildList {
+                add(
+                    PageTabsComp.Tab("Ülesanne", preselected = true, id = exerciseTabId) {
+                        ExerciseTabComp(exercise, ::validChanged, it)
+                            .also { exerciseTab = it }
+                    }
+                )
+
+                add(
+                    PageTabsComp.Tab("Automaatkontroll", id = autoassessTabId) {
+                        val aaProps = if (exercise.grading_script != null) {
+                            AutoAssessmentTabComp.AutoAssessProps(
+                                exercise.grading_script!!,
+                                exercise.assets!!.associate { it.file_name to it.file_content },
+                                exercise.container_image!!, exercise.max_time_sec!!, exercise.max_mem_mb!!
+                            )
+                        } else null
+
+                        AutoAssessmentTabComp(aaProps, ::validChanged, it)
+                            .also { autoassessTab = it }
+                    }
+                )
+
+                if (exercise.grader_type == ExerciseDAO.GraderType.AUTO) {
+                    add(
+                        PageTabsComp.Tab("Katsetamine", id = testingTabId) {
+                            TestingTabComp(exerciseId, it)
+                        }
+                    )
+                }
+            },
+            trailerComp = editModeBtns,
+            parent = this
+        )
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
 
         Title.update {
@@ -120,73 +111,74 @@ class ExerciseRootComp(
                 )
             )
         )
-
-        val tabsList = mutableListOf<CardTabsComp.Tab>()
-
-        tabsList.add(
-            CardTabsComp.Tab(
-                EXERCISE_TAB_ID,
-                "Ülesanne",
-                ExerciseTabComp(exercise, ::saveExercise, tabs),
-                selectedTabId == EXERCISE_TAB_ID
-            )
-        )
-
-        if (exercise.grader_type == GraderType.AUTO) {
-            val autoComp = AutoAssessmentTabComp(exercise, ::saveExercise, this.tabs)
-            autoassessComp = autoComp
-
-            tabsList.add(CardTabsComp.Tab(AA_TAB_ID, "Automaatkontroll", autoComp, selectedTabId == AA_TAB_ID))
-            tabsList.add(
-                CardTabsComp.Tab(
-                    TESTING_TAB_ID,
-                    "Katsetamine",
-                    TestingTabComp(exerciseId, this.tabs),
-                    selectedTabId == TESTING_TAB_ID
-                )
-            )
-        }
-
-        tabs.setTabs(tabsList)
     }
+
+    override fun hasUnsavedChanges(): Boolean =
+        exerciseTab.hasUnsavedChanges() ||
+                autoassessTab.hasUnsavedChanges()
 
     override fun render(): String = tmRender(
         "t-c-exercise",
         "crumbsDstId" to crumbs.dstId,
-        "cardDstId" to tabs.dstId,
+        "tabsDstId" to tabs.dstId,
         "addToCourseModalDstId" to addToCourseModal.dstId,
     )
 
-    private fun onTabSelected(tabId: String) {
-        selectedTabId = tabId
-        onActivateTab(tabId)
-    }
-
-    private suspend fun saveExercise(exercise: ExerciseDTO) {
-        val body = exercise.let {
-            mapOf(
-                "title" to it.title,
-                "text_adoc" to it.text_adoc.blankToNull(),
-                "text_html" to it.text_html,
-                "public" to it.is_public,
-                "grader_type" to it.grader_type.name,
-                "grading_script" to it.grading_script,
-                "container_image" to it.container_image,
-                "max_time_sec" to it.max_time_sec,
-                "max_mem_mb" to it.max_mem_mb,
-                "assets" to it.assets?.map { mapOf("file_name" to it.file_name, "file_content" to it.file_content) },
-                "executors" to it.executors?.map { mapOf("executor_id" to it.id) }
-            )
-        }
-        fetchEms("/exercises/$exerciseId", ReqMethod.PUT, body, successChecker = { http200 }).await()
-        successMessage { "Ülesanne salvestatud" }
-
-        recreate()
-    }
-
     private suspend fun recreate() {
-        val editorTabId = autoassessComp?.getEditorActiveTabId()
+        val selectedTab = tabs.getSelectedTab()
+        val editorView = autoassessTab.getEditorActiveView()
+
         createAndBuild().await()
-        editorTabId?.let { autoassessComp?.setEditorActiveTabId(editorTabId) }
+
+        tabs.setSelectedTab(selectedTab)
+        autoassessTab.setEditorActiveView(editorView)
     }
+
+    private fun validChanged(_notUsed: Boolean) {
+        editModeBtns?.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
+    }
+
+    private suspend fun editModeChanged(nowEditing: Boolean) {
+        tabs.refreshIndicator()
+
+        // exercise tab: title, text editor
+        exerciseTab.setEditable(nowEditing)
+
+        // aa tab: attrs, editor
+        val editorView = autoassessTab.getEditorActiveView()
+        autoassessTab.setEditable(nowEditing)
+        autoassessTab.setEditorActiveView(editorView)
+    }
+
+    private suspend fun saveExercise(): Boolean {
+        val exerciseProps = exerciseTab.getEditedProps()
+        val autoevalProps = autoassessTab.getEditedProps()
+
+        ExerciseDAO.updateExercise(
+            exerciseId,
+            ExerciseDAO.UpdatedExercise(
+                exerciseProps.title,
+                exerciseProps.textAdoc,
+                exerciseProps.textHtml,
+                if (autoevalProps != null)
+                    ExerciseDAO.Autoeval(
+                        autoevalProps.containerImage,
+                        autoevalProps.evalScript,
+                        autoevalProps.assets,
+                        autoevalProps.maxTime,
+                        autoevalProps.maxMem,
+                    )
+                else null
+            )
+        ).await()
+
+        successMessage { "Ülesanne salvestatud" }
+        recreate()
+        return true
+    }
+
+    private suspend fun wishesToCancel() =
+        if (hasUnsavedChanges())
+            window.confirm("Siin lehel on salvestamata muudatusi. Kas oled kindel, et soovid muutmise lõpetada ilma salvestamata?")
+        else true
 }

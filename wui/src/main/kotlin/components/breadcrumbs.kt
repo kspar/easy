@@ -1,7 +1,6 @@
 package components
 
 import Str
-import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise_library.ExerciseLibraryPage
 import rip.kspar.ezspa.Component
@@ -12,8 +11,7 @@ import tmRender
 data class Crumb(val label: String, val href: String? = null) {
     companion object {
         val myCourses = Crumb(Str.myCourses(), CoursesPage.link())
-        fun courseExercises(courseId: String, courseTitle: String) = Crumb(courseTitle, CourseExercisesPage.link(courseId))
-        val exercises = Crumb(Str.exerciseLibrary(), ExerciseLibraryPage.link())
+        val libraryRoot = Crumb(Str.exerciseLibrary(), ExerciseLibraryPage.linkToRoot())
     }
 }
 

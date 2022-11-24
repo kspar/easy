@@ -1375,4 +1375,69 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="191022-1" author="priit">
+        <dropForeignKeyConstraint baseTableName="submission"
+                                  constraintName="fk_submission_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="submission_draft"
+                                  constraintName="fk_submission_draft_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission_draft"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_draft_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment"
+                                  constraintName="fk_teacher_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_teacher_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="automatic_assessment"
+                                  constraintName="fk_automatic_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="automatic_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_automatic_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="171122-1" author="kspar">
+        <!-- Cascade container image changes -->
+        <dropForeignKeyConstraint baseTableName="executor_container_image"
+                                  constraintName="fk_executor_container_image_container_image"/>
+        <addForeignKeyConstraint baseTableName="executor_container_image" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_executor_container_image_container_image"
+                                 onUpdate="CASCADE"/>
+        <dropForeignKeyConstraint baseTableName="automatic_exercise"
+                                  constraintName="fk_automatic_exercise_container_image"/>
+        <addForeignKeyConstraint baseTableName="automatic_exercise" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_automatic_exercise_container_image"
+                                 onUpdate="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="221122-1" author="kspar">
+        <modifyDataType tableName="group_exercise_dir_access" columnName="access_level" newDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="221122-2" author="kspar">
+        <modifyDataType tableName="exercise_dir" columnName="any_account_access_level" newDataType="integer"/>
+    </changeSet>
+
+
 </databaseChangeLog>

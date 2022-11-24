@@ -40,6 +40,7 @@ abstract class Component(
      * Produce HTML that represents this component's current state. This HTML is inserted into the destination element
      * when building the component.
      */
+    // TODO: default render could be plainDst(children)?
     protected abstract fun render(): String
 
     /**
@@ -78,6 +79,8 @@ abstract class Component(
         children.map { it.createAndBuild() }.unionPromise().await()
         postChildrenBuilt()
     }
+
+    open fun hasUnsavedChanges(): Boolean = children.any { it.hasUnsavedChanges() }
 
     open fun createAndBuild3(): Promise<*>? {
         paintLoading()

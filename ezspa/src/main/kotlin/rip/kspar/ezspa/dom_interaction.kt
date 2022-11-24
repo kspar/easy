@@ -4,6 +4,7 @@ import kotlinx.coroutines.await
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.w3c.dom.events.Event
+import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
 import kotlin.js.Date
 
@@ -46,7 +47,7 @@ fun List<Node>.onVanillaClick(preventDefault: Boolean, f: suspend (event: MouseE
     }
 }
 
-fun Node.onChange(f: (event: Event) -> Unit): ActiveListener {
+fun Node.onChange(f: suspend (event: Event) -> Unit): ActiveListener {
     val listener: (Event) -> Unit = { event: Event ->
         doInPromise {
             f(event)
@@ -61,6 +62,18 @@ fun Node.onInput(debounceDelay: Int = 250, f: (event: Event) -> Unit): ActiveLis
     val listener = createEventListenerWithDebounce(debounceDelay, f)
     this.addEventListener("input", listener)
     return ActiveListener(this, "input", listener)
+}
+
+fun Element.onENTER(f: (KeyboardEvent) -> Unit): ActiveListener {
+    val listener = { e: Event ->
+        e as KeyboardEvent
+        if (e.keyCode == 13 && !e.repeat) {
+            f(e)
+            e.preventDefault()
+        }
+    }
+    this.addEventListener("keydown", listener)
+    return ActiveListener(this, "keydown", listener)
 }
 
 private fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event: Event) -> Unit): (Event) -> Unit {

@@ -2,6 +2,7 @@ package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.ems.service.cache.CachingService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.exception.ResourceLockedException
@@ -29,7 +30,7 @@ private val log = KotlinLogging.logger {}
 data class MoodleSyncedStudents(val syncedStudents: Int, val syncedPendingStudents: Int)
 
 @Service
-class MoodleStudentsSyncService(val mailService: SendMailService) {
+class MoodleStudentsSyncService(val mailService: SendMailService, val cachingService: CachingService) {
 
     @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
@@ -50,6 +51,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 log.warn { "Course $courseId students not synced with Moodle, shortname: $shortname" }
             } else {
                 insertStudentsFromMoodleResponse(queryStudents(shortname), courseId)
+                    .also { if (it.syncedStudents > 0) cachingService.evictSelectLatestValidGradeForCourse(courseId) }
             }
         }
     }

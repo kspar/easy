@@ -2,11 +2,9 @@ package components.modal
 
 import libheaders.MModalInstance
 import libheaders.Materialize
-import objOf
 import org.w3c.dom.Element
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.getElemById
+import plainDstStr
+import rip.kspar.ezspa.*
 import tmRender
 import kotlin.js.Promise
 
@@ -20,9 +18,9 @@ open class ModalComp<T>(
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     private val onOpen: (() -> Unit)? = null,
     parent: Component?,
-    dstId: String = IdGenerator.nextId(),
+    private val id: Modal,
     private val modalId: String = IdGenerator.nextId(),
-) : Component(parent, dstId) {
+) : Component(parent, id.name) {
 
     private val modalElement: Element
         get() = getElemById(modalId)
@@ -43,6 +41,13 @@ open class ModalComp<T>(
     override val children: List<Component>
         get() = bodyComps + footerComps
 
+    override fun create() = doInPromise {
+        // Create dst in modals container
+        val dstId = id.name
+        if (getElemBySelector("#ez-modals #$dstId") == null)
+            getElemById("ez-modals").appendHTML(plainDstStr(dstId))
+    }
+
     override fun render(): String = tmRender(
         "t-c-modal",
         "id" to modalId,
@@ -60,6 +65,14 @@ open class ModalComp<T>(
 
     fun setFooterComps(componentsProvider: (ModalComp<T>) -> List<Component>) {
         this.footerComps = componentsProvider(this)
+    }
+
+    fun setTitle(title: String?) {
+        if (title != null) {
+            modalElement.getElemBySelector(".modal-title").textContent = title
+        } else {
+            modalElement.getElemBySelector(".modal-title").remove()
+        }
     }
 
 //    fun addListener(listenerProducer: () -> ActiveListener) {

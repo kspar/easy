@@ -38,9 +38,19 @@
         </div>
     </div>
 </div>
-<header>
+<header class="display-none">
+    <div id="nav-wrap"></div>
 </header>
-<main>
+<main class="display-none">
+    <ez-modals id="ez-modals">
+        <ez-dst id="ADD_STUDENTS_TO_COURSE" class="add-participants-modal"></ez-dst>
+        <ez-dst id="ADD_TEACHERS_TO_COURSE" class="add-participants-modal"></ez-dst>
+        <ez-dst id="UPDATE_COURSE_EXERCISE_TITLE_ALIAS" class="update-course-ex-title-modal"></ez-dst>
+    </ez-modals>
+    <div id="sidenav-wrap"></div>
+    <div class="container">
+        <div id="content-container" class="content-container"></div>
+    </div>
 </main>
 <footer>
 </footer>
@@ -57,27 +67,6 @@
         <ez-dst id="{{pageSectionId}}"></ez-dst>
         <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
     </ul>
-
-    <!-- Workaround: modals cannot be inside elements that have transforms like sidenav: -->
-    <!-- Elements with transforms act as a containing block for fixed position descendants, so position:fixed under something with a transform no longer has fixed behavior. -->
-    <ez-dst id="new-course-modal-dst-id"></ez-dst>
-    <ez-dst id="new-exercise-modal-dst-id"></ez-dst>
-
-    <!-- New exercise modal -->
-    <div id="new-exercise-modal" class="modal">
-        <div class="modal-content">
-            <h4>{{newExerciseLabel}}</h4>
-            <div class="form-fields">
-                <div class="input-field">
-                    <input id="new-exercise-name-input" type="text">
-                    <label for="new-exercise-name-input">{{newExerciseTitleLabel}}</label>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>{{doSaveLabel}}</ez-btn-content></button>
-        </div>
-    </div>
 </script>
 
 <script id="t-c-sidenav-head-account-section" type="text/x-handlebars">
@@ -102,12 +91,13 @@
     <li><div class="divider"></div></li>
     <li id="{{coursesId}}"><a href="{{coursesLink}}" class="waves-effect sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
     {{#isTeacherOrAdmin}}
+        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
     {{/isTeacherOrAdmin}}
     {{#isAdmin}}
 <!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="waves-effect sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
-        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
         <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
     {{/isAdmin}}
+    <ez-dst id="{{newCourseModalDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-course-section" type="text/x-handlebars">
@@ -116,14 +106,9 @@
     <li id="{{exercisesId}}"><a href="{{exercisesLink}}" class="waves-effect sidenav-close">{{{exercisesIcon}}}{{exercisesLabel}}</a></li>
     {{#isTeacherOrAdmin}}
         <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
-        <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}<span class="badge">{{newLabel}}</span></a></li>
-        <li id="{{oldParticipantsId}}"><a href="{{oldParticipantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{oldParticipantsLabel}}</a></li>
+        <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
     {{/isTeacherOrAdmin}}
-    {{#isAdmin}}
-        <li><a id="{{newExerciseLinkId}}" class="waves-effect sidenav-close">{{{newExerciseIcon}}}{{newExerciseLabel}}</a></li>
-<!--        <li><a class="waves-effect sidenav-close">{{{addExerciseIcon}}}{{addExerciseLabel}}</a></li>-->
-
-    {{/isAdmin}}
+    <ez-dst id="{{newExerciseDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-page-section" type="text/x-handlebars">
@@ -178,10 +163,15 @@
 </script>
 
 <script id="t-c-page-tabs" type="text/x-handlebars">
-    <ul id="{{tabsId}}" class="tabs ez-tabs">
-        <!-- On one line, avoid whitespace between items -->
-        {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
-    </ul>
+    <ez-tabs-header>
+        <ul id="{{tabsId}}" class="tabs ez-tabs">
+            <!-- On one line, avoid whitespace between items -->
+            {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
+        </ul>
+        {{#trailerElementId}}
+            <ez-tabs-trailer id="{{trailerElementId}}"></ez-tabs-trailer>
+        {{/trailerElementId}}
+    </ez-tabs-header>
     <ez-tabs-content>
         {{#tabs}}
         <ez-tab-content id="{{id}}">
@@ -222,7 +212,7 @@
 <script id="t-c-modal" type="text/x-handlebars">
     <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}}">
         <div class="modal-content">
-            {{#title}}<h4>{{title}}</h4>{{/title}}
+            {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
             {{#bodyComps}}
                 <ez-dst id="{{id}}"></ez-dst>
             {{/bodyComps}}
@@ -322,77 +312,96 @@
 </script>
 
 <script id="t-c-ezcoll-item" type="text/x-handlebars">
-    <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}}">
-        <ezc-item-container>
-            <ezc-left>
-                <ezc-item-type>
-                    {{#isTypeIcon}}{{{typeHtml}}}{{/isTypeIcon}}
-                    {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
-                </ezc-item-type>
-                <label class="ezc-item-checkbox">
-                    <input id="ezc-item-checkbox-{{itemId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
-                </label>
-            </ezc-left>
-            <ezc-main>
-                <ezc-center>
-                    <ezc-first>
-                        <ezc-title {{#titleInactive}}class="inactive"{{/titleInactive}}><a {{#titleLink}}href="{{titleLink}}"{{/titleLink}}>{{title}}</a></ezc-title>
-                        {{#topAttr}}
-                            <ezc-attr class="top" ez-show-min="{{minCollWidth}}">
-                                <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">{{{shortValueHtml}}}</ezc-attr-text>
-                            </ezc-attr>
-                        {{/topAttr}}
-                    </ezc-first>
-                    {{#hasBottomAttrs}}
-                        <ezc-second>
-                            <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
-                                {{#bottomAttrs}}
-                                    <ezc-attr class="bottom">
-                                        <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">
-                                            {{{shortValueHtml}}}
-                                        </ezc-attr-text>
-                                    </ezc-attr>
-                                {{/bottomAttrs}}
-                            </ezc-bottom-attrs>
-                            <ezc-fold class="display-none">
-                                {{#topAttr}}
-                                    <ezc-fold-attr ez-show-max="{{maxCollWidthInFold}}">
-                                        <ezc-fold-key>{{key}}:</ezc-fold-key>
-                                        <ezc-fold-value>
-                                            <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                {{/topAttr}}
-                                {{#bottomAttrs}}
-                                    <ezc-fold-attr>
-                                        <ezc-fold-key>{{key}}:</ezc-fold-key>
-                                        <ezc-fold-value>
-                                            <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
-                                        </ezc-fold-value>
-                                    </ezc-fold-attr>
-                                {{/bottomAttrs}}
-                            </ezc-fold>
-                            {{#hasActions}}
-                                <ezc-bottom-space>
-                                    {{#actions}}{{#showShortcut}}
-                                        <ez-icon-action ez-action="{{id}}" ez-show-min="{{minCollWidth}}" title="{{text}}" class="waves-effect" tabindex="0">{{{iconHtml}}}</ez-icon-action>
-                                    {{/showShortcut}}{{/actions}}
-                                </ezc-bottom-space>
-                            {{/hasActions}}
-                        </ezc-second>
-                    {{/hasBottomAttrs}}
-                </ezc-center>
-            </ezc-main>
-            {{#hasActions}}
-                <ezc-right>
-                    <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="waves-effect dropdown-trigger" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
-                        <ez-icon class="med">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                        </ez-icon>
-                    </ez-icon-action>
-                </ezc-right>
-            {{/hasActions}}
-        </ezc-item-container>
+    <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}} {{#progressBar}}has-bar{{/progressBar}} {{#inactive}}inactive{{/inactive}}">
+        <ezc-bar-container>
+            <ezc-item-container>
+                <ezc-left>
+                    <ezc-item-type>
+                        {{#isTypeIcon}}{{{typeHtml}}}{{/isTypeIcon}}
+                        {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
+                    </ezc-item-type>
+                    <label class="ezc-item-checkbox">
+                        <input id="ezc-item-checkbox-{{itemId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
+                    </label>
+                </ezc-left>
+                <ezc-main>
+                    <ezc-center>
+                        <ezc-first>
+                            <ezc-title>
+                                <a {{#titleLink}}href="{{titleLink}}"{{/titleLink}}>{{title}}</a>
+                                {{#titleIcon}}<ezc-title-icon title="{{titleIconLabel}}">{{{titleIcon}}}</ezc-title-icon>{{/titleIcon}}
+                            </ezc-title>
+                            {{#topAttr}}
+                                <ezc-attr class="top" ez-show-min="{{minCollWidth}}">
+                                    <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">{{{shortValueHtml}}}</ezc-attr-text>
+                                </ezc-attr>
+                            {{/topAttr}}
+                        </ezc-first>
+                        {{#hasBottomAttrs}}
+                            <ezc-second>
+                                <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
+                                    {{#bottomAttrs}}
+                                        <ezc-attr class="bottom">
+                                            <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">
+                                                {{{shortValueHtml}}}
+                                            </ezc-attr-text>
+                                        </ezc-attr>
+                                    {{/bottomAttrs}}
+                                </ezc-bottom-attrs>
+                                <ezc-fold class="display-none">
+                                    {{#topAttr}}
+                                        <ezc-fold-attr ez-show-max="{{maxCollWidthInFold}}">
+                                            <ezc-fold-key>{{key}}:</ezc-fold-key>
+                                            <ezc-fold-value>
+                                                <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                    {{/topAttr}}
+                                    {{#bottomAttrs}}
+                                        <ezc-fold-attr>
+                                            <ezc-fold-key>{{key}}:</ezc-fold-key>
+                                            <ezc-fold-value>
+                                                <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
+                                            </ezc-fold-value>
+                                        </ezc-fold-attr>
+                                    {{/bottomAttrs}}
+                                    {{#progressBar}}{{#showAttr}}
+                                        <ezc-fold-attr>
+                                            <ezc-fold-key>{{label}}:</ezc-fold-key>
+                                            <ezc-fold-value><ezc-attr-text>{{labelValue}}</ezc-attr-text></ezc-fold-value>
+                                        </ezc-fold-attr>
+                                    {{/showAttr}}{{/progressBar}}
+                                </ezc-fold>
+                                {{#hasActions}}
+                                    <ezc-bottom-space>
+                                        {{#actions}}{{#showShortcut}}
+                                            <ez-icon-action ez-action="{{id}}" ez-show-min="{{minCollWidth}}" title="{{text}}" class="waves-effect" tabindex="0">{{{iconHtml}}}</ez-icon-action>
+                                        {{/showShortcut}}{{/actions}}
+                                    </ezc-bottom-space>
+                                {{/hasActions}}
+                            </ezc-second>
+                        {{/hasBottomAttrs}}
+                    </ezc-center>
+                </ezc-main>
+                {{#hasActions}}
+                    <ezc-right>
+                        <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="waves-effect dropdown-trigger" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
+                            <ez-icon class="med">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </ez-icon>
+                        </ez-icon-action>
+                    </ezc-right>
+                {{/hasActions}}
+            </ezc-item-container>
+            {{#progressBar}}
+                <ezc-progress-bar title="{{labelValue}}">
+                    <ezc-progress-bar-part style="background-color: var(--ezc-bar-green); flex-grow: {{green}};"></ezc-progress-bar-part>
+                    <ezc-progress-bar-part style="background-color: var(--ezc-bar-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
+                    <ezc-progress-bar-part style="background-color: var(--ezc-bar-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
+                    <ezc-progress-bar-part style="background-color: var(--ezc-bar-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
+                </ezc-progress-bar>
+            {{/progressBar}}
+        </ezc-bar-container>
         {{#hasBottomAttrs}}
             <ezc-trailer>
                 <ezc-expand-trailer>
@@ -404,6 +413,9 @@
                 </ezc-expand-trailer>
             </ezc-trailer>
         {{/hasBottomAttrs}}
+        {{#expandPlaceholder}}
+            <ezc-trailer class="placeholder"></ezc-trailer>
+        {{/expandPlaceholder}}
         <!-- Action menu structure -->
         <ul id="ezc-item-action-dropdown-{{itemId}}" class="dropdown-content">
             {{#actions}}
@@ -414,7 +426,7 @@
 </script>
 
 <script id="t-c-link" type="text/x-handlebars">
-    <a id="{{id}}" href="#!"><i class="material-icons pre-link-icon">{{icon}}</i>{{label}}</a>
+    <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>
 
 <script id="t-c-assessment-view" type="text/x-handlebars">
@@ -441,13 +453,21 @@
 
 <script id="t-c-button" type="text/x-handlebars">
     <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} {{#isDisabled}}disabled{{/isDisabled}} waves-effect">
-        <ez-btn-content>{{{contentHtml}}}</ez-btn-content>
+        <ez-btn-content>{{#iconHtml}}<ez-btn-icon>{{{iconHtml}}}</ez-btn-icon>{{/iconHtml}}<ez-btn-text>{{text}}</ez-btn-text></ez-btn-content>
     </button>
 </script>
 
 <script id="t-c-string-field" type="text/x-handlebars">
     <div class="input-field">
         <input id="{{id}}" type="text" value="{{value}}">
+        <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+    </div>
+</script>
+
+<script id="t-c-int-field" type="text/x-handlebars">
+    <div class="input-field">
+        <input id="{{id}}" type="number" min="{{min}}" max="{{max}}" value="{{value}}">
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
@@ -473,13 +493,42 @@
 <script id="t-c-radio-buttons" type="text/x-handlebars">
     <ez-radio-buttons id="{{elementId}}">
         {{#buttons}}
-            <label for="{{id}}">
+            {{#hasLines}}
+                <ez-radio-line-label>{{label}}</ez-radio-line-label>
+            {{/hasLines}}
+            <label for="{{id}}" class="{{#hasLines}}line{{/hasLines}}">
                 <input id="{{id}}" value="{{id}}" name="{{groupId}}" type="radio" {{#isSelected}}checked{{/isSelected}} {{#isDisabled}}disabled="disabled"{{/isDisabled}}>
-                <span>{{label}}</span>
+                    <span>
+                        {{^hasLines}}{{label}}{{/hasLines}}
+                        {{#hasLines}}<ez-radio-line></ez-radio-line>{{/hasLines}}
+                    </span>
             </label>
         {{/buttons}}
         <span id="field-helper-{{elementId}}" class="helper-text"></span>
     </ez-radio-buttons>
+</script>
+
+<script id="t-c-edit-mode" type="text/x-handlebars">
+    <ez-edit-mode-bar>
+        <ez-dst id="{{startEditDst}}"></ez-dst>
+        <ez-dst id="{{cancelDst}}"></ez-dst>
+        <ez-dst id="{{saveDst}}"></ez-dst>
+    </ez-edit-mode-bar>
+</script>
+
+<script id="t-c-attrs" type="text/x-handlebars">
+    {{#attrs}}
+        <ez-attr><ez-attr-label>{{label}}:</ez-attr-label>{{value}}</ez-attr>
+    {{/attrs}}
+</script>
+
+<script id="t-c-unordered-list" type="text/x-handlebars">
+    <ul class="browser-default">
+        {{#items}}
+            <li><a {{#href}}href="{{href}}"{{/href}}>{{title}}</a></li>
+        {{/items}}
+        <li class="{{^hasLink}}display-none{{/hasLink}}" style="list-style: none"><ez-dst id="{{expandLinkDst}}"></ez-dst></li>
+    </ul>
 </script>
 
 
@@ -555,55 +604,14 @@
 
 <!-- Course exercises page -->
 
-<script id="t-c-stud-course-exercises" type="text/x-handlebars">
-    <ez-dst id="{{crumbDstId}}"></ez-dst>
-    <div class="title-wrap">
-        <h2 class="title">{{courseTitle}}</h2>
+<script id="t-c-course-exercises-teacher" type="text/x-handlebars">
+    <div class="title-wrap no-crumb">
+        <h2 class="title">{{title}}</h2>
     </div>
-    <ez-dst id="{{listDstId}}"></ez-dst>
-</script>
-
-<script id="t-c-stud-course-exercises-list" type="text/x-handlebars">
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-            <a class="collection-item bb-wrap" href="{{href}}">
-                <div class="exercise-item">
-                    <span>{{title}}</span>
-                    <span class="exercise-item">
-                    <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-                    <span class="grade">
-                       <span {{^evalAuto}}{{^evalTeacher}}{{^evalMissing}}style="margin-right: 34px;"{{/evalMissing}}{{/evalTeacher}}{{/evalAuto}}>{{points}}{{^points}}-{{/points}}/100</span
-                       >{{#evalAuto
-}}<img class="tooltipped eval-logo-auto" src="/static/img/inline-icons/optimised/robot-op.svg" data-position="bottom" data-tooltip="{{autoLabel}}" alt="{{autoLabel}}"/>
-                    {{/evalAuto}}{{#evalTeacher
-}}<i id="some" class="material-icons tooltipped eval-logo-teacher" data-position="bottom" data-tooltip="{{teacherLabel}}">face</i>
-                    {{/evalTeacher}}{{#evalMissing
-}}<img class="tooltipped eval-logo-missing" src="/static/img/inline-icons/optimised/missing-ass-op.svg" data-position="bottom" data-tooltip="{{missingLabel}}" alt="{{missingLabel}}"/>
-                    {{/evalMissing}}
-                    </span>
-                </span>
-                </div>
-                <div class="bb">
-                    {{#completed}}
-                        <span class="bb-item bb-green"></span>
-                    {{/completed}}
-    {{#started}}
-                        <span class="bb-item bb-yellow"></span>
-                    {{/started}}
-    {{#evalMissing}}
-                        <span class="bb-item bb-blue"></span>
-                    {{/evalMissing}}
-    {{#unstarted}}
-                        <span class="bb-item bb-grey"></span>
-                    {{/unstarted}}
-                </div>
-            </a>
-        {{/exercises}}
-    </div>
-</script>
-
-<script id="t-c-stud-course-exercises-item" type="text/x-handlebars">
-
+    <ez-dst id="{{collDst}}"></ez-dst>
+    <ez-dst id="{{reorderModalDst}}"></ez-dst>
+    <ez-dst id="{{updateTitleAliasModalDst}}"></ez-dst>
+    <ez-dst id="{{newExerciseModalDst}}"></ez-dst>
 </script>
 
 
@@ -612,37 +620,29 @@
 <script id="t-c-exercise" type="text/x-handlebars">
     <div id="global-exercise">
         <ez-dst id="{{crumbsDstId}}"></ez-dst>
-        <ez-dst id="{{cardDstId}}"></ez-dst>
+        <ez-dst id="{{tabsDstId}}"></ez-dst>
         <ez-dst id="{{addToCourseModalDstId}}"></ez-dst>
     </div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-attrs" type="text/x-handlebars">
-    <p class="subheading-item"><span class="subheading">{{createdAtLabel}}:</span>{{createdAt}} ({{createdBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{modifiedAtLabel}}:</span>{{modifiedAt}} ({{modifiedBy}})</p>
-    <p class="subheading-item"><span class="subheading">{{isPublicLabel}}:</span>{{isPublic}}</p>
-    <p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>
-    <p class="subheading-item"><span class="subheading">{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</span>{{^onCourses}}{{notUsedOnAnyCoursesLabel}}{{/onCourses}}</p>
-    <ul class="browser-default" style="margin-top: 0;">
-        {{#onCourses}}
-            <li><a href="/courses/{{courseId}}/exercises/{{courseExerciseId}}/summary">{{name}}</a> {{#alias}}({{aliasLabel}}: {{alias}}){{/alias}}</li>
-        {{/onCourses}}
-    </ul>
+    <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
+    <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCoursesCount}}{{notUsedOnAnyCoursesLabel}}{{/onCoursesCount}}</ez-attr>
+    <ez-dst class="attr-list" id="{{onCoursesListDst}}"></ez-dst>
+    <div id="{{titleDstId}}" style="margin-top: 4rem;"></div>
+</script>
+
+<script id="t-c-exercise-tab-title-view" type="text/x-handlebars">
     <h2>{{title}}</h2>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-view" type="text/x-handlebars">
-    <div class="pre-exercise-text-wrap">
-        <a id="exercise-text-enable-edit" href="#!"><i class="material-icons" style="font-size: 19px; margin-right: .5rem;">create</i>{{doEditLabel}}</a>
-    </div>
     <div id="exercise-text">{{{html}}}</div>
 </script>
 
 <script id="t-c-exercise-tab-exercise-text-edit" type="text/x-handlebars">
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-exercise" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
     <ez-dst id="{{previewDstId}}"></ez-dst>
 </script>
 
@@ -652,11 +652,31 @@
 </script>
 
 <script id="t-c-exercise-tab-aa" type="text/x-handlebars">
-    <h2>{{aaLabel}}</h2>
+    <ez-dst id="{{typeSelectDstId}}"></ez-dst>
+    <ez-dst id="{{attrsDstId}}"></ez-dst>
     <ez-dst id="{{editorDstId}}"></ez-dst>
-    <div class="center">
-        <button id="update-submit-aa" class="waves-effect waves-light btn"><ez-btn-content>{{doUpdateLabel}}</ez-btn-content></button>
-    </div>
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-read" type="text/x-handlebars">
+    <ez-attr><ez-attr-label>{{typeLabel}}:</ez-attr-label>{{type}}</ez-attr>
+    {{#maxTime}}<ez-attr><ez-attr-label>{{maxTimeLabel}}:</ez-attr-label>{{maxTime}}</ez-attr>{{/maxTime}}
+    {{#maxMem}}<ez-attr><ez-attr-label>{{maxMemLabel}}:</ez-attr-label>{{maxMem}}</ez-attr>{{/maxMem}}
+</script>
+
+<script id="t-c-exercise-tab-aa-attrs-edit" type="text/x-handlebars">
+    <ez-exercise-autoeval>
+        <ez-block-container>
+            <ez-block style="padding-right: 5rem;">
+                <div id="{{typeDstId}}"></div>
+            </ez-block>
+            <ez-block style="flex-grow: 0">
+                <ez-block-container>
+                    {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
+                    {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 25rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/memDstId}}
+                </ez-block-container>
+            </ez-block>
+        </ez-block-container>
+    </ez-exercise-autoeval>
 </script>
 
 <script id="t-c-exercise-tab-testing" type="text/x-handlebars">
@@ -724,8 +744,8 @@
 
     <ez-participants-list id="{{tabsId}}"></ez-participants-list>
 
-    <ez-dst class="add-participants-modal" id="{{addStudentsModalId}}"></ez-dst>
-    <ez-dst class="add-participants-modal" id="{{addTeachersModalId}}"></ez-dst>
+    <ez-dst id="{{addStudentsModalId}}"></ez-dst>
+    <ez-dst id="{{addTeachersModalId}}"></ez-dst>
     <ez-dst id="{{createGroupModalId}}"></ez-dst>
 </script>
 
@@ -844,22 +864,24 @@
 <script id="tm-navbar" type="text/x-handlebars-template">
     <nav class="navbar">
         <div class="topnav container" role="navigation">
-            <div class="left-cluster">
-                <div>
-                    <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
-                </div>
-                <a href="/courses" class="logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
-                    <span class="text">LAHENDUS</span>
-                </a>
-            </div>
-            <!-- Search here -->
-            <div class="right-cluster">
-                <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
-                    <a href="#!">
-                        <i class="profile-logo left material-icons">account_circle</i>
-                        <span class="profile-name">{{userName}}</span>
+            <div class="content-container">
+                <div class="left-cluster">
+                    <div>
+                        <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
+                    </div>
+                    <a href="/courses" class="logo">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
+                        <span class="text">LAHENDUS</span>
                     </a>
+                </div>
+                <!-- Search here -->
+                <div class="right-cluster">
+                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
+                        <a href="#!">
+                            <i class="profile-logo left material-icons">account_circle</i>
+                            <span class="profile-name">{{userName}}</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1250,37 +1272,6 @@
             <div id="exercise"></div>
             <div id="submit"></div>
         </div>
-    </div>
-</script>
-
-<script id="tm-teach-exercises-list" type="text/x-handlebars-template">
-    <nav class="crumb-wrap">
-        <a href="{{coursesHref}}" class="breadcrumb truncate">{{courses}}</a>
-        <a class="breadcrumb truncate">{{title}}</a>
-    </nav>
-    <div class="title-wrap">
-        <h2 class="title">{{title}}</h2>
-        <a class="waves-effect waves-light btn title-button" href="/courses/{{courseId}}/grades">
-            <i class="material-icons">school</i><span class="text">{{gradesLabel}}</span>
-        </a>
-    </div>
-    <div id="exercises-list" class="collection divided-collection">
-        {{#exercises}}
-        <a class="collection-item {{^noBb}}bb-wrap{{/noBb}}" href="{{href}}">
-            <div class="exercise-item" style="align-items: baseline;">
-                <span>{{title}}</span>
-                <span class="deadline tooltipped" data-position="bottom" data-tooltip="{{deadlineLabel}}">{{deadline}}</span>
-            </div>
-            {{#studentsExist}}
-            <div class="bb">
-                <span class="bb-green bb-item tooltipped" style="width: {{completedPc}}%" data-position="bottom" data-tooltip="{{completedLabel}}: {{completedCount}}"></span
-                ><span class="bb-yellow bb-item tooltipped" style="width: {{startedPc}}%" data-position="bottom" data-tooltip="{{startedLabel}}: {{startedCount}}"></span
-                ><span class="bb-blue bb-item tooltipped" style="width: {{ungradedPc}}%" data-position="bottom" data-tooltip="{{ungradedLabel}}: {{ungradedCount}}"></span
-                ><span class="bb-grey bb-item tooltipped" style="width: {{unstartedPc}}%" data-position="bottom" data-tooltip="{{unstartedLabel}}: {{unstartedCount}}"></span>
-            </div>
-            {{/studentsExist}}
-        </a>
-        {{/exercises}}
     </div>
 </script>
 

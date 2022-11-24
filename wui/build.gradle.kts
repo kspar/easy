@@ -13,8 +13,8 @@ repositories {
 
 dependencies {
     implementation(project(":ezspa"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.5.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
 
     val pathToMaterialize: String? by project
     when (pathToMaterialize) {

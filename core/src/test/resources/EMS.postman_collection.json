@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "a21b1df1-a2b8-47be-b216-77b88f21acd5",
+		"_postman_id": "aab584b8-da47-49f0-b2f5-64fa4d1ed2ae",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -6516,6 +6516,147 @@
 						"exercises",
 						"1",
 						"similarity"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: put: library dir change to PR access: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"group_id\": \"1\",\r\n  \"access_level\" : \"PR\"\r\n}"
+				},
+				"url": {
+					"raw": "{{EMSBASE}}/lib/dirs/1/access",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"lib",
+						"dirs",
+						"1",
+						"access"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: teacher: get:  read dir: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "teacher"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/lib/dirs/1",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"lib",
+						"dirs",
+						"1"
 					]
 				}
 			},

@@ -4,14 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Dir
 import core.db.DirAccessLevel
-import core.db.GroupDirAccess
-import core.ems.service.assertAccountHasDirAccess
-import core.ems.service.getAccountImplicitGroupId
-import core.ems.service.hasAccountDirAccess
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
+import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.upsertGroupDirAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -31,8 +30,8 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class CreateDirController {
     data class Req(
-            @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
-            @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentId: String?,
+        @JsonProperty("name") @field:NotBlank @field:Size(max = 100) val name: String,
+        @JsonProperty("parent_dir_id") @field:Size(max = 100) val parentId: String?,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -40,12 +39,13 @@ class CreateDirController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/lib/dirs")
     fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
-        log.debug { "Creating lib dir $body by ${caller.id}" }
+        log.debug { "Creating lib dir ${body.name} in dir ${body.parentId} by ${caller.id}" }
 
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
-        if (parentId != null) {
-            assertAccountHasDirAccess(caller, parentId, DirAccessLevel.PRA)
+        caller.assertAccess {
+            if (parentId != null)
+                libraryDir(parentId, DirAccessLevel.PRA)
         }
 
         return Resp(insertDir(body.name, parentId, caller).toString())
@@ -63,18 +63,10 @@ private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser):
             }
             it[createdAt] = now
             it[modifiedAt] = now
-        }
+        }.value
 
-        // If caller doesn't have full access by inheritance, add it explicitly
-        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
-            GroupDirAccess.insert {
-                it[group] = getAccountImplicitGroupId(caller.id)
-                it[dir] = newDirId
-                it[level] = DirAccessLevel.PRAWM
-                it[createdAt] = now
-            }
-        }
+        upsertGroupDirAccess(getImplicitGroupFromAccount(caller.id), newDirId, DirAccessLevel.PRAWM)
 
-        newDirId.value
+        newDirId
     }
 }

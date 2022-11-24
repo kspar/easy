@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.assertTeacherOrAdminHasAccessToExercise
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
@@ -15,11 +16,10 @@ import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
-class TeacherReadAnonymousSubmissionsController {
+class ReadAnonymousSubmissions {
+    private val log = KotlinLogging.logger {}
 
     data class SubmissionResp(
         @JsonProperty("id") val submissionId: String,
@@ -40,7 +40,7 @@ class TeacherReadAnonymousSubmissionsController {
         log.debug { "Getting anonymous submissions for '${caller.id}' on exercise '$exerciseIdString'" }
         val exerciseId = exerciseIdString.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }
 
         return selectAllAnonymousSubmissions(exerciseId)
     }

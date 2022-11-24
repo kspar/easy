@@ -1,6 +1,14 @@
 package core.exception
 
 
+abstract class AccessControlException(message: String) : RuntimeException(message)
+
+class ForbiddenException(
+    override val message: String,
+    val code: ReqError,
+    vararg val attributes: Pair<String, String>
+) : AccessControlException(message)
+
 class InvalidRequestException(
     override val message: String,
     val code: ReqError? = null,
@@ -8,15 +16,9 @@ class InvalidRequestException(
     val notify: Boolean = true
 ) : RuntimeException(message)
 
-
-class AwaitTimeoutException(
+class TSLCompileException(
     override val message: String,
-    val code: ReqError,
-    vararg val attributes: Pair<String, String>
-) : RuntimeException(message)
+) : RuntimeException(message) {
+    val code = ReqError.TSL_COMPILE_FAILED
+}
 
-class ForbiddenException(
-    override val message: String,
-    val code: ReqError,
-    vararg val attributes: Pair<String, String>
-) : RuntimeException(message)

@@ -63,8 +63,8 @@ class TeacherCourseListComp(
     override val children: List<Component>
         get() = courseItems
 
-    override fun create(): Promise<*> = doInPromise {
-        courseItems = CoursesTeacherDAO.getMyCourses().map {
+    override fun create() = doInPromise {
+        courseItems = CoursesTeacherDAO.getMyCourses().await().map {
             TeacherCourseItemComp(it.id, it.title, it.student_count, this)
         }
     }

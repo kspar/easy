@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
+import core.ems.service.access_control.teacherOnCourse
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -77,8 +80,7 @@ class UpdateCourseExercise(private val adocService: AdocService) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+        caller.assertAccess { teacherOnCourse(courseId, true) }
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         updateCourseExercise(courseExId, req)

@@ -3,7 +3,8 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.ems.service.assertUserHasAccessToCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.userOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
@@ -14,11 +15,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadBasicCourseInfo {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(@JsonProperty("title") val title: String)
 
@@ -30,26 +31,24 @@ class ReadBasicCourseInfo {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertUserHasAccessToCourse(caller, courseId)
+        caller.assertAccess { userOnCourse(courseId) }
 
         val courseInfo = selectCourseInfo(courseId)
         log.debug { "Got course info: $courseInfo" }
         return courseInfo
     }
-}
 
-private fun selectCourseInfo(courseId: Long): ReadBasicCourseInfo.Resp =
+    private fun selectCourseInfo(courseId: Long): Resp =
         transaction {
             Course.slice(Course.title)
-                    .select {
-                        Course.id eq courseId
-                    }
-                    .map {
-                        ReadBasicCourseInfo.Resp(
-                                it[Course.title]
-                        )
-                    }
-                    .single()
+                .select {
+                    Course.id eq courseId
+                }
+                .map {
+                    Resp(
+                        it[Course.title]
+                    )
+                }
+                .single()
         }
-
-
+}

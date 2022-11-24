@@ -6,8 +6,8 @@ import core.db.AnonymousSubmission
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.PriorityLevel
+import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
-import core.ems.service.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -23,14 +23,16 @@ import javax.validation.Valid
 import javax.validation.constraints.Size
 import kotlin.coroutines.EmptyCoroutineContext
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
+    private val log = KotlinLogging.logger {}
+
     @Value("\${easy.core.auto-assess.anonymous-submissions-to-keep}")
     private lateinit var submissionToKeep: String
 
+    // TODO should be required = true?
     data class Req(
         @JsonProperty("solution") @field:Size(max = 300000) val solution: String
     )

@@ -6,8 +6,8 @@ import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
-import emptyToNull
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import plainDstStr
@@ -19,7 +19,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class AddStudentsModalComp(
     private val courseId: String,
     private val availableGroups: List<ParticipantsRootComp.Group>,
@@ -33,7 +32,7 @@ class AddStudentsModalComp(
         onOpen = { studentsFieldComp.focus() },
         defaultReturnValue = false,
         fixFooter = true, isWide = true,
-        parent = this
+        id = Modal.ADD_STUDENTS_TO_COURSE, parent = this
     )
 
     private val helpTextComp = ParagraphsComp(
@@ -117,8 +116,11 @@ class AddStudentsModalComp(
 
         val active = resp.accesses_added
         val pending = resp.pending_accesses_added_updated
-        val msg = "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"} ja " +
-                "lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}"
+        val msg = (if (active > 0)
+            "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"}. " else "") +
+                if (pending > 0)
+                    "Lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}."
+                else ""
 
         successMessage { msg }
 

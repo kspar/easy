@@ -5,6 +5,8 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.libraryDir
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -22,11 +24,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class CreateExerciseCont(private val adocService: AdocService) {
+class CreateExercise(private val adocService: AdocService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
@@ -58,9 +60,10 @@ class CreateExerciseCont(private val adocService: AdocService) {
 
         val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
 
-        if (parentDirId != null) {
-            assertAccountHasDirAccess(caller, parentDirId, DirAccessLevel.PRA)
-            assertDirExists(parentDirId)
+        caller.assertAccess {
+            if (parentDirId != null) {
+                libraryDir(parentDirId, DirAccessLevel.PRA)
+            }
         }
 
         return when (dto.textAdoc) {
@@ -68,80 +71,70 @@ class CreateExerciseCont(private val adocService: AdocService) {
             else -> Resp(insertExercise(caller, dto, adocService.adocToHtml(dto.textAdoc), parentDirId).toString())
         }
     }
-}
 
+    private fun insertExercise(caller: EasyUser, req: Req, html: String?, parentDirId: Long?): Long {
+        val teacherId = EntityID(caller.id, Teacher)
+        val now = DateTime.now()
 
-private fun insertExercise(caller: EasyUser, req: CreateExerciseCont.Req, html: String?, parentDirId: Long?): Long {
-    val teacherId = EntityID(caller.id, Teacher)
-    val now = DateTime.now()
+        return transaction {
 
-    return transaction {
+            val newAutoExerciseId =
+                if (req.graderType == GraderType.AUTO) {
+                    insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
+                        req.assets?.map { it.fileName to it.fileContent })
 
-        val newAutoExerciseId =
-            if (req.graderType == GraderType.AUTO) {
-                insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
-                    req.assets?.map { it.fileName to it.fileContent })
+                } else null
 
-            } else null
-
-        val implicitDirId = Dir.insertAndGetId {
-            // ChickenEgg: name = exercise ID but that's not known yet
-            it[name] = "create-ex-placeholder"
-            it[isImplicit] = true
-            if (parentDirId != null) {
-                it[parentDir] = EntityID(parentDirId, Dir)
+            val implicitDirId = Dir.insertAndGetId {
+                // ChickenEgg: name = exercise ID but that's not known yet
+                it[name] = "create-ex-placeholder"
+                it[isImplicit] = true
+                if (parentDirId != null) {
+                    it[parentDir] = EntityID(parentDirId, Dir)
+                }
+                it[createdAt] = now
+                it[modifiedAt] = now
             }
-            it[createdAt] = now
-            it[modifiedAt] = now
-        }
 
-        // If caller doesn't have full access by inheritance, add it explicitly
-        if (parentDirId == null || !hasAccountDirAccess(caller, parentDirId, DirAccessLevel.PRAWM)) {
-            GroupDirAccess.insert {
-                it[group] = getAccountImplicitGroupId(caller.id)
+            upsertGroupDirAccess(getImplicitGroupFromAccount(caller.id), implicitDirId.value, DirAccessLevel.PRAWM)
+
+            val exerciseId = Exercise.insertAndGetId {
+                it[owner] = teacherId
+                it[public] = req.public
+                it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
                 it[dir] = implicitDirId
-                it[level] = DirAccessLevel.PRAWM
                 it[createdAt] = now
             }
-        }
 
-        val exerciseId = Exercise.insertAndGetId {
-            it[owner] = teacherId
-            it[public] = req.public
-            it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
-            it[dir] = implicitDirId
-            it[createdAt] = now
-        }
-
-        // Set correct name for implicit dir
-        Dir.update({ Dir.id eq implicitDirId }) {
-            it[name] = exerciseId.value.toString()
-        }
-
-        ExerciseVer.insert {
-            it[exercise] = exerciseId
-            it[author] = teacherId
-            it[validFrom] = now
-            it[graderType] = req.graderType
-            it[title] = req.title
-            it[textHtml] = html
-            it[textAdoc] = req.textAdoc
-            it[autoExerciseId] = newAutoExerciseId
-        }
-
-        if (html != null) {
-            val inUse = StoredFile.slice(StoredFile.id)
-                .select { StoredFile.usageConfirmed eq false }
-                .map { it[StoredFile.id].value }
-                .filter { html.contains(it) }
-
-            StoredFile.update({ StoredFile.id inList inUse }) {
-                it[usageConfirmed] = true
-                it[exercise] = exerciseId
+            // Set correct name for implicit dir
+            Dir.update({ Dir.id eq implicitDirId }) {
+                it[name] = exerciseId.value.toString()
             }
-        }
 
-        exerciseId.value
+            ExerciseVer.insert {
+                it[exercise] = exerciseId
+                it[author] = teacherId
+                it[validFrom] = now
+                it[graderType] = req.graderType
+                it[title] = req.title
+                it[textHtml] = html
+                it[textAdoc] = req.textAdoc
+                it[autoExerciseId] = newAutoExerciseId
+            }
+
+            if (html != null) {
+                val inUse = StoredFile.slice(StoredFile.id)
+                    .select { StoredFile.usageConfirmed eq false }
+                    .map { it[StoredFile.id].value }
+                    .filter { html.contains(it) }
+
+                StoredFile.update({ StoredFile.id inList inUse }) {
+                    it[usageConfirmed] = true
+                    it[exercise] = exerciseId
+                }
+            }
+
+            exerciseId.value
+        }
     }
 }
-

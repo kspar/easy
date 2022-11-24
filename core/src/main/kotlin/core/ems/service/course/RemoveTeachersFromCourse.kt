@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Teacher
 import core.db.TeacherCourseAccess
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasNoRestrictedGroupsOnCourse
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -19,11 +19,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class RemoveTeachersFromCourseController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("teachers") @field:Valid val teachers: List<TeacherIdReq>
@@ -45,39 +45,39 @@ class RemoveTeachersFromCourseController {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertTeacherOrAdminHasNoRestrictedGroupsOnCourse(caller, courseId)
+        caller.assertAccess {
+            teacherOnCourse(courseId, false)
+        }
 
         deleteTeachersFromCourse(teachers, courseId)
     }
-}
 
-
-private fun deleteTeachersFromCourse(teachers: RemoveTeachersFromCourseController.Req, courseId: Long) {
-    transaction {
-        teachers.teachers.forEach { teacher ->
-            val teacherExists =
-                Teacher.select { Teacher.id eq teacher.id }
-                    .count() == 1L
-            if (!teacherExists) {
-                throw InvalidRequestException("Teacher not found: $teacher")
+    private fun deleteTeachersFromCourse(teachers: Req, courseId: Long) {
+        transaction {
+            teachers.teachers.forEach { teacher ->
+                val teacherExists =
+                    Teacher.select { Teacher.id eq teacher.id }
+                        .count() == 1L
+                if (!teacherExists) {
+                    throw InvalidRequestException("Teacher not found: $teacher")
+                }
             }
-        }
 
-        val teachersWithAccess = teachers.teachers.filter {
-            TeacherCourseAccess.select {
-                TeacherCourseAccess.teacher eq it.id and (TeacherCourseAccess.course eq courseId)
-            }.count() > 0
-        }
-
-
-        teachersWithAccess.forEach { teacher ->
-            TeacherCourseAccess.deleteWhere {
-                TeacherCourseAccess.teacher eq teacher.id and (TeacherCourseAccess.course eq courseId)
+            val teachersWithAccess = teachers.teachers.filter {
+                TeacherCourseAccess.select {
+                    TeacherCourseAccess.teacher eq it.id and (TeacherCourseAccess.course eq courseId)
+                }.count() > 0
             }
+
+
+            teachersWithAccess.forEach { teacher ->
+                TeacherCourseAccess.deleteWhere {
+                    TeacherCourseAccess.teacher eq teacher.id and (TeacherCourseAccess.course eq courseId)
+                }
+            }
+
+            log.debug { "Removing access from teachers (the rest already have no access): $teachersWithAccess" }
+
         }
-
-        log.debug { "Removing access from teachers (the rest already have no access): $teachersWithAccess" }
-
     }
 }

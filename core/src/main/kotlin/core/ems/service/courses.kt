@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.stereotype.Service
 import java.io.Serializable
 
-
+// TODO: remove
 fun assertCourseExists(courseId: Long) {
     if (!courseExists(courseId)) {
         throw InvalidRequestException("Course $courseId does not exist")

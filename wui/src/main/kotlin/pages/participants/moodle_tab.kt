@@ -15,18 +15,10 @@ import rip.kspar.ezspa.sleep
 import successMessage
 import tmRender
 
-@ExperimentalStdlibApi
 class ParticipantsMoodleTabComp(
     private val courseId: String,
     private val moodleStatus: ParticipantsRootComp.MoodleProps,
     private val onStudentsSynced: suspend () -> Unit,
-//    private val groups: List<ParticipantsRootComp.Group>,
-//    private val students: List<ParticipantsRootComp.Student>,
-//    private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
-//    private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
-//    private val teachers: List<ParticipantsRootComp.Teacher>,
-//    private val isEditable: Boolean,
-//    private val onGroupDeleted: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
@@ -46,11 +38,11 @@ class ParticipantsMoodleTabComp(
 
     override fun create() = doInPromise {
         syncStudentsBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", ::syncStudents,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", null, ::syncStudents,
             true, "Sünkroniseerin...", parent = this
         )
         syncGradesBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", ::syncGrades,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", null, ::syncGrades,
             true, "Sünkroniseerin...", parent = this
         )
     }
@@ -81,6 +73,8 @@ class ParticipantsMoodleTabComp(
 
         debug { "Sync completed" }
         successMessage { "Õpilased edukalt sünkroniseeritud" }
+
+        // TODO: should call onStudentsSynced
     }
 
     private suspend fun syncGrades() {
@@ -109,6 +103,7 @@ class ParticipantsMoodleTabComp(
                     successChecker = { http200 }).await()
                     .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
 
+                // TODO: could also be grades_in_progress
                 if (moodleProps?.sync_students_in_progress != true) {
                     break
                 }

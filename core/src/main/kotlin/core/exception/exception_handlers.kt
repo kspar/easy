@@ -1,7 +1,6 @@
 package core.exception
 
 import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import core.aas.ExecutorOverloadException
@@ -64,6 +63,14 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
+    @ExceptionHandler(value = [TSLCompileException::class])
+    fun handleTSLException(ex: TSLCompileException, request: WebRequest): ResponseEntity<Any> {
+        val id = UUID.randomUUID().toString()
+        log.info("TSL compile exception: ${ex.message}, id: $id")
+        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, emptyMap(), ex.message)
+        return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
+    }
+
     @ExceptionHandler(value = [Exception::class])
     fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
@@ -91,18 +98,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
 
         return ResponseEntity(resp, HttpStatus.FORBIDDEN)
     }
-
-    @ExceptionHandler(value = [AwaitTimeoutException::class])
-    fun handleAwaitTimeoutException(ex: AwaitTimeoutException, request: WebRequest): ResponseEntity<Any> {
-        val id = UUID.randomUUID().toString()
-        log.info("AwaitTimeoutException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
-        mailService.sendSystemNotification(ex.stackTraceString, id)
-
-        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, ex.attributes.toMap(), ex.message)
-        return ResponseEntity(resp, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
 
     // https://www.baeldung.com/spring-boot-bean-validation and
     // https://stackoverflow.com/questions/51991992/getting-ambiguous-exceptionhandler-method-mapped-for-methodargumentnotvalidexce?rq=1
@@ -144,10 +139,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
             is MismatchedInputException -> {
                 val cause = ex.cause as MismatchedInputException
                 cause.originalMessage
-            }
-            is InvalidFormatException -> {
-                val cause = ex.cause as InvalidFormatException
-                "Cannot parse parameter '${cause.value}' to '${cause.targetType}'"
             }
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
             else -> ex.message ?: "Invalid request!"

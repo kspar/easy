@@ -7,13 +7,12 @@ import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
-import objOf
 import rip.kspar.ezspa.*
 import tmRender
 import kotlin.js.Promise
 
 enum class ActivePage {
-    MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS, COURSE_PARTICIPANTS_OLD,
+    MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS,
     LIBRARY,
     ARTICLES,
 }

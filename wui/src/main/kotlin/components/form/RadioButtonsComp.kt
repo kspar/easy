@@ -12,6 +12,7 @@ import tmRender
 
 class RadioButtonsComp(
     private val buttons: List<Button>,
+    private val selectLineAfterButtons: Boolean = false,
     isRequired: Boolean = true,
     private val paintRequired: Boolean = false,
     fieldNameForMessage: String = "",
@@ -56,6 +57,7 @@ class RadioButtonsComp(
             mapOf(
                 "id" to it.id,
                 "groupId" to groupId,
+                "hasLines" to selectLineAfterButtons,
                 "label" to it.label,
                 "isSelected" to (it.type == Type.PRESELECTED),
                 "isDisabled" to (it.type == Type.DISABLED),

@@ -5,6 +5,7 @@ import components.form.CheckboxComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
@@ -18,17 +19,18 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
 class CreateExerciseModalComp(
-    private val allowAddingToCourseId: String? = null,
+    private val dirId: String?,
+    private val allowAddingToCourseId: String?,
     parent: Component,
-    dstId: String,
-) : Component(parent, dstId) {
+) : Component(parent) {
 
+    data class ExIds(val exerciseId: String, val courseExerciseId: String?)
 
-    private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
+    private val modalComp: BinaryModalComp<ExIds?> = BinaryModalComp(
         "Uus ülesanne", Str.doSave(), Str.cancel(), Str.saving(),
         primaryAction = { createExercise(titleField.getValue()) },
         primaryPostAction = ::reinitialise, onOpen = { titleField.focus() },
-        defaultReturnValue = null, parent = this
+        defaultReturnValue = null, id = Modal.CREATE_EXERCISE, parent = this
     )
 
     private val titleField = StringFieldComp(
@@ -36,6 +38,7 @@ class CreateExerciseModalComp(
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
+        onENTER = { modalComp.primaryButton.click() },
         parent = modalComp
     )
 
@@ -73,30 +76,27 @@ class CreateExerciseModalComp(
     @Serializable
     private data class NewExerciseDTO(val id: String)
 
-    private suspend fun createExercise(title: String): String {
+    private suspend fun createExercise(title: String): ExIds {
         debug { "Saving new exercise with title $title" }
         val exerciseId = fetchEms("/exercises",
             ReqMethod.POST,
             mapOf(
+                "parent_dir_id" to dirId,
                 "title" to title,
                 "public" to true,
-                // TODO: should be TEACHER initially when we have the feature to change it afterwards
-                "grader_type" to "AUTO",
-                "grading_script" to "",
-                "container_image" to "pygrader",
-                "max_time_sec" to 7,
-                "max_mem_mb" to 30,
-                "assets" to emptyList<Map<String, String>>(),
+                "grader_type" to "TEACHER",
+                "anonymous_autoassess_enabled" to false,
             ),
             successChecker = { http200 }).await()
             .parseTo(NewExerciseDTO.serializer()).await().id
+
         debug { "Saved new exercise with id $exerciseId" }
 
-        if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
+        val courseExId = if (addToCourseCheckbox != null && addToCourseCheckbox.isChecked) {
             allowAddingToCourseId!!
-            ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId)
-        }
+            ExerciseDAO.addExerciseToCourse(exerciseId, allowAddingToCourseId).await()
+        } else null
 
-        return exerciseId
+        return ExIds(exerciseId, courseExId)
     }
 }

@@ -1,7 +1,9 @@
 :root {
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
+    --ez-checkbox-disabled-border-col: rgba(0, 0, 0, .15);
     --ez-checkbox-fill-col: #4DAB54;
     --ez-icon-col: rgba(0, 0, 0, .38);
+    --ez-icon-inactive-col: rgba(0, 0, 0, .22);
     --ez-icon-action-col: rgba(0, 0, 0, .54);
     --ez-icon-action-active-col: rgba(0, 0, 0, .87);
     --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
@@ -11,10 +13,15 @@
     --ez-flat-btn-disabled-border-col: rgba(0, 0, 0, .1);
     --ez-flat-btn-border-col: rgba(0, 0, 0, .3);
     --ez-btn-danger-col: #df483d;
+    --ez-btn-disabled-text: #9f9f9f;
 
     --ezc-link-hover-col: #429748;
-    --ezc-attr-immutable-col: rgba(0, 0, 0, .54);
+    --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
+    --ezc-bar-green: #4DAB54;
+    --ezc-bar-yellow: #ffd052;
+    --ezc-bar-blue: #688ffd;
+    --ezc-bar-grey: #d5d5d5;
 }
 
 /** Page, body, general **/
@@ -34,6 +41,8 @@ body {
     min-width: 320px;
 }
 
+/* Embedded - when displaying page in embed */
+
 html.embedded body {
     background: none;
     min-height: 0;
@@ -50,12 +59,69 @@ html.embedded main {
     padding: 0;
 }
 
+/* wui 3 design - remove wui3 class when migrated */
+
+html.wui3 body {
+    background: none;
+}
+
+html.wui3 .container {
+    width: 100%;
+    container-type: inline-size;
+    container-name: container;
+}
+
+html.wui3 .content-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+    transition: padding 200ms ease-out;
+}
+
+@container container (width < 830px) {
+    html.wui3 .content-container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+@container container (width < 700px) {
+    html.wui3 .content-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@container container (width < 500px) {
+    html.wui3 .content-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+main {
+    font-size: 1.5rem;
+}
+
+
+
+/* TODO: remove */
 .subheading-item {
     display: flex;
     flex-wrap: wrap;
 }
 
 .subheading {
+    color: #4DAB54;
+    font-weight: 500;
+    margin-right: 0.6rem;
+}
+
+ez-attr {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+ez-attr-label {
     color: #4DAB54;
     font-weight: 500;
     margin-right: 0.6rem;
@@ -85,7 +151,7 @@ svg {
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
-.topnav {
+.topnav .content-container {
     height: 100%;
     display: flex;
     justify-content: space-between;
@@ -202,6 +268,10 @@ svg {
     width: 15rem;
 }
 
+.sidenav .role-select-wrap .input-field {
+    margin-bottom: 1rem;
+}
+
 .sidenav li {
     line-height: unset;
 }
@@ -288,7 +358,6 @@ div.container {
 }
 
 #content-container {
-    font-size: 1.5rem;
     padding-bottom: 3rem;
 }
 
@@ -511,7 +580,11 @@ nav.crumb-wrap .breadcrumb:before {
 }
 
 
-/** Exercises page **/
+/** Course exercises page **/
+
+.update-course-ex-title-modal ez-attr {
+    padding-bottom: 2rem;
+}
 
 #exercises-list .exercise-item {
     display: flex;
@@ -552,13 +625,23 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#global-exercise .pre-exercise-text-wrap {
-    display: flex;
-    justify-content: flex-end;
+#global-exercise ez-tabs-content {
+    margin-top: 3rem;
+}
+
+@container tabs (width < 750px) {
+    #global-exercise ez-tabs-trailer ez-btn-content ez-btn-text {
+        display: none;
+    }
+}
+
+.attr-list ul {
+    margin-top: 0;
 }
 
 
-/*  */
+/** Anonymous autoeval embed **/
+
 #anonauto button {
     padding-bottom: .4rem;
 }
@@ -780,6 +863,9 @@ ez-participants-list .card .card-content p {
 }
 
 
+
+
+
 /** Grade table page **/
 
 .grade-table-wrap {
@@ -943,11 +1029,26 @@ ez-btn-content {
     justify-content: center;
 }
 
-ez-btn-content > ez-icon {
+.btn ez-btn-content ez-icon,
+.btn-floating ez-btn-content ez-icon {
     color: #fff;
 }
 
-ez-btn-content > ez-icon > svg {
+.btn.disabled ez-btn-content ez-icon,
+.btn-floating.disabled ez-btn-content ez-icon {
+    color: var(--ez-btn-disabled-text);
+}
+
+.btn-flat ez-btn-content ez-icon {
+    color: var(--ez-icon-action-col);
+}
+
+/* if icon with text, add space between */
+ez-btn-content ez-btn-icon ~ ez-btn-text {
+    padding-left: .6rem;
+}
+
+.btn-floating ez-btn-content ez-icon > svg {
     width: 2rem;
     height: 2rem;
 }
@@ -977,7 +1078,8 @@ ez-btn-content > ez-icon > svg {
     }
 }
 
-a.uncolored {
+a.uncolored,
+a:not([href]) {
     color: inherit;
 }
 
@@ -1132,10 +1234,9 @@ textarea.materialize-textarea {
     padding: 1.1rem 0 1.1rem 0;
 }
 
-/* TODO: Hopefully not needed for anything, remove at some point */
-/*.input-field {*/
-/*    margin-top: 2rem;*/
-/*}*/
+.input-field {
+    margin-bottom: 2rem;
+}
 
 .input-field input:not(.invalid) ~ .helper-text:not(.has-text) {
     display: none;
@@ -1176,6 +1277,8 @@ textarea.materialize-textarea {
 .select-wrap {
     width: fit-content;
     width: -moz-fit-content;
+    /* Margin from bottom border to end for all form elements - 28px */
+    margin-bottom: 2.8rem;
 }
 
 .select-dropdown li.optgroup {
@@ -1258,6 +1361,31 @@ ez-radio-buttons > label {
     margin-bottom: .5rem;
 }
 
+ez-radio-buttons label.line span{
+    width: 100%;
+}
+
+ez-radio-buttons ez-radio-line {
+    width: 100%;
+    height: 1px;
+    background-color: #ccc;
+    transition: background-color 200ms ease-out;
+}
+
+[type="radio"]:checked + span ez-radio-line {
+    background-color: #777;
+}
+
+[type="radio"]:disabled + span ez-radio-line {
+    background-color: #e5e5e5;
+}
+
+ez-radio-buttons ez-radio-line-label {
+    display: block;
+    margin-left: 35px;
+    font-size: 1.4rem;
+}
+
 ez-radio-buttons > .helper-text {
     position: relative;
     min-height: 18px;
@@ -1281,6 +1409,8 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:not(:checked)+span,
 [type="radio"]:checked+span {
+    display: inline-flex;
+    align-items: center;
     font-size: 1.4rem;
 }
 
@@ -1302,6 +1432,10 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:checked+span {
     color: #000;
+}
+
+[type="radio"]:disabled:not(:checked)+span:before {
+    border-color: var(--ez-checkbox-disabled-border-col);
 }
 
 
@@ -1664,20 +1798,27 @@ ez-coll[no-matched-items] > ezc-no-match-placeholder {
 
 ezc-item {
     display: flex;
-    margin-bottom: 1rem;
     min-height: 5rem;
+}
+
+ezc-bar-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 ezc-item-container {
     flex: 1 1 auto;
     display: flex;
     min-width: 0;
-    padding: .8rem .8rem .8rem .2rem;
-    background-color: #fff;
-    box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.1),
-    0 2px 1px -2px rgba(0, 0, 0, 0.09),
-    0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    padding: 1.1rem .8rem 1.1rem .2rem;
+    border-bottom: 1px solid #ccc;
+}
+
+ezc-item.has-bar ezc-item-container {
+    padding-top: 2rem;
+    padding-bottom: .6rem;
+    border: none;
 }
 
 ezc-left {
@@ -1691,6 +1832,7 @@ ezc-item-type {
     display: flex;
     justify-content: center;
     width: 3rem;
+    padding-bottom: .6rem;
 }
 
 ezc-item-type-text {
@@ -1708,6 +1850,10 @@ ezc-item[selected] .ezc-item-checkbox {
     display: block;
 }
 
+ezc-item.inactive ezc-left ez-icon {
+    color: var(--ez-icon-inactive-col);
+}
+
 ezc-left ez-icon > svg {
     width: 2.4rem;
     height: 2.4rem;
@@ -1722,6 +1868,7 @@ ezc-left .ezc-item-checkbox {
     width: 3rem;
     padding: .1rem 0 0 .5rem;
     cursor: pointer;
+    font-size: 1rem;
 }
 
 ezc-left .ezc-item-checkbox span.dummy,
@@ -1763,15 +1910,18 @@ ezc-first {
 ezc-title {
     flex: 1 1 auto;
     padding-right: 1rem;
-    font-size: 1.7rem;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
-ezc-title.inactive {
+ezc-item.inactive ezc-title {
     color: var(--ezc-attr-immutable-col);
 }
 
 ezc-title > a {
     color: inherit;
+    padding: .5rem 1rem .5rem 0;
 }
 
 ezc-title > a:hover[href] {
@@ -1781,7 +1931,6 @@ ezc-title > a:hover[href] {
 ezc-second {
     display: flex;
     justify-content: space-between;
-    margin-top: .5rem;
     min-height: 24px;
 }
 
@@ -1888,12 +2037,28 @@ ezc-fold-value {
     padding-left: .6rem;
 }
 
-ezc-trailer {
+ezc-progress-bar {
     display: flex;
 }
 
+ezc-progress-bar-part {
+    display: inline-flex;
+    height: .4rem;
+}
+
+ezc-trailer {
+    display: flex;
+}
+ezc-trailer.placeholder {
+    width: 2.4rem;
+}
+
 ezc-expand-trailer {
-    padding-top: 1.1rem;
+    padding-top: .8rem;
+}
+
+ezc-item.has-bar ezc-expand-trailer {
+    padding-top: 1.6rem;
 }
 
 ezc-expand-trailer > ez-icon-action {
@@ -1927,7 +2092,6 @@ ez-coll-wrap *[ez-show-max="599"] {
 }
 
 /* Container is ez-coll-wrap */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
     ezc-ctrl-shown-icon {
@@ -1945,7 +2109,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-ctrl {
         padding-left: 2.2rem;
@@ -1972,7 +2135,6 @@ ez-coll-wrap *[ez-show-max="599"] {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width < 600px) {
     ez-coll-wrap *[ez-show-max="599"] {
         display: flex;
@@ -1996,7 +2158,6 @@ ezc-bottom-attrs > ezc-attr {
 }
 
 /* Container is ezc-bottom-attrs */
-/*noinspection CssInvalidAtRule*/
 @container (width < 400px) {
     /* first one grows always */
     ezc-bottom-attrs > ezc-attr:nth-child(1) {
@@ -2004,7 +2165,6 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) and (width < 600px) {
     /* first one grows is there is one */
     ezc-bottom-attrs[ez-attrs="1"] > ezc-attr:nth-child(1) {
@@ -2017,14 +2177,12 @@ ezc-bottom-attrs > ezc-attr {
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 400px) {
     ezc-bottom-attrs > ezc-attr:nth-child(2) {
         display: inline-block;
     }
 }
 
-/*noinspection CssInvalidAtRule*/
 @container (width >= 600px) {
     ezc-bottom-attrs > ezc-attr:nth-child(3) {
         display: inline-block;
@@ -2048,7 +2206,6 @@ ezc-bottom-attrs > ezc-attr {
 
 /* Increase attr width if there's more space. Note that if items have a different number of attrs, they will resize differently.
    This can be fixed by setting ez-attrs to *max* number of attrs on any item, for all items. */
-/*noinspection CssInvalidAtRule*/
 @container (width >= 900px) {
     ezc-bottom-attrs[ez-attrs="3"] > ezc-attr {
         flex-basis: 300px;
@@ -2204,9 +2361,23 @@ div.title-wrap > .title-button > i.material-icons {
 
 /** Tabs **/
 
+ez-tabs-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    container-type: inline-size;
+    container-name: tabs
+}
+
 .ez-tabs {
     background-color: transparent;
-    border-bottom: 1px solid #ccc;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+
+.ez-tabs::-webkit-scrollbar { /* WebKit */
+    width: 0;
+    height: 0;
 }
 
 .ez-tabs .indicator {
@@ -2231,6 +2402,10 @@ div.title-wrap > .title-button > i.material-icons {
 .ez-tabs .tab a:focus,
 .ez-tabs .tab a:focus.active {
     background-color: transparent;
+}
+
+ez-tabs-trailer {
+    flex-shrink: 0;
 }
 
 ez-tabs-content {

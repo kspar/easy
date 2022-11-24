@@ -6,6 +6,7 @@ import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import components.modal.Modal
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -16,7 +17,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 
-@ExperimentalStdlibApi
 class AddTeachersModalComp(
     private val courseId: String,
     private val availableGroups: List<ParticipantsRootComp.Group>,
@@ -30,7 +30,7 @@ class AddTeachersModalComp(
         onOpen = { teachersFieldComp.focus() },
         defaultReturnValue = false,
         fixFooter = true, isWide = true,
-        parent = this
+        id = Modal.ADD_TEACHERS_TO_COURSE, parent = this
     )
 
     private val helpTextComp = ParagraphsComp(

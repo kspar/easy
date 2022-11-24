@@ -11,23 +11,25 @@ import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
 import libheaders.tabHandler
 import negation
-import objOf
 import rip.kspar.ezspa.*
 import tmRender
 import warn
 
 
 class CodeEditorComp(
-    files: List<File>,
+    // Original files, can be used later to check for changes
+    private val files: List<File>,
     private val fileCreator: CreateFile? = null,
     private val softWrap: Boolean = false,
     private val placeholder: String? = null,
     private val showLineNumbers: Boolean = true,
     private val showTabs: Boolean = true,
-    parent: Component?
+    parent: Component?,
 ) : Component(parent) {
 
     // TODO: should have a separate comp for code editor tabs (and/or toolbar) to avoid drawing new tabs like this
+
+    // TODO: delete tabs/files
 
     constructor(
         file: File,
@@ -47,7 +49,7 @@ class CodeEditorComp(
 
     data class CreateFile(
         val fileLang: dynamic,
-        val editability: Edit,
+        val newFileEditability: Edit,
     )
 
     private data class Tab(
@@ -127,6 +129,7 @@ class CodeEditorComp(
 
         refreshTabActions()
 
+        // TODO: don't allow creating duplicate filenames
         if (fileCreator != null && showTabs) {
             getElemById(createFileId).onVanillaClick(true) {
                 createFileModalComp.setExistingFilenames(tabs.map { it.filename })
@@ -136,6 +139,12 @@ class CodeEditorComp(
                 }
             }
         }
+    }
+
+    override fun hasUnsavedChanges(): Boolean {
+        val origFiles = files.associate { it.name to it.content.orEmpty() }
+        val editedFiles = getAllFiles().associate { it.name to it.content.orEmpty() }
+        return origFiles != editedFiles
     }
 
     fun getAllFiles(): List<File> = tabs.map { File(it.filename, it.doc.getValue(), it.lang, it.editability) }
@@ -188,7 +197,7 @@ class CodeEditorComp(
         debug { "Creating new file: $filename" }
         fileCreator!!
 
-        val file = File(filename, null, fileCreator.fileLang, fileCreator.editability)
+        val file = File(filename, null, fileCreator.fileLang, fileCreator.newFileEditability)
         val tab = fileToTab(file)
         tabs.add(tab)
         createFileModalComp.setExistingFilenames(tabs.map { it.filename })
@@ -222,18 +231,20 @@ class CodeEditorComp(
     }
 
     private fun refreshEditability() {
-        when (activeTab?.editability) {
-            Edit.EDITABLE -> {
-                setEditable(true)
-                removeEditToggle()
-            }
-            Edit.READONLY -> {
-                setEditable(false)
-                removeEditToggle()
-            }
-            Edit.TOGGLED -> {
-                setEditable(toggleEditEnabled)
-                addEditToggle(toggleEditEnabled)
+        activeTab?.let {
+            when (it.editability) {
+                Edit.EDITABLE -> {
+                    setEditable(true)
+                    removeEditToggle()
+                }
+                Edit.READONLY -> {
+                    setEditable(false)
+                    removeEditToggle()
+                }
+                Edit.TOGGLED -> {
+                    setEditable(toggleEditEnabled)
+                    addEditToggle(toggleEditEnabled)
+                }
             }
         }
     }
@@ -257,7 +268,7 @@ class CodeEditorComp(
         editToggleComp = if (isCurrentlyEditable)
             LinkComp("Keela muutmine", null, null, ::toggleEdit, this, editToggleId)
         else
-            LinkComp("Muuda", "create", null, ::toggleEdit, this, editToggleId)
+            LinkComp("Muuda", null, null, ::toggleEdit, this, editToggleId)
 
         editToggleComp?.createAndBuild()
     }

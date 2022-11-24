@@ -5,6 +5,9 @@ import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.exerciseViaCourse
+import core.ems.service.access_control.libraryExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import kotlinx.coroutines.runBlocking
@@ -20,13 +23,15 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
+class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
+    private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("solution") @field:Size(max = 300000) val solution: String)
+    data class Req(
+        @JsonProperty("solution") @field:Size(max = 300000) val solution: String
+    )
 
     data class Resp(
         @JsonProperty("grade") val grade: Int,
@@ -42,21 +47,19 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
         @Valid @RequestBody dto: Req,
         caller: EasyUser
     ): Resp {
-
-        val callerId = caller.id
-        log.debug { "Teacher/admin $callerId autoassessing solution to exercise $exerciseIdStr" }
+        log.debug { "Teacher/admin ${caller.id} autoassessing solution to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
         val courseId = courseIdStr?.idToLongOrInvalidReq()
 
-        // Can access through course or directly via library
-        if (courseId != null) {
-            assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-            assertExerciseIsOnCourse(exerciseId, courseId, false)
-        } else {
-            assertTeacherOrAdminHasAccessToExercise(caller, exerciseId)
+        caller.assertAccess {
+            // Can access through course or directly via library
+            if (courseId != null)
+                exerciseViaCourse(exerciseId, courseId)
+            else
+                libraryExercise(exerciseId, DirAccessLevel.PR)
         }
 
-        insertTeacherSubmission(exerciseId, dto.solution, callerId)
+        insertTeacherSubmission(exerciseId, dto.solution, caller.id)
 
         val aaId = getAutoExerciseId(exerciseId)
             ?: throw InvalidRequestException(
@@ -65,11 +68,7 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
             )
 
         val aaResult = runBlocking {
-            autoGradeScheduler.submitAndAwait(
-                aaId,
-                dto.solution,
-                PriorityLevel.AUTHENTICATED
-            )
+            autoGradeScheduler.submitAndAwait(aaId, dto.solution, PriorityLevel.AUTHENTICATED)
         }
         // TODO: maybe should save auto assessments as well and follow the scheme as with student submit:
         // this service submits and returns
@@ -77,27 +76,25 @@ class TeacherAutoassController(val autoGradeScheduler: AutoGradeScheduler) {
 
         return Resp(aaResult.grade, aaResult.feedback)
     }
-}
 
-
-private fun getAutoExerciseId(exerciseId: Long): Long? {
-    return transaction {
-        (Exercise innerJoin ExerciseVer)
-            .slice(ExerciseVer.autoExerciseId)
-            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
-            .map { it[ExerciseVer.autoExerciseId] }
-            .single()?.value
+    private fun getAutoExerciseId(exerciseId: Long): Long? {
+        return transaction {
+            (Exercise innerJoin ExerciseVer)
+                .slice(ExerciseVer.autoExerciseId)
+                .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+                .map { it[ExerciseVer.autoExerciseId] }
+                .single()?.value
+        }
     }
-}
 
-
-private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String) {
-    transaction {
-        TeacherSubmission.insert {
-            it[TeacherSubmission.solution] = solution
-            it[TeacherSubmission.createdAt] = DateTime.now()
-            it[TeacherSubmission.exercise] = EntityID(exerciseId, TeacherSubmission)
-            it[TeacherSubmission.teacher] = EntityID(teacherId, Teacher)
+    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String) {
+        transaction {
+            TeacherSubmission.insert {
+                it[TeacherSubmission.solution] = solution
+                it[createdAt] = DateTime.now()
+                it[exercise] = EntityID(exerciseId, TeacherSubmission)
+                it[teacher] = EntityID(teacherId, Teacher)
+            }
         }
     }
 }

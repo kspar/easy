@@ -8,7 +8,6 @@ import kotlinx.dom.clear
 import kotlinx.dom.removeClass
 import libheaders.Materialize
 import libheaders.closePromise
-import objOf
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement
@@ -32,10 +31,12 @@ class EzCollComp<P>(
         val props: P,
         val type: ItemType,
         val title: String,
+        val titleIcon: TitleIcon? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
         val titleLink: String? = null,
         val topAttr: Attr<P>? = null,
         val bottomAttrs: List<Attr<P>> = emptyList(),
+        val progressBar: ProgressBar? = null,
         val isSelectable: Boolean = false,
         val actions: List<Action<P>> = emptyList(),
         val attrWidthS: AttrWidthS = AttrWidthS.W200,
@@ -58,6 +59,8 @@ class EzCollComp<P>(
         override val isIcon = false
         override val html = text
     }
+
+    data class TitleIcon(val icon: String, val label: String)
 
     data class Action<P>(
         val iconHtml: String,
@@ -150,6 +153,11 @@ class EzCollComp<P>(
     }
 
     data class ListAttrItem<ItemType : Any>(val shortValue: ItemType, val longValue: ItemType = shortValue)
+
+    data class ProgressBar(
+        val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0,
+        val showAttr: Boolean = false
+    )
 
     enum class TitleStatus { NORMAL, INACTIVE }
 
@@ -298,11 +306,12 @@ class EzCollComp<P>(
         allCheckboxEl.onVanillaClick(false) {
 
             val isChecked = allCheckboxEl.checked
-            val visibleItems = calculateVisibleItems()
 
-            checkedItems = if (isChecked) visibleItems.toMutableList() else mutableListOf()
+            val visibleSelectableItems = calcSelectableItems(true)
 
-            visibleItems.forEach { it.setSelected(isChecked) }
+            checkedItems = if (isChecked) visibleSelectableItems.toMutableList() else mutableListOf()
+
+            visibleSelectableItems.forEach { it.setSelected(isChecked) }
             updateSelection()
         }
     }
@@ -362,7 +371,7 @@ class EzCollComp<P>(
         }
     }
 
-    private fun calculateVisibleItems(): List<EzCollItemComp<P>> {
+    private fun calcVisibleItems(): List<EzCollItemComp<P>> {
         return items.filter { item ->
             activatedFilters.all { filterGroup ->
                 filterGroup.any { filter -> filter.predicate(item.spec) }
@@ -370,12 +379,20 @@ class EzCollComp<P>(
         }
     }
 
+    private fun calcSelectableItems(onlyVisible: Boolean): List<EzCollItemComp<P>> {
+        val selectable = items.filter { it.spec.isSelectable }
+        return if (onlyVisible) {
+            calcVisibleItems().intersect(selectable.toSet()).toList()
+        } else
+            selectable
+    }
+
     private fun updateFiltering() {
         if (!hasFiltering)
             return
 
         val isFilterActive = activatedFilters.isNotEmpty()
-        val visibleItems = calculateVisibleItems()
+        val visibleItems = calcVisibleItems()
 
         updateVisibleItems(visibleItems)
         updateShownCount(visibleItems.size, isFilterActive)
@@ -448,7 +465,7 @@ class EzCollComp<P>(
                 // Item was processed
                 processed != null -> EzCollItemComp(
                     processed,
-                    item.bottomAttrsCount,
+                    item.maxBottomAttrsCount,
                     item.orderingIndex,
                     ::itemSelectClicked,
                     ::removeItem,
@@ -490,7 +507,7 @@ class EzCollComp<P>(
     }
 
     private fun selectItemsBasedOnChecked() {
-        val visibleItems = calculateVisibleItems()
+        val visibleItems = calcVisibleItems()
         visibleItems.forEach { it.setSelected(checkedItems.contains(it)) }
         updateSelection()
     }
@@ -526,8 +543,11 @@ class EzCollComp<P>(
         val currentStatus = allCheckboxEl.checked to allCheckboxEl.indeterminate
 
         val newStatus = when {
+            // nothing
             checkedItems.isEmpty() -> false to false
-            checkedItems.size == calculateVisibleItems().size -> true to false
+            // everything that can be selected
+            checkedItems.size == calcSelectableItems(true).size -> true to false
+            // something in between
             else -> false to true
         }
 
@@ -536,8 +556,6 @@ class EzCollComp<P>(
             allCheckboxEl.checked = newStatus.first
             allCheckboxEl.indeterminate = newStatus.second
             allCheckboxEl.dispatchEvent(Event("change"))
-        } else {
-            debug { "All checkbox status unchanged: $currentStatus" }
         }
     }
 
@@ -578,7 +596,7 @@ class EzCollComp<P>(
 
 class EzCollItemComp<P>(
     var spec: EzCollComp.Item<P>,
-    val bottomAttrsCount: Int,
+    val maxBottomAttrsCount: Int,
     var orderingIndex: Int,
     private val onCheckboxClicked: (EzCollItemComp<P>, Boolean) -> Unit,
     private val onDelete: (EzCollItemComp<P>) -> Unit,
@@ -597,7 +615,9 @@ class EzCollItemComp<P>(
         "itemId" to spec.id,
         "isSelectable" to spec.isSelectable,
         "hasBottomAttrs" to spec.bottomAttrs.isNotEmpty(),
-        "bottomAttrCount" to bottomAttrsCount,
+        "bottomAttrCount" to maxBottomAttrsCount,
+        // This item does not have bottom attrs but others do
+        "expandPlaceholder" to (spec.bottomAttrs.isEmpty() && maxBottomAttrsCount > 0),
         "attrWidthS" to spec.attrWidthS.valuePx,
         "attrWidthM" to spec.attrWidthM.valuePx,
         "hasGrowingAttrs" to if (spec.bottomAttrs.size == 1) true else spec.hasGrowingAttrs,
@@ -605,8 +625,10 @@ class EzCollItemComp<P>(
         "isTypeIcon" to spec.type.isIcon,
         "typeHtml" to spec.type.html,
         "title" to spec.title,
+        "titleIcon" to spec.titleIcon?.icon,
+        "titleIconLabel" to spec.titleIcon?.label,
         "titleLink" to spec.titleLink,
-        "titleInactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
+        "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
                 "id" to it.id,
@@ -627,6 +649,24 @@ class EzCollItemComp<P>(
                 "isActionable" to (it.onClick != null),
             )
         },
+        "progressBar" to spec.progressBar?.let {
+            if (it.green + it.yellow + it.blue + it.grey > 0)
+                objOf(
+                    "green" to it.green,
+                    "yellow" to it.yellow,
+                    "blue" to it.blue,
+                    "grey" to it.grey,
+                    "showAttr" to it.showAttr,
+                    "label" to "Progress",
+                    "labelValue" to buildList {
+                        if (it.green > 0) add("${it.green} lahendatud")
+                        if (it.yellow > 0) add("${it.yellow} nässu läinud")
+                        if (it.blue > 0) add("${it.blue} hindamata")
+                        if (it.grey > 0) add("${it.grey} esitamata")
+                    }.joinToString(" / ")
+                )
+            else null
+        },
         "actions" to spec.actions.map {
             mapOf(
                 "id" to it.id,
@@ -641,7 +681,11 @@ class EzCollItemComp<P>(
     )
 
     public override fun postRender() {
-        initExpanding()
+        if (spec.bottomAttrs.isNotEmpty()) {
+            initExpanding()
+            updateExpanded()
+        }
+
         initActions()
         initActionableAttrs()
 
@@ -649,11 +693,6 @@ class EzCollItemComp<P>(
             initSelection()
             updateSelectionState()
         }
-
-        // TODO: atm item is expandable if there are bottom attrs
-        // TODO: but should also be expandable if there is a top attr which doesn't fit
-
-        updateExpanded()
     }
 
 

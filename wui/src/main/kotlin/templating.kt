@@ -1,5 +1,6 @@
 import libheaders.Mustache
 import rip.kspar.ezspa.getElemById
+import rip.kspar.ezspa.toJsObj
 
 fun tmRender(templateId: String, data: Map<String, Any?>? = null): String =
     render(getElemById(templateId).innerHTML, data ?: emptyMap())
@@ -11,7 +12,7 @@ private fun render(template: String, data: Map<String, Any?>): String {
     return Mustache.render(template, data.toJsObj())
 }
 
-fun plainDstStr(vararg dstIds: String): String = plainDstStr(dstIds.toList())
+fun plainDstStr(vararg dstIds: String?): String = plainDstStr(dstIds.toList())
 
-fun plainDstStr(dstIds: List<String>): String =
-    dstIds.joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }
+fun plainDstStr(dstIds: List<String?>): String =
+    dstIds.filterNotNull().joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }

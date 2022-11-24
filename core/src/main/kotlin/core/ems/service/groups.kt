@@ -1,19 +1,68 @@
 package core.ems.service
 
+import core.conf.security.EasyUser
+import core.db.Account
 import core.db.AccountGroup
 import core.db.Group
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 
-// TODO: cache
-fun getAccountImplicitGroupId(accountId: String): EntityID<Long> {
-    return transaction {
-        (Group innerJoin AccountGroup).slice(Group.id)
-                .select {
-                    AccountGroup.account eq accountId and Group.isImplicit
-                }.map { it[Group.id] }
-                .single()
+
+fun hasUserGroupAccess(user: EasyUser, groupId: Long, requireManager: Boolean): Boolean {
+    return when {
+        user.isAdmin() -> true
+        else -> hasAccountGroupAccess(user.id, groupId, requireManager)
     }
+}
+
+private fun hasAccountGroupAccess(accountId: String, groupId: Long, requireManager: Boolean): Boolean {
+    return transaction {
+        val q = AccountGroup.select {
+            AccountGroup.account eq accountId and (AccountGroup.group eq groupId)
+        }
+        if (requireManager) {
+            q.andWhere { AccountGroup.isManager eq true }
+        }
+        q.count() >= 1L
+    }
+}
+
+fun getImplicitGroupFromAccount(accountId: String): Long = transaction {
+    Group
+        .slice(Group.id)
+        .select {
+            Group.name.eq(accountId) and Group.isImplicit
+        }
+        .map {
+            it[Group.id]
+        }
+        .single().value
+}
+
+data class AccountFromImplicitGroup(
+    val id: String, val givenName: String, val familyName: String, val email: String,
+    val moodleUsername: String?, val createdAt: DateTime, val lastSeen: DateTime,
+)
+
+fun getAccountFromImplicitGroup(implicitGroupId: Long): AccountFromImplicitGroup = transaction {
+    (Group innerJoin AccountGroup innerJoin Account)
+        .slice(
+            Account.id, Account.givenName, Account.familyName, Account.email,
+            Account.moodleUsername, Account.createdAt, Account.lastSeen
+        ).select {
+            Group.id eq implicitGroupId and Group.isImplicit
+        }.map {
+            AccountFromImplicitGroup(
+                it[Account.id].value,
+                it[Account.givenName],
+                it[Account.familyName],
+                it[Account.email],
+                it[Account.moodleUsername],
+                it[Account.createdAt],
+                it[Account.lastSeen],
+            )
+        }.single()
 }

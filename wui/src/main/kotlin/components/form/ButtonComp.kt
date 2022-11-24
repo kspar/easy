@@ -4,15 +4,14 @@ import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.asList
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.getElemByIdAs
-import rip.kspar.ezspa.onVanillaClick
+import rip.kspar.ezspa.*
 import tmRender
 
 class ButtonComp(
     private val type: Type,
-    private val labelHtml: String,
+    // TODO: label can be empty
+    private val label: String,
+    private val iconHtml: String? = null,
     private val onClick: suspend (() -> Unit),
     private val isEnabledInitial: Boolean = true,
     private val disabledLabel: String? = null,
@@ -32,7 +31,8 @@ class ButtonComp(
     override fun render() = tmRender(
         "t-c-button",
         "id" to btnId,
-        "contentHtml" to labelHtml,
+        "text" to label,
+        "iconHtml" to iconHtml,
         "isPrimary" to (type == Type.PRIMARY),
         "isSecondary" to (type == Type.FLAT),
         "isDanger" to (type == Type.DANGER),
@@ -42,17 +42,21 @@ class ButtonComp(
 
     override fun postRender() {
         element.onVanillaClick(true) {
-            val btnContent = element.getElementsByTagName("ez-btn-content").asList().single()
-            val activeHtml = btnContent.innerHTML
+            val btnText = element.getElementsByTagName("ez-btn-text").asList().single()
+            val activeHtml = btnText.innerHTML
             disable()
+
             if (disabledLabel != null) {
-                btnContent.textContent = disabledLabel
+                btnText.textContent = disabledLabel
             }
             try {
                 onClick()
             } finally {
-                btnContent.innerHTML = activeHtml
-                enable()
+                // element might've been destroyed on click
+                if (getElemByIdOrNull(btnId) != null) {
+                    btnText.innerHTML = activeHtml
+                    enable()
+                }
             }
             postClick?.invoke()
         }
@@ -69,4 +73,6 @@ class ButtonComp(
             else it.addClass("disabled")
         }
     }
+
+    fun click() = element.click()
 }

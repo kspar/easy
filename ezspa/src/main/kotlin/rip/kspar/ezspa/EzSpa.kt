@@ -19,13 +19,13 @@ object EzSpa {
         private var pages: List<Page> = emptyList()
         private var currentPage: Page? = null
 
-        fun getCurrentPage() = pageFromPath(window.location.pathname)
+        fun getCurrentPage() = pageFromPath(window.location.pathname, false)
 
         fun updatePage(pageState: String? = null) {
             preUpdateHook?.invoke()
 
             val path = window.location.pathname
-            val newPage = pageFromPath(path)
+            val newPage = pageFromPath(path, true)
 
             currentPage?.destruct()
             currentPage = newPage
@@ -38,6 +38,7 @@ object EzSpa {
         fun navigateTo(path: String) {
             preNavigate()
             window.history.pushState(null, "", path)
+            refreshCurrentPathFromBrowser()
             updatePage()
         }
 
@@ -49,13 +50,14 @@ object EzSpa {
             currentPage?.onPreNavigation()
         }
 
-        private fun pageFromPath(path: String): Page {
+        private fun pageFromPath(path: String, respectNotFoundHandler: Boolean): Page {
             val matchingPages = pages.filter { it.pathMatches() }
             val matchingCount = matchingPages.size
             return when {
                 matchingCount == 1 -> matchingPages.single()
                 matchingCount < 1 -> {
-                    pageNotFoundHandler?.invoke(path)
+                    if (respectNotFoundHandler)
+                        pageNotFoundHandler?.invoke(path)
                     error("Path $path did not match any pages")
                 }
                 else -> error("Path $path matched several pages: ${matchingPages.map { it.pageName }}")

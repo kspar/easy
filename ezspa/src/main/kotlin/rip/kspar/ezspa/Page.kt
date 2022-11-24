@@ -22,25 +22,42 @@ abstract class Page {
      * String that defines which paths should be served by the page.
      *
      * Format: /some/stuff/{path-param-key}/bla
+     * Append ** in the end to allow any suffix i.e. wildcard.
      *
      * Example: /courses/{courseId}/dashboard
      */
     abstract val pathSchema: String
 
     private val pathComponents: List<PathComponent> by lazy {
-        pathSchema.split("/").filter { it.isNotBlank() }.map {
-            val paramMatch = it.match("^{(\\w+)}$")
-            if (paramMatch != null && paramMatch.size == 2) {
-                val paramKey = paramMatch[1]
-                PathParam(paramKey)
-            } else {
-                PathString(it)
+        val componentStrings = pathSchema.split("/").filter { it.isNotBlank() }
+        componentStrings.mapIndexedNotNull { i, s ->
+            val paramMatch = s.match("^{(\\w+)}$")
+            when {
+                paramMatch != null && paramMatch.size == 2 -> {
+                    val paramKey = paramMatch[1]
+                    if (paramKey == "wildcard") {
+                        error("The 'wildcard' param key is reserved")
+                    }
+                    PathParam(paramKey)
+                }
+                s == "**" -> {
+                    if (componentStrings.lastIndex != i) {
+                        error("Path wildcard suffix must be the last component, components: $componentStrings")
+                    }
+                    pathHasWildcardSuffix = true
+                    null
+                }
+                else -> PathString(s)
             }
         }
     }
 
+    private var pathHasWildcardSuffix = false
+
     private val pathRegex: String by lazy {
-        pathComponents.joinToString(prefix = "^/", separator = "/", postfix = "/?$") {
+        pathComponents.joinToString(
+            prefix = "^/", separator = "/", postfix = if (pathHasWildcardSuffix) "(.*)$" else "/?$"
+        ) {
             when (it) {
                 is PathString -> it.str
                 is PathParam -> "(\\w+)"
@@ -57,9 +74,14 @@ abstract class Page {
      * pathSchema = "/ez/{par}/game"
      * currentPath = "/ez/w1337/game"
      * returns {par=w1337}
+     *
+     * If the suffix wildcard is used in the schema then its key is 'wildcard'.
      */
     fun parsePathParams(): CertainMap<String, String> {
-        val expectedParamKeys = pathComponents.filterIsInstance<PathParam>().map { it.key }
+        val expectedParamKeys = pathComponents.filterIsInstance<PathParam>().map { it.key }.toMutableList()
+        if (pathHasWildcardSuffix) {
+            expectedParamKeys.add("wildcard")
+        }
 
         val path = window.location.pathname
         val match = path.match(pathRegex)
@@ -85,8 +107,8 @@ abstract class Page {
      *
      * @param pathParams must contain keys for all path params of this page's pathSchema
      */
-    fun constructPathLink(pathParams: Map<String, String>): String {
-        return pathComponents.joinToString(separator = "/", prefix = "/") {
+    fun constructPathLink(pathParams: Map<String, String>) =
+        pathComponents.joinToString(separator = "/", prefix = "/") {
             when (it) {
                 is PathParam -> pathParams[it.key]?.encodeURIComponent() ?: error(
                     "Key ${it.key} not found while constructing path link. Page: $pageName," +
@@ -95,7 +117,6 @@ abstract class Page {
                 is PathString -> it.str
             }
         }
-    }
 
     /**
      * Build the current page: fetch resources, perform requests, render templates, add listeners etc.
@@ -141,10 +162,10 @@ abstract class Page {
     }
 
     /**
-     * Update current page URL. Takes a URL fragment that can be relative ('foo') or absolute ('/foo') or
-     * only query string ('?foo') or only hash string ('#foo') or a combination of these.
+     * Update current page URL path. The given path should be absolute. It can include a query string and hash.
      */
-    fun updateUrl(urlFragment: String) {
-        window.history.replaceState(null, "", urlFragment)
+    fun updateUrl(path: String) {
+        window.history.replaceState(null, "", path)
+        refreshCurrentPathFromBrowser()
     }
 }

@@ -16,8 +16,6 @@ import rip.kspar.ezspa.doInPromise
 import tmRender
 import kotlin.js.Date
 
-// buildList is experimental
-@ExperimentalStdlibApi
 class ParticipantsRootComp(
     private val courseId: String,
     private val isAdmin: Boolean,
@@ -223,14 +221,14 @@ class ParticipantsRootComp(
                     }
                 )
             },
-            this
+            parent = this
         )
 
 
         // Create sidenav actions
         val sideActions = buildList {
             if (!studentsSynced) add(
-                Sidenav.Action(Icons.addParticipant, "Lisa õpilasi") {
+                Sidenav.Action(Icons.addPerson, "Lisa õpilasi") {
                     if (addStudentsModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
@@ -239,7 +237,7 @@ class ParticipantsRootComp(
                 }
             )
             if (!hasRestrictedGroups) add(
-                Sidenav.Action(Icons.addParticipant, "Lisa õpetajaid") {
+                Sidenav.Action(Icons.addPerson, "Lisa õpetajaid") {
                     if (addTeachersModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
                         createAndBuild().await()

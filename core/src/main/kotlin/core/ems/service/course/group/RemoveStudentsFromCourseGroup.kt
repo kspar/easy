@@ -5,9 +5,10 @@ import core.conf.security.EasyUser
 import core.db.StudentCourseGroup
 import core.db.StudentMoodlePendingCourseGroup
 import core.db.StudentPendingCourseGroup
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.courseGroupAccessible
+import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourse
-import core.ems.service.assertTeacherOrAdminHasAccessToCourseGroup
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -19,11 +20,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class RemoveStudentsFromCourseGroupController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("active_students") @field:Valid val activeStudents: List<ActiveStudentReq> = emptyList(),
@@ -69,22 +70,22 @@ class RemoveStudentsFromCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
-        assertTeacherOrAdminHasAccessToCourse(caller, courseId)
-        assertGroupExistsOnCourse(groupId, courseId)
-        assertTeacherOrAdminHasAccessToCourseGroup(caller, courseId, groupId)
+        caller.assertAccess {
+            teacherOnCourse(courseId, true)
+            assertGroupExistsOnCourse(groupId, courseId)
+            courseGroupAccessible(courseId, groupId)
+        }
 
         val deletedCount = removeStudentsFromGroup(
             courseId, groupId, activeStudentIds, pendingStudentEmails, moodlePendingStudentUnames
         )
         return Resp(deletedCount)
     }
-}
 
-private fun removeStudentsFromGroup(
-    courseId: Long, groupId: Long, activeStudentIds: List<String>,
-    pendingStudentEmails: List<String>, moodlePendingStudentUnames: List<String>
-): Int {
-    return transaction {
+    private fun removeStudentsFromGroup(
+        courseId: Long, groupId: Long, activeStudentIds: List<String>,
+        pendingStudentEmails: List<String>, moodlePendingStudentUnames: List<String>
+    ): Int = transaction {
         val deletedActive = StudentCourseGroup.deleteWhere {
             StudentCourseGroup.student.inList(activeStudentIds) and
                     StudentCourseGroup.courseGroup.eq(groupId) and
@@ -105,3 +106,4 @@ private fun removeStudentsFromGroup(
         deletedActive + deletedPending + deletedMoodlePending
     }
 }
+

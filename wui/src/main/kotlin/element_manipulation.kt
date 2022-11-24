@@ -24,3 +24,11 @@ fun partitionElementsWithAction(allElements: List<Element>, selectedElements: Li
     allElements.forEach(inactiveAction)
     selectedElements.forEach(activeAction)
 }
+
+fun Element.hide() {
+    this.addClass("display-none")
+}
+
+fun Element.show() {
+    this.removeClass("display-none")
+}
