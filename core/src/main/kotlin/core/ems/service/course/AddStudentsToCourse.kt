@@ -6,6 +6,7 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -21,7 +22,7 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class AddStudentsToCourseController {
+class AddStudentsToCourseController(val cachingService: CachingService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("students") @field:Valid val students: List<StudentEmailReq>)
@@ -65,7 +66,9 @@ class AddStudentsToCourseController {
             students.flatMap { it.groups }.toSet().forEach { courseGroupAccessible(courseId, it) }
         }
 
-        return insertStudentCourseAccesses(courseId, students)
+        return insertStudentCourseAccesses(courseId, students).also {
+            if (it.accessesAdded > 0) cachingService.evictSelectLatestValidGradeForCourse(courseId)
+        }
     }
 
     private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNoAccount>): Resp = transaction {

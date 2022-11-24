@@ -2,13 +2,11 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.StudentCourseAccess
-import core.db.StudentCourseGroup
-import core.db.StudentPendingAccess
-import core.db.StudentPendingCourseGroup
+import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.canTeacherOrAdminAccessCourseGroup
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.ForbiddenException
 import core.exception.ReqError
@@ -26,7 +24,7 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class RemoveStudentsFromCourseController {
+class RemoveStudentsFromCourseController(val cachingService: CachingService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
@@ -81,7 +79,11 @@ class RemoveStudentsFromCourseController {
 
         val (deleted, pendingDeleted) = deleteStudentsFromCourse(courseId, studentIds, pendingStudentEmails)
         log.debug { "Removed $deleted active students and $pendingDeleted pending students" }
-        return Resp(deleted, pendingDeleted)
+
+        return Resp(
+            deleted,
+            pendingDeleted
+        ).also { if (deleted > 0) cachingService.evictSelectLatestValidGradeForCourse(courseId) }
     }
 
     private fun assertCallerCanAccessStudents(
