@@ -63,14 +63,6 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
     }
 
-    @ExceptionHandler(value = [TSLCompileException::class])
-    fun handleTSLException(ex: TSLCompileException, request: WebRequest): ResponseEntity<Any> {
-        val id = UUID.randomUUID().toString()
-        log.info("TSL compile exception: ${ex.message}, id: $id")
-        val resp = RequestErrorResponse(id, ex.code.errorCodeStr, emptyMap(), ex.message)
-        return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
-    }
-
     @ExceptionHandler(value = [Exception::class])
     fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
