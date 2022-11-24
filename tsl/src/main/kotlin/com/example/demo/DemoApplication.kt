@@ -98,7 +98,7 @@ data class CompiledResult(
 
 fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): CompiledResult {
     when (backendID) {
-        "Tiivad" -> {
+        "tiivad" -> {
             val parseTree = f.decodeFromString<TSL>(tslSpec)
 
             // val irTree = IRTree(parseTree) TODO: Uncomment me if we will use intermediate tree (so far, we don't need)
@@ -127,7 +127,7 @@ fun main() {
 
     var inputText = File(fileName).readText(Charsets.UTF_8)
 
-    var compiledResult = compileTSL(inputText, "1.0.0", "Tiivad")
+    var compiledResult = compileTSL(inputText, "1.0.0", "tiivad")
     println(compiledResult.backendID)
     println(compiledResult.backendVersion)
     println(compiledResult.generatedScripts[0])
