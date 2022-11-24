@@ -98,11 +98,11 @@ data class CompiledResult(
 fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): CompiledResult {
     when (backendID) {
         "tiivad" -> {
-            val parseTree = f.decodeFromString<Check>(tslSpec)
+            val parseTree = f.decodeFromString<TSL>(tslSpec)
 
-            // val irTree = IRTree(parseTree) TODO: Uncomment me
-            val irTree = TSL("python3", false, listOf("file.py"), "1.0", listOf()) // TODO: RemoveMe
-            val compiler = Compiler(irTree)
+//             val irTree = IRTree(parseTree) TODO: Uncomment me
+//            val irTree = TSL("python3", false, listOf("file.py"), "1.0", listOf()) // TODO: RemoveMe
+            val compiler = Compiler(parseTree)
             val assessmentCode = compiler.generateAssessmentCodes()
 
             return CompiledResult(
