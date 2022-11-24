@@ -3,8 +3,7 @@ package core.ems.service.exercise
 import com.example.demo.compileTSL
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.exception.InvalidRequestException
-import core.exception.ReqError
+import core.exception.TSLCompileException
 import mu.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
@@ -39,16 +38,12 @@ class CompileTSL {
 
         val result = try {
             compileTSL(dto.tslSpec, "1", "tiivad")
-
         } catch (e: Exception) {
-            throw InvalidRequestException(
-                "TSL compilation failed with exception: ${e.message}",
-                ReqError.TSL_COMPILE_FAILED, notify = false
-            )
+            throw TSLCompileException(e.message.orEmpty())
         }
 
         val resp = Resp(result.generatedScripts.mapIndexed { i, s ->
-            ScriptResp("generated$i.py", s)
+            ScriptResp("generated-$i.py", s)
         })
 
         return resp

@@ -15,3 +15,10 @@ class InvalidRequestException(
     vararg val attributes: Pair<String, String>,
     val notify: Boolean = true
 ) : RuntimeException(message)
+
+class TSLCompileException(
+    override val message: String,
+) : RuntimeException(message) {
+    val code = ReqError.TSL_COMPILE_FAILED
+}
+
