@@ -2,7 +2,9 @@ package core.ems.service.exercise
 
 import com.example.demo.compileTSL
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
+import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -34,12 +36,12 @@ class CompileTSL {
     )
 
     data class MetaResp(
+        @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("timestamp") val timestamp: DateTime,
         @JsonProperty("compiler_version") val compilerVersion: String,
         @JsonProperty("backend_id") val backendId: String,
         @JsonProperty("backend_version") val backendVersion: String,
-
-        )
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/tsl/compile")
