@@ -51,6 +51,7 @@ fun fetchEms(
 
                 window.fetch(
                     AppProperties.EMS_ROOT + path,
+                    // RequestInit doesn't have signal
                     objOf(
                         "method" to method.name,
                         "headers" to combinedHeaders,

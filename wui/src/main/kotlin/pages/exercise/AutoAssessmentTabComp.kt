@@ -2,10 +2,7 @@ package pages.exercise
 
 import debug
 import kotlinx.coroutines.await
-import pages.exercise.editor.AutoassessAttrsComp
-import pages.exercise.editor.AutoassessCodeEditorComp
-import pages.exercise.editor.AutoassessEditorComp
-import pages.exercise.editor.AutoassessTSLEditorComp
+import pages.exercise.editor.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import tmRender
@@ -63,6 +60,12 @@ class AutoAssessmentTabComp(
             when (val editorType = type?.editor) {
                 AutoEvalTypes.TypeEditor.TSL_COMPOSE -> {
                     editor = AutoassessTSLEditorComp(
+                        props.evalScript, props.assets,
+                        isEditable, this
+                    )
+                }
+                AutoEvalTypes.TypeEditor.TSL_YAML -> {
+                    editor = AutoassessTSLYAMLEditorComp(
                         props.evalScript, props.assets,
                         isEditable, this
                     )

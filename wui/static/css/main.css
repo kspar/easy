@@ -635,7 +635,7 @@ nav.crumb-wrap .breadcrumb:before {
     }
 }
 
-.attr-list ul {
+#global-exercise .attr-list ul {
     margin-top: 0;
 }
 

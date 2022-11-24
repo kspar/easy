@@ -135,7 +135,7 @@ class CodeEditorComp(
                 createFileModalComp.setExistingFilenames(tabs.map { it.filename })
                 val filename = createFileModalComp.openWithClosePromise().await()
                 if (filename != null) {
-                    createFile(filename)
+                    createFileWithCreator(filename)
                 }
             }
         }
@@ -151,8 +151,12 @@ class CodeEditorComp(
 
     fun getFileValue(filename: String): String = tabs.single { it.filename == filename }.doc.getValue()
 
-    fun setFileValue(filename: String, value: String?) {
-        tabs.single { it.filename == filename }.doc.setValue(value)
+    fun setFileValue(
+        filename: String, value: String?, newFileLang: dynamic = "python", newFileEdit: Edit = Edit.EDITABLE
+    ) {
+        val existingTab = tabs.singleOrNull { it.filename == filename }
+        val tab = existingTab ?: createFile(filename, newFileLang, newFileEdit)
+        tab.doc.setValue(value)
     }
 
     fun setFileEditable(filename: String, isEditable: Boolean) {
@@ -193,18 +197,21 @@ class CodeEditorComp(
         }
     }
 
-    private fun createFile(filename: String) {
-        debug { "Creating new file: $filename" }
-        fileCreator!!
-
-        val file = File(filename, null, fileCreator.fileLang, fileCreator.newFileEditability)
+    private fun createFile(filename: String, lang: dynamic, editability: Edit): Tab {
+        val file = File(filename, null, lang, editability)
         val tab = fileToTab(file)
         tabs.add(tab)
         createFileModalComp.setExistingFilenames(tabs.map { it.filename })
 
         getEditorElement().getElemBySelector("ez-code-edit-tabs").appendHTML(tabToHtml(tab))
-
         refreshTabActions()
+        return tab
+    }
+
+    private fun createFileWithCreator(filename: String) {
+        debug { "Creating new file: $filename" }
+        fileCreator!!
+        val tab = createFile(filename, fileCreator.fileLang, fileCreator.newFileEditability)
         switchToTab(tab)
     }
 
