@@ -29,17 +29,17 @@ apply plugin: 'org.liquibase.gradle'
 
 group = 'ee.urgas'
 version = '1'
-sourceCompatibility = 1.8
+sourceCompatibility = 11
 compileKotlin {
     kotlinOptions {
         freeCompilerArgs = ["-Xjsr305=strict"]
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 }
 compileTestKotlin {
     kotlinOptions {
         freeCompilerArgs = ["-Xjsr305=strict"]
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 }
 
@@ -96,6 +96,9 @@ dependencies {
 
     // Temporary JWT parsing for username migration
     implementation 'com.auth0:java-jwt:3.18.3'
+
+    // TSL
+    implementation project(":tsl")
 }
 
 
