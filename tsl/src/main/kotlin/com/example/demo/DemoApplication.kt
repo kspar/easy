@@ -65,6 +65,7 @@ val module = SerializersModule {
         subclass(FunctionContainsReturnTest::class)
         subclass(FunctionCallsFunctionTest::class)
         subclass(FunctionIsRecursiveTest::class)
+        subclass(FunctionCallsPrintTest::class)
         subclass(FunctionDefinesFunctionTest::class)
         subclass(FunctionImportsModuleTest::class)
         subclass(FunctionContainsTryExceptTest::class)
@@ -98,11 +99,10 @@ data class CompiledResult(
 fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): CompiledResult {
     when (backendID) {
         "Tiivad" -> {
-            val parseTree = f.decodeFromString<Check>(tslSpec)
+            val parseTree = f.decodeFromString<TSL>(tslSpec)
 
-            // val irTree = IRTree(parseTree) TODO: Uncomment me
-            val irTree = TSL("python3", false, listOf("file.py"), "1.0", listOf()) // TODO: RemoveMe
-            val compiler = Compiler(irTree)
+            // val irTree = IRTree(parseTree) TODO: Uncomment me if we will use intermediate tree (so far, we don't need)
+            val compiler = Compiler(parseTree)
             val assessmentCode = compiler.generateAssessmentCodes()
 
             return CompiledResult(
@@ -121,16 +121,25 @@ fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): 
 
 fun main() {
     // TODO: Lisage siia faili nimi, mis asub juurkaustas:
-    var fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
+    //var fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
+    var fileName = "tsl/src/main/kotlin/com/example/demo/yl1.YAML"
     println(fileName)
 
     var inputText = File(fileName).readText(Charsets.UTF_8)
+
+    var compiledResult = compileTSL(inputText, "1.0.0", "Tiivad")
+    println(compiledResult.backendID)
+    println(compiledResult.backendVersion)
+    println(compiledResult.generatedScripts[0])
+    println(compiledResult.tslCompilerVersion)
+
     var parseTree = f.decodeFromString<TSL>(inputText)
     println(parseTree)
 
     var compiler = Compiler(parseTree)
+    compiler.validateParseTree()
     var assessmentCode = compiler.generateAssessmentCodes()
-    println(assessmentCode)
+    // println(assessmentCode)
 }
 
 //var irTree = IRTree(parseTree)

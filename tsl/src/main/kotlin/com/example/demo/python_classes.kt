@@ -6,14 +6,14 @@ class PyExecuteTest(val test: Test, val testName: String, val namedArgs: Map<Str
         PyFunctionCall(
             "execute_test",
             namedArgs +
-                    Pair("test_name", PyStr(testName)) +
+                    Pair("type", PyStr(testName)) +
                     Pair("points", PyFloat(test.points)) +
                     Pair("id", PyInt(test.id)) +
                     Pair("name", PyStr(test.name)) +
                     Pair("inputs", PyStr(test.inputs)) +
-                    Pair("passedNext", PyInt(test.passedNext)) +
-                    Pair("failedNext", PyInt(test.failedNext)) +
-                    Pair("visibleToUser", PyBool(test.visibleToUser))
+                    Pair("passed_next", PyInt(test.passedNext)) +
+                    Pair("failed_next", PyInt(test.failedNext)) +
+                    Pair("visible_to_user", PyBool(test.visibleToUser))
         ).generatePyString()
 }
 
@@ -32,11 +32,12 @@ class PyStandardOutputChecks(val standardOutputChecks: List<StandardOutputCheck>
                 PyFunctionCall(
                     "StandardOutputChecks", mapOf(
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
-                        "expected_output" to PyStr(it.expectedOutput),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
-                        "passedMessage" to PyStr(it.passedMessage),
-                        "failedMessage" to PyStr(it.failedMessage)
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage)
                     )
                 )
             }).generatePyString()
@@ -57,10 +58,11 @@ class PyStandardOutputChecksLong(val standardOutputChecksLong: List<StandardOutp
                 PyFunctionCall(
                     "StandardOutputChecks", mapOf(
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
-                        "expected_output" to PyStr(it.expectedOutput),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
                         "before_message" to PyStr(it.beforeMessage),
-                        "passedMessage" to PyStr(it.passedMessage),
-                        "failedMessage" to PyStr(it.failedMessage)
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage)
                     )
                 )
             }).generatePyString()
@@ -78,11 +80,12 @@ class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimiti
                     "OutputFileChecks", mapOf(
                         "file_name" to PyStr(it.fileName),
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
-                        "expected_output" to PyStr(it.expectedOutput),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
-                        "passedMessage" to PyStr(it.passedMessage),
-                        "failedMessage" to PyStr(it.failedMessage)
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage)
                     )
                 )
             }).generatePyString()

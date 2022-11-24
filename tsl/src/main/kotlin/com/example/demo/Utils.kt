@@ -22,21 +22,24 @@ class FileData(
 @Serializable
 data class StandardOutputCheck(
     val stringCheckType: StringCheckType,
-    val expectedOutput: String, // Väljund
+    val nothingElse: Boolean? = null,
+    val expectedOutput: List<String>, // The field to be checked.
     val considerElementsOrder: Boolean? = null
 ) : Check()
 
 @Serializable
 data class StandardOutputCheckLong(
     val stringCheckType: StringCheckTypeLong,
-    val expectedOutput: String // Väljund
+    val nothingElse: Boolean? = null,
+    val expectedOutput: List<String> // The field to be checked.
 ) : Check()
 
 @Serializable
 data class OutputFileCheck(
     val fileName: String,
     val stringCheckType: StringCheckType,
-    val expectedOutput: String, // Väljund
+    val nothingElse: Boolean? = null,
+    val expectedOutput: List<String>, // The field to be checked.
     val considerElementsOrder: Boolean? = null
 ) : Check()
 
@@ -56,4 +59,10 @@ class ContainsCheck(
 class RecursiveCheck(
     val mustBeRecursive: Boolean,
     val cannotBeRecursive: Boolean
+) : Check()
+
+@Serializable
+class CallsCheck(
+    val mustCallPrint: Boolean,
+    val cannotCallPrint: Boolean
 ) : Check()

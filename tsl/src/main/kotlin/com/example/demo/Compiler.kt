@@ -3,20 +3,33 @@ package com.example.demo
 // class Compiler(private val irTree: IRTree) {
 class Compiler(private val irTree: TSL) { // TODO: RemoveMe
 
-    fun generateAssessmentCodes(): String {
-        if (irTree.validateFiles) {
-            val validationCode = generateValidationCode(irTree.requiredFiles)
-            println(validationCode)
+    fun validateParseTree() {
+        var points = this.irTree.tests.sumOf{ it.points }
+        println("Total points: $points")
+        if (points < 0 || points > 100) {
+            throw Exception("The total number of points configured by UI ($points) is not in the valid range of [0..100].")
         }
-        val a = this.irTree.tests.map {
-            println(generateAssessmentCode(it, irTree.requiredFiles[0]))
-        }.joinToString { "\n" }
-        println(a)
-        return ""
+    }
+
+    fun generateAssessmentCodes(): String {
+        var assessmentCode = "from lib import *\n"
+        var validationCode = ""
+        if (irTree.validateFiles) {
+            validationCode = generateValidationCode(irTree.requiredFiles)
+        }
+        var assCode = ""
+        this.irTree.tests.map {
+            assCode += generateAssessmentCode(it, irTree.requiredFiles[0]) + "\n"
+        }
+
+        var printCode = "print(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))\n"
+        //println("print(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))\n" + // TODO: FIXME
+        //        "with open('a1_results_real.json', 'w', encoding='utf-8') as f: f.write(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))")
+        return "$assessmentCode$validationCode$assCode$printCode"
     }
 
     private fun generateValidationCode(filesToValidate: List<String>): String {
-        return filesToValidate.joinToString(", ", "validate_files([", "])") { PyStr(it).generatePyString() }
+        return filesToValidate.joinToString(", ", "validate_files([", "])\n") { PyStr(it).generatePyString() }
     }
 
     private fun generateAssessmentCode(test: Test, file_name: String): String {
@@ -28,8 +41,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     mapOf(
                         "file_name" to PyStr(file_name),
                         "function_name" to PyStr(test.functionName),
-                        "arguments" to PyStr(test.arguments),
-                        "standard_input_data" to PyStr(test.standardInputData),
+                        "arguments" to test.arguments?.let { PyList(it.map { PyStr(it) }) },
+                        "standard_input_data" to test.standardInputData?.let { PyList(it.map { PyStr(it) }) },
                         "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
                             ?.let { PyList(it) },
                         "return_value" to PyStr(test.returnValue),
@@ -50,8 +63,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.containsLoop.cannotContain)
                         ),
                         "before_message" to PyStr(test.containsLoop.beforeMessage),
-                        "passedMessage" to PyStr(test.containsLoop.passedMessage),
-                        "failedMessage" to PyStr(test.containsLoop.failedMessage)
+                        "passed_message" to PyStr(test.containsLoop.passedMessage),
+                        "failed_message" to PyStr(test.containsLoop.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -78,8 +91,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.containsReturn.cannotContain)
                         ),
                         "before_message" to PyStr(test.containsReturn.beforeMessage),
-                        "passedMessage" to PyStr(test.containsReturn.passedMessage),
-                        "failedMessage" to PyStr(test.containsReturn.failedMessage)
+                        "passed_message" to PyStr(test.containsReturn.passedMessage),
+                        "failed_message" to PyStr(test.containsReturn.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -91,6 +104,23 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "file_name" to PyStr(file_name),
                         "function_name" to PyStr(test.functionName),
                         "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                    )
+                ).generatePyString()
+            }
+            is FunctionCallsPrintTest -> {
+                PyExecuteTest(
+                    test,
+                    "function_calls_print_test",
+                    mapOf(
+                        "file_name" to PyStr(file_name),
+                        "function_name" to PyStr(test.functionName),
+                        "contains_check" to PyPair(
+                            PyBool(test.callsCheck.mustCallPrint),
+                            PyBool(test.callsCheck.cannotCallPrint)
+                        ),
+                        "before_message" to PyStr(test.callsCheck.beforeMessage),
+                        "passed_message" to PyStr(test.callsCheck.passedMessage),
+                        "failed_message" to PyStr(test.callsCheck.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -106,8 +136,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.isRecursive.cannotBeRecursive)
                         ),
                         "before_message" to PyStr(test.isRecursive.beforeMessage),
-                        "passedMessage" to PyStr(test.isRecursive.passedMessage),
-                        "failedMessage" to PyStr(test.isRecursive.failedMessage)
+                        "passed_message" to PyStr(test.isRecursive.passedMessage),
+                        "failed_message" to PyStr(test.isRecursive.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -145,8 +175,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.containsTryExcept.cannotContain)
                         ),
                         "before_message" to PyStr(test.containsTryExcept.beforeMessage),
-                        "passedMessage" to PyStr(test.containsTryExcept.passedMessage),
-                        "failedMessage" to PyStr(test.containsTryExcept.failedMessage)
+                        "passed_message" to PyStr(test.containsTryExcept.passedMessage),
+                        "failed_message" to PyStr(test.containsTryExcept.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -162,8 +192,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.containsLocalVars.cannotContain)
                         ),
                         "before_message" to PyStr(test.containsLocalVars.beforeMessage),
-                        "passedMessage" to PyStr(test.containsLocalVars.passedMessage),
-                        "failedMessage" to PyStr(test.containsLocalVars.failedMessage)
+                        "passed_message" to PyStr(test.containsLocalVars.passedMessage),
+                        "failed_message" to PyStr(test.containsLocalVars.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -173,7 +203,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     "program_execution_test",
                     mapOf(
                         "file_name" to PyStr(file_name),
-                        "standard_input_data" to PyStr(test.standardInputData),
+                        "standard_input_data" to test.standardInputData?.let { PyList(it.map { PyStr(it) }) },
                         "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
                             ?.let { PyList(it) },
                         "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
@@ -183,8 +213,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.exceptionCheck?.cannotThrowException)
                         ),
                         "before_message" to PyStr(test.exceptionCheck?.beforeMessage),
-                        "passedMessage" to PyStr(test.exceptionCheck?.passedMessage),
-                        "failedMessage" to PyStr(test.exceptionCheck?.failedMessage)
+                        "passed_message" to PyStr(test.exceptionCheck?.passedMessage),
+                        "failed_message" to PyStr(test.exceptionCheck?.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -199,8 +229,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.programContainsTryExcept.cannotContain)
                         ),
                         "before_message" to PyStr(test.programContainsTryExcept.beforeMessage),
-                        "passedMessage" to PyStr(test.programContainsTryExcept.passedMessage),
-                        "failedMessage" to PyStr(test.programContainsTryExcept.failedMessage)
+                        "passed_message" to PyStr(test.programContainsTryExcept.passedMessage),
+                        "failed_message" to PyStr(test.programContainsTryExcept.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -215,8 +245,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.programCallsPrint.cannotContain)
                         ),
                         "before_message" to PyStr(test.programCallsPrint.beforeMessage),
-                        "passedMessage" to PyStr(test.programCallsPrint.passedMessage),
-                        "failedMessage" to PyStr(test.programCallsPrint.failedMessage)
+                        "passed_message" to PyStr(test.programCallsPrint.passedMessage),
+                        "failed_message" to PyStr(test.programCallsPrint.failedMessage)
                     )
                 ).generatePyString()
             }
@@ -231,8 +261,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyBool(test.programContainsLoop.cannotContain)
                         ),
                         "before_message" to PyStr(test.programContainsLoop.beforeMessage),
-                        "passedMessage" to PyStr(test.programContainsLoop.passedMessage),
-                        "failedMessage" to PyStr(test.programContainsLoop.failedMessage)
+                        "passed_message" to PyStr(test.programContainsLoop.passedMessage),
+                        "failed_message" to PyStr(test.programContainsLoop.failedMessage)
                     )
                 ).generatePyString()
             }

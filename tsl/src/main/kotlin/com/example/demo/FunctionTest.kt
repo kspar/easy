@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
 @SerialName("function_execution_test") // Funktsiooni käivituse test
 data class FunctionExecutionTest(
     val functionName: String,
-    val arguments: String? = null,
-    val standardInputData: String? = null,
+    val arguments: List<String>? = null,
+    val standardInputData: List<String>? = null,
     val inputFiles: List<FileData>? = null, // Sama nii input kui output data-le
     val returnValue: String? = null,
     val standardOutputChecks: List<StandardOutputCheck>? = null,
@@ -43,6 +43,13 @@ data class FunctionContainsReturnTest(
 data class FunctionCallsFunctionTest(
     val functionName: String,
     val standardOutputCheck: StandardOutputCheckLong
+) : Test()
+
+@Serializable
+@SerialName("function_calls_print_test")
+data class FunctionCallsPrintTest(
+    val functionName: String,
+    val callsCheck: CallsCheck
 ) : Test()
 
 @Serializable

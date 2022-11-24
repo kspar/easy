@@ -22,11 +22,21 @@ class PyFunctionCall(val name: String, val namedArgs: Map<String, PyASTPrimitive
 
 class PyInt(val value: Long?) : PyASTPrimitive() {
     // Long.toString() is always a valid Python integer primitive?
-    override fun generatePyString() = value.toString()
+    override fun generatePyString(): String {
+        if (value == null) {
+            return "None"
+        }
+        return value.toString()
+    }
 }
 
 class PyStr(val value: String?) : PyASTPrimitive() {
-    override fun generatePyString() = "'''${value?.replace("'''", "\\'''")?.trim()}'''"
+    override fun generatePyString(): String {
+        if (value == null) {
+            return "None"
+        }
+        return "'''${value?.replace("'''", "\\'''")?.trim()}'''"
+    }
 }
 
 class PyFloat(val value: Double) : PyASTPrimitive() {
@@ -48,5 +58,10 @@ open class PyTuple(val values: List<PyASTPrimitive>) : PyASTPrimitive() {
 class PyPair(value1: PyASTPrimitive, value2: PyASTPrimitive) : PyTuple(listOf(value1, value2))
 
 class PyBool(val value: Boolean?) : PyASTPrimitive() {
-    override fun generatePyString() = value.toString().replaceFirstChar { it.uppercase() }
+    override fun generatePyString(): String {
+        if (value == null) {
+            return "None"
+        }
+        return value.toString().replaceFirstChar { it.uppercase() }
+    }
 }

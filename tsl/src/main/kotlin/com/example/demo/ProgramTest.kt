@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("program_execution_test") // Tulemuse test
 data class ProgramExecutionTest(
-    val standardInputData: String? = null,
+    val standardInputData: List<String>? = null,
     val inputFiles: List<FileData>? = null, // Sama nii input kui output data-le
     val standardOutputChecks: List<StandardOutputCheck>? = null,
     val outputFileChecks: List<OutputFileCheck>? = null,
