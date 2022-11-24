@@ -52,6 +52,12 @@ class CachingService(val cacheManager: CacheManager) {
         cacheManager.getCache(selectLatestValidGradesCache)?.evict(courseExerciseId)
     }
 
+    fun evictSelectLatestValidGradeForCourse(courseId: Long) = transaction {
+        CourseExercise.slice(CourseExercise.id)
+            .select { CourseExercise.id eq courseId }
+            .map { it[CourseExercise.id].value }
+            .forEach { evictSelectLatestValidGrades(it) }
+    }
 
     @Cacheable(articleCache)
     fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp {
