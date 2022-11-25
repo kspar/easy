@@ -1,15 +1,16 @@
 package pages.exercise.editor
 
-import components.StringComp
 import components.code_editor.CodeEditorComp
 import dao.TSLDAO
 import debug
 import kotlinx.coroutines.await
 import observeValueChange
-import plainDstStr
+import org.w3c.dom.Element
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.getElemByIdOrNull
+import tmRender
 
 class AutoassessTSLYAMLEditorComp(
     private val evaluateScript: String,
@@ -18,16 +19,18 @@ class AutoassessTSLYAMLEditorComp(
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
-    private val compilerFeedback = StringComp("", this)
     private lateinit var codeEditor: CodeEditorComp
 
     private var isEditable = startEditable
     private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME) { "" }
     private val generatedAssets = assets - TSL_SPEC_FILENAME
 
+    val compilerFeedbackEl: Element
+        get() = getElemById("tsl-yaml-compiler-feedback")
+
 
     override val children: List<Component>
-        get() = listOf(compilerFeedback, codeEditor)
+        get() = listOf(codeEditor)
 
     override fun create() = doInPromise {
         codeEditor = CodeEditorComp(
@@ -42,7 +45,10 @@ class AutoassessTSLYAMLEditorComp(
         )
     }
 
-    override fun render() = plainDstStr(compilerFeedback.dstId, codeEditor.dstId)
+    override fun render() = tmRender(
+        "t-c-exercise-tab-aa-tsl-yaml",
+        "editorDst" to codeEditor.dstId,
+    )
 
     override fun postRender() {
         if (isEditable) {
@@ -54,9 +60,9 @@ class AutoassessTSLYAMLEditorComp(
                         val result = TSLDAO.compile(it).await()
                         debug { "Compilation finished" }
 
-                        result.feedback?.let {
-                            compilerFeedback.parts = StringComp.simpleText(it)
-                        }
+                        compilerFeedbackEl.textContent = result.feedback?.let {
+                            "Kompilaatori viga:\n$it"
+                        }.orEmpty()
 
                         result.scripts?.forEach {
                             codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
