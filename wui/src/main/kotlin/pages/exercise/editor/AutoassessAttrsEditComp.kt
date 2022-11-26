@@ -19,7 +19,7 @@ class AutoassessAttrsEditComp(
     private val typeSelect = SelectComp(
         "Automaatkontrolli tüüp", AutoEvalTypes.templates.map {
             SelectComp.Option(it.name, it.container, it.container == containerImage)
-        }, true, onTypeChanged, this
+        }, true, onOptionChange = onTypeChanged, parent = this
     )
 
     private val timeField = if (containerImage != null)

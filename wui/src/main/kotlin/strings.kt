@@ -1,3 +1,5 @@
+import pages.exercise_library.DirAccess
+
 // Top-level property to access strings
 var Str: TranslatableStrings = EstStrings
 
@@ -37,8 +39,23 @@ abstract class TranslatableStrings {
         Role.TEACHER -> roleTeacher()
         Role.ADMIN -> roleAdmin()
     }
+
     fun translateStudents(count: Int) = if (count == 1) coursesStudent() else coursesStudents()
     fun translateExercises(count: Int) = if (count == 1) exercise() else exercises()
+    fun translatePermission(permission: DirAccess) =
+        when (permission) {
+            DirAccess.P -> permissionP()
+            DirAccess.PR -> permissionPR()
+            DirAccess.PRA -> permissionPRA()
+            DirAccess.PRAW -> permissionPRAW()
+            DirAccess.PRAWM -> permissionPRAWM()
+        }
+
+    abstract fun permissionP(): String
+    abstract fun permissionPR(): String
+    abstract fun permissionPRA(): String
+    abstract fun permissionPRAW(): String
+    abstract fun permissionPRAWM(): String
 
 
     // Navbar
@@ -183,7 +200,9 @@ private object EstStrings : TranslatableStrings() {
     override fun coursesStudent() = "õpilane"
     override fun addNewCourse() = "Lisa uus kursus"
     override fun newCourseName() = "Uue kursuse nimi"
-    override fun somethingWentWrong() = "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
+    override fun somethingWentWrong() =
+        "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
+
     override fun fetchingCoursesFailed() = "Kursuste laadimine ebaõnnestus."
     override fun courseCreationFailed() = "Uue kursuse loomine ebaõnnestus."
     override fun coursesTitleAdmin() = "Kõik kursused"
@@ -233,4 +252,9 @@ private object EstStrings : TranslatableStrings() {
     override fun new() = "uus"
     override fun exercise() = "ülesanne"
     override fun exercises() = "ülesannet"
+    override fun permissionP() = "Läbikäija"
+    override fun permissionPR() = "Vaataja"
+    override fun permissionPRA() = "Lisaja"
+    override fun permissionPRAW() = "Muutja"
+    override fun permissionPRAWM() = "Moderaator"
 }

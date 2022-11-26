@@ -437,7 +437,7 @@
 
 <script id="t-c-select" type="text/x-handlebars">
     <div class="input-field select-wrap">
-        <select id="{{selectId}}">
+        <select id="{{selectId}}" {{#isDisabled}}disabled{{/isDisabled}}>
             {{#hasEmptyOption}}
                 <option value="">–</option>
             {{/hasEmptyOption}}
@@ -690,6 +690,28 @@
 <script id="t-c-exercise-tab-aa-tsl-yaml" type="text/x-handlebars">
     <pre id="tsl-yaml-compiler-feedback"></pre>
     <ez-dst id="{{editorDst}}"></ez-dst>
+</script>
+
+<script id="t-c-exercise-permissions" type="text/x-handlebars">
+    <ez-exercise-permissions>
+        <ez-add-permission></ez-add-permission>
+        {{#directPermissions}}
+            <ez-permission>
+                <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                <ez-dst id="{{selectDst}}"></ez-dst>
+            </ez-permission>
+        {{/directPermissions}}
+
+        {{#inheritingDirs}}
+            <ez-inheriting-dir>{{dirLabel}} <a {{^isCurrent}}href="{{dirHref}}"{{/isCurrent}}>{{dirName}}</a> {{#isCurrent}}{{currentDirLabel}}{{/isCurrent}}</ez-inheriting-dir>
+            {{#permissions}}
+                <ez-permission class="inherited">
+                    <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                    <z-permission-access>{{access}}</z-permission-access>
+                </ez-permission>
+            {{/permissions}}
+        {{/inheritingDirs}}
+    </ez-exercise-permissions>
 </script>
 
 

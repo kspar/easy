@@ -9,9 +9,11 @@ import components.EzCollComp
 import dao.ExerciseDAO
 import dao.LibraryDAO
 import dao.LibraryDirDAO
+import debug
 import kotlinx.coroutines.await
 import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
+import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
 import plainDstStr
 import rip.kspar.ezspa.Component
@@ -20,7 +22,7 @@ import rip.kspar.ezspa.doInPromise
 import successMessage
 
 
-class ExerciseLibRootComp(
+class ExerciseLibComp(
     private val dirId: String?,
     private val setPathSuffix: (String) -> Unit,
     dstId: String
@@ -56,7 +58,7 @@ class ExerciseLibRootComp(
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
-    private val permissionsModal = PermissionsModalComp(parent = this)
+    private val permissionsModal = PermissionsModalComp(null, true, dirId, this)
     private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
@@ -258,9 +260,11 @@ class ExerciseLibRootComp(
 
     private suspend fun permissions(item: EzCollComp.Item<Props>): EzCollComp.Result {
         permissionsModal.dirId = item.props.dirId
+        permissionsModal.isDir = item.props is DirProps
         permissionsModal.setTitle(item.props.title)
-        val saved = permissionsModal.refreshAndOpen().await()
-        if (saved)
+        val permissionsChanged = permissionsModal.refreshAndOpen().await()
+        debug { "Permissions changed: $permissionsChanged" }
+        if (permissionsChanged)
             createAndBuild().await()
         return EzCollComp.ResultUnmodified
     }

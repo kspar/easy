@@ -10,6 +10,7 @@ class SelectComp(
     private val label: String? = null,
     var options: List<Option>,
     var hasEmptyOption: Boolean = false,
+    var isDisabled: Boolean = false,
     private val onOptionChange: (suspend (String?) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {
@@ -22,6 +23,7 @@ class SelectComp(
     override fun render() = tmRender("t-c-select",
         "selectId" to selectId,
         "selectLabel" to label,
+        "isDisabled" to isDisabled,
         "hasEmptyOption" to hasEmptyOption,
         "options" to options.map {
             mapOf("value" to it.value, "isSelected" to it.preselected, "label" to it.label)
