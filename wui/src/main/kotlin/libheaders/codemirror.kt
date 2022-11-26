@@ -1,13 +1,17 @@
 package libheaders
 
-import rip.kspar.ezspa.objOf
 import org.w3c.dom.Element
+import rip.kspar.ezspa.objOf
 
 @JsName("CodeMirror")
 external object CodeMirror {
     var modeURL: String
     fun fromTextArea(element: Element, options: dynamic): CodeMirrorInstance
     fun autoLoadMode(editor: CodeMirrorInstance, mode: dynamic)
+    fun findModeByFileName(filename: String): ModeInfo?
+    class ModeInfo {
+        val mode: dynamic
+    }
 
     @JsName("Doc")
     class Doc(value: String, mode: dynamic) {

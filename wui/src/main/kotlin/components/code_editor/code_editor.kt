@@ -42,14 +42,17 @@ class CodeEditorComp(
     ) : this(listOf(file), fileCreator, softWrap, placeholder, showLineNumbers, showTabs, parent)
 
     data class File(
-        val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE
+        val name: String, val content: String?,
+        val editability: Edit = Edit.EDITABLE,
+        // Auto-detect based on filename if null
+        val lang: dynamic = null
     )
 
     enum class Edit { EDITABLE, READONLY, TOGGLED }
 
     data class CreateFile(
-        val fileLang: dynamic,
         val newFileEditability: Edit,
+        val fileLang: dynamic = null,
     )
 
     private data class Tab(
@@ -179,8 +182,10 @@ class CodeEditorComp(
 
     private fun getEditorElement() = getElemById(editorId)
 
-    private fun fileToTab(f: File): Tab =
-        Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), f.lang), IdGenerator.nextId(), f.editability, f.lang)
+    private fun fileToTab(f: File): Tab {
+        val mode = f.lang ?: CodeMirror.findModeByFileName(f.name)?.mode
+        return Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), mode), IdGenerator.nextId(), f.editability, mode)
+    }
 
     private fun tabToHtml(tab: Tab) =
         tmRender("t-code-editor-tab", mapOf("id" to tab.id, "name" to tab.filename))
@@ -198,7 +203,7 @@ class CodeEditorComp(
     }
 
     private fun createFile(filename: String, lang: dynamic, editability: Edit): Tab {
-        val file = File(filename, null, lang, editability)
+        val file = File(filename, null, editability, lang)
         val tab = fileToTab(file)
         tabs.add(tab)
         createFileModalComp.setExistingFilenames(tabs.map { it.filename })

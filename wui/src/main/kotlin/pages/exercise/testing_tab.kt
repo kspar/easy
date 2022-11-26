@@ -60,7 +60,7 @@ class TestingTabComp(
         val latestSubmission = submissions.submissions.getOrNull(0)?.solution
 
         editor = CodeEditorComp(
-            CodeEditorComp.File(editorTabName, latestSubmission, "python"),
+            CodeEditorComp.File(editorTabName, latestSubmission),
             placeholder = "Kirjuta või lohista lahendus siia...", parent = this
         )
     }

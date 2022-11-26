@@ -22,11 +22,11 @@ class AutoassessCodeEditorComp(
 
     override fun create() = doInPromise {
         codeEditorComp = CodeEditorComp(
-            listOf(CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, "shell", editorEditable(isEditable))) +
+            listOf(CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable))) +
                     assets.toList().sortedBy { it.first }.map {
-                        CodeEditorComp.File(it.first, it.second, "python", editorEditable(isEditable))
+                        CodeEditorComp.File(it.first, it.second, editorEditable(isEditable))
                     },
-            fileCreator = if (isEditable) CodeEditorComp.CreateFile("python", CodeEditorComp.Edit.EDITABLE) else null,
+            fileCreator = if (isEditable) CodeEditorComp.CreateFile(CodeEditorComp.Edit.EDITABLE) else null,
             parent = this,
         )
     }
