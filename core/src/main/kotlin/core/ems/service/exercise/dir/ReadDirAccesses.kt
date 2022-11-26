@@ -125,7 +125,7 @@ class ReadDirAccesses {
             }
 
             // Recompute best group accesses
-            dir.groupAccesses.forEach { newGroupAccess ->
+            dir.groupAccesses.filter { it.access != DirAccessLevel.P }.forEach { newGroupAccess ->
                 val currentGroupAccess = inheritedAccesses[newGroupAccess.id]
                 if (currentGroupAccess == null || newGroupAccess.access > currentGroupAccess.access) {
                     inheritedAccesses[newGroupAccess.id] = AccessGroupDir(
