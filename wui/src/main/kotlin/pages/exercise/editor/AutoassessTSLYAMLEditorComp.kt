@@ -70,29 +70,32 @@ class AutoassessTSLYAMLEditorComp(
     }
 
     private suspend fun compile(tslSpec: String) {
-        val result = TSLDAO.compile(tslSpec).await()
-        debug { "Compilation finished" }
+        try {
+            val result = TSLDAO.compile(tslSpec).await()
+            debug { "Compilation finished" }
 
-        compilerFeedbackEl.textContent = result.feedback?.let {
-            "Kompilaatori viga:\n$it"
-        }.orEmpty()
+            compilerFeedbackEl.textContent = result.feedback?.let {
+                "Kompilaatori viga:\n$it"
+            }.orEmpty()
 
-        result.scripts?.forEach {
-            codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
+            result.scripts?.forEach {
+                codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
+            }
+
+            result.meta?.let {
+                val metaFile = """
+                                    Compiled at: ${it.timestamp.date.toUTCString()}
+                                    Compiler version: ${it.compiler_version}
+                                    Backend: ${it.backend_id} ${it.backend_version}
+                               """.trimIndent()
+                codeEditor.setFileValue(
+                    TSL_META_FILENAME, metaFile, CodeEditorComp.Edit.READONLY
+                )
+            }
+        } finally {
+            isUpToDate = true
+            onValidChanged(isUpToDate)
         }
-
-        result.meta?.let {
-            val metaFile = """
-                                Compiled at: ${it.timestamp.date.toUTCString()}
-                                Compiler version: ${it.compiler_version}
-                                Backend: ${it.backend_id} ${it.backend_version}
-                           """.trimIndent()
-            codeEditor.setFileValue(
-                TSL_META_FILENAME, metaFile, CodeEditorComp.Edit.READONLY
-            )
-        }
-        isUpToDate = true
-        onValidChanged(isUpToDate)
     }
 
     override suspend fun setEditable(nowEditable: Boolean) {
