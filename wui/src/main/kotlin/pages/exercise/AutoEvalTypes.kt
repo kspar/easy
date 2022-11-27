@@ -12,15 +12,25 @@ object AutoEvalTypes {
     )
 
     enum class TypeEditor {
-        TSL_COMPOSE, CODE_EDITOR
+        TSL_COMPOSE, TSL_YAML,
+        CODE_EDITOR
     }
 
     val templates = listOf(
         TypeTemplate(
-            "TSL", "tiivad",
+            "TSL", "tiivad:tsl-compose",
             7, 30, TypeEditor.TSL_COMPOSE,
             "TODO TSL",
             "",
+        ),
+
+        TypeTemplate(
+            "TSL Spec", "tiivad:tsl-spec",
+            7, 30, TypeEditor.TSL_YAML,
+            "TODO TSL YAML",
+            """
+                cd student-submission
+            """.trimIndent(),
         ),
 
         TypeTemplate(
@@ -35,9 +45,9 @@ object AutoEvalTypes {
             7, 30, TypeEditor.CODE_EDITOR,
             "Me ei soovita uusi automaatkontrolle Python Graderiga koostada, aga teegi leiab siit: https://github.com/kspar/python-grader",
             """
-                    cd student-submission
-                    python3 -m grader.easy
-                """.trimIndent(),
+                cd student-submission
+                python3 -m grader.easy
+            """.trimIndent(),
             mapOf(
                 "tester.py" to """
                         from grader import *
@@ -57,12 +67,12 @@ object AutoEvalTypes {
             20, 50, TypeEditor.CODE_EDITOR,
             "TODO imgrec",
             """
-                    cd student-submission
-                    python3 kontroll.py
-                    xvfb-run python3 modified_student_submission.py
+                cd student-submission
+                python3 kontroll.py
+                xvfb-run python3 modified_student_submission.py
     
-                    python3 -m grader.easy --assets screenshot.jpg tester_2.py --no-solution-file
-                """.trimIndent()
+                python3 -m grader.easy --assets screenshot.jpg tester_2.py --no-solution-file
+            """.trimIndent()
         )
     )
 

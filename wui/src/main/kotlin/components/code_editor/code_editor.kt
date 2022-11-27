@@ -42,14 +42,17 @@ class CodeEditorComp(
     ) : this(listOf(file), fileCreator, softWrap, placeholder, showLineNumbers, showTabs, parent)
 
     data class File(
-        val name: String, val content: String?, val lang: dynamic, val editability: Edit = Edit.EDITABLE
+        val name: String, val content: String?,
+        val editability: Edit = Edit.EDITABLE,
+        // Auto-detect based on filename if null
+        val lang: dynamic = null
     )
 
     enum class Edit { EDITABLE, READONLY, TOGGLED }
 
     data class CreateFile(
-        val fileLang: dynamic,
         val newFileEditability: Edit,
+        val fileLang: dynamic = null,
     )
 
     private data class Tab(
@@ -135,7 +138,7 @@ class CodeEditorComp(
                 createFileModalComp.setExistingFilenames(tabs.map { it.filename })
                 val filename = createFileModalComp.openWithClosePromise().await()
                 if (filename != null) {
-                    createFile(filename)
+                    createFileWithCreator(filename)
                 }
             }
         }
@@ -151,8 +154,12 @@ class CodeEditorComp(
 
     fun getFileValue(filename: String): String = tabs.single { it.filename == filename }.doc.getValue()
 
-    fun setFileValue(filename: String, value: String?) {
-        tabs.single { it.filename == filename }.doc.setValue(value)
+    fun setFileValue(
+        filename: String, value: String?, newFileLang: dynamic = "python", newFileEdit: Edit = Edit.EDITABLE
+    ) {
+        val existingTab = tabs.singleOrNull { it.filename == filename }
+        val tab = existingTab ?: createFile(filename, newFileLang, newFileEdit)
+        tab.doc.setValue(value)
     }
 
     fun setFileEditable(filename: String, isEditable: Boolean) {
@@ -175,8 +182,10 @@ class CodeEditorComp(
 
     private fun getEditorElement() = getElemById(editorId)
 
-    private fun fileToTab(f: File): Tab =
-        Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), f.lang), IdGenerator.nextId(), f.editability, f.lang)
+    private fun fileToTab(f: File): Tab {
+        val mode = f.lang ?: CodeMirror.findModeByFileName(f.name)?.mode
+        return Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), mode), IdGenerator.nextId(), f.editability, mode)
+    }
 
     private fun tabToHtml(tab: Tab) =
         tmRender("t-code-editor-tab", mapOf("id" to tab.id, "name" to tab.filename))
@@ -193,18 +202,21 @@ class CodeEditorComp(
         }
     }
 
-    private fun createFile(filename: String) {
-        debug { "Creating new file: $filename" }
-        fileCreator!!
-
-        val file = File(filename, null, fileCreator.fileLang, fileCreator.newFileEditability)
+    private fun createFile(filename: String, lang: dynamic, editability: Edit): Tab {
+        val file = File(filename, null, editability, lang)
         val tab = fileToTab(file)
         tabs.add(tab)
         createFileModalComp.setExistingFilenames(tabs.map { it.filename })
 
         getEditorElement().getElemBySelector("ez-code-edit-tabs").appendHTML(tabToHtml(tab))
-
         refreshTabActions()
+        return tab
+    }
+
+    private fun createFileWithCreator(filename: String) {
+        debug { "Creating new file: $filename" }
+        fileCreator!!
+        val tab = createFile(filename, fileCreator.fileLang, fileCreator.newFileEditability)
         switchToTab(tab)
     }
 

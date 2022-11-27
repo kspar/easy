@@ -32,6 +32,8 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         get() = this.tokenParsed.family_name.unsafeCast<String>()
     val email: String
         get() = this.tokenParsed.email.unsafeCast<String>()
+    val username: String
+        get() = this.tokenParsed.preferred_username.unsafeCast<String>()
 
     lateinit var activeRole: Role
 

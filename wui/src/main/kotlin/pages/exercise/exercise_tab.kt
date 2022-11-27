@@ -220,12 +220,12 @@ class ExerciseTextEditComp(
     override fun create(): Promise<*> = doInPromise {
         editor = CodeEditorComp(
             listOf(
-                CodeEditorComp.File(ADOC_FILENAME, textAdoc, "asciidoc"),
+                CodeEditorComp.File(ADOC_FILENAME, textAdoc, lang = "asciidoc"),
                 CodeEditorComp.File(
                     HTML_FILENAME,
                     textHtml,
+                    CodeEditorComp.Edit.READONLY,
                     objOf("name" to "xml", "htmlMode" to true),
-                    CodeEditorComp.Edit.READONLY
                 )
             ), softWrap = true, parent = this
         )

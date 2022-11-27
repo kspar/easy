@@ -41,7 +41,7 @@ object ExerciseLibraryPage : EasyPage() {
         val dirId = getDirId().let { if (it == "root") null else it }
 
         doInPromise {
-            ExerciseLibRootComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
+            ExerciseLibComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
                 .createAndBuild().await()
         }
     }

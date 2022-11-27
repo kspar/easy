@@ -13,10 +13,6 @@ class AutoassessCodeEditorComp(
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
-    companion object {
-        const val EVAL_SCRIPT_FILENAME = "evaluate.sh"
-    }
-
     private var isEditable = startEditable
 
     private lateinit var codeEditorComp: CodeEditorComp
@@ -26,11 +22,11 @@ class AutoassessCodeEditorComp(
 
     override fun create() = doInPromise {
         codeEditorComp = CodeEditorComp(
-            listOf(CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, "shell", editorEditable(isEditable))) +
+            listOf(CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable))) +
                     assets.toList().sortedBy { it.first }.map {
-                        CodeEditorComp.File(it.first, it.second, "python", editorEditable(isEditable))
+                        CodeEditorComp.File(it.first, it.second, editorEditable(isEditable))
                     },
-            fileCreator = if (isEditable) CodeEditorComp.CreateFile("python", CodeEditorComp.Edit.EDITABLE) else null,
+            fileCreator = if (isEditable) CodeEditorComp.CreateFile(CodeEditorComp.Edit.EDITABLE) else null,
             parent = this,
         )
     }
@@ -43,6 +39,7 @@ class AutoassessCodeEditorComp(
     }
 
     override fun getEvalScript(): String {
+        // TODO: codeEditorComp.getFileValue(EVAL_SCRIPT_FILENAME)?
         val files = codeEditorComp.getAllFiles().associate { it.name to it.content.orEmpty() }
         return files[EVAL_SCRIPT_FILENAME]!!
     }
@@ -54,10 +51,6 @@ class AutoassessCodeEditorComp(
 
     // Not checking anything in editor
     override fun isValid() = true
-
-    private fun editorEditable(isEditable: Boolean) =
-        if (isEditable) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
-
 
     data class ActiveView(
         val editorTabId: String?,

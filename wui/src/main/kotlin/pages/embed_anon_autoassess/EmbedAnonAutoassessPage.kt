@@ -78,7 +78,7 @@ class EmbedAnonAutoassessRootComp(
         // TODO: get exercise details
         sleep(1000).await()
 
-        val file = CodeEditorComp.File("solution.py", if (showTemplate) "print()" else null, "python")
+        val file = CodeEditorComp.File("solution.py", if (showTemplate) "print()" else null)
         editor = CodeEditorComp(
             file, placeholder = "Kirjuta lahendus siia...",
             showLineNumbers = false, showTabs = false, parent = this

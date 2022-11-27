@@ -635,8 +635,45 @@ nav.crumb-wrap .breadcrumb:before {
     }
 }
 
-.attr-list ul {
+#global-exercise .attr-list ul {
     margin-top: 0;
+}
+
+ez-exercise-permissions .select-wrap {
+    display: inline-block;
+    margin: 0;
+}
+
+ez-exercise-permissions ez-permission {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+ez-exercise-permissions ez-permission.inherited {
+    border-left: 1px solid #ccc;
+    padding-left: 1rem;
+    padding-bottom: .5rem;
+}
+
+ez-exercise-permissions h5 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+ez-exercise-permissions ez-inheriting-dir {
+    display: block;
+    margin-top: 2rem;
+    margin-bottom: .5rem;
+}
+
+ez-exercise-permissions ez-inheriting-dir a {
+    font-weight: 500;
+}
+
+/* "Remove access" option */
+ez-exercise-permissions .select-wrapper ul li:last-child {
+    border-top: 1px solid #ccc;
 }
 
 

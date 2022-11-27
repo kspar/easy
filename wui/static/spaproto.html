@@ -437,7 +437,7 @@
 
 <script id="t-c-select" type="text/x-handlebars">
     <div class="input-field select-wrap">
-        <select id="{{selectId}}">
+        <select id="{{selectId}}" {{#isDisabled}}disabled{{/isDisabled}}>
             {{#hasEmptyOption}}
                 <option value="">–</option>
             {{/hasEmptyOption}}
@@ -685,6 +685,33 @@
     <div class="center">
         <button id="testing-submit" class="waves-effect waves-light btn"><ez-btn-content>{{doTestLabel}}</ez-btn-content></button>
     </div>
+</script>
+
+<script id="t-c-exercise-tab-aa-tsl-yaml" type="text/x-handlebars">
+    <pre id="tsl-yaml-compiler-feedback"></pre>
+    <ez-dst id="{{editorDst}}"></ez-dst>
+</script>
+
+<script id="t-c-exercise-permissions" type="text/x-handlebars">
+    <ez-exercise-permissions>
+        <ez-add-permission></ez-add-permission>
+        {{#directPermissions}}
+            <ez-permission>
+                <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                <ez-dst id="{{selectDst}}"></ez-dst>
+            </ez-permission>
+        {{/directPermissions}}
+
+        {{#inheritingDirs}}
+            <ez-inheriting-dir>{{dirLabel}} <a {{^isCurrent}}href="{{dirHref}}"{{/isCurrent}}>{{dirName}}</a> {{#isCurrent}}{{currentDirLabel}}{{/isCurrent}}</ez-inheriting-dir>
+            {{#permissions}}
+                <ez-permission class="inherited">
+                    <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                    <z-permission-access>{{access}}</z-permission-access>
+                </ez-permission>
+            {{/permissions}}
+        {{/inheritingDirs}}
+    </ez-exercise-permissions>
 </script>
 
 
@@ -1474,10 +1501,10 @@
 
 <script src="https://idp.lahendus.ut.ee/auth/js/keycloak.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/autorefresh.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/mode/loadmode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/meta.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css"/>†
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/autorefresh.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/placeholder.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror-asciidoc@1.0.4/lib/asciidoc.min.js"></script>
