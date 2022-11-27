@@ -1,0 +1,7 @@
+FROM tiivad-base
+
+COPY assessment_code.py /assessment_code.py
+COPY student-submission /student-submission
+COPY evaluate.sh /
+
+CMD /evaluate.sh
