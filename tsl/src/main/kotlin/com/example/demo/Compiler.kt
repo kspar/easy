@@ -12,7 +12,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
     }
 
     fun generateAssessmentCodes(): String {
-        var assessmentCode = "from lib import *\n"
+        var assessmentCode = "from tiivad import *\n"
         var validationCode = ""
         if (irTree.validateFiles) {
             validationCode = generateValidationCode(irTree.requiredFiles)
