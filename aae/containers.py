@@ -50,7 +50,7 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
 
         os.mkdir(os.path.join(student_dir, 'student-submission'))
 
-        with open(os.path.join(student_dir, 'student-submission', 'submission'), mode='w',
+        with open(os.path.join(student_dir, 'student-submission', 'submission.py'), mode='w',
                   encoding='utf-8') as submission_file:
             submission_file.write(submission)
 
