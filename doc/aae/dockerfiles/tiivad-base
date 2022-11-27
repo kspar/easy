@@ -1,7 +1,0 @@
-FROM python:3
-
-ENV PYTHONIOENCODING utf-8
-
-RUN pip install tiivad
-RUN pip install numpy
-RUN pip install matplotlib
