@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import time
+import json
+import typing as T
 
 from flask import Flask
 from flask import jsonify
@@ -39,7 +41,26 @@ def assets_to_tuples(assets):
     return assets_list
 
 
-def parse_assessment_output(raw_output):
+def parse_v3(raw_output) -> T.Optional[T.Tuple[int, str]]:
+    try:
+        j: dict = json.loads(raw_output)
+    except json.JSONDecodeError:
+        return None
+
+    if j.get('result_type', None) == 'OK_V3':
+        points = int(j['points'])
+        feedback = raw_output
+        return points, feedback
+
+    return None
+
+
+def parse_assessment_output(raw_output) -> T.Tuple[int, str]:
+    assessment_v3 = parse_v3(raw_output)
+    if assessment_v3 is not None:
+        return assessment_v3
+
+    # TODO: pygrader and imgrec should produce OK_LEGACY json messages
     grade_separator = "#" * 50
 
     grade_string = raw_output.rstrip().split("\n")[-1].lower().strip()
@@ -91,7 +112,7 @@ def post_grade():
             assessment = parse_assessment_output(raw_output)
         except Exception as e:
             app.logger.error(e)
-            assessment = (0, SOMETHING_FAILED_MESSAGE)
+            assessment = (0, SOMETHING_FAILED_MESSAGE + "\n\n" + raw_output)
     elif status == RunStatus.TIME_EXCEEDED:
         assessment = (0, TIME_EXCEEDED_MESSAGE)
     elif status == RunStatus.MEM_EXCEEDED:
