@@ -56,7 +56,7 @@ class CompileTSL {
 
         return Resp(
             result.generatedScripts.mapIndexed { i, s ->
-                ScriptResp("generated-$i.py", s)
+                ScriptResp("generated_$i.py", s)
             },
             null,
             MetaResp(DateTime.now(), result.tslCompilerVersion, result.backendID, result.backendVersion)

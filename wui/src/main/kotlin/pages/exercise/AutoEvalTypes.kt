@@ -30,6 +30,7 @@ object AutoEvalTypes {
             "TODO TSL YAML",
             """
                 cd student-submission
+                python generated_0.py
             """.trimIndent(),
         ),
 
@@ -46,7 +47,7 @@ object AutoEvalTypes {
             "Me ei soovita uusi automaatkontrolle Python Graderiga koostada, aga teegi leiab siit: https://github.com/kspar/python-grader",
             """
                 cd student-submission
-                python3 -m grader.easy
+                python -m grader.easy
             """.trimIndent(),
             mapOf(
                 "tester.py" to """
