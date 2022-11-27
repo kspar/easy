@@ -67,7 +67,7 @@ class AutoAssessmentTabComp(
                 AutoEvalTypes.TypeEditor.TSL_YAML -> {
                     editor = AutoassessTSLYAMLEditorComp(
                         props.evalScript, props.assets,
-                        isEditable, this
+                        isEditable, onValidChanged,this
                     )
                 }
                 AutoEvalTypes.TypeEditor.CODE_EDITOR -> {

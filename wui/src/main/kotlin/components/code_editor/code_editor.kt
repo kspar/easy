@@ -155,7 +155,7 @@ class CodeEditorComp(
     fun getFileValue(filename: String): String = tabs.single { it.filename == filename }.doc.getValue()
 
     fun setFileValue(
-        filename: String, value: String?, newFileLang: dynamic = "python", newFileEdit: Edit = Edit.EDITABLE
+        filename: String, value: String?, newFileEdit: Edit = Edit.EDITABLE, newFileLang: dynamic = null
     ) {
         val existingTab = tabs.singleOrNull { it.filename == filename }
         val tab = existingTab ?: createFile(filename, newFileLang, newFileEdit)

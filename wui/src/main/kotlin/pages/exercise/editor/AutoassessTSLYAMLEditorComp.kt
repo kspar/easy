@@ -16,6 +16,7 @@ class AutoassessTSLYAMLEditorComp(
     private val evaluateScript: String,
     private val assets: Map<String, String>,
     startEditable: Boolean,
+    private val onValidChanged: (Boolean) -> Unit,
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
@@ -24,6 +25,8 @@ class AutoassessTSLYAMLEditorComp(
     private var isEditable = startEditable
     private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME) { "" }
     private val generatedAssets = assets - TSL_SPEC_FILENAME
+
+    private var isUpToDate = true
 
     val compilerFeedbackEl: Element
         get() = getElemById("tsl-yaml-compiler-feedback")
@@ -52,38 +55,44 @@ class AutoassessTSLYAMLEditorComp(
     override fun postRender() {
         if (isEditable) {
             doInPromise {
-                observeValueChange(2000, 500,
+                observeValueChange(1000, 300,
                     valueProvider = { codeEditor.getFileValue(TSL_SPEC_FILENAME) },
                     continuationConditionProvider = { getElemByIdOrNull(codeEditor.dstId) != null && isEditable },
-                    action = {
-                        val result = TSLDAO.compile(it).await()
-                        debug { "Compilation finished" }
-
-                        compilerFeedbackEl.textContent = result.feedback?.let {
-                            "Kompilaatori viga:\n$it"
-                        }.orEmpty()
-
-                        result.scripts?.forEach {
-                            codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
-                        }
-
-                        result.meta?.let {
-                            val metaFile = """
-                                Compiled at: ${it.timestamp.date.toUTCString()}
-                                Compiler version: ${it.compiler_version}
-                                Backend: ${it.backend_id} ${it.backend_version}
-                                """.trimIndent()
-                            codeEditor.setFileValue(
-                                TSL_META_FILENAME, metaFile, "null", CodeEditorComp.Edit.READONLY
-                            )
-                        }
-                    },
+                    action = ::compile,
                     idleCallback = {
+                        isUpToDate = false
+                        onValidChanged(isUpToDate)
                         debug { "Change in TSL spec detected, waiting for idle" }
                     }
                 )
             }
         }
+    }
+
+    private suspend fun compile(tslSpec: String) {
+        val result = TSLDAO.compile(tslSpec).await()
+        debug { "Compilation finished" }
+
+        compilerFeedbackEl.textContent = result.feedback?.let {
+            "Kompilaatori viga:\n$it"
+        }.orEmpty()
+
+        result.scripts?.forEach {
+            codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
+        }
+
+        result.meta?.let {
+            val metaFile = """
+                                Compiled at: ${it.timestamp.date.toUTCString()}
+                                Compiler version: ${it.compiler_version}
+                                Backend: ${it.backend_id} ${it.backend_version}
+                           """.trimIndent()
+            codeEditor.setFileValue(
+                TSL_META_FILENAME, metaFile, CodeEditorComp.Edit.READONLY
+            )
+        }
+        isUpToDate = true
+        onValidChanged(isUpToDate)
     }
 
     override suspend fun setEditable(nowEditable: Boolean) {
@@ -100,7 +109,7 @@ class AutoassessTSLYAMLEditorComp(
         return files - EVAL_SCRIPT_FILENAME
     }
 
-    override fun isValid() = true
+    override fun isValid() = isUpToDate
 
 
     data class ActiveView(
