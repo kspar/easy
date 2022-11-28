@@ -58,8 +58,7 @@ class PutDirAccess {
             throw InvalidRequestException("Cannot change your own group", ReqError.CANNOT_MODIFY_OWN)
 
         if (body.level == null)
-        // TODO: remove access only if current access is not P,
-        //  note that if P is required by children then must replace with P instead of removing
+            libraryDirRemoveAccess(dirId, groupId)
         else
             libraryDirAddAccess(dirId, groupId, body.level)
     }
@@ -73,4 +72,3 @@ class PutDirAccess {
         }
     }
 }
-

@@ -10,12 +10,68 @@ import core.util.maxOfOrNull
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
 private val log = KotlinLogging.logger {}
 
+
+fun libraryDirRemoveAccess(dirId: Long, groupId: Long) {
+    transaction {
+        val level = getAccessLevel(dirId, groupId)
+
+        if (level == null || level == DirAccessLevel.P)
+            return@transaction
+
+        // remove access
+        removeAccess(dirId, groupId)
+
+        // if we have access to any child, add back P and end
+        if (hasChildrenAccess(dirId, groupId)) {
+            upsertGroupDirAccess(groupId, dirId, DirAccessLevel.P)
+            return@transaction
+        }
+
+        // if we completely removed this access then we might have to remove P accesses up the chain
+        getDir(dirId)?.parentDir?.let { parentDirId ->
+            removeRootchainPassthrough(parentDirId, groupId)
+        }
+    }
+}
+
+private fun removeRootchainPassthrough(dirId: Long, groupId: Long) {
+    // if dir has P access and no children accesses, remove and continue up the chain, else end
+    if (getAccessLevel(dirId, groupId) == DirAccessLevel.P && !hasChildrenAccess(dirId, groupId)) {
+        removeAccess(dirId, groupId)
+
+        getDir(dirId)?.parentDir?.let { parentDirId ->
+            removeRootchainPassthrough(parentDirId, groupId)
+        }
+    }
+}
+
+private fun getAccessLevel(dirId: Long, groupId: Long): DirAccessLevel? = transaction {
+    GroupDirAccess.select {
+        GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId)
+    }.map {
+        it[GroupDirAccess.level]
+    }.singleOrNull()
+}
+
+private fun hasChildrenAccess(dirId: Long, groupId: Long): Boolean = transaction {
+    (Dir innerJoin GroupDirAccess).select {
+        Dir.parentDir.eq(dirId) and
+                GroupDirAccess.group.eq(groupId)
+    }.count() > 0
+}
+
+private fun removeAccess(dirId: Long, groupId: Long) = transaction {
+    GroupDirAccess.deleteWhere {
+        GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId)
+    }
+}
 
 /**
  * Add given access level to given group for dir
