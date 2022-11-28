@@ -44,6 +44,7 @@ class ReadDirAccesses {
         @JsonProperty("username") val username: String,
         @JsonProperty("given_name") val givenName: String,
         @JsonProperty("family_name") val familyName: String,
+        @JsonProperty("email") val email: String?,
         @JsonProperty("group_id") val implicitGroupId: String,
         @JsonProperty("access") val access: DirAccessLevel,
         // TODO: modified_at
@@ -154,6 +155,7 @@ class ReadDirAccesses {
             }
 
         // Allow only groups for which the caller has access
+        // TODO: not sure if this makes sense
         val directGroupAccesses = directGroupsPart.filter {
             hasUserGroupAccess(caller, it.id, false)
         }.map {
@@ -182,6 +184,7 @@ class ReadDirAccesses {
                 account.id,
                 account.givenName,
                 account.familyName,
+                account.email,
                 it.id.toString(),
                 it.access,
                 null
@@ -193,6 +196,7 @@ class ReadDirAccesses {
                 account.id,
                 account.givenName,
                 account.familyName,
+                account.email,
                 it.groupId.toString(),
                 it.access,
                 InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),
