@@ -93,4 +93,28 @@ object LibraryDirDAO {
         fetchEms("/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(Accesses.serializer()).await()
     }
+
+
+    sealed interface Subject
+    data class NewAccount(val email: String) : Subject
+    data class Group(val id: String) : Subject
+
+    fun putDirAccess(dirId: String, subject: Subject, level: DirAccess?) = doInPromise {
+        debug { "Put dir access $level for dir $dirId to group/account $subject" }
+        val body = buildMap {
+            when (subject) {
+                is Group ->
+                    put("group_id", subject.id)
+                is NewAccount ->
+                    put("email", subject.email)
+            }
+            put("access_level", level?.name)
+        }
+
+        fetchEms(
+            "/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.PUT, body, successChecker = { http200 }
+        ).await()
+
+        Unit
+    }
 }

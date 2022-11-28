@@ -265,7 +265,7 @@ svg {
 
 .sidenav .role-select-wrap {
     margin-top: .5rem;
-    width: 15rem;
+    width: 12rem;
 }
 
 .sidenav .role-select-wrap .input-field {
@@ -639,9 +639,8 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 0;
 }
 
-ez-exercise-permissions .select-wrap {
-    display: inline-block;
-    margin: 0;
+#DIR_PERMISSIONS .modal.fixed-footer .modal-footer {
+    border-top: none;
 }
 
 ez-exercise-permissions ez-permission {
@@ -656,11 +655,6 @@ ez-exercise-permissions ez-permission.inherited {
     padding-bottom: .5rem;
 }
 
-ez-exercise-permissions h5 {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-}
-
 ez-exercise-permissions ez-inheriting-dir {
     display: block;
     margin-top: 2rem;
@@ -671,10 +665,16 @@ ez-exercise-permissions ez-inheriting-dir a {
     font-weight: 500;
 }
 
-/* "Remove access" option */
-ez-exercise-permissions .select-wrapper ul li:last-child {
-    border-top: 1px solid #ccc;
+ez-exercise-permissions .select-wrap {
+    display: inline-block;
+    width: 12rem;
+    margin: 0;
 }
+
+/* "Remove access" option, no way to do this since materialize moves options to body for unconstrained selects */
+/*ez-exercise-permissions ul li:last-child {*/
+/*    border-top: 1px solid #ccc;*/
+/*}*/
 
 
 /** Anonymous autoeval embed **/

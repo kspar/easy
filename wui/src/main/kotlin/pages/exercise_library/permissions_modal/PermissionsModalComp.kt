@@ -34,7 +34,7 @@ class PermissionsModalComp(
 
     override fun create() = doInPromise {
         modalComp = ModalComp(
-            "Jagamine", onOpen = { },
+            "Jagamine", onOpen = { }, fixFooter = true,
             defaultReturnValue = false, id = Modal.DIR_PERMISSIONS,
             bodyCompsProvider = {
                 val list = PermissionsListLoaderComp(dirId, isDir, currentDirId, { permissionsChanged = true }, it)
@@ -118,14 +118,16 @@ class PermissionsListComp(
                     .thenBy { it.family_name }
                     .thenBy { it.given_name }
             ).map {
-                val select = createSelectPermission(it.access, it.username)
+                val select = createSelectPermission(
+                    it.access, PermissionSubject(it.username == Auth.username, groupId = it.group_id)
+                )
                 add(DirectAccess("${it.given_name} ${it.family_name}", false, it.access, select))
             }
             accesses.direct_groups.sortedWith(
                 compareByDescending<LibraryDirDAO.GroupAccess> { it.access }
                     .thenBy { it.name }
             ).map {
-                val select = createSelectPermission(it.access, it.name)
+                val select = createSelectPermission(it.access, PermissionSubject(false, groupId = it.id))
                 add(DirectAccess(it.name, true, it.access, select))
             }
         }
@@ -186,7 +188,15 @@ class PermissionsListComp(
 
     override fun renderLoading() = "Laen õiguseid..."
 
-    private fun createSelectPermission(access: DirAccess, subject: String) =
+    data class PermissionSubject(
+        val isSelf: Boolean,
+        val groupId: String? = null,
+        // or
+        val newAccountEmail: String? = null,
+    )
+
+    private fun createSelectPermission(access: DirAccess, subject: PermissionSubject) =
+        // TODO: try select without border, with focus background color and smaller width
         SelectComp(
             options = buildList {
                 if (access == DirAccess.P)
@@ -196,15 +206,39 @@ class PermissionsListComp(
                     add(SelectComp.Option(Str.translatePermission(DirAccess.PRA), "PRA", access == DirAccess.PRA))
                 add(SelectComp.Option(Str.translatePermission(DirAccess.PRAW), "PRAW", access == DirAccess.PRAW))
                 add(SelectComp.Option(Str.translatePermission(DirAccess.PRAWM), "PRAWM", access == DirAccess.PRAWM))
-                add(SelectComp.Option("Eemalda juurdepääs", ""))
+                if (access != DirAccess.P)
+                    add(SelectComp.Option("Eemalda juurdepääs", ""))
             },
             onOptionChange = { changePermission(it, subject) },
-            isDisabled = access == DirAccess.P || subject == Auth.username,
+            isDisabled = subject.isSelf,
+            unconstrainedPosition = true,
             parent = this
         )
 
-    private fun changePermission(access: String?, subject: String) {
-        debug { "change permission for $subject to $access" }
+    private suspend fun changePermission(access: String?, subject: PermissionSubject) {
+        debug { "Change permission for $subject to $access" }
+
+        val s = when {
+            subject.groupId != null -> LibraryDirDAO.Group(subject.groupId)
+            subject.newAccountEmail != null -> LibraryDirDAO.NewAccount(subject.newAccountEmail)
+            else -> error("subject.groupId and .newAccountEmail are both null")
+        }
+
+        val a = when (access) {
+            "" -> null
+            null -> null
+            "P" -> DirAccess.P
+            "PR" -> DirAccess.PR
+            "PRA" -> DirAccess.PRA
+            "PRAW" -> DirAccess.PRAW
+            "PRAWM" -> DirAccess.PRAWM
+            else -> error("Unmapped permission string: $access")
+        }
+
+        LibraryDirDAO.putDirAccess(dirId, s, a).await()
+
         onPermissionsChanged()
+
+        createAndBuild().await()
     }
 }
