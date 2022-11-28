@@ -7,7 +7,7 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getAccountDirAccessLevel
-import core.ems.service.getDirParentId
+import core.ems.service.getDir
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
@@ -269,7 +269,7 @@ class ReadDirController {
         if (dirId == null) {
             return false
         }
-        return isDirDirectlyShared(dirId) || isDirSharedRec(getDirParentId(dirId))
+        return isDirDirectlyShared(dirId) || isDirSharedRec(getDir(dirId)?.parentDir)
     }
 
     private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {

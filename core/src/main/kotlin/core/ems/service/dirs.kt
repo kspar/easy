@@ -22,11 +22,18 @@ private val log = KotlinLogging.logger {}
  */
 fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
     transaction {
+        val dir = getDir(dirId) ?: return@transaction
+
+        // Allow PRA only for explicit dirs
+        if (dir.isImplicit && level == DirAccessLevel.PRA) {
+            return@transaction
+        }
+
         // Add given access to given group G
         upsertGroupDirAccess(groupId, dirId, level)
 
         // Look at parent dir D if it exists (if not, end)
-        val parentDirId = getDirParentId(dirId) ?: return@transaction
+        val parentDirId = dir.parentDir ?: return@transaction
 
         val parentDirAccessLevel = GroupDirAccess
             .slice(GroupDirAccess.level)
@@ -59,11 +66,30 @@ fun getExerciseFromImplicitDir(implicitDirId: Long): Long = transaction {
     TODO("Should it return exercise ID or more attrs like for groups?")
 }
 
-fun getDirParentId(dirId: Long): Long? = transaction {
-    Dir.slice(Dir.parentDir)
-        .select { Dir.id eq dirId }
-        .map { it[Dir.parentDir]?.value }
-        .single()
+data class ExerciseDir(
+    val id: Long,
+    val name: String,
+    val isImplicit: Boolean,
+    val parentDir: Long?,
+    val anyAccess: DirAccessLevel?,
+    val createdAt: DateTime,
+    val modifiedAt: DateTime,
+)
+
+fun getDir(dirId: Long): ExerciseDir? = transaction {
+    Dir.select { Dir.id eq dirId }
+        .map {
+            ExerciseDir(
+                it[Dir.id].value,
+                it[Dir.name],
+                it[Dir.isImplicit],
+                it[Dir.parentDir]?.value,
+                it[Dir.anyAccess],
+                it[Dir.createdAt],
+                it[Dir.modifiedAt],
+            )
+        }
+        .singleOrNull()
 }
 
 fun assertDirExists(dirId: Long, allowImplicit: Boolean = false) {
