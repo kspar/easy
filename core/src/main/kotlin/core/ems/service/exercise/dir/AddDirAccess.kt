@@ -49,6 +49,9 @@ class AddDirController {
                 "email" to body.email.orEmpty(),
             )
 
+        if (groupId == getImplicitGroupFromAccount(caller.id))
+            throw InvalidRequestException("Cannot change your own group", ReqError.CANNOT_MODIFY_OWN)
+
         if (body.level == null)
         // TODO: remove access
         else
