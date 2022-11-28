@@ -70,6 +70,7 @@ object LibraryDirDAO {
         val group_id: String,
         val given_name: String,
         val family_name: String,
+        val email: String?,
         val access: DirAccess,
         val inherited_from: InheritingDir? = null,
     )

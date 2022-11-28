@@ -4,6 +4,7 @@ import Auth
 import Icons
 import Str
 import components.form.SelectComp
+import components.form.StringFieldComp
 import components.modal.Modal
 import components.modal.ModalComp
 import dao.LibraryDirDAO
@@ -91,20 +92,29 @@ class PermissionsListComp(
     parent: Component,
 ) : Component(parent) {
 
-    data class DirectAccess(val subjectName: String, val isGroup: Boolean, val level: DirAccess, val select: SelectComp)
+    private lateinit var newAccessInput: StringFieldComp
+
+    data class DirectAccess(
+        val subjectName: String, val isGroup: Boolean, val email: String?, val level: DirAccess, val select: SelectComp
+    )
+
     data class InheritingDir(val name: String, val id: String, val accesses: List<InheritedAccess>)
-    data class InheritedAccess(val subjectName: String, val isGroup: Boolean, val level: DirAccess)
+    data class InheritedAccess(val subjectName: String, val isGroup: Boolean, val email: String?, val level: DirAccess)
 
     private lateinit var directAccesses: List<DirectAccess>
     private lateinit var inheritedAccesses: List<InheritingDir>
 
     override val children: List<Component>
-        get() = directAccesses.map { it.select }
+        get() = directAccesses.map { it.select } + newAccessInput
 
     override fun create() = doInPromise {
         val accesses = LibraryDirDAO.getDirAccesses(dirId).await()
 
-        // TODO: add
+        newAccessInput = StringFieldComp(
+            "", false, "Jagamiseks sisesta kasutaja email",
+            onENTER = { putPermission(DirAccess.PR, PermissionSubject(false, newAccountEmail = it)) },
+            parent = this
+        )
 
         directAccesses = buildList {
             // TODO: any
@@ -114,34 +124,36 @@ class PermissionsListComp(
             // TODO: test ordering
             // TODO: test group icon
             accesses.direct_accounts.sortedWith(
-                compareByDescending<LibraryDirDAO.AccountAccess> { it.access }
+                compareByDescending<LibraryDirDAO.AccountAccess> { it.username == Auth.username }
+                    .thenByDescending { it.access }
                     .thenBy { it.family_name }
                     .thenBy { it.given_name }
             ).map {
                 val select = createSelectPermission(
                     it.access, PermissionSubject(it.username == Auth.username, groupId = it.group_id)
                 )
-                add(DirectAccess("${it.given_name} ${it.family_name}", false, it.access, select))
+                add(DirectAccess("${it.given_name} ${it.family_name}", false, it.email, it.access, select))
             }
             accesses.direct_groups.sortedWith(
                 compareByDescending<LibraryDirDAO.GroupAccess> { it.access }
                     .thenBy { it.name }
             ).map {
                 val select = createSelectPermission(it.access, PermissionSubject(false, groupId = it.id))
-                add(DirectAccess(it.name, true, it.access, select))
+                add(DirectAccess(it.name, true, null, it.access, select))
             }
         }
 
         val dirs = mutableMapOf<LibraryDirDAO.InheritingDir, MutableList<InheritedAccess>>()
 
         accesses.inherited_accounts.sortedWith(
-            compareByDescending<LibraryDirDAO.AccountAccess> { it.access }
+            compareByDescending<LibraryDirDAO.AccountAccess> { it.username == Auth.username }
+                .thenByDescending { it.access }
                 .thenBy { it.family_name }
                 .thenBy { it.given_name }
         ).forEach {
             it.inherited_from!!
             dirs.getOrPut(it.inherited_from) { mutableListOf() }
-                .add(InheritedAccess("${it.given_name} ${it.family_name}", false, it.access))
+                .add(InheritedAccess("${it.given_name} ${it.family_name}", false, it.email, it.access))
         }
 
         accesses.inherited_groups.sortedWith(
@@ -150,7 +162,7 @@ class PermissionsListComp(
         ).forEach {
             it.inherited_from!!
             dirs.getOrPut(it.inherited_from) { mutableListOf() }
-                .add(InheritedAccess(it.name, true, it.access))
+                .add(InheritedAccess(it.name, true, null, it.access))
         }
 
         inheritedAccesses = dirs.map {
@@ -160,13 +172,15 @@ class PermissionsListComp(
 
     override fun render() = tmRender(
         "t-c-exercise-permissions",
+        "newAccessDst" to newAccessInput.dstId,
         "groupIcon" to Icons.groups,
         "dirLabel" to "Päritud kaustalt",
         "currentDirLabel" to "(see kaust)",
         "directPermissions" to directAccesses.map {
             mapOf(
                 "isGroup" to it.isGroup,
-                "subject" to it.subjectName,
+                "name" to it.subjectName,
+                "email" to it.email,
                 "selectDst" to it.select.dstId,
             )
         },
@@ -178,7 +192,8 @@ class PermissionsListComp(
                 "permissions" to it.accesses.map {
                     mapOf(
                         "isGroup" to it.isGroup,
-                        "subject" to it.subjectName,
+                        "name" to it.subjectName,
+                        "email" to it.email,
                         "access" to Str.translatePermission(it.level),
                     )
                 }
@@ -187,6 +202,10 @@ class PermissionsListComp(
     )
 
     override fun renderLoading() = "Laen õiguseid..."
+
+    override fun postChildrenBuilt() {
+        newAccessInput.focus()
+    }
 
     data class PermissionSubject(
         val isSelf: Boolean,
@@ -209,33 +228,36 @@ class PermissionsListComp(
                 if (access != DirAccess.P)
                     add(SelectComp.Option("Eemalda juurdepääs", ""))
             },
-            onOptionChange = { changePermission(it, subject) },
+            onOptionChange = {
+                val selectedAccess = when (it) {
+                    "" -> null
+                    null -> null
+                    "P" -> DirAccess.P
+                    "PR" -> DirAccess.PR
+                    "PRA" -> DirAccess.PRA
+                    "PRAW" -> DirAccess.PRAW
+                    "PRAWM" -> DirAccess.PRAWM
+                    else -> error("Unmapped permission string: $it")
+                }
+                putPermission(selectedAccess, subject)
+            },
             isDisabled = subject.isSelf,
             unconstrainedPosition = true,
             parent = this
         )
 
-    private suspend fun changePermission(access: String?, subject: PermissionSubject) {
-        debug { "Change permission for $subject to $access" }
+    private suspend fun putPermission(access: DirAccess?, subject: PermissionSubject) {
+        debug { "Put permission for $subject to $access" }
+        // TODO: disable input and selects
 
+        // TODO: for new accesses, if access exists already, do nothing
         val s = when {
             subject.groupId != null -> LibraryDirDAO.Group(subject.groupId)
             subject.newAccountEmail != null -> LibraryDirDAO.NewAccount(subject.newAccountEmail)
             else -> error("subject.groupId and .newAccountEmail are both null")
         }
 
-        val a = when (access) {
-            "" -> null
-            null -> null
-            "P" -> DirAccess.P
-            "PR" -> DirAccess.PR
-            "PRA" -> DirAccess.PRA
-            "PRAW" -> DirAccess.PRAW
-            "PRAWM" -> DirAccess.PRAWM
-            else -> error("Unmapped permission string: $access")
-        }
-
-        LibraryDirDAO.putDirAccess(dirId, s, a).await()
+        LibraryDirDAO.putDirAccess(dirId, s, access).await()
 
         onPermissionsChanged()
 

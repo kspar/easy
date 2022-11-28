@@ -645,8 +645,9 @@ nav.crumb-wrap .breadcrumb:before {
 
 ez-exercise-permissions ez-permission {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
+    margin-bottom: 0.7rem;
 }
 
 ez-exercise-permissions ez-permission.inherited {
@@ -670,6 +671,25 @@ ez-exercise-permissions .select-wrap {
     width: 12rem;
     margin: 0;
 }
+
+ez-exercise-permissions ez-permission-subject {
+    display: flex;
+    flex-direction: column;
+}
+
+ez-exercise-permissions ez-permission-name {
+    display: flex;
+}
+
+ez-exercise-permissions ez-permission-name ez-icon {
+    margin-right: .7rem;
+}
+
+ez-exercise-permissions ez-permission-email {
+    font-size: 1.2rem;
+    color: var(--ezc-attr-immutable-col);
+}
+
 
 /* "Remove access" option, no way to do this since materialize moves options to body for unconstrained selects */
 /*ez-exercise-permissions ul li:last-child {*/
@@ -1186,6 +1206,22 @@ textarea.materialize-textarea {
     color: #333;
 }
 
+input:not([type])::placeholder,
+input[type=text]:not(.browser-default)::placeholder,
+input[type=password]:not(.browser-default)::placeholder,
+input[type=email]:not(.browser-default)::placeholder,
+input[type=url]:not(.browser-default)::placeholder,
+input[type=time]:not(.browser-default)::placeholder,
+input[type=date]:not(.browser-default)::placeholder,
+input[type=datetime]:not(.browser-default)::placeholder,
+input[type=datetime-local]:not(.browser-default)::placeholder,
+input[type=tel]:not(.browser-default)::placeholder,
+input[type=number]:not(.browser-default)::placeholder,
+input[type=search]:not(.browser-default)::placeholder,
+textarea.materialize-textarea::placeholder {
+    color: #bbb;
+}
+
 input:not([type]):focus:not([readonly]),
 input[type=text]:not(.browser-default):focus:not([readonly]),
 input[type=password]:not(.browser-default):focus:not([readonly]),
@@ -1309,6 +1345,7 @@ textarea.materialize-textarea {
 
 .select-wrapper input.select-dropdown:focus {
     border-bottom: 1px solid var(--ez-checkbox-fill-col);
+    box-shadow: 0 1px 0 0 #469c45;
 }
 
 .select-wrap {

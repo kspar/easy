@@ -459,7 +459,7 @@
 
 <script id="t-c-string-field" type="text/x-handlebars">
     <div class="input-field">
-        <input id="{{id}}" type="text" value="{{value}}">
+        <input id="{{id}}" type="text" value="{{value}}" placeholder="{{placeholder}}">
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
@@ -694,10 +694,13 @@
 
 <script id="t-c-exercise-permissions" type="text/x-handlebars">
     <ez-exercise-permissions>
-        <ez-add-permission></ez-add-permission>
+        <ez-add-permission id="{{newAccessDst}}"></ez-add-permission>
         {{#directPermissions}}
             <ez-permission>
-                <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                <ez-permission-subject>
+                    <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                    <ez-permission-email>{{email}}</ez-permission-email>
+                </ez-permission-subject>
                 <ez-dst id="{{selectDst}}"></ez-dst>
             </ez-permission>
         {{/directPermissions}}
@@ -706,8 +709,11 @@
             <ez-inheriting-dir>{{dirLabel}} <a {{^isCurrent}}href="{{dirHref}}"{{/isCurrent}}>{{dirName}}</a> {{#isCurrent}}{{currentDirLabel}}{{/isCurrent}}</ez-inheriting-dir>
             {{#permissions}}
                 <ez-permission class="inherited">
-                    <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
-                    <z-permission-access>{{access}}</z-permission-access>
+                    <ez-permission-subject>
+                        <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                        <ez-permission-email>{{email}}</ez-permission-email>
+                    </ez-permission-subject>
+                    <ez-permission-access>{{access}}</ez-permission-access>
                 </ez-permission>
             {{/permissions}}
         {{/inheritingDirs}}
