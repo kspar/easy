@@ -23,7 +23,7 @@ private val log = KotlinLogging.logger {}
 class CreateCourse {
 
     data class Req(
-        @JsonProperty("title") @field:NotBlank @field:Size(max = 200) val title: String
+        @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String
     )
 
     data class Resp(@JsonProperty("id") val id: String)
