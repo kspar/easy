@@ -29,7 +29,7 @@ class SidenavCourseSectionComp(
     override val children = emptyList<Component>()
 
     override fun create(): Promise<*> = doInPromise {
-        courseTitle = BasicCourseInfo.get(courseId).await().title
+        courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
     }
 
     override fun render(): String = tmRender(

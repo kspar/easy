@@ -16,13 +16,16 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class TeacherReadCoursesController {
+class ReadTeacherCourses {
 
-    data class Resp(@JsonProperty("courses") val courses: List<CourseResp>)
+    data class Resp(
+        @JsonProperty("courses") val courses: List<CourseResp>
+    )
 
     data class CourseResp(
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
+        @JsonProperty("alias") val alias: String?,
         @JsonProperty("student_count") val studentCount: Long
     )
 
@@ -45,24 +48,25 @@ class TeacherReadCoursesController {
     private fun selectCoursesForAdmin(): List<CourseResp> = transaction {
         val studentCount = StudentCourseAccess.student.count().alias("student_count")
         (Course leftJoin StudentCourseAccess)
-            .slice(Course.id, Course.title, studentCount)
+            .slice(Course.id, Course.title, Course.alias, studentCount)
             .selectAll()
-            .groupBy(Course.id, Course.title)
+            .groupBy(Course.id, Course.title, Course.alias)
             .map {
                 CourseResp(
                     it[Course.id].value.toString(),
                     it[Course.title],
-                    it[studentCount]
+                    it[Course.alias],
+                    it[studentCount],
                 )
             }
     }
 
     private fun selectCoursesForTeacher(teacherId: String): List<CourseResp> {
-        data class CourseAccess(val id: Long, val title: String)
+        data class CourseAccess(val id: Long, val title: String, val alias: String?)
         return transaction {
             // get teacher course accesses with groups
             (Course innerJoin TeacherCourseAccess leftJoin TeacherCourseGroup)
-                .slice(Course.id, Course.title, TeacherCourseGroup.courseGroup)
+                .slice(Course.id, Course.title, Course.alias, TeacherCourseGroup.courseGroup)
                 .select {
                     TeacherCourseAccess.teacher eq teacherId
                 }
@@ -70,7 +74,8 @@ class TeacherReadCoursesController {
                 .groupBy({
                     CourseAccess(
                         it[Course.id].value,
-                        it[Course.title]
+                        it[Course.title],
+                        it[Course.alias],
                     )
                 }) {
                     val courseGroupId: EntityID<Long>? = it[TeacherCourseGroup.courseGroup]
@@ -86,6 +91,7 @@ class TeacherReadCoursesController {
                     CourseResp(
                         course.id.toString(),
                         course.title,
+                        course.alias,
                         studentCount
                     )
                 }

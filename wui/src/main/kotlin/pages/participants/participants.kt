@@ -124,7 +124,7 @@ class ParticipantsRootComp(
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
-        courseTitle = courseTitlePromise.await().title
+        courseTitle = courseTitlePromise.await().effectiveTitle
 
         Title.update {
             it.pageTitle = Str.participants()

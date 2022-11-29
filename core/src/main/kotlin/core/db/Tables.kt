@@ -68,6 +68,7 @@ object ExerciseVer : LongIdTable("exercise_version") {
 object Course : LongIdTable("course") {
     val createdAt = datetime("created_at")
     val title = text("title")
+    val alias = text("alias").nullable()
     val moodleShortName = text("moodle_short_name").nullable()
     val moodleSyncStudents = bool("moodle_sync_students")
     val moodleSyncStudentsInProgress = bool("moodle_sync_students_in_progress")

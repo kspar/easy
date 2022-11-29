@@ -3,6 +3,7 @@ package dao
 import EzDate
 import EzDateSerializer
 import blankToNull
+import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -54,10 +55,14 @@ object ExerciseDAO {
     @Serializable
     data class OnCourse(
         val id: String,
-        val title: String,
+        private val title: String,
+        private val alias: String?,
         val course_exercise_id: String,
         val course_exercise_title_alias: String?
-    )
+    ) {
+        val effectiveTitle: String
+            get() = getEffectiveCourseTitle(title, alias)
+    }
 
     enum class GraderType {
         AUTO, TEACHER

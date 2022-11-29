@@ -1,5 +1,7 @@
 package dao
 
+import Auth
+import Role
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -16,7 +18,15 @@ object CoursesTeacherDAO {
     private data class Courses(val courses: List<Course>)
 
     @Serializable
-    data class Course(val id: String, val title: String, val student_count: Int)
+    data class Course(
+        val id: String,
+        private val title: String,
+        private val alias: String?,
+        val student_count: Int
+    ) {
+        val effectiveTitle: String
+            get() = getEffectiveCourseTitle(title, alias)
+    }
 
     fun getMyCourses(): Promise<List<Course>> = doInPromise {
         debug { "Getting my courses teacher" }
@@ -26,4 +36,7 @@ object CoursesTeacherDAO {
             // Temp hack to sort by created time - newer on top
             .sortedByDescending { it.id.toInt() }
     }
+
+    fun getEffectiveCourseTitle(title: String, alias: String?): String =
+        if (alias == null || Auth.activeRole == Role.ADMIN) title else alias
 }

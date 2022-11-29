@@ -1,7 +1,6 @@
 package pages.courses
 
 import Str
-import cache.BasicCourseInfo
 import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -65,7 +64,7 @@ class TeacherCourseListComp(
 
     override fun create() = doInPromise {
         courseItems = CoursesTeacherDAO.getMyCourses().await().map {
-            TeacherCourseItemComp(it.id, it.title, it.student_count, this)
+            TeacherCourseItemComp(it.id, it.effectiveTitle, it.student_count, this)
         }
     }
 
@@ -82,12 +81,6 @@ class TeacherCourseListComp(
         "t-loading-list",
         "items" to listOf(emptyMap<Nothing, Nothing>(), emptyMap(), emptyMap())
     )
-
-    override fun postRender() {
-        courseItems.forEach {
-            BasicCourseInfo.put(it.id, it.title)
-        }
-    }
 
     override fun getCacheableState(): State = State(courseItems.map { SCourse(it.id, it.title, it.studentCount) })
 }

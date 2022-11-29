@@ -138,7 +138,7 @@ object OldParticipantsPage : EasyPage() {
                 "/courses/$courseId/moodle", ReqMethod.GET,
                 successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
             )
-            val courseTitle = BasicCourseInfo.get(courseId).await().title
+            val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
 
             val participants = participantsPromise.await()
                     .parseTo(Participants.serializer()).await()

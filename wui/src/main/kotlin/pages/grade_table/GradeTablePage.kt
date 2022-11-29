@@ -69,7 +69,7 @@ class GradeTableRootComponent(
         get() = listOf(crumbsComp, cardComp)
 
     override fun create(): Promise<*> = doInPromise {
-        val courseTitle = BasicCourseInfo.get(courseId).await().title
+        val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
 
         crumbsComp = BreadcrumbsComp(
             listOf(

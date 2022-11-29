@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.RestController
 class ReadBasicCourseInfo {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("title") val title: String)
+    data class Resp(
+        @JsonProperty("title") val title: String,
+        @JsonProperty("alias") val alias: String?,
+    )
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/{courseId}/basic")
@@ -33,20 +36,19 @@ class ReadBasicCourseInfo {
 
         caller.assertAccess { userOnCourse(courseId) }
 
-        val courseInfo = selectCourseInfo(courseId)
-        log.debug { "Got course info: $courseInfo" }
-        return courseInfo
+        return selectCourseInfo(courseId)
     }
 
     private fun selectCourseInfo(courseId: Long): Resp =
         transaction {
-            Course.slice(Course.title)
+            Course.slice(Course.title, Course.alias)
                 .select {
                     Course.id eq courseId
                 }
                 .map {
                     Resp(
-                        it[Course.title]
+                        it[Course.title],
+                        it[Course.alias],
                     )
                 }
                 .single()

@@ -262,7 +262,7 @@ object ExerciseSummaryPage : EasyPage() {
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
-        val courseTitle = BasicCourseInfo.get(courseId).await().title
+        val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         val exercise = exercisePromise.await()
             .parseTo(TeacherExercise.serializer()).await()
 
@@ -954,7 +954,7 @@ object ExerciseSummaryPage : EasyPage() {
                 errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
             )
 
-            val courseTitle = BasicCourseInfo.get(courseId).await().title
+            val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
             val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
 
             Title.update {

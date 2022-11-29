@@ -108,7 +108,7 @@ object CourseExercisesPage : EasyPage() {
             successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)
         ).await()
 
-        val courseTitle = courseInfoPromise.await().title
+        val courseTitle = courseInfoPromise.await().effectiveTitle
         val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()
 
         Title.update { it.parentPageTitle = courseTitle }
