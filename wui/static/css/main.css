@@ -639,21 +639,25 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 0;
 }
 
+#DIR_PERMISSIONS .modal .modal-content {
+    padding-bottom: 2rem;
+}
+
 #DIR_PERMISSIONS .modal.fixed-footer .modal-footer {
     border-top: none;
+    padding: 0;
 }
 
 ez-exercise-permissions ez-permission {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.7rem;
+    min-height: 5.6rem;
 }
 
 ez-exercise-permissions ez-permission.inherited {
     border-left: 1px solid #ccc;
     padding-left: 1rem;
-    padding-bottom: .5rem;
 }
 
 ez-exercise-permissions ez-inheriting-dir {
@@ -1336,6 +1340,14 @@ textarea.materialize-textarea {
 
 .select-dropdown.dropdown-content li.selected:hover {
     background-color: rgba(0, 0, 0, 0.08);
+}
+
+.select-wrapper .caret {
+    fill: #666;
+}
+
+.select-wrapper.disabled .caret {
+    fill: #bbb;
 }
 
 .select-wrapper + label {

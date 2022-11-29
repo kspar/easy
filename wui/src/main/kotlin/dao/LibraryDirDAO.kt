@@ -99,6 +99,7 @@ object LibraryDirDAO {
     sealed interface Subject
     data class NewAccount(val email: String) : Subject
     data class Group(val id: String) : Subject
+    object Any : Subject
 
     fun putDirAccess(dirId: String, subject: Subject, level: DirAccess?) = doInPromise {
         debug { "Put dir access $level for dir $dirId to group/account $subject" }
@@ -108,6 +109,8 @@ object LibraryDirDAO {
                     put("group_id", subject.id)
                 is NewAccount ->
                     put("email", subject.email)
+                is Any ->
+                    put("any_access", true)
             }
             put("access_level", level?.name)
         }

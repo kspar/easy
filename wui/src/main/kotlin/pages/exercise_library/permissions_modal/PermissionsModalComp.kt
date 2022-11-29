@@ -2,6 +2,7 @@ package pages.exercise_library.permissions_modal
 
 import Auth
 import Icons
+import Role
 import Str
 import components.form.SelectComp
 import components.form.StringFieldComp
@@ -9,6 +10,7 @@ import components.modal.Modal
 import components.modal.ModalComp
 import dao.LibraryDirDAO
 import debug
+import errorMessage
 import kotlinx.coroutines.await
 import pages.exercise_library.DirAccess
 import pages.exercise_library.ExerciseLibraryPage
@@ -103,6 +105,7 @@ class PermissionsListComp(
 
     private lateinit var directAccesses: List<DirectAccess>
     private lateinit var inheritedAccesses: List<InheritingDir>
+    private lateinit var existingSubjects: Set<String>
 
     override val children: List<Component>
         get() = directAccesses.map { it.select } + newAccessInput
@@ -110,19 +113,18 @@ class PermissionsListComp(
     override fun create() = doInPromise {
         val accesses = LibraryDirDAO.getDirAccesses(dirId).await()
 
+        existingSubjects = accesses.direct_accounts.mapNotNull { it.email }.toSet() +
+                accesses.direct_groups.map { it.id }
+
         newAccessInput = StringFieldComp(
             "", false, "Jagamiseks sisesta kasutaja email",
-            onENTER = { putPermission(DirAccess.PR, PermissionSubject(false, newAccountEmail = it)) },
+            // TODO: should have a button or some other way to activate this on mobile
+            onENTER = ::onNewAccess,
             parent = this
         )
 
         directAccesses = buildList {
-            // TODO: any
-//            accesses.direct_any?.let {
-//                add(UnorderedListComp.Item("Kõik: ${it.access.name}"))
-//            }
-            // TODO: test ordering
-            // TODO: test group icon
+            // Accounts
             accesses.direct_accounts.sortedWith(
                 compareByDescending<LibraryDirDAO.AccountAccess> { it.username == Auth.username }
                     .thenByDescending { it.access }
@@ -130,21 +132,30 @@ class PermissionsListComp(
                     .thenBy { it.given_name }
             ).map {
                 val select = createSelectPermission(
-                    it.access, PermissionSubject(it.username == Auth.username, groupId = it.group_id)
+                    it.access, PermissionSubjectGroup(it.group_id), it.username != Auth.username
                 )
                 add(DirectAccess("${it.given_name} ${it.family_name}", false, it.email, it.access, select))
             }
+
+            // Any
+            accesses.direct_any?.let {
+                val select = createSelectPermission(it.access, PermissionSubjectAny, Auth.activeRole == Role.ADMIN)
+                add(DirectAccess("Kõik kasutajad", true, null, it.access, select))
+            }
+
+            // Groups
             accesses.direct_groups.sortedWith(
                 compareByDescending<LibraryDirDAO.GroupAccess> { it.access }
                     .thenBy { it.name }
             ).map {
-                val select = createSelectPermission(it.access, PermissionSubject(false, groupId = it.id))
+                val select = createSelectPermission(it.access, PermissionSubjectGroup(it.id), true)
                 add(DirectAccess(it.name, true, null, it.access, select))
             }
         }
 
         val dirs = mutableMapOf<LibraryDirDAO.InheritingDir, MutableList<InheritedAccess>>()
 
+        // Accounts
         accesses.inherited_accounts.sortedWith(
             compareByDescending<LibraryDirDAO.AccountAccess> { it.username == Auth.username }
                 .thenByDescending { it.access }
@@ -156,6 +167,14 @@ class PermissionsListComp(
                 .add(InheritedAccess("${it.given_name} ${it.family_name}", false, it.email, it.access))
         }
 
+        // Any
+        accesses.inherited_any?.let {
+            it.inherited_from!!
+            dirs.getOrPut(it.inherited_from) { mutableListOf() }
+                .add(InheritedAccess("Kõik kasutajad", true, null, it.access))
+        }
+
+        // Groups
         accesses.inherited_groups.sortedWith(
             compareByDescending<LibraryDirDAO.GroupAccess> { it.access }
                 .thenBy { it.name }
@@ -201,21 +220,19 @@ class PermissionsListComp(
         }
     )
 
+    // TODO: remove and add loader near title - circle after title or indeterminate linear to top edge?
     override fun renderLoading() = "Laen õiguseid..."
 
     override fun postChildrenBuilt() {
         newAccessInput.focus()
     }
 
-    data class PermissionSubject(
-        val isSelf: Boolean,
-        val groupId: String? = null,
-        // or
-        val newAccountEmail: String? = null,
-    )
+    sealed interface PermissionSubject
+    data class PermissionSubjectGroup(val groupId: String) : PermissionSubject
+    data class PermissionSubjectNewAcc(val newAccountEmail: String) : PermissionSubject
+    object PermissionSubjectAny : PermissionSubject
 
-    private fun createSelectPermission(access: DirAccess, subject: PermissionSubject) =
-        // TODO: try select without border, with focus background color and smaller width
+    private fun createSelectPermission(access: DirAccess, subject: PermissionSubject, isEditable: Boolean) =
         SelectComp(
             options = buildList {
                 if (access == DirAccess.P)
@@ -241,25 +258,45 @@ class PermissionsListComp(
                 }
                 putPermission(selectedAccess, subject)
             },
-            isDisabled = subject.isSelf,
+            isDisabled = !isEditable,
             unconstrainedPosition = true,
             parent = this
         )
 
+    private suspend fun onNewAccess(subjectStr: String) {
+        val subject = when {
+            subjectStr.lowercase() == "kõik kasutajad" -> {
+                if (Auth.activeRole == Role.ADMIN)
+                    PermissionSubjectAny
+                else {
+                    errorMessage {
+                        "Sul pole õigust kõikidele kasutajatele jagamiseks, pöördu selle sooviga administraatori poole."
+                    }
+                    return
+                }
+            }
+            subjectStr.contains("@") -> PermissionSubjectNewAcc(subjectStr)
+            else -> PermissionSubjectGroup(subjectStr)
+        }
+        putPermission(DirAccess.PR, subject)
+    }
+
     private suspend fun putPermission(access: DirAccess?, subject: PermissionSubject) {
         debug { "Put permission for $subject to $access" }
-        // TODO: disable input and selects
+        // TODO: disable input and selects, make loader load
 
-        // TODO: for new accesses, if access exists already, do nothing
-        val s = when {
-            subject.groupId != null -> LibraryDirDAO.Group(subject.groupId)
-            subject.newAccountEmail != null -> LibraryDirDAO.NewAccount(subject.newAccountEmail)
-            else -> error("subject.groupId and .newAccountEmail are both null")
+        val s = when (subject) {
+            is PermissionSubjectGroup -> LibraryDirDAO.Group(subject.groupId)
+            is PermissionSubjectNewAcc -> LibraryDirDAO.NewAccount(subject.newAccountEmail)
+            is PermissionSubjectAny -> LibraryDirDAO.Any
         }
 
-        LibraryDirDAO.putDirAccess(dirId, s, access).await()
-
-        onPermissionsChanged()
+        // if an existing subject is added again, do nothing
+        if (subject !is PermissionSubjectNewAcc || !existingSubjects.contains(subject.newAccountEmail)) {
+            // TODO: try-catch no account / no group
+            LibraryDirDAO.putDirAccess(dirId, s, access).await()
+            onPermissionsChanged()
+        }
 
         createAndBuild().await()
     }
