@@ -1055,6 +1055,10 @@ ez-participants-list .card .card-content p {
     display: none !important;
 }
 
+.hidden {
+    visibility: hidden !important;
+}
+
 .flex {
     display: flex !important;
 }
@@ -1542,6 +1546,10 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
     max-width: 75rem;
 }
 
+.modal .progress {
+    margin: 0;
+}
+
 .modal.fixed-footer .modal-content {
     overflow: auto;
 }
@@ -1697,6 +1705,14 @@ ez-spinner .spinner-layer {
 
 ez-spinner .circle-clipper .circle {
     border-width: 2px;
+}
+
+.progress {
+    background-color: transparent;
+}
+
+.progress .indeterminate {
+    background-color: var(--ez-attr-key-col);
 }
 
 

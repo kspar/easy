@@ -211,6 +211,9 @@
 
 <script id="t-c-modal" type="text/x-handlebars">
     <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}}">
+        <div class="progress hidden">
+            <div class="indeterminate"></div>
+        </div>
         <div class="modal-content">
             {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
             {{#bodyComps}}

@@ -40,7 +40,9 @@ class PermissionsModalComp(
             "Jagamine", onOpen = { }, fixFooter = true,
             defaultReturnValue = false, id = Modal.DIR_PERMISSIONS,
             bodyCompsProvider = {
-                val list = PermissionsListLoaderComp(dirId, isDir, currentDirId, { permissionsChanged = true }, it)
+                val list = PermissionsListLoaderComp(
+                    dirId, isDir, currentDirId, { modalComp.setLoading(it) }, { permissionsChanged = true }, it
+                )
                 permissionsList = list
                 listOf(list)
             },
@@ -67,6 +69,7 @@ class PermissionsListLoaderComp(
     var dirId: String?,
     var isDir: Boolean,
     private val currentDirId: String?,
+    private val onLoadingChange: (isLoading: Boolean) -> Unit,
     private val onPermissionsChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {
@@ -78,7 +81,7 @@ class PermissionsListLoaderComp(
 
     override fun create() = doInPromise {
         dirId?.let {
-            permissionsList = PermissionsListComp(it, isDir, currentDirId, onPermissionsChanged, this)
+            permissionsList = PermissionsListComp(it, isDir, currentDirId, onLoadingChange, onPermissionsChanged, this)
         }
     }
 
@@ -90,6 +93,7 @@ class PermissionsListComp(
     private val dirId: String,
     private val isDir: Boolean,
     private val currentDirId: String?,
+    private val onLoadingChange: (isLoading: Boolean) -> Unit,
     private val onPermissionsChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {
@@ -111,6 +115,7 @@ class PermissionsListComp(
         get() = directAccesses.map { it.select } + newAccessInput
 
     override fun create() = doInPromise {
+        onLoadingChange(true)
         val accesses = LibraryDirDAO.getDirAccesses(dirId).await()
 
         existingSubjects = accesses.direct_accounts.mapNotNull { it.email }.toSet() +
@@ -220,11 +225,9 @@ class PermissionsListComp(
         }
     )
 
-    // TODO: remove and add loader near title - circle after title or indeterminate linear to top edge?
-    override fun renderLoading() = "Laen õiguseid..."
-
     override fun postChildrenBuilt() {
         newAccessInput.focus()
+        onLoadingChange(false)
     }
 
     sealed interface PermissionSubject
@@ -283,7 +286,7 @@ class PermissionsListComp(
 
     private suspend fun putPermission(access: DirAccess?, subject: PermissionSubject) {
         debug { "Put permission for $subject to $access" }
-        // TODO: disable input and selects, make loader load
+        onLoadingChange(true)
 
         val s = when (subject) {
             is PermissionSubjectGroup -> LibraryDirDAO.Group(subject.groupId)

@@ -1,5 +1,7 @@
 package components.modal
 
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import libheaders.MModalInstance
 import libheaders.Materialize
 import org.w3c.dom.Element
@@ -71,7 +73,17 @@ open class ModalComp<T>(
         if (title != null) {
             modalElement.getElemBySelector(".modal-title").textContent = title
         } else {
+            // Not sure: removing the element makes it impossible to set a title later
             modalElement.getElemBySelector(".modal-title").remove()
+        }
+    }
+
+    fun setLoading(isLoading: Boolean) {
+        modalElement.getElemBySelector(".progress").let {
+            if (isLoading)
+                it.removeClass("hidden")
+            else
+                it.addClass("hidden")
         }
     }
 
