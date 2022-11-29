@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.DirAccessLevel
 import core.ems.service.*
+import core.ems.service.access_control.admin
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.exception.InvalidRequestException
@@ -22,6 +23,7 @@ class PutDirAccess {
     data class Req(
         @JsonProperty("group_id") val groupId: String? = null,
         @JsonProperty("email") val email: String? = null,
+        @JsonProperty("any_access") val anyAccess: Boolean = false,
         @JsonProperty("access_level") val level: DirAccessLevel?,
     )
 
@@ -32,23 +34,25 @@ class PutDirAccess {
         @PathVariable("dirId") dirIdString: String,
         caller: EasyUser
     ) {
-        log.debug { "Put dir access ${body.level} to group ${body.groupId} or email ${body.email} for dir $dirIdString by ${caller.id}" }
+        log.debug { "Put dir access ${body.level} to group:${body.groupId}, email:${body.email} or any:${body.anyAccess} for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
 
-        caller.assertAccess { libraryDir(dirId, DirAccessLevel.PRAWM) }
+        caller.assertAccess {
+            libraryDir(dirId, DirAccessLevel.PRAWM)
+            if (body.anyAccess)
+                admin()
+        }
 
         assertDirExists(dirId, true)
 
-        // TODO should assert that group exists
-        // if given groupId is null, map email to groupId
-        val groupId = body.groupId?.idToLongOrInvalidReq()
-            ?: emailToImplicitGroup(body.email)
-            ?: throw InvalidRequestException(
-                "Account with email ${body.email} not found",
-                ReqError.ENTITY_WITH_ID_NOT_FOUND,
-                "email" to body.email.orEmpty(),
-            )
+        val groupId = when {
+            // TODO: assert that group exists
+            body.groupId != null -> body.groupId.idToLongOrInvalidReq()
+            body.email != null -> emailToImplicitGroup(body.email)
+            body.anyAccess -> null
+            else -> throw InvalidRequestException("Missing parameter", ReqError.INVALID_PARAMETER_VALUE)
+        }
 
         if (body.level == DirAccessLevel.P)
             throw InvalidRequestException("Cannot assign P permission directly", ReqError.INVALID_PARAMETER_VALUE)
@@ -60,15 +64,13 @@ class PutDirAccess {
         if (body.level == null)
             libraryDirRemoveAccess(dirId, groupId)
         else
-            libraryDirAddAccess(dirId, groupId, body.level)
+            libraryDirPutAccess(dirId, groupId, body.level)
     }
 
-    private fun emailToImplicitGroup(email: String?): Long? {
-        if (email == null)
-            return null
-
-        return getUsernameByEmail(email)?.let {
-            getImplicitGroupFromAccount(it)
-        }
+    private fun emailToImplicitGroup(email: String): Long {
+        val username = getUsernameByEmail(email) ?: throw InvalidRequestException(
+            "Account with email $email not found", ReqError.ENTITY_WITH_ID_NOT_FOUND, "email" to email,
+        )
+        return getImplicitGroupFromAccount(username)
     }
 }
