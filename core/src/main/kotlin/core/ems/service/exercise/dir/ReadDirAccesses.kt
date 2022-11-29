@@ -119,7 +119,7 @@ class ReadDirAccesses {
             // Recompute best any access
             inheritedAny = when {
                 dir.anyAccess == null -> inheritedAny
-                inheritedAny == null || dir.anyAccess > inheritedAny.access ->
+                dir.anyAccess != DirAccessLevel.P && (inheritedAny == null || dir.anyAccess > inheritedAny.access) ->
                     AccessAny(dir.anyAccess, dir.id, dir.name)
 
                 else -> inheritedAny
@@ -155,27 +155,31 @@ class ReadDirAccesses {
             }
 
         // Allow only groups for which the caller has access
-        // TODO: not sure if this makes sense
-        val directGroupAccesses = directGroupsPart.filter {
-            hasUserGroupAccess(caller, it.id, false)
-        }.map {
-            GroupAccessResp(
-                it.id.toString(),
-                it.name,
-                it.access,
-                null
-            )
-        }
-        val inheritedGroupAccesses = inheritedGroupsPart.filter {
-            hasUserGroupAccess(caller, it.groupId, false)
-        }.map {
-            GroupAccessResp(
-                it.groupId.toString(),
-                it.groupName,
-                it.access,
-                InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),
-            )
-        }
+        // not sure if this makes sense - commented out for now, remove in the future
+        val directGroupAccesses = directGroupsPart
+//            .filter {
+//            hasUserGroupAccess(caller, it.id, false)
+//        }
+            .map {
+                GroupAccessResp(
+                    it.id.toString(),
+                    it.name,
+                    it.access,
+                    null
+                )
+            }
+        val inheritedGroupAccesses = inheritedGroupsPart
+//            .filter {
+//            hasUserGroupAccess(caller, it.groupId, false)
+//        }
+            .map {
+                GroupAccessResp(
+                    it.groupId.toString(),
+                    it.groupName,
+                    it.access,
+                    InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),
+                )
+            }
 
         // Resolve account accesses
         val directAccountAccesses = directAccountsPart.map {
