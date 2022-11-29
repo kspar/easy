@@ -622,6 +622,10 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 0;
 }
 
+#UPDATE_COURSE ez-attr {
+    padding-bottom: 2rem;
+}
+
 
 /** Exercise page **/
 

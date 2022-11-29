@@ -2,6 +2,7 @@ package components.modal
 
 enum class Modal {
     CREATE_COURSE,
+    UPDATE_COURSE,
 
     CREATE_EXERCISE,
     CREATE_DIR,

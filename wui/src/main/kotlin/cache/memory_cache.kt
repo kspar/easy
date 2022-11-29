@@ -32,4 +32,8 @@ open class MemoryCache<K, V>(
     fun put(key: K, value: V) {
         cache[key] = value
     }
+
+    fun invalidate(key: K) {
+        cache.remove(key)
+    }
 }

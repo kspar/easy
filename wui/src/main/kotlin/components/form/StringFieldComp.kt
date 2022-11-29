@@ -12,7 +12,7 @@ import tmRender
 class StringFieldComp(
     private val label: String,
     private val isRequired: Boolean,
-    private val placeholder: String = "",
+    private val placeholder: String? = null,
     private val paintRequiredOnCreate: Boolean = false,
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,

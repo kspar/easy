@@ -6,7 +6,7 @@ import queries.*
 import kotlin.js.Promise
 
 
-data class CourseInfo(val id: String, private val title: String, private val alias: String?) {
+data class CourseInfo(val id: String, val title: String, val alias: String?) {
     val effectiveTitle: String
         get() = CoursesTeacherDAO.getEffectiveCourseTitle(title, alias)
 }
@@ -28,5 +28,6 @@ object BasicCourseInfo {
     }
 
     fun get(courseId: String): Promise<CourseInfo> = courseInfoCache.get(courseId)
-}
 
+    fun invalidate(courseId: String) = courseInfoCache.invalidate(courseId)
+}

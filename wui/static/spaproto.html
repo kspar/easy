@@ -107,8 +107,9 @@
     {{#isTeacherOrAdmin}}
         <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
         <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+        <li><a id="{{updateCourseLinkId}}" class="waves-effect sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
     {{/isTeacherOrAdmin}}
-    <ez-dst id="{{newExerciseDst}}"></ez-dst>
+    <ez-dst id="{{updateModalDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-page-section" type="text/x-handlebars">
@@ -462,7 +463,7 @@
 
 <script id="t-c-string-field" type="text/x-handlebars">
     <div class="input-field">
-        <input id="{{id}}" type="text" value="{{value}}" placeholder="{{placeholder}}">
+        <input id="{{id}}" type="text" value="{{value}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}>
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
