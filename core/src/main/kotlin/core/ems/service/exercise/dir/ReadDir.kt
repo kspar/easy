@@ -258,10 +258,12 @@ class ReadDirController {
                 )
             }
 
-        val anyAccessible = directAccesses.firstOrNull()?.anyAccess != null
+        // All rows contain the same anyAccess field
+        val anyAccessible = directAccesses.firstOrNull()?.anyAccess?.let { it >= DirAccessLevel.PR } ?: false
+
         val hasExplicitGroupAccess = directAccesses.any { it.isGroupImplicit == false }
 
-        // (anyAccess != null) || (number of >= R accesses on item > 1) || (1 access on item is for an explicit group)
+        // (anyAccess >= R) || (number of >= R accesses on item > 1) || (1 access on item is for an explicit group)
         return anyAccessible || directAccesses.count() > 1 || hasExplicitGroupAccess
     }
 
