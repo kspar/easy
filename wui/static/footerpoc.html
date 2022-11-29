@@ -16,152 +16,42 @@
 
 </head>
 <style>
-    .loading-exercise-line {
-        height: 1.7rem;
-        margin: 2rem;
-        background: rgb(219, 219, 219);
-        animation: pulse 1.5s linear infinite alternate;
-        border-radius: 0.5rem;
-        opacity: 0.3;
+    footer {
+        position:absolute;
+        bottom:0;
+        width:100%;
+        background: #ffffff;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        border-top: rgba(0, 0, 0, .15) solid 1px;
     }
 
-    .loading-exercise-collection .item:nth-child(1){
-        animation-delay: 0.1s;
-        background: rgba(71, 149, 73, 0.45);
-        width: 13rem;
-    }
-
-    .loading-exercise-collection .item:nth-child(2){
-        animation-delay: 0.1s;
-        background: rgba(71, 149, 73, 0.45);
-        width: 15rem;
-    }
-
-    .loading-exercise-collection .item:nth-child(3){
-        animation-delay: 0.1s;
-        background: rgba(71, 149, 73, 0.45);
-        width: 11rem;
-    }
-
-    .loading-exercise-collection .item:nth-child(4){
-        animation-delay: 0.3s;
-        height: 2.5rem;
-        margin-top: 4rem;
-        margin-bottom: 2.5rem;
-        width: 25%;
-    }
-
-    .loading-exercise-collection .item:nth-child(5){
-        animation-delay: 0.5s;
-        width: 75%;
-    }
-    .loading-exercise-collection .item:nth-child(6){
-        animation-delay: 0.5s;
-    }
-    .loading-exercise-collection .item:nth-child(7){
-        animation-delay: 0.5s;
-        width: 45%;
-    }
-    .loading-exercise-collection .item:nth-child(8){
-        animation-delay: 0.5s;
-        width: 60%;
-    }
-
-    .loading-exercise-collection{
-        border: none;
-        margin-top: 5rem;
-    }
-
-    @keyframes pulse {
-        0%,
-        30% {
-            opacity: 0.3;
-        }
-        50% {
-            opacity: 0.5;
-        }
-        90%,
-        100% {
-            opacity: 1;
-        }
-    }
-
-
-
-
-
-
-
-
-    body {
-        display: flex;
-        min-height: 100vh;
-        flex-direction: column;
-    }
-
-    main {
-        flex: 1 0 auto;
-    }
-
-    footer.page-footer {
-        padding-top: 5px;
-        padding-bottom: 10px;
-    }
-
-    footer .fa-github:hover {
-        opacity: 0.7;
-    }
-
-    footer .fa-github {
-        color: #fff;
-        font-size: 4.5rem;
-        margin-top: 25px;
-    }
-
-    footer .footer-heading{
-        font-size: 2.5rem;
-        margin-top: 25px;
-        font-weight: 400;
-    }
-
-    footer .statistics-subheading{
-        font-size: 1.3rem;
-        font-variant: all-small-caps;
-        letter-spacing: 3px;
-    }
-
-    footer .statistics-value{
-        font-size: 2.1rem;
-        font-weight: 500;
-        letter-spacing: 2px;
-    }
-
-    footer .version-string{
-        font-size: 1.3rem;
-    }
-
-    footer hr {
-        border-color: rgba(255, 255, 255, 0.31);
-    }
-
-    footer .row{
-        margin-bottom: 3px;
-    }
 
     footer .content-wrap{
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         flex-direction: row;
+        padding-bottom: 1rem;
     }
 
-    footer .statistics-wrap{
-        width: 75%;
+    footer .license{
+        display: flex;
+        justify-content: space-between;
     }
+
+    footer .item{
+        border-right: rgba(0, 0, 0, .15) solid 1px;
+        padding-right: 1.3rem;
+        line-height: 1.5;
+        padding-left: 1.3rem;
+    }
+
+    footer .item-last{
+        padding-left: 1.3rem;
+    }
+
 
     @media screen and (max-width: 992px) {
-        footer .statistics-wrap{
-            width: 100%;
-        }
         footer .content-wrap{
             flex-direction: column;
         }
@@ -198,57 +88,270 @@
         <li><a id="logout-link">Logi välja</a></li>
     </ul>
 </header>
-<main>
-    <div id="container" class="container">
-        <div class="collection loading-exercise-collection">
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
-            <div class="loading-exercise-line item"></div>
+<main><div id="sidenav-wrap">
+    <ul id="sidenav" class="sidenav sidenav-fixed" style="transform: translateX(0px);">
+        <ez-dst id="ezid-0">
+    <li>
+        <div class="user-view">
+            <div class="background"></div>
+            <div class="name attr truncate">Merilin Säde</div>
+            <div class="email attr truncate">merilin.sade@ut.ee</div>
+                <div class="role-select-wrap">
+                    <ez-dst id="ezid-16">
+    <div class="input-field select-wrap">
+        <div class="select-wrapper"><svg class="caret" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg><input class="select-dropdown dropdown-trigger" type="text" readonly="true" data-target="select-options-5cd27567-de16-d82a-0522-9637cd51abdb"><ul id="select-options-5cd27567-de16-d82a-0522-9637cd51abdb" class="dropdown-content select-dropdown" tabindex="0"><li id="select-options-5cd27567-de16-d82a-0522-9637cd51abdb0" tabindex="0"><span>Õpilane</span></li><li id="select-options-5cd27567-de16-d82a-0522-9637cd51abdb1" tabindex="0" class="selected"><span>Admin</span></li></ul><div class="hide-select"><select id="ezid-17" tabindex="-1">
+                <option value="student">Õpilane</option>
+                <option value="admin" selected="">Admin</option>
+        </select></div></div>
+    </div>
+</ez-dst>
+                </div>
+        </div>
+    </li>
+</ez-dst>
+        <ez-dst id="ezid-1">
+    <li><div class="divider"></div></li>
+    <li id="ezid-2" class=""><a href="/courses" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"></path><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"></path></svg></ez-icon>Minu kursused</a></li>
+<!--        <li id="ezid-3"><a href="&#x2F;library" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"/><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></ez-icon>Ülesandekogu</a></li>-->
+<!--        <li id="ezid-4"><a href="#!" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"/><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></ez-icon>Artiklid</a></li>-->
+        <li><a id="ezid-12" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><circle cx="14.5" cy="10.5" r="1.25"></circle><circle cx="9.5" cy="10.5" r="1.25"></circle><path d="M22.94 12.66c.04-.21.06-.43.06-.66s-.02-.45-.06-.66c-.25-1.51-1.36-2.74-2.81-3.17-.53-1.12-1.28-2.1-2.19-2.91C16.36 3.85 14.28 3 12 3s-4.36.85-5.94 2.26c-.92.81-1.67 1.8-2.19 2.91-1.45.43-2.56 1.65-2.81 3.17-.04.21-.06.43-.06.66s.02.45.06.66c.25 1.51 1.36 2.74 2.81 3.17.52 1.11 1.27 2.09 2.17 2.89C7.62 20.14 9.71 21 12 21s4.38-.86 5.97-2.28c.9-.8 1.65-1.79 2.17-2.89 1.44-.43 2.55-1.65 2.8-3.17zM19 14c-.1 0-.19-.02-.29-.03-.2.67-.49 1.29-.86 1.86C16.6 17.74 14.45 19 12 19s-4.6-1.26-5.85-3.17c-.37-.57-.66-1.19-.86-1.86-.1.01-.19.03-.29.03-1.1 0-2-.9-2-2s.9-2 2-2c.1 0 .19.02.29.03.2-.67.49-1.29.86-1.86C7.4 6.26 9.55 5 12 5s4.6 1.26 5.85 3.17c.37.57.66 1.19.86 1.86.1-.01.19-.03.29-.03 1.1 0 2 .9 2 2s-.9 2-2 2zM7.5 14c.76 1.77 2.49 3 4.5 3s3.74-1.23 4.5-3h-9z"></path></svg></ez-icon>Uus kursus</a></li>
+</ez-dst>
+        <ez-dst id="ezid-13">
+    <li><div class="divider"></div></li>
+    <li title="Tarkvaraarendus (RAM valikkursus)"><a class="subheader truncate">Tarkvaraarendus (RAM valikkursus)</a></li>
+    <li id="ezid-4102"><a href="/courses/23/exercises" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"></path></svg></ez-icon>Ülesanded</a></li>
+        <li id="ezid-4103" class="active"><a href="/courses/23/grades" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"></path></svg></ez-icon>Hinded</a></li>
+        <li id="ezid-4104" class=""><a href="/courses/23/participants" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></svg></ez-icon>Osalejad</a></li>
+<!--        <li><a class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></ez-icon>Lisa ülesanne kogust</a></li>-->
+        <li><a class="waves-effect sidenav-close modal-trigger" href="#new-exercise-modal"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg></ez-icon>Uus ülesanne</a></li>
+</ez-dst>
+        <ez-dst id="ezid-14">
+    <li><div class="divider"></div></li>
+    <li title="Hinded"><a class="subheader truncate">Hinded</a></li>
+        <li><a class="waves-effect sidenav-close" id="ezid-4321"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M5,20h14v-2H5V20z M19,9h-4V3H9v6H5l7,7L19,9z"></path></g></svg></ez-icon>Ekspordi hinded</a></li>
+</ez-dst>
+        <ez-dst id="ezid-15" class="trailer">
+    <li><div class="divider"></div></li>
+        <li><a href="https://dev.idp.lahendus.ut.ee/auth/admin/master/console" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 20 20" height="18px" viewBox="0 0 20 20" width="18px" fill="#000000"><g><rect fill="none" height="20" width="20"></rect></g><g><g><path d="M13,9c0.35,0,0.68,0.06,1,0.14V6.18L9,4L4,6.18v3.27c0,3.03,2.13,5.86,5,6.55c0.35-0.08,0.7-0.2,1.02-0.35 C9.39,14.94,9,14.02,9,13C9,10.79,10.79,9,13,9z"></path><path d="M13,10c-1.66,0-3,1.34-3,3c0,1.66,1.34,3,3,3s3-1.34,3-3C16,11.34,14.66,10,13,10z M13,11.03c0.47,0,0.84,0.38,0.84,0.84 c0,0.46-0.38,0.84-0.84,0.84s-0.84-0.38-0.84-0.84C12.16,11.41,12.53,11.03,13,11.03z M13,15.06c-0.7,0-1.31-0.35-1.68-0.87 c0.04-0.54,1.13-0.81,1.68-0.81s1.64,0.27,1.68,0.81C14.31,14.72,13.7,15.06,13,15.06z"></path></g></g></svg></ez-icon>Keycloak admin</a></li>
+        <li><a href="https://easy.myjetbrains.com/youtrack/issues" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"></path></svg></ez-icon>YouTrack</a></li>
+    <li><a href="https://dev.idp.lahendus.ut.ee/auth/realms/master/account?referrer=dev.lahendus.ut.ee&amp;referrer_uri=https%3A%2F%2Fdev.lahendus.ut.ee%2Fcourses" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><g><path d="M0,0h24v24H0V0z" fill="none"></path><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"></path></g></svg></ez-icon>Konto seaded</a></li>
+    <li><a href="https://dev.idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fdev.lahendus.ut.ee%2Fcourses" class="waves-effect sidenav-close"><ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"></path><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path></svg></ez-icon>Logi välja</a></li>
+</ez-dst>
+    </ul>
+
+    <!-- Workaround: modals cannot be inside elements that have transforms like sidenav: -->
+    <!-- Elements with transforms act as a containing block for fixed position descendants, so position:fixed under something with a transform no longer has fixed behavior. -->
+    <ez-dst id="new-course-modal-dst-id">
+    <div id="ezid-5" class="modal">
+        <div class="modal-content">
+            <h4>Uus kursus</h4>
+                <ez-dst id="ezid-10">
+    <div class="input-field">
+        <input id="ezid-11" type="text" value="">
+        <label for="ezid-11" class="">Kursuse nimi</label>
+        <span id="field-helper-ezid-11" class="helper-text "></span>
+    </div>
+</ez-dst>
+        </div>
+        <div class="modal-footer">
+                <ez-dst id="ezid-8">
+    <button id="ezid-9" class=" secondary-btn btn-flat waves-effect">
+        <ez-btn-content>Tühista</ez-btn-content>
+    </button>
+</ez-dst>
+                <ez-dst id="ezid-6">
+    <button id="ezid-7" class="btn waves-light  waves-effect" disabled="">
+        <ez-btn-content>Salvesta</ez-btn-content>
+    </button>
+</ez-dst>
         </div>
     </div>
-</main>
+</ez-dst>
 
-<footer class="page-footer grey darken-3">
-    <div class="container">
-        <div class="content-wrap">
-            <div class="statistics-wrap">
-                <h4 class="footer-heading">Statistika</h4>
-                <hr/>
-                <div class="row">
-                    <div class="col s4">
-                        <span class="statistics-value">0</span>
-                    </div>
-                    <div class="col s4">
-                        <span class="statistics-value">4556</span>
-                    </div>
-                    <div class="col s4">
-                        <span class="statistics-value">100</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s4">
-                        <span class="statistics-subheading">Esitust kontrollimisel</span>
-                    </div>
-                    <div class="col s4">
-                        <span class="statistics-subheading">Esitust kokku</span>
-                    </div>
-                    <div class="col s4">
-                        <span class="statistics-subheading">Kasutajat kokku</span>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <a href="#" class="fa fa-github"></a>
-                    <p class="version-string">easy/wui v2 <br> (build 2019-08-29 19:54:26 +0200)</p> <!-- Temporary, for automatic generation time -->
+    <!-- New exercise modal -->
+    <div id="new-exercise-modal" class="modal" tabindex="0">
+        <div class="modal-content">
+            <h4>Uus ülesanne</h4>
+            <div class="form-fields">
+                <div class="input-field">
+                    <input id="new-exercise-name-input" type="text">
+                    <label for="new-exercise-name-input">Ülesande nimi</label>
                 </div>
             </div>
         </div>
+        <div class="modal-footer">
+            <button id="new-exercise-btn" class="waves-effect waves-light btn"><ez-btn-content>Salvesta</ez-btn-content></button>
+        </div>
+    </div>
+</div><div id="content-container" class="container"><ez-dst id="ezid-4318">
+    <nav class="crumb-wrap">
+            <a href="/courses" class="breadcrumb truncate">Minu kursused</a>
+            <a href="/courses/23/exercises" class="breadcrumb truncate">Tarkvaraarendus (RAM valikkursus)</a>
+            <a class="breadcrumb truncate">Hinded</a>
+    </nav>
+</ez-dst>
+<ez-dst id="ezid-4319">
+    <div class="title-wrap">
+        <h2 class="title">Tarkvaraarendus (RAM valikkursus)</h2>
+    </div>
+    <div class="card">
+        <div class="card-content">
+            <ez-dst id=""></ez-dst>
+            <ez-dst id="ezid-4320">
+    <div class="grades-wrap">
+        <div class="pre-table-wrap">
+        </div>
+        <div class="grade-table-wrap">
+            <table class="colored truncated-ex">
+                <thead><tr>
+                    <th class="header-spacer"></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/568/summary"><span class="text" title="1.1 Kalade kaalumine">1.1 Kalade kaalumine</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/569/summary"><span class="text" title="2.1 Lauatennis">2.1 Lauatennis</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/570/summary"><span class="text" title="2.2 Kalorsus">2.2 Kalorsus</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/571/summary"><span class="text" title="2.3a Retseptid ">2.3a Retseptid </span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/572/summary"><span class="text" title="2.3b Kohustuslik kirjandus">2.3b Kohustuslik kirjandus</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/573/summary"><span class="text" title="2.3c Vähimatest suurim">2.3c Vähimatest suurim</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/574/summary"><span class="text" title="3.1 Koristaja">3.1 Koristaja</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/575/summary"><span class="text" title="3.2 Hinnete tabel">3.2 Hinnete tabel</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/576/summary"><span class="text" title="3.3a Nummerda">3.3a Nummerda</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/577/summary"><span class="text" title="3.3b Bingo reeglite kontrollimine">3.3b Bingo reeglite kontrollimine</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/578/summary"><span class="text" title="3.3c Maksimaalne rida">3.3c Maksimaalne rida</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/579/summary"><span class="text" title="3.3d Kas on võitnud?">3.3d Kas on võitnud?</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/580/summary"><span class="text" title="3.3e Sudoku lahenduse kontrollimine">3.3e Sudoku lahenduse kontrollimine</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/581/summary"><span class="text" title="3.3f Anagrammi otsing">3.3f Anagrammi otsing</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/582/summary"><span class="text" title="4.1 Hinnete tabel failist">4.1 Hinnete tabel failist</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/583/summary"><span class="text" title="4.2a Tehnika">4.2a Tehnika</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/584/summary"><span class="text" title="4.2b Programmeerimisest maalähedaselt">4.2b Programmeerimisest maalähedaselt</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/585/summary"><span class="text" title="5.1 Teksti analüüs">5.1 Teksti analüüs</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/586/summary"><span class="text" title="5.2 Rahvusvahelised sõidukid">5.2 Rahvusvahelised sõidukid</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/587/summary"><span class="text" title="5.3a Albumid">5.3a Albumid</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/588/summary"><span class="text" title="5.3b Juhuslik Bingo tabel">5.3b Juhuslik Bingo tabel</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/589/summary"><span class="text" title="5.3c Lubaduste ühisosa">5.3c Lubaduste ühisosa</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/590/summary"><span class="text" title="5.3d Võiduks veel vaja">5.3d Võiduks veel vaja</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/591/summary"><span class="text" title="6.1 Alla ja üles">6.1 Alla ja üles</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/592/summary"><span class="text" title="6.2 Paarissumma">6.2 Paarissumma</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/593/summary"><span class="text" title="6.3a Dissonantne järjekord I">6.3a Dissonantne järjekord I</span></a></th>
+                        <th><a class="wrap uncolored " href="/courses/23/exercises/594/summary"><span class="text" title="6.3b Dissonantne järjekord II">6.3b Dissonantne järjekord II</span></a></th>
+                </tr></thead>
+                <tbody>
+                    <tr>
+                        <td class="student truncate" title="Must Albatross">Must Albatross</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class=" unfinished  ">0</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                    </tr>
+                    <tr>
+                        <td class="student truncate" title="Must Kühmnokk">Must Kühmnokk</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                    </tr>
+                    <tr>
+                        <td class="student truncate" title="Oranž Väiketüll">Oranž Väiketüll</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="finished   ">100</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                            <td class="  unstarted ">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="post-table-wrap">
+        </div>
+    </div>
+</ez-dst>
+        </div>
+    </div>
+</ez-dst></div></main>
+
+<footer>
+    <div class="container">
+                    <div class="content-wrap">
+                        <div class="item">
+                            <a href="#!">Kasutustingimused ja privaatsus</a>
+                        </div>
+                        <div class="item">
+                            <a href="#!">Meist</a>
+                        </div>
+                        <div class="item-last">
+                            <a href="#!">Kontakt</a>
+                        </div>
+                    </div>
+                <div class="license">
+                        <p>easy/wui v2 (build 2019-08-29 19:54:26 +0200)</p> <!-- Temporary, for automatic generation time -->
+                        <a href="#!">MIT litsents</a>
+                </div>
     </div>
 </footer>
 
