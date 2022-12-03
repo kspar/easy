@@ -243,7 +243,8 @@ object ExerciseSummaryPage : EasyPage() {
             // Could be optimised to load exercise details & students in parallel,
             // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
             val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
-            buildTeacherTesting(courseId, exerciseDetails.exercise_id)
+            if (exerciseDetails.grader_type == GraderType.AUTO)
+                buildTeacherTesting(courseId, exerciseDetails.exercise_id)
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
             initTooltips()
