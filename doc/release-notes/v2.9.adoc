@@ -1,0 +1,17 @@
+
+
+= Release notes: v2.9
+
+* Bringing exercise library into the light!
+* Teachers can now create exercises, directories, modify exercises, share them with other users and add them to their courses.
+
+* Teachers can also change their course title (alias), and reorder, rename, hide/publish and remove exercises on their courses.
+
+* Creating automatic assessment scripts using TSL has been integrated as an experimental feature.
+
+* Datetime representation is now dynamic (in most places).
+
+* Updated various dependencies.
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=In%20release:%20v2.9%20[here].
