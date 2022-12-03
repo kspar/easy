@@ -17,12 +17,12 @@ object AutoEvalTypes {
     }
 
     val templates = listOf(
-        TypeTemplate(
-            "TSL", "tiivad:tsl-compose",
-            7, 30, TypeEditor.TSL_COMPOSE,
-            "TODO TSL",
-            "",
-        ),
+//        TypeTemplate(
+//            "TSL", "tiivad:tsl-compose",
+//            7, 30, TypeEditor.TSL_COMPOSE,
+//            "TODO TSL",
+//            "",
+//        ),
 
         TypeTemplate(
             "TSL Spec", "tiivad:tsl-spec",
@@ -34,12 +34,12 @@ object AutoEvalTypes {
             """.trimIndent(),
         ),
 
-        TypeTemplate(
-            "edutest", "edutest",
-            7, 30, TypeEditor.CODE_EDITOR,
-            "TODO edutest",
-            "",
-        ),
+//        TypeTemplate(
+//            "edutest", "edutest",
+//            7, 30, TypeEditor.CODE_EDITOR,
+//            "TODO edutest",
+//            "",
+//        ),
 
         TypeTemplate(
             "Python Grader", "pygrader",

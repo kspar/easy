@@ -35,7 +35,7 @@ class AutoassessAttrsEditComp(
 
     private val memField = if (containerImage != null)
         IntFieldComp(
-            "Lubatud mälukasutus (MB)", true, 1, 50, initialValue = maxMem,
+            "Lubatud mälukasutus (MB)", true, 10, 50, initialValue = maxMem,
             fieldNameForMessage = "Väärtus",
             paintRequiredOnCreate = true,
             onValidChange = ::onElementValidChange,
