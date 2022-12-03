@@ -68,12 +68,24 @@ object ExerciseDAO {
         AUTO, TEACHER
     }
 
+    class NoLibAccessException : Exception()
+
     fun getExercise(exerciseId: String): Promise<Exercise> = doInPromise {
         debug { "Getting exercise $exerciseId" }
 
-        fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.GET,
-            successChecker = { http200 }).await()
-            .parseTo(Exercise.serializer()).await()
+        // TODO: should have a default pattern to accomplish this - throwing an exception based on resp (e.g. code)
+        try {
+            fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.GET,
+                successChecker = { http200 },
+                errorHandler = {
+                    it.handleByCode(RespError.NO_EXERCISE_ACCESS) {
+                        throw NoLibAccessException()
+                    }
+                }).await()
+                .parseTo(Exercise.serializer()).await()
+        } catch (e: HandledResponseError) {
+            throw if (e.errorHandlerException.await() is NoLibAccessException) e.errorHandlerException.await() else e
+        }
     }
 
 
