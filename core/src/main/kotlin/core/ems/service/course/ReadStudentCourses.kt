@@ -3,7 +3,6 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
-import core.db.Student
 import core.db.StudentCourseAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
@@ -17,11 +16,17 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class StudentReadCoursesController {
+class ReadStudentCourses {
 
-    data class CourseTitleResp(@JsonProperty("id") val id: String, @JsonProperty("title") val title: String)
+    data class Resp(
+        @JsonProperty("courses") val courses: List<CourseResp>
+    )
 
-    data class Resp(@JsonProperty("courses") val courses: List<CourseTitleResp>)
+    data class CourseResp(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("alias") val alias: String?,
+    )
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses")
@@ -30,19 +35,20 @@ class StudentReadCoursesController {
         log.debug { "Getting courses for student $callerId" }
         return selectCoursesForStudent(callerId)
     }
-}
 
-private fun selectCoursesForStudent(studentId: String): StudentReadCoursesController.Resp {
-    return transaction {
-        StudentReadCoursesController.Resp(
-                (Student innerJoin StudentCourseAccess innerJoin Course)
-                        .slice(Course.id, Course.title)
-                        .select {
-                            Student.id eq studentId
-                        }
-                        .withDistinct()
-                        .map {
-                            StudentReadCoursesController.CourseTitleResp(it[Course.id].value.toString(), it[Course.title])
-                        })
+    private fun selectCoursesForStudent(studentId: String): Resp = transaction {
+        Resp(
+            (StudentCourseAccess innerJoin Course).slice(
+                Course.id, Course.title, Course.alias
+            ).select {
+                StudentCourseAccess.student eq studentId
+            }.map {
+                CourseResp(
+                    it[Course.id].value.toString(),
+                    it[Course.title],
+                    it[Course.alias],
+                )
+            }
+        )
     }
 }

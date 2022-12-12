@@ -5,7 +5,6 @@ import components.form.validation.StringConstraints
 import components.form.validation.ValidatableFieldComp
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.events.KeyboardEvent
 import rip.kspar.ezspa.*
 import tmRender
 
@@ -13,6 +12,7 @@ import tmRender
 class StringFieldComp(
     private val label: String,
     private val isRequired: Boolean,
+    private val placeholder: String? = null,
     private val paintRequiredOnCreate: Boolean = false,
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
@@ -21,7 +21,7 @@ class StringFieldComp(
     constraints: List<FieldConstraint<String>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
     private val onValueChange: ((String) -> Unit)? = null,
-    private val onENTER: (() -> Unit)? = null,
+    private val onENTER: (suspend (String) -> Unit)? = null,
     private val trimValue: Boolean = true,
     parent: Component
 ) : ValidatableFieldComp<String>(
@@ -44,6 +44,7 @@ class StringFieldComp(
         "id" to inputId,
         "value" to initialValue,
         "label" to label,
+        "placeholder" to placeholder,
         "helpText" to helpText,
     )
 
@@ -55,7 +56,7 @@ class StringFieldComp(
         }
         if (onENTER != null) {
             getElement().onENTER {
-                onENTER.invoke()
+                onENTER.invoke(getValue())
             }
         }
     }

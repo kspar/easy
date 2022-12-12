@@ -243,7 +243,8 @@ object ExerciseSummaryPage : EasyPage() {
             // Could be optimised to load exercise details & students in parallel,
             // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
             val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
-            buildTeacherTesting(courseId, exerciseDetails.exercise_id)
+            if (exerciseDetails.grader_type == GraderType.AUTO)
+                buildTeacherTesting(courseId, exerciseDetails.exercise_id)
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
             initTooltips()
@@ -262,7 +263,7 @@ object ExerciseSummaryPage : EasyPage() {
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
-        val courseTitle = BasicCourseInfo.get(courseId).await().title
+        val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         val exercise = exercisePromise.await()
             .parseTo(TeacherExercise.serializer()).await()
 
@@ -954,7 +955,7 @@ object ExerciseSummaryPage : EasyPage() {
                 errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
             )
 
-            val courseTitle = BasicCourseInfo.get(courseId).await().title
+            val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
             val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
 
             Title.update {

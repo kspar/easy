@@ -7,7 +7,7 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getAccountDirAccessLevel
-import core.ems.service.getDirParentId
+import core.ems.service.getDir
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
@@ -258,10 +258,12 @@ class ReadDirController {
                 )
             }
 
-        val anyAccessible = directAccesses.firstOrNull()?.anyAccess != null
+        // All rows contain the same anyAccess field
+        val anyAccessible = directAccesses.firstOrNull()?.anyAccess?.let { it >= DirAccessLevel.PR } ?: false
+
         val hasExplicitGroupAccess = directAccesses.any { it.isGroupImplicit == false }
 
-        // (anyAccess != null) || (number of >= R accesses on item > 1) || (1 access on item is for an explicit group)
+        // (anyAccess >= R) || (number of >= R accesses on item > 1) || (1 access on item is for an explicit group)
         return anyAccessible || directAccesses.count() > 1 || hasExplicitGroupAccess
     }
 
@@ -269,7 +271,7 @@ class ReadDirController {
         if (dirId == null) {
             return false
         }
-        return isDirDirectlyShared(dirId) || isDirSharedRec(getDirParentId(dirId))
+        return isDirDirectlyShared(dirId) || isDirSharedRec(getDir(dirId)?.parentDir)
     }
 
     private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {

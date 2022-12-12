@@ -7,6 +7,7 @@ import components.EditModeButtonsComp
 import components.PageTabsComp
 import dao.ExerciseDAO
 import dao.LibraryDirDAO
+import errorMessage
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import pages.Title
@@ -45,7 +46,12 @@ class ExerciseRootComp(
         get() = listOf(crumbs, tabs, addToCourseModal)
 
     override fun create() = doInPromise {
-        val exercise = ExerciseDAO.getExercise(exerciseId).await()
+        val exercise = try {
+            ExerciseDAO.getExercise(exerciseId).await()
+        } catch (e: ExerciseDAO.NoLibAccessException) {
+            errorMessage { "Sul pole ülesandekogus sellele ülesandele ligipääsu" }
+            error("No exercise lib access to exercise $exerciseId")
+        }
         val parents = LibraryDirDAO.getDirParents(exercise.dir_id).await().reversed()
 
         setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))

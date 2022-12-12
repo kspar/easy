@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.getAccountDirAccessLevel
-import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
+import core.ems.service.getAccountDirAccessLevel
+import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
@@ -71,6 +71,7 @@ class ReadExercise {
     data class RespCourse(
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
+        @JsonProperty("alias") val alias: String?,
         @JsonProperty("course_exercise_id") val courseExId: String,
         @JsonProperty("course_exercise_title_alias") val titleAlias: String?
     )
@@ -89,7 +90,8 @@ class ReadExercise {
 
     private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp {
         data class UsedOnCourse(
-            val id: String, val title: String, val courseExId: String, val titleAlias: String?,
+            val id: String, val title: String, val courseAlias: String?,
+            val courseExId: String, val exAlias: String?,
             val callerHasAccess: Boolean,
         )
 
@@ -99,7 +101,7 @@ class ReadExercise {
                 (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
                     onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
                     additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).slice(
-                    Course.id, Course.title, CourseExercise.id, CourseExercise.titleAlias,
+                    Course.id, Course.title, Course.alias, CourseExercise.id, CourseExercise.titleAlias,
                     TeacherCourseAccess.teacher
                 ).select {
                     CourseExercise.exercise eq exerciseId
@@ -108,6 +110,7 @@ class ReadExercise {
                     UsedOnCourse(
                         it[Course.id].value.toString(),
                         it[Course.title],
+                        it[Course.alias],
                         it[CourseExercise.id].value.toString(),
                         it[CourseExercise.titleAlias],
                         it[TeacherCourseAccess.teacher] != null,
@@ -170,7 +173,7 @@ class ReadExercise {
                         autoExercise?.maxMem,
                         autoExercise?.assets?.map { RespAsset(it.first, it.second) },
                         autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
-                        onCoursesAccess.map { RespCourse(it.id, it.title, it.courseExId, it.titleAlias) },
+                        onCoursesAccess.map { RespCourse(it.id, it.title, it.courseAlias, it.courseExId, it.exAlias) },
                         onCoursesNoAccess.count(),
                         it[Exercise.successfulAnonymousSubmissionCount],
                         it[Exercise.unsuccessfulAnonymousSubmissionCount],

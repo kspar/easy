@@ -265,7 +265,7 @@ svg {
 
 .sidenav .role-select-wrap {
     margin-top: .5rem;
-    width: 15rem;
+    width: 12rem;
 }
 
 .sidenav .role-select-wrap .input-field {
@@ -622,6 +622,10 @@ nav.crumb-wrap .breadcrumb:before {
     margin-bottom: 0;
 }
 
+#UPDATE_COURSE ez-attr {
+    padding-bottom: 2rem;
+}
+
 
 /** Exercise page **/
 
@@ -639,26 +643,25 @@ nav.crumb-wrap .breadcrumb:before {
     margin-top: 0;
 }
 
-ez-exercise-permissions .select-wrap {
-    display: inline-block;
-    margin: 0;
+#DIR_PERMISSIONS .modal .modal-content {
+    padding-bottom: 2rem;
+}
+
+#DIR_PERMISSIONS .modal.fixed-footer .modal-footer {
+    border-top: none;
+    padding: 0;
 }
 
 ez-exercise-permissions ez-permission {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
+    min-height: 5.6rem;
 }
 
 ez-exercise-permissions ez-permission.inherited {
     border-left: 1px solid #ccc;
     padding-left: 1rem;
-    padding-bottom: .5rem;
-}
-
-ez-exercise-permissions h5 {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
 }
 
 ez-exercise-permissions ez-inheriting-dir {
@@ -671,10 +674,35 @@ ez-exercise-permissions ez-inheriting-dir a {
     font-weight: 500;
 }
 
-/* "Remove access" option */
-ez-exercise-permissions .select-wrapper ul li:last-child {
-    border-top: 1px solid #ccc;
+ez-exercise-permissions .select-wrap {
+    display: inline-block;
+    width: 12rem;
+    margin: 0;
 }
+
+ez-exercise-permissions ez-permission-subject {
+    display: flex;
+    flex-direction: column;
+}
+
+ez-exercise-permissions ez-permission-name {
+    display: flex;
+}
+
+ez-exercise-permissions ez-permission-name ez-icon {
+    margin-right: .7rem;
+}
+
+ez-exercise-permissions ez-permission-email {
+    font-size: 1.2rem;
+    color: var(--ezc-attr-immutable-col);
+}
+
+
+/* "Remove access" option, no way to do this since materialize moves options to body for unconstrained selects */
+/*ez-exercise-permissions ul li:last-child {*/
+/*    border-top: 1px solid #ccc;*/
+/*}*/
 
 
 /** Anonymous autoeval embed **/
@@ -1031,6 +1059,10 @@ ez-participants-list .card .card-content p {
     display: none !important;
 }
 
+.hidden {
+    visibility: hidden !important;
+}
+
 .flex {
     display: flex !important;
 }
@@ -1186,6 +1218,22 @@ textarea.materialize-textarea {
     color: #333;
 }
 
+input:not([type])::placeholder,
+input[type=text]:not(.browser-default)::placeholder,
+input[type=password]:not(.browser-default)::placeholder,
+input[type=email]:not(.browser-default)::placeholder,
+input[type=url]:not(.browser-default)::placeholder,
+input[type=time]:not(.browser-default)::placeholder,
+input[type=date]:not(.browser-default)::placeholder,
+input[type=datetime]:not(.browser-default)::placeholder,
+input[type=datetime-local]:not(.browser-default)::placeholder,
+input[type=tel]:not(.browser-default)::placeholder,
+input[type=number]:not(.browser-default)::placeholder,
+input[type=search]:not(.browser-default)::placeholder,
+textarea.materialize-textarea::placeholder {
+    color: #bbb;
+}
+
 input:not([type]):focus:not([readonly]),
 input[type=text]:not(.browser-default):focus:not([readonly]),
 input[type=password]:not(.browser-default):focus:not([readonly]),
@@ -1302,6 +1350,14 @@ textarea.materialize-textarea {
     background-color: rgba(0, 0, 0, 0.08);
 }
 
+.select-wrapper .caret {
+    fill: #666;
+}
+
+.select-wrapper.disabled .caret {
+    fill: #bbb;
+}
+
 .select-wrapper + label {
     /* Font size for fixed labels */
     font-size: 1.2rem;
@@ -1309,6 +1365,7 @@ textarea.materialize-textarea {
 
 .select-wrapper input.select-dropdown:focus {
     border-bottom: 1px solid var(--ez-checkbox-fill-col);
+    box-shadow: 0 1px 0 0 #469c45;
 }
 
 .select-wrap {
@@ -1493,6 +1550,10 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
     max-width: 75rem;
 }
 
+.modal .progress {
+    margin: 0;
+}
+
 .modal.fixed-footer .modal-content {
     overflow: auto;
 }
@@ -1648,6 +1709,14 @@ ez-spinner .spinner-layer {
 
 ez-spinner .circle-clipper .circle {
     border-width: 2px;
+}
+
+.progress {
+    background-color: transparent;
+}
+
+.progress .indeterminate {
+    background-color: var(--ez-attr-key-col);
 }
 
 

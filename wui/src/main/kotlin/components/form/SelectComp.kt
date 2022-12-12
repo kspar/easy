@@ -11,6 +11,7 @@ class SelectComp(
     var options: List<Option>,
     var hasEmptyOption: Boolean = false,
     var isDisabled: Boolean = false,
+    private val unconstrainedPosition: Boolean = false,
     private val onOptionChange: (suspend (String?) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {
@@ -35,8 +36,10 @@ class SelectComp(
             getElemById(selectId), objOf(
                 "dropdownOptions" to objOf(
                     "coverTrigger" to false,
-                    "autoFocus" to false
-                )
+                    "autoFocus" to false,
+                    "constrainWidth" to !unconstrainedPosition,
+                    "container" to if (unconstrainedPosition) getBody() else null,
+                ),
             )
         )
 

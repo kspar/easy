@@ -80,7 +80,7 @@ class ExerciseAttributesComp(
         onCoursesList = UnorderedListComp(
             exercise.on_courses.sortedByDescending { it.id.toInt() }.map {
                 UnorderedListComp.Item(
-                    it.title + (it.course_exercise_title_alias?.let { " ($it)" } ?: ""),
+                    it.effectiveTitle + (it.course_exercise_title_alias?.let { " ($it)" } ?: ""),
                     ExerciseSummaryPage.link(it.id, it.course_exercise_id)
                 )
             } + if (exercise.on_courses_no_access > 0)

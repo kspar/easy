@@ -44,6 +44,7 @@ class ReadDirAccesses {
         @JsonProperty("username") val username: String,
         @JsonProperty("given_name") val givenName: String,
         @JsonProperty("family_name") val familyName: String,
+        @JsonProperty("email") val email: String?,
         @JsonProperty("group_id") val implicitGroupId: String,
         @JsonProperty("access") val access: DirAccessLevel,
         // TODO: modified_at
@@ -118,7 +119,7 @@ class ReadDirAccesses {
             // Recompute best any access
             inheritedAny = when {
                 dir.anyAccess == null -> inheritedAny
-                inheritedAny == null || dir.anyAccess > inheritedAny.access ->
+                dir.anyAccess != DirAccessLevel.P && (inheritedAny == null || dir.anyAccess > inheritedAny.access) ->
                     AccessAny(dir.anyAccess, dir.id, dir.name)
 
                 else -> inheritedAny
@@ -154,26 +155,31 @@ class ReadDirAccesses {
             }
 
         // Allow only groups for which the caller has access
-        val directGroupAccesses = directGroupsPart.filter {
-            hasUserGroupAccess(caller, it.id, false)
-        }.map {
-            GroupAccessResp(
-                it.id.toString(),
-                it.name,
-                it.access,
-                null
-            )
-        }
-        val inheritedGroupAccesses = inheritedGroupsPart.filter {
-            hasUserGroupAccess(caller, it.groupId, false)
-        }.map {
-            GroupAccessResp(
-                it.groupId.toString(),
-                it.groupName,
-                it.access,
-                InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),
-            )
-        }
+        // not sure if this makes sense - commented out for now, remove in the future
+        val directGroupAccesses = directGroupsPart
+//            .filter {
+//            hasUserGroupAccess(caller, it.id, false)
+//        }
+            .map {
+                GroupAccessResp(
+                    it.id.toString(),
+                    it.name,
+                    it.access,
+                    null
+                )
+            }
+        val inheritedGroupAccesses = inheritedGroupsPart
+//            .filter {
+//            hasUserGroupAccess(caller, it.groupId, false)
+//        }
+            .map {
+                GroupAccessResp(
+                    it.groupId.toString(),
+                    it.groupName,
+                    it.access,
+                    InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),
+                )
+            }
 
         // Resolve account accesses
         val directAccountAccesses = directAccountsPart.map {
@@ -182,6 +188,7 @@ class ReadDirAccesses {
                 account.id,
                 account.givenName,
                 account.familyName,
+                account.email,
                 it.id.toString(),
                 it.access,
                 null
@@ -193,6 +200,7 @@ class ReadDirAccesses {
                 account.id,
                 account.givenName,
                 account.familyName,
+                account.email,
                 it.groupId.toString(),
                 it.access,
                 InheritingDirResp(it.inheritingDirId.toString(), it.inheritingDirName),

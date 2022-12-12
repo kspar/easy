@@ -107,8 +107,9 @@
     {{#isTeacherOrAdmin}}
         <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
         <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+        <li><a id="{{updateCourseLinkId}}" class="waves-effect sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
     {{/isTeacherOrAdmin}}
-    <ez-dst id="{{newExerciseDst}}"></ez-dst>
+    <ez-dst id="{{updateModalDst}}"></ez-dst>
 </script>
 
 <script id="t-c-sidenav-page-section" type="text/x-handlebars">
@@ -211,6 +212,9 @@
 
 <script id="t-c-modal" type="text/x-handlebars">
     <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}}">
+        <div class="progress hidden">
+            <div class="indeterminate"></div>
+        </div>
         <div class="modal-content">
             {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
             {{#bodyComps}}
@@ -459,7 +463,7 @@
 
 <script id="t-c-string-field" type="text/x-handlebars">
     <div class="input-field">
-        <input id="{{id}}" type="text" value="{{value}}">
+        <input id="{{id}}" type="text" value="{{value}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}>
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
@@ -694,10 +698,13 @@
 
 <script id="t-c-exercise-permissions" type="text/x-handlebars">
     <ez-exercise-permissions>
-        <ez-add-permission></ez-add-permission>
+        <ez-add-permission id="{{newAccessDst}}"></ez-add-permission>
         {{#directPermissions}}
             <ez-permission>
-                <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
+                <ez-permission-subject>
+                    <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                    <ez-permission-email>{{email}}</ez-permission-email>
+                </ez-permission-subject>
                 <ez-dst id="{{selectDst}}"></ez-dst>
             </ez-permission>
         {{/directPermissions}}
@@ -706,8 +713,11 @@
             <ez-inheriting-dir>{{dirLabel}} <a {{^isCurrent}}href="{{dirHref}}"{{/isCurrent}}>{{dirName}}</a> {{#isCurrent}}{{currentDirLabel}}{{/isCurrent}}</ez-inheriting-dir>
             {{#permissions}}
                 <ez-permission class="inherited">
-                    <ez-permission-group>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{subject}}</ez-permission-group>
-                    <z-permission-access>{{access}}</z-permission-access>
+                    <ez-permission-subject>
+                        <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                        <ez-permission-email>{{email}}</ez-permission-email>
+                    </ez-permission-subject>
+                    <ez-permission-access>{{access}}</ez-permission-access>
                 </ez-permission>
             {{/permissions}}
         {{/inheritingDirs}}
@@ -1503,6 +1513,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/mode/loadmode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/meta.min.js"></script>
+<!-- Required for legacy non-dynamic modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css"/>†
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/autorefresh.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/edit/matchbrackets.min.js"></script>

@@ -8,37 +8,132 @@ import core.util.component1
 import core.util.component2
 import core.util.maxOfOrNull
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
 private val log = KotlinLogging.logger {}
 
 
-/**
- * Add given access level to given group for dir
- */
-fun libraryDirAddAccess(dirId: Long, groupId: Long, level: DirAccessLevel) {
+fun libraryDirRemoveAccess(dirId: Long, groupId: Long?) {
+    // groupId == null -> any access
     transaction {
-        // Add given access to given group G
-        upsertGroupDirAccess(groupId, dirId, level)
+        val level = if (groupId != null)
+            getAccessLevel(dirId, groupId)
+        else
+            getDir(dirId)?.anyAccess
 
-        // Look at parent dir D if it exists (if not, end)
-        val parentDirId = getDirParentId(dirId) ?: return@transaction
+        if (level == null || level == DirAccessLevel.P)
+            return@transaction
 
-        val parentDirAccessLevel = GroupDirAccess
-            .slice(GroupDirAccess.level)
-            .select {
-                (GroupDirAccess.dir eq parentDirId) and (GroupDirAccess.group eq groupId)
-            }.map { it[GroupDirAccess.level] }
-            .firstOrNull()
+        // if we have access to any child, replace with P and end, else remove access and continue
+        if (groupId != null) {
+            if (hasChildrenAccess(dirId, groupId)) {
+                upsertGroupDirAccess(groupId, dirId, DirAccessLevel.P)
+                return@transaction
+            } else {
+                removeAccess(dirId, groupId)
+            }
+        } else {
+            if (hasChildrenAnyAccess(dirId)) {
+                updateAnyDirAccess(dirId, DirAccessLevel.P)
+                return@transaction
+            } else {
+                updateAnyDirAccess(dirId, null)
+            }
+        }
 
-        //  If G has at least P access to D, end
+        // if we removed this access then we might have to remove P accesses up the chain
+        getDir(dirId)?.parentDir?.let { parentDirId ->
+            if (groupId != null)
+                removeRootchainPassthrough(parentDirId, groupId)
+            else
+                removeRootchainPassthroughAny(parentDirId)
+        }
+    }
+}
+
+private fun removeRootchainPassthrough(dirId: Long, groupId: Long) {
+    // if dir has P access and no children accesses, remove and continue up the chain, else end
+    if (getAccessLevel(dirId, groupId) == DirAccessLevel.P && !hasChildrenAccess(dirId, groupId)) {
+        removeAccess(dirId, groupId)
+
+        getDir(dirId)?.parentDir?.let { parentDirId ->
+            removeRootchainPassthrough(parentDirId, groupId)
+        }
+    }
+}
+
+private fun removeRootchainPassthroughAny(dirId: Long) {
+    val dir = getDir(dirId)
+    if (dir?.anyAccess == DirAccessLevel.P && !hasChildrenAnyAccess(dirId)) {
+        updateAnyDirAccess(dirId, null)
+
+        dir.parentDir?.let { parentDirId ->
+            removeRootchainPassthroughAny(parentDirId)
+        }
+    }
+}
+
+private fun getAccessLevel(dirId: Long, groupId: Long): DirAccessLevel? = transaction {
+    GroupDirAccess.select {
+        GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId)
+    }.map {
+        it[GroupDirAccess.level]
+    }.singleOrNull()
+}
+
+private fun hasChildrenAccess(dirId: Long, groupId: Long): Boolean = transaction {
+    (Dir innerJoin GroupDirAccess).select {
+        Dir.parentDir.eq(dirId) and
+                GroupDirAccess.group.eq(groupId)
+    }.count() > 0
+}
+
+private fun hasChildrenAnyAccess(dirId: Long): Boolean = transaction {
+    Dir.select {
+        Dir.parentDir.eq(dirId) and Dir.anyAccess.isNotNull()
+    }.count() > 0
+}
+
+private fun removeAccess(dirId: Long, groupId: Long) = transaction {
+    GroupDirAccess.deleteWhere {
+        GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId)
+    }
+}
+
+
+/**
+ * Add or update access to given group (or any account if null) for dir
+ */
+fun libraryDirPutAccess(dirId: Long, groupId: Long?, level: DirAccessLevel) {
+    // groupId == null -> any access
+    transaction {
+        val dir = getDir(dirId) ?: return@transaction
+
+        // Allow PRA only for explicit dirs
+        if (dir.isImplicit && level == DirAccessLevel.PRA) {
+            return@transaction
+        }
+
+        // Add access
+        if (groupId != null)
+            upsertGroupDirAccess(groupId, dirId, level)
+        else
+            updateAnyDirAccess(dirId, level)
+
+        // Look at parent dir if it exists
+        val parentDirId = dir.parentDir ?: return@transaction
+
+        val parentDirAccessLevel =
+            if (groupId != null)
+                getAccessLevel(parentDirId, groupId)
+            else
+                getDir(parentDirId)?.anyAccess
+
+        // If we don't have at least P access to parent, add it up the chain
         if (parentDirAccessLevel == null) {
-            // Add P access for G to D -> repeat
-            libraryDirAddAccess(parentDirId, groupId, DirAccessLevel.P)
+            libraryDirPutAccess(parentDirId, groupId, DirAccessLevel.P)
         }
     }
 }
@@ -59,11 +154,30 @@ fun getExerciseFromImplicitDir(implicitDirId: Long): Long = transaction {
     TODO("Should it return exercise ID or more attrs like for groups?")
 }
 
-fun getDirParentId(dirId: Long): Long? = transaction {
-    Dir.slice(Dir.parentDir)
-        .select { Dir.id eq dirId }
-        .map { it[Dir.parentDir]?.value }
-        .single()
+data class ExerciseDir(
+    val id: Long,
+    val name: String,
+    val isImplicit: Boolean,
+    val parentDir: Long?,
+    val anyAccess: DirAccessLevel?,
+    val createdAt: DateTime,
+    val modifiedAt: DateTime,
+)
+
+fun getDir(dirId: Long): ExerciseDir? = transaction {
+    Dir.select { Dir.id eq dirId }
+        .map {
+            ExerciseDir(
+                it[Dir.id].value,
+                it[Dir.name],
+                it[Dir.isImplicit],
+                it[Dir.parentDir]?.value,
+                it[Dir.anyAccess],
+                it[Dir.createdAt],
+                it[Dir.modifiedAt],
+            )
+        }
+        .singleOrNull()
 }
 
 fun assertDirExists(dirId: Long, allowImplicit: Boolean = false) {
@@ -178,6 +292,13 @@ fun upsertGroupDirAccess(groupId: Long, dirId: Long, level: DirAccessLevel) = tr
         it[dir] = dirId
         it[GroupDirAccess.level] = level
         it[createdAt] = DateTime.now()
+    }
+}
+
+fun updateAnyDirAccess(dirId: Long, level: DirAccessLevel?) = transaction {
+    Dir.update({ Dir.id.eq(dirId) }) {
+        it[anyAccess] = level
+        it[modifiedAt] = DateTime.now()
     }
 }
 

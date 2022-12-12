@@ -1,7 +1,7 @@
 package pages.courses
 
 import Str
-import cache.BasicCourseInfo
+import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.ReqMethod
@@ -63,7 +63,10 @@ class StudentCourseListComp(
     data class CoursesDto(val courses: List<CourseDto>)
 
     @Serializable
-    data class CourseDto(val id: String, val title: String)
+    data class CourseDto(val id: String, private val title: String, private val alias: String?) {
+        val effectiveTitle: String
+            get() = CoursesTeacherDAO.getEffectiveCourseTitle(title, alias)
+    }
 
 
     private var courseItems: List<StudentCourseItemComp> = emptyList()
@@ -77,7 +80,7 @@ class StudentCourseListComp(
             .courses
             // Temp hack to sort by created time - newer on top
             .sortedByDescending { it.id.toInt() }
-            .map { StudentCourseItemComp(it.id, it.title, this) }
+            .map { StudentCourseItemComp(it.id, it.effectiveTitle, this) }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
@@ -93,12 +96,6 @@ class StudentCourseListComp(
         "t-loading-list",
         "items" to listOf(emptyMap<Nothing, Nothing>(), emptyMap(), emptyMap())
     )
-
-    override fun postRender() {
-        courseItems.forEach {
-            BasicCourseInfo.put(it.id, it.title)
-        }
-    }
 
     override fun getCacheableState(): State = State(courseItems.map { SCourse(it.id, it.title) })
 }

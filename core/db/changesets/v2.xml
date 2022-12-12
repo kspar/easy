@@ -1439,5 +1439,13 @@
         <modifyDataType tableName="exercise_dir" columnName="any_account_access_level" newDataType="integer"/>
     </changeSet>
 
+    <changeSet id="291122-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="alias" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>

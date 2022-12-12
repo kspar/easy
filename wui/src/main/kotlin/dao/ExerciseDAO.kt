@@ -3,6 +3,7 @@ package dao
 import EzDate
 import EzDateSerializer
 import blankToNull
+import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -54,21 +55,37 @@ object ExerciseDAO {
     @Serializable
     data class OnCourse(
         val id: String,
-        val title: String,
+        private val title: String,
+        private val alias: String?,
         val course_exercise_id: String,
         val course_exercise_title_alias: String?
-    )
+    ) {
+        val effectiveTitle: String
+            get() = getEffectiveCourseTitle(title, alias)
+    }
 
     enum class GraderType {
         AUTO, TEACHER
     }
 
+    class NoLibAccessException : Exception()
+
     fun getExercise(exerciseId: String): Promise<Exercise> = doInPromise {
         debug { "Getting exercise $exerciseId" }
 
-        fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.GET,
-            successChecker = { http200 }).await()
-            .parseTo(Exercise.serializer()).await()
+        // TODO: should have a default pattern to accomplish this - throwing an exception based on resp (e.g. code)
+        try {
+            fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.GET,
+                successChecker = { http200 },
+                errorHandler = {
+                    it.handleByCode(RespError.NO_EXERCISE_ACCESS) {
+                        throw NoLibAccessException()
+                    }
+                }).await()
+                .parseTo(Exercise.serializer()).await()
+        } catch (e: HandledResponseError) {
+            throw if (e.errorHandlerException.await() is NoLibAccessException) e.errorHandlerException.await() else e
+        }
     }
 
 

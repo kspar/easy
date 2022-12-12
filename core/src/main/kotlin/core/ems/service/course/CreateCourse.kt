@@ -20,9 +20,11 @@ private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class AdminCreateCourseController {
+class CreateCourse {
 
-    data class Req(@JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 200) val title: String)
+    data class Req(
+        @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String
+    )
 
     data class Resp(@JsonProperty("id") val id: String)
 
@@ -30,18 +32,17 @@ class AdminCreateCourseController {
     @PostMapping("/admin/courses")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
         log.debug { "Create course '${dto.title}' by ${caller.id}" }
-        val courseId = insertCourse(dto)
+        val courseId = insertCourse(dto.title)
         return Resp(courseId.toString())
     }
-}
 
+    private fun insertCourse(courseTitle: String): Long {
+        return transaction {
+            Course.insertAndGetId {
+                it[createdAt] = DateTime.now()
+                it[title] = courseTitle
+            }
+        }.value
 
-private fun insertCourse(body: AdminCreateCourseController.Req): Long {
-    return transaction {
-        Course.insertAndGetId {
-            it[createdAt] = DateTime.now()
-            it[title] = body.title
-        }
-    }.value
-
+    }
 }

@@ -62,7 +62,7 @@ class TeacherCourseExercisesRootComp(
 
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
-        courseTitle = BasicCourseInfo.get(courseId).await().title
+        courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         Title.update { it.parentPageTitle = courseTitle }
 
         val exercises = exercisesPromise.await()

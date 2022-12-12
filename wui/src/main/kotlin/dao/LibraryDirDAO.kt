@@ -70,6 +70,7 @@ object LibraryDirDAO {
         val group_id: String,
         val given_name: String,
         val family_name: String,
+        val email: String?,
         val access: DirAccess,
         val inherited_from: InheritingDir? = null,
     )
@@ -92,5 +93,32 @@ object LibraryDirDAO {
         debug { "Getting dir accesses for dir $dirId" }
         fetchEms("/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(Accesses.serializer()).await()
+    }
+
+
+    sealed interface Subject
+    data class NewAccount(val email: String) : Subject
+    data class Group(val id: String) : Subject
+    object Any : Subject
+
+    fun putDirAccess(dirId: String, subject: Subject, level: DirAccess?) = doInPromise {
+        debug { "Put dir access $level for dir $dirId to group/account $subject" }
+        val body = buildMap {
+            when (subject) {
+                is Group ->
+                    put("group_id", subject.id)
+                is NewAccount ->
+                    put("email", subject.email)
+                is Any ->
+                    put("any_access", true)
+            }
+            put("access_level", level?.name)
+        }
+
+        fetchEms(
+            "/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.PUT, body, successChecker = { http200 }
+        ).await()
+
+        Unit
     }
 }

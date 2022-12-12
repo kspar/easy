@@ -7,6 +7,7 @@ import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLButtonElement
+import parseTo
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
@@ -107,6 +108,94 @@ class AssessmentViewComp(
         "auto" to isAuto,
         "gradeLabel" to if (isAuto) Str.autoGradeLabel() else Str.teacherGradeLabel(),
         "grade" to grade?.toString(),
-        "feedback" to feedback
+        "feedback" to feedback?.let { formatFeedback(it) },
     )
 }
+
+
+@Serializable
+data class OkV3(
+    val result_type: String,
+    val points: Double, // TODO: Int
+    val pre_evaluate_error: String? = null,
+    val tests: List<V3Test>,
+)
+
+@Serializable
+data class V3Test(
+    val title: String,
+    val status: V3Status,
+    val exception_message: String? = null,
+    val user_inputs: List<String>,
+    val created_files: List<V3File>,
+    val actual_output: String? = null,
+    val checks: List<V3Check>,
+)
+
+enum class V3Status {
+    PASS, FAIL, SKIP
+}
+
+@Serializable
+data class V3File(
+    val name: String,
+    val content: String,
+)
+
+@Serializable
+data class V3Check(
+    val title: String,
+    val feedback: String,
+    val status: V3Status,
+)
+
+fun formatFeedback(raw_feedback: String): String {
+    val okv3 = try {
+        raw_feedback.parseTo(OkV3.serializer())
+    } catch (e: Exception) {
+        return raw_feedback
+    }
+
+    if (okv3.pre_evaluate_error != null) {
+        return okv3.pre_evaluate_error
+    }
+
+    return okv3.tests.joinToString("\n\n") {
+        val testTitle = "${mapStatus(it.status)} ${it.title}"
+        val testContent = it.exception_message ?: run {
+            val checks = it.checks.map {
+                val checkTitle = "  ${mapStatus(it.status)} ${it.title}"
+                val checkFeedback = "      ${it.feedback}"
+                "$checkTitle\n$checkFeedback"
+            }.joinToString("\n\n")
+
+            val inputs = if (it.user_inputs.isNotEmpty())
+                "  Programmile antud sisendid:\n" +
+                        it.user_inputs.joinToString("\n") { "    $it" }
+            else null
+
+            val files = if (it.created_files.isNotEmpty())
+                "  Loodud failid:\n" +
+                        it.created_files.joinToString("\n") {
+                            val content = it.content.split("\n").joinToString("\n") { "    $it" }
+                            "    --- ${it.name} ---\n$content"
+                        }
+            else null
+
+            val output = if (it.actual_output != null)
+                "  Programmi väljund:\n" + it.actual_output.split("\n").joinToString("\n") { "    $it" }
+            else null
+
+            listOfNotNull(checks, inputs, files, output).joinToString("\n\n")
+        }
+
+        "$testTitle\n$testContent"
+    }
+}
+
+private fun mapStatus(status: V3Status): String =
+    when (status) {
+        V3Status.PASS -> "[✓]"
+        V3Status.FAIL -> "[x]"
+        V3Status.SKIP -> "[-]"
+    }

@@ -64,13 +64,16 @@ fun Node.onInput(debounceDelay: Int = 250, f: (event: Event) -> Unit): ActiveLis
     return ActiveListener(this, "input", listener)
 }
 
-fun Element.onENTER(f: (KeyboardEvent) -> Unit): ActiveListener {
+fun Element.onENTER(f: suspend (KeyboardEvent) -> Unit): ActiveListener {
     val listener = { e: Event ->
-        e as KeyboardEvent
-        if (e.keyCode == 13 && !e.repeat) {
-            f(e)
-            e.preventDefault()
+        doInPromise {
+            e as KeyboardEvent
+            if (e.keyCode == 13 && !e.repeat) {
+                f(e)
+                e.preventDefault()
+            }
         }
+        Unit
     }
     this.addEventListener("keydown", listener)
     return ActiveListener(this, "keydown", listener)
