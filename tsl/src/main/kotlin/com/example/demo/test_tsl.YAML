@@ -3,9 +3,38 @@ language: python3
 validateFiles: true
 tslVersion: 1.0.0
 requiredFiles:
-  - kodu1.py
+  - submission.py
 
 tests:
+  - type: program_execution_test
+    standardInputData:
+      - Kasutajasisend
+    inputFiles:
+      - fileName: sisendfail.txt
+        fileContent: Sisendfaili sisu.
+    standardOutputChecks:
+      - stringCheckType: ANY_OF_THESE
+        considerElementsOrder: false
+        expectedOutput:
+          - down
+          - up
+        beforeMessage: Kontrollib, kas väljund sisaldab võtmesõna.
+        passedMessage: Programmi väljund sisaldab antud võtmesõna.
+        failedMessage: Programmi väljund ei sisalda antud võtmesõna.
+    outputFileChecks:
+      - fileName: valjundfail.txt
+        stringCheckType: ALL_OF_THESE
+        expectedOutput:
+          - Väljundfaili eeldatav sisu
+        considerElementsOrder: false
+        beforeMessage: Kontrollib, kas väljundfail sisaldab võtmesõna.
+        passedMessage: Programmi väljundfail sisaldab antud võtmesõna.
+        failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
+    exceptionCheck:
+      mustThrowException: false
+      cannotThrowException: true
+    name: Programmi käivituse test.
+
   - type: program_imports_module_test
     standardOutputCheck:
       stringCheckType: ALL_OF_THESE
@@ -14,7 +43,6 @@ tests:
       beforeMessage: Kontrollib, kas programm impordib mooduli.
       passedMessage: Programm importis mooduli.
       failedMessage: Programm ei importinud moodulit.
-    name: Programm importib mooduli turtle.
     points: 10
 
   - type: program_calls_function_test
@@ -86,35 +114,6 @@ tests:
       passedMessage: Programm sisaldab võtmesõna.
       failedMessage: Programm ei sisalda võtmesõna.
     name: Programm sisaldab võtmesõna.
-
-  - type: program_execution_test
-    standardInputData:
-      - Kasutajasisend
-    inputFiles:
-      - fileName: sisendfail.txt
-        fileContent: Sisendfaili sisu.
-    standardOutputChecks:
-      - stringCheckType: ANY_OF_THESE
-        considerElementsOrder: false
-        expectedOutput:
-          - down
-          - up
-        beforeMessage: Kontrollib, kas väljund sisaldab võtmesõna.
-        passedMessage: Programmi väljund sisaldab antud võtmesõna.
-        failedMessage: Programmi väljund ei sisalda antud võtmesõna.
-    outputFileChecks:
-      - fileName: valjundfail.txt
-        stringCheckType: ALL_OF_THESE
-        expectedOutput:
-          - Väljundfaili eeldatav sisu
-        considerElementsOrder: false
-        beforeMessage: Kontrollib, kas väljundfail sisaldab võtmesõna.
-        passedMessage: Programmi väljundfail sisaldab antud võtmesõna.
-        failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
-    exceptionCheck:
-      mustThrowException: false
-      cannotThrowException: true
-    name: Programmi käivituse test.
 
   - type: function_contains_loop_test
     functionName: seosta_lapsed_ja_vanemad

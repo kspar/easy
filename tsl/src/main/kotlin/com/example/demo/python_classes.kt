@@ -25,7 +25,7 @@ class PyStandardOutputChecks(val standardOutputChecks: List<StandardOutputCheck>
 
     override fun generatePyString(): String {
         if (standardOutputChecks == null) {
-            return ""
+            return "[]"
         }
         return PyList(
             standardOutputChecks.map {
@@ -33,7 +33,7 @@ class PyStandardOutputChecks(val standardOutputChecks: List<StandardOutputCheck>
                     "StandardOutputChecks", mapOf(
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
+                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
@@ -51,7 +51,7 @@ class PyStandardOutputChecksLong(val standardOutputChecksLong: List<StandardOutp
 
     override fun generatePyString(): String {
         if (standardOutputChecksLong == null) {
-            return ""
+            return "[]"
         }
         return PyList(
             standardOutputChecksLong.map {
@@ -59,7 +59,7 @@ class PyStandardOutputChecksLong(val standardOutputChecksLong: List<StandardOutp
                     "StandardOutputChecks", mapOf(
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
+                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
                         "failed_message" to PyStr(it.failedMessage)
@@ -72,7 +72,7 @@ class PyStandardOutputChecksLong(val standardOutputChecksLong: List<StandardOutp
 class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimitive() {
     override fun generatePyString(): String {
         if (outputFileChecks == null) {
-            return ""
+            return "[]"
         }
         return PyList(
             outputFileChecks.map {
@@ -81,7 +81,7 @@ class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimiti
                         "file_name" to PyStr(it.fileName),
                         "string_check_type" to PyStr(it.stringCheckType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map {PyStr(it)}),
+                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),

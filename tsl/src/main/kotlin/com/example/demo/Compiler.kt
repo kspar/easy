@@ -4,7 +4,7 @@ package com.example.demo
 class Compiler(private val irTree: TSL) { // TODO: RemoveMe
 
     fun validateParseTree() {
-        var points = this.irTree.tests.sumOf{ it.points }
+        val points = this.irTree.tests.sumOf { it.points }
         println("Total points: $points")
         if (points < 0 || points > 100) {
             throw Exception("The total number of points configured by UI ($points) is not in the valid range of [0..100].")
@@ -12,7 +12,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
     }
 
     fun generateAssessmentCodes(): String {
-        var assessmentCode = "from tiivad import *\n"
+        val assessmentCode = "from tiivad import *\n"
         var validationCode = ""
         if (irTree.validateFiles) {
             validationCode = generateValidationCode(irTree.requiredFiles)
@@ -22,7 +22,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
             assCode += generateAssessmentCode(it, irTree.requiredFiles[0]) + "\n"
         }
 
-        var printCode = "print(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))\n"
+        val printCode = "print(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))\n"
         //println("print(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))\n" + // TODO: FIXME
         //        "with open('a1_results_real.json', 'w', encoding='utf-8') as f: f.write(json.dumps(Results(None).format_result(), cls=ComplexEncoder, ensure_ascii=False))")
         return "$assessmentCode$validationCode$assCode$printCode"
@@ -35,16 +35,30 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
     private fun generateAssessmentCode(test: Test, file_name: String): String {
         return when (test) {
             is FunctionExecutionTest -> {
+                val standardInputData: PyList = if (test.standardInputData == null) {
+                    PyList(listOf())
+                } else {
+                    PyList(test.standardInputData.map { PyStr(it) })
+                }
+                val inputFiles: PyList = if (test.inputFiles == null) {
+                    PyList(listOf())
+                } else {
+                    test.inputFiles.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }.let { PyList(it) }
+                }
+                val arguments: PyList = if (test.arguments == null) {
+                    PyList(listOf())
+                } else {
+                    PyList(test.arguments.map { PyStr(it) })
+                }
                 PyExecuteTest(
                     test,
                     "function_execution_test",
                     mapOf(
                         "file_name" to PyStr(file_name),
                         "function_name" to PyStr(test.functionName),
-                        "arguments" to test.arguments?.let { PyList(it.map { PyStr(it) }) },
-                        "standard_input_data" to test.standardInputData?.let { PyList(it.map { PyStr(it) }) },
-                        "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
-                            ?.let { PyList(it) },
+                        "arguments" to arguments,
+                        "standard_input_data" to standardInputData,
+                        "input_files" to inputFiles,
                         "return_value" to PyStr(test.returnValue),
                         "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks)
@@ -198,14 +212,23 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
             is ProgramExecutionTest -> {
+                val standardInputData: PyList = if (test.standardInputData == null) {
+                    PyList(listOf())
+                } else {
+                    PyList(test.standardInputData.map { PyStr(it) })
+                }
+                val inputFiles: PyList = if (test.inputFiles == null) {
+                    PyList(listOf())
+                } else {
+                    test.inputFiles.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }.let { PyList(it) }
+                }
                 PyExecuteTest(
                     test,
                     "program_execution_test",
                     mapOf(
                         "file_name" to PyStr(file_name),
-                        "standard_input_data" to test.standardInputData?.let { PyList(it.map { PyStr(it) }) },
-                        "input_files" to test.inputFiles?.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
-                            ?.let { PyList(it) },
+                        "standard_input_data" to standardInputData,
+                        "input_files" to inputFiles,
                         "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks),
                         "exception_check" to PyPair(

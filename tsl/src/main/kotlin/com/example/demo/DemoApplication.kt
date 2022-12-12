@@ -125,7 +125,7 @@ fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): 
 fun main() {
     // TODO: Lisage siia faili nimi, mis asub juurkaustas:
     //var fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
-    val fileName = "tsl/src/main/kotlin/com/example/demo/yl1.YAML"
+    val fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
     println(fileName)
 
     val inputText = File(fileName).readText(Charsets.UTF_8)
