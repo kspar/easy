@@ -9,7 +9,7 @@ class PyExecuteTest(val test: Test, val testName: String, val namedArgs: Map<Str
                     Pair("type", PyStr(testName)) +
                     Pair("points", PyFloat(test.points)) +
                     Pair("id", PyInt(test.id)) +
-                    Pair("name", PyStr(test.name)) +
+                    Pair("name", if (test.name != null) PyStr(test.name) else PyStr(test.getDefaultName())) +
                     Pair("inputs", PyStr(test.inputs)) +
                     Pair("passed_next", PyInt(test.passedNext)) +
                     Pair("failed_next", PyInt(test.failedNext)) +

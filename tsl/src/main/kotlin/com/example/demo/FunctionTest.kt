@@ -15,74 +15,118 @@ data class FunctionExecutionTest(
     val returnValue: String? = null,
     val standardOutputChecks: List<StandardOutputCheck>? = null,
     val outputFileChecks: List<OutputFileCheck>? = null
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsiooni käivitus"
+    }
+}
 
 @Serializable
 @SerialName("function_contains_loop_test")
 data class FunctionContainsLoopTest(
     val functionName: String,
     val containsLoop: ContainsCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon sisaldab tsüklit"
+    }
+}
 
 @Serializable
 @SerialName("function_contains_keyword_test")
 data class FunctionContainsKeywordTest(
     val functionName: String,
     val standardOutputCheck: StandardOutputCheck,
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon sisaldab märksõna"
+    }
+}
 
 @Serializable
 @SerialName("function_contains_return_test")
 data class FunctionContainsReturnTest(
     val functionName: String,
     val containsReturn: ContainsCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon sisaldab 'return' käsku"
+    }
+}
 
 @Serializable
 @SerialName("function_calls_function_test")
 data class FunctionCallsFunctionTest(
     val functionName: String,
     val standardOutputCheck: StandardOutputCheckLong
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon kutsub välja teist funktsiooni"
+    }
+}
 
 @Serializable
 @SerialName("function_calls_print_test")
 data class FunctionCallsPrintTest(
     val functionName: String,
     val callsCheck: CallsCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon kutsub välja 'print' käsu"
+    }
+}
 
 @Serializable
 @SerialName("function_is_recursive_test")
 data class FunctionIsRecursiveTest(
     val functionName: String,
     val isRecursive: RecursiveCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon on rekursiivne"
+    }
+}
 
 @Serializable
 @SerialName("function_defines_function_test")
 data class FunctionDefinesFunctionTest(
     val functionName: String,
     val standardOutputCheck: StandardOutputCheckLong
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon defineerib enda sees uue funktsiooni"
+    }
+}
 
 @Serializable
 @SerialName("function_imports_module_test")
 data class FunctionImportsModuleTest(
     val functionName: String,
     val standardOutputCheck: StandardOutputCheckLong
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon impordib mooduli"
+    }
+}
 
 @Serializable
 @SerialName("function_contains_try_except_test")
 data class FunctionContainsTryExceptTest(
     val functionName: String,
     val containsTryExcept: ContainsCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon sisaldab 'try/except' plokki"
+    }
+}
 
 @Serializable
 @SerialName("function_uses_only_local_vars_test")
 data class FunctionUsesOnlyLocalVarsTest(
     val functionName: String,
     val containsLocalVars: ContainsCheck
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon kasutab vaid lokaalseid muutujaid"
+    }
+}

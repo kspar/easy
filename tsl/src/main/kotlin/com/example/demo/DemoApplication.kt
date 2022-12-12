@@ -31,6 +31,8 @@ abstract class Check {
 
 @Serializable
 abstract class Test {
+    abstract fun getDefaultName(): String
+
     val points: Double = 1.0
     val id: Long? = null
     val name: String? = null
@@ -50,15 +52,16 @@ abstract class Test {
 @Serializable
 data class DefaultTest(
     val defaultValue: Int? = null
-) : Test()
+) : Test() {
+    override fun getDefaultName(): String {
+        return "DefaultTest DefaultName"
+    }
+}
 
 
 // Declare different types of Tests
 val module = SerializersModule {
     polymorphic(Test::class) {
-        subclass(FileExists::class)
-        subclass(FileNotEmpty::class)
-        subclass(FileIsPython::class)
         subclass(FunctionExecutionTest::class)
         subclass(FunctionContainsLoopTest::class)
         subclass(FunctionContainsKeywordTest::class)
@@ -113,7 +116,7 @@ fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): 
             )
         }
         else -> {
-            throw NotImplementedError();
+            throw NotImplementedError()
         }
     }
 }
@@ -122,24 +125,24 @@ fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): 
 fun main() {
     // TODO: Lisage siia faili nimi, mis asub juurkaustas:
     //var fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
-    var fileName = "tsl/src/main/kotlin/com/example/demo/yl1.YAML"
+    val fileName = "tsl/src/main/kotlin/com/example/demo/yl1.YAML"
     println(fileName)
 
-    var inputText = File(fileName).readText(Charsets.UTF_8)
+    val inputText = File(fileName).readText(Charsets.UTF_8)
 
-    var compiledResult = compileTSL(inputText, "1.0.0", "tiivad")
+    val compiledResult = compileTSL(inputText, "1.0.0", "tiivad")
     println(compiledResult.backendID)
     println(compiledResult.backendVersion)
     println(compiledResult.generatedScripts[0])
     println(compiledResult.tslCompilerVersion)
 
-    var parseTree = f.decodeFromString<TSL>(inputText)
+    val parseTree = f.decodeFromString<TSL>(inputText)
     println(parseTree)
 
-    var compiler = Compiler(parseTree)
+    val compiler = Compiler(parseTree)
     compiler.validateParseTree()
-    var assessmentCode = compiler.generateAssessmentCodes()
-    // println(assessmentCode)
+    val assessmentCode = compiler.generateAssessmentCodes()
+    println(assessmentCode)
 }
 
 //var irTree = IRTree(parseTree)
