@@ -6,6 +6,7 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -25,11 +26,11 @@ import java.util.zip.ZipOutputStream
 
 @RestController
 @RequestMapping("/v2")
-class ExportPersonalCourseSubmissions {
+class ExportPersonalCourseLatestSubmissions {
     private val log = KotlinLogging.logger {}
 
     private data class Solution(val exerciseName: String, val submission: String, val createdAt: DateTime)
-    private data class CourseSolution(val name: String, val solutions: List<Solution>)
+    private data class CourseSolution(val courseName: String, val solutions: List<Solution>)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/{courseId}/export/submissions")
@@ -43,12 +44,11 @@ class ExportPersonalCourseSubmissions {
 
         return ResponseEntity
             .ok()
-            .header(CONTENT_DISPOSITION, "attachment; filename=${courseSolution.name}.zip")
+            .header(CONTENT_DISPOSITION, "attachment; filename=${courseSolution.courseName}.zip")
             .body(zip(courseSolution))
     }
 
     private fun selectStudentSubmissions(courseId: Long, studentId: String): CourseSolution = transaction {
-
         val courseName = Course
             .slice(Course.alias, Course.title)
             .select { Course.id eq courseId }
@@ -60,15 +60,16 @@ class ExportPersonalCourseSubmissions {
                 CourseExercise.titleAlias,
                 ExerciseVer.title,
                 Submission.solution,
-                Submission.id,
                 Submission.createdAt
             )
             .select {
                 CourseExercise.course eq courseId and (Submission.student eq studentId) and (ExerciseVer.validTo.isNull())
             }
+            .orderBy(Submission.createdAt, SortOrder.DESC)
+            .distinctBy { it[Submission.solution] }
             .map {
                 Solution(
-                    "${it[CourseExercise.titleAlias] ?: it[ExerciseVer.title]}_${it[Submission.id]}.py",
+                    it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
                     it[Submission.solution],
                     it[Submission.createdAt]
                 )
@@ -80,7 +81,7 @@ class ExportPersonalCourseSubmissions {
 
         ZipOutputStream(zipOutputStream).use { zipStream ->
             courseSolution.solutions.forEach {
-                val entry = ZipEntry(it.exerciseName)
+                val entry = ZipEntry(it.exerciseName + ".py")
                 entry.lastModifiedTime = FileTime.fromMillis(it.createdAt.millis)
                 zipStream.putNextEntry(entry)
                 zipStream.write(it.submission.toByteArray(Charsets.UTF_8))

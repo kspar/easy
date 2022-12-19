@@ -1,10 +1,9 @@
 {
 	"info": {
-		"_postman_id": "91bbb128-917d-4360-8257-c35fd6b51f9b",
+		"_postman_id": "af0266c7-020e-43e8-bc80-aaeab9e6f6bc",
 		"name": "EMS",
 		"description": "This collection implements tests for the API of easy:ems",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "5693234"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -6658,6 +6657,76 @@
 						"lib",
 						"dirs",
 						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: student: get: export latest personal course submissionss: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "student"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/courses/1/export/submissions",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"courses",
+						"1",
+						"export",
+						"submissions"
 					]
 				}
 			},
