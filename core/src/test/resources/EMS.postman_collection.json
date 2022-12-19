@@ -6663,7 +6663,7 @@
 			"response": []
 		},
 		{
-			"name": "EMS: student: get: export latest personal course submissionss: success",
+			"name": "EMS: student: get: export latest personal course submissions: success",
 			"event": [
 				{
 					"listen": "test",
@@ -6727,6 +6727,74 @@
 						"1",
 						"export",
 						"submissions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "EMS: student: get: export personal data: success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response is ok\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "oidc_claim_easy_role",
+						"type": "text",
+						"value": "student"
+					},
+					{
+						"key": "oidc_claim_email",
+						"type": "text",
+						"value": "foo@bar.com"
+					},
+					{
+						"key": "oidc_claim_given_name",
+						"type": "text",
+						"value": "Foo"
+					},
+					{
+						"key": "oidc_claim_family_name",
+						"type": "text",
+						"value": "Bar"
+					},
+					{
+						"key": "oidc_claim_preferred_username",
+						"type": "text",
+						"value": "fp"
+					}
+				],
+				"url": {
+					"raw": "{{EMSBASE}}/account/export",
+					"host": [
+						"{{EMSBASE}}"
+					],
+					"path": [
+						"account",
+						"export"
 					]
 				}
 			},
