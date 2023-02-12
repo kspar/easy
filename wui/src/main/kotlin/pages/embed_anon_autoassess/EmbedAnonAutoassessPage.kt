@@ -19,7 +19,7 @@ object EmbedAnonAutoassessPage : EasyPage() {
 
     override val pathSchema = "/embed/exercises/{exerciseId}/summary"
 
-    override val doesRequireAuthentication = false
+    override val pageAuth = PageAuth.NONE
     override val isEmbedded = true
 
     private val exerciseId: String

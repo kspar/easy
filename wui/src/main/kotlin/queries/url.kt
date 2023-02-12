@@ -10,15 +10,19 @@ fun getCurrentQueryParamValue(key: String): String? {
     return searchParams.get(key)
 }
 
-fun createQueryString(vararg params: Pair<String, String?>): String {
+fun createQueryString(vararg params: Pair<String, String?>): String = createQueryString(false, params.toMap())
+
+fun createQueryString(isSuffix: Boolean = false, params: Map<String, String?>): String {
     val encodedParams = params.filter { (_, v) ->
         !v.isNullOrBlank()
     }.map { (k, v) ->
         k.encodeURIComponent() to v!!.encodeURIComponent()
     }
 
+    val prefix = if (isSuffix) "&" else "?"
+
     return when {
         encodedParams.isEmpty() -> ""
-        else -> encodedParams.joinToString("&", "?") { (k, v) -> "$k=$v" }
+        else -> encodedParams.joinToString("&", prefix) { (k, v) -> "$k=$v" }
     }
 }

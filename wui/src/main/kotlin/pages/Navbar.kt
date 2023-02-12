@@ -15,7 +15,7 @@ object Navbar {
         getElemById("nav-wrap").innerHTML = tmRender(
             "tm-navbar",
             "sidenavIcon" to Icons.hamburgerMenu,
-            "userName" to Auth.firstName,
+            "userName" to (Auth.firstName ?: ""),
             "account" to Str.accountData(),
             "accountLink" to Auth.createAccountUrl(),
             "logOut" to Str.logOut(),

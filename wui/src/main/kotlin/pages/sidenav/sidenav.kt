@@ -58,13 +58,18 @@ object Sidenav {
     private lateinit var sidenavComp: SidenavRootComp
 
     suspend fun build() {
-        sidenavComp = SidenavRootComp(Auth.activeRole, Auth.getAvailableRoles(), DST_ID)
+        sidenavComp = SidenavRootComp(
+            if (Auth.authenticated) Auth.activeRole else Role.STUDENT,
+            Auth.getAvailableRoles(),
+            DST_ID
+        )
         sidenavComp.createAndBuild().await()
     }
 
     fun refresh(spec: Spec) {
         doInPromise {
-            sidenavComp.updateRole(Auth.activeRole).await()  // TODO: test, is this necessary?
+            // TODO: test, is this necessary?
+            sidenavComp.updateRole(if (Auth.authenticated) Auth.activeRole else Role.STUDENT).await()
             sidenavComp.updateCourse(spec.courseId).await()
             sidenavComp.updateActivePage(spec.activePage).await()
             sidenavComp.updatePageItems(spec.pageSection).await()
@@ -84,7 +89,8 @@ class SidenavRootComp(
 ) : Component(null, dstId) {
 
     private var headSectionComp = SidenavHeadAccountSection(
-        "${Auth.firstName} ${Auth.lastName}", Auth.email,
+        "${Auth.firstName ?: ""} ${Auth.lastName ?: ""}",
+        Auth.email ?: "",
         activeRole, availableRoles, ::triggerRoleChange, this
     )
 

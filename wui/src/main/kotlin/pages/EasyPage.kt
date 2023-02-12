@@ -18,13 +18,16 @@ import tmRender
 
 abstract class EasyPage : Page() {
 
+    enum class PageAuth { REQUIRED, OPTIONAL, NONE }
+
     /**
      * Hint to application whether authentication should be required/started before the user navigates to it.
-     * Changing this value provides no security. Setting it to false will allow unauthenticated users to navigate
-     * to this page; setting it to true will cause the application to start authentication for unauthenticated users
-     * before navigating here.
+     * Changing this value provides no security. Setting it to NONE will allow unauthenticated users to navigate
+     * to this page; setting it to REQUIRED will cause the application to start authentication for unauthenticated users
+     * before navigating here; setting it to OPTIONAL will populate user info if the user is already authenticated but
+     * will not enforce login if they're not.
      */
-    open val doesRequireAuthentication = true
+    open val pageAuth = PageAuth.REQUIRED
 
     /**
      * Whether the page is meant to be embedded i.e. not independently visited in the browser.
@@ -44,7 +47,7 @@ abstract class EasyPage : Page() {
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
-        if (doesRequireAuthentication && allowedRoles.none { it == Auth.activeRole }) {
+        if (pageAuth == PageAuth.REQUIRED && allowedRoles.none { it == Auth.activeRole }) {
             getContainer().innerHTML = tmRender(
                 "tm-no-access-page", mapOf(
                     "title" to Str.noPermissionForPageTitle(),

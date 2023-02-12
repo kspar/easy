@@ -9,4 +9,5 @@ enum class PageName {
     EXERCISE_LIBRARY,
     EXERCISE,
     EMBED_ANON_AUTOASSESS,
+    LINK_REGISTER,
 }

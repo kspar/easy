@@ -7,15 +7,17 @@ import kotlin.js.Promise
 enum class Role(val id: String) {
     STUDENT("student"),
     TEACHER("teacher"),
-    ADMIN("admin")
+    ADMIN("admin"),
 }
 
 @JsName("Keycloak")
 open external class InternalKeycloak(confUrl: String = definedExternally) {
     val token: String
     val tokenParsed: dynamic
+    val authenticated: Boolean
 
     fun createAccountUrl(): String
+    fun createRegisterUrl(): String
     fun createLogoutUrl(options: dynamic = definedExternally): String
 
     protected fun init(options: dynamic): Promise<Boolean>
@@ -26,18 +28,18 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
 // Expose keycloak instance via a singleton
 // Note: Do not override methods or define methods with same name, javascript freezes because javascript
 object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
-    val firstName: String
-        get() = this.tokenParsed.given_name.unsafeCast<String>()
-    val lastName: String
-        get() = this.tokenParsed.family_name.unsafeCast<String>()
-    val email: String
-        get() = this.tokenParsed.email.unsafeCast<String>()
-    val username: String
-        get() = this.tokenParsed.preferred_username.unsafeCast<String>()
+    val firstName: String?
+        get() = this.tokenParsed?.given_name?.unsafeCast<String>()
+    val lastName: String?
+        get() = this.tokenParsed?.family_name?.unsafeCast<String>()
+    val email: String?
+        get() = this.tokenParsed?.email?.unsafeCast<String>()
+    val username: String?
+        get() = this.tokenParsed?.preferred_username?.unsafeCast<String>()
 
     lateinit var activeRole: Role
 
-    fun hasRole(role: Role): Boolean = this.tokenParsed.easy_role.includes(role.id).unsafeCast<Boolean>()
+    fun hasRole(role: Role): Boolean = this.tokenParsed?.easy_role?.includes(role.id)?.unsafeCast<Boolean>() ?: false
 
     fun getAvailableRoles(): List<Role> = Role.values().filter { hasRole(it) }
 
@@ -51,7 +53,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
     }
 
 
-    fun initialize(): Promise<Boolean> =
+    fun initialize(isRequired: Boolean): Promise<Boolean> =
         Promise { resolve, reject ->
             this.init(
                 objOf(
@@ -62,15 +64,15 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             ).then { authenticated: Boolean ->
                 debug { "Authenticated: $authenticated" }
                 when {
-                    authenticated -> {
-                        activeRole = getPersistedRole() ?: getMainRole()
-                        resolve(authenticated)
-                    }
+                    authenticated -> activeRole = getPersistedRole() ?: getMainRole()
                     else -> {
-                        debug { "Redirecting to login" }
-                        login()
+                        if (isRequired) {
+                            debug { "Redirecting to login" }
+                            login()
+                        }
                     }
                 }
+                resolve(authenticated)
             }.catch {
                 permanentErrorMessage(
                     false,
@@ -110,6 +112,6 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         hasRole(Role.ADMIN) -> Role.ADMIN
         hasRole(Role.TEACHER) -> Role.TEACHER
         hasRole(Role.STUDENT) -> Role.STUDENT
-        else -> error("No valid roles found: ${this.tokenParsed.easy_role}")
+        else -> error("No valid roles found: ${this.tokenParsed?.easy_role}")
     }
 }

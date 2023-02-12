@@ -13,6 +13,7 @@ import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
 import pages.exercise.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
+import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
 import queries.*
@@ -24,6 +25,7 @@ private val PAGES = listOf(
     OldParticipantsPage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
+    RegisterLinkPage,
 )
 
 fun main() {
@@ -31,11 +33,14 @@ fun main() {
 
     // Start authentication as soon as possible
     doInPromise {
-        if (isAuthRequired()) {
+        val pageAuth = getPageAuth()
+        if (pageAuth != EasyPage.PageAuth.NONE) {
             setSplashText("Login sisse")
-            initAuthentication()
-            setSplashText("Uuendan andmeid")
-            updateAccountData()
+            Auth.initialize(pageAuth == EasyPage.PageAuth.REQUIRED).await()
+            if (Auth.authenticated) {
+                setSplashText("Uuendan andmeid")
+                updateAccountData()
+            }
         }
         refreshCurrentPathFromBrowser()
         buildStatics()
@@ -74,15 +79,15 @@ suspend fun buildStatics() {
     }
 }
 
-private fun isAuthRequired() = (EzSpa.PageManager.getCurrentPage() as EasyPage).doesRequireAuthentication
+private fun getPageAuth() = (EzSpa.PageManager.getCurrentPage() as EasyPage).pageAuth
 private fun isEmbedded() = (EzSpa.PageManager.getCurrentPage() as EasyPage).isEmbedded
 
 private suspend fun updateAccountData() {
     val funLog = debugFunStart("updateAccountData")
 
-    val firstName = Auth.firstName
-    val lastName = Auth.lastName
-    val email = Auth.email
+    val firstName = Auth.firstName!!
+    val lastName = Auth.lastName!!
+    val email = Auth.email!!
 
     debug { "Updating account data to [email: $email, first name: $firstName, last name: $lastName]" }
 
@@ -103,12 +108,6 @@ private suspend fun updateAccountData() {
     ).await()
     debug { "Account data updated" }
 
-    funLog?.end()
-}
-
-private suspend fun initAuthentication() {
-    val funLog = debugFunStart("initAuthentication")
-    Auth.initialize().await()
     funLog?.end()
 }
 
