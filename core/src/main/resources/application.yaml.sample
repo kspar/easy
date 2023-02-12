@@ -14,9 +14,13 @@ spring:
         transport:
           protocol: "smtp"
         smtp:
+          auth: true
           port: 587
           starttls:
             enable: true
+            required: true
+    username: "<username>"
+    password: "<password>"
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
@@ -26,10 +30,13 @@ easy:
   core:
     auth-enabled: true
     mail:
+      from: "<from-address>"
       sys:
         enabled: true
-        from: "<from-address>"
         to: "<to-address>"
+      user:
+        enabled: true
+
     auto-assess:
         fixed-delay:
           ms: "3000"
@@ -53,3 +60,6 @@ easy:
 
     exercise-index-normalisation:
       cron: "0 5 3 * * *"
+
+  wui:
+    base-url: "https://easy.example"
