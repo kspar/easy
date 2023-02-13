@@ -40,9 +40,9 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Kursusele ligi pääsemiseks mine $wuiBaseUrl ja logi sisse meiliaadressiga $recipientEmail.
             |
-            |Kui parool on meelest läinud, siis proovi "Unustasid parooli?" funktsionaalsust sisselogimise lehel.
+            |Kui sul on parool meelest läinud, siis proovi "Unustasid parooli?" funktsionaalsust sisselogimise lehel.
             | 
-            |Kui pärast sisse logimist seda kursust ei näe, siis veendu, et kasutaja meiliaadress oleks $recipientEmail. 
+            |Kui sa pärast sisse logimist seda kursust ei näe, siis veendu, et kasutaja meiliaadress oleks $recipientEmail. 
             |
             |Mõnusat progemist!
             |Lahenduse meeskond

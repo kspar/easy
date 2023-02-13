@@ -117,7 +117,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
 
         data class NewPendingAccess(val email: String, val moodleUsername: String, val groups: List<MoodleGroup>)
 
-        val courseTitle = getCourse(courseId)!!.title
+        val courseTitle = getCourse(courseId)!!.let { it.alias ?: it.title }
         val courseEntity = EntityID(courseId, Course)
 
         return transaction {
