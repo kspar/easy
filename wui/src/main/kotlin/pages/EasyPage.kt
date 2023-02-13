@@ -47,7 +47,7 @@ abstract class EasyPage : Page() {
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
-        if (pageAuth == PageAuth.REQUIRED && allowedRoles.none { it == Auth.activeRole }) {
+        if (pageAuth == PageAuth.REQUIRED && (!Auth.authenticated || allowedRoles.none { it == Auth.activeRole })) {
             getContainer().innerHTML = tmRender(
                 "tm-no-access-page", mapOf(
                     "title" to Str.noPermissionForPageTitle(),

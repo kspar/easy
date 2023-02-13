@@ -17,11 +17,12 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
     val authenticated: Boolean
 
     fun createAccountUrl(): String
-    fun createRegisterUrl(): String
+    fun createRegisterUrl(options: dynamic = definedExternally): String
     fun createLogoutUrl(options: dynamic = definedExternally): String
 
     protected fun init(options: dynamic): Promise<Boolean>
     protected fun login(options: dynamic = definedExternally)
+    fun logout(options: dynamic = definedExternally)
     protected fun updateToken(minValidSec: Int): Promise<Boolean>
 }
 
