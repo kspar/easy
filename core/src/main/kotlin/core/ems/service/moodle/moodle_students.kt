@@ -146,7 +146,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
             val newAccesses =
                 moodleResponse.students.flatMap { moodleStudent ->
                     val moodleEmail = moodleStudent.email.lowercase()
-                    Account.slice(Account.id)
+                    Account.slice(Account.id, Account.email)
                         .select {
                             Account.moodleUsername eq moodleStudent.username or
                                     (Account.email eq moodleEmail)
