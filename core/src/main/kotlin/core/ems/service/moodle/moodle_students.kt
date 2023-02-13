@@ -3,6 +3,7 @@ package core.ems.service.moodle
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
 import core.ems.service.cache.CachingService
+import core.ems.service.getCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.exception.ResourceLockedException
@@ -110,12 +111,18 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
     ): MoodleSyncedStudents {
 
         data class MoodleGroup(val id: String, val name: String)
-        data class NewAccess(val username: String, val moodleUsername: String, val groups: List<MoodleGroup>)
+        data class NewAccess(
+            val email: String, val username: String, val moodleUsername: String, val groups: List<MoodleGroup>
+        )
+
         data class NewPendingAccess(val email: String, val moodleUsername: String, val groups: List<MoodleGroup>)
 
+        val courseTitle = getCourse(courseId)!!.title
         val courseEntity = EntityID(courseId, Course)
 
         return transaction {
+            // TODO: ask Moodle to send all groups separately
+            // TODO: then delete groups that don't exist anymore
             // Insert groups or get their IDs
             val moodleGroups = moodleResponse.students
                 .mapNotNull { it.groups }
@@ -147,6 +154,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
                         .withDistinct()
                         .map {
                             NewAccess(
+                                it[Account.email],
                                 it[Account.id].value,
                                 moodleStudent.username,
                                 moodleStudent.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
@@ -176,7 +184,14 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
             log.debug { "Giving pending access to students: $newPendingAccesses" }
 
 
-            // Remove & insert all accesses
+            // Diff accesses before and after to send notifications for only new accesses
+            val previousStudentEmails = (StudentCourseAccess innerJoin Student innerJoin Account).select {
+                StudentCourseAccess.course.eq(courseId)
+            }.map {
+                it[Account.email]
+            }
+
+            // Remove & insert all accesses because groups might have changed
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
             val time = DateTime.now()
@@ -197,6 +212,19 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
                 }
             }
 
+            // Send notifications for only new accesses
+            val newStudentEmails = newAccesses.map { it.email } - previousStudentEmails.toSet()
+            log.debug { "New active emails: $newStudentEmails" }
+            newStudentEmails.forEach {
+                mailService.sendStudentAddedToCourseActive(courseTitle, it)
+            }
+
+            // Diff accesses before and after to send invitations for only new accesses
+            val previousEmailsPending = StudentMoodlePendingAccess.select {
+                StudentMoodlePendingAccess.course.eq(courseId)
+            }.map {
+                it[StudentMoodlePendingAccess.email]
+            }
 
             // Remove & insert all pending accesses
             StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
@@ -213,6 +241,13 @@ class MoodleStudentsSyncService(val mailService: SendMailService, val cachingSer
                     this[StudentMoodlePendingCourseGroup.course] = courseId
                     this[StudentMoodlePendingCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
                 }
+            }
+
+            // Send invitation for only new accesses
+            val newEmailsPending = newPendingAccesses.map { it.email } - previousEmailsPending.toSet()
+            log.debug { "New pending emails: $newEmailsPending" }
+            newEmailsPending.forEach {
+                mailService.sendStudentAddedToCoursePending(courseTitle, it)
             }
 
             val syncedStudentsCount = newAccesses.size

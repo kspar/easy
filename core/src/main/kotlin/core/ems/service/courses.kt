@@ -6,8 +6,39 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.stereotype.Service
 import java.io.Serializable
+
+data class CourseDTO(
+    val id: Long,
+    val title: String,
+    val alias: String?,
+    val createdAt: DateTime,
+    val moodleShortName: String?,
+    val moodleSyncStudents: Boolean,
+    val moodleSyncGrades: Boolean,
+    val moodleSyncStudentsInProgress: Boolean,
+    val moodleSyncGradesInProgress: Boolean,
+)
+
+fun getCourse(courseId: Long): CourseDTO? = transaction {
+    Course.select {
+        Course.id.eq(courseId)
+    }.map {
+        CourseDTO(
+            it[Course.id].value,
+            it[Course.title],
+            it[Course.alias],
+            it[Course.createdAt],
+            it[Course.moodleShortName],
+            it[Course.moodleSyncStudents],
+            it[Course.moodleSyncGrades],
+            it[Course.moodleSyncStudentsInProgress],
+            it[Course.moodleSyncGradesInProgress],
+        )
+    }.singleOrNull()
+}
 
 // TODO: remove
 fun assertCourseExists(courseId: Long) {
@@ -19,7 +50,7 @@ fun assertCourseExists(courseId: Long) {
 fun courseExists(courseId: Long): Boolean {
     return transaction {
         Course.select { Course.id eq courseId }
-                .count() > 0
+            .count() > 0
     }
 }
 
@@ -35,11 +66,13 @@ fun assertExerciseIsAutoGradable(exerciseId: Long) {
     )
 }
 
-data class Grade(val submissionId: String,
-                 val studentId: String,
-                 val grade: Int?,
-                 val graderType: GraderType?,
-                 val feedback: String?) : Serializable
+data class Grade(
+    val submissionId: String,
+    val studentId: String,
+    val grade: Int?,
+    val graderType: GraderType?,
+    val feedback: String?
+) : Serializable
 
 
 @Service
@@ -64,15 +97,19 @@ class CourseService(val cachingService: CachingService) {
     /**
      * Return a query for all students on the course, filtering by search query words and group IDs.
      */
-    fun selectStudentsOnCourseQuery(courseId: Long, queryWords: List<String>,
-                                    groups: List<Long>, includeUngrouped: Boolean): Query {
+    fun selectStudentsOnCourseQuery(
+        courseId: Long, queryWords: List<String>,
+        groups: List<Long>, includeUngrouped: Boolean
+    ): Query {
         val query = (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentCourseGroup)
-                .slice(Student.id,
-                        Account.email,
-                        Account.givenName,
-                        Account.familyName)
-                .select { StudentCourseAccess.course eq courseId }
-                .withDistinct()
+            .slice(
+                Student.id,
+                Account.email,
+                Account.givenName,
+                Account.familyName
+            )
+            .select { StudentCourseAccess.course eq courseId }
+            .withDistinct()
 
         if (groups.isNotEmpty()) {
             query.andWhere {

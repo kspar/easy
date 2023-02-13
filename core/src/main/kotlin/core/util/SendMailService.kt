@@ -31,6 +31,26 @@ class SendMailService(private val mailSender: JavaMailSender) {
     private lateinit var wuiBaseUrl: String
 
     @Async
+    fun sendStudentAddedToCourseActive(courseTitle: String, recipientEmail: String) {
+        val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
+        val text = """
+            |Tere!
+            |
+            |Sind lisati meiliaadressiga $recipientEmail kursusele "$courseTitle" Lahenduse keskkonnas.
+            |
+            |Kursusele ligi pääsemiseks mine $wuiBaseUrl ja logi sisse meiliaadressiga $recipientEmail.
+            |
+            |Kui parool on meelest läinud, siis proovi "Unustasid parooli?" funktsionaalsust sisselogimise lehel.
+            | 
+            |Kui pärast sisse logimist seda kursust ei näe, siis veendu, et kasutaja meiliaadress oleks $recipientEmail. 
+            |
+            |Mõnusat progemist!
+            |Lahenduse meeskond
+        """.trimMargin()
+        sendUserEmail(recipientEmail, subject, text)
+    }
+
+    @Async
     fun sendStudentAddedToCoursePending(courseTitle: String, recipientEmail: String) {
         val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
         val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
