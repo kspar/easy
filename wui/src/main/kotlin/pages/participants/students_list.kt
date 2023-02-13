@@ -6,6 +6,7 @@ import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.modal.Modal
+import dao.ParticipantsDAO
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -87,11 +88,20 @@ class ParticipantsStudentsListComp(
                     p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUserUnf)) }
                 },
                 isSelectable = isEditable,
-                actions = if (isEditable) listOf(
-                    EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup),
-                    EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup),
-                    EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
-                ) else emptyList(),
+                actions = if (isEditable) buildList {
+                    if (!p.isActive)
+                        add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
+                    add(EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup))
+                    add(EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup))
+                    add(
+                        EzCollComp.Action(
+                            Icons.removeParticipant,
+                            "Eemalda kursuselt",
+                            onActivate = ::removeFromCourse
+                        )
+                    )
+                }
+                else emptyList(),
             )
         }
 
@@ -290,6 +300,17 @@ class ParticipantsStudentsListComp(
             EzCollComp.ResultModified<StudentProps>(emptyList())
         else
             EzCollComp.ResultUnmodified
+    }
+
+    private suspend fun sendInvite(item: EzCollComp.Item<StudentProps>): EzCollComp.Result = sendInvite(listOf(item))
+
+    private suspend fun sendInvite(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
+        // TODO: allow active students ("saada teavitus") as well
+        // TODO: mass action
+
+        ParticipantsDAO.sendStudentCourseInvites(courseId, items.map { it.props.email }).await()
+        successMessage { "Saadetud" }
+        return EzCollComp.ResultUnmodified
     }
 }
 
