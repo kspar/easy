@@ -114,7 +114,9 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
                 this[StudentCourseGroup.courseGroup] = it
             }
         }
+        // TODO: optionally send notification
 
+        // TODO: need to know which are new and which are old: either don't delete (just update) or diff before and after
         // Delete & create pending accesses to update validFrom & groups
         StudentPendingAccess.deleteWhere {
             StudentPendingAccess.course eq courseId and
@@ -133,6 +135,7 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
                 this[StudentPendingCourseGroup.courseGroup] = it
             }
         }
+        // TODO: optionally send notification
 
         Resp(newStudentsWithAccount.size, studentsNoAccount.size)
     }
