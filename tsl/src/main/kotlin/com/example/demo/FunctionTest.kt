@@ -13,7 +13,7 @@ data class FunctionExecutionTest(
     val standardInputData: List<String>? = null,
     val inputFiles: List<FileData>? = null, // Sama nii input kui output data-le
     val returnValue: String? = null,
-    val standardOutputChecks: List<StandardOutputCheck>? = null,
+    val genericChecks: List<GenericCheck>? = null,
     val outputFileChecks: List<OutputFileCheck>? = null
 ) : Test() {
     override fun getDefaultName(): String {
@@ -36,7 +36,7 @@ data class FunctionContainsLoopTest(
 @SerialName("function_contains_keyword_test")
 data class FunctionContainsKeywordTest(
     val functionName: String,
-    val standardOutputCheck: StandardOutputCheck,
+    val genericCheck: GenericCheck,
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsioon sisaldab märksõna"
@@ -58,7 +58,7 @@ data class FunctionContainsReturnTest(
 @SerialName("function_calls_function_test")
 data class FunctionCallsFunctionTest(
     val functionName: String,
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsioon kutsub välja teist funktsiooni"
@@ -91,7 +91,7 @@ data class FunctionIsRecursiveTest(
 @SerialName("function_defines_function_test")
 data class FunctionDefinesFunctionTest(
     val functionName: String,
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsioon defineerib enda sees uue funktsiooni"
@@ -102,7 +102,7 @@ data class FunctionDefinesFunctionTest(
 @SerialName("function_imports_module_test")
 data class FunctionImportsModuleTest(
     val functionName: String,
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsioon impordib mooduli"
@@ -121,8 +121,8 @@ data class FunctionContainsTryExceptTest(
 }
 
 @Serializable
-@SerialName("function_uses_only_local_vars_test")
-data class FunctionUsesOnlyLocalVarsTest(
+@SerialName("function_is_pure_test")
+data class FunctionIsPureTest(
     val functionName: String,
     val containsLocalVars: ContainsCheck
 ) : Test() {
