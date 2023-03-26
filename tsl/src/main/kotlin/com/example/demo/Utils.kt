@@ -2,11 +2,11 @@ package com.example.demo
 
 import kotlinx.serialization.Serializable
 
-enum class StringCheckType {
+enum class CheckType {
     ALL_OF_THESE, ANY_OF_THESE, MISSING_AT_LEAST_ONE_OF_THESE, NONE_OF_THESE
 }
 
-enum class StringCheckTypeLong {
+enum class CheckTypeLong {
     ALL_OF_THESE, ANY_OF_THESE, ANY, NONE_OF_THESE, MISSING_AT_LEAST_ONE_OF_THESE, NONE
 }
 
@@ -20,49 +20,45 @@ class FileData(
 //  et näiteks 3 nime eksisteerib väljundis, aga 2 nime mitte?
 
 @Serializable
-data class StandardOutputCheck(
-    val stringCheckType: StringCheckType,
+data class GenericCheck(
+    val checkType: CheckType,
     val nothingElse: Boolean? = null,
-    val expectedOutput: List<String>, // The field to be checked.
-    val considerElementsOrder: Boolean? = null
+    val expectedValue: List<String>, // The field to be checked.
+    val considerElementsOrder: Boolean? = false
 ) : Check()
 
 @Serializable
-data class StandardOutputCheckLong(
-    val stringCheckType: StringCheckTypeLong,
+data class GenericCheckLong(
+    val checkType: CheckTypeLong,
     val nothingElse: Boolean? = null,
-    val expectedOutput: List<String> // The field to be checked.
+    val expectedValue: List<String> // The field to be checked.
 ) : Check()
 
 @Serializable
 data class OutputFileCheck(
     val fileName: String,
-    val stringCheckType: StringCheckType,
+    val checkType: CheckType,
     val nothingElse: Boolean? = null,
-    val expectedOutput: List<String>, // The field to be checked.
-    val considerElementsOrder: Boolean? = null
+    val expectedValue: List<String>, // The field to be checked.
+    val considerElementsOrder: Boolean? = false
 ) : Check()
 
 @Serializable
 class ExceptionCheck(
-    val mustThrowException: Boolean,
-    val cannotThrowException: Boolean
+    val mustNotThrowException: Boolean
 ) : Check()
 
 @Serializable
 class ContainsCheck(
-    val mustContain: Boolean,
-    val cannotContain: Boolean
+    val mustNotContain: Boolean
 ) : Check()
 
 @Serializable
 class RecursiveCheck(
-    val mustBeRecursive: Boolean,
-    val cannotBeRecursive: Boolean
+    val mustNotBeRecursive: Boolean
 ) : Check()
 
 @Serializable
 class CallsCheck(
-    val mustCallPrint: Boolean,
-    val cannotCallPrint: Boolean
+    val mustNotCall: Boolean
 ) : Check()

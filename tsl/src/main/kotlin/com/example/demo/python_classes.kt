@@ -18,22 +18,22 @@ class PyExecuteTest(val test: Test, val testName: String, val namedArgs: Map<Str
 }
 
 
-class PyStandardOutputChecks(val standardOutputChecks: List<StandardOutputCheck>?) : PyASTPrimitive() {
-    constructor(standardOutputCheck: StandardOutputCheck) : this(
-        listOf(standardOutputCheck)
+class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive() {
+    constructor(genericCheck: GenericCheck) : this(
+        listOf(genericCheck)
     )
 
     override fun generatePyString(): String {
-        if (standardOutputChecks == null) {
+        if (genericChecks == null) {
             return "[]"
         }
         return PyList(
-            standardOutputChecks.map {
+            genericChecks.map {
                 PyFunctionCall(
-                    "StandardOutputChecks", mapOf(
-                        "string_check_type" to PyStr(it.stringCheckType.toString()),
+                    "GenericChecks", mapOf(
+                        "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
@@ -44,22 +44,22 @@ class PyStandardOutputChecks(val standardOutputChecks: List<StandardOutputCheck>
     }
 }
 
-class PyStandardOutputChecksLong(val standardOutputChecksLong: List<StandardOutputCheckLong>?) : PyASTPrimitive() {
-    constructor(standardOutputCheck: StandardOutputCheckLong) : this(
-        listOf(standardOutputCheck)
+class PyGenericChecksLong(val genericChecksLong: List<GenericCheckLong>?) : PyASTPrimitive() {
+    constructor(genericCheck: GenericCheckLong) : this(
+        listOf(genericCheck)
     )
 
     override fun generatePyString(): String {
-        if (standardOutputChecksLong == null) {
+        if (genericChecksLong == null) {
             return "[]"
         }
         return PyList(
-            standardOutputChecksLong.map {
+            genericChecksLong.map {
                 PyFunctionCall(
-                    "StandardOutputChecks", mapOf(
-                        "string_check_type" to PyStr(it.stringCheckType.toString()),
+                    "GenericChecks", mapOf(
+                        "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
                         "failed_message" to PyStr(it.failedMessage)
@@ -79,9 +79,9 @@ class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimiti
                 PyFunctionCall(
                     "OutputFileChecks", mapOf(
                         "file_name" to PyStr(it.fileName),
-                        "string_check_type" to PyStr(it.stringCheckType.toString()),
+                        "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_output" to PyList(it.expectedOutput.map { PyStr(it) }),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),

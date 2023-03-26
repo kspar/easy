@@ -7,7 +7,6 @@ import kotlinx.serialization.*
 
 import kotlinx.serialization.modules.*
 import java.io.File
-import java.nio.file.Paths
 
 @Serializable
 data class TSL(
@@ -72,7 +71,7 @@ val module = SerializersModule {
         subclass(FunctionDefinesFunctionTest::class)
         subclass(FunctionImportsModuleTest::class)
         subclass(FunctionContainsTryExceptTest::class)
-        subclass(FunctionUsesOnlyLocalVarsTest::class)
+        subclass(FunctionIsPureTest::class)
 
         subclass(ProgramExecutionTest::class)
         subclass(ProgramContainsTryExceptTest::class)
