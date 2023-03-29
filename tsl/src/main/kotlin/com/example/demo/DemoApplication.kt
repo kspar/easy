@@ -23,9 +23,9 @@ data class TSL(
 
 @Serializable
 abstract class Check {
-    val beforeMessage: String? = null
-    val passedMessage: String? = null
-    val failedMessage: String? = null
+    lateinit var beforeMessage: String
+    lateinit var passedMessage: String
+    lateinit var failedMessage: String
 }
 
 @Serializable

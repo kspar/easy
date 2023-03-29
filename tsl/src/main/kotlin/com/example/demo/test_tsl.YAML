@@ -30,6 +30,9 @@ tests:
         failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
     exceptionCheck:
       mustNotThrowException: true
+      beforeMessage: Kontrollib, et programm ei viskaks erindit.
+      passedMessage: Programm ei visanud erindit.
+      failedMessage: Programm viskas erindi.
     name: Programmi käivituse test.
 
   - type: program_imports_module_test
