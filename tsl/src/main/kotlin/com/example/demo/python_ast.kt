@@ -30,12 +30,18 @@ class PyInt(val value: Long?) : PyASTPrimitive() {
     }
 }
 
-class PyStr(val value: String?) : PyASTPrimitive() {
+class PyStr(val value: String?, private val forceString: Boolean = true) : PyASTPrimitive() {
     override fun generatePyString(): String {
         if (value == null) {
             return "None"
         }
-        return "'''${value?.replace("'''", "\\'''")?.trim()}'''"
+        if (value.startsWith('"')) {
+            return value
+        }
+        if (forceString) {
+            return "'''${value.replace("'''", "\\'''").trim()}'''"
+        }
+        return value
     }
 }
 

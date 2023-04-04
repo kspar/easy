@@ -48,7 +48,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 val arguments: PyList = if (test.arguments == null) {
                     PyList(listOf())
                 } else {
-                    PyList(test.arguments.map { PyStr(it) })
+                    PyList(test.arguments.map { PyStr(it, false) })
                 }
                 PyExecuteTest(
                     test,
@@ -59,7 +59,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "arguments" to arguments,
                         "standard_input_data" to standardInputData,
                         "input_files" to inputFiles,
-                        "return_value" to PyStr(test.returnValue),
+                        "return_value" to PyStr(test.returnValue, false),
                         "generic_checks" to PyGenericChecks(test.genericChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks)
                     )
