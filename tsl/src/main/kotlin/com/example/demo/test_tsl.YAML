@@ -216,14 +216,14 @@ tests:
   - type: function_execution_test
     functionName: seosta_lapsed_ja_vanemad
     arguments:
-      - lapsed.txt
-      - nimed.txt
+      - '"lapsed.txt"'
+      - '"nimed.txt"'
     standardInputData:
       - Kasutajasisend
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    returnValue: '3'
+    returnValue: 3
     genericChecks:
       - checkType: ANY_OF_THESE
         considerElementsOrder: false

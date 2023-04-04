@@ -22,11 +22,11 @@ data class TSL(
 )
 
 @Serializable
-abstract class Check (
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+abstract class Check {
+    abstract val beforeMessage: String
+    abstract val passedMessage: String
+    abstract val failedMessage: String
+}
 
 @Serializable
 abstract class Test {

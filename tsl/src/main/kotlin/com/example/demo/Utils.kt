@@ -25,20 +25,20 @@ data class GenericCheck(
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>, // The field to be checked.
     val considerElementsOrder: Boolean? = false,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 data class GenericCheckLong(
     val checkType: CheckTypeLong,
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>, // The field to be checked.
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 data class OutputFileCheck(
@@ -47,39 +47,39 @@ data class OutputFileCheck(
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>, // The field to be checked.
     val considerElementsOrder: Boolean? = false,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 class ExceptionCheck(
     val mustNotThrowException: Boolean,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 class ContainsCheck(
     val mustNotContain: Boolean,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 class RecursiveCheck(
     val mustNotBeRecursive: Boolean,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
 
 @Serializable
 class CallsCheck(
     val mustNotCall: Boolean,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
-)
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+): Check()
