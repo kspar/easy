@@ -4,44 +4,12 @@ import com.charleskorn.kaml.PolymorphismStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
-import tsl.common.model.*
+import tsl.common.model.TSL
 import java.io.File
 
 
-// Declare different types of Tests
-val module = SerializersModule {
-    polymorphic(Test::class) {
-        subclass(FunctionExecutionTest::class)
-        subclass(FunctionContainsLoopTest::class)
-        subclass(FunctionContainsKeywordTest::class)
-        subclass(FunctionContainsReturnTest::class)
-        subclass(FunctionCallsFunctionTest::class)
-        subclass(FunctionIsRecursiveTest::class)
-        subclass(FunctionCallsPrintTest::class)
-        subclass(FunctionDefinesFunctionTest::class)
-        subclass(FunctionImportsModuleTest::class)
-        subclass(FunctionContainsTryExceptTest::class)
-        subclass(FunctionIsPureTest::class)
-
-        subclass(ProgramExecutionTest::class)
-        subclass(ProgramContainsTryExceptTest::class)
-        subclass(ProgramCallsPrintTest::class)
-        subclass(ProgramContainsLoopTest::class)
-        subclass(ProgramImportsModuleTest::class)
-        subclass(ProgramContainsKeywordTest::class)
-        subclass(ProgramCallsFunctionTest::class)
-        subclass(ProgramDefinesFunctionTest::class)
-
-        defaultDeserializer { DefaultTest.serializer() }
-    }
-}
-
-
 val c = YamlConfiguration(polymorphismStyle = PolymorphismStyle.Property)
-val f = Yaml(serializersModule = module, configuration = c)
+val f = Yaml(configuration = c)
 
 data class CompiledResult(
     val generatedScripts: List<String>,

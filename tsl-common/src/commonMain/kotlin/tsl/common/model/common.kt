@@ -24,7 +24,7 @@ abstract class Check {
 }
 
 @Serializable
-abstract class Test {
+sealed class Test {
     // TODO: convert into field?
     abstract fun getDefaultName(): String
 
