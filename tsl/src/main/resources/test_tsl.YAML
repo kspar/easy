@@ -12,10 +12,9 @@ tests:
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    standardOutputChecks:
-      - stringCheckType: ANY_OF_THESE
-        considerElementsOrder: false
-        expectedOutput:
+    genericChecks:
+      - checkType: ANY_OF_THESE
+        expectedValue:
           - down
           - up
         beforeMessage: Kontrollib, kas väljund sisaldab võtmesõna.
@@ -23,22 +22,23 @@ tests:
         failedMessage: Programmi väljund ei sisalda antud võtmesõna.
     outputFileChecks:
       - fileName: valjundfail.txt
-        stringCheckType: ALL_OF_THESE
-        expectedOutput:
+        checkType: ALL_OF_THESE
+        expectedValue:
           - Väljundfaili eeldatav sisu
-        considerElementsOrder: false
         beforeMessage: Kontrollib, kas väljundfail sisaldab võtmesõna.
         passedMessage: Programmi väljundfail sisaldab antud võtmesõna.
         failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
     exceptionCheck:
-      mustThrowException: false
-      cannotThrowException: true
+      mustNotThrowException: true
+      beforeMessage: Kontrollib, et programm ei viskaks erindit.
+      passedMessage: Programm ei visanud erindit.
+      failedMessage: Programm viskas erindi.
     name: Programmi käivituse test.
 
   - type: program_imports_module_test
-    standardOutputCheck:
-      stringCheckType: ALL_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
         - turtle
       beforeMessage: Kontrollib, kas programm impordib mooduli.
       passedMessage: Programm importis mooduli.
@@ -46,19 +46,10 @@ tests:
     points: 10
 
   - type: program_calls_function_test
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
-        - down
-        - up
-        - forward
-        - left
-        - right
-        - fd
-        - rt
-        - lt
-        - bk
-        - goto
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - close
       beforeMessage: Kontrollib, kas programm kutsub välja turtle funktsiooni.
       passedMessage: Programm kutsus välja vähemalt ühe turtle funktsiooni.
       failedMessage: Programm ei kutsnud välja ühtegi turtle funktsiooni.
@@ -66,8 +57,7 @@ tests:
 
   - type: program_contains_loop_test
     programContainsLoop:
-      mustContain: True
-      cannotContain: False
+      mustNotContain: False
       beforeMessage: Kontrollib, kas programmis esineb tsükkel.
       passedMessage: Programmis esines tsükkel.
       failedMessage: Programmis ei esine ühtegi tsüklit.
@@ -75,8 +65,7 @@ tests:
 
   - type: program_contains_try_except_test
     programContainsTryExcept:
-      mustContain: False
-      cannotContain: True
+      mustNotContain: True
       beforeMessage: Kontrollib, kas programmis esineb try/except plokk.
       passedMessage: Programmis ei esine try/except plokki.
       failedMessage: Programmis esines try/except plokk.
@@ -84,17 +73,16 @@ tests:
 
   - type: program_calls_print_test
     programCallsPrint:
-      mustContain: True
-      cannotContain: False
+      mustNotCall: False
       beforeMessage: Kontrollib, kas programm kutsub välja 'print' käsu.
       passedMessage: Programm kutsus välja 'print' käsu.
       failedMessage: Programm ei kutsunud välja 'print' käsku.
     name: Programm peab välja kutsuma 'print' käsu.
 
   - type: program_defines_function_test
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
         - down
         - up
         - seosta_lapsed_ja_vanemad
@@ -104,9 +92,9 @@ tests:
     name: Programm defineerib vähemalt ühe antud funktsioonidest.
 
   - type: program_contains_keyword_test
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
         - seosta_lapsed_ja_vanemad
         - yes
         - no
@@ -118,8 +106,7 @@ tests:
   - type: function_contains_loop_test
     functionName: seosta_lapsed_ja_vanemad
     containsLoop:
-      mustContain: True
-      cannotContain: False
+      mustNotContain: False
       beforeMessage: Kontrollib, kas funktsioonis esineb tsükkel.
       passedMessage: Funktsioonis esines tsükkel.
       failedMessage: Funktsioonis ei esine ühtegi tsüklit.
@@ -127,9 +114,9 @@ tests:
 
   - type: function_contains_keyword_test
     functionName: seosta_lapsed_ja_vanemad
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
         - ff.close()
         - no
       beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
@@ -140,8 +127,7 @@ tests:
   - type: function_contains_return_test
     functionName: seosta_lapsed_ja_vanemad
     containsReturn:
-      mustContain: True
-      cannotContain: False
+      mustNotContain: False
       beforeMessage: Kontrollib, kas funktsioonis esineb return.
       passedMessage: Funktsioonis esines return.
       failedMessage: Funktsioonis ei esine ühtegi return'i.
@@ -149,9 +135,9 @@ tests:
 
   - type: function_calls_function_test
     functionName: seosta_lapsed_ja_vanemad
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
         - down
         - up
         - forward
@@ -170,8 +156,7 @@ tests:
   - type: function_calls_print_test
     functionName: seosta_lapsed_ja_vanemad
     callsCheck:
-      mustCallPrint: True
-      cannotCallPrint: False
+      mustNotCall: False
       beforeMessage: Kontrollib, kas funktsioon kutsub välja print käsu.
       passedMessage: Funktsioon kutsub välja print käsu.
       failedMessage: Funktsioon ei kutsu välja print käsku.
@@ -180,8 +165,7 @@ tests:
   - type: function_is_recursive_test
     functionName: seosta_lapsed_ja_vanemad
     isRecursive:
-      mustBeRecursive: True
-      cannotBeRecursive: False
+      mustNotBeRecursive: False
       beforeMessage: Kontrollib, kas funktsioon on rekursiivne.
       passedMessage: Funktsioonis on rekursiivne.
       failedMessage: Funktsioonis ei ole rekursiivne.
@@ -189,9 +173,9 @@ tests:
 
   - type: function_defines_function_test
     functionName: seosta_lapsed_ja_vanemad
-    standardOutputCheck:
-      stringCheckType: ANY_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
         - down
         - up
         - seosta_lapsed_ja_vanemad2
@@ -202,9 +186,9 @@ tests:
 
   - type: function_imports_module_test
     functionName: seosta_lapsed_ja_vanemad
-    standardOutputCheck:
-      stringCheckType: ALL_OF_THESE
-      expectedOutput:
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
         - turtle
       beforeMessage: Kontrollib, kas funktsioon impordib mooduli.
       passedMessage: Funktsioon importis mooduli.
@@ -214,18 +198,16 @@ tests:
   - type: function_contains_try_except_test
     functionName: seosta_lapsed_ja_vanemad
     containsTryExcept:
-      mustContain: False
-      cannotContain: True
+      mustNotContain: True
       beforeMessage: Kontrollib, kas funktsioonis esineb try/except plokk.
       passedMessage: Funktsioonis ei esine try/except plokki.
       failedMessage: Funktsioonis esines try/except plokk.
     name: Funktsioonis ei tohi olla try/except plokki.
 
-  - type: function_uses_only_local_vars_test
+  - type: function_is_pure_test
     functionName: seosta_lapsed_ja_vanemad
     containsLocalVars:
-      mustContain: True
-      cannotContain: False
+      mustNotContain: False
       beforeMessage: Kontrollib, kas funktsioon kasutab ainult lokaalseid muutujaid.
       passedMessage: Funktsioon kasutab ainult lokaalseid muutujaid.
       failedMessage: Funktsioon ei kasuta ainult lokaalseid muutujaid.
@@ -234,18 +216,18 @@ tests:
   - type: function_execution_test
     functionName: seosta_lapsed_ja_vanemad
     arguments:
-      - lapsed.txt
-      - nimed.txt
+      - '"lapsed.txt"'
+      - '"nimed.txt"'
     standardInputData:
       - Kasutajasisend
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    returnValue: '{}'
-    standardOutputChecks:
-      - stringCheckType: ANY_OF_THESE
+    returnValue: 3
+    genericChecks:
+      - checkType: ANY_OF_THESE
         considerElementsOrder: false
-        expectedOutput:
+        expectedValue:
           - down
           - up
         beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
@@ -253,10 +235,10 @@ tests:
         failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
     outputFileChecks:
       - fileName: valjundfail.txt
-        stringCheckType: ALL_OF_THESE
-        expectedOutput:
+        checkType: ALL_OF_THESE
+        expectedValue:
           - Väljundfaili eeldatav sisu
-        considerElementsOrder: false
+        considerElementsOrder: true
         beforeMessage: Kontrollib, kas funktsiooni väljundfail sisaldab võtmesõna.
         passedMessage: Funktsiooni väljundfail sisaldab antud võtmesõna.
         failedMessage: Funktsiooni väljundfail ei sisalda antud võtmesõna.

@@ -10,7 +10,7 @@ import tsl.common.model.*
 data class ProgramExecutionTest(
     val standardInputData: List<String> = emptyList(),
     val inputFiles: List<FileData> = emptyList(),
-    val standardOutputChecks: List<StandardOutputCheck> = emptyList(),
+    val genericChecks: List<GenericCheck> = emptyList(),
     val outputFileChecks: List<OutputFileCheck> = emptyList(),
     val exceptionCheck: ExceptionCheck? = null,
 ) : Test() {
@@ -32,7 +32,7 @@ data class ProgramContainsTryExceptTest(
 @Serializable
 @SerialName("program_calls_print_test")
 data class ProgramCallsPrintTest(
-    val programCallsPrint: ContainsCheck
+    val programCallsPrint: CallsCheck
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programm kutsub välja 'print' käsu"
@@ -52,7 +52,7 @@ data class ProgramContainsLoopTest(
 @Serializable
 @SerialName("program_imports_module_test")
 data class ProgramImportsModuleTest(
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programm impordib mooduli"
@@ -62,7 +62,7 @@ data class ProgramImportsModuleTest(
 @Serializable
 @SerialName("program_contains_keyword_test")
 data class ProgramContainsKeywordTest(
-    val standardOutputCheck: StandardOutputCheck
+    val genericCheck: GenericCheck
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programm sisaldab märksõna"
@@ -72,7 +72,7 @@ data class ProgramContainsKeywordTest(
 @Serializable
 @SerialName("program_calls_function_test")
 data class ProgramCallsFunctionTest(
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programm kutsub välja funktsiooni"
@@ -82,7 +82,7 @@ data class ProgramCallsFunctionTest(
 @Serializable
 @SerialName("program_defines_function_test")
 data class ProgramDefinesFunctionTest(
-    val standardOutputCheck: StandardOutputCheckLong
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programm defineerib funktsiooni"

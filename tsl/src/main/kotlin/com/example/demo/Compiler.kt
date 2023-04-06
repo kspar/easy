@@ -34,7 +34,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
         return filesToValidate.joinToString(", ", "validate_files([", "])\n") { PyStr(it).generatePyString() }
     }
 
-    private fun generateAssessmentCode(test: Test, file_name: String): String {
+    private fun generateAssessmentCode(test: Test, fileName: String): String {
         return when (test) {
             is FunctionExecutionTest -> {
                 val standardInputData: PyList = if (test.standardInputData == null) {
@@ -50,19 +50,19 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 val arguments: PyList = if (test.arguments == null) {
                     PyList(listOf())
                 } else {
-                    PyList(test.arguments.map { PyStr(it) })
+                    PyList(test.arguments.map { PyStr(it, false) })
                 }
                 PyExecuteTest(
                     test,
                     "function_execution_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
                         "arguments" to arguments,
                         "standard_input_data" to standardInputData,
                         "input_files" to inputFiles,
-                        "return_value" to PyStr(test.returnValue),
-                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
+                        "return_value" to PyStr(test.returnValue, false),
+                        "generic_checks" to PyGenericChecks(test.genericChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks)
                     )
                 ).generatePyString()
@@ -73,12 +73,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_contains_loop_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.containsLoop.mustContain),
-                            PyBool(test.containsLoop.cannotContain)
-                        ),
+                        "contains_check" to PyBool(test.containsLoop.mustNotContain),
                         "before_message" to PyStr(test.containsLoop.beforeMessage),
                         "passed_message" to PyStr(test.containsLoop.passedMessage),
                         "failed_message" to PyStr(test.containsLoop.failedMessage)
@@ -91,9 +88,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_contains_keyword_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputCheck)
+                        "generic_checks" to PyGenericChecks(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -103,12 +100,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_contains_return_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.containsReturn.mustContain),
-                            PyBool(test.containsReturn.cannotContain)
-                        ),
+                        "contains_check" to PyBool(test.containsReturn.mustNotContain),
                         "before_message" to PyStr(test.containsReturn.beforeMessage),
                         "passed_message" to PyStr(test.containsReturn.passedMessage),
                         "failed_message" to PyStr(test.containsReturn.failedMessage)
@@ -121,9 +115,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_calls_function_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -133,12 +127,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_calls_print_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.callsCheck.mustCallPrint),
-                            PyBool(test.callsCheck.cannotCallPrint)
-                        ),
+                        "contains_check" to PyBool(test.callsCheck.mustNotCall),
                         "before_message" to PyStr(test.callsCheck.beforeMessage),
                         "passed_message" to PyStr(test.callsCheck.passedMessage),
                         "failed_message" to PyStr(test.callsCheck.failedMessage)
@@ -151,12 +142,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_is_recursive_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.isRecursive.mustBeRecursive),
-                            PyBool(test.isRecursive.cannotBeRecursive)
-                        ),
+                        "contains_check" to PyBool(test.isRecursive.mustNotBeRecursive),
                         "before_message" to PyStr(test.isRecursive.beforeMessage),
                         "passed_message" to PyStr(test.isRecursive.passedMessage),
                         "failed_message" to PyStr(test.isRecursive.failedMessage)
@@ -169,9 +157,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_defines_function_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -181,9 +169,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_imports_module_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -193,12 +181,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "function_contains_try_except_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.containsTryExcept.mustContain),
-                            PyBool(test.containsTryExcept.cannotContain)
-                        ),
+                        "contains_check" to PyBool(test.containsTryExcept.mustNotContain),
                         "before_message" to PyStr(test.containsTryExcept.beforeMessage),
                         "passed_message" to PyStr(test.containsTryExcept.passedMessage),
                         "failed_message" to PyStr(test.containsTryExcept.failedMessage)
@@ -206,17 +191,14 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is FunctionUsesOnlyLocalVarsTest -> {
+            is FunctionIsPureTest -> {
                 PyExecuteTest(
                     test,
-                    "function_uses_only_local_vars_test",
+                    "function_is_pure_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
-                        "contains_check" to PyPair(
-                            PyBool(test.containsLocalVars.mustContain),
-                            PyBool(test.containsLocalVars.cannotContain)
-                        ),
+                        "contains_check" to PyBool(test.containsLocalVars.mustNotContain),
                         "before_message" to PyStr(test.containsLocalVars.beforeMessage),
                         "passed_message" to PyStr(test.containsLocalVars.passedMessage),
                         "failed_message" to PyStr(test.containsLocalVars.failedMessage)
@@ -239,15 +221,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_execution_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
+                        "file_name" to PyStr(fileName),
                         "standard_input_data" to standardInputData,
                         "input_files" to inputFiles,
-                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputChecks),
+                        "generic_checks" to PyGenericChecks(test.genericChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks),
-                        "exception_check" to PyPair(
-                            PyBool(test.exceptionCheck?.mustThrowException),
-                            PyBool(test.exceptionCheck?.cannotThrowException)
-                        ),
+                        "exception_check" to PyBool(test.exceptionCheck?.mustNotThrowException),
                         "before_message" to PyStr(test.exceptionCheck?.beforeMessage),
                         "passed_message" to PyStr(test.exceptionCheck?.passedMessage),
                         "failed_message" to PyStr(test.exceptionCheck?.failedMessage)
@@ -260,11 +239,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_contains_try_except_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "contains_check" to PyPair(
-                            PyBool(test.programContainsTryExcept.mustContain),
-                            PyBool(test.programContainsTryExcept.cannotContain)
-                        ),
+                        "file_name" to PyStr(fileName),
+                        "contains_check" to PyBool(test.programContainsTryExcept.mustNotContain),
                         "before_message" to PyStr(test.programContainsTryExcept.beforeMessage),
                         "passed_message" to PyStr(test.programContainsTryExcept.passedMessage),
                         "failed_message" to PyStr(test.programContainsTryExcept.failedMessage)
@@ -277,11 +253,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_calls_print_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "contains_check" to PyPair(
-                            PyBool(test.programCallsPrint.mustContain),
-                            PyBool(test.programCallsPrint.cannotContain)
-                        ),
+                        "file_name" to PyStr(fileName),
+                        "contains_check" to PyBool(test.programCallsPrint.mustNotCall),
                         "before_message" to PyStr(test.programCallsPrint.beforeMessage),
                         "passed_message" to PyStr(test.programCallsPrint.passedMessage),
                         "failed_message" to PyStr(test.programCallsPrint.failedMessage)
@@ -294,11 +267,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_contains_loop_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "contains_check" to PyPair(
-                            PyBool(test.programContainsLoop.mustContain),
-                            PyBool(test.programContainsLoop.cannotContain)
-                        ),
+                        "file_name" to PyStr(fileName),
+                        "contains_check" to PyBool(test.programContainsLoop.mustNotContain),
                         "before_message" to PyStr(test.programContainsLoop.beforeMessage),
                         "passed_message" to PyStr(test.programContainsLoop.passedMessage),
                         "failed_message" to PyStr(test.programContainsLoop.failedMessage)
@@ -311,8 +281,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_imports_module_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -322,8 +292,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_contains_keyword_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "standard_output_checks" to PyStandardOutputChecks(test.standardOutputCheck)
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecks(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -333,8 +303,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_calls_function_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }
@@ -344,8 +314,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     test,
                     "program_defines_function_test",
                     mapOf(
-                        "file_name" to PyStr(file_name),
-                        "standard_output_checks" to PyStandardOutputChecksLong(test.standardOutputCheck)
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
                     )
                 ).generatePyString()
             }

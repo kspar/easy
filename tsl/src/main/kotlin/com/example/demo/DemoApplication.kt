@@ -24,7 +24,7 @@ val module = SerializersModule {
         subclass(FunctionDefinesFunctionTest::class)
         subclass(FunctionImportsModuleTest::class)
         subclass(FunctionContainsTryExceptTest::class)
-        subclass(FunctionUsesOnlyLocalVarsTest::class)
+        subclass(FunctionIsPureTest::class)
 
         subclass(ProgramExecutionTest::class)
         subclass(ProgramContainsTryExceptTest::class)
