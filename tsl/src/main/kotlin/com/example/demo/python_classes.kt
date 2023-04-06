@@ -1,8 +1,8 @@
 package com.example.demo
 
+import tsl.common.model.GenericCheck
+import tsl.common.model.GenericCheckLong
 import tsl.common.model.OutputFileCheck
-import tsl.common.model.StandardOutputCheck
-import tsl.common.model.StandardOutputCheckLong
 import tsl.common.model.Test
 
 class PyExecuteTest(val test: Test, val testName: String, val namedArgs: Map<String, PyASTPrimitive?>) :

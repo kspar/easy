@@ -18,9 +18,9 @@ data class TSL(
 
 @Serializable
 abstract class Check {
-    val beforeMessage: String? = null
-    val passedMessage: String? = null
-    val failedMessage: String? = null
+    abstract val beforeMessage: String
+    abstract val passedMessage: String
+    abstract val failedMessage: String
 }
 
 @Serializable
@@ -43,6 +43,7 @@ abstract class Test {
     //fun_arguments
     //fun_param_count
 }
+
 
 @Serializable
 data class DefaultTest(
@@ -79,7 +80,7 @@ data class GenericCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 data class GenericCheckLong(
@@ -89,7 +90,7 @@ data class GenericCheckLong(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 data class OutputFileCheck(
@@ -101,7 +102,7 @@ data class OutputFileCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class ExceptionCheck(
@@ -109,7 +110,7 @@ class ExceptionCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class ContainsCheck(
@@ -117,7 +118,7 @@ class ContainsCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class RecursiveCheck(
@@ -125,7 +126,7 @@ class RecursiveCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class CallsCheck(
@@ -133,4 +134,4 @@ class CallsCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
