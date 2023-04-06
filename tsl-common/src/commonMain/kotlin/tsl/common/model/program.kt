@@ -1,15 +1,17 @@
-package com.example.demo
+package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import tsl.common.model.*
+
 
 @Serializable
 @SerialName("program_execution_test")
 data class ProgramExecutionTest(
-    val standardInputData: List<String>? = null,
-    val inputFiles: List<FileData>? = null,
-    val standardOutputChecks: List<StandardOutputCheck>? = null,
-    val outputFileChecks: List<OutputFileCheck>? = null,
+    val standardInputData: List<String> = emptyList(),
+    val inputFiles: List<FileData> = emptyList(),
+    val standardOutputChecks: List<StandardOutputCheck> = emptyList(),
+    val outputFileChecks: List<OutputFileCheck> = emptyList(),
     val exceptionCheck: ExceptionCheck? = null,
 ) : Test() {
     override fun getDefaultName(): String {

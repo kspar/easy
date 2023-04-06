@@ -4,4 +4,6 @@ include 'wui',
         'core',
         'aae',
         'ezspa',
-        'tsl'
+        'tsl',
+        'tsl-common'
+
