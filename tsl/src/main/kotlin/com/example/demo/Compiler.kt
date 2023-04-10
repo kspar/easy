@@ -1,5 +1,7 @@
 package com.example.demo
 
+import tsl.common.model.*
+
 // class Compiler(private val irTree: IRTree) {
 class Compiler(private val irTree: TSL) { // TODO: RemoveMe
 
@@ -65,6 +67,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionContainsLoopTest -> {
                 PyExecuteTest(
                     test,
@@ -79,6 +82,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionContainsKeywordTest -> {
                 PyExecuteTest(
                     test,
@@ -90,6 +94,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionContainsReturnTest -> {
                 PyExecuteTest(
                     test,
@@ -104,6 +109,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionCallsFunctionTest -> {
                 PyExecuteTest(
                     test,
@@ -115,6 +121,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionCallsPrintTest -> {
                 PyExecuteTest(
                     test,
@@ -129,6 +136,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionIsRecursiveTest -> {
                 PyExecuteTest(
                     test,
@@ -143,6 +151,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionDefinesFunctionTest -> {
                 PyExecuteTest(
                     test,
@@ -154,6 +163,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionImportsModuleTest -> {
                 PyExecuteTest(
                     test,
@@ -165,6 +175,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionContainsTryExceptTest -> {
                 PyExecuteTest(
                     test,
@@ -179,6 +190,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is FunctionIsPureTest -> {
                 PyExecuteTest(
                     test,
@@ -193,6 +205,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramExecutionTest -> {
                 val standardInputData: PyList = if (test.standardInputData == null) {
                     PyList(listOf())
@@ -220,6 +233,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramContainsTryExceptTest -> {
                 PyExecuteTest(
                     test,
@@ -233,6 +247,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramCallsPrintTest -> {
                 PyExecuteTest(
                     test,
@@ -246,6 +261,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramContainsLoopTest -> {
                 PyExecuteTest(
                     test,
@@ -259,6 +275,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramImportsModuleTest -> {
                 PyExecuteTest(
                     test,
@@ -269,6 +286,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramContainsKeywordTest -> {
                 PyExecuteTest(
                     test,
@@ -279,6 +297,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramCallsFunctionTest -> {
                 PyExecuteTest(
                     test,
@@ -289,6 +308,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     )
                 ).generatePyString()
             }
+
             is ProgramDefinesFunctionTest -> {
                 PyExecuteTest(
                     test,

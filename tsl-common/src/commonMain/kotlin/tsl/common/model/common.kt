@@ -1,6 +1,58 @@
-package com.example.demo
+package tsl.common.model
 
 import kotlinx.serialization.Serializable
+
+
+@Serializable
+data class TSL(
+    val language: String = "python3",
+    val validateFiles: Boolean,
+    // The first file in the requiredFiles list is always the file to be executed.
+    // We can expect from UI that there is always at least one file in the list.
+    // TODO: Execution-tüüpi testide puhul pole vaja faili nime, alati kasutatakse peafaili listist.
+    // TODO: Static tüüpi testide puhul oleks tarvis vajadusel määrata faili nimi, vastasel juhul otsitakse üle kõigi.
+    val requiredFiles: List<String>,
+    val tslVersion: String,
+    val tests: List<Test>
+)
+
+@Serializable
+abstract class Check {
+    abstract val beforeMessage: String
+    abstract val passedMessage: String
+    abstract val failedMessage: String
+}
+
+@Serializable
+sealed class Test {
+    // TODO: convert into field?
+    abstract fun getDefaultName(): String
+
+    val points: Double = 1.0
+    val id: Long? = null
+    val name: String? = null
+    val inputs: String? = null // TODO: Kaspar, kas selle jätame?
+    val passedNext: Long? = null
+    val failedNext: Long? = null
+    val visibleToUser: Boolean? = null
+    // val programOutput: String? = null
+    //output_files
+    //prog_inputs
+    //return_type
+    //return_value
+    //fun_arguments
+    //fun_param_count
+}
+
+
+@Serializable
+data class DefaultTest(
+    val defaultValue: Int? = null
+) : Test() {
+    override fun getDefaultName(): String {
+        return "DefaultTest DefaultName"
+    }
+}
 
 enum class CheckType {
     ALL_OF_THESE, ANY_OF_THESE, MISSING_AT_LEAST_ONE_OF_THESE, NONE_OF_THESE
@@ -28,7 +80,7 @@ data class GenericCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 data class GenericCheckLong(
@@ -38,7 +90,7 @@ data class GenericCheckLong(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 data class OutputFileCheck(
@@ -50,7 +102,7 @@ data class OutputFileCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class ExceptionCheck(
@@ -58,7 +110,7 @@ class ExceptionCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class ContainsCheck(
@@ -66,7 +118,7 @@ class ContainsCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class RecursiveCheck(
@@ -74,7 +126,7 @@ class RecursiveCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
 
 @Serializable
 class CallsCheck(
@@ -82,4 +134,4 @@ class CallsCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
-): Check()
+) : Check()
