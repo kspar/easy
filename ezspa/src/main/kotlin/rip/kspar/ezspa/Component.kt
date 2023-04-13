@@ -40,8 +40,7 @@ abstract class Component(
      * Produce HTML that represents this component's current state. This HTML is inserted into the destination element
      * when building the component.
      */
-    // TODO: default render could be plainDst(children)?
-    protected abstract fun render(): String
+    protected open fun render(): String = plainDstStr(children.map { it.dstId })
 
     /**
      * Perform UI initialisation, caching and other tasks after the component has been painted.
