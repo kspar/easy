@@ -122,6 +122,16 @@ abstract class Component(
     }
 
     /**
+     * Append the child's destination HTML element inside this component's destination,
+     * and then [createAndBuild] the child.
+     */
+    fun appendChild(child: Component): Promise<*> = doInPromise {
+        getElemById(dstId).appendHTML(plainDstStr(child.dstId))
+        child.createAndBuild().await()
+        postChildrenBuilt()
+    }
+
+    /**
      * Rebuild this component and its children.
      */
     fun rebuild() {
