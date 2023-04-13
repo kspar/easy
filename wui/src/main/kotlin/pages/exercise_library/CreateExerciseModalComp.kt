@@ -10,7 +10,7 @@ import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200

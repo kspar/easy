@@ -2,12 +2,11 @@ package components
 
 import libheaders.MTabsInstance
 import libheaders.Materialize
-import rip.kspar.ezspa.objOf
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemById
-import tmRender
+import rip.kspar.ezspa.objOf
+import template
 
 
 class PageTabsComp(

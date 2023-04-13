@@ -3,7 +3,7 @@ package components
 import Icons
 import components.form.ButtonComp
 import debug
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import show
 

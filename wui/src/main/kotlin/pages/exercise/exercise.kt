@@ -64,7 +64,7 @@ class ExerciseRootComp(
         }
 
         tabs = PageTabsComp(
-            buildList {
+            tabs = buildList {
                 add(
                     PageTabsComp.Tab("Ülesanne", preselected = true, id = exerciseTabId) {
                         ExerciseTabComp(exercise, ::validChanged, it)

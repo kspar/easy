@@ -1,7 +1,7 @@
 package components.code_editor
 
 import Icons
-import components.LinkComp
+import components.text.LinkComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass

@@ -2,7 +2,7 @@ package pages.exercise.editor
 
 import components.code_editor.CodeEditorComp
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 

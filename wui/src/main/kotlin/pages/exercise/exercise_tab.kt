@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 import lightboxExerciseImages
 import observeValueChange
 import pages.ExerciseSummaryPage
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200

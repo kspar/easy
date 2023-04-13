@@ -21,7 +21,7 @@ import pages.ExerciseSummaryPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.*
 import tmRender

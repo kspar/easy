@@ -5,7 +5,7 @@ import kotlinx.dom.removeClass
 import libheaders.MModalInstance
 import libheaders.Materialize
 import org.w3c.dom.Element
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.*
 import tmRender
 import kotlin.js.Promise
@@ -23,6 +23,8 @@ open class ModalComp<T>(
     private val id: Modal,
     private val modalId: String = IdGenerator.nextId(),
 ) : Component(parent, id.name) {
+
+    // TODO: remove container style from container and ID render hack from modal
 
     private val modalElement: Element
         get() = getElemById(modalId)

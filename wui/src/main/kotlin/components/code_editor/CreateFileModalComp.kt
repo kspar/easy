@@ -7,7 +7,7 @@ import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import components.modal.Modal
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 

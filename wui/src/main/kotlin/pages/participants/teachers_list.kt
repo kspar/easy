@@ -2,13 +2,13 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
-import components.StringComp
+import components.text.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200

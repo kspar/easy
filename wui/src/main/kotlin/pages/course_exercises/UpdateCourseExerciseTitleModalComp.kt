@@ -1,7 +1,7 @@
 package pages.course_exercises
 
 import Str
-import components.AttrsComp
+import components.text.AttrsComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp

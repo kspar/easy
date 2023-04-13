@@ -1,16 +1,16 @@
 package pages.participants
 
 import Str
-import components.ParagraphsComp
 import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import components.modal.Modal
+import components.text.ParagraphsComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200

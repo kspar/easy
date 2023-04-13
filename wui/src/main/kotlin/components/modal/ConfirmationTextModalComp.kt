@@ -1,7 +1,7 @@
 package components.modal
 
-import components.StringComp
 import components.form.ButtonComp
+import components.text.StringComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise

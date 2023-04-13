@@ -1,8 +1,8 @@
 package pages.exercise.editor
 
-import components.AttrsComp
+import components.text.AttrsComp
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import kotlin.js.Promise

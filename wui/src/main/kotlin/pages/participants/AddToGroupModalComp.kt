@@ -1,13 +1,13 @@
 package pages.participants
 
 import Str
-import components.StringComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
 import components.modal.Modal
+import components.text.StringComp
 import debug
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
