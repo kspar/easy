@@ -17,6 +17,7 @@ class TextFieldComp(
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
     private val startActive: Boolean = false,
+    private val initialValue: String = "",
     private val helpText: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
     onValidChange: ((Boolean) -> Unit)? = null,
@@ -42,7 +43,8 @@ class TextFieldComp(
         "t-c-text-field",
         "id" to elementId,
         "placeholder" to placeholderHtml,
-        "active" to startActive,
+        "value" to initialValue,
+        "active" to (startActive || initialValue.isNotBlank()),
         "label" to label,
         "helpText" to helpText,
     )
@@ -54,4 +56,6 @@ class TextFieldComp(
             onValueChange?.invoke(getValue())
         }
     }
+
+    override fun hasUnsavedChanges() = getValue() != initialValue
 }
