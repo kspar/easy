@@ -1,7 +1,13 @@
 :root {
+    --ez-green: #4DAB54;
+    --ez-attr-key: #4DAB54;
+    --ez-border: #ccc;
+    --ez-secondary-action-hover-bg: #f1f3f4;
+
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
     --ez-checkbox-disabled-border-col: rgba(0, 0, 0, .15);
     --ez-checkbox-fill-col: #4DAB54;
+
     --ez-icon-col: rgba(0, 0, 0, .38);
     --ez-icon-inactive-col: rgba(0, 0, 0, .22);
     --ez-icon-action-col: rgba(0, 0, 0, .54);
@@ -9,7 +15,7 @@
     --ez-icon-action-active-bg-col: rgba(0, 0, 0, .04);
     --ez-icon-action-clicked-bg-col: rgba(0, 0, 0, .1);
     --ez-icon-action-disabled-col: rgba(0, 0, 0, .38);
-    --ez-attr-key-col: #4DAB54;
+
     --ez-flat-btn-disabled-border-col: rgba(0, 0, 0, .1);
     --ez-flat-btn-border-col: rgba(0, 0, 0, .3);
     --ez-btn-danger-col: #df483d;
@@ -18,10 +24,13 @@
     --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
+    --ezc-link-hover-col: #429748;
     --ezc-bar-green: #4DAB54;
     --ezc-bar-yellow: #ffd052;
     --ezc-bar-blue: #688ffd;
     --ezc-bar-grey: #d5d5d5;
+
+    --ez-tabs-subpage-active: #666;
 }
 
 /** Page, body, general **/
@@ -629,7 +638,7 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Exercise page **/
 
-#global-exercise ez-tabs-content {
+#global-exercise ez-tabs.toplevel > ez-tabs-content {
     margin-top: 3rem;
 }
 
@@ -1092,6 +1101,14 @@ ez-participants-list .card .card-content p {
     background-color: var(--ez-btn-danger-col);
 }
 
+.btn-flat {
+    padding: 0 1.2rem;
+}
+
+.btn-flat:hover {
+    background-color: var(--ez-secondary-action-hover-bg);
+}
+
 ez-btn-content {
     display: flex;
     align-items: center;
@@ -1317,6 +1334,8 @@ textarea.materialize-textarea:focus.invalid ~ label {
 
 textarea.materialize-textarea {
     padding: 1.1rem 0 1.1rem 0;
+    /* https://stackoverflow.com/questions/7144843/extra-space-under-textarea-differs-along-browsers */
+    vertical-align: top;
 }
 
 .input-field {
@@ -1645,7 +1664,7 @@ ez-icon > svg {
     height: 1.8rem;
 }
 
-ez-icon.med > svg {
+.icon-med ez-icon > svg {
     width: 2.4rem;
     height: 2.4rem;
 }
@@ -1656,6 +1675,10 @@ ez-icon-action {
     cursor: pointer;
     border-radius: 50%;
     transition: background .2s ease-in-out;
+}
+
+ez-icon-action.icon-med {
+    padding: .5rem;
 }
 
 ez-icon-action > ez-icon {
@@ -1691,10 +1714,6 @@ ez-icon-action.waves-effect {
     transition: background .2s ease-in-out;
 }
 
-ez-icon-action > ez-icon.med {
-    padding: .2rem;
-}
-
 
 /** Loaders **/
 
@@ -1716,7 +1735,7 @@ ez-spinner .circle-clipper .circle {
 }
 
 .progress .indeterminate {
-    background-color: var(--ez-attr-key-col);
+    background-color: var(--ez-attr-key);
 }
 
 
@@ -2134,7 +2153,7 @@ ezc-fold-attr {
 }
 
 ezc-fold-key {
-    color: var(--ez-attr-key-col);
+    color: var(--ez-attr-key);
     font-weight: 500;
 }
 
@@ -2470,43 +2489,35 @@ div.title-wrap > .title-button > i.material-icons {
 ez-tabs-header {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #ccc;
-    container-type: inline-size;
-    container-name: tabs
 }
 
-.ez-tabs {
+ez-tabs-header .tabs {
     background-color: transparent;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
 }
 
-.ez-tabs::-webkit-scrollbar { /* WebKit */
+ez-tabs-header .tabs::-webkit-scrollbar { /* WebKit */
     width: 0;
     height: 0;
 }
 
-.ez-tabs .indicator {
-    background-color: var(--ez-checkbox-fill-col);
-}
-
-.ez-tabs > .tab > a,
-.ez-tabs > .tab > a:hover:not(.active) {
+ez-tabs-header .tabs > .tab > a,
+ez-tabs-header .tabs > .tab > a:hover:not(.active) {
     font-size: 1.6rem;
     color: var(--ezc-attr-mutable-col);
 }
 
-.ez-tabs > .tab > a.active {
-    color: var(--ez-checkbox-fill-col);
+ez-tabs-header .tabs > .tab > a.active {
     font-weight: 500;
 }
 
-.ez-tabs > .tab > a:hover {
-    background-color: rgba(0,0,0,0.05);
+ez-tabs-header .tabs > .tab > a:hover {
+    background-color: var(--ez-secondary-action-hover-bg);
 }
 
-.ez-tabs .tab a:focus,
-.ez-tabs .tab a:focus.active {
+ez-tabs-header .tabs .tab a:focus,
+ez-tabs-header .tabs .tab a:focus.active {
     background-color: transparent;
 }
 
@@ -2516,7 +2527,38 @@ ez-tabs-trailer {
 
 ez-tabs-content {
     display: block;
-    margin-top: 1rem;
+}
+
+
+ez-tabs.toplevel > ez-tabs-header {
+    border-bottom: 1px solid var(--ez-border);
+    container-type: inline-size;
+    container-name: tabs
+}
+
+ez-tabs.toplevel > ez-tabs-header .tabs .indicator {
+    background-color: var(--ez-green);
+}
+
+ez-tabs.toplevel > ez-tabs-header .tabs > .tab > a.active {
+    color: var(--ez-green);
+}
+
+
+ez-tabs.subpage > ez-tabs-header .tabs .indicator {
+    background-color: var(--ez-tabs-subpage-active);
+}
+
+ez-tabs.subpage > ez-tabs-header .tabs > .tab {
+    border-bottom: 1px solid var(--ez-border);
+}
+
+ez-tabs.subpage > ez-tabs-header .tabs > .tab > a.active {
+    color: var(--ez-tabs-subpage-active);
+}
+
+ez-tabs .editor-wrapper {
+    margin-top: 0;
 }
 
 
