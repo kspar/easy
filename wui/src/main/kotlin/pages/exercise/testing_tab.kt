@@ -3,6 +3,7 @@ package pages.exercise
 import DateSerializer
 import Str
 import components.code_editor.CodeEditorComp
+import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import onSingleClickWithDisabled
@@ -116,6 +117,7 @@ class AssessmentViewComp(
 @Serializable
 data class OkV3(
     val result_type: String,
+    val producer: String,
     val points: Double, // TODO: Int
     val pre_evaluate_error: String? = null,
     val tests: List<V3Test>,
@@ -149,14 +151,19 @@ data class V3Check(
     val status: V3Status,
 )
 
-fun formatFeedback(raw_feedback: String): String {
+fun formatFeedback(rawFeedback: String): String {
     val okv3 = try {
-        raw_feedback.parseTo(OkV3.serializer())
+        rawFeedback.parseTo(OkV3.serializer())
     } catch (e: Exception) {
-        return raw_feedback
+        debug { e }
+        debug { "Feedback is not in OK_V3 format, falling back to raw" }
+        return rawFeedback
     }
 
+    debug { "Feedback parsed to OK_V3 format" }
+
     if (okv3.pre_evaluate_error != null) {
+        debug { "Showing only feedback pre-evaluate error" }
         return okv3.pre_evaluate_error
     }
 
