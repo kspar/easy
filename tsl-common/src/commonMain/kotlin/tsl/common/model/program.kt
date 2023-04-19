@@ -8,6 +8,7 @@ import tsl.common.model.*
 @Serializable
 @SerialName("program_execution_test")
 data class ProgramExecutionTest(
+    override val id: Long,
     val standardInputData: List<String> = emptyList(),
     val inputFiles: List<FileData> = emptyList(),
     val genericChecks: List<GenericCheck> = emptyList(),
@@ -22,6 +23,7 @@ data class ProgramExecutionTest(
 @Serializable
 @SerialName("program_contains_try_except_test")
 data class ProgramContainsTryExceptTest(
+    override val id: Long,
     val programContainsTryExcept: ContainsCheck
 ) : Test() {
     override fun getDefaultName(): String {
@@ -32,6 +34,7 @@ data class ProgramContainsTryExceptTest(
 @Serializable
 @SerialName("program_calls_print_test")
 data class ProgramCallsPrintTest(
+    override val id: Long,
     val programCallsPrint: CallsCheck
 ) : Test() {
     override fun getDefaultName(): String {
@@ -42,6 +45,7 @@ data class ProgramCallsPrintTest(
 @Serializable
 @SerialName("program_contains_loop_test")
 data class ProgramContainsLoopTest(
+    override val id: Long,
     val programContainsLoop: ContainsCheck
 ) : Test() {
     override fun getDefaultName(): String {
@@ -52,6 +56,7 @@ data class ProgramContainsLoopTest(
 @Serializable
 @SerialName("program_imports_module_test")
 data class ProgramImportsModuleTest(
+    override val id: Long,
     val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
@@ -62,6 +67,7 @@ data class ProgramImportsModuleTest(
 @Serializable
 @SerialName("program_contains_keyword_test")
 data class ProgramContainsKeywordTest(
+    override val id: Long,
     val genericCheck: GenericCheck
 ) : Test() {
     override fun getDefaultName(): String {
@@ -72,6 +78,7 @@ data class ProgramContainsKeywordTest(
 @Serializable
 @SerialName("program_calls_function_test")
 data class ProgramCallsFunctionTest(
+    override val id: Long,
     val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
@@ -82,6 +89,7 @@ data class ProgramCallsFunctionTest(
 @Serializable
 @SerialName("program_defines_function_test")
 data class ProgramDefinesFunctionTest(
+    override val id: Long,
     val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {

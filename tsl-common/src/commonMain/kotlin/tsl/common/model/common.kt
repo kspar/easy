@@ -1,7 +1,14 @@
 package tsl.common.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+interface TSLModel
+
+val TSLFormat = Json {
+    encodeDefaults = true
+    prettyPrint = true
+}
 
 @Serializable
 data class TSL(
@@ -14,22 +21,23 @@ data class TSL(
     val requiredFiles: List<String>,
     val tslVersion: String,
     val tests: List<Test>
-)
+) : TSLModel
 
 @Serializable
-abstract class Check {
+abstract class Check : TSLModel {
     abstract val beforeMessage: String
     abstract val passedMessage: String
     abstract val failedMessage: String
 }
 
 @Serializable
-sealed class Test {
+sealed class Test : TSLModel {
+    abstract val id: Long
+
     // TODO: convert into field?
     abstract fun getDefaultName(): String
 
     val points: Double = 1.0
-    val id: Long? = null
     val name: String? = null
     val inputs: String? = null // TODO: Kaspar, kas selle jätame?
     val passedNext: Long? = null
@@ -42,16 +50,6 @@ sealed class Test {
     //return_value
     //fun_arguments
     //fun_param_count
-}
-
-
-@Serializable
-data class DefaultTest(
-    val defaultValue: Int? = null
-) : Test() {
-    override fun getDefaultName(): String {
-        return "DefaultTest DefaultName"
-    }
 }
 
 enum class CheckType {
