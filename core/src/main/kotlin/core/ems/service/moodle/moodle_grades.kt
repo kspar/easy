@@ -142,7 +142,7 @@ class MoodleGradesSyncService {
     private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> {
         return exercises.flatMap {
             val chunks = it.grades.chunked(200) { grades ->
-                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, grades)))
+                MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, grades.toMutableList())))
             }
             if (chunks.isNotEmpty()) {
                 chunks
