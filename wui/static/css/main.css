@@ -1,5 +1,6 @@
 :root {
     --ez-green: #4DAB54;
+    --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
     --ez-secondary-action-hover-bg: #f1f3f4;
@@ -21,7 +22,6 @@
     --ez-btn-danger-col: #df483d;
     --ez-btn-disabled-text: #9f9f9f;
 
-    --ezc-link-hover-col: #429748;
     --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
     --ezc-link-hover-col: #429748;
@@ -1091,9 +1091,13 @@ ez-participants-list .card .card-content p {
 
 /** Buttons **/
 
-.btn, .btn:hover,
-.btn-floating, .btn-floating:hover {
-    background-color: #4DAB54;
+.btn, .btn:focus,
+.btn-floating, .btn-floating:focus {
+    background-color: var(--ez-green);
+}
+
+.btn:hover, .btn-floating:hover {
+    background-color: var(--ez-green-hover);
 }
 
 .btn.danger,
@@ -2350,6 +2354,77 @@ ez-block-container ez-block {
 }
 
 
+/** Ez collapsible **/
+
+.ez-collapsible {
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+
+.ez-collapsible .collapsible-header {
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    transition: background-color .3s ease-out;
+}
+
+.ez-collapsible .collapsible-header:hover {
+    background-color: var(--ez-secondary-action-hover-bg);
+}
+
+/* TODO: too wide padding on small screens */
+.ez-collapsible .collapsible-body {
+    border-bottom: none;
+    border-top: 2px solid var(--ez-attr-key);
+    padding: 2rem 3.5rem;
+}
+
+
+ez-tsl-root ez-tabs-header {
+    margin-top: 2rem;
+}
+
+ez-tsl-tests {
+    margin-top: 2rem;
+}
+
+ez-tsl-test-header-left, ez-tsl-test-header-right {
+    display: flex;
+}
+
+.ez-collapsible ez-collapsible-title {
+    padding-left: 1rem;
+}
+
+ez-tsl-add-test button {
+    margin-top: 3rem;
+}
+
+ez-tsl-tests textarea.materialize-textarea {
+    min-height: 6rem;
+}
+
+ez-tsl-compiler-feedback {
+    display: flex;
+    margin-top: 2rem;
+    padding: 1rem;
+    color: #ac7d00;
+    background-color: ivory;
+    border: 1px solid #ffe18f;
+}
+
+ez-tsl-compiler-feedback ez-icon {
+    margin: 0 2rem 0 1rem;
+    color: #ac7d00;
+}
+
+ez-tsl-compiler-feedback ez-icon > svg {
+    width: 3rem;
+    height: 3rem;
+}
+
+
 /** Bottom distribution bar **/
 
 .bb-wrap {
@@ -2971,6 +3046,10 @@ button i.material-icons {
     .toast .toast-action {
         margin-left: 0;
     }
+}
+
+.toast .toast-action:hover {
+    background-color: inherit;
 }
 
 

@@ -3,6 +3,7 @@ package components.form
 import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.form.validation.ValidatableFieldComp
+import libheaders.Materialize
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLTextAreaElement
 import rip.kspar.ezspa.*
@@ -55,6 +56,9 @@ class TextFieldComp(
             validateAndPaint(paintRequiredOnInput)
             onValueChange?.invoke(getValue())
         }
+        // TODO: materialize bug: this will correctly resize here but the new height will remain the minimum,
+        //  it won't shrink any smaller when input is deleted - check if new version fixes
+        Materialize.textareaAutoResize(getElement())
     }
 
     override fun hasUnsavedChanges() = getValue() != initialValue
