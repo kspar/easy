@@ -1,10 +1,8 @@
 package core.ems.service.cache
 
 import core.db.*
-import core.ems.service.Grade
+import core.ems.service.*
 import core.ems.service.article.ReadArticleDetailsController
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.selectArticleAliases
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
@@ -20,7 +18,6 @@ const val accountCache = "account"
 const val adminCache = "admin"
 const val articleCache = "articles"
 const val countSubmissionsInAutoAssessmentCache = "autoassessment"
-const val selectLatestValidGradesCache = "selectLatestValidGrades"
 const val studentCache = "student"
 const val countSubmissionsCache = "submissions"
 const val teacherCache = "teacher"
@@ -45,18 +42,6 @@ class CachingService(val cacheManager: CacheManager) {
     fun evictAccountCache(username: String) {
         log.debug { "Evicting 'account' cache for $username." }
         cacheManager.getCache(accountCache)?.evict(username)
-    }
-
-    fun evictSelectLatestValidGrades(courseExerciseId: Long) {
-        log.debug { "Evicting 'selectLatestValidGrades' cache for $courseExerciseId." }
-        cacheManager.getCache(selectLatestValidGradesCache)?.evict(courseExerciseId)
-    }
-
-    fun evictSelectLatestValidGradeForCourse(courseId: Long) = transaction {
-        CourseExercise.slice(CourseExercise.id)
-            .select { CourseExercise.id eq courseId }
-            .map { it[CourseExercise.id].value }
-            .forEach { evictSelectLatestValidGrades(it) }
     }
 
     @Cacheable(articleCache)
@@ -124,53 +109,6 @@ class CachingService(val cacheManager: CacheManager) {
         }
     }
 
-
-    @Cacheable(selectLatestValidGradesCache)
-    @Suppress("SENSELESS_COMPARISON")
-    fun selectLatestValidGradesAll(courseExerciseId: Long): List<Grade> {
-        log.debug { "$courseExerciseId not in 'selectLatestValidGrades' cache. Executing select." }
-        return transaction {
-            (Submission leftJoin TeacherAssessment leftJoin AutomaticAssessment)
-                .slice(
-                    Submission.id,
-                    Submission.student,
-                    TeacherAssessment.id,
-                    TeacherAssessment.grade,
-                    TeacherAssessment.feedback,
-                    AutomaticAssessment.id,
-                    AutomaticAssessment.grade,
-                    AutomaticAssessment.feedback
-                )
-                .select { Submission.courseExercise eq courseExerciseId }
-                .orderBy(Submission.createdAt, SortOrder.DESC)
-                .distinctBy { it[Submission.student] }
-                .map {
-                    when {
-                        it[TeacherAssessment.id] != null -> Grade(
-                            it[Submission.id].value.toString(),
-                            it[Submission.student].value,
-                            it[TeacherAssessment.grade],
-                            GraderType.TEACHER,
-                            it[TeacherAssessment.feedback]
-                        )
-                        it[AutomaticAssessment.id] != null -> Grade(
-                            it[Submission.id].value.toString(),
-                            it[Submission.student].value,
-                            it[AutomaticAssessment.grade],
-                            GraderType.AUTO,
-                            it[AutomaticAssessment.feedback]
-                        )
-                        else -> Grade(
-                            it[Submission.id].value.toString(),
-                            it[Submission.student].value,
-                            null,
-                            null,
-                            null
-                        )
-                    }
-                }
-        }
-    }
 
     data class Acc(
         val id: String,

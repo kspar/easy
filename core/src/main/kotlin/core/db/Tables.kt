@@ -162,18 +162,26 @@ object Submission : LongIdTable("submission") {
     val student = reference("student_id", Student)
     val createdAt = datetime("created_at")
     val solution = text("solution")
+    val grade = integer("grade").nullable()
+    val isAutoGrade = bool("is_auto_grade").nullable()
     val autoGradeStatus = enumerationByName("auto_grade_status", 20, AutoGradeStatus::class)
 }
 
 object TeacherAssessment : LongIdTable("teacher_assessment") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)
-    val teacher = reference("teacher_id", Teacher)
-    val createdAt = datetime("created_at")
-    val grade = integer("grade")
-    val feedback = text("feedback").nullable()
+    val teacher = reference("teacher_id", Account)
+    val mergeWindowStart = datetime("merge_window_start")
+    val editedAt = datetime("edited_at").nullable()
+    val grade = integer("grade").nullable()
+    val feedbackHtml = text("feedback_html").nullable()
+    val feedbackAdoc = text("feedback_adoc").nullable()
 }
 
 object AutomaticAssessment : LongIdTable("automatic_assessment") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)
     val createdAt = datetime("created_at")
     val grade = integer("grade")

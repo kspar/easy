@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.GradeResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -21,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 // TODO: UNGRADED?
-enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
+enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED, UNGRADED }
 
 @RestController
 @RequestMapping("/v2")
@@ -34,8 +36,7 @@ class StudentReadExercisesController {
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("deadline") val softDeadline: DateTime?,
         @JsonProperty("status") val status: StudentExerciseStatus,
-        @JsonProperty("grade") val grade: Int?,
-        @JsonProperty("graded_by") val gradedBy: GraderType?,
+        @JsonProperty("grade") val grade: GradeResp?,
         @JsonProperty("ordering_idx") val orderingIndex: Int
     )
 
@@ -52,17 +53,18 @@ class StudentReadExercisesController {
         return selectStudentExercises(courseId, caller.id)
     }
 
-    private fun selectStudentExercises(courseId: Long, studentId: String): StudentReadExercisesController.Resp {
+    private fun selectStudentExercises(courseId: Long, studentId: String): Resp {
 
         data class ExercisePartial(
-            val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
+            val courseExId: Long,
+            val title: String,
+            val deadline: DateTime?,
+            val threshold: Int,
             val titleAlias: String?
         )
 
-        data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
-
         return transaction {
-            StudentReadExercisesController.Resp(
+            Resp(
                 (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                     .slice(
                         ExerciseVer.title,
@@ -91,6 +93,7 @@ class StudentReadExercisesController {
 
                         val lastSub =
                             Submission
+                                .slice(Submission.id, Submission.grade, Submission.isAutoGrade)
                                 .select {
                                     Submission.courseExercise eq ex.courseExId and
                                             (Submission.student eq studentId)
@@ -98,66 +101,34 @@ class StudentReadExercisesController {
                                 .orderBy(Submission.createdAt, SortOrder.DESC)
                                 .limit(1)
                                 .map {
-                                    SubmissionPartial(
-                                        it[Submission.id].value,
-                                        it[Submission.solution],
-                                        it[Submission.createdAt]
-                                    )
-                                }
-                                .firstOrNull()
+                                    val grade = it[Submission.grade]
+                                    val isAuto = it[Submission.isAutoGrade]
+                                    it[Submission.id].value to toGradeRespOrNull(grade, isAuto)
+                                }.firstOrNull()
 
-                        var gradedBy: GraderType? = null
-                        var grade: Int? = null
 
-                        if (lastSub != null) {
-                            grade = lastTeacherGrade(lastSub.id)
-                            if (grade != null) {
-                                gradedBy = GraderType.TEACHER
-                            } else {
-                                grade = lastAutoGrade(lastSub.id)
-                                if (grade != null) {
-                                    gradedBy = GraderType.AUTO
-                                }
-                            }
-                        }
+                        val submissionId = lastSub?.first
+                        val grade = lastSub?.second?.grade
 
-                        // TODO: UNGRADED?
                         val status: StudentExerciseStatus =
-                            if (lastSub == null) {
-                                StudentExerciseStatus.UNSTARTED
-                            } else if (grade != null && grade >= ex.threshold) {
-                                StudentExerciseStatus.COMPLETED
-                            } else {
-                                StudentExerciseStatus.STARTED
+                            when {
+                                submissionId == null -> StudentExerciseStatus.UNSTARTED
+                                grade == null -> StudentExerciseStatus.UNGRADED
+                                grade >= ex.threshold -> StudentExerciseStatus.COMPLETED
+                                else -> StudentExerciseStatus.STARTED
                             }
 
-
-                        StudentReadExercisesController.ExerciseResp(
+                        ExerciseResp(
                             ex.courseExId.toString(),
                             ex.titleAlias ?: ex.title,
                             ex.deadline,
                             status,
-                            grade,
-                            gradedBy,
+                            lastSub?.second,
                             i
                         )
                     }
             )
         }
     }
-
-    private fun lastAutoGrade(submissionId: Long): Int? =
-        AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[AutomaticAssessment.grade] }
-            .firstOrNull()
-
-    private fun lastTeacherGrade(submissionId: Long): Int? =
-        TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[TeacherAssessment.grade] }
-            .firstOrNull()
 }
 

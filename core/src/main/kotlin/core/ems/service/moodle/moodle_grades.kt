@@ -196,39 +196,24 @@ class MoodleGradesSyncService {
 
 
     private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? {
-        val moodleUsername = (Submission innerJoin Student innerJoin Account)
-                .slice(Account.moodleUsername, Account.id)
-                .select { Submission.id eq submissionId }
-                .map {
-                    val moodleUsername = it[Account.moodleUsername]
-                    if (moodleUsername != null) {
-                        moodleUsername
-                    } else {
+        return (Submission innerJoin Student innerJoin Account)
+            .slice(Account.moodleUsername, Account.id, Submission.grade)
+            .select { Submission.id eq submissionId }
+            .map {
+                val moodleUsername = it[Account.moodleUsername]
+                val grade = it[Submission.grade]
+
+                when {
+                    moodleUsername == null -> {
                         log.warn { "Unable to sync grades to Moodle for student ${it[Account.id]} because they have no Moodle username" }
                         return@selectLatestGradeForSubmission null
                     }
+
+                    grade == null -> return@selectLatestGradeForSubmission null
+                    else -> MoodleReqGrade(moodleUsername, grade)
                 }
-                .single()
 
-        val teacherGrade = TeacherAssessment
-                .slice(TeacherAssessment.grade)
-                .select { TeacherAssessment.submission eq submissionId }
-                .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-                .limit(1)
-                .map { assessment -> MoodleReqGrade(moodleUsername, assessment[TeacherAssessment.grade]) }
-                .firstOrNull()
-
-        if (teacherGrade != null)
-            return teacherGrade
-
-        return AutomaticAssessment
-                .slice(AutomaticAssessment.grade)
-                .select { AutomaticAssessment.submission eq submissionId }
-                .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-                .limit(1)
-                .map { assessment ->
-                    MoodleReqGrade(moodleUsername, assessment[AutomaticAssessment.grade])
-                }
-                .firstOrNull()
+            }
+            .singleOrNull()
     }
 }

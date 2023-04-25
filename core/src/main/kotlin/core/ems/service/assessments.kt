@@ -1,38 +1,48 @@
 package core.ems.service
 
-import core.db.AutomaticAssessment
+import com.fasterxml.jackson.annotation.JsonProperty
+import core.conf.security.EasyUser
+import core.db.Account
 import core.db.TeacherAssessment
-import org.jetbrains.exposed.sql.SortOrder
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.teacherOnCourse
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
 
 
-/**
- * Return the valid grade for this submission or null if it's ungraded.
- * This grade can come from either a teacher or automatic assessment.
- */
-fun selectLatestGradeForSubmission(submissionId: Long): Int? {
-    val teacherGrade = TeacherAssessment
-            .slice(TeacherAssessment.submission,
-                    TeacherAssessment.createdAt,
-                    TeacherAssessment.grade)
-            .select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[TeacherAssessment.grade] }
-            .firstOrNull()
+data class TeacherResp(
+    @JsonProperty("id")
+    val id: String,
+    @JsonProperty("given_name")
+    val givenName: String,
+    @JsonProperty("family_name")
+    val familyName: String
+)
 
-    if (teacherGrade != null)
-        return teacherGrade
 
-    val autoGrade = AutomaticAssessment
-            .slice(AutomaticAssessment.submission,
-                    AutomaticAssessment.createdAt,
-                    AutomaticAssessment.grade)
-            .select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map { it[AutomaticAssessment.grade] }
-            .firstOrNull()
+fun selectTeacher(teacherId: String) = transaction {
+    Account
+        .slice(Account.id, Account.givenName, Account.familyName)
+        .select { Account.id eq teacherId }
+        .map { TeacherResp(it[Account.id].value, it[Account.givenName], it[Account.familyName]) }
+        .singleOrInvalidRequest()
+}
 
-    return autoGrade
+
+
+
+fun assertAssessmentControllerChecks(
+    caller: EasyUser, submissionIdString: String, courseExerciseIdString: String, courseIdString: String,
+): Triple<String, Long, Long> {
+
+    val callerId = caller.id
+    val courseId = courseIdString.idToLongOrInvalidReq()
+    val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
+    val submissionId = submissionIdString.idToLongOrInvalidReq()
+
+    caller.assertAccess { teacherOnCourse(courseId, true) }
+
+    assertSubmissionExists(submissionId, courseExId, courseId)
+    return Triple(callerId, courseExId, submissionId)
 }

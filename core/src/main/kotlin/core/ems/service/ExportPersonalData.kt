@@ -173,10 +173,10 @@ class ExportPersonalData {
             .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC).limit(1)
             .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }.firstOrNull()
 
-    private fun lastTeacherAssessment(submissionId: Long): Pair<Int, String?>? =
+    private fun lastTeacherAssessment(submissionId: Long): Pair<Int?, String?>? =
         TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.createdAt to SortOrder.DESC).limit(1)
-            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedback] }.firstOrNull()
+            .orderBy(TeacherAssessment.mergeWindowStart to SortOrder.DESC).limit(1)
+            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedbackHtml] }.firstOrNull()
 
     private data class JsonFile(val filename: String, val content: String)
 

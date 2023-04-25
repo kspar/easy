@@ -66,9 +66,7 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
             students.flatMap { it.groups }.toSet().forEach { courseGroupAccessible(courseId, it) }
         }
 
-        return insertStudentCourseAccesses(courseId, students).also {
-            if (it.accessesAdded > 0) cachingService.evictSelectLatestValidGradeForCourse(courseId)
-        }
+        return insertStudentCourseAccesses(courseId, students)
     }
 
     private fun insertStudentCourseAccesses(courseId: Long, students: List<StudentNoAccount>): Resp = transaction {

@@ -80,10 +80,7 @@ class RemoveStudentsFromCourseController(val cachingService: CachingService) {
         val (deleted, pendingDeleted) = deleteStudentsFromCourse(courseId, studentIds, pendingStudentEmails)
         log.debug { "Removed $deleted active students and $pendingDeleted pending students" }
 
-        return Resp(
-            deleted,
-            pendingDeleted
-        ).also { if (deleted > 0) cachingService.evictSelectLatestValidGradeForCourse(courseId) }
+        return Resp(deleted, pendingDeleted)
     }
 
     private fun assertCallerCanAccessStudents(

@@ -1448,4 +1448,97 @@
     </changeSet>
 
 
+    <changeSet id="270223-1" author="priit">
+
+        <addColumn tableName="submission">
+            <!-- New field submission.grade: authoritative grade, nullable, modify on assessment -->
+            <column name="grade" type="integer">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_auto_grade" type="boolean">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="teacher_assessment">
+            <!-- New field teacher_assessment.edited_at, teacher_assessment.feedback_html -->
+            <column name="edited_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- At some point migrate all missing-html feedbacks from feedback_adoc -->
+            <column name="feedback_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- teacher_assessment FK -> (course_exercise, account ("student")) -->
+            <column name="course_exercise_id" type="bigint">
+                <constraints references="course_exercise(id)"
+                             foreignKeyName="fk_teacher_assessment_course_exercise"
+                             nullable="true"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_teacher_assessment_account_student"
+                             nullable="true"/>
+            </column>
+
+        </addColumn>
+
+        <!-- teacher_assessment.grade to nullable -->
+        <dropNotNullConstraint tableName="teacher_assessment" columnName="grade" columnDataType="integer"/>
+        <!-- rename teacher_assessment.feedback -> teacher_assessment.feedback_adoc -->
+        <renameColumn tableName="teacher_assessment" oldColumnName="feedback" newColumnName="feedback_adoc"/>
+        <!-- teacher_assessment.created_at -> merge_window_start (return in activity log service as created_at) -->
+        <renameColumn tableName="teacher_assessment" oldColumnName="created_at " newColumnName="merge_window_start"/>
+
+        <!-- teacher_assessment.teacher FK to account instead of teacher -->
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_assessment_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment"
+                                  constraintName="fk_teacher_assessment_teacher"/>
+
+
+        <!--automatic_assessment FK -> (course_exercise, account ("student")) -->
+        <addColumn tableName="automatic_assessment">
+            <column name="course_exercise_id" type="bigint">
+                <constraints references="course_exercise(id)"
+                             foreignKeyName="fk_automatic_assessment_course_exercise"
+                             nullable="true"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_automatic_assessment_account_student"
+                             nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Migrate and make FKs not null -->
+        <sql>
+            UPDATE teacher_assessment
+            SET student_id         = submission.student_id,
+                course_exercise_id = submission.course_exercise_id FROM submission
+            WHERE submission.id = teacher_assessment.submission_id;
+
+            UPDATE automatic_assessment
+            SET student_id         = submission.student_id,
+                course_exercise_id = submission.course_exercise_id FROM submission
+            WHERE submission.id = automatic_assessment.submission_id;
+
+            ALTER TABLE teacher_assessment
+                ALTER course_exercise_id SET NOT NULL;
+            ALTER TABLE automatic_assessment
+                ALTER course_exercise_id SET NOT NULL;
+            ALTER TABLE teacher_assessment
+                ALTER student_id SET NOT NULL;
+            ALTER TABLE automatic_assessment
+                ALTER student_id SET NOT NULL;
+        </sql>
+
+    </changeSet>
+
+
 </databaseChangeLog>
