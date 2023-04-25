@@ -1,7 +1,7 @@
 package pages.exercise
 
 import Str
-import components.StringComp
+import components.text.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import components.modal.Modal
@@ -9,7 +9,7 @@ import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import errorMessage
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.unionPromise

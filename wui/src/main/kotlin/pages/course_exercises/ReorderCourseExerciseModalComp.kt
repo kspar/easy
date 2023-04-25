@@ -1,10 +1,10 @@
 package pages.course_exercises
 
 import Str
-import components.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import components.modal.Modal
+import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
 import debug
 import kotlinx.coroutines.await

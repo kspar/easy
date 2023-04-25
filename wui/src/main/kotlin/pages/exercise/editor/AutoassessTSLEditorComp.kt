@@ -1,6 +1,6 @@
 package pages.exercise.editor
 
-import kotlinx.coroutines.await
+import pages.exercise.editor.tsl.TSLRootComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
@@ -11,22 +11,20 @@ class AutoassessTSLEditorComp(
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
+    val tslRoot = TSLRootComp(this)
 
     private var isEditable = startEditable
 
-
     override val children: List<Component>
-        get() = listOf()
+        get() = listOf(tslRoot)
 
     override fun create() = doInPromise {
 
     }
 
-    override fun render() = "TSL"
-
     override suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
-        createAndBuild().await()
+        // TODO: disable all form elements?
     }
 
     override fun getEvalScript(): String {
@@ -41,6 +39,7 @@ class AutoassessTSLEditorComp(
 
 
     object ActiveView : AutoassessEditorComp.ActiveView
+
     override fun getActiveView() = ActiveView
     override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {}
 }

@@ -7,7 +7,7 @@ import components.modal.BinaryModalComp
 import components.modal.Modal
 import dao.LibraryDirDAO
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 

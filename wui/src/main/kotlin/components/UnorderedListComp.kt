@@ -1,5 +1,6 @@
 package components
 
+import components.text.LinkComp
 import rip.kspar.ezspa.Component
 import tmRender
 

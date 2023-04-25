@@ -18,8 +18,11 @@ external object Materialize {
     val Materialbox: MMaterialbox
     val FormSelect: MFormSelect
     val Modal: MModal
+    val Collapsible: MCollapsible
 
     fun toast(options: dynamic): MToastInstance
+
+    fun textareaAutoResize(textareaElement: Element)
 }
 
 
@@ -108,3 +111,15 @@ external class MModalInstance {
     fun close()
     fun destroy()
 }
+
+external class MCollapsible {
+    fun init(element: Element, options: dynamic = definedExternally): MCollapsibleInstance
+}
+
+external class MCollapsibleInstance {
+    fun open(i: Int)
+    fun close(i: Int)
+}
+
+fun MCollapsibleInstance.open() = this.open(0)
+fun MCollapsibleInstance.close() = this.close(0)

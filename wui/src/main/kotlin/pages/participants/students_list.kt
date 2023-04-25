@@ -2,7 +2,7 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
-import components.StringComp
+import components.text.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.modal.Modal
@@ -10,7 +10,7 @@ import dao.ParticipantsDAO
 import debug
 import errorMessage
 import kotlinx.coroutines.await
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise

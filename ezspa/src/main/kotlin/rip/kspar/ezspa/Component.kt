@@ -40,8 +40,7 @@ abstract class Component(
      * Produce HTML that represents this component's current state. This HTML is inserted into the destination element
      * when building the component.
      */
-    // TODO: default render could be plainDst(children)?
-    protected abstract fun render(): String
+    protected open fun render(): String = plainDstStr(children.map { it.dstId })
 
     /**
      * Perform UI initialisation, caching and other tasks after the component has been painted.
@@ -119,6 +118,16 @@ abstract class Component(
     fun rebuildAndRecreateChildren(): Promise<*> = doInPromise {
         buildThis()
         children.map { it.createAndBuild() }.unionPromise().await()
+        postChildrenBuilt()
+    }
+
+    /**
+     * Append the child's destination HTML element inside this component's destination,
+     * and then [createAndBuild] the child.
+     */
+    fun appendChild(child: Component): Promise<*> = doInPromise {
+        getElemById(dstId).appendHTML(plainDstStr(child.dstId))
+        child.createAndBuild().await()
         postChildrenBuilt()
     }
 

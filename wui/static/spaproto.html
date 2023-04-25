@@ -163,25 +163,6 @@
     </div>
 </script>
 
-<script id="t-c-page-tabs" type="text/x-handlebars">
-    <ez-tabs-header>
-        <ul id="{{tabsId}}" class="tabs ez-tabs">
-            <!-- On one line, avoid whitespace between items -->
-            {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
-        </ul>
-        {{#trailerElementId}}
-            <ez-tabs-trailer id="{{trailerElementId}}"></ez-tabs-trailer>
-        {{/trailerElementId}}
-    </ez-tabs-header>
-    <ez-tabs-content>
-        {{#tabs}}
-        <ez-tab-content id="{{id}}">
-            <ez-dst id="{{compDstId}}"></ez-dst>
-        </ez-tab-content>
-        {{/tabs}}
-    </ez-tabs-content>
-</script>
-
 <script id="t-c-code-editor" type="text/x-handlebars">
     <div id="{{editorId}}" class="editor-wrapper {{^showLineNums}}no-gutter{{/showLineNums}}">
         {{#showTabs}}
@@ -389,8 +370,8 @@
                 </ezc-main>
                 {{#hasActions}}
                     <ezc-right>
-                        <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="waves-effect dropdown-trigger" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
-                            <ez-icon class="med">
+                        <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
+                            <ez-icon>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                             </ez-icon>
                         </ez-icon-action>
@@ -479,7 +460,7 @@
 
 <script id="t-c-text-field" type="text/x-handlebars">
     <div class="input-field">
-        <textarea id="{{id}}" class="materialize-textarea" placeholder="{{{placeholder}}}"></textarea>
+        <textarea id="{{id}}" class="materialize-textarea" placeholder="{{{placeholder}}}">{{value}}</textarea>
         <label for="{{id}}" class="{{#active}}active{{/active}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>

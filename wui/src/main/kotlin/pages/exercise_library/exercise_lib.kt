@@ -15,7 +15,7 @@ import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise

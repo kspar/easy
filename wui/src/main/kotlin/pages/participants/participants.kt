@@ -150,7 +150,7 @@ class ParticipantsRootComp(
 
 
         tabsComp = PageTabsComp(
-            buildList {
+            tabs = buildList {
                 add(
                     PageTabsComp.Tab("Õpilased", preselected = true, id = tabStudentsId) {
                         ParticipantsStudentsListComp(

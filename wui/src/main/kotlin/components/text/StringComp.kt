@@ -1,4 +1,4 @@
-package components
+package components.text
 
 import rip.kspar.ezspa.Component
 

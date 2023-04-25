@@ -108,3 +108,7 @@ private fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event:
 }
 
 fun Element.appendHTML(html: String) = this.insertAdjacentHTML("beforeend", html)
+
+fun plainDstStr(vararg dstIds: String?): String = plainDstStr(dstIds.toList())
+fun plainDstStr(dstIds: List<String?>): String =
+    dstIds.filterNotNull().joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }

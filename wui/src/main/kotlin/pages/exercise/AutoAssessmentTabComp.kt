@@ -134,6 +134,8 @@ class AutoAssessmentTabComp(
 
     fun isValid() = attrs.isValid() && (editor?.isValid() ?: true)
 
+    fun refreshTSLTabs() = (editor as? AutoassessTSLEditorComp)?.tslRoot?.tabs?.refreshIndicator()
+
     private suspend fun changeType(typeId: String?) {
         debug { "Set type to $typeId" }
 

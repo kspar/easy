@@ -1,4 +1,4 @@
-package components
+package components.text
 
 import onSingleClickWithDisabled
 import org.w3c.dom.HTMLAnchorElement

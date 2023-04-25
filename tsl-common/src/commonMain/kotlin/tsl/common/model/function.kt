@@ -1,20 +1,23 @@
-package com.example.demo
+package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import tsl.common.model.*
 
 // TODO: Refactor: Later remove 'functionName' and create a Function class that has it in it by deafult.
+
 
 @Serializable
 @SerialName("function_execution_test") // Funktsiooni käivituse test
 data class FunctionExecutionTest(
+    override val id: Long,
     val functionName: String,
-    val arguments: List<String>? = null,
-    val standardInputData: List<String>? = null,
-    val inputFiles: List<FileData>? = null, // Sama nii input kui output data-le
+    val arguments: List<String> = emptyList(),
+    val standardInputData: List<String> = emptyList(),
+    val inputFiles: List<FileData> = emptyList(), // Sama nii input kui output data-le
     val returnValue: String? = null,
-    val genericChecks: List<GenericCheck>? = null,
-    val outputFileChecks: List<OutputFileCheck>? = null
+    val genericChecks: List<GenericCheck> = emptyList(),
+    val outputFileChecks: List<OutputFileCheck> = emptyList()
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsiooni käivitus"
@@ -24,6 +27,7 @@ data class FunctionExecutionTest(
 @Serializable
 @SerialName("function_contains_loop_test")
 data class FunctionContainsLoopTest(
+    override val id: Long,
     val functionName: String,
     val containsLoop: ContainsCheck
 ) : Test() {
@@ -35,6 +39,7 @@ data class FunctionContainsLoopTest(
 @Serializable
 @SerialName("function_contains_keyword_test")
 data class FunctionContainsKeywordTest(
+    override val id: Long,
     val functionName: String,
     val genericCheck: GenericCheck,
 ) : Test() {
@@ -46,6 +51,7 @@ data class FunctionContainsKeywordTest(
 @Serializable
 @SerialName("function_contains_return_test")
 data class FunctionContainsReturnTest(
+    override val id: Long,
     val functionName: String,
     val containsReturn: ContainsCheck
 ) : Test() {
@@ -57,6 +63,7 @@ data class FunctionContainsReturnTest(
 @Serializable
 @SerialName("function_calls_function_test")
 data class FunctionCallsFunctionTest(
+    override val id: Long,
     val functionName: String,
     val genericCheck: GenericCheckLong
 ) : Test() {
@@ -68,6 +75,7 @@ data class FunctionCallsFunctionTest(
 @Serializable
 @SerialName("function_calls_print_test")
 data class FunctionCallsPrintTest(
+    override val id: Long,
     val functionName: String,
     val callsCheck: CallsCheck
 ) : Test() {
@@ -79,6 +87,7 @@ data class FunctionCallsPrintTest(
 @Serializable
 @SerialName("function_is_recursive_test")
 data class FunctionIsRecursiveTest(
+    override val id: Long,
     val functionName: String,
     val isRecursive: RecursiveCheck
 ) : Test() {
@@ -90,6 +99,7 @@ data class FunctionIsRecursiveTest(
 @Serializable
 @SerialName("function_defines_function_test")
 data class FunctionDefinesFunctionTest(
+    override val id: Long,
     val functionName: String,
     val genericCheck: GenericCheckLong
 ) : Test() {
@@ -101,6 +111,7 @@ data class FunctionDefinesFunctionTest(
 @Serializable
 @SerialName("function_imports_module_test")
 data class FunctionImportsModuleTest(
+    override val id: Long,
     val functionName: String,
     val genericCheck: GenericCheckLong
 ) : Test() {
@@ -112,6 +123,7 @@ data class FunctionImportsModuleTest(
 @Serializable
 @SerialName("function_contains_try_except_test")
 data class FunctionContainsTryExceptTest(
+    override val id: Long,
     val functionName: String,
     val containsTryExcept: ContainsCheck
 ) : Test() {
@@ -123,6 +135,7 @@ data class FunctionContainsTryExceptTest(
 @Serializable
 @SerialName("function_is_pure_test")
 data class FunctionIsPureTest(
+    override val id: Long,
     val functionName: String,
     val containsLocalVars: ContainsCheck
 ) : Test() {

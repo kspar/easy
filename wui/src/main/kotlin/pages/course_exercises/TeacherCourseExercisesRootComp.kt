@@ -6,10 +6,10 @@ import Icons
 import UserMessageAction
 import cache.BasicCourseInfo
 import components.EzCollComp
-import components.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.modal.Modal
+import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
 import debug

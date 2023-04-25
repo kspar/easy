@@ -7,6 +7,7 @@ requiredFiles:
 
 tests:
   - type: program_execution_test
+    id: 1
     standardInputData:
       - Kasutajasisend
     inputFiles:
@@ -30,9 +31,13 @@ tests:
         failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
     exceptionCheck:
       mustNotThrowException: true
+      beforeMessage: Kontrollib, et programm ei viskaks erindit.
+      passedMessage: Programm ei visanud erindit.
+      failedMessage: Programm viskas erindi.
     name: Programmi käivituse test.
 
   - type: program_imports_module_test
+    id: 2
     genericCheck:
       checkType: ALL_OF_THESE
       expectedValue:
@@ -43,6 +48,7 @@ tests:
     points: 10
 
   - type: program_calls_function_test
+    id: 3
     genericCheck:
       checkType: ANY_OF_THESE
       expectedValue:
@@ -53,6 +59,7 @@ tests:
     name: Programm kutsub välja turtle funktsiooni.
 
   - type: program_contains_loop_test
+    id: 4
     programContainsLoop:
       mustNotContain: False
       beforeMessage: Kontrollib, kas programmis esineb tsükkel.
@@ -61,6 +68,7 @@ tests:
     name: Programmis esineb tsükkel.
 
   - type: program_contains_try_except_test
+    id: 5
     programContainsTryExcept:
       mustNotContain: True
       beforeMessage: Kontrollib, kas programmis esineb try/except plokk.
@@ -69,6 +77,7 @@ tests:
     name: Programmis ei tohi olla try/except plokki.
 
   - type: program_calls_print_test
+    id: 6
     programCallsPrint:
       mustNotCall: False
       beforeMessage: Kontrollib, kas programm kutsub välja 'print' käsu.
@@ -77,6 +86,7 @@ tests:
     name: Programm peab välja kutsuma 'print' käsu.
 
   - type: program_defines_function_test
+    id: 7
     genericCheck:
       checkType: ANY_OF_THESE
       expectedValue:
@@ -89,6 +99,7 @@ tests:
     name: Programm defineerib vähemalt ühe antud funktsioonidest.
 
   - type: program_contains_keyword_test
+    id: 8
     genericCheck:
       checkType: ANY_OF_THESE
       expectedValue:
@@ -101,6 +112,7 @@ tests:
     name: Programm sisaldab võtmesõna.
 
   - type: function_contains_loop_test
+    id: 9
     functionName: seosta_lapsed_ja_vanemad
     containsLoop:
       mustNotContain: False
@@ -110,6 +122,7 @@ tests:
     name: Funktsioonis esineb tsükkel.
 
   - type: function_contains_keyword_test
+    id: 10
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
       checkType: ANY_OF_THESE
@@ -122,6 +135,7 @@ tests:
     name: Funktsioon sisaldab võtmesõna.
 
   - type: function_contains_return_test
+    id: 11
     functionName: seosta_lapsed_ja_vanemad
     containsReturn:
       mustNotContain: False
@@ -131,6 +145,7 @@ tests:
     name: Funktsioonis esineb return.
 
   - type: function_calls_function_test
+    id: 12
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
       checkType: ANY_OF_THESE
@@ -151,6 +166,7 @@ tests:
     name: Funktsioon kutsub välja turtle funktsiooni.
 
   - type: function_calls_print_test
+    id: 13
     functionName: seosta_lapsed_ja_vanemad
     callsCheck:
       mustNotCall: False
@@ -160,6 +176,7 @@ tests:
     name: Funktsioon kutsub välja print käsu.
 
   - type: function_is_recursive_test
+    id: 14
     functionName: seosta_lapsed_ja_vanemad
     isRecursive:
       mustNotBeRecursive: False
@@ -169,6 +186,7 @@ tests:
     name: Funktsioonis on rekursiivne.
 
   - type: function_defines_function_test
+    id: 15
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
       checkType: ANY_OF_THESE
@@ -182,6 +200,7 @@ tests:
     name: Funktsioon defineerib vähemalt ühe antud funktsioonidest.
 
   - type: function_imports_module_test
+    id: 16
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
       checkType: ALL_OF_THESE
@@ -193,6 +212,7 @@ tests:
     name: Funktsioon importib mooduli turtle.
 
   - type: function_contains_try_except_test
+    id: 17
     functionName: seosta_lapsed_ja_vanemad
     containsTryExcept:
       mustNotContain: True
@@ -202,6 +222,7 @@ tests:
     name: Funktsioonis ei tohi olla try/except plokki.
 
   - type: function_is_pure_test
+    id: 18
     functionName: seosta_lapsed_ja_vanemad
     containsLocalVars:
       mustNotContain: False
@@ -211,16 +232,17 @@ tests:
     name: Funktsioon kasutab ainult lokaalseid muutujaid.
 
   - type: function_execution_test
+    id: 19
     functionName: seosta_lapsed_ja_vanemad
     arguments:
-      - lapsed.txt
-      - nimed.txt
+      - '"lapsed.txt"'
+      - '"nimed.txt"'
     standardInputData:
       - Kasutajasisend
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    returnValue: '3'
+    returnValue: 3
     genericChecks:
       - checkType: ANY_OF_THESE
         considerElementsOrder: false

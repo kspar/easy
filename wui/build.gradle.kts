@@ -8,13 +8,13 @@ version = "2"
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
     implementation(project(":ezspa"))
+    implementation(project(":tsl-common"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.6.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 
     val pathToMaterialize: String? by project
     when (pathToMaterialize) {
@@ -27,7 +27,7 @@ dependencies {
 }
 
 kotlin {
-    js {
+    js(IR) {
         browser {}
         binaries.executable()
     }

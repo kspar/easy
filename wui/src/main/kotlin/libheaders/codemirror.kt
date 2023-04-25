@@ -28,6 +28,7 @@ external class CodeMirrorInstance {
     fun getMode(): CodeMirrorMode
     fun execCommand(cmd: String)
     fun somethingSelected(): Boolean
+    fun refresh()
 }
 
 external class CodeMirrorMode {

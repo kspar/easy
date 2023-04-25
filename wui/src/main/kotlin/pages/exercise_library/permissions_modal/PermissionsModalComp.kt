@@ -14,7 +14,7 @@ import errorMessage
 import kotlinx.coroutines.await
 import pages.exercise_library.DirAccess
 import pages.exercise_library.ExerciseLibraryPage
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import tmRender

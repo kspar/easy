@@ -17,7 +17,7 @@ import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
-import plainDstStr
+import rip.kspar.ezspa.plainDstStr
 import restore
 import rip.kspar.ezspa.CacheableComponent
 import rip.kspar.ezspa.Component

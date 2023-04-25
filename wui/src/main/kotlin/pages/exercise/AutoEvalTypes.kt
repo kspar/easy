@@ -17,12 +17,12 @@ object AutoEvalTypes {
     }
 
     val templates = listOf(
-//        TypeTemplate(
-//            "TSL", "tiivad:tsl-compose",
-//            7, 30, TypeEditor.TSL_COMPOSE,
-//            "TODO TSL",
-//            "",
-//        ),
+        TypeTemplate(
+            "TSL", "tiivad:tsl-compose",
+            7, 30, TypeEditor.TSL_COMPOSE,
+            "TODO TSL",
+            "",
+        ),
 
         TypeTemplate(
             "TSL Spec", "tiivad:tsl-spec",
