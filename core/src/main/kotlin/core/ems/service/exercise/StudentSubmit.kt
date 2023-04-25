@@ -9,7 +9,6 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.anyPreviousTeacherAssessmentContainsGrade
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
@@ -85,7 +84,7 @@ class StudentSubmitCont(
         try {
             val autoExerciseId = selectAutoExId(courseExId)
             if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId, cachingService, courseExId)
+                insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
                 throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
             }
 
@@ -102,7 +101,7 @@ class StudentSubmitCont(
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId, cachingService, courseExId)
+            insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
             return
         }
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
