@@ -42,6 +42,8 @@ class ExerciseRootComp(
     private lateinit var exerciseTab: ExerciseTabComp
     private lateinit var autoassessTab: AutoAssessmentTabComp
 
+    private lateinit var initialExercise: ExerciseDAO.Exercise
+
     override val children: List<Component>
         get() = listOf(crumbs, tabs, addToCourseModal)
 
@@ -52,6 +54,8 @@ class ExerciseRootComp(
             errorMessage { "Sul pole ülesandekogus sellele ülesandele ligipääsu" }
             error("No exercise lib access to exercise $exerciseId")
         }
+        initialExercise = exercise
+
         val parents = LibraryDirDAO.getDirParents(exercise.dir_id).await().reversed()
 
         setPathSuffix(createPathChainSuffix(parents.map { it.name } + exercise.title))
@@ -147,7 +151,14 @@ class ExerciseRootComp(
         editModeBtns?.setSaveEnabled(exerciseTab.isValid() && autoassessTab.isValid())
     }
 
-    private suspend fun editModeChanged(nowEditing: Boolean) {
+    private suspend fun editModeChanged(nowEditing: Boolean): Boolean {
+        // Check if exercise has changed before editing
+        if (nowEditing && hasExerciseChanged()) {
+            successMessage { "Seda ülesannet on vahepeal muudetud, näitan uut versiooni" }
+            recreate()
+            return false
+        }
+
         tabs.refreshIndicator()
 
         // exercise tab: title, text editor
@@ -157,33 +168,103 @@ class ExerciseRootComp(
         val editorView = autoassessTab.getEditorActiveView()
         autoassessTab.setEditable(nowEditing)
         autoassessTab.setEditorActiveView(editorView)
+        return true
     }
 
     private suspend fun saveExercise(): Boolean {
         val exerciseProps = exerciseTab.getEditedProps()
         val autoevalProps = autoassessTab.getEditedProps()
+        val updatedExercise = ExerciseDAO.UpdatedExercise(
+            exerciseProps.title,
+            exerciseProps.textAdoc,
+            exerciseProps.textHtml,
+            if (autoevalProps != null)
+                ExerciseDAO.Autoeval(
+                    autoevalProps.containerImage,
+                    autoevalProps.evalScript,
+                    autoevalProps.assets,
+                    autoevalProps.maxTime,
+                    autoevalProps.maxMem,
+                )
+            else null
+        )
 
-        ExerciseDAO.updateExercise(
-            exerciseId,
-            ExerciseDAO.UpdatedExercise(
-                exerciseProps.title,
-                exerciseProps.textAdoc,
-                exerciseProps.textHtml,
-                if (autoevalProps != null)
-                    ExerciseDAO.Autoeval(
-                        autoevalProps.containerImage,
-                        autoevalProps.evalScript,
-                        autoevalProps.assets,
-                        autoevalProps.maxTime,
-                        autoevalProps.maxMem,
-                    )
-                else null
+        val merge = mergeChanges(updatedExercise)
+
+        if (merge.conflict) {
+            val forceSave = window.confirm(
+                "Seda ülesannet on vahepeal muudetud ja lokaalsed muudatused lähevad varem tehtud muudatustega konflikti. " +
+                        "Kas soovid vahepeal tehtud muudatused oma lokaalsete muudatustega üle kirjutada?"
             )
-        ).await()
+            if (!forceSave)
+                return false
+        }
+
+        ExerciseDAO.updateExercise(exerciseId, merge.merged).await()
 
         successMessage { "Ülesanne salvestatud" }
         recreate()
         return true
+    }
+
+    data class MergeResult(val conflict: Boolean, val merged: ExerciseDAO.UpdatedExercise)
+
+    private suspend fun mergeChanges(local: ExerciseDAO.UpdatedExercise): MergeResult {
+        val remote = ExerciseDAO.getExercise(exerciseId).await()
+        val initial = initialExercise
+
+        val remoteAutoeval = if (remote.container_image != null)
+            ExerciseDAO.Autoeval(
+                remote.container_image!!,
+                remote.grading_script!!,
+                remote.assets!!.associate { it.file_name to it.file_content },
+                remote.max_time_sec!!,
+                remote.max_mem_mb!!
+            )
+        else null
+
+        val initialAutoeval = if (initial.container_image != null)
+            ExerciseDAO.Autoeval(
+                initial.container_image!!,
+                initial.grading_script!!,
+                initial.assets!!.associate { it.file_name to it.file_content },
+                initial.max_time_sec!!,
+                initial.max_mem_mb!!
+            )
+        else null
+
+        val title = mergeValue(local.title, remote.title, initial.title)
+        val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
+        val textHtml = mergeValue(local.textHtml, remote.text_html, initial.text_html)
+        val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
+
+        return MergeResult(
+            listOf(title, textAdoc, textHtml, autoeval).any { it.second },
+            ExerciseDAO.UpdatedExercise(title.first, textAdoc.first, textHtml.first, autoeval.first)
+        )
+    }
+
+    private fun <T> mergeValue(local: T, remote: T, initial: T): Pair<T, Boolean> = when {
+        // local unchanged
+        local == initial -> remote to false
+        // remote unchanged
+        remote == initial -> local to false
+        // both changed to same value - no conflict
+        local == remote -> local to false
+        // both changed to different values - conflict
+        else -> local to true
+    }
+
+    private suspend fun hasExerciseChanged(): Boolean {
+        val currentExercise = ExerciseDAO.getExercise(exerciseId).await()
+        return currentExercise.title != initialExercise.title ||
+                currentExercise.text_adoc != initialExercise.text_adoc ||
+                currentExercise.text_html != initialExercise.text_html ||
+                currentExercise.container_image != initialExercise.container_image ||
+                currentExercise.grading_script != initialExercise.grading_script ||
+                currentExercise.assets != initialExercise.assets ||
+                currentExercise.max_time_sec != initialExercise.max_time_sec ||
+                currentExercise.max_mem_mb != initialExercise.max_mem_mb
     }
 
     private suspend fun wishesToCancel() =
