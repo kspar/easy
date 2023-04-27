@@ -3,12 +3,12 @@ package components
 import Icons
 import components.form.ButtonComp
 import debug
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.plainDstStr
 import show
 
 class EditModeButtonsComp(
-    private val onModeChanged: suspend (Boolean) -> Unit,
+    private val onModeChange: suspend (Boolean) -> Boolean,
     private val onSave: suspend () -> Boolean,
     private val canCancel: suspend () -> Boolean = { true },
     startAsEditing: Boolean = false,
@@ -21,8 +21,8 @@ class EditModeButtonsComp(
 
     private val startEditBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Muuda", Icons.edit,
-            { changeEditMode(true) }, parent = this
+            ButtonComp.Type.FLAT, "Muuda", Icons.edit, disabledLabel = "Laen...",
+            onClick = { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =
         ButtonComp(
@@ -45,15 +45,17 @@ class EditModeButtonsComp(
         updateBtnVisibility()
     }
 
-    suspend fun changeEditMode(nowEditing: Boolean) {
+    private suspend fun changeEditMode(nowEditing: Boolean) {
         val newMode = if (nowEditing) State.EDITING else State.NOT_EDITING
         if (state != newMode) {
-            debug { "State changed to $newMode" }
-            state = newMode
-
-            updateBtnVisibility()
-
-            onModeChanged(nowEditing)
+            val isModeChangeAccepted = onModeChange(nowEditing)
+            if (isModeChangeAccepted) {
+                debug { "State changed to $newMode" }
+                state = newMode
+                updateBtnVisibility()
+            } else {
+                debug { "State change from $state to $newMode not accepted" }
+            }
         }
     }
 

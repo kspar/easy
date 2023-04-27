@@ -16,6 +16,8 @@ import rip.kspar.ezspa.getHtml
 
 object ExerciseLibraryPage : EasyPage() {
 
+    private var rootComp: ExerciseLibComp? = null
+
     override val pageName: Any
         get() = PageName.EXERCISE_LIBRARY
 
@@ -41,14 +43,15 @@ object ExerciseLibraryPage : EasyPage() {
         val dirId = getDirId().let { if (it == "root") null else it }
 
         doInPromise {
-            ExerciseLibComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
-                .createAndBuild().await()
+            rootComp = ExerciseLibComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
+                .also { it.createAndBuild().await() }
         }
     }
 
     override fun destruct() {
         super.destruct()
         getHtml().removeClass("wui3")
+        rootComp?.destroy()
     }
 
     fun linkToRoot() = linkToDir("root")

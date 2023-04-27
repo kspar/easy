@@ -17,11 +17,11 @@ import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
-import rip.kspar.ezspa.plainDstStr
 import restore
 import rip.kspar.ezspa.CacheableComponent
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import stringify
 import warn
 import kotlin.js.Promise
@@ -69,10 +69,14 @@ object CoursesPage : EasyPage() {
         val root = rootComp
         if (root != null) {
             updateState(State.serializer().stringify(State(root.getCacheableState(), getWindowScrollPosition())))
-            rootComp = null
         } else {
             warn { "Cannot cache courses page - root component is null" }
         }
+    }
+
+    override fun destruct() {
+        super.destruct()
+        rootComp?.destroy()
     }
 
     fun link() = constructPathLink(emptyMap())

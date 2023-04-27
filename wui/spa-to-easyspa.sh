@@ -6,9 +6,9 @@
 #sed -i "$s" static/spaproto.html
 
 
+scp build/developmentExecutable/wui.js devgate:/var/www/wui/static/js/
 scp static/spaproto.html devgate:/var/www/wui/index.html
 scp static/css/main.css devgate:/var/www/wui/static/css/main.css
-scp build/distributions/wui.js devgate:/var/www/wui/static/js/
 
 
 

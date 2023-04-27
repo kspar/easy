@@ -2,18 +2,17 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
-import components.text.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
-import components.modal.Modal
+import components.text.StringComp
 import debug
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
 import toEstonianString
 import kotlin.js.Date
@@ -150,8 +149,7 @@ class ParticipantsTeachersListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER,
-            id = Modal.REMOVE_TEACHERS_FROM_COURSE, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.TEACHER, parent = this)

@@ -34,6 +34,7 @@ abstract class Component(
      * the component is ready to be rendered.
      * NB! Avoid performing synchronous tasks.
      */
+    // TODO: non-null
     protected open fun create(): Promise<*>? = null
 
     /**
@@ -58,6 +59,28 @@ abstract class Component(
      */
     protected open fun renderLoading(): String? = null
 
+    /**
+     * Clear everything rendered by this component, destroy global effects etc.
+     * This is (should be - see [destroy]) guaranteed to be called before this component is cleared out of the DOM.
+     * Default implementation clears the component's destination.
+     * To destroy a component, call [destroy].
+     */
+    protected open fun destroyThis() = getElemByIdOrNull(dstId)?.clear()
+
+    /**
+     * Clear everything rendered by this component and its children, destroy global effects etc.
+     * Make sure to always call this for each component that was created but is now discarded.
+     * [Page]s should ensure that this function is called on [Page.destruct] for all root components
+     * (from where it propagates down to all current children).
+     * However, if a component's children change, then this function should be manually called for all removed children
+     * by the parent component since [Page] root [destroy]s will only propagate to current (not previous) children.
+     */
+    fun destroy() {
+        // If is created, then assume all lateinit children are initialized
+        if (isCreated)
+            children.forEach { it.destroy() }
+        destroyThis()
+    }
 
     /**
      * Callback function invoked when this component's state has changed.
@@ -74,12 +97,13 @@ abstract class Component(
     open fun createAndBuild(): Promise<*> = doInPromise {
         paintLoading()
         create()?.await()
+        isCreated = true
         buildThis()
         children.map { it.createAndBuild() }.unionPromise().await()
         postChildrenBuilt()
     }
 
-    open fun hasUnsavedChanges(): Boolean = children.any { it.hasUnsavedChanges() }
+    open fun hasUnsavedChanges(): Boolean = if (isCreated) children.any { it.hasUnsavedChanges() } else false
 
     open fun createAndBuild3(): Promise<*>? {
         paintLoading()
@@ -140,14 +164,6 @@ abstract class Component(
         postChildrenBuilt()
     }
 
-    /**
-     * Clear this component's destination i.e. delete everything rendered by the component.
-     * Can be reversed by [createAndBuild] or [rebuild].
-     */
-    fun clear() {
-        getElemById(dstId).clear()
-    }
-
     // FIXME: temporarily public to optimise ezcoll
     fun buildThis() {
         paint()
@@ -159,6 +175,8 @@ abstract class Component(
             getElemById(dstId).innerHTML = it
         }
     }
+
+    private var isCreated: Boolean = false
 
     private fun paint() {
         try {

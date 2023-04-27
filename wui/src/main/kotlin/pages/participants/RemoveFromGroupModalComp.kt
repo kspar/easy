@@ -5,7 +5,6 @@ import components.text.StringComp
 import components.form.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -37,10 +36,9 @@ class RemoveFromGroupModalComp(
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         null, Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
-        primaryPostAction = ::reinitialise, primaryBtnType = ButtonComp.Type.DANGER,
         defaultReturnValue = false,
-        id = if (isFor == For.STUDENT) Modal.REMOVE_STUDENTS_FROM_COURSE_GROUP else Modal.REMOVE_TEACHERS_FROM_COURSE_GROUP,
+        primaryBtnType = ButtonComp.Type.DANGER, primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
+        primaryPostAction = ::reinitialise,
         parent = this
     )
 

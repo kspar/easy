@@ -54,6 +54,11 @@ object EmbedAnonAutoassessPage : EasyPage() {
             }
         }
     }
+
+    override fun destruct() {
+        super.destruct()
+        rootComp?.destroy()
+    }
 }
 
 class EmbedAnonAutoassessRootComp(

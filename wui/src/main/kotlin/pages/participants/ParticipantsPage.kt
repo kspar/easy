@@ -16,6 +16,8 @@ import rip.kspar.ezspa.getHtml
 
 object ParticipantsPage : EasyPage() {
 
+    private var rootComp: ParticipantsRootComp? = null
+
     override val pageName = PageName.PARTICIPANTS
 
     override val allowedRoles = listOf(Role.ADMIN, Role.TEACHER)
@@ -33,18 +35,18 @@ object ParticipantsPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
-
         getHtml().addClass("wui3")
 
         doInPromise {
-            ParticipantsRootComp(courseId, Auth.activeRole == Role.ADMIN, CONTENT_CONTAINER_ID)
-                .createAndBuild().await()
+            rootComp = ParticipantsRootComp(courseId, Auth.activeRole == Role.ADMIN, CONTENT_CONTAINER_ID)
+                .also { it.createAndBuild().await() }
         }
     }
 
     override fun destruct() {
         super.destruct()
         getHtml().removeClass("wui3")
+        rootComp?.destroy()
     }
 
     fun link(courseId: String) = constructPathLink(mapOf("courseId" to courseId))

@@ -5,9 +5,8 @@ import kotlinx.dom.removeClass
 import libheaders.MModalInstance
 import libheaders.Materialize
 import org.w3c.dom.Element
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.*
-import tmRender
+import template
 import kotlin.js.Promise
 
 
@@ -19,22 +18,15 @@ open class ModalComp<T>(
     bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     private val onOpen: (() -> Unit)? = null,
+    private val htmlClasses: String = "",
     parent: Component?,
-    private val id: Modal,
-    private val modalId: String = IdGenerator.nextId(),
-) : Component(parent, id.name) {
+) : Component(parent) {
 
-    // TODO: remove container style from container and ID render hack from modal
-
+    private val modalId: String = IdGenerator.nextId()
     private val modalElement: Element
         get() = getElemById(modalId)
 
     private var mModal: MModalInstance? = null
-
-    // TODO: listener refresh logic is probably not needed since children are comps that manage their own listeners,
-    //  remove at some point if it becomes clear that it's not needed
-//    private val listenerProducers: MutableList<() -> ActiveListener> = mutableListOf()
-//    private var activeListeners: MutableSet<ActiveListener> = mutableSetOf()
 
     private var bodyComps = bodyCompsProvider?.invoke(this) ?: emptyList()
     private var footerComps = footerCompsProvider?.invoke(this) ?: emptyList()
@@ -46,21 +38,46 @@ open class ModalComp<T>(
         get() = bodyComps + footerComps
 
     override fun create() = doInPromise {
-        // Create dst in modals container
-        val dstId = id.name
-        if (getElemBySelector("#ez-modals #$dstId") == null)
-            getElemById("ez-modals").appendHTML(plainDstStr(dstId))
+        // Create destination in global modal container.
+        // This hack is needed because components can be rendered inside elements that have a separate containing block.
+        // This would cause children-modals to be rendered somewhere where they cannot be positioned as absolute/fixed
+        // relative to the viewport.
+        // https://stackoverflow.com/questions/76005559/how-to-position-an-absolute-fixed-element-relative-to-the-viewport-instead-of-pa
+        getElemById("ez-modals").appendHTML(plainDstStr(dstId))
     }
 
-    override fun render(): String = tmRender(
-        "t-c-modal",
+    override fun render(): String = template(
+        """
+            <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}} {{htmlClasses}}">
+                <div class="progress hidden">
+                    <div class="indeterminate"></div>
+                </div>
+                <div class="modal-content">
+                    {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
+                    {{#bodyComps}}
+                        <ez-dst id="{{id}}"></ez-dst>
+                    {{/bodyComps}}
+                </div>
+                <div class="modal-footer">
+                    {{#footerComps}}
+                        <ez-dst id="{{id}}"></ez-dst>
+                    {{/footerComps}}
+                </div>
+            </div>
+        """.trimIndent(),
         "id" to modalId,
         "fixedFooter" to fixFooter,
         "wide" to isWide,
+        "htmlClasses" to htmlClasses,
         "title" to title,
         "bodyComps" to bodyComps.map { mapOf("id" to it.dstId) },
         "footerComps" to footerComps.map { mapOf("id" to it.dstId) },
     )
+
+    override fun destroyThis() {
+        // Remove the destination element since it was created in [create].
+        getElemById(dstId).remove()
+    }
 
 
     fun setContentComps(componentsProvider: (ModalComp<T>) -> List<Component>) {
@@ -89,11 +106,6 @@ open class ModalComp<T>(
         }
     }
 
-//    fun addListener(listenerProducer: () -> ActiveListener) {
-//        listenerProducers.add(listenerProducer)
-//        activeListeners.add(listenerProducer())
-//    }
-
     fun openWithClosePromise(): Promise<T> {
         val p = Promise<T> { resolve, _ ->
             val modal = Materialize.Modal.init(
@@ -118,13 +130,5 @@ open class ModalComp<T>(
     private fun onModalClose(resolve: (T) -> Unit) {
         resolve(returnValue)
         returnValue = defaultReturnValue
-//        refreshListeners()
     }
-
-//    private fun refreshListeners() {
-//        activeListeners.forEach { it.remove() }
-//        activeListeners.clear()
-//
-//        activeListeners = listenerProducers.map { it() }.toMutableSet()
-//    }
 }

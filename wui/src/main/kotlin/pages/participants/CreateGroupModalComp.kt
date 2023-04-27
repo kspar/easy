@@ -6,7 +6,6 @@ import components.form.validation.ConstraintViolation
 import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.plainDstStr
@@ -35,10 +34,10 @@ class CreateGroupModalComp(
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Loo uus rühm", Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { createGroup(groupNameFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise, onOpen = { groupNameFieldComp.focus() },
         defaultReturnValue = false,
-        id = Modal.CREATE_COURSE_GROUP, parent = this
+        primaryAction = { createGroup(groupNameFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
+        onOpen = { groupNameFieldComp.focus() },
+        parent = this
     )
 
     private val groupNameFieldComp = StringFieldComp(

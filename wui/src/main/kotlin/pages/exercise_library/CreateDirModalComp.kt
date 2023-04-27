@@ -4,12 +4,11 @@ import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import dao.LibraryDirDAO
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 
 class CreateDirModalComp(
     private val parentDirId: String?,
@@ -19,9 +18,9 @@ class CreateDirModalComp(
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus kaust", Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { createDir(nameField.getValue()) },
-        primaryPostAction = ::reinitialise, onOpen = { nameField.focus() },
-        defaultReturnValue = null, id = Modal.CREATE_DIR, parent = this
+        defaultReturnValue = null,
+        primaryAction = { createDir(nameField.getValue()) }, primaryPostAction = ::reinitialise,
+        onOpen = { nameField.focus() }, parent = this
     )
 
     private val nameField = StringFieldComp(

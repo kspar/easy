@@ -42,11 +42,7 @@
     <div id="nav-wrap"></div>
 </header>
 <main class="display-none">
-    <ez-modals id="ez-modals">
-        <ez-dst id="ADD_STUDENTS_TO_COURSE" class="add-participants-modal"></ez-dst>
-        <ez-dst id="ADD_TEACHERS_TO_COURSE" class="add-participants-modal"></ez-dst>
-        <ez-dst id="UPDATE_COURSE_EXERCISE_TITLE_ALIAS" class="update-course-ex-title-modal"></ez-dst>
-    </ez-modals>
+    <ez-modals id="ez-modals"></ez-modals>
     <div id="sidenav-wrap"></div>
     <div class="container">
         <div id="content-container" class="content-container"></div>
@@ -189,25 +185,6 @@
 
 <script id="t-code-editor-tab" type="text/x-handlebars">
     <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
-</script>
-
-<script id="t-c-modal" type="text/x-handlebars">
-    <div id="{{id}}" class="modal {{#fixedFooter}}fixed-footer{{/fixedFooter}} {{#wide}}wide{{/wide}}">
-        <div class="progress hidden">
-            <div class="indeterminate"></div>
-        </div>
-        <div class="modal-content">
-            {{#title}}<h4 class="modal-title">{{title}}</h4>{{/title}}
-            {{#bodyComps}}
-                <ez-dst id="{{id}}"></ez-dst>
-            {{/bodyComps}}
-        </div>
-        <div class="modal-footer">
-            {{#footerComps}}
-                <ez-dst id="{{id}}"></ez-dst>
-            {{/footerComps}}
-        </div>
-    </div>
 </script>
 
 <script id="t-c-ezcoll" type="text/x-handlebars">

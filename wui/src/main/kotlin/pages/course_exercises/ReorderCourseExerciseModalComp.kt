@@ -3,7 +3,6 @@ package pages.course_exercises
 import Str
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
 import debug
@@ -26,10 +25,15 @@ class ReorderCourseExerciseModalComp(
     private lateinit var exercisesRadioBtns: RadioButtonsComp
 
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
-        null, "Liiguta", Str.cancel(), "Liigutan...",
+        null,
+        "Liiguta",
+        Str.cancel(),
+        "Liigutan...",
+        defaultReturnValue = null,
+        primaryButtonEnabledInitial = false,
+        fixFooter = true,
         primaryAction = { exercisesRadioBtns.getSelectedOption()?.id?.let { moveExercise(it.toInt()) } },
-        primaryButtonEnabledInitial = false, defaultReturnValue = null, fixFooter = true,
-        id = Modal.REORDER_COURSE_EXERCISES, parent = this
+        parent = this
     )
 
     override val children: List<Component>

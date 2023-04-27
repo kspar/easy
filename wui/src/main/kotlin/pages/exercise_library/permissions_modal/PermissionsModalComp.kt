@@ -6,7 +6,6 @@ import Role
 import Str
 import components.form.SelectComp
 import components.form.StringFieldComp
-import components.modal.Modal
 import components.modal.ModalComp
 import dao.LibraryDirDAO
 import debug
@@ -14,9 +13,9 @@ import errorMessage
 import kotlinx.coroutines.await
 import pages.exercise_library.DirAccess
 import pages.exercise_library.ExerciseLibraryPage
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import tmRender
 import kotlin.js.Promise
 
@@ -38,7 +37,7 @@ class PermissionsModalComp(
     override fun create() = doInPromise {
         modalComp = ModalComp(
             "Jagamine", onOpen = { }, fixFooter = true,
-            defaultReturnValue = false, id = Modal.DIR_PERMISSIONS,
+            defaultReturnValue = false,
             bodyCompsProvider = {
                 val list = PermissionsListLoaderComp(
                     dirId, isDir, currentDirId, { modalComp.setLoading(it) }, { permissionsChanged = true }, it
@@ -278,6 +277,7 @@ class PermissionsListComp(
                     return
                 }
             }
+
             subjectStr.contains("@") -> PermissionSubjectNewAcc(subjectStr)
             else -> PermissionSubjectGroup(subjectStr)
         }

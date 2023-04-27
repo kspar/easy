@@ -73,7 +73,10 @@ class ExerciseRootComp(
                 )
 
                 add(
-                    PageTabsComp.Tab("Automaatkontroll", id = autoassessTabId, onActivate = { autoassessTab.refreshTSLTabs() }) {
+                    PageTabsComp.Tab(
+                        "Automaatkontroll",
+                        id = autoassessTabId,
+                        onActivate = { autoassessTab.refreshTSLTabs() }) {
                         val aaProps = if (exercise.grading_script != null) {
                             AutoAssessmentTabComp.AutoAssessProps(
                                 exercise.grading_script!!,

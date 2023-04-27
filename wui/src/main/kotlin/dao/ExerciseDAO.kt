@@ -91,8 +91,8 @@ object ExerciseDAO {
 
     data class UpdatedExercise(
         val title: String,
-        val textAdoc: String,
-        val textHtml: String,
+        val textAdoc: String?,
+        val textHtml: String?,
         val autoeval: Autoeval?,
     )
 

@@ -1,11 +1,10 @@
 package pages.course_exercises
 
 import Str
-import components.text.AttrsComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
+import components.text.AttrsComp
 import dao.CourseExercisesTeacherDAO
 import debug
 import kotlinx.coroutines.await
@@ -31,8 +30,8 @@ class UpdateCourseExerciseTitleModalComp(
         primaryAction = { updateAlias(aliasComp.getValue()) },
         // Not sure why pushing to event loop end is needed
         onOpen = { sleep(0).then { aliasComp.focus() } },
-        primaryButtonEnabledInitial = false, defaultReturnValue = null,
-        id = Modal.UPDATE_COURSE_EXERCISE_TITLE_ALIAS, parent = this
+        primaryButtonEnabledInitial = false, defaultReturnValue = null, htmlClasses = "update-course-ex-title-modal",
+        parent = this
     )
 
     override val children: List<Component>

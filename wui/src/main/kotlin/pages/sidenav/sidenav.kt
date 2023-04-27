@@ -144,13 +144,20 @@ class SidenavRootComp(
             debug { "Sidenav updating based on new role" }
             activeRole = newRole
 
+            generalSectionComp.destroy()
             generalSectionComp = SidenavGeneralSectionComp(activeRole, this, generalSectionComp.dstId)
+
             courseId?.let { courseId ->
+                courseSectionComp?.destroy()
                 courseSectionComp = SidenavCourseSectionComp(activeRole, courseId, this, courseSectionDstId)
             }
+
             pageSection?.let { pageSection ->
+                pageSectionComp?.destroy()
                 pageSectionComp = SidenavPageSectionComp(pageSection, this, pageSectionDstId)
             }
+
+            trailerSectionComp.destroy()
             trailerSectionComp = SidenavTrailerSectionComp(activeRole, this, trailerSectionComp.dstId)
 
             listOfNotNull(
@@ -173,11 +180,13 @@ class SidenavRootComp(
             when {
                 newCourseId != null -> {
                     val comp = SidenavCourseSectionComp(activeRole, newCourseId, this, courseSectionDstId)
+                    courseSectionComp?.destroy()
                     courseSectionComp = comp
                     comp.createAndBuild().await()
                 }
+
                 else -> {
-                    courseSectionComp?.clear()
+                    courseSectionComp?.destroy()
                     courseSectionComp = null
                 }
             }
@@ -206,11 +215,13 @@ class SidenavRootComp(
             when {
                 newPageSection != null -> {
                     val comp = SidenavPageSectionComp(newPageSection, this, pageSectionDstId)
+                    pageSectionComp?.destroy()
                     pageSectionComp = comp
                     comp.createAndBuild().await()
                 }
+
                 else -> {
-                    pageSectionComp?.clear()
+                    pageSectionComp?.destroy()
                     pageSectionComp = null
                 }
             }
