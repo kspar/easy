@@ -1,0 +1,1544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+
+    <changeSet id="250619-1" author="kspar">
+        <renameColumn tableName="student" oldColumnName="email" newColumnName="username"/>
+        <sql>alter table student rename constraint uniq_student_email to uniq_student_id;</sql>
+        <renameColumn tableName="student_course_access" oldColumnName="student_email" newColumnName="student_id"/>
+        <renameColumn tableName="submission" oldColumnName="student_email" newColumnName="student_id"/>
+        <addColumn tableName="student">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <renameColumn tableName="teacher" oldColumnName="email" newColumnName="username"/>
+        <sql>alter table teacher rename constraint uniq_teacher_email to uniq_teacher_id;</sql>
+        <renameColumn tableName="teacher_course_access" oldColumnName="teacher_email" newColumnName="teacher_id"/>
+        <renameColumn tableName="exercise_version" oldColumnName="author" newColumnName="author_id"/>
+        <renameColumn tableName="exercise" oldColumnName="owned_by" newColumnName="owned_by_id"/>
+        <renameColumn tableName="teacher_assessment" oldColumnName="teacher_email" newColumnName="teacher_id"/>
+        <addColumn tableName="teacher">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="260619-1" author="priit">
+        <createTable tableName="admin">
+            <column name="username" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="admin_seq_id" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="050719-1" author="priit">
+        <addColumn tableName="course_exercise">
+            <column name="instructions_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="title_alias" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="120719-1" author="kspar">
+        <createTable tableName="automatic_exercise">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="grading_script" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="container_image" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_time_sec" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_mem_mb" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="asset">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)" foreignKeyName="fk_asset_auto_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="file_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_content" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="executor">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="base_url" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="load" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_load" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="auto_exercise_executor">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)"
+                             foreignKeyName="fk_auto_exercise_executor_auto_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="executor_id" type="bigint">
+                <constraints references="executor(id)" foreignKeyName="fk_auto_exercise_executor_executor"
+                             nullable="false"/>
+            </column>
+        </createTable>
+
+        <addColumn tableName="exercise_version">
+            <column name="auto_exercise_id" type="bigint">
+                <constraints references="automatic_exercise(id)" foreignKeyName="fk_exercise_version_automatic_exercise"
+                             nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="310819-1" author="priit">
+        <createTable tableName="management_notification">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="message" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="management_notification_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="030919-1" author="priit">
+        <addDefaultValue tableName="management_notification" columnName="id"
+                         defaultValueSequenceNext="management_notification_id_seq"/>
+    </changeSet>
+
+    <changeSet id="140919-1" author="priit">
+        <createTable tableName="submission_draft">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_submission_draft_course_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints primaryKey="true" references="student(username)"
+                             foreignKeyName="fk_submission_draft_student"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="190919-1" author="priit">
+        <createTable tableName="testing_draft">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_testing_draft_course_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="teacher_id" type="text">
+                <constraints primaryKey="true" references="teacher(username)"
+                             foreignKeyName="fk_testing_draft_teacher"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="190919-2" author="priit">
+        <createTable tableName="system_configuration">
+            <column name="key" type="text">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+            <column name="value" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="220919-1" author="kspar">
+        <createTable tableName="account">
+            <column name="username" type="text">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="family_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Data migration -->
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT a.username, a.created_at, a.email, a.given_name, a.family_name
+            FROM admin a;
+        </sql>
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT t.username, t.created_at, t.email, t.given_name, t.family_name
+            FROM teacher t ON CONFLICT DO NOTHING;
+        </sql>
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name)
+            SELECT s.username, s.created_at, s.email, s.given_name, s.family_name
+            FROM student s ON CONFLICT DO NOTHING;
+        </sql>
+
+        <addForeignKeyConstraint baseTableName="student" baseColumnNames="username" constraintName="fk_student_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="student" columnName="email"/>
+        <dropColumn tableName="student" columnName="given_name"/>
+        <dropColumn tableName="student" columnName="family_name"/>
+        <addForeignKeyConstraint baseTableName="teacher" baseColumnNames="username" constraintName="fk_teacher_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="teacher" columnName="email"/>
+        <dropColumn tableName="teacher" columnName="given_name"/>
+        <dropColumn tableName="teacher" columnName="family_name"/>
+        <addForeignKeyConstraint baseTableName="admin" baseColumnNames="username" constraintName="fk_admin_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+        <dropColumn tableName="admin" columnName="email"/>
+        <dropColumn tableName="admin" columnName="given_name"/>
+        <dropColumn tableName="admin" columnName="family_name"/>
+    </changeSet>
+
+    <changeSet id="220919-2" author="kspar">
+        <dropForeignKeyConstraint baseTableName="student_course_access"
+                                  constraintName="fk_student_course_access_student"/>
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
+        <dropUniqueConstraint tableName="student" constraintName="uniq_student_id"/>
+        <addForeignKeyConstraint baseTableName="student_course_access" baseColumnNames="student_id"
+                                 constraintName="fk_student_course_access_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission" baseColumnNames="student_id"
+                                 constraintName="fk_submission_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="submission_draft" baseColumnNames="student_id"
+                                 constraintName="fk_submission_draft_student"
+                                 referencedTableName="student"
+                                 referencedColumnNames="username"/>
+
+        <dropForeignKeyConstraint baseTableName="testing_draft" constraintName="fk_testing_draft_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_course_access"
+                                  constraintName="fk_teacher_course_access_teacher"/>
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_teacher"/>
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_teacher"/>
+        <dropUniqueConstraint tableName="teacher" constraintName="uniq_teacher_id"/>
+        <addForeignKeyConstraint baseTableName="testing_draft" baseColumnNames="teacher_id"
+                                 constraintName="fk_testing_draft_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_access" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_course_access_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_assessment_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise_version" baseColumnNames="author_id"
+                                 constraintName="fk_exercise_version_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+        <addForeignKeyConstraint baseTableName="exercise" baseColumnNames="owned_by_id"
+                                 constraintName="fk_exercise_student"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"/>
+    </changeSet>
+
+    <changeSet id="230919-1" author="priit">
+        <createTable tableName="log_report">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="text">
+                <constraints primaryKey="true" references="account(username)"
+                             foreignKeyName="fk_account_log_report"
+                             nullable="false"/>
+            </column>
+            <column name="log_time" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="log_level" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="log_message" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="report_log_id_seq" startValue="1" incrementBy="1"/>
+        <addDefaultValue tableName="log_report" columnName="id"
+                         defaultValueSequenceNext="report_log_id_seq"/>
+    </changeSet>
+
+    <changeSet id="011119-1" author="priit">
+        <addColumn tableName="exercise_version">
+            <column name="text_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="011119-2" author="priit">
+        <addColumn tableName="course_exercise">
+            <column name="instructions_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="131119-1" author="priit">
+        <addColumn tableName="course">
+            <column name="moodle_short_name" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="student">
+            <column name="moodle_username" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <createTable tableName="student_moodle_pending_access">
+            <column name="course_id" type="bigint">
+                <constraints primaryKey="true" references="course(id)"
+                             foreignKeyName="fk_pending_access_course_id"
+                             nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ut_username" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="ut_username"
+                             constraintName="uniq_ut_username"/>
+    </changeSet>
+
+    <changeSet id="181119-1" author="priit">
+        <createTable tableName="student_pending_access">
+            <column name="course_id" type="bigint">
+                <constraints primaryKey="true" references="course(id)"
+                             foreignKeyName="fk_pending_access_course_id"
+                             nullable="false"/>
+            </column>
+            <column name="email" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="student_pending_access" columnNames="email" constraintName="uniq_email"/>
+        <dropColumn tableName="student_moodle_pending_access" columnName="email"/>
+    </changeSet>
+
+    <changeSet id="211119-1" author="priit">
+        <dropColumn tableName="student" columnName="moodle_username"/>
+        <addColumn tableName="account">
+            <column name="moodle_username" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="211119-2" author="priit">
+        <renameColumn tableName="student_moodle_pending_access" newColumnName="moodle_username"
+                      oldColumnName="ut_username"/>
+    </changeSet>
+
+    <changeSet id="251119-1" author="priit">
+        <dropColumn tableName="student_course_access" columnName="id"/>
+        <dropColumn tableName="teacher_course_access" columnName="id"/>
+        <addPrimaryKey columnNames="course_id, student_id" tableName="student_course_access"/>
+        <addPrimaryKey columnNames="course_id, teacher_id" tableName="teacher_course_access"/>
+    </changeSet>
+
+    <changeSet id="061219-1" author="kspar">
+        <addColumn tableName="course_exercise">
+            <column name="moodle_exercise_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="121219-1" author="kspar">
+        <dropUniqueConstraint tableName="student_pending_access" constraintName="uniq_email"/>
+        <dropUniqueConstraint tableName="student_moodle_pending_access" constraintName="uniq_ut_username"/>
+    </changeSet>
+
+    <changeSet id="121219-2" author="kspar">
+        <createTable tableName="group">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" references="course(id)"
+                             foreignKeyName="fk_group_course"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="teacher_group_access">
+            <column name="teacher_id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_teacher_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="teacher_group_access"
+                                 baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access"/>
+
+        <createTable tableName="student_group_access">
+            <column name="student_id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_group_access"
+                                 baseColumnNames="student_id, course_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="student_id, course_id"
+                                 constraintName="fk_student_group_access_student_course_access"/>
+
+        <createTable tableName="student_pending_group_access">
+            <column name="email" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_pending_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_pending_group_access"
+                                 baseColumnNames="email, course_id"
+                                 referencedTableName="student_pending_access"
+                                 referencedColumnNames="email, course_id"
+                                 constraintName="fk_student_pending_group_access_student_pending_access"/>
+
+        <createTable tableName="student_moodle_pending_group_access">
+            <column name="moodle_username" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" references="group(id)"
+                             foreignKeyName="fk_student_moodle_pending_group_access_group"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                 baseColumnNames="moodle_username, course_id"
+                                 referencedTableName="student_moodle_pending_access"
+                                 referencedColumnNames="moodle_username, course_id"
+                                 constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
+    </changeSet>
+
+    <changeSet id="311219-1" author="priit">
+        <createTable tableName="article">
+            <column name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="owner_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article"
+                                 baseColumnNames="owner_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_admin"/>
+    </changeSet>
+
+    <changeSet id="311219-2" author="priit">
+        <createTable tableName="article_version">
+            <column name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="author_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="valid_to" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="title" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="text_adoc" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="text_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_version_article"/>
+
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="previous_id"
+                                 referencedTableName="article_version"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_version_article_version"/>
+
+
+        <addForeignKeyConstraint baseTableName="article_version"
+                                 baseColumnNames="author_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_version_admin"/>
+    </changeSet>
+
+    <changeSet id="311219-3" author="priit">
+        <createTable tableName="article_alias">
+            <column name="alias" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="article_alias"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_article_alias_article"/>
+
+
+        <addForeignKeyConstraint baseTableName="article_alias"
+                                 baseColumnNames="created_by_id"
+                                 referencedTableName="admin"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_article_alias_admin"/>
+    </changeSet>
+
+    <changeSet id="311219-4" author="priit">
+        <createTable tableName="stored_file">
+            <column name="id" type="text">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="article_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="type" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="exercise_id"
+                                 referencedTableName="exercise"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_stored_file_exercise"/>
+
+
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="article_id"
+                                 referencedTableName="article"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_stored_file_article"/>
+
+
+        <addForeignKeyConstraint baseTableName="stored_file"
+                                 baseColumnNames="created_by_id"
+                                 referencedTableName="teacher"
+                                 referencedColumnNames="username"
+                                 constraintName="fk_stored_file_teacher"/>
+    </changeSet>
+
+    <changeSet id="311219-5" author="priit">
+        <createSequence sequenceName="article_id_seq" startValue="1" incrementBy="1"/>
+        <createSequence sequenceName="article_version_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="311219-6" author="priit">
+        <dropColumn tableName="article_version" columnName="valid_from"/>
+        <addColumn tableName="article_version">
+            <column name="valid_from" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="010120-1" author="kspar">
+        <createSequence sequenceName="seq_group_id" startValue="1" incrementBy="1"/>
+        <addDefaultValue tableName="group" columnName="id"
+                         defaultValueSequenceNext="seq_group_id"/>
+    </changeSet>
+
+    <changeSet id="070120-1" author="priit">
+        <addDefaultValue tableName="article" columnName="id" defaultValueSequenceNext="article_id_seq"/>
+        <addDefaultValue tableName="article_version" columnName="id" defaultValueSequenceNext="article_version_id_seq"/>
+    </changeSet>
+
+    <changeSet id="090120-1" author="kspar">
+        <!-- Hack to bypass exposed's problems with references to composite PKs: https://github.com/JetBrains/Exposed/issues/639
+        Replace composite keys of student_course_access, student_pending_access, student_moodle_pending_access
+        and references to them by their respective groups with IDs. However, keep the columns themselves so it would be
+        easier to migrate back. -->
+
+        <dropUniqueConstraint tableName="student_group_access" constraintName="student_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_group_access"
+                                  constraintName="fk_student_group_access_student_course_access"/>
+
+        <dropUniqueConstraint tableName="student_course_access" constraintName="student_course_access_pkey"/>
+        <addUniqueConstraint tableName="student_course_access" columnNames="course_id, student_id"/>
+        <addColumn tableName="student_course_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_group_access">
+            <column name="student_course_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_group_access" baseColumnNames="student_course_access_id"
+                                 referencedTableName="student_course_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_group_access_student_course_access"/>
+        <addPrimaryKey tableName="student_group_access" columnNames="student_course_access_id, group_id"/>
+
+
+        <dropUniqueConstraint tableName="student_pending_group_access"
+                              constraintName="student_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_pending_group_access"
+                                  constraintName="fk_student_pending_group_access_student_pending_access"/>
+
+        <dropUniqueConstraint tableName="student_pending_access" constraintName="student_pending_access_pkey"/>
+        <addUniqueConstraint tableName="student_pending_access" columnNames="course_id, email"/>
+        <addColumn tableName="student_pending_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_pending_group_access">
+            <column name="student_pending_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_pending_group_access"
+                                 baseColumnNames="student_pending_access_id"
+                                 referencedTableName="student_pending_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_pending_group_access_student_pending_access"/>
+        <addPrimaryKey tableName="student_pending_group_access" columnNames="student_pending_access_id, group_id"/>
+
+
+        <dropUniqueConstraint tableName="student_moodle_pending_group_access"
+                              constraintName="student_moodle_pending_group_access_pkey"/>
+        <dropForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
+
+        <dropUniqueConstraint tableName="student_moodle_pending_access"
+                              constraintName="student_moodle_pending_access_pkey"/>
+        <addUniqueConstraint tableName="student_moodle_pending_access" columnNames="course_id, moodle_username"/>
+        <addColumn tableName="student_moodle_pending_access">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_moodle_pending_group_access">
+            <column name="student_moodle_pending_access_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_group_access"
+                                 baseColumnNames="student_moodle_pending_access_id"
+                                 referencedTableName="student_moodle_pending_access" referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_group_access"
+                       columnNames="student_moodle_pending_access_id, group_id"/>
+    </changeSet>
+
+
+    <changeSet id="150120-1" author="priit">
+        <addColumn tableName="stored_file">
+            <column name="size_bytes" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+
+    <changeSet id="150120-2" author="priit">
+        <dropColumn tableName="stored_file" columnName="size_bytes"/>
+        <addColumn tableName="stored_file">
+            <column name="size_bytes" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="150120-3" author="kspar">
+        <addColumn tableName="student_moodle_pending_access">
+            <column name="email" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="180120-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="moodle_sync_students" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moodle_sync_grades" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="100220-1" author="priit">
+        <addColumn tableName="stored_file">
+            <column name="usage_confirmed" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="160220-1" author="priit">
+        <addColumn tableName="student_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="teacher_course_access">
+            <column name="created_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="160320-1" author="priit">
+        <renameTable newTableName="teacher_submission"
+                     oldTableName="testing_draft "/>
+
+        <dropColumn tableName="teacher_submission" columnName="course_exercise_id"/>
+
+        <addColumn tableName="teacher_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_teacher_submission_exercise"
+                             nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="141120-1" author="kspar">
+        <renameTable oldTableName="group" newTableName="course_group"/>
+        <sql>
+            alter
+            index group_pkey rename to course_group_pkey;
+            alter table course_group rename constraint fk_group_course to fk_course_group_course;
+            alter sequence seq_group_id rename to seq_course_group_id;
+        </sql>
+        <renameTable oldTableName="student_group_access" newTableName="student_course_group_access"/>
+        <renameTable oldTableName="student_moodle_pending_group_access"
+                     newTableName="student_moodle_pending_course_group_access"/>
+        <renameTable oldTableName="student_pending_group_access" newTableName="student_pending_course_group_access"/>
+        <renameTable oldTableName="teacher_group_access" newTableName="teacher_course_group_access"/>
+    </changeSet>
+
+    <changeSet id="141120-2" author="kspar">
+        <createTable tableName="group">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="implicit" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="account_group_access">
+            <column name="account_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_account_group_access_account"
+                             nullable="false"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints references="group(id)"
+                             foreignKeyName="fk_account_group_access_group"
+                             nullable="false"/>
+            </column>
+            <column name="manager" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="141120-3" author="kspar">
+        <addPrimaryKey tableName="account_group_access" columnNames="account_id, group_id"/>
+
+        <createTable tableName="exercise_dir">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="implicit" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent" type="bigint">
+                <constraints references="exercise_dir(id)"
+                             foreignKeyName="fk_exercise_dir_exercise_dir"
+                             nullable="true"/>
+            </column>
+            <column name="any_account_access_level" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="group_exercise_dir_access">
+            <column name="group_id" type="bigint">
+                <constraints primaryKey="true"
+                             references="group(id)"
+                             foreignKeyName="fk_group_exercise_dir_access_group"
+                             nullable="false"/>
+            </column>
+            <column name="dir_id" type="bigint">
+                <constraints primaryKey="true"
+                             references="exercise_dir(id)"
+                             foreignKeyName="fk_group_exercise_dir_access_exercise_dir"
+                             nullable="false"/>
+            </column>
+            <column name="access_level" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addColumn tableName="exercise">
+            <column name="dir_id" type="bigint">
+                <constraints references="exercise_dir(id)"
+                             foreignKeyName="fk_exercise_exercise_dir"
+                             nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="161120-1" author="kspar">
+        <!-- Migration: add implicit groups for all accounts -->
+        <sql>
+            INSERT INTO "group" (name, implicit, created_at)
+            SELECT a.username, true, a.created_at
+            FROM account a;
+
+            INSERT INTO account_group_access (account_id, group_id, manager, created_at)
+            SELECT g.name, g.id, false, g.created_at
+            FROM "group" g
+            WHERE g.implicit = true;
+        </sql>
+    </changeSet>
+
+    <changeSet id="171120-1" author="kspar">
+        <!-- Migration: add implicit dirs for all exercises -->
+        <sql>
+            INSERT INTO exercise_dir (name, implicit, created_at, modified_at)
+            SELECT e.id, true, e.created_at, e.created_at
+            FROM exercise e;
+
+            UPDATE exercise e
+            SET dir_id = (SELECT id
+                          FROM exercise_dir
+                          WHERE name = cast(e.id as text)
+                            AND implicit = true);
+
+            <!-- After migration, exercise.dir_id always points to the exercise's implicit dir, so it cannot be null -->
+            ALTER TABLE exercise
+                ALTER COLUMN dir_id SET NOT NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="170821-1" author="priit">
+        <addColumn tableName="executor">
+            <column name="drain" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="090921-1" author="priit">
+
+        <createTable tableName="container_image">
+            <column name="id" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="executor_container_image">
+            <column name="executor_id" type="bigint">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_executor_container_image"
+                             references="executor(id)"
+                             foreignKeyName="fk_executor_container_image_executor"
+                             nullable="false"/>
+            </column>
+            <column name="container_image_id" type="text">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_executor_container_image"
+                             references="container_image(id)"
+                             foreignKeyName="fk_executor_container_image_container_image"
+                             nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Migration: create container images from automatic exercise. -->
+        <sql>
+            INSERT INTO container_image (id)
+            SELECT DISTINCT a.container_image
+            FROM automatic_exercise a;
+        </sql>
+
+        <renameColumn
+                tableName="automatic_exercise"
+                oldColumnName="container_image"
+                newColumnName="container_image_id"/>
+
+
+        <addForeignKeyConstraint baseTableName="automatic_exercise"
+                                 baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_automatic_exercise_container_image"/>
+    </changeSet>
+
+    <changeSet id="131021-1" author="priit">
+        <dropTable tableName="auto_exercise_executor"/>
+    </changeSet>
+
+
+    <changeSet id="191021-1" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student accesses, exposed fixed its issues :) -->
+
+        <!-- Drop group entity's FK so we can drop other stuff -->
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_group_access_student_course_access"/>
+
+        <!-- Replace group entity's PK -->
+        <dropPrimaryKey tableName="student_course_group_access"/>
+        <addPrimaryKey tableName="student_course_group_access" columnNames="course_id, student_id, group_id"/>
+
+        <!-- Drop group entity's old id PK/FK field -->
+        <dropColumn tableName="student_course_group_access" columnName="student_course_access_id"/>
+
+        <!-- Replace access entity's PK -->
+        <dropPrimaryKey tableName="student_course_access"/>
+        <addPrimaryKey tableName="student_course_access" columnNames="course_id, student_id"/>
+
+        <!-- Drop access entity's old id PK field and key -->
+        <dropColumn tableName="student_course_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_course_access"
+                              constraintName="student_course_access_course_id_student_id_key"/>
+
+        <!-- Add group entity's new FK last so it doesn't stop us dropping other stuff -->
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_course_group_access_student_course_access"/>
+    </changeSet>
+
+    <changeSet id="201021-1" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student pending accesses -->
+
+        <dropForeignKeyConstraint baseTableName="student_pending_course_group_access"
+                                  constraintName="fk_student_pending_group_access_student_pending_access"/>
+        <dropPrimaryKey tableName="student_pending_course_group_access"/>
+        <addPrimaryKey tableName="student_pending_course_group_access" columnNames="course_id, email, group_id"/>
+        <dropColumn tableName="student_pending_course_group_access" columnName="student_pending_access_id"/>
+
+        <dropPrimaryKey tableName="student_pending_access"/>
+        <addPrimaryKey tableName="student_pending_access" columnNames="course_id, email"/>
+        <dropColumn tableName="student_pending_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_pending_access"
+                              constraintName="student_pending_access_course_id_email_key"/>
+
+        <addForeignKeyConstraint baseTableName="student_pending_course_group_access"
+                                 baseColumnNames="course_id, email"
+                                 referencedTableName="student_pending_access"
+                                 referencedColumnNames="course_id, email"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_pending_course_group_access_student_pending_access"/>
+    </changeSet>
+
+    <changeSet id="201021-2" author="kspar">
+        <!-- Remove workaround introduced in changeSet 090120-1 for student moodle pending accesses -->
+
+        <dropForeignKeyConstraint baseTableName="student_moodle_pending_course_group_access"
+                                  constraintName="fk_student_moodle_pending_group_access_student_moodle_pending_a"/>
+        <dropPrimaryKey tableName="student_moodle_pending_course_group_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_course_group_access"
+                       columnNames="course_id, moodle_username, group_id"/>
+        <dropColumn tableName="student_moodle_pending_course_group_access"
+                    columnName="student_moodle_pending_access_id"/>
+
+        <dropPrimaryKey tableName="student_moodle_pending_access"/>
+        <addPrimaryKey tableName="student_moodle_pending_access" columnNames="course_id, moodle_username"/>
+        <dropColumn tableName="student_moodle_pending_access" columnName="id"/>
+        <dropUniqueConstraint tableName="student_moodle_pending_access"
+                              constraintName="student_moodle_pending_access_course_id_moodle_username_key"/>
+
+        <addForeignKeyConstraint baseTableName="student_moodle_pending_course_group_access"
+                                 baseColumnNames="course_id, moodle_username"
+                                 referencedTableName="student_moodle_pending_access"
+                                 referencedColumnNames="course_id, moodle_username"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_student_moodle_pending_course_group_access_student_moodle_pending_access"/>
+    </changeSet>
+
+    <changeSet id="011121-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="moodle_sync_students_in_progress" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moodle_sync_grades_in_progress" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="231121-1" author="priit">
+        <dropColumn tableName="executor" columnName="load"/>
+    </changeSet>
+
+    <changeSet id="140222-1" author="kspar">
+        <addColumn tableName="course_exercise">
+            <!-- All existing to visible, set invisible ones manually -->
+            <column name="student_visible_from" type="timestamp" valueDate="2018-12-02T12:59:00">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <dropColumn tableName="course_exercise" columnName="student_visible"/>
+    </changeSet>
+
+    <changeSet id="160222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="admin" constraintName="fk_admin_account"/>
+        <addForeignKeyConstraint baseTableName="admin" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_admin_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article" constraintName="fk_article_admin"/>
+        <addForeignKeyConstraint baseTableName="article" baseColumnNames="owner_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_admin" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article_version" constraintName="fk_article_version_admin"/>
+        <addForeignKeyConstraint baseTableName="article_version" baseColumnNames="author_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_version_admin" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="article_alias" constraintName="fk_article_alias_admin"/>
+        <addForeignKeyConstraint baseTableName="article_alias" baseColumnNames="created_by_id"
+                                 referencedTableName="admin" referencedColumnNames="username"
+                                 constraintName="fk_article_alias_admin" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="student" constraintName="fk_student_account"/>
+        <addForeignKeyConstraint baseTableName="student" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_student_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_access"
+                                  constraintName="fk_student_course_access_student"/>
+        <addForeignKeyConstraint baseTableName="student_course_access" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_student_course_access_student" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_course_group_access_student_course_access"/>
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 constraintName="fk_student_course_group_access_student_course_access"
+                                 onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="submission" constraintName="fk_submission_student"/>
+        <addForeignKeyConstraint baseTableName="submission" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_submission_student" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="submission_draft" constraintName="fk_submission_draft_student"/>
+        <addForeignKeyConstraint baseTableName="submission_draft" baseColumnNames="student_id"
+                                 referencedTableName="student" referencedColumnNames="username"
+                                 constraintName="fk_submission_draft_student" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="teacher" constraintName="fk_teacher_account"/>
+        <addForeignKeyConstraint baseTableName="teacher" baseColumnNames="username"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_teacher_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="exercise" constraintName="fk_exercise_student"/>
+        <addForeignKeyConstraint baseTableName="exercise" baseColumnNames="owned_by_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_exercise_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="exercise_version" constraintName="fk_exercise_version_student"/>
+        <addForeignKeyConstraint baseTableName="exercise_version" baseColumnNames="author_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_exercise_version_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="stored_file" constraintName="fk_stored_file_teacher"/>
+        <addForeignKeyConstraint baseTableName="stored_file" baseColumnNames="created_by_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_stored_file_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_submission" constraintName="fk_testing_draft_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_submission" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_submission_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment" constraintName="fk_teacher_assessment_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_assessment_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_access"
+                                  constraintName="fk_teacher_course_access_student"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_access" baseColumnNames="teacher_id"
+                                 referencedTableName="teacher" referencedColumnNames="username"
+                                 constraintName="fk_teacher_course_access_teacher" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_course_group_access"
+                                  constraintName="fk_teacher_group_access_teacher_course_access"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_group_access" baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access" onUpdate="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="account_group_access"
+                                  constraintName="fk_account_group_access_account"/>
+        <addForeignKeyConstraint baseTableName="account_group_access" baseColumnNames="account_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_account_group_access_account" onUpdate="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="log_report" constraintName="fk_account_log_report"/>
+        <addForeignKeyConstraint baseTableName="log_report" baseColumnNames="user_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_log_report_account" onUpdate="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="160222-2" author="kspar">
+        <addColumn tableName="account">
+            <!-- Workaround to get computed values for non-nullable new column - add and remove default value -->
+            <column name="last_seen" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_migration_done" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pre_migration_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="account" columnName="last_seen"/>
+    </changeSet>
+
+    <changeSet id="180222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="student_course_group_access"
+                                  constraintName="fk_student_course_group_access_student_course_access"/>
+        <addForeignKeyConstraint baseTableName="student_course_group_access" baseColumnNames="course_id, student_id"
+                                 referencedTableName="student_course_access"
+                                 referencedColumnNames="course_id, student_id"
+                                 constraintName="fk_student_course_group_access_student_course_access"
+                                 onUpdate="CASCADE" onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="180222-2" author="kspar">
+        <addColumn tableName="course_exercise">
+            <column name="created_at" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="timestamp" defaultValueDate="2018-12-02T12:59:00">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="course_exercise" columnName="created_at"/>
+        <dropDefaultValue tableName="course_exercise" columnName="modified_at"/>
+    </changeSet>
+
+    <changeSet id="190222-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="teacher_course_group_access"
+                                  constraintName="fk_teacher_group_access_teacher_course_access"/>
+        <addForeignKeyConstraint baseTableName="teacher_course_group_access" baseColumnNames="teacher_id, course_id"
+                                 referencedTableName="teacher_course_access"
+                                 referencedColumnNames="teacher_id, course_id"
+                                 constraintName="fk_teacher_group_access_teacher_course_access"
+                                 onUpdate="CASCADE" onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="031022-1" author="priit">
+        <addColumn tableName="exercise">
+            <column name="anonymous_autoassess_enabled" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="successful_anonymous_submission_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unsuccessful_anonymous_submission_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="031022-2" author="priit">
+        <createTable tableName="anonymous_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints references="exercise(id)" foreignKeyName="fk_anonymous_submission_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="grade" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="feedback" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="181022-1" author="priit">
+        <addColumn tableName="exercise">
+            <column name="anonymous_autoassess_template" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="181022-2" author="priit">
+        <addColumn tableName="exercise">
+            <column name="removed_submissions_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="191022-1" author="priit">
+        <dropForeignKeyConstraint baseTableName="submission"
+                                  constraintName="fk_submission_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="submission_draft"
+                                  constraintName="fk_submission_draft_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="submission_draft"
+                                 baseColumnNames="course_exercise_id"
+                                 constraintName="fk_submission_draft_course_exercise"
+                                 referencedTableName="course_exercise"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment"
+                                  constraintName="fk_teacher_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="teacher_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_teacher_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="automatic_assessment"
+                                  constraintName="fk_automatic_assessment_submission"/>
+        <addForeignKeyConstraint baseTableName="automatic_assessment"
+                                 baseColumnNames="submission_id"
+                                 constraintName="fk_automatic_assessment_submission"
+                                 referencedTableName="submission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="171122-1" author="kspar">
+        <!-- Cascade container image changes -->
+        <dropForeignKeyConstraint baseTableName="executor_container_image"
+                                  constraintName="fk_executor_container_image_container_image"/>
+        <addForeignKeyConstraint baseTableName="executor_container_image" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_executor_container_image_container_image"
+                                 onUpdate="CASCADE"/>
+        <dropForeignKeyConstraint baseTableName="automatic_exercise"
+                                  constraintName="fk_automatic_exercise_container_image"/>
+        <addForeignKeyConstraint baseTableName="automatic_exercise" baseColumnNames="container_image_id"
+                                 referencedTableName="container_image" referencedColumnNames="id"
+                                 constraintName="fk_automatic_exercise_container_image"
+                                 onUpdate="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="221122-1" author="kspar">
+        <modifyDataType tableName="group_exercise_dir_access" columnName="access_level" newDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="221122-2" author="kspar">
+        <modifyDataType tableName="exercise_dir" columnName="any_account_access_level" newDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="291122-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="alias" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+
+    <changeSet id="270223-1" author="priit">
+
+        <addColumn tableName="submission">
+            <!-- New field submission.grade: authoritative grade, nullable, modify on assessment -->
+            <column name="grade" type="integer">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_auto_grade" type="boolean">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="teacher_assessment">
+            <!-- New field teacher_assessment.edited_at, teacher_assessment.feedback_html -->
+            <column name="edited_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- At some point migrate all missing-html feedbacks from feedback_adoc -->
+            <column name="feedback_html" type="text">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- teacher_assessment FK -> (course_exercise, account ("student")) -->
+            <column name="course_exercise_id" type="bigint">
+                <constraints references="course_exercise(id)"
+                             foreignKeyName="fk_teacher_assessment_course_exercise"
+                             nullable="true"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_teacher_assessment_account_student"
+                             nullable="true"/>
+            </column>
+
+        </addColumn>
+
+        <!-- teacher_assessment.grade to nullable -->
+        <dropNotNullConstraint tableName="teacher_assessment" columnName="grade" columnDataType="integer"/>
+        <!-- rename teacher_assessment.feedback -> teacher_assessment.feedback_adoc -->
+        <renameColumn tableName="teacher_assessment" oldColumnName="feedback" newColumnName="feedback_adoc"/>
+        <!-- teacher_assessment.created_at -> merge_window_start (return in activity log service as created_at) -->
+        <renameColumn tableName="teacher_assessment" oldColumnName="created_at " newColumnName="merge_window_start"/>
+
+        <!-- teacher_assessment.teacher FK to account instead of teacher -->
+        <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
+                                 constraintName="fk_teacher_assessment_account"
+                                 referencedTableName="account"
+                                 referencedColumnNames="username"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_assessment"
+                                  constraintName="fk_teacher_assessment_teacher"/>
+
+
+        <!--automatic_assessment FK -> (course_exercise, account ("student")) -->
+        <addColumn tableName="automatic_assessment">
+            <column name="course_exercise_id" type="bigint">
+                <constraints references="course_exercise(id)"
+                             foreignKeyName="fk_automatic_assessment_course_exercise"
+                             nullable="true"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_automatic_assessment_account_student"
+                             nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Migrate and make FKs not null -->
+        <sql>
+            UPDATE teacher_assessment
+            SET student_id         = submission.student_id,
+                course_exercise_id = submission.course_exercise_id FROM submission
+            WHERE submission.id = teacher_assessment.submission_id;
+
+            UPDATE automatic_assessment
+            SET student_id         = submission.student_id,
+                course_exercise_id = submission.course_exercise_id FROM submission
+            WHERE submission.id = automatic_assessment.submission_id;
+
+            ALTER TABLE teacher_assessment
+                ALTER course_exercise_id SET NOT NULL;
+            ALTER TABLE automatic_assessment
+                ALTER course_exercise_id SET NOT NULL;
+            ALTER TABLE teacher_assessment
+                ALTER student_id SET NOT NULL;
+            ALTER TABLE automatic_assessment
+                ALTER student_id SET NOT NULL;
+        </sql>
+
+    </changeSet>
+
+
+</databaseChangeLog>
