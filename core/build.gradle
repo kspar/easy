@@ -47,6 +47,10 @@ repositories {
     mavenCentral()
 }
 
+test {
+    useJUnitPlatform()
+}
+
 dependencies {
 
     // Spring Boot
@@ -80,6 +84,8 @@ dependencies {
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'io.zonky.test:embedded-postgres:2.0.3'
 
     // Asciidoc
     implementation 'org.asciidoctor:asciidoctorj:2.4.3'
