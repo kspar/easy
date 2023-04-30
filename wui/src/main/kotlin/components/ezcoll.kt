@@ -13,6 +13,7 @@ import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLOptionElement
 import org.w3c.dom.events.Event
 import rip.kspar.ezspa.*
+import template
 import tmRender
 import kotlin.js.Promise
 
@@ -221,8 +222,90 @@ class EzCollComp<P>(
     override fun render(): String {
         val activatedFilterIds = activatedFilters.flatMap { it.map { it.id } }
 
-        return tmRender(
-            "t-c-ezcoll",
+        return template(
+            """
+                <ez-coll-wrap id="{{collId}}" {{#hasSelection}}has-selection{{/hasSelection}}>
+                    <ezc-ctrl>
+                        <ezc-ctrl-left>
+                            {{#hasSelection}}
+                            <label class="ezc-all-checkbox">
+                                <input id="ezc-select-all-{{collId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
+                            </label>
+                            <a class="btn-flat dropdown-trigger waves-effect disabled" data-target='ezc-select-action-dropdown-{{collId}}'>
+                                <ezc-mass-action-btn-label>{{applyLabel}}{{{applyExpandIcon}}}</ezc-mass-action-btn-label>
+                                <ezc-mass-action-btn-icon>{{{applyShortIcon}}}</ezc-mass-action-btn-icon>
+                            </a>
+                            <ezc-ctrl-selected></ezc-ctrl-selected>
+                            {{/hasSelection}}
+                        </ezc-ctrl-left>
+                        <ezc-ctrl-right>
+                            <ezc-ctrl-shown>
+                                <ezc-ctrl-shown-icon></ezc-ctrl-shown-icon>
+                                <ezc-ctrl-shown-count>
+                                    <ez-spinner class="preloader-wrapper active">
+                                        <div class="spinner-layer">
+                                            <div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div>
+                                        </div>
+                                        </div>
+                                    </ez-spinner>
+                                </ezc-ctrl-shown-count>
+                                <ezc-ctrl-shown-name></ezc-ctrl-shown-name>
+                            </ezc-ctrl-shown>
+                            {{#hasFiltering}}
+                            <ezc-ctrl-filter filter="off">
+                                <ez-icon-action title="{{filterLabel}}" tabindex="0">
+                                    <ez-icon class="filter-disabled-icon"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><path d="M0,0h24 M24,24H0" fill="none"/><path d="M7,6h10l-5.01,6.3L7,6z M4.25,5.61C6.27,8.2,10,13,10,13v6c0,0.55,0.45,1,1,1h2c0.55,0,1-0.45,1-1v-6 c0,0,3.72-4.8,5.74-7.39C20.25,4.95,19.78,4,18.95,4H5.04C4.21,4,3.74,4.95,4.25,5.61z"/><path d="M0,0h24v24H0V0z" fill="none"/></g></svg></ez-icon>
+                                </ez-icon-action>
+                                <div class="input-field select-wrap">
+                                    <select multiple>
+                                        <optgroup label="{{removeFiltersLabel}}"></optgroup>
+                                        {{#filterGroups}}
+                                            <optgroup label="{{groupLabel}}">
+                                                {{#filterOptions}}
+                                                    <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{optionLabel}}</option>
+                                                {{/filterOptions}}
+                                            </optgroup>
+                                        {{/filterGroups}}
+                                    </select>
+                                    <label></label>
+                                </div>
+                            </ezc-ctrl-filter>
+                            {{/hasFiltering}}
+                            {{#hasOrdering}}
+                            <ezc-ctrl-order>
+                                <ez-icon-action title="{{orderLabel}}" class="dropdown-trigger" data-target="ezc-sorting-dropdown-{{collId}}" tabindex="0">
+                                    <ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></ez-icon>
+                                </ez-icon-action>
+                            </ezc-ctrl-order>
+                            {{/hasOrdering}}
+                        </ezc-ctrl-right>
+                        <!-- Mass action menu structure -->
+                        <ul id="ezc-select-action-dropdown-{{collId}}" class="dropdown-content">
+                            {{#selectActions}}
+                                <li><span ez-mass-action="{{id}}">{{{actionHtml}}}</span></li>
+                            {{/selectActions}}
+                        </ul>
+                        <!-- Sorting menu structure -->
+                        <ul id="ezc-sorting-dropdown-{{collId}}" class="dropdown-content">
+                            {{#sorters}}
+                                <li>
+                                    <label>
+                                        <input ez-sorter="{{id}}" name="sorter-{{collId}}" type="radio" {{#isSelected}}checked{{/isSelected}}/>
+                                        <span>{{label}}</span>
+                                    </label>
+                                </li>
+                            {{/sorters}}
+                        </ul>
+                    </ezc-ctrl>
+                    <ez-coll {{#isEmpty}}empty{{/isEmpty}}>
+                        {{#items}}
+                            <ez-dst id="{{dstId}}" style="order: {{idx}}"></ez-dst>
+                        {{/items}}
+                        <ezc-empty-placeholder>{{{emptyPlaceholder}}}</ezc-empty-placeholder>
+                        <ezc-no-match-placeholder>{{{noMatchingItemsPlaceholder}}}</ezc-no-match-placeholder>
+                    </ez-coll>
+                </ez-coll-wrap>
+            """.trimIndent(),
             "collId" to collId,
             "hasSelection" to hasSelection,
             "hasFiltering" to hasFiltering,
@@ -606,18 +689,136 @@ class EzCollItemComp<P>(
     private val itemEl: Element
         get() = getElemById(spec.id)
 
+    private val isExpandable
+        get() = spec.topAttr != null || spec.bottomAttrs.isNotEmpty() || spec.progressBar != null
+
     private var isSelected: Boolean = false
 
     private var isExpanded: Boolean = false
 
-    override fun render() = tmRender(
-        "t-c-ezcoll-item",
+    override fun render() = template(
+        """
+            <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}} {{#progressBar}}has-bar{{/progressBar}} {{#inactive}}inactive{{/inactive}}">
+                <ezc-bar-container>
+                    <ezc-item-container>
+                        <ezc-left>
+                            <ezc-item-type>
+                                {{#isTypeIcon}}{{{typeHtml}}}{{/isTypeIcon}}
+                                {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
+                            </ezc-item-type>
+                            <label class="ezc-item-checkbox">
+                                <input id="ezc-item-checkbox-{{itemId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
+                            </label>
+                        </ezc-left>
+                        <ezc-main>
+                            <ezc-center>
+                                <ezc-first>
+                                    <ezc-title>
+                                        <a {{#titleLink}}href="{{titleLink}}"{{/titleLink}}>{{title}}</a>
+                                        {{#titleIcon}}<ezc-title-icon title="{{titleIconLabel}}">{{{titleIcon}}}</ezc-title-icon>{{/titleIcon}}
+                                    </ezc-title>
+                                    {{#topAttr}}
+                                        <ezc-attr class="top" ez-show-min="{{minCollWidth}}">
+                                            <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">{{{shortValueHtml}}}</ezc-attr-text>
+                                        </ezc-attr>
+                                    {{/topAttr}}
+                                </ezc-first>
+                                <ezc-second>
+                                        <ezc-bottom-attrs ez-attrs="{{bottomAttrCount}}" {{#hasGrowingAttrs}}ez-growing-attrs{{/hasGrowingAttrs}}>
+                                            {{#bottomAttrs}}
+                                                <ezc-attr class="bottom">
+                                                    <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}" title="{{key}}: {{value}}">
+                                                        {{{shortValueHtml}}}
+                                                    </ezc-attr-text>
+                                                </ezc-attr>
+                                            {{/bottomAttrs}}
+                                        </ezc-bottom-attrs>
+                                    <ezc-fold class="display-none">
+                                        {{#topAttr}}
+                                            <ezc-fold-attr ez-show-max="{{maxCollWidthInFold}}">
+                                                <ezc-fold-key>{{key}}:</ezc-fold-key>
+                                                <ezc-fold-value>
+                                                    <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
+                                                </ezc-fold-value>
+                                            </ezc-fold-attr>
+                                        {{/topAttr}}
+                                        {{#bottomAttrs}}
+                                            <ezc-fold-attr>
+                                                <ezc-fold-key>{{key}}:</ezc-fold-key>
+                                                <ezc-fold-value>
+                                                    <ezc-attr-text ez-attr-id="{{id}}" class="{{#isActionable}}actionable{{/isActionable}}">{{value}}</ezc-attr-text>
+                                                </ezc-fold-value>
+                                            </ezc-fold-attr>
+                                        {{/bottomAttrs}}
+                                        {{#progressBar}}{{#showAttr}}
+                                            <ezc-fold-attr>
+                                                <ezc-fold-value><ezc-attr-text style='flex-wrap: wrap;'>
+                                                    {{#green}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-green);"></ezc-progress-label-circle>{{green}} lahendatud</ez-progress-label>{{/green}}
+                                                    {{#yellow}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-yellow);"></ezc-progress-label-circle>{{yellow}} nässu läinud</ez-progress-label>{{/yellow}}
+                                                    {{#blue}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-blue);"></ezc-progress-label-circle>{{blue}} hindamata</ez-progress-label>{{/blue}}
+                                                    {{#grey}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-grey);"></ezc-progress-label-circle>{{grey}} esitamata</ez-progress-label>{{/grey}}
+                                                </ezc-attr-text></ezc-fold-value>
+                                            </ezc-fold-attr>
+                                        {{/showAttr}}{{/progressBar}}
+                                    </ezc-fold>
+                                    {{#hasActions}}
+                                        <ezc-bottom-space>
+                                            {{#actions}}{{#showShortcut}}
+                                                <ez-icon-action ez-action="{{id}}" ez-show-min="{{minCollWidth}}" title="{{text}}" tabindex="0">{{{iconHtml}}}</ez-icon-action>
+                                            {{/showShortcut}}{{/actions}}
+                                        </ezc-bottom-space>
+                                    {{/hasActions}}
+                                </ezc-second>
+                            </ezc-center>
+                        </ezc-main>
+                        {{#hasActions}}
+                            <ezc-right>
+                                <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="dropdown-trigger icon-med" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
+                                    <ez-icon>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                    </ez-icon>
+                                </ez-icon-action>
+                            </ezc-right>
+                        {{/hasActions}}
+                    </ezc-item-container>
+                    {{#progressBar}}
+                        <ezc-progress-bar title="{{labelValue}}">
+                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-green); flex-grow: {{green}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
+                        </ezc-progress-bar>
+                    {{/progressBar}}
+                </ezc-bar-container>
+                {{#isExpandable}}
+                    <ezc-trailer>
+                        <ezc-expand-trailer>
+                            <ez-icon-action ez-expand-item title="{{expandItemTitle}}" tabindex="0">
+                                <ez-icon>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+                                </ez-icon>
+                            </ez-icon-action>
+                        </ezc-expand-trailer>
+                    </ezc-trailer>
+                {{/isExpandable}}
+                {{#expandPlaceholder}}
+                    <ezc-trailer class="placeholder"></ezc-trailer>
+                {{/expandPlaceholder}}
+                <!-- Action menu structure -->
+                <ul id="ezc-item-action-dropdown-{{itemId}}" class="dropdown-content">
+                    {{#actions}}
+                        <li><span ez-action="{{id}}">{{{iconHtml}}}{{text}}</span></li>
+                    {{/actions}}
+                </ul>
+            </ezc-item>
+        """.trimIndent(),
         "itemId" to spec.id,
         "isSelectable" to spec.isSelectable,
+        "isExpandable" to isExpandable,
         "hasBottomAttrs" to spec.bottomAttrs.isNotEmpty(),
         "bottomAttrCount" to maxBottomAttrsCount,
-        // This item does not have bottom attrs but others do
-        "expandPlaceholder" to (spec.bottomAttrs.isEmpty() && maxBottomAttrsCount > 0),
+        // This item is not expandable others are
+        "expandPlaceholder" to (!isExpandable && maxBottomAttrsCount > 0),
         "attrWidthS" to spec.attrWidthS.valuePx,
         "attrWidthM" to spec.attrWidthM.valuePx,
         "hasGrowingAttrs" to if (spec.bottomAttrs.size == 1) true else spec.hasGrowingAttrs,
@@ -657,7 +858,6 @@ class EzCollItemComp<P>(
                     "blue" to it.blue,
                     "grey" to it.grey,
                     "showAttr" to it.showAttr,
-                    "label" to "Progress",
                     "labelValue" to buildList {
                         if (it.green > 0) add("${it.green} lahendatud")
                         if (it.yellow > 0) add("${it.yellow} nässu läinud")
@@ -681,7 +881,7 @@ class EzCollItemComp<P>(
     )
 
     public override fun postRender() {
-        if (spec.bottomAttrs.isNotEmpty()) {
+        if (isExpandable) {
             initExpanding()
             updateExpanded()
         }
