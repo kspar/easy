@@ -12,7 +12,7 @@ import template
 class PageTabsComp(
     private val type: Type = Type.TOP_LEVEL,
     private val tabs: List<Tab>,
-    private val trailerComp: Component? = null,
+    trailerComponent: ((parentComp: PageTabsComp) -> Component)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -30,6 +30,7 @@ class PageTabsComp(
     private val tabsId = IdGenerator.nextId()
 
     private val tabComps: List<Component> = tabs.map { it.compProvider(this) }
+    private val trailerComp = trailerComponent?.invoke(this)
 
     private lateinit var mtabs: MTabsInstance
 

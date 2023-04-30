@@ -62,11 +62,6 @@ class ExerciseRootComp(
 
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
 
-        if (exercise.effective_access >= DirAccess.PRAW) {
-            // TODO: wrong parent
-            editModeBtns = EditModeButtonsComp(::editModeChanged, ::saveExercise, ::wishesToCancel, parent = this)
-        }
-
         tabs = PageTabsComp(
             tabs = buildList {
                 add(
@@ -102,7 +97,9 @@ class ExerciseRootComp(
                     )
                 }
             },
-            trailerComp = editModeBtns,
+            trailerComponent = if (exercise.effective_access >= DirAccess.PRAW) {
+                { EditModeButtonsComp({ editModeChanged(it) }, { saveExercise() }, { wishesToCancel() }, parent = it) }
+            } else null,
             parent = this
         )
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
