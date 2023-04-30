@@ -21,7 +21,7 @@ class EditModeButtonsComp(
 
     private val startEditBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Muuda", Icons.edit, disabledLabel = "Laen...",
+            ButtonComp.Type.FLAT, "Muuda", Icons.edit, clickedLabel = "Laen...",
             onClick = { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =
@@ -33,7 +33,7 @@ class EditModeButtonsComp(
         )
     private val saveBtn =
         ButtonComp(
-            ButtonComp.Type.PRIMARY, "Salvesta", Icons.check, disabledLabel = "Salvestan...",
+            ButtonComp.Type.PRIMARY, "Salvesta", Icons.check, clickedLabel = "Salvestan...",
             onClick = { onSave() }, parent = this
         )
 

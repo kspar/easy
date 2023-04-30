@@ -1114,7 +1114,7 @@ ez-participants-list .card .card-content p {
 }
 
 ez-btn-content {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 }
@@ -1136,6 +1136,11 @@ ez-btn-content {
 /* if icon with text, add space between */
 ez-btn-content ez-btn-icon ~ ez-btn-text {
     padding-left: .6rem;
+}
+
+/* visible spinner */
+ez-btn-content ez-spinner:not(.display-none) ~ ez-btn-text {
+    padding-left: 1rem;
 }
 
 .btn-floating ez-btn-content ez-icon > svg {
@@ -1722,12 +1727,18 @@ ez-icon-action.waves-effect {
 /** Loaders **/
 
 ez-spinner.preloader-wrapper {
-    width: 2rem;
-    height: 2rem;
+    width: 1.8rem;
+    height: 1.8rem;
+    display: inline-flex;
 }
 
 ez-spinner .spinner-layer {
     border-color: var(--ez-checkbox-fill-col);
+}
+
+.btn ez-spinner .spinner-layer,
+.btn-flat ez-spinner .spinner-layer {
+    border-color: var(--ez-btn-disabled-text);
 }
 
 ez-spinner .circle-clipper .circle {
