@@ -98,6 +98,7 @@ object CourseExercisesPage : EasyPage() {
     override fun destruct() {
         super.destruct()
         rootComp?.destroy()
+        rootComp = null
         getHtml().removeClass("wui3")
     }
 
