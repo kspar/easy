@@ -35,7 +35,7 @@ class RemoveFromGroupModalComp(
 
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        null, Str.doSave(), Str.cancel(), Str.saving(),
+        null, "Eemalda", Str.cancel(), "Eemaldan...",
         defaultReturnValue = false,
         primaryBtnType = ButtonComp.Type.DANGER, primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
         primaryPostAction = ::reinitialise,

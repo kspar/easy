@@ -294,10 +294,10 @@ class ParticipantsStudentsListComp(
 
         val removed = removeFromCourseModal.openWithClosePromise().await()
 
-        return if (removed)
-            EzCollComp.ResultModified<StudentProps>(emptyList())
-        else
-            EzCollComp.ResultUnmodified
+        if (removed) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
     }
 
     private suspend fun sendInvite(item: EzCollComp.Item<StudentProps>): EzCollComp.Result = sendInvite(listOf(item))

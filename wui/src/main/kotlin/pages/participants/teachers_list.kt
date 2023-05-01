@@ -248,9 +248,9 @@ class ParticipantsTeachersListComp(
 
         val removed = removeFromCourseModal.openWithClosePromise().await()
 
-        return if (removed)
-            EzCollComp.ResultModified<TeacherProps>(emptyList())
-        else
-            EzCollComp.ResultUnmodified
+        if (removed) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
     }
 }
