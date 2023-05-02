@@ -191,12 +191,6 @@
     <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>
 
-<script id="t-c-assessment-view" type="text/x-handlebars">
-    <h4>{{title}}</h4>
-    <pre class="feedback {{#auto}}auto-feedback{{/auto}}">{{feedback}}</pre>
-    <div>{{gradeLabel}}: <span class="grade-number">{{grade}}{{^grade}}-{{/grade}}</span>/100</div>
-</script>
-
 <script id="t-c-select" type="text/x-handlebars">
     <div class="input-field select-wrap">
         <select id="{{selectId}}" {{#isDisabled}}disabled{{/isDisabled}}>
@@ -433,14 +427,6 @@
             </ez-block>
         </ez-block-container>
     </ez-exercise-autoeval>
-</script>
-
-<script id="t-c-exercise-tab-testing" type="text/x-handlebars">
-    <ez-dst id="{{assessId}}"></ez-dst>
-    <ez-dst id="{{editorId}}"></ez-dst>
-    <div class="center">
-        <button id="testing-submit" class="waves-effect waves-light btn"><ez-btn-content>{{doTestLabel}}</ez-btn-content></button>
-    </div>
 </script>
 
 <script id="t-c-exercise-tab-aa-tsl-yaml" type="text/x-handlebars">
