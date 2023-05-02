@@ -1256,7 +1256,7 @@ input[type=tel]:not(.browser-default)::placeholder,
 input[type=number]:not(.browser-default)::placeholder,
 input[type=search]:not(.browser-default)::placeholder,
 textarea.materialize-textarea::placeholder {
-    color: #bbb;
+    color: #777;
 }
 
 input:not([type]):focus:not([readonly]),
