@@ -98,7 +98,15 @@ class ExerciseRootComp(
                 }
             },
             trailerComponent = if (exercise.effective_access >= DirAccess.PRAW) {
-                { EditModeButtonsComp({ editModeChanged(it) }, { saveExercise() }, { wishesToCancel() }, parent = it) }
+                {
+                    EditModeButtonsComp(
+                        { editModeChanged(it) },
+                        { saveExercise() },
+                        postModeChange = { tabs.refreshIndicator() },
+                        canCancel = { wishesToCancel() },
+                        parent = it
+                    )
+                }
             } else null,
             parent = this
         )
@@ -155,8 +163,6 @@ class ExerciseRootComp(
             recreate()
             return false
         }
-
-        tabs.refreshIndicator()
 
         // exercise tab: title, text editor
         exerciseTab.setEditable(nowEditing)
