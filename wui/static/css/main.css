@@ -3,6 +3,7 @@
     --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
+    --ez-border-radius: 4px;
     --ez-secondary-action-hover-bg: #f1f3f4;
 
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
@@ -2388,15 +2389,19 @@ ez-block-container ez-block {
 /** Ez collapsible **/
 
 .ez-collapsible {
-    margin: 0;
-    border: 0;
+    margin: 0 0 1rem 0;
+    border: 1px solid var(--ez-border);
+    border-radius: var(--ez-border-radius);
     box-shadow: none;
 }
 
 .ez-collapsible .collapsible-header {
+    display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
+    border: 0;
+    border-radius: var(--ez-border-radius);
     transition: background-color .3s ease-out;
 }
 
