@@ -236,7 +236,7 @@ object ExerciseSummaryPage : EasyPage() {
                 )
             )
 
-            Materialize.Tabs.init(getElemById("tabs"))
+            val tabs = Materialize.Tabs.init(getElemById("tabs"))
 
             getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
 
@@ -248,6 +248,8 @@ object ExerciseSummaryPage : EasyPage() {
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
             initTooltips()
+
+            tabs.updateTabIndicator()
             fl?.end()
         }
 
