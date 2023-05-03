@@ -132,6 +132,10 @@ ez-attr {
     flex-wrap: wrap;
 }
 
+ez-attr:last-child {
+    margin-bottom: 2rem;
+}
+
 ez-attr-label {
     color: #4DAB54;
     font-weight: 500;
