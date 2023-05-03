@@ -2690,18 +2690,19 @@ ez-assessment {
     margin-bottom: 2rem;
 }
 
-ez-assessment pre.feedback {
+/* TODO: add prefixes once we're fully migrated to wui3 */
+/*ez-assessment*/ pre.feedback {
     font-size: 1.4rem;
     white-space: normal;
 }
 
-ez-assessment pre.auto-feedback {
+/*ez-assessment*/ pre.auto-feedback {
     background-color: #f5f5f5;
     white-space: pre;
     overflow: auto;
 }
 
-ez-assessment .grade-number {
+/*ez-assessment*/ .grade-number {
     font-weight: 500;
 }
 

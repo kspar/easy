@@ -37,6 +37,7 @@ import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.exercise.ExercisePage
 import pages.exercise.TestingTabComp
+import pages.exercise.formatFeedback
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -942,7 +943,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "autoLabel" to Str.autoAssessmentLabel(),
                 "autoGradeLabel" to Str.autoGradeLabel(),
                 "grade" to grade.toString(),
-                "feedback" to feedback
+                "feedback" to feedback?.let { formatFeedback(it) },
             )
         )
     }
