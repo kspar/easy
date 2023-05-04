@@ -213,7 +213,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
                     val grade = toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
                     val latest = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
 
-                    studentId to SubmissionRow(latest, studentId, student.givenName, student.familyName, student.groups)
+                    (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(latest, studentId, student.givenName, student.familyName, student.groups)
                 }
             }.toMap()
 
@@ -222,7 +222,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
 
             val studentSubmissionRows = ex.students.map { id ->
                 val student = courseStudents[id] ?: throw IllegalStateException()
-                studentsWithSubmissions[id] ?: SubmissionRow(null, id, student.givenName, student.familyName, student.groups)
+                studentsWithSubmissions[id to ex.exerciseId] ?: SubmissionRow(null, id, student.givenName, student.familyName, student.groups)
             }
 
             val latestSubmissionValidGrades = studentSubmissionRows.mapNotNull { it.latestSubmission }.map { it.grade?.grade }
