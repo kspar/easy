@@ -4,7 +4,7 @@ import core.db.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
+import liquibase.resource.FileSystemResourceAccessor
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.StdOutSqlLogger
@@ -56,9 +56,11 @@ class CoursesKtTest {
     fun bootstrap() {
         Database.connect(dataSource)
 
-        val liquibase =
-            Liquibase("db/changelog.xml", ClassLoaderResourceAccessor(), JdbcConnection(dataSource.connection))
-        liquibase.update("development")
+        Liquibase(
+            "db/changelog.xml",
+            FileSystemResourceAccessor(),
+            JdbcConnection(dataSource.connection)
+        ).update("development")
 
         transaction {
             addLogger(StdOutSqlLogger)
