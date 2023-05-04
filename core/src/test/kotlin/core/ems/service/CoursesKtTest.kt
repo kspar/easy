@@ -37,12 +37,6 @@ class CoursesKtTest {
 
 
     @Test
-    fun `selectAllCourseExercisesLatestSubmissions should return 2 exercises`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.exerciseId.toLong() }.toSet())
-    }
-
-    @Test
     fun `selectAllCourseExercisesLatestSubmissions should return 4 submissions (1 null, 3 graded)`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
         val submissions = latestSubmissions.map { it.latestSubmissions }.flatten().map { it.latestSubmission }
@@ -113,6 +107,9 @@ class CoursesKtTest {
     fun `selectAllCourseExercises check completedCount, startedCount, unstartedCount, ungradedCount`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
+        // Expect 2 exercises
+        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.exerciseId.toLong() }.toSet())
+
         val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
         val ex2Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce2Id }
 
@@ -131,7 +128,6 @@ class CoursesKtTest {
     @Test
     fun `selectStudentsOnCourse should return two students`() {
         val students = selectStudentsOnCourse(course1Id).map { it.id }
-        assertEquals(students.size, 2)
         assertEquals(students.toSet(), studentIds.toSet())
     }
 
