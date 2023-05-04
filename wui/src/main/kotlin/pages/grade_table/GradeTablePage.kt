@@ -21,7 +21,6 @@ import pages.ExerciseSummaryPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
-import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.*
 import tmRender
@@ -29,6 +28,7 @@ import kotlin.js.Promise
 
 
 object GradeTablePage : EasyPage() {
+
     override val pageName: Any
         get() = PageName.GRADE_TABLE
 
@@ -52,6 +52,11 @@ object GradeTablePage : EasyPage() {
             rootComp = root
             root.createAndBuild().await()
         }
+    }
+
+    override fun destruct() {
+        super.destruct()
+        rootComp?.destroy()
     }
 
     fun link(courseId: String) = constructPathLink(mapOf("courseId" to courseId))
@@ -239,7 +244,8 @@ class GradeTableTableComp(
     override fun create() = doInPromise {
         debug { "Building grade table for course $courseId, group $groupId" }
         val q = createQueryString("group" to groupId)
-        val gradesPromise = fetchEms("/courses/teacher/$courseId/grades$q", ReqMethod.GET,
+        val gradesPromise = fetchEms(
+            "/courses/teacher/$courseId/grades$q", ReqMethod.GET,
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
         )
 
@@ -339,6 +345,7 @@ class GradeTableTableComp(
                 "t-s-missing-content-wandering-eyes",
                 "text" to "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
             )
+
             else -> tmRender(
                 "t-c-grades-table",
                 "exerciseCount" to exercises.size,

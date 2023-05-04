@@ -5,16 +5,15 @@ import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import components.text.ParagraphsComp
 import debug
 import errorMessage
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
 
 class AddTeachersModalComp(
@@ -25,12 +24,13 @@ class AddTeachersModalComp(
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Lisa õpetajaid", Str.doAdd(), Str.cancel(), Str.adding(),
-        primaryAction = { addTeachers(groupSelectComp?.getValue(), teachersFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise,
-        onOpen = { teachersFieldComp.focus() },
         defaultReturnValue = false,
-        fixFooter = true, isWide = true,
-        id = Modal.ADD_TEACHERS_TO_COURSE, parent = this
+        fixFooter = true,
+        isWide = true,
+        primaryAction = { addTeachers(groupSelectComp?.getValue(), teachersFieldComp.getValue()) },
+        primaryPostAction = ::reinitialise, onOpen = { teachersFieldComp.focus() },
+        htmlClasses = "add-participants-modal",
+        parent = this
     )
 
     private val helpTextComp = ParagraphsComp(

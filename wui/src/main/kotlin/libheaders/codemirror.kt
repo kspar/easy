@@ -17,6 +17,7 @@ external object CodeMirror {
     class Doc(value: String, mode: dynamic) {
         fun getValue(): String
         fun setValue(value: String?)
+        fun markText(from: dynamic, to: dynamic, options: dynamic)
     }
 }
 

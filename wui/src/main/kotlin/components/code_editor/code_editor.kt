@@ -27,6 +27,11 @@ class CodeEditorComp(
     parent: Component?,
 ) : Component(parent) {
 
+    // TODO: code editor tabs same as subpage tabs
+    //  if tab name is editable / tab is removable - on active&hover, show edit icon right of name, have unsymmetrical paddings (~ left 3/right 1?)
+    //  if creatable - add + tab as last
+    //  check paddings etc to align with other tabs
+
     // TODO: should have a separate comp for code editor tabs (and/or toolbar) to avoid drawing new tabs like this
 
     // TODO: delete tabs/files
@@ -72,6 +77,9 @@ class CodeEditorComp(
     private var toggleEditEnabled = false
 
     private lateinit var editor: CodeMirrorInstance
+
+    val activeDoc
+        get() = activeTab?.doc
 
     private var editToggleComp: LinkComp? = null
     private val createFileModalComp: CreateFileModalComp
@@ -180,6 +188,11 @@ class CodeEditorComp(
         }
     }
 
+    /**
+     * Call after the editor becomes visible after it's been changed while not visible.
+     */
+    fun refresh() = editor.refresh()
+
     private fun getEditorElement() = getElemById(editorId)
 
     private fun fileToTab(f: File): Tab {
@@ -249,10 +262,12 @@ class CodeEditorComp(
                     setEditable(true)
                     removeEditToggle()
                 }
+
                 Edit.READONLY -> {
                     setEditable(false)
                     removeEditToggle()
                 }
+
                 Edit.TOGGLED -> {
                     setEditable(toggleEditEnabled)
                     addEditToggle(toggleEditEnabled)

@@ -138,11 +138,12 @@ class TSLTestComp(
         }
 
         content = if (newType != null) {
+            content?.destroy()
             createContentComp(newType, null).also {
                 it.createAndBuild().await()
             }
         } else {
-            content?.clear()
+            content?.destroy()
             null
         }
 

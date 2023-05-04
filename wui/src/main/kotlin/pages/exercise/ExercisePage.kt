@@ -9,12 +9,12 @@ import kotlinx.coroutines.launch
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import pages.EasyPage
-import pages.sidenav.ActivePage
-import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Navigation
 import rip.kspar.ezspa.getHtml
 
 object ExercisePage : EasyPage() {
+
+    private var root: ExerciseRootComp? = null
 
     override val pageName: Any
         get() = PageName.EXERCISE
@@ -34,21 +34,24 @@ object ExercisePage : EasyPage() {
         getHtml().addClass("wui3")
 
         MainScope().launch {
-            val root = ExerciseRootComp(
+            val r = ExerciseRootComp(
                 exerciseId,
                 ::setWildcardPath,
                 CONTENT_CONTAINER_ID
             )
-            root.createAndBuild().await()
+            root = r
+
+            r.createAndBuild().await()
 
             Navigation.catchNavigation {
-                root.hasUnsavedChanges()
+                r.hasUnsavedChanges()
             }
         }
     }
 
     override fun destruct() {
         super.destruct()
+        root?.destroy()
         Navigation.stopNavigationCatching()
         getHtml().removeClass("wui3")
     }

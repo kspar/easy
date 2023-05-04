@@ -2,16 +2,15 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
-import components.text.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
-import components.modal.Modal
+import components.text.StringComp
 import errorMessage
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
 
 class ParticipantsGroupsListComp(
@@ -73,8 +72,7 @@ class ParticipantsGroupsListComp(
 
         deleteGroupModal = ConfirmationTextModalComp(
             null, "Kustuta", "Tühista", "Kustutan...",
-            primaryBtnType = ButtonComp.Type.DANGER,
-            id = Modal.DELETE_COURSE_GROUP, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
     }
 

@@ -4,17 +4,16 @@ import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
 
 class CreateCourseModalComp(
@@ -23,10 +22,10 @@ class CreateCourseModalComp(
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
         "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { createCourse(courseTitleFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise, onOpen = { courseTitleFieldComp.focus() },
         defaultReturnValue = null,
-        id = Modal.CREATE_COURSE, parent = this
+        primaryAction = { createCourse(courseTitleFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
+        onOpen = { courseTitleFieldComp.focus() },
+        parent = this
     )
 
     private val courseTitleFieldComp = StringFieldComp(

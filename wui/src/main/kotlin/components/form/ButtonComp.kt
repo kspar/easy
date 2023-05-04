@@ -1,11 +1,12 @@
 package components.form
 
+import hide
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import org.w3c.dom.HTMLButtonElement
-import org.w3c.dom.asList
 import rip.kspar.ezspa.*
-import tmRender
+import show
+import template
 
 class ButtonComp(
     private val type: Type,
@@ -14,7 +15,8 @@ class ButtonComp(
     private val iconHtml: String? = null,
     private val onClick: suspend (() -> Unit),
     private val isEnabledInitial: Boolean = true,
-    private val disabledLabel: String? = null,
+    private val clickedLabel: String? = null,
+    private val showClickedLoading: Boolean = true,
     private val postClick: (suspend (() -> Unit))? = null,
     parent: Component
 ) : Component(parent) {
@@ -28,33 +30,52 @@ class ButtonComp(
     private val element: HTMLButtonElement
         get() = getElemByIdAs(btnId)
 
-    override fun render() = tmRender(
-        "t-c-button",
+    override fun render() = template(
+        """
+            <button id="{{id}}" class="{{#isPrimary}}btn waves-light{{/isPrimary}} {{#isSecondary}}secondary-btn btn-flat{{/isSecondary}} {{#isDanger}}btn danger waves-light{{/isDanger}} {{#isPrimaryRound}}btn-floating waves-light{{/isPrimaryRound}} {{#isDisabled}}disabled{{/isDisabled}} waves-effect">
+                <ez-btn-content>
+                    {{#iconHtml}}<ez-btn-icon>{{{iconHtml}}}</ez-btn-icon>{{/iconHtml}}
+                    <ez-spinner class="preloader-wrapper active display-none">
+                        <div class="spinner-layer"><div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div></div></div>
+                    </ez-spinner>
+                    <ez-btn-text>{{text}}</ez-btn-text>
+                </ez-btn-content>
+            </button>
+        """.trimIndent(),
         "id" to btnId,
-        "text" to label,
-        "iconHtml" to iconHtml,
         "isPrimary" to (type == Type.PRIMARY),
         "isSecondary" to (type == Type.FLAT),
         "isDanger" to (type == Type.DANGER),
         "isPrimaryRound" to (type == Type.PRIMARY_ROUND),
         "isDisabled" to !isEnabledInitial,
+        "iconHtml" to iconHtml,
+        "text" to label,
     )
 
     override fun postRender() {
         element.onVanillaClick(true) {
-            val btnText = element.getElementsByTagName("ez-btn-text").asList().single()
-            val activeHtml = btnText.innerHTML
+            val text = element.getElemBySelector("ez-btn-text")
+            val icon = element.getElemBySelectorOrNull("ez-btn-icon")
+            val loader = element.getElemBySelector("ez-spinner")
+            val activeHtml = text.innerHTML
+
             disable()
 
-            if (disabledLabel != null) {
-                btnText.textContent = disabledLabel
+            if (showClickedLoading) {
+                icon?.hide()
+                loader.show()
+            }
+            if (clickedLabel != null) {
+                text.textContent = clickedLabel
             }
             try {
                 onClick()
             } finally {
                 // element might've been destroyed on click
                 if (getElemByIdOrNull(btnId) != null) {
-                    btnText.innerHTML = activeHtml
+                    loader.hide()
+                    icon?.show()
+                    text.innerHTML = activeHtml
                     enable()
                 }
             }

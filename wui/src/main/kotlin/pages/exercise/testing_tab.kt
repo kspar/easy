@@ -1,19 +1,19 @@
 package pages.exercise
 
 import DateSerializer
+import Icons
 import Str
 import components.code_editor.CodeEditorComp
+import components.form.ButtonComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import onSingleClickWithDisabled
-import org.w3c.dom.HTMLButtonElement
 import parseTo
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getElemByIdAs
+import template
 import tmRender
 import kotlin.js.Date
 import kotlin.js.Promise
@@ -49,9 +49,13 @@ class TestingTabComp(
 
     private lateinit var editor: CodeEditorComp
     private var assessment: AssessmentViewComp? = null
+    private val submitBtn = ButtonComp(
+        ButtonComp.Type.PRIMARY, Str.doAutoAssess(), Icons.robot, ::submit,
+        clickedLabel = Str.autoAssessing(), parent = this
+    )
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, assessment)
+        get() = listOfNotNull(editor, assessment, submitBtn)
 
     override fun create(): Promise<*> = doInPromise {
         val submissions =
@@ -67,24 +71,27 @@ class TestingTabComp(
         )
     }
 
-    override fun render(): String = tmRender(
-        "t-c-exercise-tab-testing",
+    override fun render() = template(
+        """
+            <ez-dst id="{{assessId}}"></ez-dst>
+            <ez-dst id="{{editorId}}"></ez-dst>
+            <div id='{{btnId}}' class="center"></div>
+        """.trimIndent(),
         "assessId" to assessmentId,
         "editorId" to editor.dstId,
-        "doTestLabel" to Str.doAutoAssess()
+        "btnId" to submitBtn.dstId,
     )
 
-    override fun postRender() {
-        getElemByIdAs<HTMLButtonElement>("testing-submit").onSingleClickWithDisabled(Str.autoAssessing()) {
-            editor.setFileEditable(editorTabName, false)
-            assessment = AssessmentViewComp(null, Str.autoAssessing(), true, this, assessmentId)
-            assessment?.createAndBuild()?.await()
 
-            val a = submitCheck(editor.getFileValue(editorTabName))
-            assessment = AssessmentViewComp(a.grade, a.feedback, true, this, assessmentId)
-            assessment?.createAndBuild()?.await()
-            editor.setFileEditable(editorTabName, true)
-        }
+    private suspend fun submit() {
+        editor.setFileEditable(editorTabName, false)
+        assessment = AssessmentViewComp(null, Str.autoAssessing(), true, this, assessmentId)
+        assessment?.createAndBuild()?.await()
+
+        val a = submitCheck(editor.getFileValue(editorTabName))
+        assessment = AssessmentViewComp(a.grade, a.feedback, true, this, assessmentId)
+        assessment?.createAndBuild()?.await()
+        editor.setFileEditable(editorTabName, true)
     }
 
     private suspend fun submitCheck(solution: String): AutoAssessmentDTO {
@@ -103,8 +110,14 @@ class AssessmentViewComp(
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
 
-    override fun render(): String = tmRender(
-        "t-c-assessment-view",
+    override fun render(): String = template(
+        """
+            <ez-assessment>
+                <h4>{{title}}</h4>
+                <pre class="feedback {{#auto}}auto-feedback{{/auto}}">{{feedback}}</pre>
+                <div>{{gradeLabel}}: <span class="grade-number">{{grade}}{{^grade}}-{{/grade}}</span>/100</div>
+            </ez-assessment>
+        """.trimIndent(),
         "title" to if (isAuto) Str.autoAssessmentLabel() else Str.teacherAssessmentLabel(),
         "auto" to isAuto,
         "gradeLabel" to if (isAuto) Str.autoGradeLabel() else Str.teacherGradeLabel(),

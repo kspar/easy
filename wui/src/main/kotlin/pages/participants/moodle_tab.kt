@@ -38,11 +38,11 @@ class ParticipantsMoodleTabComp(
 
     override fun create() = doInPromise {
         syncStudentsBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", null, ::syncStudents,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", Icons.sync, ::syncStudents,
             true, "Sünkroniseerin...", parent = this
         )
         syncGradesBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", null, ::syncGrades,
+            ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", Icons.sync, ::syncGrades,
             true, "Sünkroniseerin...", parent = this
         )
     }
@@ -63,18 +63,39 @@ class ParticipantsMoodleTabComp(
         "gradesBtnId" to syncGradesBtn.dstId,
     )
 
+    override fun postChildrenBuilt() {
+        doInPromise {
+            checkSyncStatuses()
+        }
+    }
+
+    private suspend fun checkSyncStatuses() {
+        val moodleProps = fetchEms(
+            "/courses/$courseId/moodle", ReqMethod.GET,
+            successChecker = { http200 }).await()
+            .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
+
+        // Hack to show button clicked effects, start polling and restore active button after poll
+        if (moodleProps?.sync_students_in_progress == true) {
+            syncStudentsBtn.click()
+        }
+        if (moodleProps?.sync_grades_in_progress == true) {
+            syncGradesBtn.click()
+        }
+    }
+
     private suspend fun syncStudents() {
         debug { "Moodle syncing all students" }
         val moodleStudentsSyncStatus = fetchEms("/courses/$courseId/moodle/students", ReqMethod.POST,
             successChecker = { http200 }).await()
             .parseTo(MoodleSyncedStatus.serializer()).await().status
 
-        awaitSyncEnd(moodleStudentsSyncStatus)
+        awaitSyncEnd(moodleStudentsSyncStatus, SyncType.STUDENTS)
 
         debug { "Sync completed" }
         successMessage { "Õpilased edukalt sünkroniseeritud" }
 
-        // TODO: should call onStudentsSynced
+        onStudentsSynced()
     }
 
     private suspend fun syncGrades() {
@@ -83,16 +104,18 @@ class ParticipantsMoodleTabComp(
             successChecker = { http200 }).await()
             .parseTo(MoodleSyncedStatus.serializer()).await().status
 
-        awaitSyncEnd(moodleGradesSyncStatus)
+        awaitSyncEnd(moodleGradesSyncStatus, SyncType.GRADES)
 
         debug { "Sync completed" }
         successMessage { "Hinded edukalt sünkroniseeritud" }
     }
 
-    private suspend fun awaitSyncEnd(status: MoodleSyncStatus) {
-        if (status == MoodleSyncStatus.IN_PROGRESS) {
+
+    private enum class SyncType { STUDENTS, GRADES }
+
+    private suspend fun awaitSyncEnd(initialStatus: MoodleSyncStatus, type: SyncType) {
+        if (initialStatus == MoodleSyncStatus.IN_PROGRESS) {
             debug { "Sync already in progress" }
-            successMessage { "Sünkroniseerimine juba käib" }
 
             while (true) {
                 sleep(3000).await()
@@ -103,10 +126,14 @@ class ParticipantsMoodleTabComp(
                     successChecker = { http200 }).await()
                     .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
 
-                // TODO: could also be grades_in_progress
-                if (moodleProps?.sync_students_in_progress != true) {
-                    break
+                val status = when(type) {
+                    SyncType.STUDENTS -> moodleProps?.sync_students_in_progress
+                    SyncType.GRADES -> moodleProps?.sync_grades_in_progress
                 }
+
+                // false (not in progress) or null (N/A, no moodle props)
+                if (status != true)
+                    break
             }
         }
     }

@@ -22,23 +22,23 @@ open class BinaryModalComp<T>(
     open var primaryPostAction: (suspend () -> Unit)? = null,
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
     onOpen: (() -> Unit)? = null,
-    id: Modal,
+    htmlClasses: String = "",
     parent: Component?,
 ) : ModalComp<T>(
     title, defaultReturnValue,
-    fixFooter = fixFooter, isWide = isWide, onOpen = onOpen,
-    parent = parent, id = id,
+    fixFooter = fixFooter, isWide = isWide, onOpen = onOpen, htmlClasses = htmlClasses,
+    parent = parent
 ) {
 
     val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, null, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
-    }, primaryButtonEnabledInitial, primaryBtnLoadingText, { primaryPostAction?.invoke() }, this)
+    }, primaryButtonEnabledInitial, primaryBtnLoadingText, true, { primaryPostAction?.invoke() }, this)
 
     val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, null, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
-    }, true, secondaryBtnLoadingText, { secondaryPostAction?.invoke() }, this)
+    }, true, secondaryBtnLoadingText, true, { secondaryPostAction?.invoke() }, this)
 
     override fun create() = doInPromise {
         super.create()?.await()

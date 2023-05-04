@@ -8,7 +8,6 @@ import cache.BasicCourseInfo
 import components.EzCollComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
-import components.modal.Modal
 import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
@@ -118,8 +117,7 @@ class TeacherCourseExercisesRootComp(
 
         removeModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER,
-            id = Modal.REMOVE_EXERCISE_FROM_COURSE, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
 
         Sidenav.replacePageSection(

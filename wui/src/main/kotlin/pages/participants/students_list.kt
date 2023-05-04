@@ -2,18 +2,17 @@ package pages.participants
 
 import Icons
 import components.EzCollComp
-import components.text.StringComp
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
-import components.modal.Modal
+import components.text.StringComp
 import dao.ParticipantsDAO
 import debug
 import errorMessage
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
 
 class ParticipantsStudentsListComp(
@@ -169,8 +168,7 @@ class ParticipantsStudentsListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER,
-            id = Modal.REMOVE_STUDENTS_FROM_COURSE, parent = this
+            primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.STUDENT, parent = this)
@@ -296,10 +294,10 @@ class ParticipantsStudentsListComp(
 
         val removed = removeFromCourseModal.openWithClosePromise().await()
 
-        return if (removed)
-            EzCollComp.ResultModified<StudentProps>(emptyList())
-        else
-            EzCollComp.ResultUnmodified
+        if (removed) {
+            onGroupsChanged()
+        }
+        return EzCollComp.ResultUnmodified
     }
 
     private suspend fun sendInvite(item: EzCollComp.Item<StudentProps>): EzCollComp.Result = sendInvite(listOf(item))

@@ -18,10 +18,7 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.*
 import restore
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getHtml
-import rip.kspar.ezspa.getNodelistBySelector
-import rip.kspar.ezspa.toJsObj
+import rip.kspar.ezspa.*
 import tmRender
 import toEstonianString
 import kotlin.js.Date
@@ -52,6 +49,7 @@ object CourseExercisesPage : EasyPage() {
         val ordering_idx: Int
     )
 
+    private var rootComp: Component? = null
 
     override val pageName: PageName
         get() = PageName.EXERCISES
@@ -64,6 +62,7 @@ object CourseExercisesPage : EasyPage() {
     private val courseId: String
         get() = parsePathParams()["courseId"]
 
+    // TODO: What is this for? Try to remove
     override fun clear() {
         super.clear()
         getContainer().innerHTML = tmRender(
@@ -80,9 +79,12 @@ object CourseExercisesPage : EasyPage() {
             Role.STUDENT -> {
                 buildStudentExercises(courseId)
             }
+
             Role.TEACHER, Role.ADMIN -> {
                 getHtml().addClass("wui3")
-                TeacherCourseExercisesRootComp(courseId).createAndBuild()
+                val root = TeacherCourseExercisesRootComp(courseId)
+                rootComp = root
+                root.createAndBuild()
             }
         }.then {
             scrollPosition?.restore()
@@ -95,6 +97,8 @@ object CourseExercisesPage : EasyPage() {
 
     override fun destruct() {
         super.destruct()
+        rootComp?.destroy()
+        rootComp = null
         getHtml().removeClass("wui3")
     }
 
@@ -133,10 +137,12 @@ object CourseExercisesPage : EasyPage() {
                     ExerciseStatus.UNSTARTED -> {
                         exMap["unstarted"] = true
                     }
+
                     ExerciseStatus.STARTED -> {
                         if (ex.graded_by != null)
                             exMap["started"] = true
                     }
+
                     ExerciseStatus.COMPLETED -> {
                         exMap["completed"] = true
                     }
@@ -147,10 +153,12 @@ object CourseExercisesPage : EasyPage() {
                         exMap["evalAuto"] = true
                         exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
                     }
+
                     GraderType.TEACHER -> {
                         exMap["evalTeacher"] = true
                         exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
                     }
+
                     null -> {
                         if (ex.status != ExerciseStatus.UNSTARTED)
                             exMap["evalMissing"] = true

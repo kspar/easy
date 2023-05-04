@@ -3,7 +3,6 @@ package pages.participants
 import Str
 import components.form.SelectComp
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import components.text.StringComp
 import debug
 import kotlinx.coroutines.await
@@ -38,10 +37,9 @@ class AddToGroupModalComp(
 
     private val modalComp: BinaryModalComp<AddedGroup?> = BinaryModalComp(
         null, Str.doSave(), Str.cancel(), Str.saving(),
+        defaultReturnValue = null,
         primaryAction = { groupSelectComp.getLabelAndValue().let { addToGroup(it.first, it.second) } },
         primaryPostAction = ::reinitialise,
-        defaultReturnValue = null,
-        id = if (isFor == For.STUDENT) Modal.ADD_STUDENTS_TO_COURSE_GROUP else Modal.ADD_TEACHERS_TO_COURSE_GROUP,
         parent = this
     )
 

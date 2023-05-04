@@ -37,6 +37,7 @@ import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.exercise.ExercisePage
 import pages.exercise.TestingTabComp
+import pages.exercise.formatFeedback
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -236,7 +237,7 @@ object ExerciseSummaryPage : EasyPage() {
                 )
             )
 
-            Materialize.Tabs.init(getElemById("tabs"))
+            val tabs = Materialize.Tabs.init(getElemById("tabs"))
 
             getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
 
@@ -248,6 +249,8 @@ object ExerciseSummaryPage : EasyPage() {
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
             initTooltips()
+
+            tabs.updateTabIndicator()
             fl?.end()
         }
 
@@ -940,7 +943,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "autoLabel" to Str.autoAssessmentLabel(),
                 "autoGradeLabel" to Str.autoGradeLabel(),
                 "grade" to grade.toString(),
-                "feedback" to feedback
+                "feedback" to feedback?.let { formatFeedback(it) },
             )
         )
     }

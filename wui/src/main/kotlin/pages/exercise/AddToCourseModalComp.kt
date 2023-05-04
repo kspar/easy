@@ -4,7 +4,6 @@ import Str
 import components.text.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import errorMessage
@@ -28,11 +27,16 @@ class AddToCourseModalComp(
     ) : this(listOf(exerciseId), exerciseTitle, parent)
 
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
-        "Lisa ülesanne kursusele", Str.doAdd(), Str.cancel(), Str.adding(),
+        "Lisa ülesanne kursusele",
+        Str.doAdd(),
+        Str.cancel(),
+        Str.adding(),
+        defaultReturnValue = null,
+        primaryButtonEnabledInitial = false,
+        fixFooter = true,
         primaryAction = { list.getSelectedCourseId()?.let { addToCourse(it) } },
         primaryPostAction = ::reinitialise,
-        primaryButtonEnabledInitial = false, defaultReturnValue = null, fixFooter = true,
-        id = Modal.ADD_EXERCISE_TO_COURSE, parent = this
+        parent = this
     )
 
     private lateinit var list: AddToCourseModalCoursesListComp

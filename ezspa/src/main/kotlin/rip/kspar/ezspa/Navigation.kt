@@ -37,7 +37,7 @@ object Navigation {
 
     fun stopNavigationCatching() {
         unsavedChangesChecker = null
-        beforeUnloadAbort!!.abort()
+        beforeUnloadAbort?.abort()
     }
 }
 

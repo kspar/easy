@@ -1,11 +1,10 @@
 package pages.sidenav
 
 import Str
-import components.text.AttrsComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
+import components.text.AttrsComp
 import dao.CoursesTeacherDAO
 import emptyToNull
 import kotlinx.coroutines.await
@@ -25,10 +24,10 @@ class UpdateCourseModalComp(
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Kursuse sätted", Str.doSave(), Str.cancel(), Str.saving(),
-        primaryAction = { updateCourse() },
-        onOpen = { alias.focus() },
-        primaryButtonEnabledInitial = false, defaultReturnValue = false,
-        id = Modal.UPDATE_COURSE, parent = this
+        defaultReturnValue = false,
+        primaryButtonEnabledInitial = false,
+        primaryAction = { updateCourse() }, onOpen = { alias.focus() },
+        parent = this
     )
 
     override val children: List<Component>

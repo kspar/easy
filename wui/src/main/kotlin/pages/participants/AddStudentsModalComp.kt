@@ -5,12 +5,10 @@ import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import components.modal.Modal
 import components.text.ParagraphsComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
@@ -27,12 +25,13 @@ class AddStudentsModalComp(
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Lisa õpilasi", Str.doAdd(), Str.cancel(), Str.adding(),
-        primaryAction = { addStudents(groupSelectComp?.getValue(), studentsFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise,
-        onOpen = { studentsFieldComp.focus() },
         defaultReturnValue = false,
-        fixFooter = true, isWide = true,
-        id = Modal.ADD_STUDENTS_TO_COURSE, parent = this
+        fixFooter = true,
+        isWide = true,
+        primaryAction = { addStudents(groupSelectComp?.getValue(), studentsFieldComp.getValue()) },
+        primaryPostAction = ::reinitialise, onOpen = { studentsFieldComp.focus() },
+        htmlClasses = "add-participants-modal",
+        parent = this
     )
 
     private val helpTextComp = ParagraphsComp(
@@ -66,8 +65,6 @@ class AddStudentsModalComp(
     override fun create() = doInPromise {
         modalComp.setContentComps { listOfNotNull(helpTextComp, groupSelectComp, studentsFieldComp) }
     }
-
-    override fun render() = plainDstStr(modalComp.dstId)
 
     override fun postChildrenBuilt() {
         studentsFieldComp.validateInitial()
