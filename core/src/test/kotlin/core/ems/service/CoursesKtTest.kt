@@ -97,7 +97,7 @@ class CoursesKtTest {
      * 1. grade: 51 - expect to see
      */
     @Test
-    fun `selectAllCourseExercises student 2 should return 1 submission with grade 51`() {
+    fun `selectAllCourseExercises student 2 should return 1 submission with grade 51 and 1 "null" submission`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
         val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
