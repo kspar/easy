@@ -37,7 +37,7 @@ class CoursesKtTest {
 
 
     @Test
-    fun `selectAllCourseExercisesLatestSubmissions should return 4 submissions (1 null, 3 graded)`() {
+    fun `selectAllCourseExercisesLatestSubmissions should return 4 submissions from 2 students (1 null, 3 graded)`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
         val submissions = latestSubmissions.map { it.latestSubmissions }.flatten().map { it.latestSubmission }
         assertEquals(4, submissions.size)
