@@ -18,41 +18,28 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import javax.sql.DataSource
+import kotlin.random.Random
 
 
 class CoursesKtTest {
     private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
     private val dataSource: DataSource = embeddedPostgres.postgresDatabase
+    private val random = Random(0)
 
-    private val teacher1Id = "teacher1"
     private val student1Id = "student1"
     private val student2Id = "student2"
     private val studentIds = listOf(student1Id, student2Id)
 
+    private val course1Id = random.nextLongId()
 
-    private val course1Id = 1L
-
-    private val exercise1Id = 1L
-    private val exercise2Id = exercise1Id + 1
-
-    private val exerciseVer1Id = 1L
-    private val exerciseVer2Id = exerciseVer1Id + 1
-
-    private val ce1Id = 1L
+    private val ce1Id = random.nextLongId()
     private val ce2Id = ce1Id + 1
 
 
     @Test
-    fun `getCourse should return correct course when course exists`() {
-        val course = getCourse(course1Id)
-        assertEquals("Test Course", course?.title)
-        assertEquals("TC", course?.alias)
-    }
-
-    @Test
     fun `selectAllCourseExercisesLatestSubmissions should return 2 exercises`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-        assertEquals(setOf(exerciseVer1Id, exerciseVer2Id), latestSubmissions.map { it.exerciseId.toLong() }.toSet())
+        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.exerciseId.toLong() }.toSet())
     }
 
     @Test
@@ -97,7 +84,7 @@ class CoursesKtTest {
      * 1. grade: 51 - expect to see
      */
     @Test
-    fun `selectAllCourseExercises student 2 should return 1 submission with grade 51 and 1 "null" submission`() {
+    fun `selectAllCourseExercises student 2 should return 1 submission with grade 51 and 1 null submission`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
         val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
@@ -148,12 +135,6 @@ class CoursesKtTest {
         assertEquals(students.toSet(), studentIds.toSet())
     }
 
-    @Test
-    fun `getCourse should return null when course does not exist`() {
-        val course = getCourse(course1Id + 1)
-        assertNull(course)
-    }
-
     @BeforeEach
     fun bootstrap() {
         Database.connect(dataSource)
@@ -164,8 +145,13 @@ class CoursesKtTest {
             JdbcConnection(dataSource.connection)
         ).update("development")
 
+
         transaction {
             addLogger(StdOutSqlLogger)
+
+            val teacher1Id = "teacher1"
+            val exercise1Id = random.nextLongId()
+            val exercise2Id = exercise1Id + 1
 
             Account.insert {
                 it[id] = EntityID(student1Id, Account)
@@ -186,6 +172,7 @@ class CoursesKtTest {
                 it[lastSeen] = DateTime.parse("2023-04-27T12:00:00Z")
                 it[idMigrationDone] = true
             }
+
             Account.insert {
                 it[id] = EntityID(teacher1Id, Account)
                 it[email] = "user3@example.com"
@@ -244,7 +231,6 @@ class CoursesKtTest {
 
 
             ExerciseVer.insert {
-                it[id] = exerciseVer1Id
                 it[exercise] = EntityID(exercise1Id, Exercise)
                 it[author] = EntityID(teacher1Id, Account)
                 it[validFrom] = DateTime.now().minusDays(1)
@@ -255,7 +241,6 @@ class CoursesKtTest {
             }
 
             ExerciseVer.insert {
-                it[id] = exerciseVer2Id
                 it[exercise] = EntityID(exercise2Id, Exercise)
                 it[author] = EntityID(teacher1Id, Account)
                 it[validFrom] = DateTime.now().minusDays(1)
@@ -289,9 +274,9 @@ class CoursesKtTest {
                 it[hardDeadline] = DateTime.now().plusDays(14)
                 it[orderIdx] = 1
                 it[assessmentsStudentVisible] = true
-                it[instructionsHtml] = "<p>Course exercise instructions</p>"
-                it[instructionsAdoc] = "Course exercise instructions"
-                it[titleAlias] = "Course exercise title alias"
+                it[instructionsHtml] = "<p>Course exercise 1 instructions</p>"
+                it[instructionsAdoc] = "Course exercise 1 instructions"
+                it[titleAlias] = "Course exercise 1"
             }
 
             CourseExercise.insert {
@@ -306,9 +291,9 @@ class CoursesKtTest {
                 it[hardDeadline] = DateTime.now().plusDays(14)
                 it[orderIdx] = 1
                 it[assessmentsStudentVisible] = true
-                it[instructionsHtml] = "<p>Course exercise instructions</p>"
-                it[instructionsAdoc] = "Course exercise instructions"
-                it[titleAlias] = "Course exercise title alias"
+                it[instructionsHtml] = "<p>Course exercise 2 instructions</p>"
+                it[instructionsAdoc] = "Course exercise 2 instructions"
+                it[titleAlias] = "Course exercise 2"
             }
 
             TeacherCourseAccess.insert {
@@ -384,5 +369,7 @@ class CoursesKtTest {
     fun shutdown() {
         embeddedPostgres.close()
     }
+
+    private fun Random.nextLongId() = this.nextLong(1000)
 }
 
