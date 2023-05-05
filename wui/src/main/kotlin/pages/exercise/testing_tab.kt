@@ -75,7 +75,7 @@ class TestingTabComp(
         """
             <ez-dst id="{{assessId}}"></ez-dst>
             <ez-dst id="{{editorId}}"></ez-dst>
-            <div id='{{btnId}}' class="center"></div>
+            <div id='{{btnId}}' class="center" style="display: flex; justify-content: center;"></div>
         """.trimIndent(),
         "assessId" to assessmentId,
         "editorId" to editor.dstId,
