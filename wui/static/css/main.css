@@ -1106,7 +1106,7 @@ ez-participants-list .card .card-content p {
 /** Buttons **/
 
 .btn, .btn-flat, .btn-floating {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 }
