@@ -96,11 +96,11 @@ object CourseExercisesTeacherDAO {
                 "title_alias" to it.titleAlias,
                 "instructions_adoc" to it.instructions,
                 "threshold" to it.threshold,
-                "soft_deadline" to it.softDeadline,
-                "hard_deadline" to it.hardDeadline,
+                "soft_deadline" to it.softDeadline?.date,
+                "hard_deadline" to it.hardDeadline?.date,
                 "assessments_student_visible" to it.assessmentsStudentVisible,
                 "student_visible" to it.isStudentVisible,
-                "student_visible_from" to it.studentVisibleFrom,
+                "student_visible_from" to it.studentVisibleFrom?.toIsoString(),
                 "moodle_exercise_id" to it.moodleExerciseId,
             )
         }

@@ -64,6 +64,16 @@ fun Node.onInput(debounceDelay: Int = 250, f: (event: Event) -> Unit): ActiveLis
     return ActiveListener(this, "input", listener)
 }
 
+fun Element.onBlur(f: suspend (event: Event) -> Unit): ActiveListener {
+    val listener: (Event) -> Unit = { event: Event ->
+        doInPromise {
+            f(event)
+        }
+    }
+    this.addEventListener("blur", listener)
+    return ActiveListener(this, "blur", listener)
+}
+
 fun Element.onENTER(f: suspend (KeyboardEvent) -> Unit): ActiveListener {
     val listener = { e: Event ->
         doInPromise {
