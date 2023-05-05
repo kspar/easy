@@ -98,7 +98,7 @@ class TeacherCourseExercisesRootComp(
                         if (it.isVisible) "Peida" else "Avalikusta", onActivate = ::showHide
                     ),
                     EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
-                    EzCollComp.Action(Icons.settings, "Muuda sätteid", onActivate = ::updateCourseExercise),
+                    EzCollComp.Action(Icons.settings, "Ülesande sätted", onActivate = ::updateCourseExercise),
                     EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
                 ),
             )

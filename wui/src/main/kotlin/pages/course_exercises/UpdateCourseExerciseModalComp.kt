@@ -21,7 +21,8 @@ import warn
 class UpdateCourseExerciseModalComp(
     private val courseId: String,
     private val exercise: CourseExercise,
-    parent: Component,
+    // TODO: remove nullable when exercise summary page is migrated
+    parent: Component?,
     dstId: String,
 ) : Component(parent, dstId) {
 
