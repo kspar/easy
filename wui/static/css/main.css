@@ -43,6 +43,7 @@ html {
     height: 100%;
     color: #333;
     letter-spacing: 0.03rem;
+    overflow-y: overlay;
 }
 
 body {
