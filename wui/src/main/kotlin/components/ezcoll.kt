@@ -645,7 +645,7 @@ class EzCollComp<P>(
     private fun initSorting() {
         Materialize.Dropdown.init(
             getElemById(collId).getElemBySelector("ezc-ctrl-order .dropdown-trigger"),
-            objOf("closeOnClick" to false, "coverTrigger" to false, "constrainWidth" to false)
+            objOf("closeOnClick" to false, "coverTrigger" to false, "constrainWidth" to false, "container" to getBody())
         )
         sorters.forEach { s ->
             getElemById(collId).getElemBySelector("[ez-sorter='${s.id}']").onVanillaClick(false) {
@@ -964,7 +964,7 @@ class EzCollItemComp<P>(
         if (spec.actions.isNotEmpty()) {
             Materialize.Dropdown.init(
                 getElemById("ezc-item-action-menu-${spec.id}"),
-                objOf("constrainWidth" to false, "coverTrigger" to false)
+                objOf("constrainWidth" to false, "coverTrigger" to false, "container" to getBody())
             )
         }
     }
