@@ -1592,7 +1592,7 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 .modal {
     max-width: 55rem;
     max-height: 80%;
-    overflow-y: auto;
+    overflow-y: inherit;
 }
 
 .modal.fixed-footer.open {
