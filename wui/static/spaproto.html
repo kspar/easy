@@ -520,34 +520,6 @@
 </script>
 
 
-<!-- Embedded anon autoassess page -->
-<script id="t-c-anonauto" type="text/x-handlebars">
-    <div id="anonauto">
-        {{#title}}<h2>{{title}}</h2>{{/title}}
-        <div id="exercise-text">
-            {{{text}}}
-        </div>
-        <div style="position: relative">
-            <div style="position: absolute; right: 10px; top: 10px;">
-                <ez-dst id="{{submitBtnId}}"></ez-dst>
-            </div>
-            <ez-dst id="{{editorId}}"></ez-dst>
-        </div>
-        <ez-dst id="{{feedbackId}}"></ez-dst>
-        <div style="display: flex; align-items: center; justify-content: end; font-size: 1rem;">
-            <!-- TODO: svg -->
-            <img src="/static/favicon/mstile-70x70.png" style="width: 1.7rem; height: 1.7rem; margin-right: 3px;">
-            {{lahendus}} |<a href="/library/{{exerciseId}}/summary" target="_blank" style="margin-left: 3px; color: #bbb">#{{exerciseId}}</a>
-        </div>
-    </div>
-</script>
-
-<script id="t-c-anonauto-feedback" type="text/x-handlebars">
-    <pre class="feedback auto-feedback">{{feedback}}</pre>
-    <div>{{autoGradeLabel}}: <span class="grade-number">{{grade}}</span>/100</div>
-</script>
-
-
 <!-- Snippets -->
 <script id="t-s-missing-content-wandering-eyes" type="text/x-handlebars">
     <div class="missing-content-wrap">

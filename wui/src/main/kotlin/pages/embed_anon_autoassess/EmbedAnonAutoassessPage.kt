@@ -6,13 +6,17 @@ import Icons
 import PageName
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
+import debug
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
+import libheaders.ResizeObserver
 import pages.EasyPage
+import pages.exercise.ExercisePage
 import queries.getCurrentQueryParamValue
 import rip.kspar.ezspa.*
-import tmRender
+import template
+import kotlin.math.roundToInt
 
 object EmbedAnonAutoassessPage : EasyPage() {
     override val pageName = PageName.EMBED_ANON_AUTOASSESS
@@ -39,7 +43,6 @@ object EmbedAnonAutoassessPage : EasyPage() {
         val showTitle = getCurrentQueryParamValue("title") != null
         val showTemplate = getCurrentQueryParamValue("template") != null
         val sendIframeHeightId = getCurrentQueryParamValue("dynamic-height-id")
-        val sendIframeHeightDelay = getCurrentQueryParamValue("dynamic-height-delay")?.toIntOrNull()
 
         doInPromise {
             rootComp = EmbedAnonAutoassessRootComp(
@@ -47,7 +50,6 @@ object EmbedAnonAutoassessPage : EasyPage() {
                 showTitle,
                 showTemplate,
                 sendIframeHeightId,
-                sendIframeHeightDelay,
                 CONTENT_CONTAINER_ID
             ).also {
                 it.createAndBuild().await()
@@ -66,7 +68,6 @@ class EmbedAnonAutoassessRootComp(
     private val showTitle: Boolean,
     private val showTemplate: Boolean,
     private val frameId: String?,
-    private val framePollDelay: Int?,
     dstId: String
 ) : Component(null, dstId) {
 
@@ -88,12 +89,31 @@ class EmbedAnonAutoassessRootComp(
             file, placeholder = "Kirjuta lahendus siia...",
             showLineNumbers = false, showTabs = false, parent = this
         )
-        submitBtn = ButtonComp(ButtonComp.Type.PRIMARY_ROUND, "", Icons.robot, { assess() }, parent = this)
+        submitBtn = ButtonComp(ButtonComp.Type.PRIMARY_ROUND, null, Icons.robot, { assess() }, parent = this)
         feedback = EmbedAnonAutoassessFeedbackComp(parent = this, dstId = feedbackDstId)
     }
 
-    override fun render() = tmRender(
-        "t-c-anonauto",
+    override fun render() = template(
+        """
+            <div id="anonauto">
+                {{#title}}<h2>{{title}}</h2>{{/title}}
+                <div id="exercise-text">
+                    {{{text}}}
+                </div>
+                <div style="position: relative">
+                    <div style="position: absolute; right: 10px; top: 10px;">
+                        <ez-dst id="{{submitBtnId}}"></ez-dst>
+                    </div>
+                    <ez-dst id="{{editorId}}"></ez-dst>
+                </div>
+                <ez-dst id="{{feedbackId}}"></ez-dst>
+                <div style="display: flex; align-items: center; justify-content: end; font-size: 1rem;">
+                    <!-- TODO: svg -->
+                    <img src="/static/favicon/mstile-70x70.png" style="width: 1.7rem; height: 1.7rem; margin-right: 3px;">
+                    {{lahendus}} |<a href="{{href}}" target="_blank" style="margin-left: 3px; color: #bbb">#{{exerciseId}}</a>
+                </div>
+            </div>
+        """.trimIndent(),
         "exerciseId" to exerciseId,
         "title" to if (showTitle) "1.1 Tervitus" else null,
         "text" to """
@@ -125,19 +145,25 @@ Tere, maailm!</code></pre>
         "submitBtnId" to submitBtn.dstId,
         "feedbackId" to feedback.dstId,
         "lahendus" to AppProperties.AppName,
+        "href" to ExercisePage.link(exerciseId),
     )
 
     override fun postRender() {
         if (frameId != null) {
-            doInPromise {
-                while (true) {
-                    val h = getBody().offsetHeight
-                    if (h != 0) {
-                        window.parent.postMessage("$frameId|${h + 1}", "*")
+
+            debug { "Setup resize handler" }
+
+            val observer = ResizeObserver { entries, _ ->
+                entries.forEach {
+                    it.borderBoxSize.firstOrNull()?.let {
+                        val height = it.blockSize.roundToInt()
+                        debug { "Content resized to $height px" }
+                        window.parent.postMessage("$frameId|$height", "*")
                     }
-                    sleep(framePollDelay ?: 200).await()
                 }
             }
+
+            observer.observe(getBody())
         }
     }
 
@@ -169,8 +195,12 @@ class EmbedAnonAutoassessFeedbackComp(
     parent: Component?,
     dstId: String = IdGenerator.nextId(),
 ) : Component(parent, dstId) {
-    override fun render() = if (show) tmRender(
-        "t-c-anonauto-feedback",
+
+    override fun render() = if (show) template(
+        """
+            <pre class="feedback auto-feedback">{{feedback}}</pre>
+            <div>{{autoGradeLabel}}: <span class="grade-number">{{grade}}</span>/100</div>
+        """.trimIndent(),
         "grade" to grade,
         "feedback" to feedback,
         "autoGradeLabel" to "Automaatne hinne",

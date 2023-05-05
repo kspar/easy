@@ -54,6 +54,16 @@ body {
 
 /* Embedded - when displaying page in embed */
 
+html.embedded {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Chrome, Safari, Opera */
+html.embedded::-webkit-scrollbar {
+    display: none;
+}
+
 html.embedded body {
     background: none;
     min-height: 0;
@@ -726,7 +736,7 @@ ez-exercise-autoeval > ez-block-container {
 
 /** Anonymous autoeval embed **/
 
-#anonauto button {
+#anonauto button:not([disabled]) {
     padding-bottom: .4rem;
 }
 
@@ -1094,6 +1104,12 @@ ez-participants-list .card .card-content p {
 
 /** Buttons **/
 
+.btn, .btn-flat, .btn-floating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .btn, .btn:focus,
 .btn-floating, .btn-floating:focus {
     background-color: var(--ez-green);
@@ -1149,6 +1165,12 @@ ez-btn-content ez-spinner:not(.display-none) ~ ez-btn-text {
 .btn-floating ez-btn-content ez-icon > svg {
     width: 2rem;
     height: 2rem;
+}
+
+.btn ez-spinner .spinner-layer,
+.btn-flat ez-spinner .spinner-layer,
+.btn-floating ez-spinner .spinner-layer {
+    border-color: var(--ez-btn-disabled-text);
 }
 
 

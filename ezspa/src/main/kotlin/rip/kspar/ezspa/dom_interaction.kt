@@ -89,7 +89,7 @@ fun Element.onENTER(f: suspend (KeyboardEvent) -> Unit): ActiveListener {
     return ActiveListener(this, "keydown", listener)
 }
 
-private fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event: Event) -> Unit): (Event) -> Unit {
+fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event: Event) -> Unit): (Event) -> Unit {
     var isWaiting = false
     var lastCallTime = Date.now()
     lateinit var latestEvent: Event
