@@ -1,0 +1,60 @@
+
+
+= Release notes: v3
+
+_by ChatGPT_
+
+=== Features
+
+* Modify global exercise page (EZ-1225)
+
+Get your creative hats on, teachers! Now you can make your global exercise page (EZ-1225) look snazzy and customize it to your heart's content. Make those exercises pop!
+
+* Exercises page shows statistics numbers on mobile (EZ-1229)
+
+Attention, math lovers! We've crunched the numbers and made sure you can now view exercise statistics on your mobile devices (EZ-1229). It's like having a pocket-sized math genius with you at all times!
+
+* Delete group service + wui (EZ-1304)
+
+Say goodbye to unnecessary groups, because we've added a delete feature for groups (EZ-1304). It's like Marie Kondo for your courses. Keep it tidy!
+
+* Scheduled show course exercise (EZ-1512)
+
+Teachers, get ready to schedule like a pro! Now you can set up exercises to appear at specific times (EZ-1512). It's the ultimate exercise planning power move!
+
+* Migrate access control checks to a new system (EZ-1497)
+
+We've given our access control system a makeover, making it more secure and powerful than ever (EZ-1497). Students, don't even think about sneaking into the teacher's lounge!
+
+* Move TSL model to a separate multiplatform project (EZ-1537)
+
+We've done some behind-the-scenes magic and moved our TSL model to a separate project (EZ-1537). It's like having a secret stash of knowledge that both students and teachers can access!
+
+* Ezcoll allows expanding with progress bar or top attribute (EZ-1516)
+
+Students, rejoice! Now you can expand your Ezcoll experience with a progress bar or top attribute (EZ-1516). It's like unlocking bonus levels in your learning journey!
+
+=== Bug Fixes
+
+* Exercise page no longer reloads the whole page when saving (EZ-1430)
+
+We've put a stop to the exercise page's wild reloading spree (EZ-1430). From now on, it will only refresh the part that needs attention, just like a well-behaved student raising their hand.
+
+* Invalid grades no longer cached after adding a student with existing submissions (EZ-1469)
+
+We caught those pesky invalid grades and showed them the door (EZ-1469)! Adding or removing students will now update the grade cache correctly. No more mysterious grade mishaps!
+
+* Participants page groups list is now refreshed when a student or teacher is removed from the course (EZ-1545)
+
+We've given the participants page a little makeover (EZ-1545). Now, when a student or teacher is removed from a course, the groups list will be instantly updated. No more ghosts hanging around!
+
+* Moodle grades syncing now waits for completion (EZ-1544)
+
+Good things come to those who wait, and that includes grade syncing with Moodle (EZ-1544)! Our syncing process now patiently waits for completion, just like a student waiting for the recess bell.
+
+* Prevent simultaneous exercise editing (EZ-1543)
+
+We've introduced the Exercise Editing Police to maintain order and prevent conflicting changes (EZ-1543). Say goodbye to chaos and hello to peaceful collaboration. One editor at a time, please!
+
+
+All related issues can be seen https://easy.myjetbrains.com/youtrack/issues?q=State:%20Resolved%20In%20release:%20v3.0%20[here].

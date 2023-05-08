@@ -20,11 +20,9 @@ import pages.exercise.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp
 import pages.sidenav.Sidenav
 import restore
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.EzSpa
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.unionPromise
+import rip.kspar.ezspa.*
 import successMessage
+import template
 import tmRender
 import kotlin.js.Promise
 
@@ -40,6 +38,7 @@ class TeacherCourseExercisesRootComp(
         val isAutoeval: Boolean,
         val deadline: EzDate?,
         val isVisible: Boolean,
+        val visibleFrom: EzDate?,
         val completed: Int,
         val started: Int,
         val ungraded: Int,
@@ -51,13 +50,15 @@ class TeacherCourseExercisesRootComp(
     private lateinit var coll: EzCollComp<ExProps>
 
     private lateinit var reorderModal: ReorderCourseExerciseModalComp
-    private lateinit var updateTitleAliasModal: UpdateCourseExerciseTitleModalComp
     private lateinit var removeModal: ConfirmationTextModalComp
+
+    private val updateModalDst = IdGenerator.nextId()
+    private var updateModal: UpdateCourseExerciseModalComp? = null
 
     private val newExerciseModal = CreateExerciseModalComp(null, courseId, this)
 
     override val children: List<Component>
-        get() = listOf(coll, reorderModal, updateTitleAliasModal, removeModal, newExerciseModal)
+        get() = listOfNotNull(coll, reorderModal, updateModal, removeModal, newExerciseModal)
 
     override fun create() = doInPromise {
         val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
@@ -70,6 +71,7 @@ class TeacherCourseExercisesRootComp(
             ExProps(
                 it.id, it.ordering_idx, it.library_title, it.title_alias,
                 it.grader_type == ExerciseDAO.GraderType.AUTO, it.soft_deadline, it.isVisibleNow,
+                it.student_visible_from,
                 it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count
             )
         }
@@ -96,7 +98,7 @@ class TeacherCourseExercisesRootComp(
                         if (it.isVisible) "Peida" else "Avalikusta", onActivate = ::showHide
                     ),
                     EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
-                    EzCollComp.Action(Icons.edit, "Muuda pealkirja", onActivate = ::updateTitleAlias),
+                    EzCollComp.Action(Icons.settings, "Ülesande sätted", onActivate = ::updateCourseExercise),
                     EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
                 ),
             )
@@ -112,8 +114,6 @@ class TeacherCourseExercisesRootComp(
         )
 
         reorderModal = ReorderCourseExerciseModalComp(courseId, this)
-
-        updateTitleAliasModal = UpdateCourseExerciseTitleModalComp(courseId, this)
 
         removeModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
@@ -148,15 +148,22 @@ class TeacherCourseExercisesRootComp(
         mapOf("marginTopRem" to 4, "titleWidthRem" to 40)
     )
 
-    override fun render() = tmRender(
-        "t-c-course-exercises-teacher",
+    override fun render() = template(
+        """
+            <div class="title-wrap no-crumb">
+                <h2 class="title">{{title}}</h2>
+            </div>
+            <ez-dst id="{{collDst}}"></ez-dst>
+            <ez-dst id="{{reorderModalDst}}"></ez-dst>
+            <ez-dst id="{{updateModalDst}}"></ez-dst>
+            <ez-dst id="{{newExerciseModalDst}}"></ez-dst>
+        """.trimIndent(),
         "title" to courseTitle,
         "collDst" to coll.dstId,
         "reorderModalDst" to reorderModal.dstId,
-        "updateTitleAliasModalDst" to updateTitleAliasModal.dstId,
+        "updateModalDst" to updateModalDst,
         "newExerciseModalDst" to newExerciseModal.dstId,
     )
-
 
     private suspend fun showHide(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
         val nowVisible = !item.props.isVisible
@@ -193,12 +200,24 @@ class TeacherCourseExercisesRootComp(
         return EzCollComp.ResultUnmodified
     }
 
-    private suspend fun updateTitleAlias(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
-        updateTitleAliasModal.updatableCourseExercise =
-            UpdateCourseExerciseTitleModalComp.CourseExercise(item.props.id, item.props.libTitle, item.props.titleAlias)
-        updateTitleAliasModal.createAndBuild().await()
-        debug { "start open" }
-        val modalReturn = updateTitleAliasModal.openWithClosePromise().await()
+    private suspend fun updateCourseExercise(item: EzCollComp.Item<ExProps>): EzCollComp.Result {
+        val m = UpdateCourseExerciseModalComp(
+            courseId,
+            UpdateCourseExerciseModalComp.CourseExercise(
+                item.props.id,
+                item.props.libTitle,
+                item.props.titleAlias,
+                item.props.isVisible,
+                item.props.visibleFrom,
+            ),
+            this,
+            dstId = updateModalDst
+        )
+
+        updateModal = m
+
+        m.createAndBuild().await()
+        val modalReturn = m.openWithClosePromise().await()
         if (modalReturn != null) {
             recreate()
         }

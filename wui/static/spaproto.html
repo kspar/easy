@@ -346,18 +346,6 @@
     </div>
 </script>
 
-<!-- Course exercises page -->
-
-<script id="t-c-course-exercises-teacher" type="text/x-handlebars">
-    <div class="title-wrap no-crumb">
-        <h2 class="title">{{title}}</h2>
-    </div>
-    <ez-dst id="{{collDst}}"></ez-dst>
-    <ez-dst id="{{reorderModalDst}}"></ez-dst>
-    <ez-dst id="{{updateTitleAliasModalDst}}"></ez-dst>
-    <ez-dst id="{{newExerciseModalDst}}"></ez-dst>
-</script>
-
 
 <!-- Exercise page -->
 
@@ -529,34 +517,6 @@
             </ez-block-container>
         </div>
     </div>
-</script>
-
-
-<!-- Embedded anon autoassess page -->
-<script id="t-c-anonauto" type="text/x-handlebars">
-    <div id="anonauto">
-        {{#title}}<h2>{{title}}</h2>{{/title}}
-        <div id="exercise-text">
-            {{{text}}}
-        </div>
-        <div style="position: relative">
-            <div style="position: absolute; right: 10px; top: 10px;">
-                <ez-dst id="{{submitBtnId}}"></ez-dst>
-            </div>
-            <ez-dst id="{{editorId}}"></ez-dst>
-        </div>
-        <ez-dst id="{{feedbackId}}"></ez-dst>
-        <div style="display: flex; align-items: center; justify-content: end; font-size: 1rem;">
-            <!-- TODO: svg -->
-            <img src="/static/favicon/mstile-70x70.png" style="width: 1.7rem; height: 1.7rem; margin-right: 3px;">
-            {{lahendus}} |<a href="/library/{{exerciseId}}/summary" target="_blank" style="margin-left: 3px; color: #bbb">#{{exerciseId}}</a>
-        </div>
-    </div>
-</script>
-
-<script id="t-c-anonauto-feedback" type="text/x-handlebars">
-    <pre class="feedback auto-feedback">{{feedback}}</pre>
-    <div>{{autoGradeLabel}}: <span class="grade-number">{{grade}}</span>/100</div>
 </script>
 
 
@@ -917,7 +877,7 @@
         <div class="editor-top"></div>
         <textarea id="testing-submission">{{latestSubmission}}</textarea>
     </div>
-    <div class="center">
+    <div class="center" style="display: flex; justify-content: center;">
         <button id="testing-submit" class="waves-effect waves-light btn">{{checkLabel}}</button>
     </div>
 </script>
@@ -946,6 +906,7 @@
             <textarea id="aa-files"></textarea>
         </div>
     {{/aaTitle}}
+    <ez-dst id="{{updateModalDst}}"></ez-dst>
 </script>
 
 <script id="tm-exercise-crumbs" type="text/x-handlebars-template">
@@ -1003,7 +964,7 @@
         </div>
         <textarea id="submission"></textarea>
     </div>
-    <div class="center">
+    <div class="center" style="display: flex; justify-content: center;">
         <button id="submit-button" class="waves-effect waves-light btn">{{checkLabel}}</button>
     </div>
 </script>
@@ -1239,7 +1200,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/meta.min.js"></script>
 <!-- Required for legacy non-dynamic modes -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css"/>†
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/idea.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/autorefresh.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/display/placeholder.min.js"></script>
@@ -1249,6 +1210,5 @@
 <script src="/static/js/csv.js"></script>
 <script src="/static/js/wui.js"></script>
 
-<div id="date"></div> <!-- Temporary, for automatic generation time -->
 </body>
 </html>
