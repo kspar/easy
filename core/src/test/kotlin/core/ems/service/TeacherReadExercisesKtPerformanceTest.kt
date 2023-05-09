@@ -18,7 +18,7 @@ import org.junit.jupiter.api.assertTimeout
 import javax.sql.DataSource
 
 
-class TeacherReadExercusesKtPerformanceTest {
+class TeacherReadExercisesKtPerformanceTest {
     private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
     private val dataSource: DataSource = embeddedPostgres.postgresDatabase
 
