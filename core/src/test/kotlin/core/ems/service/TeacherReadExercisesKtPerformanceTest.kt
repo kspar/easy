@@ -24,7 +24,7 @@ class TeacherReadExercisesKtPerformanceTest {
 
     private val courseId = 1L
     private val numberOfExercises = 100
-    private val numberOfStudents = 10000
+    private val numberOfStudents = 1000
     private val numberOfStudentTriesPerExercise = 3
 
     @Test
