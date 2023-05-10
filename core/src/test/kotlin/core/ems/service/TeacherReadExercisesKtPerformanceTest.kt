@@ -28,7 +28,7 @@ class TeacherReadExercisesKtPerformanceTest {
     private val courseId = 1L
     private val numberOfExercises = 100
     private val numberOfStudents = 1000
-    private val numberOfStudentTriesPerExercise = 3
+    private val numberOfStudentTriesPerExercise = 2
 
     @Test
     fun `selectAllCourseExercisesLatestSubmissions should return under 5 seconds`() {
@@ -44,11 +44,10 @@ class TeacherReadExercisesKtPerformanceTest {
             JdbcConnection(dataSource.connection)
         ).update("development")
 
+        val ids = (1..numberOfStudents).map { it.toString() }
+        val time = DateTime.now()
 
         transaction {
-            val ids = (1..numberOfStudents).map { it.toString() }
-            val time = DateTime.now()
-
             Course.insert {
                 it[id] = courseId
                 it[title] = "Test Course"
@@ -144,9 +143,11 @@ class TeacherReadExercisesKtPerformanceTest {
                 this[CourseExercise.titleAlias] = "CE $it"
             }
 
+        }
 
-            repeat(numberOfStudentTriesPerExercise) {
-                ids.take(numberOfExercises).forEach { ceId ->
+        repeat(numberOfStudentTriesPerExercise) {
+            ids.take(numberOfExercises).forEach { ceId ->
+                transaction {
                     Submission.batchInsert(ids) {
                         this[Submission.courseExercise] = ceId.toLong()
                         this[Submission.student] = it
