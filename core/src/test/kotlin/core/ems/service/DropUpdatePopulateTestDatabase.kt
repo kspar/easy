@@ -1,48 +1,57 @@
 package core.ems.service
 
+import core.EasyCoreApp
+import core.conf.DataSourceConf
 import core.db.*
-import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.FileSystemResourceAccessor
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertTimeout
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestPropertySource
 import javax.sql.DataSource
 
-@SpringBootTest
-@TestPropertySource(properties = ["logging.level.root=WARN"])
-class TeacherReadExercisesKtPerformanceTest {
-    private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
-    private val dataSource: DataSource = embeddedPostgres.postgresDatabase
-
+@SpringBootTest(classes = [EasyCoreApp::class, DataSourceConf::class])
+class DropUpdatePopulateTestDatabase(@Autowired private val dataSource: DataSource) {
     private val courseId = 1L
     private val numberOfExercises = 100
     private val numberOfStudents = 1000
     private val numberOfStudentTriesPerExercise = 2
 
     @Test
-    fun `selectAllCourseExercisesLatestSubmissions should return under 5 seconds`() {
-        assertTimeout(java.time.Duration.ofSeconds(5)) { selectAllCourseExercisesLatestSubmissions(courseId) }
+    fun assertDbContent() {
+        transaction {
+            Assertions.assertEquals(1, Course.selectAll().count().toInt())
+            Assertions.assertEquals(
+                numberOfExercises * numberOfStudents * numberOfStudentTriesPerExercise,
+                Submission.selectAll().count().toInt()
+            )
+            Assertions.assertEquals(numberOfStudents, Account.selectAll().count().toInt())
+            Assertions.assertEquals(numberOfStudents, Student.selectAll().count().toInt())
+            Assertions.assertEquals(1, Teacher.selectAll().count().toInt())
+            Assertions.assertEquals(numberOfExercises, Exercise.selectAll().count().toInt())
+        }
     }
 
     @BeforeEach
     fun bootstrap() {
-        Database.connect(dataSource)
-        Liquibase(
+        val lb = Liquibase(
             "db/changelog.xml",
             FileSystemResourceAccessor(),
             JdbcConnection(dataSource.connection)
-        ).update("development")
+        )
+
+        lb.dropAll()
+        lb.update("test")
+
 
         val ids = (1..numberOfStudents).map { it.toString() }
         val time = DateTime.now()
@@ -160,11 +169,6 @@ class TeacherReadExercisesKtPerformanceTest {
                 }
             }
         }
-    }
-
-    @AfterEach
-    fun shutdown() {
-        embeddedPostgres.close()
     }
 }
 

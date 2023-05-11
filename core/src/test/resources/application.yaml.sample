@@ -1,0 +1,65 @@
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    jdbc-url: "<url>"
+    username: "<username>"
+    password: "<password>"
+  mail:
+    host: "<mailhost>"
+    properties:
+      mail:
+        transport:
+          protocol: "smtp"
+        smtp:
+          auth: true
+          port: 587
+          starttls:
+            enable: true
+            required: true
+    username: "<username>"
+    password: "<password>"
+  jackson:
+    deserialization:
+      FAIL_ON_NULL_FOR_PRIMITIVES: true
+
+
+easy:
+  core:
+    auth-enabled: true
+    mail:
+      from: "<from-address>"
+      sys:
+        enabled: true
+        to: "<to-address>"
+      user:
+        enabled: true
+
+    auto-assess:
+        fixed-delay:
+          ms: "3000"
+        fixed-delay-observer-clear:
+          ms: "3000"
+        anonymous-submissions-to-keep: "50"
+    statistics:
+      fixed-delay:
+        ms: "1000"
+
+    moodle-sync:
+      users:
+        url: "<url>"
+        cron: "0 5 4 * * *"
+      grades:
+        url: "<url>"
+
+    pending-access:
+      clean:
+        cron: "0 5 3 * * *"
+
+    exercise-index-normalisation:
+      cron: "0 5 3 * * *"
+
+  wui:
+    base-url: "https://easy.example"
