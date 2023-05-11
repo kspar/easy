@@ -87,7 +87,8 @@ class ExerciseLibComp(
 
         val libResp = libRespPromise.await()
 
-        currentDirPermissionsModal = PermissionsModalComp(dirId, true, dirId, libResp.current_dir?.name.orEmpty(), this)
+        // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
+        currentDirPermissionsModal = PermissionsModalComp(null, true, dirId, libResp.current_dir?.name.orEmpty(), this)
 
         val currentDirAccess = libResp.current_dir?.effective_access
         // can do anything only if current dir is root, or we have at least PRA
@@ -111,6 +112,8 @@ class ExerciseLibComp(
 
                         if (currentDirAccess == DirAccess.PRAWM) {
                             add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                                // Set dirId here to avoid loading permissions if user has no M access
+                                currentDirPermissionsModal.dirId = dirId
                                 val permissionsChanged = currentDirPermissionsModal.refreshAndOpen().await()
                                 debug { "Permissions changed: $permissionsChanged" }
                                 if (permissionsChanged) {

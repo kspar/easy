@@ -114,7 +114,8 @@ class ExerciseRootComp(
             parent = this
         )
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
-        permissionsModal = PermissionsModalComp(exercise.dir_id, false, null, exercise.title, this)
+        // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
+        permissionsModal = PermissionsModalComp(null, false, null, exercise.title, this)
 
         Title.update {
             it.pageTitle = exercise.title
@@ -123,20 +124,24 @@ class ExerciseRootComp(
 
         Sidenav.replacePageSection(
             Sidenav.PageSection(
-                exercise.title, listOf(
-                    Sidenav.Action(Icons.add, "Lisa kursusele") {
+                exercise.title, buildList {
+                    add(Sidenav.Action(Icons.add, "Lisa kursusele") {
                         val r = addToCourseModal.openWithClosePromise().await()
                         if (r != null) {
                             recreate()
                         }
-                    },
-                    Sidenav.Action(Icons.addPerson, "Jagamine") {
-                        val permissionsChanged = permissionsModal.refreshAndOpen().await()
-                        debug { "Permissions changed: $permissionsChanged" }
-                        if (permissionsChanged)
-                            successMessage { "Õigused muudetud" }
+                    })
+                    if (exercise.effective_access == DirAccess.PRAWM) {
+                        add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                            // Set dirId here to avoid loading permissions if user has no M access
+                            permissionsModal.dirId = exercise.dir_id
+                            val permissionsChanged = permissionsModal.refreshAndOpen().await()
+                            debug { "Permissions changed: $permissionsChanged" }
+                            if (permissionsChanged)
+                                successMessage { "Õigused muudetud" }
+                        })
                     }
-                )
+                }
             )
         )
     }

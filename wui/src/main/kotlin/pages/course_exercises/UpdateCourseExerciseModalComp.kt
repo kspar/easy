@@ -41,7 +41,7 @@ class UpdateCourseExerciseModalComp(
     private lateinit var openingTime: DateTimeFieldComp
 
     private val modalComp: BinaryModalComp<Boolean?> = BinaryModalComp(
-        "Ülesande sätted", Str.doSave(), Str.cancel(), Str.saving(),
+        "Ülesande sätted", Str.doSave(), Str.cancel(), Str.saving(), fixFooter = true,
         primaryAction = ::updateCourseExercise,
         primaryButtonEnabledInitial = false, defaultReturnValue = null, htmlClasses = "update-course-ex-title-modal",
         parent = this
