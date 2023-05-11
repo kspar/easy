@@ -1,7 +1,6 @@
 package core.ems.service
 
 import core.EasyCoreApp
-import core.conf.DataSourceConf
 import core.db.*
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
@@ -19,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import javax.sql.DataSource
 
-@SpringBootTest(classes = [EasyCoreApp::class, DataSourceConf::class])
+@SpringBootTest(classes = [EasyCoreApp::class])
 class DropUpdatePopulateTestDatabase(@Autowired private val dataSource: DataSource) {
     private val courseId = 1L
     private val numberOfExercises = 100
