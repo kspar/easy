@@ -12,7 +12,7 @@ class PyExecuteTest(val test: Test, val testName: String, val namedArgs: Map<Str
             "execute_test",
             namedArgs +
                     Pair("type", PyStr(testName)) +
-                    Pair("points", PyFloat(test.points)) +
+                    Pair("points_weight", PyFloat(test.pointsWeight)) +
                     Pair("id", PyInt(test.id)) +
                     Pair("name", if (test.name != null) PyStr(test.name) else PyStr(test.getDefaultName())) +
                     Pair("inputs", PyStr(test.inputs)) +
@@ -34,15 +34,17 @@ class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive()
         }
         return PyList(
             genericChecks.map {
+                val forceString = it.isNumeric != true
                 PyFunctionCall(
                     "GenericChecks", mapOf(
                         "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
                         "consider_elements_order" to PyBool(it.considerElementsOrder),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
-                        "failed_message" to PyStr(it.failedMessage)
+                        "failed_message" to PyStr(it.failedMessage),
+                        "is_numeric" to PyBool(it.isNumeric)
                     )
                 )
             }).generatePyString()
@@ -60,14 +62,16 @@ class PyGenericChecksLong(val genericChecksLong: List<GenericCheckLong>?) : PyAS
         }
         return PyList(
             genericChecksLong.map {
+                val forceString = it.isNumeric != true
                 PyFunctionCall(
                     "GenericChecks", mapOf(
                         "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
-                        "failed_message" to PyStr(it.failedMessage)
+                        "failed_message" to PyStr(it.failedMessage),
+                        "is_numeric" to PyBool(it.isNumeric)
                     )
                 )
             }).generatePyString()

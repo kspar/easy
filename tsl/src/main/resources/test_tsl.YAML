@@ -12,7 +12,7 @@ tests:
       - Kasutajasisend
     inputFiles:
       - fileName: sisendfail.txt
-        fileContent: Sisendfaili sisu.
+        fileContent: Sisendfaili sisu.\nRida2\nRida3\nRida4
     genericChecks:
       - checkType: ANY_OF_THESE
         expectedValue:
@@ -26,6 +26,9 @@ tests:
         checkType: ALL_OF_THESE
         expectedValue:
           - Väljundfaili eeldatav sisu
+          - Rida2
+          - Rida3
+          - Rida4
         beforeMessage: Kontrollib, kas väljundfail sisaldab võtmesõna.
         passedMessage: Programmi väljundfail sisaldab antud võtmesõna.
         failedMessage: Programmi väljundfail ei sisalda antud võtmesõna.
@@ -45,7 +48,7 @@ tests:
       beforeMessage: Kontrollib, kas programm impordib mooduli.
       passedMessage: Programm importis mooduli.
       failedMessage: Programm ei importinud moodulit.
-    points: 10
+    pointsWeight: 10
 
   - type: program_calls_function_test
     id: 3
@@ -234,6 +237,7 @@ tests:
   - type: function_execution_test
     id: 19
     functionName: seosta_lapsed_ja_vanemad
+    functionType: FUNCTION
     arguments:
       - '"lapsed.txt"'
       - '"nimed.txt"'
@@ -261,4 +265,146 @@ tests:
         beforeMessage: Kontrollib, kas funktsiooni väljundfail sisaldab võtmesõna.
         passedMessage: Funktsiooni väljundfail sisaldab antud võtmesõna.
         failedMessage: Funktsiooni väljundfail ei sisalda antud võtmesõna.
-    name: Funktsiooni käivituse test.
+    name: Funktsiooni käivituse test (tavaline).
+
+  - type: function_execution_test
+    id: 222
+    functionName: võta_hind
+    functionType: METHOD
+    createObject: return Raamat("Harry Potter", 10.7)
+    returnValue: 10.7
+    name: Funktsiooni käivituse test (isendimeetod).
+
+  - type: function_execution_test
+    id: 223
+    functionName: loe
+    functionType: METHOD
+    createObject: return Lugemik
+    returnValue: True
+    name: Funktsiooni käivituse test (klassimeetod).
+
+  - type: function_execution_test
+    id: 224
+    functionName: loe
+    functionType: METHOD
+    createObject: return Lugemik
+    genericChecks:
+      - checkType: ANY_OF_THESE
+        considerElementsOrder: false
+        isNumeric: True
+        expectedValue:
+          - 2.3
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+    returnValue: True
+    name: Funktsiooni käivituse test (klassimeetod).
+
+  - type: class_imports_module_test
+    id: 20
+    className: Raamat
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - math
+        - pi
+      beforeMessage: Kontrollib, kas klass impordib mooduli.
+      passedMessage: Klass importis mooduli.
+      failedMessage: Klass ei importinud moodulit.
+    pointsWeight: 10
+
+  - type: class_defines_function_test
+    id: 21
+    className: Raamat
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - võta_hind
+        - suurenda_hinda
+      beforeMessage: Kontrollib, kas klass defineerib funktsiooni.
+      passedMessage: Klass defineerib funktsiooni.
+      failedMessage: Klass ei defineerib funktsiooni.
+    pointsWeight: 10
+
+  - type: class_calls_class_test
+    id: 22
+    className: Jutustus
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - Raamat
+      beforeMessage: Kontrollib, kas klass kutsub välja teise klassi.
+      passedMessage: Klass kutsub välja teise klassi.
+      failedMessage: Klass ei kutsu välja teist klassi.
+    pointsWeight: 10
+
+  - type: class_function_calls_function_test
+    id: 23
+    className: Jutustus
+    classFunctionName: add_book
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - print
+      beforeMessage: Kontrollib, kas klassi funktsioon kutsub välja funktsiooni.
+      passedMessage: Klassi funktsioon kutsub välja funktsiooni.
+      failedMessage: Klassi funktsioon ei kutsu välja funktsiooni.
+    pointsWeight: 10
+
+  - type: program_defines_class_test
+    id: 24
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - Raamat
+      beforeMessage: Kontrollib, kas programm defineerib klassi.
+      passedMessage: Programm defineerib klassi.
+      failedMessage: Programm ei defineeri klassi.
+    pointsWeight: 10
+
+  - type: program_defines_subclass_test
+    id: 25
+    className: Jutustus
+    superClass: Raamat
+    beforeMessage: Kontrollib, kas programm defineerib alamklassi.
+    passedMessage: Programm defineerib alamklassi.
+    failedMessage: Programm ei defineeri alamklassi.
+    pointsWeight: 10
+
+  - type: program_calls_class_test
+    id: 26
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - Raamat
+      beforeMessage: Kontrollib, kas programm kutsub välja klassi.
+      passedMessage: Programm kutsub välja klassi.
+      failedMessage: Programm ei kutsu välja klassi.
+    pointsWeight: 1
+
+  - type: program_calls_class_function_test
+    id: 27
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - print_info
+      beforeMessage: Kontrollib, kas programm kutsub välja klassi funktsiooni.
+      passedMessage: Programm kutsub välja klassi funktsiooni.
+      failedMessage: Programm ei kutsu välja klassi funktsiooni.
+    pointsWeight: 1
+
+  - type: class_instance_test
+    id: 1323
+    className: Raamat
+    fieldsFinal:
+      - fieldName: "title"
+        fieldContent: '"Truth and Justice"'
+      - fieldName: "author"
+        fieldContent: '"A. H. Tammsaare"'
+      - fieldName: "pages"
+        fieldContent: 453
+    createObject: return Raamat("Truth and Justice", "A. H. Tammsaare", 453)
+    beforeMessage: Kontrollib, kas klassi isend väärtustab õiged väljad.
+    passedMessage: Klassi isend väärtustas õiged väljad.
+    failedMessage: Klassi isend ei väärtustanud õigeid välju.
+    name: Klassi isendi loomise test

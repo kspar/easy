@@ -37,7 +37,7 @@ sealed class Test : TSLModel {
     // TODO: convert into field?
     abstract fun getDefaultName(): String
 
-    val points: Double = 1.0
+    val pointsWeight: Double = 1.0
     val name: String? = null
     val inputs: String? = null // TODO: Kaspar, kas selle jätame?
     val passedNext: Long? = null
@@ -66,6 +66,12 @@ class FileData(
     val fileContent: String
 )
 
+@Serializable
+class FieldData(
+    val fieldName: String,
+    val fieldContent: String
+)
+
 // TODO: Kui on nt vaja kontrollida nimede olemasolu, siis kuidas me kontrollime,
 //  et näiteks 3 nime eksisteerib väljundis, aga 2 nime mitte?
 
@@ -73,8 +79,9 @@ class FileData(
 data class GenericCheck(
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
-    val expectedValue: List<String>, // The field to be checked.
+    val expectedValue: List<String>,
     val considerElementsOrder: Boolean? = false,
+    val isNumeric: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -84,7 +91,8 @@ data class GenericCheck(
 data class GenericCheckLong(
     val checkType: CheckTypeLong,
     val nothingElse: Boolean? = null,
-    val expectedValue: List<String>, // The field to be checked.
+    val expectedValue: List<String>,
+    val isNumeric: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String

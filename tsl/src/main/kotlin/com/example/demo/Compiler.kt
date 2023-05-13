@@ -4,12 +4,25 @@ import tsl.common.model.*
 
 // class Compiler(private val irTree: IRTree) {
 class Compiler(private val irTree: TSL) { // TODO: RemoveMe
-
     fun validateParseTree() {
-        val points = this.irTree.tests.sumOf { it.points }
-        println("Total points: $points")
-        if (points < 0 || points > 100) {
-            throw Exception("The total number of points configured by UI ($points) is not in the valid range of [0..100].")
+        val allTestIds = this.irTree.tests.map { it.id }.toList()
+        val duplicatedIds = allTestIds.filter { item -> allTestIds.count { it == item } > 1 }.toSet()
+        if (duplicatedIds.isNotEmpty()) {
+            throw Exception("Test ID-s must be unique within the exercise! Duplicates: $duplicatedIds")
+        }
+    }
+
+    private fun validateNumber(genericChecks: List<GenericCheck>) {
+        genericChecks.map {
+            if (it.isNumeric == true) {
+                it.expectedValue.map {
+                    val reg = """((?:\+|\-)?\d+(?:(?:\.)\d+)?)""".toRegex()
+                    if (!reg.matches(it)) {
+                        throw Exception("The entered value (\"$it\") is not numeric in Python (make sure to use '.' instead of ',')!")
+                    }
+                }
+            } else {
+            }
         }
     }
 
@@ -52,12 +65,15 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 } else {
                     PyList(test.arguments.map { PyStr(it, false) })
                 }
+                validateNumber(test.genericChecks)
                 PyExecuteTest(
                     test,
                     "function_execution_test",
                     mapOf(
                         "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
+                        "function_type" to PyStr(test.functionType.toString()),
+                        "create_object" to PyStr(test.createObject),
                         "arguments" to arguments,
                         "standard_input_data" to standardInputData,
                         "input_files" to inputFiles,
@@ -217,6 +233,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 } else {
                     test.inputFiles.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }.let { PyList(it) }
                 }
+                validateNumber(test.genericChecks)
                 PyExecuteTest(
                     test,
                     "program_execution_test",
@@ -320,7 +337,123 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            else -> "Unknown Test"
+            is ClassImportsModuleTest -> {
+                PyExecuteTest(
+                    test,
+                    "class_imports_module_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ClassDefinesFunctionTest -> {
+                PyExecuteTest(
+                    test,
+                    "class_defines_function_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ClassCallsClassTest -> {
+                PyExecuteTest(
+                    test,
+                    "class_calls_class_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ClassFunctionCallsFunctionTest -> {
+                PyExecuteTest(
+                    test,
+                    "class_function_calls_function_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "class_function_name" to PyStr(test.classFunctionName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ProgramDefinesClassTest -> {
+                PyExecuteTest(
+                    test,
+                    "program_defines_class_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ProgramDefinesSubclassTest -> {
+                PyExecuteTest(
+                    test,
+                    "program_defines_subclass_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "superclass_name" to PyStr(test.superClass),
+                        "before_message" to PyStr(test.beforeMessage),
+                        "passed_message" to PyStr(test.passedMessage),
+                        "failed_message" to PyStr(test.failedMessage),
+                    )
+                ).generatePyString()
+            }
+
+            is ProgramCallsClassTest -> {
+                PyExecuteTest(
+                    test,
+                    "program_calls_class_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ProgramCallsClassFunctionTest -> {
+                PyExecuteTest(
+                    test,
+                    "program_calls_class_function_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "generic_checks" to PyGenericChecksLong(test.genericCheck)
+                    )
+                ).generatePyString()
+            }
+
+            is ClassInstanceTest -> {
+                val fieldsFinal: PyList =
+                    test.fieldsFinal.map { PyPair(PyStr(it.fieldName), PyStr(it.fieldContent, forceString = false)) }
+                        .let { PyList(it) }
+                PyExecuteTest(
+                    test,
+                    "class_instance_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "class_name" to PyStr(test.className),
+                        "create_object" to PyStr(test.createObject),
+                        "fields_final" to fieldsFinal,
+                        "before_message" to PyStr(test.beforeMessage),
+                        "passed_message" to PyStr(test.passedMessage),
+                        "failed_message" to PyStr(test.failedMessage)
+                    )
+                ).generatePyString()
+            }
+
+            else -> throw Exception("Unknown Test: $test")
         }
     }
 }
