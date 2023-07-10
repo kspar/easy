@@ -78,6 +78,9 @@ class CodeEditorComp(
 
     private lateinit var editor: CodeMirrorInstance
 
+    val activeDoc
+        get() = activeTab?.doc
+
     private var editToggleComp: LinkComp? = null
     private val createFileModalComp: CreateFileModalComp
 

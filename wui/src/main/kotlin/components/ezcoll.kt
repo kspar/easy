@@ -964,7 +964,7 @@ class EzCollItemComp<P>(
         if (spec.actions.isNotEmpty()) {
             Materialize.Dropdown.init(
                 getElemById("ezc-item-action-menu-${spec.id}"),
-                objOf("constrainWidth" to false, "coverTrigger" to false)
+                objOf("constrainWidth" to false, "coverTrigger" to false, "container" to getBody())
             )
         }
     }

@@ -20,9 +20,10 @@ import tmRender
 import kotlin.js.Promise
 
 class PermissionsModalComp(
-    var dirId: String?,
-    var isDir: Boolean,
-    private val currentDirId: String?,
+    var dirId: String? = null,
+    var isDir: Boolean = false,
+    private val currentDirId: String? = null,
+    private val title: String = "",
     parent: Component,
 ) : Component(parent) {
 
@@ -49,7 +50,9 @@ class PermissionsModalComp(
         )
     }
 
-    override fun render() = plainDstStr(modalComp.dstId)
+    override fun postChildrenBuilt() {
+        modalComp.setTitle(title)
+    }
 
     fun setTitle(title: String) = modalComp.setTitle(title)
 

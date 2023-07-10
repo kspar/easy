@@ -10,8 +10,7 @@ import template
 
 class ButtonComp(
     private val type: Type,
-    // TODO: label can be empty
-    private val label: String,
+    private val label: String?,
     private val iconHtml: String? = null,
     private val onClick: suspend (() -> Unit),
     private val isEnabledInitial: Boolean = true,
@@ -38,7 +37,7 @@ class ButtonComp(
                     <ez-spinner class="preloader-wrapper active display-none">
                         <div class="spinner-layer"><div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div></div></div>
                     </ez-spinner>
-                    <ez-btn-text>{{text}}</ez-btn-text>
+                    {{#text}}<ez-btn-text>{{text}}</ez-btn-text>{{/text}}
                 </ez-btn-content>
             </button>
         """.trimIndent(),
@@ -54,10 +53,10 @@ class ButtonComp(
 
     override fun postRender() {
         element.onVanillaClick(true) {
-            val text = element.getElemBySelector("ez-btn-text")
+            val text = element.getElemBySelectorOrNull("ez-btn-text")
             val icon = element.getElemBySelectorOrNull("ez-btn-icon")
             val loader = element.getElemBySelector("ez-spinner")
-            val activeHtml = text.innerHTML
+            val activeHtml = text?.innerHTML
 
             disable()
 
@@ -66,7 +65,7 @@ class ButtonComp(
                 loader.show()
             }
             if (clickedLabel != null) {
-                text.textContent = clickedLabel
+                text?.textContent = clickedLabel
             }
             try {
                 onClick()
@@ -75,7 +74,10 @@ class ButtonComp(
                 if (getElemByIdOrNull(btnId) != null) {
                     loader.hide()
                     icon?.show()
-                    text.innerHTML = activeHtml
+
+                    if (text != null && activeHtml != null)
+                        text.innerHTML = activeHtml
+
                     enable()
                 }
             }

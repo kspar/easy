@@ -3,6 +3,7 @@
     --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
+    --ez-border-radius: 4px;
     --ez-secondary-action-hover-bg: #f1f3f4;
 
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
@@ -42,6 +43,7 @@ html {
     height: 100%;
     color: #333;
     letter-spacing: 0.03rem;
+    overflow-y: overlay;
 }
 
 body {
@@ -52,6 +54,16 @@ body {
 }
 
 /* Embedded - when displaying page in embed */
+
+html.embedded {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Chrome, Safari, Opera */
+html.embedded::-webkit-scrollbar {
+    display: none;
+}
 
 html.embedded body {
     background: none;
@@ -129,6 +141,10 @@ main {
 ez-attr {
     display: flex;
     flex-wrap: wrap;
+}
+
+ez-attr:last-child {
+    margin-bottom: 2rem;
 }
 
 ez-attr-label {
@@ -640,7 +656,7 @@ nav.crumb-wrap .breadcrumb:before {
 /** Exercise page **/
 
 #global-exercise ez-tabs.toplevel > ez-tabs-content {
-    margin-top: 3rem;
+    margin-top: 2rem;
 }
 
 @container tabs (width < 750px) {
@@ -708,6 +724,10 @@ ez-exercise-permissions ez-permission-email {
     color: var(--ezc-attr-immutable-col);
 }
 
+ez-exercise-autoeval > ez-block-container {
+    margin-top: 3rem;
+}
+
 
 /* "Remove access" option, no way to do this since materialize moves options to body for unconstrained selects */
 /*ez-exercise-permissions ul li:last-child {*/
@@ -717,7 +737,7 @@ ez-exercise-permissions ez-permission-email {
 
 /** Anonymous autoeval embed **/
 
-#anonauto button {
+#anonauto button:not([disabled]) {
     padding-bottom: .4rem;
 }
 
@@ -1085,6 +1105,12 @@ ez-participants-list .card .card-content p {
 
 /** Buttons **/
 
+.btn, .btn-flat, .btn-floating {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .btn, .btn:focus,
 .btn-floating, .btn-floating:focus {
     background-color: var(--ez-green);
@@ -1129,7 +1155,7 @@ ez-btn-content {
 
 /* if icon with text, add space between */
 ez-btn-content ez-btn-icon ~ ez-btn-text {
-    padding-left: .6rem;
+    padding-left: .8rem;
 }
 
 /* visible spinner */
@@ -1140,6 +1166,12 @@ ez-btn-content ez-spinner:not(.display-none) ~ ez-btn-text {
 .btn-floating ez-btn-content ez-icon > svg {
     width: 2rem;
     height: 2rem;
+}
+
+.btn ez-spinner .spinner-layer,
+.btn-flat ez-spinner .spinner-layer,
+.btn-floating ez-spinner .spinner-layer {
+    border-color: var(--ez-btn-disabled-text);
 }
 
 
@@ -1251,7 +1283,7 @@ input[type=tel]:not(.browser-default)::placeholder,
 input[type=number]:not(.browser-default)::placeholder,
 input[type=search]:not(.browser-default)::placeholder,
 textarea.materialize-textarea::placeholder {
-    color: #bbb;
+    color: #777;
 }
 
 input:not([type]):focus:not([readonly]),
@@ -1728,11 +1760,6 @@ ez-spinner.preloader-wrapper {
 
 ez-spinner .spinner-layer {
     border-color: var(--ez-checkbox-fill-col);
-}
-
-.btn ez-spinner .spinner-layer,
-.btn-flat ez-spinner .spinner-layer {
-    border-color: var(--ez-btn-disabled-text);
 }
 
 ez-spinner .circle-clipper .circle {
@@ -2388,15 +2415,19 @@ ez-block-container ez-block {
 /** Ez collapsible **/
 
 .ez-collapsible {
-    margin: 0;
-    border: 0;
+    margin: 0 0 1rem 0;
+    border: 1px solid var(--ez-border);
+    border-radius: var(--ez-border-radius);
     box-shadow: none;
 }
 
 .ez-collapsible .collapsible-header {
+    display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
+    border: 0;
+    border-radius: var(--ez-border-radius);
     transition: background-color .3s ease-out;
 }
 
@@ -2670,18 +2701,26 @@ ez-tabs .editor-wrapper {
 
 /** Assessment view **/
 
-pre.feedback {
+ez-assessment {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    margin-bottom: 2rem;
+}
+
+/* TODO: add prefixes once we're fully migrated to wui3 */
+/*ez-assessment*/ pre.feedback {
     font-size: 1.4rem;
     white-space: normal;
 }
 
-pre.auto-feedback {
+/*ez-assessment*/ pre.auto-feedback {
     background-color: #f5f5f5;
     white-space: pre;
     overflow: auto;
 }
 
-.grade-number {
+/*ez-assessment*/ .grade-number {
     font-weight: 500;
 }
 

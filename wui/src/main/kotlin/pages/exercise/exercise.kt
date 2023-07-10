@@ -7,6 +7,7 @@ import components.EditModeButtonsComp
 import components.PageTabsComp
 import dao.ExerciseDAO
 import dao.LibraryDirDAO
+import debug
 import errorMessage
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -14,12 +15,13 @@ import pages.Title
 import pages.exercise_library.DirAccess
 import pages.exercise_library.createDirChainCrumbs
 import pages.exercise_library.createPathChainSuffix
+import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import successMessage
-import tmRender
+import template
 
 
 class ExerciseRootComp(
@@ -35,6 +37,7 @@ class ExerciseRootComp(
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var tabs: PageTabsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
+    private lateinit var permissionsModal: PermissionsModalComp
 
     // null if no write access
     private var editModeBtns: EditModeButtonsComp? = null
@@ -45,7 +48,7 @@ class ExerciseRootComp(
     private lateinit var initialExercise: ExerciseDAO.Exercise
 
     override val children: List<Component>
-        get() = listOf(crumbs, tabs, addToCourseModal)
+        get() = listOf(crumbs, tabs, addToCourseModal, permissionsModal)
 
     override fun create() = doInPromise {
         val exercise = try {
@@ -98,11 +101,21 @@ class ExerciseRootComp(
                 }
             },
             trailerComponent = if (exercise.effective_access >= DirAccess.PRAW) {
-                { EditModeButtonsComp({ editModeChanged(it) }, { saveExercise() }, { wishesToCancel() }, parent = it) }
+                {
+                    EditModeButtonsComp(
+                        { editModeChanged(it) },
+                        { saveExercise() },
+                        postModeChange = { tabs.refreshIndicator() },
+                        canCancel = { wishesToCancel() },
+                        parent = it
+                    )
+                }
             } else null,
             parent = this
         )
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
+        // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
+        permissionsModal = PermissionsModalComp(null, false, null, exercise.title, this)
 
         Title.update {
             it.pageTitle = exercise.title
@@ -111,14 +124,24 @@ class ExerciseRootComp(
 
         Sidenav.replacePageSection(
             Sidenav.PageSection(
-                exercise.title, listOf(
-                    Sidenav.Action(Icons.add, "Lisa kursusele") {
+                exercise.title, buildList {
+                    add(Sidenav.Action(Icons.add, "Lisa kursusele") {
                         val r = addToCourseModal.openWithClosePromise().await()
                         if (r != null) {
                             recreate()
                         }
+                    })
+                    if (exercise.effective_access == DirAccess.PRAWM) {
+                        add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                            // Set dirId here to avoid loading permissions if user has no M access
+                            permissionsModal.dirId = exercise.dir_id
+                            val permissionsChanged = permissionsModal.refreshAndOpen().await()
+                            debug { "Permissions changed: $permissionsChanged" }
+                            if (permissionsChanged)
+                                successMessage { "Õigused muudetud" }
+                        })
                     }
-                )
+                }
             )
         )
     }
@@ -127,11 +150,19 @@ class ExerciseRootComp(
         exerciseTab.hasUnsavedChanges() ||
                 autoassessTab.hasUnsavedChanges()
 
-    override fun render(): String = tmRender(
-        "t-c-exercise",
-        "crumbsDstId" to crumbs.dstId,
-        "tabsDstId" to tabs.dstId,
-        "addToCourseModalDstId" to addToCourseModal.dstId,
+    override fun render(): String = template(
+        """
+            <div id="global-exercise">
+                <ez-dst id="{{crumbs}}"></ez-dst>
+                <ez-dst id="{{tabs}}"></ez-dst>
+                <ez-dst id="{{addToCourseModal}}"></ez-dst>
+                <ez-dst id="{{permissionsModal}}"></ez-dst>
+            </div>
+        """.trimIndent(),
+        "crumbs" to crumbs.dstId,
+        "tabs" to tabs.dstId,
+        "addToCourseModal" to addToCourseModal.dstId,
+        "permissionsModal" to permissionsModal.dstId,
     )
 
     private suspend fun recreate() {
@@ -155,8 +186,6 @@ class ExerciseRootComp(
             recreate()
             return false
         }
-
-        tabs.refreshIndicator()
 
         // exercise tab: title, text editor
         exerciseTab.setEditable(nowEditing)

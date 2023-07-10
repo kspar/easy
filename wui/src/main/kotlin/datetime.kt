@@ -8,10 +8,6 @@ val MONTHS = listOf(
 )
 
 data class EzDate(val date: Date) : Comparable<EzDate> {
-    // this is before other - this < other
-    override fun compareTo(other: EzDate): Int =
-        (this.date.getTime() - other.date.getTime()).roundToInt()
-
     companion object {
         fun now() = EzDate(Date())
         fun epoch() = EzDate(Date(0))
@@ -22,11 +18,19 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
     enum class Format {
         // dd.MM.yy
         SHORT,
+
         // dd. month / dd. month yyyy
         DATE,
+
         // dd. month, hh:mm / dd. month yyyy, hh:mm
         FULL,
     }
+
+    // this is before other - this < other
+    override fun compareTo(other: EzDate): Int =
+        (this.date.getTime() - other.date.getTime()).roundToInt()
+
+    override fun toString() = toHumanString(Format.FULL)
 
     fun isOnSameDate(other: EzDate): Boolean {
         val isSameDate = this.date.getDate() == other.date.getDate()
@@ -40,8 +44,8 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
 
     fun toHumanString(format: Format): String {
         val now = now()
-        val paddedHours = this.date.getHours().toString().padStart(2, '0')
-        val paddedMins = this.date.getMinutes().toString().padStart(2, '0')
+        val paddedHours = this.date.getHours().pad()
+        val paddedMins = this.date.getMinutes().pad()
 
         // Today
         if (this.isOnSameDate(now))
@@ -58,17 +62,19 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         val year4digit = this.date.getFullYear().toString()
         return when (format) {
             Format.SHORT -> {
-                val paddedDay = day.padStart(2, '0')
-                val paddedMonth = (this.date.getMonth() + 1).toString().padStart(2, '0')
+                val paddedDay = day.pad()
+                val paddedMonth = (this.date.getMonth() + 1).pad()
                 val year2digit = year4digit.substring(2)
                 "$paddedDay.$paddedMonth.$year2digit"
             }
+
             Format.DATE -> {
                 if (this.isOnSameYear(now))
                     "$day. $monthName"
                 else
                     "$day. $monthName $year4digit"
             }
+
             Format.FULL ->
                 if (this.isOnSameYear(now))
                     "$day. $monthName, $paddedHours:$paddedMins"
@@ -76,6 +82,15 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
                     "$day. $monthName $year4digit, $paddedHours:$paddedMins"
         }
     }
+
+    fun toDatetimeFieldString(): String =
+        "${date.getFullYear()}-${(date.getMonth() + 1).pad()}-${date.getDate().pad()}" +
+                "T${date.getHours().pad()}:${date.getMinutes().pad()}"
+
+    fun toIsoString() = date.toISOString().split(".")[0] + 'Z'
+
+    private fun Int.pad() = this.toString().pad()
+    private fun String.pad() = this.padStart(2, '0')
 }
 
 fun EzDate.toEstonianString(): String = date.toEstonianString()

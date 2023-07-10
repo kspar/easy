@@ -3,6 +3,7 @@ package pages
 import AppProperties
 import Auth
 import DateSerializer
+import EzDate
 import Icons
 import MathJax
 import PageName
@@ -35,8 +36,10 @@ import moveClass
 import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
+import pages.course_exercises.UpdateCourseExerciseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise.TestingTabComp
+import pages.exercise.formatFeedback
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -224,6 +227,9 @@ object ExerciseSummaryPage : EasyPage() {
         }
     }
 
+    // Bit of a hack until we migrate this page
+    private val updateModalDst = IdGenerator.nextId()
+
     private fun buildTeacherExercise(courseId: String, courseExerciseId: String, isAdmin: Boolean) =
         MainScope().launch {
             val fl = debugFunStart("buildTeacherExercise")
@@ -236,7 +242,7 @@ object ExerciseSummaryPage : EasyPage() {
                 )
             )
 
-            Materialize.Tabs.init(getElemById("tabs"))
+            val tabs = Materialize.Tabs.init(getElemById("tabs"))
 
             getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
 
@@ -248,6 +254,8 @@ object ExerciseSummaryPage : EasyPage() {
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
             initTooltips()
+
+            tabs.updateTabIndicator()
             fl?.end()
         }
 
@@ -273,14 +281,6 @@ object ExerciseSummaryPage : EasyPage() {
             it.pageTitle = effectiveTitle
             it.parentPageTitle = courseTitle
         }
-
-        Sidenav.replacePageSection(
-            Sidenav.PageSection(
-                effectiveTitle, listOf(
-                    Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
-                )
-            )
-        )
 
         debug { "Exercise ID: ${exercise.exercise_id} (course exercise ID: $courseExerciseId, title: ${exercise.title}, title alias: ${exercise.title_alias})" }
 
@@ -312,7 +312,8 @@ object ExerciseSummaryPage : EasyPage() {
             "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
             "lastModified" to exercise.last_modified.toEstonianString(),
             "exerciseTitle" to effectiveTitle,
-            "exerciseText" to exercise.text_html
+            "exerciseText" to exercise.text_html,
+            "updateModalDst" to updateModalDst,
         )
 
         val aaFiles =
@@ -331,6 +332,37 @@ object ExerciseSummaryPage : EasyPage() {
             } else null
 
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", exerciseMap)
+
+
+        Sidenav.replacePageSection(
+            Sidenav.PageSection(
+                effectiveTitle, listOf(
+                    Sidenav.Action(Icons.settings, "Ülesande sätted") {
+                        val m = UpdateCourseExerciseModalComp(
+                            courseId,
+                            UpdateCourseExerciseModalComp.CourseExercise(
+                                courseExerciseId,
+                                exercise.title,
+                                exercise.title_alias,
+                                exercise.student_visible,
+                                exercise.student_visible_from?.let { EzDate(it) },
+                            ),
+                            null,
+                            dstId = updateModalDst
+                        )
+
+                        m.createAndBuild().await()
+                        val modalReturn = m.openWithClosePromise().await()
+                        m.destroy()
+                        if (modalReturn != null) {
+                            build(null)
+                        }
+                    },
+                    Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
+                )
+            )
+        )
+
 
         lightboxExerciseImages()
         highlightCode()
@@ -549,9 +581,11 @@ object ExerciseSummaryPage : EasyPage() {
                 GraderType.AUTO -> {
                     studentMap["evalAuto"] = true
                 }
+
                 GraderType.TEACHER -> {
                     studentMap["evalTeacher"] = true
                 }
+
                 null -> {}
             }
 
@@ -799,11 +833,13 @@ object ExerciseSummaryPage : EasyPage() {
                         submissionMap["evalTeacher"] = true
                         it.grade_teacher
                     }
+
                     it.grade_auto != null -> {
                         submissionMap["points"] = it.grade_auto.toString()
                         submissionMap["evalAuto"] = true
                         it.grade_auto
                     }
+
                     else -> {
                         submissionMap["evalMissing"] = true
                         null
@@ -940,7 +976,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "autoLabel" to Str.autoAssessmentLabel(),
                 "autoGradeLabel" to Str.autoGradeLabel(),
                 "grade" to grade.toString(),
-                "feedback" to feedback
+                "feedback" to feedback?.let { formatFeedback(it) },
             )
         )
     }
@@ -1165,14 +1201,17 @@ object ExerciseSummaryPage : EasyPage() {
             submission == null && draft != null -> {
                 paintDraft(draft.solution, null)
             }
+
             submission != null && draft == null -> {
                 paintLatestSubmission(submission.solution)
             }
+
             submission != null && draft != null -> {
                 when {
                     submission.solution == draft.solution || submission.submission_time >= draft.created_at -> {
                         paintLatestSubmission(submission.solution)
                     }
+
                     else -> {
                         paintDraft(draft.solution, submission.solution)
                     }

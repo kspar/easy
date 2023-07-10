@@ -10,6 +10,7 @@ import show
 class EditModeButtonsComp(
     private val onModeChange: suspend (Boolean) -> Boolean,
     private val onSave: suspend () -> Boolean,
+    private val postModeChange: suspend () -> Unit = {},
     private val canCancel: suspend () -> Boolean = { true },
     startAsEditing: Boolean = false,
     parent: Component?
@@ -53,6 +54,7 @@ class EditModeButtonsComp(
                 debug { "State changed to $newMode" }
                 state = newMode
                 updateBtnVisibility()
+                postModeChange()
             } else {
                 debug { "State change from $state to $newMode not accepted" }
             }

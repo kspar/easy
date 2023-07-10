@@ -15,7 +15,6 @@ import pages.exercise.AddToCourseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
@@ -58,12 +57,16 @@ class ExerciseLibComp(
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
-    private val permissionsModal = PermissionsModalComp(null, true, dirId, this)
+    private lateinit var currentDirPermissionsModal: PermissionsModalComp
+    private val itemPermissionsModal = PermissionsModalComp(currentDirId = dirId, parent = this)
     private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
     private val newDirModal = CreateDirModalComp(dirId, this)
 
     override val children: List<Component>
-        get() = listOf(breadcrumbs, ezcoll, addToCourseModal, permissionsModal, newExerciseModal, newDirModal)
+        get() = listOf(
+            breadcrumbs, ezcoll, addToCourseModal, currentDirPermissionsModal, itemPermissionsModal,
+            newExerciseModal, newDirModal
+        )
 
     override fun create() = doInPromise {
 
@@ -84,24 +87,42 @@ class ExerciseLibComp(
 
         val libResp = libRespPromise.await()
 
-        // can create new exercise only if current dir is root, or we have at least PRA
+        // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
+        currentDirPermissionsModal = PermissionsModalComp(null, true, dirId, libResp.current_dir?.name.orEmpty(), this)
+
         val currentDirAccess = libResp.current_dir?.effective_access
+        // can do anything only if current dir is root, or we have at least PRA
         if (currentDirAccess == null || currentDirAccess >= DirAccess.PRA) {
             Sidenav.replacePageSection(
                 Sidenav.PageSection(
-                    Str.exerciseLibrary(), listOf(
-                        Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                    libResp.current_dir?.name ?: Str.exerciseLibrary(),
+
+                    buildList {
+                        add(Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
                             val ids = newExerciseModal.openWithClosePromise().await()
                             if (ids != null) {
                                 EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
                                 successMessage { "Ülesanne loodud" }
                             }
-                        },
-                        Sidenav.Action(Icons.newFolder, "Uus kaust") {
+                        })
+                        add(Sidenav.Action(Icons.newFolder, "Uus kaust") {
                             if (newDirModal.openWithClosePromise().await() != null)
                                 createAndBuild().await()
-                        },
-                    )
+                        })
+
+                        if (currentDirAccess == DirAccess.PRAWM) {
+                            add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                                // Set dirId here to avoid loading permissions if user has no M access
+                                currentDirPermissionsModal.dirId = dirId
+                                val permissionsChanged = currentDirPermissionsModal.refreshAndOpen().await()
+                                debug { "Permissions changed: $permissionsChanged" }
+                                if (permissionsChanged) {
+                                    successMessage { "Õigused muudetud" }
+                                    createAndBuild().await()
+                                }
+                            })
+                        }
+                    }
                 )
             )
         }
@@ -224,13 +245,6 @@ class ExerciseLibComp(
         )
     }
 
-    override fun render() =
-        plainDstStr(
-            breadcrumbs.dstId, ezcoll.dstId,
-            addToCourseModal.dstId, permissionsModal.dstId,
-            newExerciseModal.dstId, newDirModal.dstId
-        )
-
     private suspend fun addToCourse(item: EzCollComp.Item<Props>) = addToCourse(listOf(item))
 
     private suspend fun addToCourse(items: List<EzCollComp.Item<Props>>): EzCollComp.Result {
@@ -259,10 +273,10 @@ class ExerciseLibComp(
     }
 
     private suspend fun permissions(item: EzCollComp.Item<Props>): EzCollComp.Result {
-        permissionsModal.dirId = item.props.dirId
-        permissionsModal.isDir = item.props is DirProps
-        permissionsModal.setTitle(item.props.title)
-        val permissionsChanged = permissionsModal.refreshAndOpen().await()
+        itemPermissionsModal.dirId = item.props.dirId
+        itemPermissionsModal.isDir = item.props is DirProps
+        itemPermissionsModal.setTitle(item.props.title)
+        val permissionsChanged = itemPermissionsModal.refreshAndOpen().await()
         debug { "Permissions changed: $permissionsChanged" }
         if (permissionsChanged)
             createAndBuild().await()
