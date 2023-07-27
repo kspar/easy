@@ -61,11 +61,8 @@ data class ClassFunctionCallsFunctionTest(
 data class ClassInstanceTest(
     override val id: Long,
     val className: String,
-    val fieldsFinal: List<FieldData> = emptyList(),
-    val createObject: String,
-    val beforeMessage: String,
-    val passedMessage: String,
-    val failedMessage: String
+    val classInstanceChecks: List<ClassInstanceCheck> = emptyList(),
+    val createObject: String
 ) : Test() {
     override fun getDefaultName(): String {
         return "Klassi isendi loomise test"

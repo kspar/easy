@@ -249,7 +249,7 @@ tests:
     returnValue: 3
     genericChecks:
       - checkType: ANY_OF_THESE
-        considerElementsOrder: false
+        elementsOrdered: false
         expectedValue:
           - down
           - up
@@ -261,7 +261,7 @@ tests:
         checkType: ALL_OF_THESE
         expectedValue:
           - Väljundfaili eeldatav sisu
-        considerElementsOrder: true
+        elementsOrdered: true
         beforeMessage: Kontrollib, kas funktsiooni väljundfail sisaldab võtmesõna.
         passedMessage: Funktsiooni väljundfail sisaldab antud võtmesõna.
         failedMessage: Funktsiooni väljundfail ei sisalda antud võtmesõna.
@@ -290,8 +290,7 @@ tests:
     createObject: return Lugemik
     genericChecks:
       - checkType: ANY_OF_THESE
-        considerElementsOrder: false
-        isNumeric: True
+        elementsOrdered: false
         expectedValue:
           - 2.3
         beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
@@ -396,15 +395,19 @@ tests:
   - type: class_instance_test
     id: 1323
     className: Raamat
-    fieldsFinal:
-      - fieldName: "title"
-        fieldContent: '"Truth and Justice"'
-      - fieldName: "author"
-        fieldContent: '"A. H. Tammsaare"'
-      - fieldName: "pages"
-        fieldContent: 453
+    classInstanceChecks:
+      - fieldsFinal:
+          - fieldName: "title"
+            fieldContent: '"Truth and Justice"'
+          - fieldName: "author"
+            fieldContent: '"A. H. Tammsaare"'
+          - fieldName: "pages"
+            fieldContent: 453
+        checkName: True
+        checkValue: True
+        nothingElse: True
+        beforeMessage: Kontrollib, kas klassi isend väärtustab õiged väljad.
+        passedMessage: Klassi isend väärtustas õiged väljad.
+        failedMessage: Klassi isend ei väärtustanud õigeid välju.
     createObject: return Raamat("Truth and Justice", "A. H. Tammsaare", 453)
-    beforeMessage: Kontrollib, kas klassi isend väärtustab õiged väljad.
-    passedMessage: Klassi isend väärtustas õiged väljad.
-    failedMessage: Klassi isend ei väärtustanud õigeid välju.
     name: Klassi isendi loomise test

@@ -21,6 +21,8 @@ data class FunctionExecutionTest(
     val inputFiles: List<FileData> = emptyList(),
     val returnValue: String? = null,
     val genericChecks: List<GenericCheck> = emptyList(),
+    val returnValueCheck: ReturnValueCheck? = null,
+    val paramValueChecks: List<ParamValueCheck> = emptyList(),
     val outputFileChecks: List<OutputFileCheck> = emptyList()
 ) : Test() {
     override fun getDefaultName(): String {
