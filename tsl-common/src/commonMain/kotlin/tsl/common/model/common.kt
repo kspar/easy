@@ -37,7 +37,7 @@ sealed class Test : TSLModel {
     // TODO: convert into field?
     abstract fun getDefaultName(): String
 
-    val points: Double = 1.0
+    val pointsWeight: Double = 1.0
     val name: String? = null
     val inputs: String? = null // TODO: Kaspar, kas selle jätame?
     val passedNext: Long? = null
@@ -60,10 +60,20 @@ enum class CheckTypeLong {
     ALL_OF_THESE, ANY_OF_THESE, ANY, NONE_OF_THESE, MISSING_AT_LEAST_ONE_OF_THESE, NONE
 }
 
+enum class DataCategory {
+    CONTAINS_LINES, CONTAINS_NUMBERS, CONTAINS_STRINGS, EQUALS
+}
+
 @Serializable
 class FileData(
     val fileName: String,
     val fileContent: String
+)
+
+@Serializable
+class FieldData(
+    val fieldName: String,
+    val fieldContent: String
 )
 
 // TODO: Kui on nt vaja kontrollida nimede olemasolu, siis kuidas me kontrollime,
@@ -73,8 +83,9 @@ class FileData(
 data class GenericCheck(
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
-    val expectedValue: List<String>, // The field to be checked.
-    val considerElementsOrder: Boolean? = false,
+    val expectedValue: List<String>,
+    val elementsOrdered: Boolean? = false,
+    val dataCategory: DataCategory = DataCategory.EQUALS,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -84,7 +95,8 @@ data class GenericCheck(
 data class GenericCheckLong(
     val checkType: CheckTypeLong,
     val nothingElse: Boolean? = null,
-    val expectedValue: List<String>, // The field to be checked.
+    val expectedValue: List<String>,
+    val dataCategory: DataCategory = DataCategory.EQUALS,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -95,8 +107,9 @@ data class OutputFileCheck(
     val fileName: String,
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
-    val expectedValue: List<String>, // The field to be checked.
-    val considerElementsOrder: Boolean? = false,
+    val expectedValue: List<String>,
+    val elementsOrdered: Boolean? = false,
+    val dataCategory: DataCategory = DataCategory.EQUALS,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -109,6 +122,34 @@ class ExceptionCheck(
     override val passedMessage: String,
     override val failedMessage: String
 ) : Check()
+
+@Serializable
+class ReturnValueCheck(
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+) : Check()
+
+@Serializable
+class ParamValueCheck(
+    val paramNumber: Int,
+    val expectedValue: String,
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+) : Check()
+
+@Serializable
+class ClassInstanceCheck(
+    val fieldsFinal: List<FieldData> = emptyList(),
+    val checkName: Boolean,
+    val checkValue: Boolean,
+    val nothingElse: Boolean,
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+) : Check()
+
 
 @Serializable
 class ContainsCheck(
