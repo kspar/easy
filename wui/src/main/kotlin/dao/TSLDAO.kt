@@ -43,7 +43,7 @@ object TSLDAO {
 
         val body = mapOf(
             "tsl_spec" to tslSpec,
-            "format" to format
+            "format" to format.name
         )
 
         fetchEms("/tsl/compile", ReqMethod.POST, body,
