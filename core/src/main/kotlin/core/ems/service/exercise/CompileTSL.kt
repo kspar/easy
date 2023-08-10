@@ -52,7 +52,7 @@ class CompileTSL {
 
         val result = try {
             compileTSL(dto.tslSpec, "1", "tiivad", dto.format)
-        } catch (e: Exception) {
+        } catch (e: Exception) {  // TODO: do not catch all exceptions, this hides internal compiler errors
             return Resp(null, e.message.orEmpty(), null)
         }
 
