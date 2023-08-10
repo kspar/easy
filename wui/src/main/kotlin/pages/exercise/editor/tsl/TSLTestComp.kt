@@ -176,6 +176,15 @@ class TSLTestComp(
         is ProgramContainsTryExceptTest -> TODO()
         is ProgramDefinesFunctionTest -> TODO()
         is ProgramImportsModuleTest -> TODO()
+        is ClassCallsClassTest -> TODO()
+        is ClassDefinesFunctionTest -> TODO()
+        is ClassFunctionCallsFunctionTest -> TODO()
+        is ClassImportsModuleTest -> TODO()
+        is ClassInstanceTest -> TODO()
+        is ProgramCallsClassFunctionTest -> TODO()
+        is ProgramCallsClassTest -> TODO()
+        is ProgramDefinesClassTest -> TODO()
+        is ProgramDefinesSubclassTest -> TODO()
     }
 
     private suspend fun createContentComp(type: TestType, model: Test?): TSLTestComponent =
