@@ -5,11 +5,14 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.decodeFromString
 import tsl.common.model.TSL
+import tsl.common.model.TSLFormat
 import java.io.File
 
 
-val c = YamlConfiguration(polymorphismStyle = PolymorphismStyle.Property)
-val f = Yaml(configuration = c)
+enum class TSL_SPEC_FORMAT { JSON, YAML }
+
+private val yamlConfiguration = YamlConfiguration(polymorphismStyle = PolymorphismStyle.Property)
+private val TSLYAMLFormat = Yaml(configuration = yamlConfiguration)
 
 data class CompiledResult(
     val generatedScripts: List<String>,
@@ -19,10 +22,19 @@ data class CompiledResult(
 )
 
 
-fun compileTSL(tslSpec: String, tslCompilerVersion: String, backendID: String): CompiledResult {
+fun compileTSL(
+    tslSpec: String,
+    tslCompilerVersion: String,
+    backendID: String,
+    format: TSL_SPEC_FORMAT
+): CompiledResult {
+
     when (backendID) {
         "tiivad" -> {
-            val parseTree = f.decodeFromString<TSL>(tslSpec)
+            val parseTree = when (format) {
+                TSL_SPEC_FORMAT.JSON -> TSLFormat.decodeFromString<TSL>(tslSpec)
+                TSL_SPEC_FORMAT.YAML -> TSLYAMLFormat.decodeFromString<TSL>(tslSpec)
+            }
 
             // val irTree = IRTree(parseTree) TODO: Uncomment me if we will use intermediate tree (so far, we don't need)
             val compiler = Compiler(parseTree)
@@ -51,13 +63,13 @@ fun main() {
 
     val inputText = File(fileName).readText(Charsets.UTF_8)
 
-    val compiledResult = compileTSL(inputText, "1.0.0", "tiivad")
+    val compiledResult = compileTSL(inputText, "1.0.0", "tiivad", TSL_SPEC_FORMAT.YAML)
     println(compiledResult.backendID)
     println(compiledResult.backendVersion)
     println(compiledResult.generatedScripts[0])
     println(compiledResult.tslCompilerVersion)
 
-    val parseTree = f.decodeFromString<TSL>(inputText)
+    val parseTree = TSLYAMLFormat.decodeFromString<TSL>(inputText)
     println(parseTree)
 
     val compiler = Compiler(parseTree)

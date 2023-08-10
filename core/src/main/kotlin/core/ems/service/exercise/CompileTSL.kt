@@ -1,5 +1,6 @@
 package core.ems.service.exercise
 
+import com.example.demo.TSL_SPEC_FORMAT
 import com.example.demo.compileTSL
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
@@ -22,6 +23,7 @@ class CompileTSL {
 
     data class Req(
         @JsonProperty("tsl_spec") @field:Size(max = 100_000) val tslSpec: String,
+        @JsonProperty("format") val format: TSL_SPEC_FORMAT = TSL_SPEC_FORMAT.JSON,
     )
 
     data class Resp(
@@ -49,7 +51,7 @@ class CompileTSL {
         log.debug { "Compile TSL by ${caller.id}" }
 
         val result = try {
-            compileTSL(dto.tslSpec, "1", "tiivad")
+            compileTSL(dto.tslSpec, "1", "tiivad", dto.format)
         } catch (e: Exception) {
             return Resp(null, e.message.orEmpty(), null)
         }

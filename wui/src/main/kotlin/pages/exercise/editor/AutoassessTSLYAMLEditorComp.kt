@@ -71,7 +71,7 @@ class AutoassessTSLYAMLEditorComp(
 
     private suspend fun compile(tslSpec: String) {
         try {
-            val result = TSLDAO.compile(tslSpec).await()
+            val result = TSLDAO.compile(tslSpec, TSLDAO.FORMAT.YAML).await()
             debug { "Compilation finished" }
 
             compilerFeedbackEl.textContent = result.feedback?.let {
