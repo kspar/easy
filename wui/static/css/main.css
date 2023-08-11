@@ -2425,6 +2425,7 @@ ez-block-container ez-block {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
+    min-height: 5.5rem; /* to keep height when showing/hiding 3-dot menu */
     border: 0;
     border-radius: var(--ez-border-radius);
     transition: background-color .3s ease-out;
