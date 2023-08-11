@@ -1,5 +1,6 @@
 package tsl.common.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -50,6 +51,14 @@ sealed class Test : TSLModel {
     //return_value
     //fun_arguments
     //fun_param_count
+}
+
+@Serializable
+@SerialName("placeholder_test")
+data class PlaceholderTest(
+    override val id: Long,
+) : Test() {
+    override fun getDefaultName() = "Uus test"
 }
 
 enum class CheckType {

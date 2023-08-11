@@ -551,7 +551,8 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            else -> throw Exception("Unknown Test: $test")
+            // Only used as an empty placeholder test - the user hasn't decided on the type yet
+            is PlaceholderTest -> ""
         }
     }
 }
