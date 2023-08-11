@@ -1,5 +1,6 @@
 package core.ems.service.exercise
 
+import com.example.demo.TSL_SPEC_FORMAT
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
@@ -59,7 +60,32 @@ class UpdateExercise(private val adocService: AdocService) {
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }
 
         val html = req.textAdoc?.let { adocService.adocToHtml(it) } ?: req.textHtml
-        updateExercise(exerciseId, caller.id, req, html)
+
+        val tslContainerName = "tiivad:tsl-compose"
+        val tslSpecFilename = "tsl.json"
+        val tslMetaFilename = "meta.txt"
+
+        // If TSL, get spec, compile and add resulting files to assets
+        val reqModified = if (req.containerImage == tslContainerName) {
+            val compileResult = compileTSLToResp(
+                req.assets!!.single { it.fileName == tslSpecFilename }.fileContent,
+                TSL_SPEC_FORMAT.JSON
+            )
+
+            val metaStr = compileResult.meta?.let {
+                """
+                    Compiled at: ${it.timestamp.toString()}
+                    Compiler version: ${it.compilerVersion}
+                    Backend: ${it.backendId} ${it.backendVersion}
+                """.trimIndent()
+            }
+            val metaScript = listOfNotNull(metaStr?.let { ReqAsset(tslMetaFilename, it) })
+            req.copy(assets = req.assets + compileResult.scripts?.map { ReqAsset(it.name, it.value) }
+                .orEmpty() + metaScript)
+        } else
+            req
+
+        updateExercise(exerciseId, caller.id, reqModified, html)
     }
 
     private fun updateExercise(exerciseId: Long, authorId: String, req: Req, html: String?) {
