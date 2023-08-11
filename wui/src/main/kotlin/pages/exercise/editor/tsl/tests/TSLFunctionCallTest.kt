@@ -13,6 +13,7 @@ import tsl.common.model.Test
 class TSLFunctionCallTest(
     private val initialModel: FunctionExecutionTest?,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component,
     dstId: String,
 ) : TSLTestComponent(parent, dstId) {
@@ -65,4 +66,9 @@ class TSLFunctionCallTest(
         )
     }
 
+    override fun setEditable(nowEditable: Boolean) {
+        editor.setFileEditable(editor.getActiveTabFilename()!!, nowEditable)
+    }
+
+    override fun isValid() = true
 }

@@ -21,7 +21,11 @@ object AutoEvalTypes {
             "TSL", "tiivad:tsl-compose",
             7, 30, TypeEditor.TSL_COMPOSE,
             "TODO TSL",
-            "",
+            """
+                cd student-submission
+                python generated_0.py
+            """.trimIndent(),
+            mapOf("generated_0.py" to "")
         ),
 
         TypeTemplate(

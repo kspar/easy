@@ -8,10 +8,11 @@ class AutoassessTSLEditorComp(
     private val evaluateScript: String,
     private val assets: Map<String, String>,
     startEditable: Boolean,
+    private val onValidChanged: () -> Unit,
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
-    val tslRoot = TSLRootComp(this)
+    val tslRoot = TSLRootComp(this, assets, startEditable, onValidChanged)
 
     private var isEditable = startEditable
 
@@ -24,20 +25,17 @@ class AutoassessTSLEditorComp(
 
     override suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
-        // TODO: disable all form elements?
+        tslRoot.setEditable(nowEditable)
     }
 
-    override fun getEvalScript(): String {
-        return ""
-    }
+    override fun getEvalScript() = evaluateScript
 
-    override fun getAssets(): Map<String, String> {
-        return emptyMap()
-    }
+    override fun getAssets() = tslRoot.getTslSpec()
 
-    override fun isValid() = true
+    override fun isValid() = tslRoot.isValid()
 
 
+    // TODO
     object ActiveView : AutoassessEditorComp.ActiveView
 
     override fun getActiveView() = ActiveView

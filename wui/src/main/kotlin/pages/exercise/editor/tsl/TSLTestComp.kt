@@ -8,36 +8,31 @@ import libheaders.MCollapsibleInstance
 import libheaders.Materialize
 import libheaders.open
 import pages.exercise.editor.tsl.tests.TSLFunctionCallTest
+import pages.exercise.editor.tsl.tests.TSLPlaceholderTest
 import pages.exercise.editor.tsl.tests.TSLProgramExecutionTest
 import rip.kspar.ezspa.*
+import show
 import template
 import tsl.common.model.*
 
 class TSLTestComp(
-    private val initialModel: Test?,
+    private val initialModel: Test,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    companion object {
-        private const val DEFAULT_TITLE = "Uus test"
-    }
-
-    private var activeTitle = when {
-        initialModel == null -> DEFAULT_TITLE
-        initialModel.name == null -> getTestTypeFromModel(initialModel).defaultTestTitle
-        else -> initialModel.name
-    }
+    private var activeTitle = initialModel.name ?: getTestTypeFromModel(initialModel).defaultTestTitle
 
     private val testType = SelectComp(
         "Testi tüüp", TestType.values().map {
-            SelectComp.Option(it.optionName, it.name, initialModel?.let { model -> getTestTypeFromModel(model) } == it)
+            SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
-        hasEmptyOption = true, onOptionChange = ::changeTestType, parent = this
+        onOptionChange = { changeTestType(it!!) }, parent = this
     )
 
     private val contentDst = IdGenerator.nextId()
-    private var content: TSLTestComponent? = null
+    private lateinit var content: TSLTestComponent
 
     private lateinit var collapsible: MCollapsibleInstance
 
@@ -45,10 +40,10 @@ class TSLTestComp(
         private set
 
     override val children: List<Component>
-        get() = listOfNotNull(testType, content)
+        get() = listOf(testType, content)
 
     override fun create() = doInPromise {
-        content = initialModel?.let { createContentComp(getTestTypeFromModel(it), it) }
+        content = createContentComp(getTestTypeFromModel(initialModel), initialModel)
     }
 
     override fun render() = template(
@@ -61,7 +56,7 @@ class TSLTestComp(
                             <ez-collapsible-title>{{title}}</ez-collapsible-title>
                         </ez-tsl-test-header-left>
                         <ez-tsl-test-header-right>
-                            <ez-icon-action ez-tsl-test-menu title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
+                            <ez-icon-action ez-tsl-test-menu id='ez-tsl-test-menu-{{testDst}}' title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
                         </ez-tsl-test-header-right>
                     </div>
                     <div class="collapsible-body">
@@ -121,30 +116,33 @@ class TSLTestComp(
         )
     }
 
-    fun getTestModel(): Test? {
-        return content?.getTSLModel()
-    }
+    fun getTestModel() = content.getTSLModel()
 
     fun open() = collapsible.open()
 
-    private suspend fun changeTestType(newTypeId: String?) {
+    fun setEditable(nowEditable: Boolean) {
+        // 3-dot menu
+        getElemById("ez-tsl-test-menu-$dstId").show(nowEditable)
+        testType.isDisabled = !nowEditable
+        testType.rebuild()
+        content.setEditable(nowEditable)
+    }
+
+    fun isValid() = content.isValid()
+
+    private suspend fun changeTestType(newTypeId: String) {
         debug { "Test type changed to: $newTypeId" }
 
-        val newType = newTypeId?.let { TestType.valueOf(it) }
+        val newType = TestType.valueOf(newTypeId)
 
         // Change title if previous one was default
         if (TestType.defaultTitles.contains(activeTitle)) {
-            changeTitle(newType?.defaultTestTitle ?: DEFAULT_TITLE)
+            changeTitle(newType.defaultTestTitle)
         }
 
-        content = if (newType != null) {
-            content?.destroy()
-            createContentComp(newType, null).also {
-                it.createAndBuild().await()
-            }
-        } else {
-            content?.destroy()
-            null
+        content.destroy()
+        content = createContentComp(newType, null).also {
+            it.createAndBuild().await()
         }
 
         // Test type changed
@@ -185,25 +183,43 @@ class TSLTestComp(
         is ProgramCallsClassTest -> TODO()
         is ProgramDefinesClassTest -> TODO()
         is ProgramDefinesSubclassTest -> TODO()
+        is PlaceholderTest -> TestType.PLACEHOLDER
     }
 
     private suspend fun createContentComp(type: TestType, model: Test?): TSLTestComponent =
         // it might be better to show/hide content comps to preserve inputs
         when (type) {
             TestType.PROGRAM_EXECUTION ->
-                TSLProgramExecutionTest(model?.let { it as ProgramExecutionTest }, onUpdate, this, contentDst)
+                TSLProgramExecutionTest(
+                    model?.let { it as ProgramExecutionTest },
+                    onUpdate,
+                    onValidChanged,
+                    this,
+                    contentDst
+                )
 
             TestType.FUNCTION_EXECUTION ->
-                TSLFunctionCallTest(model?.let { it as FunctionExecutionTest }, onUpdate, this, contentDst)
+                TSLFunctionCallTest(
+                    model?.let { it as FunctionExecutionTest },
+                    onUpdate,
+                    onValidChanged,
+                    this,
+                    contentDst
+                )
+
+            TestType.PLACEHOLDER ->
+                TSLPlaceholderTest(model?.let { it as PlaceholderTest }, this, contentDst)
+
         }
 
     enum class TestType(val optionName: String, val defaultTestTitle: String) {
+        PLACEHOLDER("-", "Uus test"),
         PROGRAM_EXECUTION("Programmi väljund", "Programmi väljundi test"),
         FUNCTION_EXECUTION("Funktsiooni tagastus", "Funktsiooni tagastuse test"),
         ;
 
         companion object {
-            val defaultTitles = TestType.values().map { it.defaultTestTitle } + DEFAULT_TITLE
+            val defaultTitles = TestType.values().map { it.defaultTestTitle }
         }
     }
 
@@ -220,4 +236,8 @@ abstract class TSLTestComponent(
 ) : Component(parent, dstId) {
 
     abstract fun getTSLModel(): Test
+
+    abstract fun setEditable(nowEditable: Boolean)
+
+    abstract fun isValid(): Boolean
 }

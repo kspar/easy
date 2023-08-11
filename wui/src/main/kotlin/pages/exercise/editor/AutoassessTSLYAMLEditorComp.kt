@@ -23,8 +23,8 @@ class AutoassessTSLYAMLEditorComp(
     private lateinit var codeEditor: CodeEditorComp
 
     private var isEditable = startEditable
-    private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME) { "" }
-    private val generatedAssets = assets - TSL_SPEC_FILENAME
+    private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME_YAML) { "" }
+    private val generatedAssets = assets - TSL_SPEC_FILENAME_YAML
 
     private var isUpToDate = true
 
@@ -39,7 +39,7 @@ class AutoassessTSLYAMLEditorComp(
         codeEditor = CodeEditorComp(
             listOf(
                 CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable)),
-                CodeEditorComp.File(TSL_SPEC_FILENAME, tslSpec, editorEditable(isEditable)),
+                CodeEditorComp.File(TSL_SPEC_FILENAME_YAML, tslSpec, editorEditable(isEditable)),
             ) + generatedAssets.toList().sortedBy { it.first }.map {
                 CodeEditorComp.File(it.first, it.second, CodeEditorComp.Edit.READONLY)
             },
@@ -56,7 +56,7 @@ class AutoassessTSLYAMLEditorComp(
         if (isEditable) {
             doInPromise {
                 observeValueChange(1000, 300,
-                    valueProvider = { codeEditor.getFileValue(TSL_SPEC_FILENAME) },
+                    valueProvider = { codeEditor.getFileValue(TSL_SPEC_FILENAME_YAML) },
                     continuationConditionProvider = { getElemByIdOrNull(codeEditor.dstId) != null && isEditable },
                     action = ::compile,
                     idleCallback = {

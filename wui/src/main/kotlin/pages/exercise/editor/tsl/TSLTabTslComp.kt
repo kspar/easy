@@ -3,24 +3,22 @@ package pages.exercise.editor.tsl
 import components.code_editor.CodeEditorComp
 import debug
 import observeValueChange
+import pages.exercise.editor.AutoassessEditorComp.Companion.TSL_SPEC_FILENAME_JSON
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
 
 
 class TSLTabTslComp(
+    private val tslSpec: String,
     private val onTslChanged: suspend (String?) -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    companion object {
-        const val FILENAME = "tsl.json"
-    }
-
     private var externallyChanged = false
 
     private val editor = CodeEditorComp(
-        CodeEditorComp.File(FILENAME, ""),
+        CodeEditorComp.File(TSL_SPEC_FILENAME_JSON, tslSpec),
         showTabs = false,
         parent = this,
     )
@@ -46,9 +44,15 @@ class TSLTabTslComp(
         }
     }
 
-    fun setTsl(tslJson: String) {
-        editor.setFileValue(FILENAME, tslJson)
+    fun getTsl() = editor.getActiveTabContent().orEmpty()
+
+    fun setTsl(tslSpec: String) {
+        editor.setFileValue(TSL_SPEC_FILENAME_JSON, tslSpec)
         externallyChanged = true
+    }
+
+    fun setEditable(nowEditable: Boolean) {
+        editor.setFileEditable(TSL_SPEC_FILENAME_JSON, nowEditable)
     }
 
     fun refreshEditor() = editor.refresh()

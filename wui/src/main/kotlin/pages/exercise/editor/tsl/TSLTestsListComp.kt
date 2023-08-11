@@ -3,11 +3,14 @@ package pages.exercise.editor.tsl
 import debug
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import tsl.common.model.PlaceholderTest
 import tsl.common.model.Test
 
 class TSLTestsListComp(
     tests: List<Test>,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component
 ) : Component(parent) {
 
@@ -19,17 +22,23 @@ class TSLTestsListComp(
     fun getTests() = testComps.mapNotNull { it.getTestModel() }
 
     suspend fun addTest() {
-        val newTestComp = createTestComp(null)
+        val newTestComp = createTestComp(PlaceholderTest(IdGenerator.nextLongId()))
         testComps.add(newTestComp)
         appendChild(newTestComp).await()
     }
 
-    fun getOpenTests() = testComps.filter { it.isOpen }.mapNotNull { it.getTestModel()?.id }
+    fun getOpenTests() = testComps.filter { it.isOpen }.map { it.getTestModel().id }
 
     fun openTests(testIds: List<Long>) {
-        debug { "Opening $testIds" }
-        testComps.filter { testIds.contains(it.getTestModel()?.id) }.forEach { it.open() }
+        debug { "Opening TSL tests $testIds" }
+        testComps.filter { testIds.contains(it.getTestModel().id) }.forEach { it.open() }
     }
 
-    private fun createTestComp(testModel: Test?) = TSLTestComp(testModel, onUpdate, parent = this)
+    fun setEditable(nowEditable: Boolean) {
+        testComps.forEach { it.setEditable(nowEditable) }
+    }
+
+    fun isValid() = testComps.none { !it.isValid() }
+
+    private fun createTestComp(testModel: Test) = TSLTestComp(testModel, onUpdate, onValidChanged, parent = this)
 }
