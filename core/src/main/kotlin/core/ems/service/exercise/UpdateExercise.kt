@@ -74,7 +74,7 @@ class UpdateExercise(private val adocService: AdocService) {
 
             val metaStr = compileResult.meta?.let {
                 """
-                    Compiled at: ${it.timestamp.toString()}
+                    Compiled at: ${it.timestamp.toString("yyyy-MM-dd HH:mm:ss")}
                     Compiler version: ${it.compilerVersion}
                     Backend: ${it.backendId} ${it.backendVersion}
                 """.trimIndent()
