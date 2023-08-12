@@ -855,7 +855,7 @@ object ExerciseSummaryPage : EasyPage() {
                 submissionMap.toJsObj()
             }.toTypedArray()
 
-            val selectedSubId = getElemBySelector("[data-active-sub]")?.getAttribute("data-active-sub")
+            val selectedSubId = getElemBySelectorOrNull("[data-active-sub]")?.getAttribute("data-active-sub")
             debug { "Selected submission: $selectedSubId" }
 
             getElemById("all-submissions-section").innerHTML = tmRender(
@@ -953,7 +953,7 @@ object ExerciseSummaryPage : EasyPage() {
                 removeClass("inactive")
             }
         }
-        getElemBySelector("[data-sub-id='$selectedSubmissionid']")?.apply {
+        getElemBySelectorOrNull("[data-sub-id='$selectedSubmissionid']")?.apply {
             removeAttribute("href")
             addClass("inactive")
         }

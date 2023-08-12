@@ -27,8 +27,11 @@ fun getElemsBySelector(selector: String): List<Element> =
 fun Element.getElemsBySelector(selector: String): List<Element> =
     this.querySelectorAll(selector).asList().mapNotNull { it as? Element }
 
-fun getElemBySelector(selector: String): Element? =
+fun getElemBySelector(selector: String): Element =
     document.querySelector(selector)
+        ?: throw ElementNotFoundException("No element with selector '$selector' in document")
+
+fun getElemBySelectorOrNull(selector: String): Element? = document.querySelector(selector)
 
 fun Element.getElemBySelector(selector: String): Element =
     getElemBySelectorOrNull(selector)
