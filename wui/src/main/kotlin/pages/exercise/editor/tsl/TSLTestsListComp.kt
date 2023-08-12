@@ -19,7 +19,7 @@ class TSLTestsListComp(
     override val children: List<Component>
         get() = testComps
 
-    fun getTests() = testComps.mapNotNull { it.getTestModel() }
+    fun getTests() = testComps.map { it.getTestModel() }
 
     suspend fun addTest() {
         val newTestComp = createTestComp(PlaceholderTest(IdGenerator.nextLongId()))

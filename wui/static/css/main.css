@@ -2451,12 +2451,24 @@ ez-tsl-tests {
     margin-top: 2rem;
 }
 
-ez-tsl-test-header-left, ez-tsl-test-header-right {
+ez-tsl-tests ez-tsl-edit-title,
+ez-tsl-tests ez-tsl-test-header-right {
+    display: none;
+}
+
+ez-tsl-tests.editable .ez-collapsible:hover ez-tsl-edit-title,
+ez-tsl-tests.editable .ez-collapsible:hover ez-tsl-test-header-right {
     display: flex;
+    align-items: center;
+}
+
+ez-tsl-test-header-left {
+    display: flex;
+    align-items: center;
 }
 
 .ez-collapsible ez-collapsible-title {
-    padding-left: 1rem;
+    padding: 0 1rem;
 }
 
 ez-tsl-add-test button {

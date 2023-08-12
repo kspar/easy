@@ -34,16 +34,18 @@ abstract class Check : TSLModel {
 @Serializable
 sealed class Test : TSLModel {
     abstract val id: Long
+    open var name: String? = null
+
+    // TODO: to int
+    open val pointsWeight: Double = 1.0
+    open val visibleToUser: Boolean = true
 
     // TODO: convert into field?
     abstract fun getDefaultName(): String
 
-    val pointsWeight: Double = 1.0
-    val name: String? = null
     val inputs: String? = null // TODO: Kaspar, kas selle jätame?
     val passedNext: Long? = null
     val failedNext: Long? = null
-    val visibleToUser: Boolean? = null
     // val programOutput: String? = null
     //output_files
     //prog_inputs

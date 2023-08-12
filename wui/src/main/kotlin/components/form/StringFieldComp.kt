@@ -62,4 +62,8 @@ class StringFieldComp(
     }
 
     override fun hasUnsavedChanges() = getValue() != initialValue
+
+    fun setValue(value: String) {
+        getElement().value = value
+    }
 }

@@ -2,9 +2,12 @@ package pages.exercise.editor.tsl
 
 import Icons
 import components.form.ButtonComp
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemBySelector
 import show
 import template
 import tsl.common.model.Test
@@ -50,6 +53,10 @@ class TSLTabComposeComp(
     }
 
     fun setEditable(nowEditable: Boolean) {
+        getElemBySelector("ez-tsl-tests").let {
+            if (nowEditable) it.addClass("editable")
+            else it.removeClass("editable")
+        }
         addTestBtn.show(nowEditable)
         testsList.setEditable(nowEditable)
     }

@@ -1,6 +1,7 @@
 package pages.exercise.editor.tsl
 
 import Icons
+import Str
 import components.form.SelectComp
 import debug
 import kotlinx.coroutines.await
@@ -11,7 +12,6 @@ import pages.exercise.editor.tsl.tests.TSLFunctionCallTest
 import pages.exercise.editor.tsl.tests.TSLPlaceholderTest
 import pages.exercise.editor.tsl.tests.TSLProgramExecutionTest
 import rip.kspar.ezspa.*
-import show
 import template
 import tsl.common.model.*
 
@@ -22,7 +22,7 @@ class TSLTestComp(
     parent: Component
 ) : Component(parent) {
 
-    private var activeTitle = initialModel.name ?: getTestTypeFromModel(initialModel).defaultTestTitle
+    private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
     private val testType = SelectComp(
         "Testi tüüp", TestType.values().map {
@@ -36,11 +36,13 @@ class TSLTestComp(
 
     private lateinit var collapsible: MCollapsibleInstance
 
+    private var activeTitle = initialModel.name ?: getTestTypeFromModel(initialModel).defaultTestTitle
+
     var isOpen = false
         private set
 
     override val children: List<Component>
-        get() = listOf(testType, content)
+        get() = listOf(editTitleModal, testType, content)
 
     override fun create() = doInPromise {
         content = createContentComp(getTestTypeFromModel(initialModel), initialModel)
@@ -54,9 +56,12 @@ class TSLTestComp(
                         <ez-tsl-test-header-left>
                             <ez-collapsible-icon>{{{titleIcon}}}</ez-collapsible-icon>
                             <ez-collapsible-title>{{title}}</ez-collapsible-title>
+                            <ez-tsl-edit-title>
+                                <ez-icon-action title="{{editLabel}}" class="waves-effect" tabindex="0">{{{editIcon}}}</ez-icon-action>
+                            </ez-tsl-edit-title>
                         </ez-tsl-test-header-left>
                         <ez-tsl-test-header-right>
-                            <ez-icon-action ez-tsl-test-menu id='ez-tsl-test-menu-{{testDst}}' title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
+                            <ez-icon-action ez-tsl-test-menu title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
                         </ez-tsl-test-header-right>
                     </div>
                     <div class="collapsible-body">
@@ -71,8 +76,10 @@ class TSLTestComp(
                     <li><span ez-action="{{id}}">{{{iconHtml}}}{{text}}</span></li>
                 {{/actions}}
             </ul>
+            <ez-dst id='{{editTitleDst}}'></ez-dst>
     """.trimIndent(),
         "title" to activeTitle,
+        "editLabel" to Str.doEditTitle(),
         "testTypeDst" to testType.dstId,
         "testContentDst" to contentDst,
         "testDst" to dstId,
@@ -84,11 +91,20 @@ class TSLTestComp(
             )
         },
         "titleIcon" to Icons.robot,
+        "editIcon" to Icons.edit,
         "menuLabel" to "Muuda...",
         "menuIcon" to Icons.dotsVertical,
+        "editTitleDst" to editTitleModal.dstId,
     )
 
     override fun postRender() {
+        getElemBySelector("#$dstId ez-tsl-edit-title").onVanillaClick(false) {
+            // Stop click from propagating to collapsible header
+            it.stopPropagation()
+            editTitleModal.title = activeTitle
+            editTitleModal.openWithClosePromise().await()
+        }
+
         getElemById(dstId).getElemBySelector("[ez-tsl-test-menu]").onVanillaClick(false) {
             // Stop click from propagating to collapsible header
             it.stopPropagation()
@@ -116,13 +132,11 @@ class TSLTestComp(
         )
     }
 
-    fun getTestModel() = content.getTSLModel()
+    fun getTestModel() = content.getTSLModel().also { it.name = activeTitle }
 
     fun open() = collapsible.open()
 
     fun setEditable(nowEditable: Boolean) {
-        // 3-dot menu
-        getElemById("ez-tsl-test-menu-$dstId").show(nowEditable)
         testType.isDisabled = !nowEditable
         testType.rebuild()
         content.setEditable(nowEditable)
@@ -152,6 +166,7 @@ class TSLTestComp(
     private fun changeTitle(newTitle: String) {
         activeTitle = newTitle
         getElemById(dstId).getElemBySelector("ez-collapsible-title").textContent = newTitle
+        onUpdate()
     }
 
     private fun getTestTypeFromModel(test: Test) = when (test) {
@@ -224,7 +239,6 @@ class TSLTestComp(
     }
 
     enum class TestAction(val title: String, val icon: String, val action: () -> Unit) {
-        RENAME("Muuda pealkirja", Icons.edit, {}),
         MOVE("Liiguta", Icons.reorder, {}),
         DELETE("Kustuta", Icons.delete, {}),
     }
