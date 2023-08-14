@@ -18,6 +18,16 @@ class PyFunctionCall(val name: String, val namedArgs: Map<String, PyASTPrimitive
     }
 }
 
+class PyDict(val namedArgs: Map<String, PyASTPrimitive?>) : PyASTPrimitive() {
+    override fun generatePyString(): String {
+        val argsString = namedArgs.map {
+            "${it.key.trim()}:${it.value?.generatePyString()}"
+        }.joinToString(", ")
+
+        return "{$argsString}"
+    }
+}
+
 // TODO: .generatePyString() võiks toimuda hiljem, mitte igas harus
 
 class PyInt(val value: Long?) : PyASTPrimitive() {

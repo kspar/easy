@@ -2,7 +2,6 @@ package pages
 
 import AppProperties
 import rip.kspar.ezspa.getElemBySelector
-import warn
 
 object Title {
 
@@ -34,13 +33,7 @@ object Title {
 
 
     private fun refresh() {
-        val title = getElemBySelector("title")
-        if (title == null) {
-            warn { "<title> element not found when refreshing title" }
-            return
-        }
-
-        title.textContent = listOfNotNull(currentSpec.pageTitle, currentSpec.parentPageTitle, appName)
-            .joinToString(" - ")
+        getElemBySelector("title").textContent =
+            listOfNotNull(currentSpec.pageTitle, currentSpec.parentPageTitle, appName).joinToString(" - ")
     }
 }

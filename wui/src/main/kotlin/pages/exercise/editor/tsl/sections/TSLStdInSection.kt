@@ -10,6 +10,7 @@ import show
 class TSLStdInSection(
     private var inputs: List<String>,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {
 
@@ -23,6 +24,7 @@ class TSLStdInSection(
         helpText = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real",
         // TODO: onUnfocus or debounce for performance
         onValueChange = { onUpdate() },
+        onValidChange = { onValidChanged() },
         parent = this
     )
 
@@ -37,6 +39,10 @@ class TSLStdInSection(
         }
     }
 
+    override fun postChildrenBuilt() {
+        textField.validateInitial()
+    }
+
     fun getInputs(): List<String> = textField.getValue().split("\n").filter { it.isNotBlank() }
 
     private suspend fun showSection() {
@@ -44,4 +50,11 @@ class TSLStdInSection(
         textField.show()
     }
 
+    fun setEditable(nowEditable: Boolean) {
+        showBtn.setEnabled(nowEditable)
+        textField.isDisabled = !nowEditable
+        textField.rebuild()
+    }
+
+    fun isValid() = textField.isValid
 }

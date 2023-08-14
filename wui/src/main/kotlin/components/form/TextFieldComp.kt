@@ -7,13 +7,14 @@ import libheaders.Materialize
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLTextAreaElement
 import rip.kspar.ezspa.*
-import tmRender
+import template
 
 
 class TextFieldComp(
     private val label: String,
     private val isRequired: Boolean,
     private val placeholderHtml: String = "",
+    var isDisabled: Boolean = false,
     private val paintRequiredOnCreate: Boolean = false,
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
@@ -40,9 +41,16 @@ class TextFieldComp(
 
     override val paintEmptyViolationInitial = paintRequiredOnCreate
 
-    override fun render() = tmRender(
-        "t-c-text-field",
+    override fun render() = template(
+        """
+            <div class="input-field">
+                <textarea id="{{id}}" class="materialize-textarea" {{#disabled}}disabled{{/disabled}} placeholder="{{{placeholder}}}">{{value}}</textarea>
+                <label for="{{id}}" class="{{#active}}active{{/active}}">{{label}}</label>
+                <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+            </div>
+        """.trimIndent(),
         "id" to elementId,
+        "disabled" to isDisabled,
         "placeholder" to placeholderHtml,
         "value" to initialValue,
         "active" to (startActive || initialValue.isNotBlank()),

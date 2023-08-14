@@ -7,11 +7,13 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.objOf
 import tsl.common.model.FunctionExecutionTest
+import tsl.common.model.FunctionType
 import tsl.common.model.Test
 
 class TSLFunctionCallTest(
     private val initialModel: FunctionExecutionTest?,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component,
     dstId: String,
 ) : TSLTestComponent(parent, dstId) {
@@ -59,9 +61,14 @@ class TSLFunctionCallTest(
         return FunctionExecutionTest(
             testId,
             "fun",
-            listOf("42"),
+            FunctionType.FUNCTION,
             returnValue = "foo"
         )
     }
 
+    override fun setEditable(nowEditable: Boolean) {
+        editor.setFileEditable(editor.getActiveTabFilename()!!, nowEditable)
+    }
+
+    override fun isValid() = true
 }

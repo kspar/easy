@@ -61,21 +61,24 @@ class AutoAssessmentTabComp(
                 AutoEvalTypes.TypeEditor.TSL_COMPOSE -> {
                     editor = AutoassessTSLEditorComp(
                         props.evalScript, props.assets,
-                        isEditable, this
+                        isEditable, { onValidChanged(true) /* random bool not used */ }, this
                     )
                 }
+
                 AutoEvalTypes.TypeEditor.TSL_YAML -> {
                     editor = AutoassessTSLYAMLEditorComp(
                         props.evalScript, props.assets,
-                        isEditable, onValidChanged,this
+                        isEditable, onValidChanged, this
                     )
                 }
+
                 AutoEvalTypes.TypeEditor.CODE_EDITOR -> {
                     editor = AutoassessCodeEditorComp(
                         props.evalScript, props.assets,
                         isEditable, this
                     )
                 }
+
                 null -> {
                     warn { "No type mapped for container image $editorType" }
                 }

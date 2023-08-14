@@ -11,7 +11,8 @@ abstract class AutoassessEditorComp(
 
     companion object {
         const val EVAL_SCRIPT_FILENAME = "evaluate.sh"
-        const val TSL_SPEC_FILENAME = "tsl.yaml"
+        const val TSL_SPEC_FILENAME_YAML = "tsl.yaml"
+        const val TSL_SPEC_FILENAME_JSON = "tsl.json"
         const val TSL_META_FILENAME = "meta.txt"
     }
 

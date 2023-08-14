@@ -32,6 +32,7 @@ abstract class TranslatableStrings {
     abstract fun new(): String
     abstract fun exercise(): String
     abstract fun exercises(): String
+    abstract fun doEditTitle(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
     fun translateRole(role: Role) = when (role) {
@@ -170,6 +171,7 @@ private object EstStrings : TranslatableStrings() {
     override fun doAdd() = "Lisa"
     override fun adding() = "Lisan..."
     override fun cancel() = "Tühista"
+    override fun doEditTitle() = "Muuda pealkirja"
     override fun exerciseSaved() = "Ülesanne uuendatud"
     override fun assessmentAddedMsg() = "Hinnang lisatud."
     override fun oldSubmissionNote() = "See on vana esitus."

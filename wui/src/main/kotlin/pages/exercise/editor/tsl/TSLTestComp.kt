@@ -1,6 +1,7 @@
 package pages.exercise.editor.tsl
 
 import Icons
+import Str
 import components.form.SelectComp
 import debug
 import kotlinx.coroutines.await
@@ -8,47 +9,43 @@ import libheaders.MCollapsibleInstance
 import libheaders.Materialize
 import libheaders.open
 import pages.exercise.editor.tsl.tests.TSLFunctionCallTest
+import pages.exercise.editor.tsl.tests.TSLPlaceholderTest
 import pages.exercise.editor.tsl.tests.TSLProgramExecutionTest
 import rip.kspar.ezspa.*
 import template
 import tsl.common.model.*
 
 class TSLTestComp(
-    private val initialModel: Test?,
+    private val initialModel: Test,
     private val onUpdate: () -> Unit,
+    private val onValidChanged: () -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    companion object {
-        private const val DEFAULT_TITLE = "Uus test"
-    }
-
-    private var activeTitle = when {
-        initialModel == null -> DEFAULT_TITLE
-        initialModel.name == null -> getTestTypeFromModel(initialModel).defaultTestTitle
-        else -> initialModel.name
-    }
+    private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
     private val testType = SelectComp(
         "Testi tüüp", TestType.values().map {
-            SelectComp.Option(it.optionName, it.name, initialModel?.let { model -> getTestTypeFromModel(model) } == it)
+            SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
-        hasEmptyOption = true, onOptionChange = ::changeTestType, parent = this
+        onOptionChange = { changeTestType(it!!) }, parent = this
     )
 
     private val contentDst = IdGenerator.nextId()
-    private var content: TSLTestComponent? = null
+    private lateinit var content: TSLTestComponent
 
     private lateinit var collapsible: MCollapsibleInstance
+
+    private var activeTitle = initialModel.name ?: getTestTypeFromModel(initialModel).defaultTestTitle
 
     var isOpen = false
         private set
 
     override val children: List<Component>
-        get() = listOfNotNull(testType, content)
+        get() = listOf(editTitleModal, testType, content)
 
     override fun create() = doInPromise {
-        content = initialModel?.let { createContentComp(getTestTypeFromModel(it), it) }
+        content = createContentComp(getTestTypeFromModel(initialModel), initialModel)
     }
 
     override fun render() = template(
@@ -59,6 +56,9 @@ class TSLTestComp(
                         <ez-tsl-test-header-left>
                             <ez-collapsible-icon>{{{titleIcon}}}</ez-collapsible-icon>
                             <ez-collapsible-title>{{title}}</ez-collapsible-title>
+                            <ez-tsl-edit-title>
+                                <ez-icon-action title="{{editLabel}}" class="waves-effect" tabindex="0">{{{editIcon}}}</ez-icon-action>
+                            </ez-tsl-edit-title>
                         </ez-tsl-test-header-left>
                         <ez-tsl-test-header-right>
                             <ez-icon-action ez-tsl-test-menu title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
@@ -76,8 +76,10 @@ class TSLTestComp(
                     <li><span ez-action="{{id}}">{{{iconHtml}}}{{text}}</span></li>
                 {{/actions}}
             </ul>
+            <ez-dst id='{{editTitleDst}}'></ez-dst>
     """.trimIndent(),
         "title" to activeTitle,
+        "editLabel" to Str.doEditTitle(),
         "testTypeDst" to testType.dstId,
         "testContentDst" to contentDst,
         "testDst" to dstId,
@@ -89,11 +91,20 @@ class TSLTestComp(
             )
         },
         "titleIcon" to Icons.robot,
+        "editIcon" to Icons.edit,
         "menuLabel" to "Muuda...",
         "menuIcon" to Icons.dotsVertical,
+        "editTitleDst" to editTitleModal.dstId,
     )
 
     override fun postRender() {
+        getElemBySelector("#$dstId ez-tsl-edit-title").onVanillaClick(false) {
+            // Stop click from propagating to collapsible header
+            it.stopPropagation()
+            editTitleModal.title = activeTitle
+            editTitleModal.openWithClosePromise().await()
+        }
+
         getElemById(dstId).getElemBySelector("[ez-tsl-test-menu]").onVanillaClick(false) {
             // Stop click from propagating to collapsible header
             it.stopPropagation()
@@ -121,30 +132,31 @@ class TSLTestComp(
         )
     }
 
-    fun getTestModel(): Test? {
-        return content?.getTSLModel()
-    }
+    fun getTestModel() = content.getTSLModel().also { it.name = activeTitle }
 
     fun open() = collapsible.open()
 
-    private suspend fun changeTestType(newTypeId: String?) {
+    fun setEditable(nowEditable: Boolean) {
+        testType.isDisabled = !nowEditable
+        testType.rebuild()
+        content.setEditable(nowEditable)
+    }
+
+    fun isValid() = content.isValid()
+
+    private suspend fun changeTestType(newTypeId: String) {
         debug { "Test type changed to: $newTypeId" }
 
-        val newType = newTypeId?.let { TestType.valueOf(it) }
+        val newType = TestType.valueOf(newTypeId)
 
         // Change title if previous one was default
         if (TestType.defaultTitles.contains(activeTitle)) {
-            changeTitle(newType?.defaultTestTitle ?: DEFAULT_TITLE)
+            changeTitle(newType.defaultTestTitle)
         }
 
-        content = if (newType != null) {
-            content?.destroy()
-            createContentComp(newType, null).also {
-                it.createAndBuild().await()
-            }
-        } else {
-            content?.destroy()
-            null
+        content.destroy()
+        content = createContentComp(newType, null).also {
+            it.createAndBuild().await()
         }
 
         // Test type changed
@@ -154,6 +166,7 @@ class TSLTestComp(
     private fun changeTitle(newTitle: String) {
         activeTitle = newTitle
         getElemById(dstId).getElemBySelector("ez-collapsible-title").textContent = newTitle
+        onUpdate()
     }
 
     private fun getTestTypeFromModel(test: Test) = when (test) {
@@ -176,30 +189,56 @@ class TSLTestComp(
         is ProgramContainsTryExceptTest -> TODO()
         is ProgramDefinesFunctionTest -> TODO()
         is ProgramImportsModuleTest -> TODO()
+        is ClassCallsClassTest -> TODO()
+        is ClassDefinesFunctionTest -> TODO()
+        is ClassFunctionCallsFunctionTest -> TODO()
+        is ClassImportsModuleTest -> TODO()
+        is ClassInstanceTest -> TODO()
+        is ProgramCallsClassFunctionTest -> TODO()
+        is ProgramCallsClassTest -> TODO()
+        is ProgramDefinesClassTest -> TODO()
+        is ProgramDefinesSubclassTest -> TODO()
+        is PlaceholderTest -> TestType.PLACEHOLDER
     }
 
     private suspend fun createContentComp(type: TestType, model: Test?): TSLTestComponent =
         // it might be better to show/hide content comps to preserve inputs
         when (type) {
             TestType.PROGRAM_EXECUTION ->
-                TSLProgramExecutionTest(model?.let { it as ProgramExecutionTest }, onUpdate, this, contentDst)
+                TSLProgramExecutionTest(
+                    model?.let { it as ProgramExecutionTest },
+                    onUpdate,
+                    onValidChanged,
+                    this,
+                    contentDst
+                )
 
             TestType.FUNCTION_EXECUTION ->
-                TSLFunctionCallTest(model?.let { it as FunctionExecutionTest }, onUpdate, this, contentDst)
+                TSLFunctionCallTest(
+                    model?.let { it as FunctionExecutionTest },
+                    onUpdate,
+                    onValidChanged,
+                    this,
+                    contentDst
+                )
+
+            TestType.PLACEHOLDER ->
+                TSLPlaceholderTest(model?.let { it as PlaceholderTest }, this, contentDst)
+
         }
 
     enum class TestType(val optionName: String, val defaultTestTitle: String) {
+        PLACEHOLDER("-", "Uus test"),
         PROGRAM_EXECUTION("Programmi väljund", "Programmi väljundi test"),
         FUNCTION_EXECUTION("Funktsiooni tagastus", "Funktsiooni tagastuse test"),
         ;
 
         companion object {
-            val defaultTitles = TestType.values().map { it.defaultTestTitle } + DEFAULT_TITLE
+            val defaultTitles = TestType.values().map { it.defaultTestTitle }
         }
     }
 
     enum class TestAction(val title: String, val icon: String, val action: () -> Unit) {
-        RENAME("Muuda pealkirja", Icons.edit, {}),
         MOVE("Liiguta", Icons.reorder, {}),
         DELETE("Kustuta", Icons.delete, {}),
     }
@@ -211,4 +250,8 @@ abstract class TSLTestComponent(
 ) : Component(parent, dstId) {
 
     abstract fun getTSLModel(): Test
+
+    abstract fun setEditable(nowEditable: Boolean)
+
+    abstract fun isValid(): Boolean
 }

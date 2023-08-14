@@ -108,7 +108,7 @@ class ExerciseRootComp(
                         postModeChange = { tabs.refreshIndicator() },
                         canCancel = { wishesToCancel() },
                         parent = it
-                    )
+                    ).also { editModeBtns = it }
                 }
             } else null,
             parent = this

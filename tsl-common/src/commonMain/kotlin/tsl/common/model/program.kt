@@ -96,3 +96,51 @@ data class ProgramDefinesFunctionTest(
         return "Programm defineerib funktsiooni"
     }
 }
+
+@Serializable
+@SerialName("program_defines_class_test")
+data class ProgramDefinesClassTest(
+    override val id: Long,
+    val genericCheck: GenericCheckLong
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Programm defineerib klassi"
+    }
+}
+
+@Serializable
+@SerialName("program_defines_subclass_test")
+data class ProgramDefinesSubclassTest(
+    override val id: Long,
+    val className: String,
+    val superClass: String,
+    val beforeMessage: String,
+    val passedMessage: String,
+    val failedMessage: String
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Programm defineerib alamklassi"
+    }
+}
+
+@Serializable
+@SerialName("program_calls_class_test")
+data class ProgramCallsClassTest(
+    override val id: Long,
+    val genericCheck: GenericCheckLong
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Programm kutsub välja klassi"
+    }
+}
+
+@Serializable
+@SerialName("program_calls_class_function_test")
+data class ProgramCallsClassFunctionTest(
+    override val id: Long,
+    val genericCheck: GenericCheckLong
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Programm kutsub välja klassi funktsiooni"
+    }
+}

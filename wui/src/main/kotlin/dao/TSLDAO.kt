@@ -14,6 +14,8 @@ import kotlin.js.Promise
 
 object TSLDAO {
 
+    enum class FORMAT { JSON, YAML }
+
     @Serializable
     data class CompileResult(
         val scripts: List<CompiledScript>?,
@@ -36,10 +38,13 @@ object TSLDAO {
         val backend_version: String,
     )
 
-    fun compile(tslSpec: String): Promise<CompileResult> = doInPromise {
+    fun compile(tslSpec: String, format: FORMAT): Promise<CompileResult> = doInPromise {
         debug { "Compiling TSL spec" }
 
-        val body = mapOf("tsl_spec" to tslSpec)
+        val body = mapOf(
+            "tsl_spec" to tslSpec,
+            "format" to format.name
+        )
 
         fetchEms("/tsl/compile", ReqMethod.POST, body,
             successChecker = { http200 }

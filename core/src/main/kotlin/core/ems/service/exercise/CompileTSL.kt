@@ -1,5 +1,6 @@
 package core.ems.service.exercise
 
+import com.example.demo.TSL_SPEC_FORMAT
 import com.example.demo.compileTSL
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
@@ -22,6 +23,7 @@ class CompileTSL {
 
     data class Req(
         @JsonProperty("tsl_spec") @field:Size(max = 100_000) val tslSpec: String,
+        @JsonProperty("format") val format: TSL_SPEC_FORMAT = TSL_SPEC_FORMAT.JSON,
     )
 
     data class Resp(
@@ -48,18 +50,24 @@ class CompileTSL {
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
         log.debug { "Compile TSL by ${caller.id}" }
 
-        val result = try {
-            compileTSL(dto.tslSpec, "1", "tiivad")
-        } catch (e: Exception) {
-            return Resp(null, e.message.orEmpty(), null)
+        val resp = try {
+            compileTSLToResp(dto.tslSpec, dto.format)
+        } catch (e: Exception) {  // TODO: do not catch all exceptions, this hides internal compiler errors
+            Resp(null, e.message.orEmpty(), null)
         }
 
-        return Resp(
-            result.generatedScripts.mapIndexed { i, s ->
-                ScriptResp("generated_$i.py", s)
-            },
-            null,
-            MetaResp(DateTime.now(), result.tslCompilerVersion, result.backendID, result.backendVersion)
-        )
+        return resp
     }
+}
+
+fun compileTSLToResp(spec: String, format: TSL_SPEC_FORMAT): CompileTSL.Resp {
+    val result = compileTSL(spec, "1", "tiivad", format)
+
+    return CompileTSL.Resp(
+        result.generatedScripts.mapIndexed { i, s ->
+            CompileTSL.ScriptResp("generated_$i.py", s)
+        },
+        null,
+        CompileTSL.MetaResp(DateTime.now(), result.tslCompilerVersion, result.backendID, result.backendVersion)
+    )
 }

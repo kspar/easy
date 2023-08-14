@@ -4,19 +4,25 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import tsl.common.model.*
 
-// TODO: Refactor: Later remove 'functionName' and create a Function class that has it in it by deafult.
 
+enum class FunctionType {
+    FUNCTION, METHOD
+}
 
 @Serializable
-@SerialName("function_execution_test") // Funktsiooni käivituse test
+@SerialName("function_execution_test")
 data class FunctionExecutionTest(
     override val id: Long,
     val functionName: String,
+    val functionType: FunctionType,
+    val createObject: String? = null,
     val arguments: List<String> = emptyList(),
     val standardInputData: List<String> = emptyList(),
-    val inputFiles: List<FileData> = emptyList(), // Sama nii input kui output data-le
+    val inputFiles: List<FileData> = emptyList(),
     val returnValue: String? = null,
     val genericChecks: List<GenericCheck> = emptyList(),
+    val returnValueCheck: ReturnValueCheck? = null,
+    val paramValueChecks: List<ParamValueCheck> = emptyList(),
     val outputFileChecks: List<OutputFileCheck> = emptyList()
 ) : Test() {
     override fun getDefaultName(): String {
