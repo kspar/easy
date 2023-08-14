@@ -1,32 +1,74 @@
 package core.ems.service
 
 import core.EasyCoreApp
+import core.conf.DatabaseInit
 import core.db.*
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.FileSystemResourceAccessor
+import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Configuration
+import org.springframework.test.context.TestPropertySource
+import java.time.Duration
+import javax.annotation.PostConstruct
 import javax.sql.DataSource
+import kotlin.system.measureTimeMillis
 
-@SpringBootTest(classes = [EasyCoreApp::class])
-class DropUpdatePopulateTestDatabase(@Autowired private val dataSource: DataSource) {
+
+@Configuration
+@TestPropertySource(properties = ["logging.level.root=WARN"])
+class DatabaseInitTest(val dataSource: DataSource) {
+    @Value("\${easy.core.liquibase.changelog}")
+    private lateinit var changelogFile: String
+
+    @PostConstruct
+    fun init() {
+        Database.connect(dataSource)
+        TransactionManager.manager.defaultRepetitionAttempts = 6
+        val lb = Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection))
+        lb.update("")
+    }
+}
+
+
+@SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
+@TestPropertySource(properties = ["logging.level.root=WARN"])
+class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired private val dataSource: DataSource) {
+    @Value("\${easy.core.liquibase.changelog}")
+    private lateinit var changelogFile: String
+
+    private val log = KotlinLogging.logger {}
+
     private val courseId = 1L
     private val numberOfExercises = 100
     private val numberOfStudents = 1000
     private val numberOfStudentTriesPerExercise = 2
 
+    /**
+     * Since all classes with SpringBootTest(classes = [EasyCoreApp::class]) are loaded, disable default DatabaseInit
+     * configuration class that does not update the database schema. DatabaseInitTest updates/creates schema,
+     * which is required by many of the loaded classes such as Moodle sync.
+     *
+     * Doing Liquibase update in BeforeEach is too late for initial setup.
+     */
+    @MockBean
+    private val databaseInit: DatabaseInit? = null
+
     @Test
-    fun assertDbContent() {
+    fun assertExpectedDatabaseContent() {
         transaction {
             Assertions.assertEquals(1, Course.selectAll().count().toInt())
             Assertions.assertEquals(
@@ -40,16 +82,24 @@ class DropUpdatePopulateTestDatabase(@Autowired private val dataSource: DataSour
         }
     }
 
+    @Test
+    fun `log measureTimeMillis of selectAllCourseExercisesLatestSubmissions`() {
+        val elapsed = measureTimeMillis {
+            assertTimeout(Duration.ofSeconds(60)) { selectAllCourseExercisesLatestSubmissions(courseId) }
+        }
+        log.warn { "Execution time: $elapsed ms" }
+    }
+
+    @AfterEach
+    fun dropAll() =
+        Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection)).dropAll()
+
+
     @BeforeEach
     fun bootstrap() {
-        val lb = Liquibase(
-            "db/changelog.xml",
-            FileSystemResourceAccessor(),
-            JdbcConnection(dataSource.connection)
-        )
-
+        val lb = Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection))
         lb.dropAll()
-        lb.update("test")
+        lb.update("")
 
 
         val ids = (1..numberOfStudents).map { it.toString() }

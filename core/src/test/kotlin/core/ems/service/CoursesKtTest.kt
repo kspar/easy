@@ -17,11 +17,18 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.TestPropertySource
 import javax.sql.DataSource
 import kotlin.random.Random
 
 
+@SpringBootTest
+@TestPropertySource(properties = ["logging.level.root=WARN"])
 class CoursesKtTest {
+    @Value("\${easy.core.liquibase.changelog}")
+    private lateinit var changelogFile: String
     private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
     private val dataSource: DataSource = embeddedPostgres.postgresDatabase
     private val random = Random(0)
@@ -136,10 +143,10 @@ class CoursesKtTest {
         Database.connect(dataSource)
 
         Liquibase(
-            "db/changelog.xml",
+            changelogFile,
             FileSystemResourceAccessor(),
             JdbcConnection(dataSource.connection)
-        ).update("development")
+        ).update("")
 
 
         transaction {

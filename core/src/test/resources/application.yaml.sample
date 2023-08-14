@@ -28,6 +28,8 @@ spring:
 
 easy:
   core:
+    liquibase:
+        changelog: "<path-to-changelog.xml>"
     auth-enabled: true
     mail:
       from: "<from-address>"
