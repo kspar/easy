@@ -9,6 +9,7 @@ build/
 
 core/db/database.properties
 core/src/main/resources/application.yaml
+core/src/test/resources/application.yaml
 
 wui/gradle.properties
 wui/src/main/kotlin/AppProperties.kt
