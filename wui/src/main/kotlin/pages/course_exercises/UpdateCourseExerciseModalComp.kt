@@ -72,19 +72,19 @@ class UpdateCourseExerciseModalComp(
                     "Nähtav",
                     type = if (exercise.isVisible) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
-                    id = optionIdVisible
+                    value = optionIdVisible
                 ),
                 RadioButtonsComp.Button(
                     "Peidetud",
                     type = if (exercise.visibleFrom == null) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
-                    id = optionIdHidden
+                    value = optionIdHidden
                 ),
                 RadioButtonsComp.Button(
                     "Muutub nähtavaks",
                     type = if (!exercise.isVisible && exercise.visibleFrom != null) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
-                    id = optionIdOpensLater
+                    value = optionIdOpensLater
                 ),
             ),
             onValueChange = {
@@ -119,9 +119,9 @@ class UpdateCourseExerciseModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    private fun isVisibleSelected() = visibleRadio.getSelectedOption()?.id == optionIdVisible
-    private fun isHiddenSelected() = visibleRadio.getSelectedOption()?.id == optionIdHidden
-    private fun isOpensLaterSelected() = visibleRadio.getSelectedOption()?.id == optionIdOpensLater
+    private fun isVisibleSelected() = visibleRadio.getSelectedOption()?.value == optionIdVisible
+    private fun isHiddenSelected() = visibleRadio.getSelectedOption()?.value == optionIdHidden
+    private fun isOpensLaterSelected() = visibleRadio.getSelectedOption()?.value == optionIdOpensLater
 
     private fun validate() {
         val isValid = aliasComp.isValid

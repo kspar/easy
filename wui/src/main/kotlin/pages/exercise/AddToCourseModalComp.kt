@@ -137,5 +137,5 @@ class AddToCourseModalCoursesListComp(
         radioButtons.validateInitial()
     }
 
-    fun getSelectedCourseId() = radioButtons.getSelectedOption()?.id
+    fun getSelectedCourseId() = radioButtons.getSelectedOption()?.value
 }

@@ -2,6 +2,7 @@ package pages.exercise.editor.tsl
 
 import Icons
 import Str
+import components.ToastThing
 import components.form.SelectComp
 import debug
 import kotlinx.coroutines.await
@@ -16,16 +17,20 @@ import template
 import tsl.common.model.*
 
 class TSLTestComp(
+    val idx: Int,
     private val initialModel: Test,
     private val onUpdate: () -> Unit,
     private val onValidChanged: () -> Unit,
+    private val onDelete: suspend (Test) -> Unit,
+    private val onRestore: suspend (Test, Int, Boolean) -> Unit,
+    private val onReorder: suspend (Test) -> Unit,
     parent: Component
 ) : Component(parent) {
 
     private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
     private val testType = SelectComp(
-        "Testi tüüp", TestType.values().map {
+        Str.testType(), TestType.values().map {
             SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
         onOptionChange = { changeTestType(it!!) }, parent = this
@@ -40,6 +45,26 @@ class TSLTestComp(
 
     var isOpen = false
         private set
+
+
+    data class TestAction(val title: String, val icon: String, val action: suspend () -> Unit) {
+        val id: String = IdGenerator.nextId()
+    }
+
+    private val testActions = listOf(
+        TestAction(Str.doMove(), Icons.reorder) {
+            onReorder(getTestModel())
+        },
+        TestAction(Str.doDelete(), Icons.delete) {
+            val activeModel = getTestModel()
+            debug { "Delete test ${activeModel.id}" }
+            onDelete(activeModel)
+            ToastThing(Str.deleted(), ToastThing.Action(Str.doRestore(), {
+                debug { "Restore test ${activeModel.id}" }
+                onRestore(activeModel, idx, isOpen)
+            }))
+        },
+    )
 
     override val children: List<Component>
         get() = listOf(editTitleModal, testType, content)
@@ -83,16 +108,16 @@ class TSLTestComp(
         "testTypeDst" to testType.dstId,
         "testContentDst" to contentDst,
         "testDst" to dstId,
-        "actions" to TestAction.values().map {
+        "actions" to testActions.map {
             mapOf(
-                "id" to it.name,
+                "id" to it.id,
                 "iconHtml" to it.icon,
                 "text" to it.title,
             )
         },
         "titleIcon" to Icons.robot,
         "editIcon" to Icons.edit,
-        "menuLabel" to "Muuda...",
+        "menuLabel" to Str.doChange() + "...",
         "menuIcon" to Icons.dotsVertical,
         "editTitleDst" to editTitleModal.dstId,
     )
@@ -110,10 +135,10 @@ class TSLTestComp(
             it.stopPropagation()
         }
 
-        TestAction.values().forEach { action ->
-            getElemById(dstId).getElemBySelector("[ez-action=\"${action.name}\"]").onVanillaClick(false) {
+        testActions.forEach { action ->
+            getElemById(dstId).getElemBySelector("[ez-action=\"${action.id}\"]").onVanillaClick(false) {
                 it.stopPropagation()
-                debug { "Action ${action.name} on test $activeTitle" }
+                debug { "Action ${action.title} on test $activeTitle" }
                 action.action()
             }
         }
@@ -236,11 +261,6 @@ class TSLTestComp(
         companion object {
             val defaultTitles = TestType.values().map { it.defaultTestTitle }
         }
-    }
-
-    enum class TestAction(val title: String, val icon: String, val action: () -> Unit) {
-        MOVE("Liiguta", Icons.reorder, {}),
-        DELETE("Kustuta", Icons.delete, {}),
     }
 }
 

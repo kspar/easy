@@ -33,6 +33,12 @@ abstract class TranslatableStrings {
     abstract fun exercise(): String
     abstract fun exercises(): String
     abstract fun doEditTitle(): String
+    abstract fun doMove(): String
+    abstract fun moving(): String
+    abstract fun doDelete(): String
+    abstract fun deleted(): String
+    abstract fun doRestore(): String
+    abstract fun doChange(): String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes() else no()
     fun translateRole(role: Role) = when (role) {
@@ -153,6 +159,7 @@ abstract class TranslatableStrings {
     abstract fun usedOnCoursesLabel(): String
     abstract fun previewLabel(): String
     abstract fun exerciseSaved(): String
+    abstract fun testType(): String
 
 
 }
@@ -172,6 +179,12 @@ private object EstStrings : TranslatableStrings() {
     override fun adding() = "Lisan..."
     override fun cancel() = "Tühista"
     override fun doEditTitle() = "Muuda pealkirja"
+    override fun doMove() = "Liiguta"
+    override fun moving() = "Liigutan..."
+    override fun doDelete() = "Kustuta"
+    override fun deleted() = "Kustutatud"
+    override fun doRestore() = "Taasta"
+    override fun doChange() = "Muuda"
     override fun exerciseSaved() = "Ülesanne uuendatud"
     override fun assessmentAddedMsg() = "Hinnang lisatud."
     override fun oldSubmissionNote() = "See on vana esitus."
@@ -259,4 +272,5 @@ private object EstStrings : TranslatableStrings() {
     override fun permissionPRA() = "Lisaja"
     override fun permissionPRAW() = "Muutja"
     override fun permissionPRAWM() = "Moderaator"
+    override fun testType() = "Testi tüüp"
 }

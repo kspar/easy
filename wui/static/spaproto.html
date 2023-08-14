@@ -235,24 +235,6 @@
     </ez-checkbox>
 </script>
 
-<script id="t-c-radio-buttons" type="text/x-handlebars">
-    <ez-radio-buttons id="{{elementId}}">
-        {{#buttons}}
-            {{#hasLines}}
-                <ez-radio-line-label>{{label}}</ez-radio-line-label>
-            {{/hasLines}}
-            <label for="{{id}}" class="{{#hasLines}}line{{/hasLines}}">
-                <input id="{{id}}" value="{{id}}" name="{{groupId}}" type="radio" {{#isSelected}}checked{{/isSelected}} {{#isDisabled}}disabled="disabled"{{/isDisabled}}>
-                    <span>
-                        {{^hasLines}}{{label}}{{/hasLines}}
-                        {{#hasLines}}<ez-radio-line></ez-radio-line>{{/hasLines}}
-                    </span>
-            </label>
-        {{/buttons}}
-        <span id="field-helper-{{elementId}}" class="helper-text"></span>
-    </ez-radio-buttons>
-</script>
-
 <script id="t-c-edit-mode" type="text/x-handlebars">
     <ez-edit-mode-bar>
         <ez-dst id="{{startEditDst}}"></ez-dst>

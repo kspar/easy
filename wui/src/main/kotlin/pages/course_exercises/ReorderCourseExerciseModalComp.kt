@@ -32,7 +32,7 @@ class ReorderCourseExerciseModalComp(
         defaultReturnValue = null,
         primaryButtonEnabledInitial = false,
         fixFooter = true,
-        primaryAction = { exercisesRadioBtns.getSelectedOption()?.id?.let { moveExercise(it.toInt()) } },
+        primaryAction = { exercisesRadioBtns.getSelectedOption()?.value?.let { moveExercise(it.toInt()) } },
         parent = this
     )
 

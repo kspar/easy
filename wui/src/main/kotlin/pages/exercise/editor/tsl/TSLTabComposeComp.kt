@@ -41,7 +41,7 @@ class TSLTabComposeComp(
         "btn" to addTestBtn.dstId
     )
 
-    fun getComposedTests() = testsList.getTests()
+    fun getComposedTests() = testsList.updateAndGetTests()
 
     fun getOpenTests() = testsList.getOpenTests()
 
