@@ -27,7 +27,7 @@ import kotlin.random.Random
 @SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
 @TestPropertySource(properties = ["logging.level.root=WARN"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // Use PER_CLASS as all tests are read-only, setup and tear-down db once.
-class CoursesKtTest(@Autowired private val dataSource: DataSource) {
+class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val dataSource: DataSource) {
     @Value("\${easy.core.liquibase.changelog}")
     private lateinit var changelogFile: String
 
