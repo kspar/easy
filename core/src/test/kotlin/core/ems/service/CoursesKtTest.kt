@@ -1,36 +1,40 @@
 package core.ems.service
 
+import core.EasyCoreApp
+import core.conf.DatabaseInit
+import core.conf.dropAll
 import core.db.*
-import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
-import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.FileSystemResourceAccessor
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.StdOutSqlLogger
-import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
 import javax.sql.DataSource
 import kotlin.random.Random
 
 
-@SpringBootTest
+@SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
 @TestPropertySource(properties = ["logging.level.root=WARN"])
-class CoursesKtTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Use PER_CLASS as all tests are read-only, setup and tear-down db once.
+class CoursesKtTest(@Autowired private val dataSource: DataSource) {
     @Value("\${easy.core.liquibase.changelog}")
     private lateinit var changelogFile: String
-    private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
-    private val dataSource: DataSource = embeddedPostgres.postgresDatabase
+
+    // Disable DatabaseInit and use DatabaseInitTest
+    @MockBean
+    private val databaseInit: DatabaseInit? = null
+
     private val random = Random(0)
 
     private val student1Id = "student1"
@@ -138,19 +142,12 @@ class CoursesKtTest {
         assertEquals(students.toSet(), studentIds.toSet())
     }
 
-    @BeforeEach
-    fun bootstrap() {
-        Database.connect(dataSource)
+    @AfterAll
+    fun teardown() = dropAll(changelogFile, JdbcConnection(dataSource.connection))
 
-        Liquibase(
-            changelogFile,
-            FileSystemResourceAccessor(),
-            JdbcConnection(dataSource.connection)
-        ).update("")
-
-
+    @BeforeAll
+    fun populate() {
         transaction {
-            addLogger(StdOutSqlLogger)
 
             val teacher1Id = "teacher1"
             val exercise1Id = random.nextLongId()
@@ -368,10 +365,6 @@ class CoursesKtTest {
         }
     }
 
-    @AfterEach
-    fun shutdown() {
-        embeddedPostgres.close()
-    }
 
     private fun Random.nextLongId() = this.nextLong(1000)
 }

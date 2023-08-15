@@ -2,17 +2,14 @@ package core.ems.service
 
 import core.EasyCoreApp
 import core.conf.DatabaseInit
+import core.conf.dropAll
 import core.db.*
-import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.FileSystemResourceAccessor
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.junit.jupiter.api.*
@@ -20,32 +17,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.TestPropertySource
 import java.time.Duration
-import javax.annotation.PostConstruct
 import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
 
 
-@Configuration
-@TestPropertySource(properties = ["logging.level.root=WARN"])
-class DatabaseInitTest(val dataSource: DataSource) {
-    @Value("\${easy.core.liquibase.changelog}")
-    private lateinit var changelogFile: String
-
-    @PostConstruct
-    fun init() {
-        Database.connect(dataSource)
-        TransactionManager.manager.defaultRepetitionAttempts = 6
-        val lb = Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection))
-        lb.update("")
-    }
-}
-
-
 @SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
 @TestPropertySource(properties = ["logging.level.root=WARN"])
+@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Use PER_CLASS as all tests are db read-only, setup and tear-down db once.
 class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired private val dataSource: DataSource) {
     @Value("\${easy.core.liquibase.changelog}")
     private lateinit var changelogFile: String
@@ -57,13 +37,8 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
     private val numberOfStudents = 1000
     private val numberOfStudentTriesPerExercise = 2
 
-    /**
-     * Since all classes with SpringBootTest(classes = [EasyCoreApp::class]) are loaded, disable default DatabaseInit
-     * configuration class that does not update the database schema. DatabaseInitTest updates/creates schema,
-     * which is required by many of the loaded classes such as Moodle sync.
-     *
-     * Doing Liquibase update in BeforeEach is too late for initial setup.
-     */
+
+    // Disable DatabaseInit and use DatabaseInitTest
     @MockBean
     private val databaseInit: DatabaseInit? = null
 
@@ -90,18 +65,11 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
         log.warn { "Execution time: $elapsed ms" }
     }
 
-    @AfterEach
-    fun dropAll() =
-        Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection)).dropAll()
+    @AfterAll
+    fun teardown() = dropAll(changelogFile, JdbcConnection(dataSource.connection))
 
-
-    @BeforeEach
-    fun bootstrap() {
-        val lb = Liquibase(changelogFile, FileSystemResourceAccessor(), JdbcConnection(dataSource.connection))
-        lb.dropAll()
-        lb.update("")
-
-
+    @BeforeAll
+    fun populate() {
         val ids = (1..numberOfStudents).map { it.toString() }
         val time = DateTime.now()
 
