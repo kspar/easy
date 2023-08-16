@@ -90,8 +90,10 @@ class FieldData(
 // TODO: Kui on nt vaja kontrollida nimede olemasolu, siis kuidas me kontrollime,
 //  et näiteks 3 nime eksisteerib väljundis, aga 2 nime mitte?
 
+// TODO: rename to DataCheck or ValueCheck?
 @Serializable
 data class GenericCheck(
+    val id: Long,
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>,
