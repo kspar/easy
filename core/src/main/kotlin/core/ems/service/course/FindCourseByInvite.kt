@@ -26,7 +26,7 @@ class FindCourseByInvite {
 
     data class Resp(@JsonProperty("course_id") val courseId: String)
 
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
+    @Secured("ROLE_STUDENT")
     @GetMapping("/courses/invite/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
         log.debug { "Finding course by invite $inviteId by ${caller.id}" }

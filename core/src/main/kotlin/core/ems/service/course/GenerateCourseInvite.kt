@@ -1,7 +1,7 @@
 package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.CourseInviteLink
 import core.db.insertOrUpdate
@@ -10,7 +10,7 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import core.util.DateTimeSerializer
+import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -29,7 +29,10 @@ class GenerateCourseInvite {
 
     data class Resp(@JsonProperty("invite_id") val inviteId: String)
     data class Req(
-        @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("expires_at", required = true) val expiresAt: DateTime,
+        @JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty(
+            "expires_at",
+            required = true
+        ) val expiresAt: DateTime,
         @JsonProperty("allowed_uses", required = true) @field:Min(0) @field:Max(1000000) val allowedUses: Int
     )
 
@@ -43,7 +46,7 @@ class GenerateCourseInvite {
         log.debug { "Creating invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId, false)
         }
 
         return Resp(createInviteId(courseId, req))
@@ -52,7 +55,11 @@ class GenerateCourseInvite {
     private fun createInviteId(courseId: Long, req: Req): String = transaction {
         if (req.expiresAt.isBeforeNow) {
             log.debug { "Expiry date cannot be in the past: ${req.expiresAt}" }
-            throw InvalidRequestException("Expiry date cannot be in the past.", ReqError.INVALID_PARAMETER_VALUE, notify = false)
+            throw InvalidRequestException(
+                "Expiry date cannot be in the past.",
+                ReqError.INVALID_PARAMETER_VALUE,
+                notify = false
+            )
         }
 
         val secureRandom = SecureRandom()

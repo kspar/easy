@@ -42,7 +42,7 @@ class ReadCourseInvite {
         log.debug { "Reading course invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId, false)
         }
 
         return readLink(courseId)
