@@ -52,7 +52,7 @@ class GenerateCourseInvite {
     private fun createInviteId(courseId: Long, req: Req): String = transaction {
         if (req.expiresAt.isBeforeNow) {
             log.debug { "Expiry date cannot be in the past: ${req.expiresAt}" }
-            throw InvalidRequestException("Expiry date cannot be in the past.", ReqError.INVALID_PARAMETER_VALUE)
+            throw InvalidRequestException("Expiry date cannot be in the past.", ReqError.INVALID_PARAMETER_VALUE, notify = false)
         }
 
         val secureRandom = SecureRandom()
