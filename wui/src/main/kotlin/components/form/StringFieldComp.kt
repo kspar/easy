@@ -6,13 +6,14 @@ import components.form.validation.ValidatableFieldComp
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import rip.kspar.ezspa.*
-import tmRender
+import template
 
 
 class StringFieldComp(
     private val label: String,
     private val isRequired: Boolean,
     private val placeholder: String? = null,
+    var isDisabled: Boolean = false,
     private val paintRequiredOnCreate: Boolean = false,
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
@@ -39,9 +40,16 @@ class StringFieldComp(
 
     override val paintEmptyViolationInitial = paintRequiredOnCreate
 
-    override fun render() = tmRender(
-        "t-c-string-field",
+    override fun render() = template(
+        """
+            <div class="input-field">
+                <input id="{{id}}" type="text" value="{{value}}" {{#disabled}}disabled{{/disabled}} {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}>
+                <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
+                <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+            </div>
+        """.trimIndent(),
         "id" to inputId,
+        "disabled" to isDisabled,
         "value" to initialValue,
         "label" to label,
         "placeholder" to placeholder,

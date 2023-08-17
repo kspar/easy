@@ -1376,7 +1376,8 @@ textarea.materialize-textarea {
     margin-bottom: 2rem;
 }
 
-.input-field input:not(.invalid) ~ .helper-text:not(.has-text) {
+.input-field input:not(.invalid) ~ .helper-text:not(.has-text),
+.input-field textarea:not(.invalid) ~ .helper-text:not(.has-text) {
     display: none;
 }
 
@@ -1583,6 +1584,22 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:disabled:not(:checked)+span:before {
     border-color: var(--ez-checkbox-disabled-border-col);
+}
+
+fieldset > legend {
+    display: flex;
+    align-items: center;
+}
+
+fieldset > legend .input-field {
+    display: inline-block;
+    padding: 0 .7rem;
+    margin-bottom: 1rem;
+}
+
+fieldset > legend .input-field input[type=text]:disabled {
+    border-bottom: none;
+    text-align: center;
 }
 
 
@@ -2475,7 +2492,7 @@ ez-tsl-add-test button {
     margin-top: 3rem;
 }
 
-ez-tsl-tests textarea.materialize-textarea {
+ez-tsl-stdin-textarea textarea.materialize-textarea {
     min-height: 6rem;
 }
 
@@ -2496,6 +2513,24 @@ ez-tsl-compiler-feedback ez-icon {
 ez-tsl-compiler-feedback ez-icon > svg {
     width: 3rem;
     height: 3rem;
+}
+
+ez-tsl-inline-field {
+    display: inline-flex;
+    margin: 0 .5rem;
+}
+
+ez-tsl-inline-field .input-field {
+    margin-bottom: 0;
+}
+
+ez-tsl-field-text-value .input-field {
+    margin: 0 0 4rem 0;
+}
+
+ez-tsl-add-button {
+    display: flex;
+    margin-top: 2rem;
 }
 
 

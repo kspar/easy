@@ -6,12 +6,13 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemByIdAs
 import rip.kspar.ezspa.onInput
-import tmRender
+import template
 
 
 class CheckboxComp(
     private val label: String,
     private val initialValue: Boolean = false,
+    var isDisabled: Boolean = false,
     private val onValueChange: ((Boolean) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {
@@ -21,10 +22,18 @@ class CheckboxComp(
     private fun getValue(): Boolean = getElement().checked
     private fun getElement(): HTMLInputElement = getElemByIdAs(inputId)
 
-    override fun render() = tmRender(
-        "t-c-checkbox",
+    override fun render() = template(
+        """
+            <ez-checkbox>
+                <label for="{{id}}">
+                    <input id="{{id}}" type="checkbox" {{#disabled}}disabled="disabled"{{/disabled}}>
+                    <span>{{label}}</span>
+                </label>
+            </ez-checkbox>
+        """.trimIndent(),
         "id" to inputId,
         "label" to label,
+        "disabled" to isDisabled,
     )
 
     override fun postRender() {
