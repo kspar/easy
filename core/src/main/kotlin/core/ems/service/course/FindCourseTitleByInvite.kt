@@ -6,11 +6,8 @@ import core.db.Course
 import core.db.CourseInviteLink
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -21,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
-class FindCourseByInvite {
+class FindCourseTitleByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("course_id") val courseId: String)
+    data class Resp(@JsonProperty("course_title") val courseId: String)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/invite/{invite-id}")
@@ -35,17 +32,17 @@ class FindCourseByInvite {
     }
 
     private fun readCourseByInvite(inviteId: String): Resp = transaction {
-        val resp = (CourseInviteLink innerJoin Course)
-            .slice(Course.id)
+        val (resp, courseId) = (CourseInviteLink innerJoin Course)
+            .slice(Course.id, Course.title, Course.alias)
             .select {
-                (CourseInviteLink.inviteId eq inviteId) and
+                (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)
 
-            }.map { Resp(it[Course.id].toString()) }
+            }.map { Resp(it[Course.alias] ?: it[Course.title].toString()) to it[Course.id]}
             .singleOrInvalidRequest(false)
 
-        CourseInviteLink.update({ CourseInviteLink.course eq resp.courseId.toLong() }) {
+        CourseInviteLink.update({ CourseInviteLink.course eq courseId }) {
             with(SqlExpressionBuilder) {
                 it.update(usedCount, usedCount + 1)
             }
