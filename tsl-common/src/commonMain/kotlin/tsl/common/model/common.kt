@@ -76,13 +76,13 @@ enum class DataCategory {
 }
 
 @Serializable
-class FileData(
+data class FileData(
     val fileName: String,
     val fileContent: String
 )
 
 @Serializable
-class FieldData(
+data class FieldData(
     val fieldName: String,
     val fieldContent: String
 )
@@ -129,7 +129,7 @@ data class OutputFileCheck(
 ) : Check()
 
 @Serializable
-class ExceptionCheck(
+data class ExceptionCheck(
     val mustNotThrowException: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -137,14 +137,14 @@ class ExceptionCheck(
 ) : Check()
 
 @Serializable
-class ReturnValueCheck(
+data class ReturnValueCheck(
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
 ) : Check()
 
 @Serializable
-class ParamValueCheck(
+data class ParamValueCheck(
     val paramNumber: Int,
     val expectedValue: String,
     override val beforeMessage: String,
@@ -153,7 +153,7 @@ class ParamValueCheck(
 ) : Check()
 
 @Serializable
-class ClassInstanceCheck(
+data class ClassInstanceCheck(
     val fieldsFinal: List<FieldData> = emptyList(),
     val checkName: Boolean,
     val checkValue: Boolean,
@@ -165,7 +165,7 @@ class ClassInstanceCheck(
 
 
 @Serializable
-class ContainsCheck(
+data class ContainsCheck(
     val mustNotContain: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -173,7 +173,7 @@ class ContainsCheck(
 ) : Check()
 
 @Serializable
-class RecursiveCheck(
+data class RecursiveCheck(
     val mustNotBeRecursive: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -181,7 +181,7 @@ class RecursiveCheck(
 ) : Check()
 
 @Serializable
-class CallsCheck(
+data class CallsCheck(
     val mustNotCall: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
