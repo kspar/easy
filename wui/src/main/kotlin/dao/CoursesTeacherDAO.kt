@@ -21,8 +21,8 @@ object CoursesTeacherDAO {
     @Serializable
     data class Course(
         val id: String,
-        private val title: String,
-        private val alias: String?,
+        val title: String,
+        val alias: String?,
         val student_count: Int
     ) {
         val effectiveTitle: String
