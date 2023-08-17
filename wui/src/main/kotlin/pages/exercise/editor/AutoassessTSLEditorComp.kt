@@ -2,7 +2,6 @@ package pages.exercise.editor
 
 import pages.exercise.editor.tsl.TSLRootComp
 import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.doInPromise
 
 class AutoassessTSLEditorComp(
     private val evaluateScript: String,
@@ -19,10 +18,6 @@ class AutoassessTSLEditorComp(
     override val children: List<Component>
         get() = listOf(tslRoot)
 
-    override fun create() = doInPromise {
-
-    }
-
     override suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
         tslRoot.setEditable(nowEditable)
@@ -35,9 +30,20 @@ class AutoassessTSLEditorComp(
     override fun isValid() = tslRoot.isValid()
 
 
-    // TODO
-    object ActiveView : AutoassessEditorComp.ActiveView
+    data class ActiveView(
+        val tab: TSLRootComp.Tab,
+        val openTests: List<Long>,
+    ) : AutoassessEditorComp.ActiveView
 
-    override fun getActiveView() = ActiveView
-    override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {}
+    override fun getActiveView() = ActiveView(
+        tslRoot.getActiveTab(),
+        tslRoot.getOpenTests(),
+    )
+
+    override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {
+        (view as? ActiveView)?.let {
+            tslRoot.setActiveTab(it.tab)
+            tslRoot.openTests(it.openTests)
+        }
+    }
 }

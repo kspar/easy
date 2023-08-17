@@ -8,6 +8,7 @@ import kotlinx.serialization.encodeToString
 import pages.exercise.editor.AutoassessEditorComp.Companion.TSL_META_FILENAME
 import pages.exercise.editor.AutoassessEditorComp.Companion.TSL_SPEC_FILENAME_JSON
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
 import tsl.common.model.TSL
@@ -21,6 +22,8 @@ class TSLRootComp(
     private val onValidChanged: () -> Unit,
 ) : Component(parent) {
 
+    enum class Tab(val id: String) { COMPOSE(IdGenerator.nextId()), SPEC(IdGenerator.nextId()), GENERATED(IdGenerator.nextId()) }
+
     private var isCompileValid = true
 
     private val compilerFeedback = TSLCompilerFeedbackComp(parent = this)
@@ -32,15 +35,21 @@ class TSLRootComp(
         listOf(
             PageTabsComp.Tab(
                 "Testid",
-                compProvider = { TSLTabComposeComp(emptyList(), ::updateTsl, onValidChanged, it) }),
+                compProvider = { TSLTabComposeComp(emptyList(), ::updateTsl, onValidChanged, it) },
+                id = Tab.COMPOSE.id
+            ),
             PageTabsComp.Tab(
                 "TSL",
                 compProvider = { TSLTabTslComp(initialTslSpecStr, ::updateCompose, it) },
-                onActivate = { tslComp.refreshEditor() }),
+                onActivate = { tslComp.refreshEditor() },
+                id = Tab.SPEC.id
+            ),
             PageTabsComp.Tab(
                 "Genereeritud skriptid",
                 compProvider = { TSLTabScriptsComp(assets - TSL_SPEC_FILENAME_JSON, it) },
-                onActivate = { scriptsComp.refreshEditor() }),
+                onActivate = { scriptsComp.refreshEditor() },
+                id = Tab.GENERATED.id
+            )
         ), parent = this
     )
 
@@ -76,6 +85,14 @@ class TSLRootComp(
     }
 
     fun isValid() = isCompileValid && composeComp.isValid()
+
+    fun getOpenTests() = composeComp.getOpenTests()
+
+    fun openTests(testIds: List<Long>) = composeComp.openTests(testIds)
+
+    fun getActiveTab(): Tab = Tab.values().single { it.id == tabs.getSelectedTab().id }
+
+    fun setActiveTab(tab: Tab) = tabs.setSelectedTabById(tab.id)
 
     private suspend fun updateCompose(newTsl: String?) {
         val tslSpec = if (newTsl.isNullOrBlank()) {
