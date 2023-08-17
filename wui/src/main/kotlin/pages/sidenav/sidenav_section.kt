@@ -26,6 +26,7 @@ abstract class SidenavSectionComp(
     }
 
     private fun paintItemActive(itemId: String) {
-        getElemById(itemId).addClass("active")
+        // Item might be invisible for this role
+        getElemByIdOrNull(itemId)?.addClass("active")
     }
 }

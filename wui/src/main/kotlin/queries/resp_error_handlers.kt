@@ -1,12 +1,17 @@
 package queries
 
+import Icons
 import Str
+import components.ToastId
+import components.ToastIds
+import components.ToastThing
 import debug
 import errorMessage
-import getContainer
 import kotlinx.serialization.Serializable
 import org.w3c.fetch.Response
-import tmRender
+import pages.courses.CoursesPage
+import rip.kspar.ezspa.EzSpa
+import rip.kspar.ezspa.IdGenerator
 import truncate
 import kotlin.js.Promise
 
@@ -19,23 +24,18 @@ object ErrorHandlers {
 
     val noCourseAccessPage: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
-            debug { "Error handled by no course access page handler" }
-            getContainer().innerHTML = tmRender(
-                "tm-no-access-page", mapOf(
-                    "title" to Str.noCourseAccessPageTitle(),
-                    "msg" to Str.noCourseAccessPageMsg()
-                )
-            )
+            EzSpa.PageManager.navigateTo(CoursesPage.link())
+            ToastThing(Str.noCourseAccessPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,
+                id = ToastIds.noCourseAccess)
         }
     }
 
     val noVisibleExerciseMsg: RespErrorHandler =
-        noEntityFoundMessage("Seda ülesannet ei eksisteeri või see on peidetud")
+        noEntityFoundMessage("Seda ülesannet ei eksisteeri või see on peidetud", ToastIds.noVisibleCourseExercise)
 
-    fun noEntityFoundMessage(msg: String): RespErrorHandler = { errorBody ->
+    fun noEntityFoundMessage(msg: String, toastId: ToastId): RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND) {
-            debug { "Error handled by no entity found message" }
-            errorMessage { msg }
+            ToastThing(msg, icon = Icons.errorUnf, displayLengthSec = 10, id = toastId)
         }
     }
 

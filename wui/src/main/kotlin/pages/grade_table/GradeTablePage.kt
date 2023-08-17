@@ -40,7 +40,7 @@ object GradeTablePage : EasyPage() {
 
     override val pathSchema = "/courses/{courseId}/grades"
 
-    private val courseId: String
+    override val courseId: String
         get() = parsePathParams()["courseId"]
 
     private var rootComp: GradeTableRootComponent? = null

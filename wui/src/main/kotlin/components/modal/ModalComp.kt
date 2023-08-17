@@ -76,7 +76,7 @@ open class ModalComp<T>(
 
     override fun destroyThis() {
         // Remove the destination element since it was created in [create].
-        getElemById(dstId).remove()
+        getElemByIdOrNull(dstId)?.remove()
     }
 
 
