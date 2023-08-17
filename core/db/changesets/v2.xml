@@ -1447,5 +1447,37 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="170823-1" author="priit">
+        <createTable tableName="course_invite_link">
+            <column name="course_id" type="bigint">
+                <constraints
+                        primaryKey="true"
+                        nullable="false" references="course(id)"
+                        foreignKeyName="fk_course_invite_link_course"/>
+            </column>
+
+            <column name="invite_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="expires_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="allowed_uses" type="integer">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="used_count" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+
 
 </databaseChangeLog>

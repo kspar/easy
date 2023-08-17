@@ -81,6 +81,16 @@ object CourseGroup : LongIdTable("course_group") {
     val course = reference("course_id", Course)
 }
 
+object CourseInviteLink : Table("course_invite_link") {
+    val inviteId = text("invite_id")
+    val createdAt = datetime("created_at")
+    val expiresAt = datetime("expires_at")
+    val course = reference("course_id", Course)
+    val allowedUses  = integer("allowed_uses")
+    val usedCount  = integer("used_count")
+    override val primaryKey = PrimaryKey(course)
+}
+
 object CourseExercise : LongIdTable("course_exercise") {
     val course = reference("course_id", Course)
     val exercise = reference("exercise_id", Exercise)
