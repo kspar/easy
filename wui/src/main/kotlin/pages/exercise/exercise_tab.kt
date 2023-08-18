@@ -11,7 +11,7 @@ import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import lightboxExerciseImages
 import observeValueChange
-import pages.ExerciseSummaryPage
+import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms

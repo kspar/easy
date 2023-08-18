@@ -7,7 +7,7 @@ import dao.CoursesTeacherDAO
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.participants.ParticipantsPage
 import queries.getCurrentQueryParamValue
 import rip.kspar.ezspa.CacheableComponent

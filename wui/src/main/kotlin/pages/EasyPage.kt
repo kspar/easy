@@ -14,7 +14,7 @@ import getWindowScrollPosition
 import kotlinx.dom.clear
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.sidenav.Sidenav
 import parseTo

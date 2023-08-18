@@ -1,4 +1,4 @@
-package pages.course_exercises
+package pages.course_exercises_list
 
 import CONTENT_CONTAINER_ID
 import EzDate
@@ -8,7 +8,7 @@ import components.EzCollComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
-import pages.ExerciseSummaryPage
+import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise

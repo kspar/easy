@@ -17,7 +17,7 @@ import libheaders.CSV
 import nowTimestamp
 import org.w3c.dom.HTMLAnchorElement
 import pages.EasyPage
-import pages.ExerciseSummaryPage
+import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav

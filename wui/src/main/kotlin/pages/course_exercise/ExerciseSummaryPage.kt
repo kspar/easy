@@ -1,4 +1,4 @@
-package pages
+package pages.course_exercise
 
 import AppProperties
 import Auth
@@ -36,7 +36,9 @@ import moveClass
 import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
-import pages.course_exercises.UpdateCourseExerciseModalComp
+import pages.EasyPage
+import pages.Title
+import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise.TestingTabComp
 import pages.exercise.formatFeedback

@@ -4,9 +4,9 @@ import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
-import pages.ExerciseSummaryPage
+import pages.course_exercise.ExerciseSummaryPage
 import pages.Navbar
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
 import pages.exercise.ExercisePage

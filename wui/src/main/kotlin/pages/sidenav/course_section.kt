@@ -6,8 +6,8 @@ import cache.BasicCourseInfo
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import kotlinx.dom.removeClass
-import pages.ExerciseSummaryPage
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercise.ExerciseSummaryPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.grade_table.GradeTablePage
 import pages.participants.ParticipantsPage
 import rip.kspar.ezspa.*

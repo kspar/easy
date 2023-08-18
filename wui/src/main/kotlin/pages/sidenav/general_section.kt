@@ -4,7 +4,7 @@ import Icons
 import Role
 import Str
 import kotlinx.coroutines.await
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise_library.ExerciseLibraryPage
 import rip.kspar.ezspa.*

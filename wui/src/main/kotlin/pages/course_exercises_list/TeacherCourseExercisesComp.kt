@@ -1,4 +1,4 @@
-package pages.course_exercises
+package pages.course_exercises_list
 
 import CONTENT_CONTAINER_ID
 import EzDate
@@ -14,7 +14,7 @@ import dao.ExerciseDAO
 import debug
 import getWindowScrollPosition
 import kotlinx.coroutines.await
-import pages.ExerciseSummaryPage
+import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
 import pages.exercise.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp

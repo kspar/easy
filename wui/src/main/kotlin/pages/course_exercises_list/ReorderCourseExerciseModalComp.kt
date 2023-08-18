@@ -1,4 +1,4 @@
-package pages.course_exercises
+package pages.course_exercises_list
 
 import Str
 import components.form.RadioButtonsComp
