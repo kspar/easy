@@ -22,7 +22,7 @@ import kotlin.math.max
 
 @RestController
 @RequestMapping("/v2")
-class ReadCourseInvite {
+class ReadCourseInviteDetails {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
@@ -45,10 +45,10 @@ class ReadCourseInvite {
             teacherOnCourse(courseId, false)
         }
 
-        return readLink(courseId)
+        return selectCourseInviteDetails(courseId)
     }
 
-    private fun readLink(courseId: Long): Resp? = transaction {
+    private fun selectCourseInviteDetails(courseId: Long): Resp? = transaction {
         CourseInviteLink
             .slice(
                 CourseInviteLink.inviteId,

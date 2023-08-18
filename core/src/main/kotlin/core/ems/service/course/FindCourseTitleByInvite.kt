@@ -6,8 +6,10 @@ import core.db.Course
 import core.db.CourseInviteLink
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.upperCase
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,29 +28,21 @@ class FindCourseTitleByInvite {
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/invite/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
-        log.debug { "Finding course by invite $inviteId by ${caller.id}" }
+        log.debug { "Finding course title by invite $inviteId by ${caller.id}" }
 
-        return readCourseByInvite(inviteId)
+        return selectCourseTitleByInvite(inviteId)
     }
 
-    private fun readCourseByInvite(inviteId: String): Resp = transaction {
-        val (resp, courseId) = (CourseInviteLink innerJoin Course)
-            .slice(Course.id, Course.title, Course.alias)
+    private fun selectCourseTitleByInvite(inviteId: String): Resp = transaction {
+        (CourseInviteLink innerJoin Course)
+            .slice(Course.title, Course.alias)
             .select {
                 (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)
 
-            }.map { Resp(it[Course.alias] ?: it[Course.title].toString()) to it[Course.id]}
+            }.map { Resp(it[Course.alias] ?: it[Course.title].toString()) }
             .singleOrInvalidRequest(false)
-
-        CourseInviteLink.update({ CourseInviteLink.course eq courseId }) {
-            with(SqlExpressionBuilder) {
-                it.update(usedCount, usedCount + 1)
-            }
-        }
-
-        resp
     }
 }
 

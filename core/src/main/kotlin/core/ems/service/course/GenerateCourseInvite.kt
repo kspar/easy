@@ -49,10 +49,10 @@ class GenerateCourseInvite {
             teacherOnCourse(courseId, false)
         }
 
-        return Resp(createInviteId(courseId, req))
+        return Resp(createInvite(courseId, req))
     }
 
-    private fun createInviteId(courseId: Long, req: Req): String = transaction {
+    private fun createInvite(courseId: Long, req: Req): String = transaction {
         if (req.expiresAt.isBeforeNow) {
             log.debug { "Expiry date cannot be in the past: ${req.expiresAt}" }
             throw InvalidRequestException(
