@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*
 class SelfAddToCourseByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("accesses_added") val accessesAdded: Int)
+    data class Resp(@JsonProperty("access_added") val accessAdded: Boolean)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/courses/self-add/{invite-id}")
@@ -56,7 +56,7 @@ class SelfAddToCourseByInvite {
         }
 
         log.debug { "$studentId self-adding to course $courseId by invite $inviteId. Accesses added = $accessesAdded/1" }
-        Resp(accessesAdded)
+        Resp(accessesAdded > 0)
     }
 }
 

@@ -12,6 +12,8 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -37,7 +39,7 @@ class GenerateCourseInvite {
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/courses/{courseId}/invite")
+    @PutMapping("/courses/{courseId}/invite")
     fun controller(
         @Valid @RequestBody req: Req, @PathVariable("courseId") courseIdStr: String, caller: EasyUser
     ): Resp {
@@ -65,14 +67,22 @@ class GenerateCourseInvite {
         val secureRandom = SecureRandom()
         val alphabet = ('A'..'Z')
 
-        val inviteId = (1..6).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }.joinToString("")
+        // If there is already invite id that is not expired, use the existing one. Otherwise, generate new.
+        // Also, the previous applies to created_at
+        val (inviteId, createdAt) = CourseInviteLink
+            .slice(CourseInviteLink.inviteId, CourseInviteLink.createdAt)
+            .select { (CourseInviteLink.course eq courseId) and CourseInviteLink.expiresAt.greater(DateTime.now()) }
+            .map { it[CourseInviteLink.inviteId] to it[CourseInviteLink.createdAt] }
+            .singleOrNull() ?: ((1..6).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }
+            .joinToString("") to DateTime.now())
 
         CourseInviteLink.insertOrUpdate(listOf(CourseInviteLink.course), listOf(CourseInviteLink.course)) {
             it[course] = courseId
-            it[createdAt] = DateTime.now()
+            it[CourseInviteLink.createdAt] = createdAt
             it[expiresAt] = req.expiresAt
             it[allowedUses] = req.allowedUses
             it[CourseInviteLink.inviteId] = inviteId
+            it[usedCount] = 0
         }
         log.debug { "Invite '$inviteId' created for course $courseId with expiry date of ${req.expiresAt} and ${req.allowedUses} uses." }
 
