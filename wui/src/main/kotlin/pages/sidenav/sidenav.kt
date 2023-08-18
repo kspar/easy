@@ -15,6 +15,7 @@ enum class ActivePage {
     MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS,
     LIBRARY,
     ARTICLES,
+    STUDENT_EXERCISE,
 }
 
 object Sidenav {
@@ -66,11 +67,11 @@ object Sidenav {
         sidenavComp.createAndBuild().await()
     }
 
-    fun refresh(spec: Spec) {
+    fun refresh(spec: Spec, forceUpdateCourse: Boolean = false) {
         doInPromise {
             // TODO: test, is this necessary?
             sidenavComp.updateRole(if (Auth.authenticated) Auth.activeRole else Role.STUDENT).await()
-            sidenavComp.updateCourse(spec.courseId).await()
+            sidenavComp.updateCourse(spec.courseId, forceUpdateCourse).await()
             sidenavComp.updateActivePage(spec.activePage).await()
             sidenavComp.updatePageItems(spec.pageSection).await()
         }
@@ -172,8 +173,8 @@ class SidenavRootComp(
         }
     }
 
-    fun updateCourse(newCourseId: String?) = doInPromise {
-        if (courseId != newCourseId) {
+    fun updateCourse(newCourseId: String?, force: Boolean) = doInPromise {
+        if (courseId != newCourseId || force) {
             debug { "Sidenav updating course section" }
             courseId = newCourseId
 
@@ -194,12 +195,8 @@ class SidenavRootComp(
     }
 
     fun updateActivePage(newActivePage: ActivePage?) = doInPromise {
-        if (activePage != newActivePage) {
-            debug { "Sidenav updating active page" }
-            activePage = newActivePage
-
-            refreshActivePage()
-        }
+        activePage = newActivePage
+        refreshActivePage()
     }
 
     private fun refreshActivePage() {

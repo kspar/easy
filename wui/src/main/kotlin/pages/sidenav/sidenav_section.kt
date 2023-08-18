@@ -3,7 +3,6 @@ package pages.sidenav
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.getElemByIdOrNull
 
 abstract class SidenavSectionComp(
@@ -13,7 +12,7 @@ abstract class SidenavSectionComp(
 
     abstract fun getActivePageItemIds(): Map<ActivePage, String>
 
-    fun clearAndSetActivePage(activePage: ActivePage?) {
+    open fun clearAndSetActivePage(activePage: ActivePage?) {
         clearActivePage()
         val activePageItemId = getActivePageItemIds()[activePage] ?: return
         paintItemActive(activePageItemId)
@@ -25,7 +24,7 @@ abstract class SidenavSectionComp(
         }
     }
 
-    private fun paintItemActive(itemId: String) {
+    protected fun paintItemActive(itemId: String) {
         // Item might be invisible for this role
         getElemByIdOrNull(itemId)?.addClass("active")
     }

@@ -1,5 +1,10 @@
 :root {
     --ez-green: #4DAB54;
+    --ez-yellow: #ffd052;
+    --ez-yellow-text: #d59b00;
+    --ez-blue: #688ffd;
+    --ez-grey: #d5d5d5;
+
     --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
@@ -27,10 +32,6 @@
     --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
     --ezc-link-hover-col: #429748;
-    --ezc-bar-green: #4DAB54;
-    --ezc-bar-yellow: #ffd052;
-    --ezc-bar-blue: #688ffd;
-    --ezc-bar-grey: #d5d5d5;
 
     --ez-tabs-subpage-active: #666;
 }
@@ -354,6 +355,27 @@ svg {
     height: 2.4rem;
 }
 
+.sidenav li a.student-course-item ez-icon > svg {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+.sidenav li a.student-course-item.circle-green ez-icon {
+    color: var(--ez-green);
+}
+
+.sidenav li a.student-course-item.circle-yellow ez-icon {
+    color: var(--ez-yellow);
+}
+
+.sidenav li a.student-course-item.circle-blue ez-icon {
+    color: var(--ez-blue);
+}
+
+.sidenav li a.student-course-item.circle-grey ez-icon {
+    color: var(--ez-grey);
+}
+
 .sidenav li a .badge {
     align-self: start;
     margin-top: 4px;
@@ -610,6 +632,16 @@ nav.crumb-wrap .breadcrumb:before {
 .update-course-ex-title-modal ez-attr {
     padding-bottom: 2rem;
 }
+
+ez-deadline-close,
+ez-deadline-close ez-icon {
+    color: var(--ez-yellow-text);
+}
+
+ez-exercise-badge ez-icon {
+    color: var(--ez-green);
+}
+
 
 #exercises-list .exercise-item {
     display: flex;

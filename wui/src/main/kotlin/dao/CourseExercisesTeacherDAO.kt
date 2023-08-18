@@ -40,7 +40,7 @@ object CourseExercisesTeacherDAO {
         debug { "Get exercises for teacher course $courseId" }
         fetchEms(
             "/teacher/courses/${courseId.encodeURIComponent()}/exercises", ReqMethod.GET,
-            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)
+            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg)
         ).await()
             .parseTo(Exercises.serializer()).await().exercises
             .sortedBy { it.ordering_idx }

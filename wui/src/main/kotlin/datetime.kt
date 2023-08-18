@@ -26,11 +26,14 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         FULL,
     }
 
-    // this is before other - this < other
+    // this is before other == this < other
     override fun compareTo(other: EzDate): Int =
         (this.date.getTime() - other.date.getTime()).roundToInt()
 
     override fun toString() = toHumanString(Format.FULL)
+
+    fun isSoonerThanHours(hours: Int) =
+        this < nowDelta(hours * 60 * 60 * 1000L)
 
     fun isOnSameDate(other: EzDate): Boolean {
         val isSameDate = this.date.getDate() == other.date.getDate()

@@ -1,53 +1,19 @@
 package pages.course_exercises
 
 import Auth
-import DateSerializer
 import PageName
 import Role
-import Str
-import cache.BasicCourseInfo
-import getContainer
-import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
-import kotlinx.serialization.Serializable
-import libheaders.Materialize
 import pages.EasyPage
-import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
-import queries.*
 import restore
-import rip.kspar.ezspa.*
-import tmRender
-import toEstonianString
-import kotlin.js.Date
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.getHtml
 
 
 object CourseExercisesPage : EasyPage() {
-
-    enum class GraderType {
-        AUTO, TEACHER
-    }
-
-    enum class ExerciseStatus {
-        UNSTARTED, STARTED, COMPLETED
-    }
-
-    @Serializable
-    data class StudentExercises(val exercises: List<StudentExercise>)
-
-    @Serializable
-    data class StudentExercise(
-        val id: String,
-        val effective_title: String,
-        @Serializable(with = DateSerializer::class)
-        val deadline: Date?,
-        val status: ExerciseStatus,
-        val grade: Int?,
-        val graded_by: GraderType?,
-        val ordering_idx: Int
-    )
 
     private var rootComp: Component? = null
 
@@ -62,32 +28,19 @@ object CourseExercisesPage : EasyPage() {
     override val courseId: String
         get() = parsePathParams()["courseId"]
 
-    // TODO: What is this for? Try to remove
-    override fun clear() {
-        super.clear()
-        getContainer().innerHTML = tmRender(
-            "tm-loading-placeholders",
-            mapOf("marginTopRem" to 6, "titleWidthRem" to 30)
-        )
-    }
-
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
         val scrollPosition = pageStateStr.getScrollPosFromState()
+        getHtml().addClass("wui3")
 
-        when (Auth.activeRole) {
-            Role.STUDENT -> {
-                buildStudentExercises(courseId)
+        rootComp = when (Auth.activeRole) {
+            Role.STUDENT -> StudentCourseExercisesComp(courseId).also {
+                it.createAndBuild().then { scrollPosition?.restore() }
             }
 
-            Role.TEACHER, Role.ADMIN -> {
-                getHtml().addClass("wui3")
-                val root = TeacherCourseExercisesRootComp(courseId)
-                rootComp = root
-                root.createAndBuild()
+            Role.TEACHER, Role.ADMIN -> TeacherCourseExercisesComp(courseId).also {
+                it.createAndBuild().then { scrollPosition?.restore() }
             }
-        }.then {
-            scrollPosition?.restore()
         }
     }
 
@@ -103,85 +56,4 @@ object CourseExercisesPage : EasyPage() {
     }
 
     fun link(courseId: String): String = constructPathLink(mapOf("courseId" to courseId))
-
-
-    private fun buildStudentExercises(courseId: String) = doInPromise {
-        val courseInfoPromise = BasicCourseInfo.get(courseId)
-        val exercisesResp = fetchEms(
-            "/student/courses/$courseId/exercises", ReqMethod.GET,
-            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)
-        ).await()
-
-        val courseTitle = courseInfoPromise.await().effectiveTitle
-        val exercises = exercisesResp.parseTo(StudentExercises.serializer()).await()
-
-        Title.update { it.parentPageTitle = courseTitle }
-
-        val exerciseArray = exercises.exercises
-            .sortedBy { it.ordering_idx }
-            .map { ex ->
-                val exMap = mutableMapOf<String, Any>(
-                    "href" to "/courses/$courseId/exercises/${ex.id}/summary",
-                    "title" to ex.effective_title,
-                    "deadlineLabel" to Str.deadlineLabel(),
-                    "autoLabel" to Str.gradedAutomatically(),
-                    "teacherLabel" to Str.gradedByTeacher(),
-                    "missingLabel" to Str.notGradedYet()
-                )
-
-                ex.deadline?.let {
-                    exMap["deadline"] = it.toEstonianString()
-                }
-
-                when (ex.status) {
-                    ExerciseStatus.UNSTARTED -> {
-                        exMap["unstarted"] = true
-                    }
-
-                    ExerciseStatus.STARTED -> {
-                        if (ex.graded_by != null)
-                            exMap["started"] = true
-                    }
-
-                    ExerciseStatus.COMPLETED -> {
-                        exMap["completed"] = true
-                    }
-                }
-
-                when (ex.graded_by) {
-                    GraderType.AUTO -> {
-                        exMap["evalAuto"] = true
-                        exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
-                    }
-
-                    GraderType.TEACHER -> {
-                        exMap["evalTeacher"] = true
-                        exMap["points"] = ex.grade?.toString() ?: error("Grader type is set but no grade found")
-                    }
-
-                    null -> {
-                        if (ex.status != ExerciseStatus.UNSTARTED)
-                            exMap["evalMissing"] = true
-                    }
-                }
-
-                exMap.toJsObj()
-            }.toTypedArray()
-
-        val exercisesHtml = tmRender(
-            "tm-stud-exercises-list", mapOf(
-                "courses" to Str.myCourses(),
-                "coursesHref" to "/courses",
-                "title" to courseTitle,
-                "exercises" to exerciseArray
-            )
-        )
-
-        getContainer().innerHTML = exercisesHtml
-        initTooltips()
-    }
-
-    private fun initTooltips() {
-        Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
-    }
 }

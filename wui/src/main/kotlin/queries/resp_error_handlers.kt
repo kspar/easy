@@ -11,7 +11,6 @@ import kotlinx.serialization.Serializable
 import org.w3c.fetch.Response
 import pages.courses.CoursesPage
 import rip.kspar.ezspa.EzSpa
-import rip.kspar.ezspa.IdGenerator
 import truncate
 import kotlin.js.Promise
 
@@ -22,7 +21,7 @@ typealias RespErrorHandler = Response.(ErrorBody?) -> Boolean
 
 object ErrorHandlers {
 
-    val noCourseAccessPage: RespErrorHandler = { errorBody ->
+    val noCourseAccessMsg: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             EzSpa.PageManager.navigateTo(CoursesPage.link())
             ToastThing(Str.noCourseAccessPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,

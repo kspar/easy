@@ -40,6 +40,7 @@ import pages.course_exercises.UpdateCourseExerciseModalComp
 import pages.exercise.ExercisePage
 import pages.exercise.TestingTabComp
 import pages.exercise.formatFeedback
+import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.*
 import rip.kspar.ezspa.*
@@ -203,7 +204,7 @@ object ExerciseSummaryPage : EasyPage() {
         get() = PageName.EXERCISE_SUMMARY
 
     override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(pathParams.courseId)
+        get() = Sidenav.Spec(pathParams.courseId, ActivePage.STUDENT_EXERCISE)
 
     override val pathSchema = "/courses/{courseId}/exercises/{courseExerciseId}/summary"
 
@@ -216,6 +217,9 @@ object ExerciseSummaryPage : EasyPage() {
 
     override val courseId
         get() = pathParams.courseId
+
+    val courseExerciseId
+        get() = pathParams.courseExerciseId
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
@@ -271,7 +275,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val exercisePromise = fetchEms(
             "/teacher/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         )
 
         val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
@@ -523,7 +527,7 @@ object ExerciseSummaryPage : EasyPage() {
     ): String? {
         val groups = fetchEms(
             "/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
-            errorHandler = ErrorHandlers.noCourseAccessPage
+            errorHandler = ErrorHandlers.noCourseAccessMsg
         ).await()
             .parseTo(Groups.serializer()).await()
             .groups.sortedBy { it.name }
@@ -566,7 +570,7 @@ object ExerciseSummaryPage : EasyPage() {
         val q = createQueryString("group" to groupId, "limit" to PAGE_STEP.toString(), "offset" to offset.toString())
         val teacherStudents = fetchEms(
             "/teacher/courses/$courseId/exercises/$courseExerciseId/submissions/latest/students$q", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         ).await()
             .parseTo(TeacherStudents.serializer()).await()
 
@@ -991,7 +995,7 @@ object ExerciseSummaryPage : EasyPage() {
             val exercisePromise = fetchEms(
                 "/student/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
                 successChecker = { http200 },
-                errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+                errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
             )
 
             val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
@@ -1054,7 +1058,7 @@ object ExerciseSummaryPage : EasyPage() {
         fetchEms(
             "/student/courses/$courseId/exercises/$courseExerciseId/submissions", ReqMethod.POST,
             mapOf("solution" to solution), successChecker = { http200 },
-            errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+            errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
         ).await()
         debug { "Submitted" }
         successMessage { Str.submitSuccessMsg() }
@@ -1092,13 +1096,13 @@ object ExerciseSummaryPage : EasyPage() {
                 val draftPromise = fetchEms(
                     "/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET,
                     successChecker = { http200 or http204 },
-                    errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+                    errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
                 )
 
                 val submission = fetchEms(
                     "/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET,
                     successChecker = { http200 },
-                    errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+                    errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
                 ).await()
                     .parseTo(StudentSubmissions.serializer()).await()
                     .submissions.getOrNull(0)
@@ -1256,12 +1260,13 @@ object ExerciseSummaryPage : EasyPage() {
         fetchEms(
             "/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET,
             successChecker = { http200 },
-            errorHandlers = listOf(ErrorHandlers.noCourseAccessPage, ErrorHandlers.noVisibleExerciseMsg)
+            errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
         ).then {
             it.parseTo(StudentSubmission.serializer())
         }.then {
             debug { "Finished long poll, rebuilding" }
             buildSubmit(courseId, courseExerciseId, it)
+            Sidenav.refresh(sidenavSpec, true)
         }
     }
 

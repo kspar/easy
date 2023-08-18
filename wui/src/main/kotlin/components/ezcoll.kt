@@ -753,10 +753,10 @@ class EzCollItemComp<P>(
                                         {{#progressBar}}{{#showAttr}}
                                             <ezc-fold-attr>
                                                 <ezc-fold-value><ezc-attr-text style='flex-wrap: wrap;'>
-                                                    {{#green}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-green);"></ezc-progress-label-circle>{{green}} lahendatud</ez-progress-label>{{/green}}
-                                                    {{#yellow}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-yellow);"></ezc-progress-label-circle>{{yellow}} nässu läinud</ez-progress-label>{{/yellow}}
-                                                    {{#blue}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-blue);"></ezc-progress-label-circle>{{blue}} hindamata</ez-progress-label>{{/blue}}
-                                                    {{#grey}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ezc-bar-grey);"></ezc-progress-label-circle>{{grey}} esitamata</ez-progress-label>{{/grey}}
+                                                    {{#green}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-green);"></ezc-progress-label-circle>{{green}} lahendatud</ez-progress-label>{{/green}}
+                                                    {{#yellow}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-yellow);"></ezc-progress-label-circle>{{yellow}} nässu läinud</ez-progress-label>{{/yellow}}
+                                                    {{#blue}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-blue);"></ezc-progress-label-circle>{{blue}} hindamata</ez-progress-label>{{/blue}}
+                                                    {{#grey}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-grey);"></ezc-progress-label-circle>{{grey}} esitamata</ez-progress-label>{{/grey}}
                                                 </ezc-attr-text></ezc-fold-value>
                                             </ezc-fold-attr>
                                         {{/showAttr}}{{/progressBar}}
@@ -783,10 +783,10 @@ class EzCollItemComp<P>(
                     </ezc-item-container>
                     {{#progressBar}}
                         <ezc-progress-bar title="{{labelValue}}">
-                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-green); flex-grow: {{green}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ezc-bar-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-green); flex-grow: {{green}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
                         </ezc-progress-bar>
                     {{/progressBar}}
                 </ezc-bar-container>

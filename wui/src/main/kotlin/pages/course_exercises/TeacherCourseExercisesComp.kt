@@ -26,7 +26,7 @@ import template
 import tmRender
 import kotlin.js.Promise
 
-class TeacherCourseExercisesRootComp(
+class TeacherCourseExercisesComp(
     private val courseId: String,
 ) : Component(null, CONTENT_CONTAINER_ID) {
 

@@ -3,13 +3,16 @@ package pages.sidenav
 import Icons
 import Role
 import cache.BasicCourseInfo
+import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
+import kotlinx.dom.removeClass
+import pages.ExerciseSummaryPage
 import pages.course_exercises.CourseExercisesPage
 import pages.grade_table.GradeTablePage
 import pages.participants.ParticipantsPage
 import rip.kspar.ezspa.*
 import successMessage
-import tmRender
+import template
 import kotlin.js.Promise
 
 class SidenavCourseSectionComp(
@@ -22,6 +25,10 @@ class SidenavCourseSectionComp(
     private lateinit var courseTitle: String
     private lateinit var updateCourseModal: UpdateCourseModalComp
 
+    // populated if student
+    private var studentExercises: List<CourseExercisesStudentDAO.Exercise> = emptyList()
+    private val studentExerciseIdPrefix = IdGenerator.nextId()
+
     private val updateModalLinkId = IdGenerator.nextId()
     private val exercisesItemId = IdGenerator.nextId()
     private val gradesItemId = IdGenerator.nextId()
@@ -32,12 +39,28 @@ class SidenavCourseSectionComp(
 
     override fun create(): Promise<*> = doInPromise {
         val info = BasicCourseInfo.get(courseId).await()
+        if (activeRole == Role.STUDENT) {
+            studentExercises = CourseExercisesStudentDAO.getCourseExercises(courseId).await()
+        }
         courseTitle = info.effectiveTitle
         updateCourseModal = UpdateCourseModalComp(courseId, info.title, info.alias, activeRole == Role.ADMIN, this)
     }
 
-    override fun render(): String = tmRender(
-        "t-c-sidenav-course-section",
+    override fun render(): String = template(
+        """
+            <li><div class="divider"></div></li>
+            <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
+            <li id="{{exercisesId}}"><a href="{{exercisesLink}}" class="waves-effect sidenav-close">{{{exercisesIcon}}}{{exercisesLabel}}</a></li>
+            {{#isTeacherOrAdmin}}
+                <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
+                <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+                <li><a id="{{updateCourseLinkId}}" class="waves-effect sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
+            {{/isTeacherOrAdmin}}
+            {{#studentExercises}}
+                <li id='{{id}}'><a href="{{link}}" class="student-course-item {{#green}}circle-green{{/green}} {{#yellow}}circle-yellow{{/yellow}} {{#blue}}circle-blue{{/blue}} {{#grey}}circle-grey{{/grey}} waves-effect sidenav-close">{{{icon}}}<span class='truncate'>{{title}}</span></a></li>
+            {{/studentExercises}}
+            <ez-dst id="{{updateModalDst}}"></ez-dst>
+        """.trimIndent(),
         "courseTitle" to courseTitle,
         "isTeacherOrAdmin" to listOf(Role.TEACHER, Role.ADMIN).contains(activeRole),
         "exercisesId" to exercisesItemId,
@@ -51,12 +74,38 @@ class SidenavCourseSectionComp(
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
         "updateCourseIcon" to Icons.settings,
-        "exercisesLabel" to "Ülesanded",
+        "exercisesLabel" to if (activeRole == Role.STUDENT) "Kõik ülesanded" else "Ülesanded",
         "gradesLabel" to "Hinded",
         "participantsLabel" to "Osalejad",
         "updateCourseLabel" to "Kursuse sätted",
         "updateModalDst" to updateCourseModal.dstId,
+        "studentExercises" to studentExercises.map {
+            mapOf(
+                "id" to (studentExerciseIdPrefix + it.id),
+                "link" to ExerciseSummaryPage.link(courseId, it.id),
+                "icon" to when (it.status) {
+                    CourseExercisesStudentDAO.SubmissionStatus.COMPLETED -> Icons.awardWithCheck
+                    else -> Icons.circle
+                },
+                "green" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED),
+                "yellow" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.STARTED),
+                "blue" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.UNGRADED),
+                "grey" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED),
+                "title" to it.effective_title,
+            )
+        }
     )
+
+    override fun clearAndSetActivePage(activePage: ActivePage?) {
+        super.clearAndSetActivePage(activePage)
+        // This is not handled by general impl
+        studentExercises.forEach {
+            getElemByIdOrNull(studentExerciseIdPrefix + it.id)?.removeClass("active")
+        }
+        if (activePage == ActivePage.STUDENT_EXERCISE) {
+            paintItemActive(studentExerciseIdPrefix + ExerciseSummaryPage.courseExerciseId)
+        }
+    }
 
     override fun getActivePageItemIds() = mapOf(
         ActivePage.COURSE_EXERCISES to exercisesItemId,

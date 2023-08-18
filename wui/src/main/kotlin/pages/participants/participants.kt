@@ -113,15 +113,15 @@ class ParticipantsRootComp(
         val courseTitlePromise = BasicCourseInfo.get(courseId)
         val participantsPromise = fetchEms(
             "/courses/$courseId/participants", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         )
         val groupsPromise = fetchEms(
             "/courses/$courseId/groups", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         )
         val moodleStatusPromise = fetchEms(
             "/courses/$courseId/moodle", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         )
 
         courseTitle = courseTitlePromise.await().effectiveTitle

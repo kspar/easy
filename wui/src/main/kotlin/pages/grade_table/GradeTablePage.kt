@@ -125,7 +125,7 @@ class GradeTableCardComp(
     override fun create() = doInPromise {
         val groups = fetchEms(
             "/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
-            errorHandler = ErrorHandlers.noCourseAccessPage
+            errorHandler = ErrorHandlers.noCourseAccessMsg
         ).await()
             .parseTo(Groups.serializer()).await()
             .groups.sortedBy { it.name }
@@ -246,7 +246,7 @@ class GradeTableTableComp(
         val q = createQueryString("group" to groupId)
         val gradesPromise = fetchEms(
             "/courses/teacher/$courseId/grades$q", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         )
 
         val gradeTable = gradesPromise.await()

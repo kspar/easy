@@ -19,7 +19,7 @@ object BasicCourseInfo {
     private val courseInfoCache = MemoryPromiseCache<String, CourseInfo>("CourseInfo") { courseId ->
         fetchEms(
             "/courses/$courseId/basic", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessPage
+            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
         ).then {
             it.parseTo(CourseInfoResp.serializer())
         }.then {
