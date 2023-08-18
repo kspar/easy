@@ -14,6 +14,8 @@ import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -59,6 +61,9 @@ class StudentSubmitCont(
     }
 
     private fun submitSolution(courseExId: Long, solution: String, studentId: String) {
+        if (!isCourseExerciseOpenForSubmit(courseExId))
+            throw InvalidRequestException("Exercise is not open for submissions", ReqError.COURSE_EXERCISE_CLOSED)
+
         when (selectGraderType(courseExId)) {
             GraderType.TEACHER -> {
                 log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
@@ -107,6 +112,15 @@ class StudentSubmitCont(
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 
+    private fun isCourseExerciseOpenForSubmit(courseExId: Long) =
+        transaction {
+            CourseExercise.slice(CourseExercise.hardDeadline)
+                .select { CourseExercise.id eq courseExId }
+                .map { it[CourseExercise.hardDeadline] }
+                .single()
+        }.let {
+            it == null || it.isAfterNow
+        }
 
     private fun selectGraderType(courseExId: Long): GraderType {
         return transaction {
