@@ -111,24 +111,6 @@
     <ez-dst id="{{updateModalDst}}"></ez-dst>
 </script>
 
-<script id="t-c-sidenav-page-section" type="text/x-handlebars">
-    <li><div class="divider"></div></li>
-    <li title="{{pageSectionTitle}}"><a class="subheader truncate">{{pageSectionTitle}}</a></li>
-    {{#pageItems}}
-        <li><a class="waves-effect sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
-    {{/pageItems}}
-</script>
-
-<script id="t-c-sidenav-trailer-section" type="text/x-handlebars">
-    <li><div class="divider"></div></li>
-    {{#isAdmin}}
-        <li><a href="{{idpLink}}" class="waves-effect sidenav-close">{{{idpIcon}}}{{idpLabel}}</a></li>
-        <li><a href="{{issueTrackLink}}" class="waves-effect sidenav-close">{{{issueTrackIcon}}}{{issueTrackLabel}}</a></li>
-    {{/isAdmin}}
-    <li><a href="{{accountSettingsLink}}" class="waves-effect sidenav-close">{{{accountSettingsIcon}}}{{accountSettingsLabel}}</a></li>
-    <li><a href="{{logOutLink}}" class="waves-effect sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
-</script>
-
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
@@ -469,38 +451,6 @@
             </a>
         {{/exercises}}
     </div>
-</script>
-
-<script id="tm-navbar" type="text/x-handlebars-template">
-    <nav class="navbar">
-        <div class="topnav container" role="navigation">
-            <div class="content-container">
-                <div class="left-cluster">
-                    <div>
-                        <a href="#!" class="sidenav-trigger" data-target="sidenav">{{{sidenavIcon}}}</a>
-                    </div>
-                    <a href="/courses" class="logo">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z"/></svg>
-                        <span class="text">LAHENDUS</span>
-                    </a>
-                </div>
-                <!-- Search here -->
-                <div class="right-cluster">
-                    <div id="profile-wrap" class="dropdown-trigger profile-wrap" data-target="profile-dropdown">
-                        <a href="#!">
-                            <i class="profile-logo left material-icons">account_circle</i>
-                            <span class="profile-name">{{userName}}</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-    <!-- Profile dropdown menu structure -->
-    <ul id="profile-dropdown" class="dropdown-content">
-        <li><a href="{{accountLink}}">{{account}}</a></li>
-        <li><a href="{{logOutLink}}">{{logOut}}</a></li>
-    </ul>
 </script>
 
 <script id="tm-message" type="text/x-handlebars-template">

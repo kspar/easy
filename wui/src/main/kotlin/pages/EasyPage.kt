@@ -57,22 +57,28 @@ abstract class EasyPage : Page() {
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
-        if (pageAuth == PageAuth.REQUIRED && (!Auth.authenticated || allowedRoles.none { it == Auth.activeRole })) {
-            val c = courseId
-            if (c != null) {
-                debug { "Navigate to course exercise page" }
-                EzSpa.PageManager.navigateTo(CourseExercisesPage.link(c))
-            } else {
-                debug { "Navigate to courses page" }
-                EzSpa.PageManager.navigateTo(CoursesPage.link())
+        if (pageAuth == PageAuth.REQUIRED) {
+            if (!Auth.authenticated) {
+                error("Not authenticated")
             }
 
-            ToastThing(
-                Str.noPermissionForPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,
-                id = ToastIds.noPermissionForPage
-            )
-            Sidenav.refresh(Sidenav.Spec())
-            error("Role ${Auth.activeRole} not allowed")
+            if (allowedRoles.none { it == Auth.activeRole }) {
+                val c = courseId
+                if (c != null) {
+                    debug { "Navigate to course exercise page" }
+                    EzSpa.PageManager.navigateTo(CourseExercisesPage.link(c))
+                } else {
+                    debug { "Navigate to courses page" }
+                    EzSpa.PageManager.navigateTo(CoursesPage.link())
+                }
+
+                ToastThing(
+                    Str.noPermissionForPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,
+                    id = ToastIds.noPermissionForPage
+                )
+                Sidenav.refresh(Sidenav.Spec())
+                error("Role ${Auth.activeRole} not allowed")
+            }
         }
     }
 

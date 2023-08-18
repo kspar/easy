@@ -3,7 +3,7 @@ package pages.sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.onVanillaClick
-import tmRender
+import template
 
 class SidenavPageSectionComp(
     private val pageSection: Sidenav.PageSection,
@@ -11,8 +11,14 @@ class SidenavPageSectionComp(
     dstId: String,
 ) : Component(parent, dstId) {
 
-    override fun render() = tmRender(
-        "t-c-sidenav-page-section",
+    override fun render() = template(
+        """
+            <li><div class="divider"></div></li>
+            <li title="{{pageSectionTitle}}"><a class="subheader truncate">{{pageSectionTitle}}</a></li>
+            {{#pageItems}}
+                <li><a class="waves-effect sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
+            {{/pageItems}}
+        """.trimIndent(),
         "pageSectionTitle" to pageSection.title,
         "pageItems" to pageSection.items.map {
             mapOf(
