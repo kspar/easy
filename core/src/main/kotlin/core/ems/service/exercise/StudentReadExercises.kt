@@ -20,8 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-// TODO: UNGRADED?
-enum class StudentExerciseStatus { UNSTARTED, STARTED, COMPLETED }
+enum class StudentExerciseStatus { UNSTARTED, UNGRADED, STARTED, COMPLETED }
 
 @RestController
 @RequestMapping("/v2")
@@ -31,6 +30,7 @@ class StudentReadExercisesController {
     data class ExerciseResp(
         @JsonProperty("id") val courseExId: String,
         @JsonProperty("effective_title") val title: String,
+        @JsonProperty("grader_type") val graderType: GraderType,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("deadline") val softDeadline: DateTime?,
         @JsonProperty("status") val status: StudentExerciseStatus,
@@ -52,20 +52,21 @@ class StudentReadExercisesController {
         return selectStudentExercises(courseId, caller.id)
     }
 
-    private fun selectStudentExercises(courseId: Long, studentId: String): StudentReadExercisesController.Resp {
+    private fun selectStudentExercises(courseId: Long, studentId: String): Resp {
 
         data class ExercisePartial(
             val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
-            val titleAlias: String?
+            val titleAlias: String?, val graderType: GraderType,
         )
 
         data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
         return transaction {
-            StudentReadExercisesController.Resp(
+            Resp(
                 (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                     .slice(
                         ExerciseVer.title,
+                        ExerciseVer.graderType,
                         CourseExercise.id,
                         CourseExercise.softDeadline,
                         CourseExercise.gradeThreshold,
@@ -85,7 +86,8 @@ class StudentReadExercisesController {
                             it[ExerciseVer.title],
                             it[CourseExercise.softDeadline],
                             it[CourseExercise.gradeThreshold],
-                            it[CourseExercise.titleAlias]
+                            it[CourseExercise.titleAlias],
+                            it[ExerciseVer.graderType],
                         )
                     }.mapIndexed { i, ex ->
 
@@ -121,20 +123,18 @@ class StudentReadExercisesController {
                             }
                         }
 
-                        // TODO: UNGRADED?
-                        val status: StudentExerciseStatus =
-                            if (lastSub == null) {
-                                StudentExerciseStatus.UNSTARTED
-                            } else if (grade != null && grade >= ex.threshold) {
-                                StudentExerciseStatus.COMPLETED
-                            } else {
-                                StudentExerciseStatus.STARTED
-                            }
+                        val status: StudentExerciseStatus = when {
+                            lastSub == null -> StudentExerciseStatus.UNSTARTED
+                            grade == null -> StudentExerciseStatus.UNGRADED
+                            grade >= ex.threshold -> StudentExerciseStatus.COMPLETED
+                            else -> StudentExerciseStatus.STARTED
+                        }
 
 
-                        StudentReadExercisesController.ExerciseResp(
+                        ExerciseResp(
                             ex.courseExId.toString(),
                             ex.titleAlias ?: ex.title,
+                            ex.graderType,
                             ex.deadline,
                             status,
                             grade,
