@@ -30,12 +30,10 @@ class GenerateCourseInvite {
     private val log = KotlinLogging.logger {}
 
     data class Resp(@JsonProperty("invite_id") val inviteId: String)
+
     data class Req(
-        @JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty(
-            "expires_at",
-            required = true
-        ) val expiresAt: DateTime,
-        @JsonProperty("allowed_uses", required = true) @field:Min(0) @field:Max(1000000) val allowedUses: Int
+        @JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty("expires_at") val expiresAt: DateTime,
+        @JsonProperty("allowed_uses") @field:Min(0) @field:Max(1000000) val allowedUses: Int
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
