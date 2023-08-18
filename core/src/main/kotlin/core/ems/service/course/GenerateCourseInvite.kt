@@ -52,6 +52,8 @@ class GenerateCourseInvite {
         return Resp(createInvite(courseId, req))
     }
 
+    private data class CourseInviteLinkDTO(val inviteId: String, val createdAt: DateTime, val usedCount: Int)
+
     private fun createInvite(courseId: Long, req: Req): String = transaction {
         if (req.expiresAt.isBeforeNow) {
             log.debug { "Expiry date cannot be in the past: ${req.expiresAt}" }
@@ -66,24 +68,33 @@ class GenerateCourseInvite {
         val alphabet = ('A'..'Z')
 
         // If there is already invite id that is not expired, use the existing one. Otherwise, generate new.
-        // Also, the previous applies to created_at
-        val (inviteId, createdAt) = CourseInviteLink
-            .slice(CourseInviteLink.inviteId, CourseInviteLink.createdAt)
+        val d = CourseInviteLink
+            .slice(CourseInviteLink.inviteId, CourseInviteLink.createdAt, CourseInviteLink.usedCount)
             .select { (CourseInviteLink.course eq courseId) and CourseInviteLink.expiresAt.greater(DateTime.now()) }
-            .map { it[CourseInviteLink.inviteId] to it[CourseInviteLink.createdAt] }
-            .singleOrNull() ?: ((1..6).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }
-            .joinToString("") to DateTime.now())
+            .map {
+                CourseInviteLinkDTO(
+                    it[CourseInviteLink.inviteId],
+                    it[CourseInviteLink.createdAt],
+                    it[CourseInviteLink.usedCount]
+                )
+            }
+            .singleOrNull()
+            ?: CourseInviteLinkDTO(
+                ((1..6).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }.joinToString("")),
+                DateTime.now(),
+                0
+            )
 
         CourseInviteLink.insertOrUpdate(listOf(CourseInviteLink.course), listOf(CourseInviteLink.course)) {
             it[course] = courseId
-            it[CourseInviteLink.createdAt] = createdAt
+            it[createdAt] = d.createdAt
             it[expiresAt] = req.expiresAt
             it[allowedUses] = req.allowedUses
-            it[CourseInviteLink.inviteId] = inviteId
-            it[usedCount] = 0
+            it[inviteId] = d.inviteId
+            it[usedCount] = d.usedCount
         }
-        log.debug { "Invite '$inviteId' created for course $courseId with expiry date of ${req.expiresAt} and ${req.allowedUses} uses." }
+        log.debug { "Invite '${d.inviteId}' created for course $courseId with expiry date of ${req.expiresAt} and ${req.allowedUses} uses." }
 
-        inviteId
+        d.inviteId
     }
 }
