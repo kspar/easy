@@ -95,6 +95,10 @@ abstract class TranslatableStrings {
     abstract fun newCourseLink(): String
     abstract fun coursesStudents(): String
     abstract fun coursesStudent(): String
+    abstract fun enrolledOnCourseAttrKey(): String
+    abstract fun coursesSingular(): String
+    abstract fun coursesPlural(): String
+
 
 
     // New course page
@@ -213,6 +217,7 @@ private object EstStrings : TranslatableStrings() {
     override fun newCourseLink() = "Uus kursus"
     override fun coursesStudents() = "õpilast"
     override fun coursesStudent() = "õpilane"
+    override fun enrolledOnCourseAttrKey() = "Kursusel on"
     override fun addNewCourse() = "Lisa uus kursus"
     override fun newCourseName() = "Uue kursuse nimi"
     override fun somethingWentWrong() =
@@ -273,4 +278,6 @@ private object EstStrings : TranslatableStrings() {
     override fun permissionPRAW() = "Muutja"
     override fun permissionPRAWM() = "Moderaator"
     override fun testType() = "Testi tüüp"
+    override fun coursesSingular() = "kursus"
+    override fun coursesPlural() = "kursust"
 }

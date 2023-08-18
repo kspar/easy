@@ -144,6 +144,7 @@ data class V3Test(
     val user_inputs: List<String>,
     val created_files: List<V3File>,
     val actual_output: String? = null,
+    val converted_submission: String? = null,
     val checks: List<V3Check>,
 )
 

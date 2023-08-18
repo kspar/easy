@@ -6,6 +6,7 @@ import components.form.TextFieldComp
 import hide
 import rip.kspar.ezspa.Component
 import show
+import template
 
 class TSLStdInSection(
     private var inputs: List<String>,
@@ -31,6 +32,15 @@ class TSLStdInSection(
     override val children: List<Component>
         get() = listOf(showBtn, textField)
 
+    override fun render() = template(
+        """
+            <ez-dst id='{{btnDst}}'></ez-dst>
+            <ez-tsl-stdin-textarea id='{{inputDst}}'></ez-tsl-stdin-textarea>
+        """.trimIndent(),
+        "btnDst" to showBtn.dstId,
+        "inputDst" to textField.dstId,
+    )
+
     override fun postRender() {
         if (inputs.isEmpty()) {
             textField.hide()
@@ -43,7 +53,7 @@ class TSLStdInSection(
         textField.validateInitial()
     }
 
-    fun getInputs(): List<String> = textField.getValue().split("\n").filter { it.isNotBlank() }
+    fun getInputs(): List<String> = textField.getValue().split("\n").filter(String::isNotBlank)
 
     private suspend fun showSection() {
         showBtn.hide()

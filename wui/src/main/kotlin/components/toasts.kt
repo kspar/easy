@@ -10,12 +10,24 @@ import org.w3c.dom.HTMLButtonElement
 import rip.kspar.ezspa.*
 import template
 
+typealias ToastId = String
+
+val activeToasts: MutableMap<ToastId, ToastThing> = mutableMapOf()
+
+object ToastIds {
+    val noCourseAccess = IdGenerator.nextId()
+    val noVisibleCourseExercise = IdGenerator.nextId()
+    val noPermissionForPage = IdGenerator.nextId()
+    val loginToContinue = IdGenerator.nextId()
+}
+
 class ToastThing(
     private val text: String,
     private val action: Action? = null,
     private val icon: String = Icons.check,
     private val isDismissable: Boolean = true,
     private val displayLengthSec: Int = 5,
+    val id: ToastId = IdGenerator.nextId(),
 ) {
 
     data class Action(
@@ -26,7 +38,13 @@ class ToastThing(
     private var instance: MToastInstance?
 
     init {
+        activeToasts[id]?.let {
+            debug { "Dismissing toast '${it.text}' with same id $id" }
+            it.dismiss()
+        }
+
         debug { "Showing toast: $text" }
+        activeToasts[id] = this
 
         val actionBtnId = IdGenerator.nextId()
         val dismissBtnId = IdGenerator.nextId()
@@ -34,7 +52,7 @@ class ToastThing(
         instance = Materialize.toast(
             objOf(
                 "unsafeHTML" to createHtml(actionBtnId, dismissBtnId),
-                // Dismiss manually to make sure instance is nulled after dismiss
+                // Dismiss manually to make sure instance is nulled after dismiss and to sync global toasts
                 "displayLength" to 1_000_000_000_000,
             )
         )
@@ -74,6 +92,7 @@ class ToastThing(
         instance?.dismiss()
         // Materialize bug: if dismiss is called more than once per instance then following toasts disappear instantly
         instance = null
+        activeToasts.remove(id)
     }
 
     private fun hideAction(actionBtnId: String) {

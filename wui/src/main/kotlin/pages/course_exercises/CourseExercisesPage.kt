@@ -59,7 +59,7 @@ object CourseExercisesPage : EasyPage() {
 
     override val pathSchema = "/courses/{courseId}/exercises"
 
-    private val courseId: String
+    override val courseId: String
         get() = parsePathParams()["courseId"]
 
     // TODO: What is this for? Try to remove

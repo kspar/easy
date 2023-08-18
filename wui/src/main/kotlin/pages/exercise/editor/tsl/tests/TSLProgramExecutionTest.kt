@@ -1,10 +1,11 @@
 package pages.exercise.editor.tsl.tests
 
 import pages.exercise.editor.tsl.TSLTestComponent
+import pages.exercise.editor.tsl.sections.TSLDataChecksSection
 import pages.exercise.editor.tsl.sections.TSLStdInSection
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.plainDstStr
+import tsl.common.model.ExceptionCheck
 import tsl.common.model.ProgramExecutionTest
 import tsl.common.model.Test
 
@@ -21,21 +22,27 @@ class TSLProgramExecutionTest(
     private val stdInSection =
         TSLStdInSection(initialModel?.standardInputData.orEmpty(), onUpdate, onValidChanged, this)
 
-    override val children: List<Component>
-        get() = listOf(stdInSection)
+    private val dataChecks =
+        TSLDataChecksSection(initialModel?.genericChecks.orEmpty().toMutableList(), onUpdate, onValidChanged, this)
 
-    override fun render() = plainDstStr(children.map { it.dstId })
+    override val children: List<Component>
+        get() = listOf(stdInSection, dataChecks)
+
 
     override fun getTSLModel(): Test {
         return ProgramExecutionTest(
             testId,
-            stdInSection.getInputs()
+            stdInSection.getInputs(),
+            genericChecks = dataChecks.updateAndGetChecks(),
+            exceptionCheck = ExceptionCheck(true, "", "", "")
         )
     }
 
     override fun setEditable(nowEditable: Boolean) {
         stdInSection.setEditable(nowEditable)
+        dataChecks.setEditable(nowEditable)
     }
 
-    override fun isValid() = stdInSection.isValid()
+    override fun isValid() = stdInSection.isValid() &&
+            dataChecks.isValid()
 }

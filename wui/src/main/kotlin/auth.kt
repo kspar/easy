@@ -1,3 +1,5 @@
+import components.ToastIds
+import components.ToastThing
 import kotlinx.browser.localStorage
 import org.w3c.dom.get
 import org.w3c.dom.set
@@ -91,10 +93,13 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 resolve(refreshed)
             }.catch {
                 debug { "Token refresh failed" }
-                permanentErrorMessage(
-                    true,
-                    UserMessageAction("Logi sisse", onActivate = ::login)
-                ) { "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida." }
+                ToastThing(
+                    "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida.",
+                    ToastThing.Action("Logi sisse", ::login),
+                    Icons.errorUnf,
+                    displayLengthSec = 60 * 60 * 24 * 365,
+                    id = ToastIds.loginToContinue
+                )
                 reject(RuntimeException("Token refresh failed"))
             }
         }

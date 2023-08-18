@@ -210,29 +210,12 @@
     </div>
 </script>
 
-<script id="t-c-string-field" type="text/x-handlebars">
-    <div class="input-field">
-        <input id="{{id}}" type="text" value="{{value}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}>
-        <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
-        <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
-    </div>
-</script>
-
 <script id="t-c-int-field" type="text/x-handlebars">
     <div class="input-field">
         <input id="{{id}}" type="number" min="{{min}}" max="{{max}}" value="{{value}}">
         <label for="{{id}}" class="{{#value}}active{{/value}}">{{label}}</label>
         <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
     </div>
-</script>
-
-<script id="t-c-checkbox" type="text/x-handlebars">
-    <ez-checkbox>
-        <label for="{{id}}">
-            <input id="{{id}}" type="checkbox">
-            <span>{{label}}</span>
-        </label>
-    </ez-checkbox>
 </script>
 
 <script id="t-c-edit-mode" type="text/x-handlebars">
@@ -250,77 +233,6 @@
         {{/items}}
         <li class="{{^hasLink}}display-none{{/hasLink}}" style="list-style: none"><ez-dst id="{{expandLinkDst}}"></ez-dst></li>
     </ul>
-</script>
-
-
-<!-- Courses page -->
-
-<script id="t-c-stud-courses" type="text/x-handlebars">
-    <div class="title-wrap no-crumb">
-        <h2 class="title">{{pageTitle}}</h2>
-    </div>
-    <ez-dst id="{{listDstId}}"></ez-dst>
-</script>
-
-<script id="t-c-stud-courses-list" type="text/x-handlebars">
-    <div id="courses-list" class="collection divided-collection">
-        {{#courses}}
-            <ez-dst id="{{dstId}}"></ez-dst>
-        {{/courses}}
-    </div>
-    {{^courses}}
-        <div class="missing-content-wrap">
-            <div class="antennaball"></div>
-            <div class="antenna"></div>
-            <div class="robot">
-                <div class="robot-eye blinking"></div>
-                <div class="robot-eye blinking"></div>
-            </div>
-            <p class="text">{{noCoursesLabel}}</p>
-        </div>
-    {{/courses}}
-</script>
-
-<script id="t-c-stud-courses-item" type="text/x-handlebars">
-    <a class="collection-item course-item" href="/courses/{{id}}/exercises">{{title}}</a>
-</script>
-
-<script id="t-c-teach-courses" type="text/x-handlebars">
-    <div class="title-wrap no-crumb">
-        <h2 class="title">{{pageTitle}}</h2>
-    </div>
-    <ez-dst id="{{listDstId}}"></ez-dst>
-</script>
-
-<script id="t-c-teach-courses-list" type="text/x-handlebars">
-    <div id="courses-list" class="collection divided-collection">
-        {{#courses}}
-            <ez-dst id="{{dstId}}"></ez-dst>
-        {{/courses}}
-    </div>
-    {{^courses}}
-        <div class="missing-content-wrap">
-            <div class="antennaball"></div>
-            <div class="antenna"></div>
-            <div class="robot">
-                <div class="robot-eye blinking"></div>
-                <div class="robot-eye blinking"></div>
-            </div>
-            <p class="text">{{noCoursesLabel}}</p>
-        </div>
-    {{/courses}}
-</script>
-
-<script id="t-c-teach-courses-item" type="text/x-handlebars">
-    <div class="teacher-course-wrapper">
-        <a class="collection-item course-item row" href="/courses/{{id}}/exercises">
-            <span class="col xs9 s7 m9">{{title}}</span>
-        </a>
-        <a class="btn-flat waves-effect waves-green course-add-students" href="/courses/{{id}}/participants">
-            <i class="material-icons">group</i>
-            <span class="course-student-count">{{count}} {{studentsLabel}}</span>
-        </a>
-    </div>
 </script>
 
 
@@ -631,21 +543,6 @@
         <div class="item"></div>
         <div class="item"></div>
         <div class="item"></div>
-    </div>
-</script>
-
-<script id="tm-no-access-page" type="text/x-handlebars-template">
-    <div class="title-wrap no-crumb">
-        <h2 class="title">{{title}}</h2>
-    </div>
-    <div class="missing-content-wrap sad-robot">
-        <div class="antennaball"></div>
-        <div class="antenna"></div>
-        <div class="robot">
-            <div class="robot-eye left"></div>
-            <div class="robot-eye right"></div>
-        </div>
-        <p class="text">{{msg}}</p>
     </div>
 </script>
 

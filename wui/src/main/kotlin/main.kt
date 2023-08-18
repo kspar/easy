@@ -6,7 +6,6 @@ import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
 import pages.ExerciseSummaryPage
 import pages.Navbar
-import pages.OldParticipantsPage
 import pages.course_exercises.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
@@ -21,8 +20,7 @@ import rip.kspar.ezspa.*
 
 
 private val PAGES = listOf(
-    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
-    OldParticipantsPage, ParticipantsPage,
+    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
     RegisterLinkPage,

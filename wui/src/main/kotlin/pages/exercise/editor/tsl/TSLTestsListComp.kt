@@ -77,7 +77,7 @@ class TSLTestsListComp(
         val newIdx = reorderModal.openWithClosePromise().await()
         if (newIdx != null) {
             changeTests {
-                it.remove(test)
+                it.removeAll { it.id == test.id }
                 it.add(newIdx, test)
             }
         }

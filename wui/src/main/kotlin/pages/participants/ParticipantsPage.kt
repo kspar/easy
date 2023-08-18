@@ -29,7 +29,7 @@ object ParticipantsPage : EasyPage() {
 
     override val pathSchema = "/courses/{courseId}/participants"
 
-    private val courseId: String
+    override val courseId: String
         get() = parsePathParams()["courseId"]
 
 

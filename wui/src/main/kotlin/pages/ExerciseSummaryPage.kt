@@ -214,6 +214,9 @@ object ExerciseSummaryPage : EasyPage() {
             PathParams(it["courseId"], it["courseExerciseId"])
         }
 
+    override val courseId
+        get() = pathParams.courseId
+
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 

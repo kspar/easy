@@ -6,11 +6,10 @@ import PageName
 import Role
 import ScrollPosition
 import Str
-import debugFunStart
 import getWindowScrollPosition
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
-import kotlinx.coroutines.launch
+import kotlinx.dom.addClass
+import kotlinx.dom.removeClass
 import kotlinx.serialization.Serializable
 import pages.EasyPage
 import pages.Title
@@ -18,16 +17,15 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import parseTo
 import restore
-import rip.kspar.ezspa.CacheableComponent
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.plainDstStr
+import rip.kspar.ezspa.*
 import stringify
 import warn
 import kotlin.js.Promise
 
 
 object CoursesPage : EasyPage() {
+
+    const val REDIR_ALLOWED_PARAM = "redir"
 
     @Serializable
     data class State(val rootState: CoursesRootComponent.State, val scrollPosition: ScrollPosition)
@@ -46,11 +44,9 @@ object CoursesPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
-        MainScope().launch {
-            val funLog = debugFunStart("CoursesPage.build")
-
+        getHtml().addClass("wui3")
+        doInPromise {
             val state = pageStateStr?.parseTo(State.serializer())
-
             val root = CoursesRootComponent(Auth.activeRole, CONTENT_CONTAINER_ID)
             rootComp = root
 
@@ -60,8 +56,6 @@ object CoursesPage : EasyPage() {
                 root.createAndBuildFromState(state.rootState).await()
                 state.scrollPosition.restore()
             }
-
-            funLog?.end()
         }
     }
 
@@ -77,6 +71,8 @@ object CoursesPage : EasyPage() {
     override fun destruct() {
         super.destruct()
         rootComp?.destroy()
+        rootComp = null
+        getHtml().removeClass("wui3")
     }
 
     fun link() = constructPathLink(emptyMap())
@@ -89,27 +85,27 @@ class CoursesRootComponent(
 ) : CacheableComponent<CoursesRootComponent.State>(null, dstId) {
 
     @Serializable
-    data class State(val studentState: StudentCoursesRootComp.State?, val teacherState: TeacherCoursesRootComp.State?)
+    data class State(val studentState: StudentCoursesComp.State?, val teacherState: TeacherCoursesComp.State?)
 
 
-    private var studentRoot: StudentCoursesRootComp? = null
-    private var teacherRoot: TeacherCoursesRootComp? = null
+    private var studentRoot: StudentCoursesComp? = null
+    private var teacherRoot: TeacherCoursesComp? = null
 
     override val children: List<Component>
         get() = listOfNotNull(studentRoot, teacherRoot)
 
     override fun create(): Promise<*> = doInPromise {
         when (role) {
-            Role.STUDENT -> studentRoot = StudentCoursesRootComp(this)
-            Role.TEACHER -> teacherRoot = TeacherCoursesRootComp(false, this)
-            Role.ADMIN -> teacherRoot = TeacherCoursesRootComp(true, this)
+            Role.STUDENT -> studentRoot = StudentCoursesComp(this)
+            Role.TEACHER -> teacherRoot = TeacherCoursesComp(false, this)
+            Role.ADMIN -> teacherRoot = TeacherCoursesComp(true, this)
         }
     }
 
     override fun createFromState(state: State): Promise<*> = doInPromise {
         when {
-            state.studentState != null -> studentRoot = StudentCoursesRootComp(this)
-            state.teacherState != null -> teacherRoot = TeacherCoursesRootComp(role == Role.ADMIN, this)
+            state.studentState != null -> studentRoot = StudentCoursesComp(this)
+            state.teacherState != null -> teacherRoot = TeacherCoursesComp(role == Role.ADMIN, this)
         }
     }
 

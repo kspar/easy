@@ -14,7 +14,6 @@ external object Materialize {
     val Sidenav: MSidenav
     val Tooltip: MTooltip
     val Tabs: MTabs
-    val Toast: MToast
     val Materialbox: MMaterialbox
     val FormSelect: MFormSelect
     val Modal: MModal
@@ -67,11 +66,6 @@ external class MTabsInstance {
     val index: Int
     fun select(tabId: String)
     fun updateTabIndicator()
-}
-
-
-external class MToast {
-    fun dismissAll()
 }
 
 external class MToastInstance {
