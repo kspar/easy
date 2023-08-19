@@ -44,6 +44,7 @@ class StudentCoursesComp(
             debug { "Redirecting to exercises" }
             EzSpa.PageManager.navigateTo(CourseExercisesPage.link(courses[0].id))
         } else {
+            CoursesPage.updateUrl(CoursesPage.link())
             createColl()
         }
     }
