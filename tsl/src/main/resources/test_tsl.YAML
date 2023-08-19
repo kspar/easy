@@ -39,6 +39,25 @@ tests:
       failedMessage: Programm viskas erindi.
     name: Programmi käivituse test.
 
+  - type: program_execution_test
+    pointsWeight: 1
+    name: null
+    inputs: null
+    passedNext: null
+    failedNext: null
+    visibleToUser: null
+    id: 769
+    standardInputData: [
+      "a"
+    ]
+    inputFiles: [
+    ]
+    genericChecks: [
+    ]
+    outputFileChecks: [
+    ]
+    exceptionCheck: null
+
   - type: program_imports_module_test
     id: 2
     genericCheck:

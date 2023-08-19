@@ -290,6 +290,18 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 } else {
                     test.inputFiles.map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }.let { PyList(it) }
                 }
+                val exceptionCheck = if (test.exceptionCheck == null) {
+                    PyStr(null)
+                } else {
+                    PyDict(
+                        mapOf(
+                            "'expected_value'" to PyBool(test.exceptionCheck?.mustNotThrowException),
+                            "'before_message'" to PyStr(test.exceptionCheck?.beforeMessage),
+                            "'passed_message'" to PyStr(test.exceptionCheck?.passedMessage),
+                            "'failed_message'" to PyStr(test.exceptionCheck?.failedMessage)
+                        )
+                    )
+                }
                 PyExecuteTest(
                     test,
                     "program_execution_test",
@@ -299,14 +311,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "input_files" to inputFiles,
                         "standard_output_checks" to PyGenericChecks(test.genericChecks),
                         "output_file_checks" to PyOutputTests(test.outputFileChecks),
-                        "exception_check" to PyDict(
-                            mapOf(
-                                "'expected_value'" to PyBool(test.exceptionCheck?.mustNotThrowException),
-                                "'before_message'" to PyStr(test.exceptionCheck?.beforeMessage),
-                                "'passed_message'" to PyStr(test.exceptionCheck?.passedMessage),
-                                "'failed_message'" to PyStr(test.exceptionCheck?.failedMessage)
-                            )
-                        )
+                        "exception_check" to exceptionCheck
                     )
                 ).generatePyString()
             }
