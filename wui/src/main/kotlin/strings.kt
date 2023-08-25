@@ -136,7 +136,7 @@ abstract class TranslatableStrings {
     abstract fun autoAssessmentLabel(): String
     abstract fun autoGradeLabel(): String
     abstract fun teacherAssessmentLabel(): String
-    abstract fun teacherGradeLabel(): String
+    abstract fun gradeLabel(): String
     abstract fun doAutoAssess(): String
     abstract fun autoAssessing(): String
     abstract fun addAssessmentLink(): String
@@ -248,10 +248,10 @@ private object EstStrings : TranslatableStrings() {
     override fun tabExerciseLabel() = "Ülesanne"
     override fun tabTestingLabel() = "Katsetamine"
     override fun tabSubmissionsLabel() = "Esitused"
-    override fun autoAssessmentLabel() = "Automaatne hinnang"
+    override fun autoAssessmentLabel() = "Automaatsed testid"
     override fun autoGradeLabel() = "Automaatne hinne"
-    override fun teacherAssessmentLabel() = "Õpetaja hinnang"
-    override fun teacherGradeLabel() = "Hinne"
+    override fun teacherAssessmentLabel() = "Õpetaja kommentaar"
+    override fun gradeLabel() = "Punktid"
     override fun doAutoAssess() = "Kontrolli"
     override fun autoAssessing() = "Kontrollin..."
     override fun addAssessmentLink() = "► Lisa hinnang"

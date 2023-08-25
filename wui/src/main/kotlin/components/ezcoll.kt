@@ -24,6 +24,7 @@ class EzCollComp<P>(
     private val filterGroups: List<FilterGroup<P>> = emptyList(),
     private val sorters: List<Sorter<P>> = emptyList(),
     private val useFirstSorterAsDefault: Boolean = true,
+    private val compact: Boolean = false,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -155,15 +156,20 @@ class EzCollComp<P>(
 
     data class ListAttrItem<ItemType : Any>(val shortValue: ItemType, val longValue: ItemType = shortValue)
 
+    data class Progress(val green: Int, val yellow: Int, val blue: Int, val grey: Int)
     data class ProgressBar(
         val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0,
         val showAttr: Boolean = false
-    )
+    ) {
+        constructor(progress: Progress, showAttr: Boolean = false) :
+                this(progress.green, progress.yellow, progress.blue, progress.grey, showAttr)
+    }
 
     enum class TitleStatus { NORMAL, INACTIVE }
 
     enum class CollMinWidth(val valuePx: String, val maxShowSecondaryValuePx: String) {
-        W600("600", "599")
+        W600("600", "599"),
+        W400("400", "399"),
     }
 
     enum class AttrWidthS(val valuePx: String) {
@@ -211,7 +217,7 @@ class EzCollComp<P>(
 
         val bottomAttrsCount = items.maxOfOrNull { it.bottomAttrs.size } ?: 0
         this.items = specs.mapIndexed { i, spec ->
-            EzCollItemComp(spec, bottomAttrsCount, i, ::itemSelectClicked, ::removeItem, this)
+            EzCollItemComp(spec, bottomAttrsCount, i, compact, ::itemSelectClicked, ::removeItem, this)
         }
     }
 
@@ -517,7 +523,7 @@ class EzCollComp<P>(
                 "$visibleItemsCount / $totalItemsCount"
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = "kuvatud"
         } else {
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "Σ"
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "N ="
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent =
                 if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
@@ -550,6 +556,7 @@ class EzCollComp<P>(
                     processed,
                     item.maxBottomAttrsCount,
                     item.orderingIndex,
+                    item.compact,
                     ::itemSelectClicked,
                     ::removeItem,
                     this
@@ -681,6 +688,7 @@ class EzCollItemComp<P>(
     var spec: EzCollComp.Item<P>,
     val maxBottomAttrsCount: Int,
     var orderingIndex: Int,
+    val compact: Boolean,
     private val onCheckboxClicked: (EzCollItemComp<P>, Boolean) -> Unit,
     private val onDelete: (EzCollItemComp<P>) -> Unit,
     parent: Component
@@ -698,7 +706,7 @@ class EzCollItemComp<P>(
 
     override fun render() = template(
         """
-            <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}} {{#progressBar}}has-bar{{/progressBar}} {{#inactive}}inactive{{/inactive}}">
+            <ezc-item id="{{itemId}}" {{#isSelectable}}selectable{{/isSelectable}} class="{{#hasBottomAttrs}}two-rows{{/hasBottomAttrs}} {{#hasActions}}has-actions{{/hasActions}} {{#progressBar}}has-bar{{/progressBar}} {{#inactive}}inactive{{/inactive}} {{#compact}}compact{{/compact}}">
                 <ezc-bar-container>
                     <ezc-item-container>
                         <ezc-left>
@@ -782,7 +790,7 @@ class EzCollItemComp<P>(
                         {{/hasActions}}
                     </ezc-item-container>
                     {{#progressBar}}
-                        <ezc-progress-bar title="{{labelValue}}">
+                        <ezc-progress-bar {{#showAttr}}title="{{labelValue}}"{{/showAttr}}>
                             <ezc-progress-bar-part style="background-color: var(--ez-green); flex-grow: {{green}};"></ezc-progress-bar-part>
                             <ezc-progress-bar-part style="background-color: var(--ez-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
                             <ezc-progress-bar-part style="background-color: var(--ez-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
@@ -816,6 +824,7 @@ class EzCollItemComp<P>(
         "isSelectable" to spec.isSelectable,
         "isExpandable" to isExpandable,
         "hasBottomAttrs" to spec.bottomAttrs.isNotEmpty(),
+        "compact" to compact,
         "bottomAttrCount" to maxBottomAttrsCount,
         // This item is not expandable others are
         "expandPlaceholder" to (!isExpandable && maxBottomAttrsCount > 0),

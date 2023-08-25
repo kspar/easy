@@ -1,4 +1,7 @@
 :root {
+    --ez-background: #fff;
+    --ez-animation-robot-color: #a8a8a8;
+
     --ez-green: #4DAB54;
     --ez-yellow: #ffd052;
     --ez-yellow-text: #d59b00;
@@ -386,6 +389,11 @@ svg {
 
 /** Container **/
 
+html.full-width div.container {
+    width: 100%;
+    max-width: none;
+}
+
 div.container {
     position: relative;
     width: 95%;
@@ -461,6 +469,18 @@ nav.crumb-wrap .breadcrumb:before {
 
 
 /** Course exercise page **/
+
+ez-student-course-exercise > ez-block-container {
+    justify-content: center;
+    gap: 2rem 5rem;
+    padding: 2rem 0 0 0;
+}
+
+@media only screen and (min-width: 500px) {
+    ez-student-course-exercise > ez-block-container {
+        padding-left: 1rem;
+    }
+}
 
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
@@ -1956,7 +1976,7 @@ ezc-ctrl-shown {
 }
 
 ezc-ctrl-shown-icon {
-    margin-right: .6rem;
+    margin-right: .3rem;
     font-weight: 500;
 }
 
@@ -2034,6 +2054,11 @@ ezc-item.has-bar ezc-item-container {
     border: none;
 }
 
+ezc-item.has-bar.compact ezc-item-container {
+    padding-top: 1.2rem;
+    padding-bottom: .5rem;
+}
+
 ezc-left {
     display: flex;
     align-items: start;
@@ -2050,7 +2075,7 @@ ezc-item-type {
 
 ezc-item-type-text {
     color: var(--ezc-attr-immutable-col);
-    font-size: .9em;
+    font-size: 1.1em;
 }
 
 ezc-item[selectable] ezc-left:hover ezc-item-type,
@@ -2320,12 +2345,6 @@ ezc-expand-trailer.open > ez-icon-action > ez-icon {
     transform: rotate(180deg);
 }
 
-
-ez-coll-wrap *[ez-show-min="600"],
-ez-coll-wrap *[ez-show-max="599"] {
-    display: none;
-}
-
 /* Container is ez-coll-wrap */
 @container (width >= 400px) {
     /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
@@ -2365,13 +2384,40 @@ ez-coll-wrap *[ez-show-max="599"] {
         padding-left: 1.5rem;
         padding-right: 1.7rem;
     }
+}
+
+/* CollMinWidth W600 */
+ez-coll-wrap *[ez-show-min="600"],
+ez-coll-wrap *[ez-show-max="599"] {
+    display: none;
+}
+
+@container (width < 600px) {
+    ez-coll-wrap *[ez-show-max="599"] {
+        display: flex;
+    }
+}
+
+@container (width >= 600px) {
     ez-coll-wrap *[ez-show-min="600"] {
         display: flex;
     }
 }
 
-@container (width < 600px) {
-    ez-coll-wrap *[ez-show-max="599"] {
+/* CollMinWidth W400 */
+ez-coll-wrap *[ez-show-min="400"],
+ez-coll-wrap *[ez-show-max="399"] {
+    display: none;
+}
+
+@container (width >= 400px) {
+    ez-coll-wrap *[ez-show-min="400"] {
+        display: flex;
+    }
+}
+
+@container (width < 400px) {
+    ez-coll-wrap *[ez-show-max="399"] {
         display: flex;
     }
 }
@@ -2457,6 +2503,7 @@ ez-block-container {
 
 ez-block-container ez-block {
     flex-grow: 1;
+    overflow: auto;
 }
 
 
@@ -2780,6 +2827,12 @@ ez-tabs .editor-wrapper {
 
 /** Assessment view **/
 
+ez-feedback {
+    display: flex;
+    flex-direction: column;
+    margin-top: 3rem;
+}
+
 ez-assessment {
     display: flex;
     flex-direction: column;
@@ -2790,17 +2843,31 @@ ez-assessment {
 /* TODO: add prefixes once we're fully migrated to wui3 */
 /*ez-assessment*/ pre.feedback {
     font-size: 1.4rem;
-    white-space: normal;
 }
 
 /*ez-assessment*/ pre.auto-feedback {
     background-color: #f5f5f5;
-    white-space: pre;
     overflow: auto;
 }
 
 /*ez-assessment*/ .grade-number {
     font-weight: 500;
+}
+
+ez-feedback ez-grade {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+ez-feedback ez-grade ez-grade-no {
+    font-weight: 500;
+    margin-left: .5rem;
+}
+
+ez-grade ez-icon {
+    display: inline-flex;
+    margin-left: .7rem;
 }
 
 
@@ -3118,6 +3185,219 @@ ez-assessment {
     line-height: 1px;
     text-align: center;
     content: '\d7';
+}
+
+
+/** Autograde animation **/
+
+.autograde-animation .robot {
+    display: flex;
+    justify-content: space-between;
+    flex-shrink: 0;
+    width: 37px;
+    height: 22px;
+    padding: 8px 5px 0 5px;
+    background-color: var(--ez-animation-robot-color);
+    border-top-left-radius: 20% 25%;
+    border-top-right-radius: 20% 25%;
+    z-index: 2;
+}
+
+.autograde-animation .robot-jaw {
+    flex-shrink: 0;
+    width: 37px;
+    height: 7px;
+    background-color: var(--ez-animation-robot-color);
+    border-bottom-left-radius: 20% 75%;
+    border-bottom-right-radius: 20% 75%;
+    animation: eating 500ms 1500ms 6;
+}
+
+.autograde-animation .antenna {
+    width: 6px;
+    height: 7px;
+    flex-shrink: 0;
+    z-index: 1;
+    background-color: var(--ez-animation-robot-color);
+}
+
+.autograde-animation .antennaball {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    background-color: var(--ez-animation-robot-color);
+    border-radius: 50%;
+    transform: translateY(2px);
+}
+
+.autograde-animation .antennaball:hover {
+    background-color: #fbff00;
+    box-shadow: 0 0 10px 10px rgba(255, 255, 190, 0.8);
+}
+
+.autograde-animation .eye {
+    background: white;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: eye-blink 3s infinite;
+}
+
+.autograde-animation .prog {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 180px;
+    width: 250px;
+    line-height: 1;
+    font-size: 17px;
+    animation: appear 1s forwards;
+    opacity: 0;
+
+}
+
+.autograde-animation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 25vh;
+    margin-top: 2rem;
+    padding: 40px;
+}
+
+.autograde-animation .wrap {
+    width: 380px;
+    height: 180px;
+}
+
+.autograde-animation .robots {
+    display: flex;
+    flex-direction: column;
+    height: 180px;
+    width: 38px;
+    justify-content: space-between;
+    transform: translateY(-180px);
+}
+
+.autograde-animation .robot-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    z-index: 1;
+    margin-bottom: 5px;
+    transform: translateY(-30px);
+}
+
+.autograde-animation .robots .robot-row:nth-child(1) {
+    transform: translateX(-68px);
+}
+
+.autograde-animation .robots .robot-row:nth-child(2) {
+    transform: translateX(350px);
+}
+
+.autograde-animation .robots .robot-row:nth-child(3) {
+    transform: translateX(-68px);
+}
+
+.autograde-animation .robots .robot-row:nth-child(4) {
+    transform: translateX(350px);
+}
+
+.autograde-animation .robots .robot-row:nth-child(1) > :nth-child(1) {
+    animation: appear 500ms 0s forwards,
+    /*disappear 500ms 5s forwards,*/
+    eating-direction 3s 1500ms forwards linear;
+}
+
+.autograde-animation .robots .robot-row:nth-child(2) > :nth-child(2) {
+    animation: appear 500ms 0s forwards,
+    /*disappear 500ms 5s forwards,*/
+    eating-direction-middle 3s 1500ms forwards linear;
+}
+
+.autograde-animation .robots .robot-row:nth-child(3) > :nth-child(1) {
+    animation: appear 500ms 0s forwards,
+    /*disappear 500ms 5s forwards,*/
+    eating-direction 3s 1500ms forwards linear;
+}
+
+.autograde-animation .robots .robot-row:nth-child(4) > :nth-child(2) {
+    animation: appear 500ms 0s forwards,
+    /*disappear 500ms 5s forwards,*/
+    eating-direction-middle 3s 1500ms forwards linear;
+}
+
+.autograde-animation .robots .robot-row:nth-child(2) > :nth-child(1) {
+    transform-origin: right;
+}
+
+.autograde-animation .robots .robot-row:nth-child(4) > :nth-child(1) {
+    transform-origin: right;
+}
+
+.autograde-animation .shade {
+    height: 40px;
+    width: 1px;
+    background-color: var(--ez-background);
+    transform-origin: left;
+    animation: letters-eating 3s 1500ms linear forwards;
+}
+
+.autograde-animation .robot-row {
+    display: flex;
+}
+
+.autograde-animation .wrap pre {
+    margin-top: 19px;
+}
+
+@keyframes eating {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    20% {
+        transform: translateY(7px);
+    }
+}
+
+@keyframes eating-direction {
+    100% {
+        transform: translate(330px, -30px);
+    }
+}
+
+@keyframes eating-direction-middle {
+    100% {
+        transform: translate(-330px, -30px);
+    }
+}
+
+@keyframes appear {
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes disappear {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes letters-eating {
+    0% {
+        transform: scaleX(0);
+    }
+    100% {
+        transform: scaleX(331);
+    }
 }
 
 

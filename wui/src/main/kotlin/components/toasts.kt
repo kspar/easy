@@ -30,6 +30,10 @@ class ToastThing(
     val id: ToastId = IdGenerator.nextId(),
 ) {
 
+    companion object {
+        const val LONG_TIME = 60 * 60 * 24 * 365
+    }
+
     data class Action(
         val label: String, val action: suspend () -> Unit,
         val dismissOnClick: Boolean = true, val hideAfterSec: Int? = null,
@@ -65,12 +69,11 @@ class ToastThing(
         if (action != null) {
             getElemByIdAs<HTMLButtonElement>(actionBtnId).let { btn ->
                 btn.onVanillaClick(true) {
-                    action.action()
                     if (action.dismissOnClick) {
                         btn.disabled = true
                         dismiss()
                     }
-
+                    action.action()
                 }
                 if (action.hideAfterSec != null) {
                     doInPromise {

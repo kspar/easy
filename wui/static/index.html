@@ -58,47 +58,6 @@
 
 <!-- Common -->
 
-<script id="t-c-sidenav" type="text/x-handlebars">
-    <ul id="sidenav" class="sidenav sidenav-fixed">
-        <ez-dst id="{{headSectionId}}"></ez-dst>
-        <ez-dst id="{{generalSectionId}}"></ez-dst>
-        <ez-dst id="{{courseSectionId}}"></ez-dst>
-        <ez-dst id="{{pageSectionId}}"></ez-dst>
-        <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
-    </ul>
-</script>
-
-<script id="t-c-sidenav-head-account-section" type="text/x-handlebars">
-    <li>
-        <div class="user-view">
-            <div class="background"></div>
-            <div class="name attr truncate">{{userName}}</div>
-            <div class="email attr truncate">{{userEmail}}</div>
-            {{^canSwitchRole}}
-                <div class="role attr">{{userRole}}</div>
-            {{/canSwitchRole}}
-            {{#canSwitchRole}}
-                <div class="role-select-wrap">
-                    <ez-dst id="{{roleSelectId}}"></ez-dst>
-                </div>
-            {{/canSwitchRole}}
-        </div>
-    </li>
-</script>
-
-<script id="t-c-sidenav-general-section" type="text/x-handlebars">
-    <li><div class="divider"></div></li>
-    <li id="{{coursesId}}"><a href="{{coursesLink}}" class="waves-effect sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
-    {{#isTeacherOrAdmin}}
-        <li id="{{libId}}"><a href="{{libLink}}" class="waves-effect sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
-    {{/isTeacherOrAdmin}}
-    {{#isAdmin}}
-<!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="waves-effect sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
-        <li><a id="{{newCourseLinkId}}" class="waves-effect sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
-    {{/isAdmin}}
-    <ez-dst id="{{newCourseModalDst}}"></ez-dst>
-</script>
-
 <script id="t-c-breadcrumbs" type="text/x-handlebars">
     <nav class="crumb-wrap">
         {{#crumbs}}
@@ -743,68 +702,6 @@
             <div id="testing"></div>
             <div id="students"></div>
             <div id="student"></div>
-        </div>
-    </div>
-</script>
-
-<script id="tm-stud-exercise-submit" type="text/x-handlebars-template">
-    {{#time}}<p id="submission-info"><span class="subheading">{{timeLabel}}:</span>{{time}}</p>{{/time}}
-    <div id="assessment-auto" class="assessment"></div>
-    <div id="assessment-teacher" class="assessment"></div>
-    <div id="submit-editor-wrap" class="editor-wrapper">
-        <div class="editor-top">
-            <div class="left-side">
-                <div id="editor-top-text" class="top-item"></div>
-            </div>
-            <div class="right-side">
-                <div class="top-item">
-                    <a id="restore-latest-sub-btn" class="tooltipped" href="#!" data-tooltip="{{restoreLabel}}" data-position="bottom"><i class="material-icons">restore</i></a>
-                </div>
-                <div id="sync-indicator" class="top-item">
-                    <i id="sync-done" class="icon material-icons tooltipped" data-tooltip="{{doneLabel}}" data-position="bottom">cloud_done</i>
-                    <i id="sync-undone" class="icon material-icons tooltipped" data-tooltip="{{undoneLabel}}" data-position="bottom">more_horiz</i>
-                    <i id="sync-fail" class="icon material-icons tooltipped" data-tooltip="{{failLabel}}" data-position="bottom">sync_problem</i>
-                    <div id="sync-loading" class="icon preloader-wrapper active tooltipped" data-tooltip="{{syncingLabel}}" data-position="bottom">
-                        <div class="spinner-layer">
-                            <div class="circle-clipper left"><div class="circle"></div></div>
-                            <div class="gap-patch"><div class="circle"></div></div>
-                            <div class="circle-clipper right"><div class="circle"></div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <textarea id="submission"></textarea>
-    </div>
-    <div class="center" style="display: flex; justify-content: center;">
-        <button id="submit-button" class="waves-effect waves-light btn">{{checkLabel}}</button>
-    </div>
-</script>
-
-<script id="tm-stud-exercise-summary" type="text/x-handlebars-template">
-    <div>
-        {{#deadline}}<p class="subheading-item"><span class="subheading">{{deadlineLabel}}:</span>{{deadline}}</p>{{/deadline}}
-        {{#graderType}}<p class="subheading-item"><span class="subheading">{{graderTypeLabel}}:</span>{{graderType}}</p>{{/graderType}}
-        {{#threshold}}<p class="subheading-item"><span class="subheading">{{thresholdLabel}}:</span>{{threshold}}%</p>{{/threshold}}
-    </div>
-    <div>
-        <h2>{{title}}</h2>
-        <div id="exercise-text">{{{text}}}</div>
-    </div>
-</script>
-
-<script id="tm-stud-exercise" type="text/x-handlebars-template">
-    <nav id="crumbs" class="crumb-wrap"></nav>
-    <div id="exercise-card" class="card">
-        <div class="tabs-wrap">
-            <ul id="tabs" class="tabs">
-                <li class="tab"><a class="active" href="#exercise">{{exerciseLabel}}</a></li>
-                <li class="tab"><a href="#submit">{{submitLabel}}</a></li>
-            </ul>
-        </div>
-        <div class="card-content">
-            <div id="exercise"></div>
-            <div id="submit"></div>
         </div>
     </div>
 </script>

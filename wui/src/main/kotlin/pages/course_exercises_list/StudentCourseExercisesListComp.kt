@@ -14,7 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
 
-class StudentCourseExercisesComp(
+class StudentCourseExercisesListComp(
     private val courseId: String,
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
@@ -76,9 +76,7 @@ class StudentCourseExercisesComp(
                         EzCollComp.SimpleAttr("Tähtaeg", it.deadline.toHumanString(EzDate.Format.FULL), Icons.pending)
                     }
                 } else null,
-                progressBar = translateStatusToProgress(it.status).let {
-                    EzCollComp.ProgressBar(it.green, it.yellow, it.blue, it.grey)
-                },
+                progressBar = EzCollComp.ProgressBar(translateStatusToProgress(it.status)),
             )
         }
 
@@ -99,13 +97,12 @@ class StudentCourseExercisesComp(
         "collDst" to coll.dstId,
     )
 
-    data class Progress(val green: Int, val yellow: Int, val blue: Int, val grey: Int)
 
     private fun translateStatusToProgress(status: CourseExercisesStudentDAO.SubmissionStatus) =
         when (status) {
-            CourseExercisesStudentDAO.SubmissionStatus.COMPLETED -> Progress(1, 0, 0, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.STARTED -> Progress(0, 1, 0, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.UNGRADED -> Progress(0, 0, 1, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED -> Progress(0, 0, 0, 1)
+            CourseExercisesStudentDAO.SubmissionStatus.COMPLETED -> EzCollComp.Progress(1, 0, 0, 0)
+            CourseExercisesStudentDAO.SubmissionStatus.STARTED -> EzCollComp.Progress(0, 1, 0, 0)
+            CourseExercisesStudentDAO.SubmissionStatus.UNGRADED -> EzCollComp.Progress(0, 0, 1, 0)
+            CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED -> EzCollComp.Progress(0, 0, 0, 1)
         }
 }

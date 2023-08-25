@@ -16,7 +16,7 @@ class SidenavPageSectionComp(
             <li><div class="divider"></div></li>
             <li title="{{pageSectionTitle}}"><a class="subheader truncate">{{pageSectionTitle}}</a></li>
             {{#pageItems}}
-                <li><a class="waves-effect sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
+                <li><a class="sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
             {{/pageItems}}
         """.trimIndent(),
         "pageSectionTitle" to pageSection.title,

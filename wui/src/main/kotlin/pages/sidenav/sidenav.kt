@@ -8,7 +8,7 @@ import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
 import rip.kspar.ezspa.*
-import tmRender
+import template
 import kotlin.js.Promise
 
 enum class ActivePage {
@@ -71,6 +71,12 @@ object Sidenav {
         doInPromise {
             // TODO: test, is this necessary?
             sidenavComp.updateRole(if (Auth.authenticated) Auth.activeRole else Role.STUDENT).await()
+
+            // Updating the course section takes time but active page should change ASAP,
+            // so let's update it now and later again after rebuild
+            if (forceUpdateCourse)
+                sidenavComp.updateActivePage(spec.activePage).await()
+
             sidenavComp.updateCourse(spec.courseId, forceUpdateCourse).await()
             sidenavComp.updateActivePage(spec.activePage).await()
             sidenavComp.updatePageItems(spec.pageSection).await()
@@ -120,8 +126,16 @@ class SidenavRootComp(
             trailerSectionComp
         )
 
-    override fun render(): String = tmRender(
-        "t-c-sidenav",
+    override fun render(): String = template(
+        """
+            <ul id="sidenav" class="sidenav sidenav-fixed">
+                <ez-dst id="{{headSectionId}}"></ez-dst>
+                <ez-dst id="{{generalSectionId}}"></ez-dst>
+                <ez-dst id="{{courseSectionId}}"></ez-dst>
+                <ez-dst id="{{pageSectionId}}"></ez-dst>
+                <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
+            </ul>
+        """.trimIndent(),
         "headSectionId" to headSectionComp.dstId,
         "generalSectionId" to generalSectionComp.dstId,
         "courseSectionId" to courseSectionDstId,
@@ -181,7 +195,7 @@ class SidenavRootComp(
             when {
                 newCourseId != null -> {
                     val comp = SidenavCourseSectionComp(activeRole, newCourseId, this, courseSectionDstId)
-                    courseSectionComp?.destroy()
+                    // Recreate without destroying i.e. visually the content will change in-place without clearing first
                     courseSectionComp = comp
                     comp.createAndBuild().await()
                 }

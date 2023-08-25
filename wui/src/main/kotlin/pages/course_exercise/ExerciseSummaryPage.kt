@@ -11,11 +11,9 @@ import PaginationConf
 import Role
 import Str
 import cache.BasicCourseInfo
-import compareTo
 import debug
 import debugFunStart
 import emptyToNull
-import errorMessage
 import getContainer
 import getLastPageOffset
 import highlightCode
@@ -32,8 +30,6 @@ import libheaders.Materialize
 import libheaders.focus
 import libheaders.tabHandler
 import lightboxExerciseImages
-import moveClass
-import observeValueChange
 import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.EasyPage
@@ -45,6 +41,7 @@ import pages.exercise.formatFeedback
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.*
+import restore
 import rip.kspar.ezspa.*
 import saveAsFile
 import successMessage
@@ -157,50 +154,8 @@ object ExerciseSummaryPage : EasyPage() {
         val feedback_teacher: String?
     )
 
-    @Serializable
-    data class StudentExercise(
-        val effective_title: String,
-        val text_html: String?,
-        @Serializable(with = DateSerializer::class)
-        val deadline: Date?,
-        val grader_type: GraderType,
-        val threshold: Int,
-        val instructions_html: String?
-    )
 
-    enum class AutogradeStatus {
-        NONE,
-        IN_PROGRESS,
-        COMPLETED,
-        FAILED
-    }
-
-    @Serializable
-    data class StudentSubmissions(
-        val submissions: List<StudentSubmission>,
-        val count: Int
-    )
-
-    @Serializable
-    data class StudentSubmission(
-        val id: String,
-        val solution: String,
-        @Serializable(with = DateSerializer::class)
-        val submission_time: Date,
-        val autograde_status: AutogradeStatus,
-        val grade_auto: Int?,
-        val feedback_auto: String?,
-        val grade_teacher: Int?,
-        val feedback_teacher: String?
-    )
-
-    @Serializable
-    data class StudentDraft(
-        val solution: String,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date
-    )
-
+    private var rootComp: Component? = null
 
     override val pageName: Any
         get() = PageName.EXERCISE_SUMMARY
@@ -208,7 +163,7 @@ object ExerciseSummaryPage : EasyPage() {
     override val sidenavSpec: Sidenav.Spec
         get() = Sidenav.Spec(pathParams.courseId, ActivePage.STUDENT_EXERCISE)
 
-    override val pathSchema = "/courses/{courseId}/exercises/{courseExerciseId}/summary"
+    override val pathSchema = "/courses/{courseId}/exercises/{courseExerciseId}/**"
 
     data class PathParams(val courseId: String, val courseExerciseId: String)
 
@@ -225,15 +180,44 @@ object ExerciseSummaryPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
+        val scrollPosition = pageStateStr.getScrollPosFromState()
 
         when (Auth.activeRole) {
-            Role.STUDENT -> buildStudentExercise(pathParams.courseId, pathParams.courseExerciseId)
+            Role.STUDENT -> doInPromise {
+                getHtml().addClass("wui3", "full-width")
+                Sidenav.refresh(sidenavSpec, true)
+
+                val r = StudentCourseExerciseComp(courseId, courseExerciseId, ::setWildcardPath)
+                rootComp = r
+                r.createAndBuild().await()
+                scrollPosition?.restore()
+
+                Navigation.catchNavigation {
+                    r.hasUnsavedChanges()
+                }
+            }
+
             Role.TEACHER, Role.ADMIN -> buildTeacherExercise(
                 pathParams.courseId,
                 pathParams.courseExerciseId,
                 Auth.activeRole == Role.ADMIN
             )
         }
+    }
+
+    override fun onPreNavigation() {
+        updateStateWithScrollPos()
+    }
+
+    override fun destruct() {
+        super.destruct()
+        rootComp?.destroy()
+        rootComp = null
+        getHtml().removeClass("wui3", "full-width")
+    }
+
+    private fun setWildcardPath(wildcardPathSuffix: String) {
+        updateUrl(link(courseId, courseExerciseId) + wildcardPathSuffix)
     }
 
     // Bit of a hack until we migrate this page
@@ -972,7 +956,7 @@ object ExerciseSummaryPage : EasyPage() {
         return tmRender(
             "tm-exercise-teacher-feedback", mapOf(
                 "teacherLabel" to Str.teacherAssessmentLabel(),
-                "teacherGradeLabel" to Str.teacherGradeLabel(),
+                "teacherGradeLabel" to Str.gradeLabel(),
                 "grade" to grade.toString(),
                 "feedback" to feedback
             )
@@ -990,303 +974,6 @@ object ExerciseSummaryPage : EasyPage() {
         )
     }
 
-
-    private fun buildStudentExercise(courseId: String, courseExerciseId: String) = MainScope().launch {
-
-        fun buildExerciseAndCrumbs() = MainScope().launch {
-            val exercisePromise = fetchEms(
-                "/student/courses/$courseId/exercises/$courseExerciseId", ReqMethod.GET,
-                successChecker = { http200 },
-                errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
-            )
-
-            val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
-            val exercise = exercisePromise.await().parseTo(StudentExercise.serializer()).await()
-
-            Title.update {
-                it.pageTitle = exercise.effective_title
-                it.parentPageTitle = courseTitle
-            }
-
-            getElemById("crumbs").innerHTML = tmRender(
-                "tm-exercise-crumbs", mapOf(
-                    "coursesLabel" to Str.myCourses(),
-                    "coursesHref" to "/courses",
-                    "courseTitle" to courseTitle,
-                    "courseHref" to "/courses/$courseId/exercises",
-                    "exerciseTitle" to exercise.effective_title
-                )
-            )
-
-            getElemById("exercise").innerHTML = tmRender(
-                "tm-stud-exercise-summary", mapOf(
-                    "deadlineLabel" to Str.softDeadlineLabel(),
-                    "deadline" to exercise.deadline?.toEstonianString(),
-                    "graderTypeLabel" to Str.graderTypeLabel(),
-                    "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
-                    "thresholdLabel" to Str.thresholdLabel(),
-                    "threshold" to exercise.threshold,
-                    "title" to exercise.effective_title,
-                    "text" to exercise.text_html
-                )
-            )
-            lightboxExerciseImages()
-            highlightCode()
-            MathJax.formatPageIfNeeded(exercise.text_html.orEmpty())
-        }
-
-
-        val fl = debugFunStart("buildStudentExercise")
-
-        getContainer().innerHTML = tmRender(
-            "tm-stud-exercise", mapOf(
-                "exerciseLabel" to Str.tabExerciseLabel(),
-                "submitLabel" to Str.tabSubmitLabel()
-            )
-        )
-
-        Materialize.Tabs.init(getElemById("tabs"))
-
-        getElemById("exercise").innerHTML = tmRender("tm-loading-exercise")
-        getElemById("submit").innerHTML = tmRender("tm-loading-submission")
-
-        buildExerciseAndCrumbs()
-        buildSubmit(courseId, courseExerciseId)
-        fl?.end()
-    }
-
-    private suspend fun postSolution(courseId: String, courseExerciseId: String, solution: String) {
-        debug { "Posting submission ${solution.substring(0, 15)}..." }
-        fetchEms(
-            "/student/courses/$courseId/exercises/$courseExerciseId/submissions", ReqMethod.POST,
-            mapOf("solution" to solution), successChecker = { http200 },
-            errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
-        ).await()
-        debug { "Submitted" }
-        successMessage { Str.submitSuccessMsg() }
-    }
-
-    private fun buildSubmit(courseId: String, courseExerciseId: String, existingSubmission: StudentSubmission? = null) =
-        MainScope().launch {
-
-            suspend fun saveSubmissionDraft(solution: String) {
-                debug { "Saving submission draft" }
-                paintSyncLoading()
-                fetchEms("/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.POST,
-                    mapOf("solution" to solution), successChecker = { http200 },
-                    errorHandler = {
-                        handleAlways {
-                            warn { "Failed to save draft with status $status" }
-                            // TODO: allow trying again - recursive call in message action fails due to a compiler bug
-                            errorMessage { "Mustandi salvestamine ebaõnnestus" }
-                            paintSyncFail()
-                        }
-                    }).await()
-                debug { "Draft saved" }
-                paintSyncDone()
-            }
-
-
-            val latestSubmissionSolution: String?
-
-            if (existingSubmission != null) {
-                debug { "Building submit tab using an existing submission" }
-                paintSubmission(existingSubmission, null)
-                latestSubmissionSolution = existingSubmission.solution
-            } else {
-                debug { "Building submit tab by fetching latest submission" }
-                val draftPromise = fetchEms(
-                    "/student/courses/$courseId/exercises/$courseExerciseId/draft", ReqMethod.GET,
-                    successChecker = { http200 or http204 },
-                    errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
-                )
-
-                val submission = fetchEms(
-                    "/student/courses/$courseId/exercises/$courseExerciseId/submissions/all?limit=1", ReqMethod.GET,
-                    successChecker = { http200 },
-                    errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
-                ).await()
-                    .parseTo(StudentSubmissions.serializer()).await()
-                    .submissions.getOrNull(0)
-
-                val draftResp = draftPromise.await()
-                val draft = if (draftResp.http200) draftResp.parseTo(StudentDraft.serializer()).await() else null
-
-                paintSubmission(submission, draft)
-                latestSubmissionSolution = submission?.solution
-
-                if (submission?.autograde_status == AutogradeStatus.IN_PROGRESS) {
-                    disableEditSubmit()
-                    paintAutoassInProgress()
-                    pollForAutograde(courseId, courseExerciseId)
-                }
-            }
-
-            val editor = CodeMirror.fromTextArea(
-                getElemById("submission"),
-                objOf(
-                    "mode" to "python",
-                    "theme" to "idea",
-                    "lineNumbers" to true,
-                    "autoRefresh" to true,
-                    "viewportMargin" to 100,
-                    "indentUnit" to 4,
-                    "matchBrackets" to true,
-                    "extraKeys" to tabHandler,
-                    "placeholder" to "Kirjuta või lohista lahendus siia...",
-                )
-            )
-
-            getElemById("submit-button").onVanillaClick(true) {
-                MainScope().launch {
-                    disableEditSubmit()
-                    postSolution(courseId, courseExerciseId, editor.getValue())
-                    paintAutoassInProgress()
-                    pollForAutograde(courseId, courseExerciseId)
-                }
-            }
-
-            paintSyncDone()
-            MainScope().launch {
-                observeValueChange(3000, 1000,
-                    valueProvider = { editor.getValue() },
-                    action = {
-                        saveSubmissionDraft(it)
-                        paintDraft(it, latestSubmissionSolution)
-                    },
-                    continuationConditionProvider = { getElemByIdOrNull("submission") != null },
-                    idleCallback = {
-                        paintSyncUnsynced()
-                    })
-            }
-        }
-
-    private fun disableEditSubmit() {
-        val editorWrap = getElemById("submit-editor-wrap")
-        val submitButton = getElemByIdAs<HTMLButtonElement>("submit-button")
-        val editor = editorWrap.getElementsByClassName("CodeMirror")[0]?.CodeMirror
-        submitButton.disabled = true
-        submitButton.textContent = Str.autoAssessing()
-        editor?.setOption("readOnly", true)
-        editorWrap.addClass("editor-read-only")
-    }
-
-    private fun paintAutoassInProgress() {
-        getElemById("assessment-auto").innerHTML = tmRender(
-            "tm-exercise-auto-feedback", mapOf(
-                "autoLabel" to Str.autoAssessmentLabel(),
-                "autoGradeLabel" to Str.autoGradeLabel(),
-                "grade" to "-",
-                "feedback" to Str.autoAssessing()
-            )
-        )
-    }
-
-    private fun paintSubmission(submission: StudentSubmission?, draft: StudentDraft?) {
-        getElemById("submit").innerHTML = tmRender(
-            "tm-stud-exercise-submit", mapOf(
-                "timeLabel" to Str.lastSubmTimeLabel(),
-                "checkLabel" to Str.submitAndCheckLabel(),
-                "doneLabel" to "Mustand salvestatud",
-                "undoneLabel" to "Mustand salvestamata",
-                "failLabel" to "Mustandi salvestamine ebaõnnestus",
-                "syncingLabel" to "Salvestan mustandit...",
-                "restoreLabel" to "Taasta viimane esitus",
-                "time" to submission?.submission_time?.toEstonianString()
-            )
-        )
-        initTooltips()
-
-        if (submission?.grade_auto != null) {
-            getElemById("assessment-auto").innerHTML =
-                renderAutoAssessment(submission.grade_auto, submission.feedback_auto)
-        }
-        if (submission?.grade_teacher != null) {
-            getElemById("assessment-teacher").innerHTML =
-                renderTeacherAssessment(submission.grade_teacher, submission.feedback_teacher)
-        }
-
-        when {
-            submission == null && draft != null -> {
-                paintDraft(draft.solution, null)
-            }
-
-            submission != null && draft == null -> {
-                paintLatestSubmission(submission.solution)
-            }
-
-            submission != null && draft != null -> {
-                when {
-                    submission.solution == draft.solution || submission.submission_time >= draft.created_at -> {
-                        paintLatestSubmission(submission.solution)
-                    }
-
-                    else -> {
-                        paintDraft(draft.solution, submission.solution)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun paintDraft(solution: String, submissionSolution: String?) {
-        getElemById("submission").textContent = solution
-        paintDraftState(solution, submissionSolution)
-    }
-
-    private fun paintDraftState(draftSolution: String, submissionSolution: String?) {
-        getElemById("editor-top-text").textContent = "Mustand (esitamata)"
-        if (submissionSolution != null && draftSolution != submissionSolution) {
-            val restoreBtn = getElemById("restore-latest-sub-btn")
-            restoreBtn.addClass("visible")
-            restoreBtn.onVanillaClick(true) {
-                debug { "Restoring latest sub" }
-                paintLatestSubmission(submissionSolution)
-            }
-        }
-    }
-
-    private fun paintLatestSubmission(solution: String) {
-        getElemById("submission").textContent = solution
-        getElemById("submit-editor-wrap").getElementsByClassName("CodeMirror")[0]?.CodeMirror?.setValue(solution)
-        paintLatestSubmissionState()
-    }
-
-    private fun paintLatestSubmissionState() {
-        getElemById("editor-top-text").textContent = "Viimane esitus"
-        getElemById("restore-latest-sub-btn").removeClass("visible")
-    }
-
-    private fun pollForAutograde(courseId: String, courseExerciseId: String) {
-        debug { "Starting long poll for autoassessment" }
-        fetchEms(
-            "/student/courses/$courseId/exercises/$courseExerciseId/submissions/latest/await", ReqMethod.GET,
-            successChecker = { http200 },
-            errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
-        ).then {
-            it.parseTo(StudentSubmission.serializer())
-        }.then {
-            debug { "Finished long poll, rebuilding" }
-            buildSubmit(courseId, courseExerciseId, it)
-            Sidenav.refresh(sidenavSpec, true)
-        }
-    }
-
-    private fun paintSyncDone() {
-        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-done"), "visible")
-    }
-
-    private fun paintSyncUnsynced() {
-        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-undone"), "visible")
-    }
-
-    private fun paintSyncLoading() {
-        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-loading"), "visible")
-    }
-
-    private fun paintSyncFail() {
-        moveClass(getElemsBySelector("#sync-indicator .icon"), getElemById("sync-fail"), "visible")
-    }
 
     private fun initTooltips() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))

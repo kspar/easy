@@ -50,14 +50,14 @@ class SidenavCourseSectionComp(
         """
             <li><div class="divider"></div></li>
             <li title="{{courseTitle}}"><a class="subheader truncate">{{courseTitle}}</a></li>
-            <li id="{{exercisesId}}"><a href="{{exercisesLink}}" class="waves-effect sidenav-close">{{{exercisesIcon}}}{{exercisesLabel}}</a></li>
+            <li id="{{exercisesId}}"><a href="{{exercisesLink}}" class="sidenav-close">{{{exercisesIcon}}}{{exercisesLabel}}</a></li>
             {{#isTeacherOrAdmin}}
-                <li id="{{gradesId}}"><a href="{{gradesLink}}" class="waves-effect sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
-                <li id="{{participantsId}}"><a href="{{participantsLink}}" class="waves-effect sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
-                <li><a id="{{updateCourseLinkId}}" class="waves-effect sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
+                <li id="{{gradesId}}"><a href="{{gradesLink}}" class="sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
+                <li id="{{participantsId}}"><a href="{{participantsLink}}" class="sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+                <li><a id="{{updateCourseLinkId}}" class="sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
             {{/isTeacherOrAdmin}}
             {{#studentExercises}}
-                <li id='{{id}}'><a href="{{link}}" class="student-course-item {{#green}}circle-green{{/green}} {{#yellow}}circle-yellow{{/yellow}} {{#blue}}circle-blue{{/blue}} {{#grey}}circle-grey{{/grey}} waves-effect sidenav-close">{{{icon}}}<span class='truncate'>{{title}}</span></a></li>
+                <li id='{{id}}'><a href="{{link}}" class="student-course-item {{#green}}circle-green{{/green}} {{#yellow}}circle-yellow{{/yellow}} {{#blue}}circle-blue{{/blue}} {{#grey}}circle-grey{{/grey}} sidenav-close">{{{icon}}}<span class='truncate'>{{title}}</span></a></li>
             {{/studentExercises}}
             <ez-dst id="{{updateModalDst}}"></ez-dst>
         """.trimIndent(),

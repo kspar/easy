@@ -34,7 +34,7 @@ object CourseExercisesPage : EasyPage() {
         getHtml().addClass("wui3")
 
         rootComp = when (Auth.activeRole) {
-            Role.STUDENT -> StudentCourseExercisesComp(courseId).also {
+            Role.STUDENT -> StudentCourseExercisesListComp(courseId).also {
                 it.createAndBuild().then { scrollPosition?.restore() }
             }
 

@@ -2,6 +2,7 @@ package dao
 
 import EzDate
 import EzDateSerializer
+import Icons
 import blankToNull
 import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
@@ -65,7 +66,12 @@ object ExerciseDAO {
     }
 
     enum class GraderType {
-        AUTO, TEACHER
+        AUTO, TEACHER;
+
+        fun icon() = when (this) {
+            AUTO -> Icons.robot
+            TEACHER -> Icons.teacherFace
+        }
     }
 
     class NoLibAccessException : Exception()

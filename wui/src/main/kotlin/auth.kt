@@ -97,7 +97,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                     "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida.",
                     ToastThing.Action("Logi sisse", ::login),
                     Icons.errorUnf,
-                    displayLengthSec = 60 * 60 * 24 * 365,
+                    displayLengthSec = ToastThing.LONG_TIME,
                     id = ToastIds.loginToContinue
                 )
                 reject(RuntimeException("Token refresh failed"))

@@ -23,11 +23,11 @@ class SidenavTrailerSectionComp(
         """
             <li><div class="divider"></div></li>
             {{#isAdmin}}
-                <li><a href="{{idpLink}}" class="waves-effect sidenav-close">{{{idpIcon}}}{{idpLabel}}</a></li>
-                <li><a href="{{issueTrackLink}}" class="waves-effect sidenav-close">{{{issueTrackIcon}}}{{issueTrackLabel}}</a></li>
+                <li><a href="{{idpLink}}" class="sidenav-close">{{{idpIcon}}}{{idpLabel}}</a></li>
+                <li><a href="{{issueTrackLink}}" class="sidenav-close">{{{issueTrackIcon}}}{{issueTrackLabel}}</a></li>
             {{/isAdmin}}
-            <li><a href="{{accountSettingsLink}}" class="waves-effect sidenav-close">{{{accountSettingsIcon}}}{{accountSettingsLabel}}</a></li>
-            <li><a id='$logoutId' class="waves-effect sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
+            <li><a href="{{accountSettingsLink}}" class="sidenav-close">{{{accountSettingsIcon}}}{{accountSettingsLabel}}</a></li>
+            <li><a id='$logoutId' class="sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
         """.trimIndent(),
         "isAdmin" to (activeRole == Role.ADMIN),
         "issueTrackLink" to AppProperties.ISSUE_TRACKER_URL,

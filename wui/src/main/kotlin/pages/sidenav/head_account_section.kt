@@ -6,7 +6,7 @@ import components.form.SelectComp
 import debug
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import tmRender
+import template
 
 
 class SidenavHeadAccountSection(
@@ -32,8 +32,24 @@ class SidenavHeadAccountSection(
         }
     }
 
-    override fun render(): String = tmRender(
-        "t-c-sidenav-head-account-section",
+    override fun render(): String = template(
+        """
+            <li>
+                <div class="user-view">
+                    <div class="background"></div>
+                    <div class="name attr truncate">{{userName}}</div>
+                    <div class="email attr truncate">{{userEmail}}</div>
+                    {{^canSwitchRole}}
+                        <div class="role attr">{{userRole}}</div>
+                    {{/canSwitchRole}}
+                    {{#canSwitchRole}}
+                        <div class="role-select-wrap">
+                            <ez-dst id="{{roleSelectId}}"></ez-dst>
+                        </div>
+                    {{/canSwitchRole}}
+                </div>
+            </li>
+        """.trimIndent(),
         "userName" to userName,
         "userEmail" to userEmail,
         "canSwitchRole" to (availableRoles.size > 1),

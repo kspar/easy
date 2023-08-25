@@ -14,7 +14,6 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
-import tmRender
 import kotlin.js.Date
 import kotlin.js.Promise
 
@@ -120,7 +119,7 @@ class AssessmentViewComp(
         """.trimIndent(),
         "title" to if (isAuto) Str.autoAssessmentLabel() else Str.teacherAssessmentLabel(),
         "auto" to isAuto,
-        "gradeLabel" to if (isAuto) Str.autoGradeLabel() else Str.teacherGradeLabel(),
+        "gradeLabel" to if (isAuto) Str.autoGradeLabel() else Str.gradeLabel(),
         "grade" to grade?.toString(),
         "feedback" to feedback?.let { formatFeedback(it) },
     )

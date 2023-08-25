@@ -2,3 +2,6 @@
 # Make sure this dir contains a stable (tested) version of Materialize
 # Repo: https://github.com/materializecss/materialize
 pathToMaterialize=/absolute/path/to/materialize
+
+# Directory where compiled wui files can be copied when testing/serving wui locally
+localWuiServeDir=/opt/homebrew/var/www/wui
