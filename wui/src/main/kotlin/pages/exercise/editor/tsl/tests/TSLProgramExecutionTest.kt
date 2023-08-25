@@ -33,8 +33,7 @@ class TSLProgramExecutionTest(
         return ProgramExecutionTest(
             testId,
             stdInSection.getInputs(),
-            genericChecks = dataChecks.updateAndGetChecks(),
-            exceptionCheck = ExceptionCheck(true, "", "", "")
+            genericChecks = dataChecks.updateAndGetChecks()
         )
     }
 
