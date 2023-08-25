@@ -130,6 +130,7 @@ class AssessmentViewComp(
 data class OkV3(
     val result_type: String,
     val producer: String,
+    // TODO: add finished_at: EzDate
     val points: Double, // TODO: Int
     val pre_evaluate_error: String? = null,
     val tests: List<V3Test>,
