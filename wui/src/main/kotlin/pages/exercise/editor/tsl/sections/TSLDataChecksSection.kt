@@ -24,7 +24,7 @@ class TSLDataChecksSection(
         val value: TextFieldComp, val type: SelectComp, val comparison: SelectComp,
 //        val nothingElse: CheckboxComp,
         val ordered: CheckboxComp,
-        val title: StringFieldComp, val passMsg: StringFieldComp, val failMsg: StringFieldComp,
+        val passMsg: StringFieldComp, val failMsg: StringFieldComp,
         val upBtn: IconButtonComp, val downBtn: IconButtonComp, val deleteBtn: IconButtonComp,
     )
 
@@ -37,7 +37,7 @@ class TSLDataChecksSection(
         get() = listOf(addCheckBtn) + sections.flatMap {
             listOf(
                 it.value, it.type, it.comparison, it.ordered,
-                it.title, it.passMsg, it.failMsg,
+                it.passMsg, it.failMsg,
                 it.upBtn, it.downBtn, it.deleteBtn
             )
         }
@@ -109,14 +109,6 @@ class TSLDataChecksSection(
                     parent = this
                 ),
                 StringFieldComp(
-                    "", true,
-                    fieldNameForMessage = "Kontrolli nimi",
-                    initialValue = check.beforeMessage,
-                    onValidChange = { onValidChanged() },
-                    onValueChange = { onUpdate() },
-                    parent = this
-                ),
-                StringFieldComp(
                     "Tagasiside õnnestumisel", true,
                     initialValue = check.passedMessage,
                     onValidChange = { onValidChanged() },
@@ -169,7 +161,7 @@ class TSLDataChecksSection(
     override fun render() = template(
         """
             {{#checks}}
-                <fieldset style='border: 1px solid #ccc; border-radius: .5rem;'>
+                <fieldset style='border: 1px solid #ccc; border-radius: .5rem; color: var(--ez-text-inactive); margin-top: 3rem;'>
                 <legend>
                     <ez-dst id='{{titleDst}}'></ez-dst>
                     <ez-dst id='{{upBtnDst}}'></ez-dst>
@@ -189,7 +181,6 @@ class TSLDataChecksSection(
         """.trimIndent(),
         "checks" to sections.map {
             mapOf(
-                "titleDst" to it.title.dstId,
                 "typeDst" to it.type.dstId,
                 "comparisonDst" to it.comparison.dstId,
                 "valueDst" to it.value.dstId,
@@ -212,7 +203,7 @@ class TSLDataChecksSection(
                 dataCategory = DataCategory.valueOf(it.comparison.getValue()!!),
                 expectedValue = it.value.getValue().split("\n").filter(String::isNotBlank),
                 elementsOrdered = it.ordered.isChecked,
-                beforeMessage = it.title.getValue(),
+                beforeMessage = "",
                 passedMessage = it.passMsg.getValue(),
                 failedMessage = it.failMsg.getValue(),
             )
@@ -244,7 +235,6 @@ class TSLDataChecksSection(
             it.comparison.isDisabled = !nowEditable
             it.value.isDisabled = !nowEditable
             it.ordered.isDisabled = !nowEditable
-            it.title.isDisabled = !nowEditable
             it.passMsg.isDisabled = !nowEditable
             it.failMsg.isDisabled = !nowEditable
         }
@@ -259,7 +249,6 @@ class TSLDataChecksSection(
 
     fun isValid() = sections.all {
         it.value.isValid &&
-                it.title.isValid &&
                 it.passMsg.isValid &&
                 it.failMsg.isValid
     }

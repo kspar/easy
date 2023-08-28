@@ -32,7 +32,10 @@
     --ez-btn-active-text: #fff;
     --ez-btn-disabled-text: #9f9f9f;
 
-    --ezc-attr-immutable-col: rgba(0, 0, 0, .44);
+    --ez-text-normal: todo;
+    --ez-text-inactive: rgba(0, 0, 0, .44);
+
+    --ezc-attr-immutable-col: var(--ez-text-inactive);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
     --ezc-link-hover-col: #429748;
 
@@ -359,7 +362,7 @@ svg {
 }
 
 .sidenav li a.student-course-item ez-icon > svg {
-    width: 1.8rem;
+    /* Height changes size, keep normal width to align link text with other items */
     height: 1.8rem;
 }
 
@@ -2510,8 +2513,6 @@ ez-block-container ez-block {
 /** Ez collapsible **/
 
 .ez-collapsible {
-    margin: 0 0 1rem 0;
-    border: 1px solid var(--ez-border);
     border-radius: var(--ez-border-radius);
     box-shadow: none;
 }
@@ -2521,8 +2522,6 @@ ez-block-container ez-block {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    min-height: 5.5rem; /* to keep height when showing/hiding 3-dot menu */
-    border: 0;
     border-radius: var(--ez-border-radius);
     transition: background-color .3s ease-out;
 }
@@ -2531,11 +2530,18 @@ ez-block-container ez-block {
     background-color: var(--ez-secondary-action-hover-bg);
 }
 
-/* TODO: too wide padding on small screens */
+.ez-collapsible li.active .collapsible-header {
+    background-color: var(--ez-secondary-action-hover-bg)
+}
+
 .ez-collapsible .collapsible-body {
-    border-bottom: none;
-    border-top: 2px solid var(--ez-attr-key);
-    padding: 2rem 3.5rem;
+    padding: 2rem 1rem;
+}
+
+@media only screen and (min-width: 500px) {
+    .ez-collapsible .collapsible-body {
+        padding-left: 3.5rem;
+    }
 }
 
 
@@ -2830,7 +2836,11 @@ ez-tabs .editor-wrapper {
 ez-feedback {
     display: flex;
     flex-direction: column;
-    margin-top: 3rem;
+    margin-top: 4rem;
+}
+
+ez-feedback pre {
+    font-size: 1.4rem;
 }
 
 ez-assessment {
@@ -2868,6 +2878,71 @@ ez-feedback ez-grade ez-grade-no {
 ez-grade ez-icon {
     display: inline-flex;
     margin-left: .7rem;
+}
+
+ez-feedback-test-header ez-icon {
+    display: inline-flex;
+    margin-right: 1rem;
+}
+
+ez-feedback-test-header.pass ez-icon  {
+    color: var(--ez-green);
+}
+
+ez-feedback-test-header.fail ez-icon {
+    color: var(--ez-btn-danger-col);
+}
+
+ez-feedback-icon {
+    display: flex;
+}
+
+ez-feedback-check {
+    display: flex;
+}
+
+ez-feedback-check ez-icon {
+    display: inline-flex;
+    margin-right: 1rem;
+}
+
+ez-feedback-check.pass {
+    color: var(--ez-text-inactive);
+}
+
+ez-feedback-check.pass ez-icon {
+    color: var(--ez-green);
+}
+
+ez-feedback-check.fail ez-icon {
+    color: var(--ez-btn-danger-col);
+}
+
+ez-feedback-data {
+    display: block;
+    margin-top: 3rem;
+}
+
+ez-feedback-data pre {
+    margin-top: .5rem;
+    margin-bottom: 2rem;
+}
+
+ez-feedback-producer {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    font-size: .7em;
+}
+
+ez-feedback-producer ez-icon {
+    display: inline-flex;
+    margin-right: .8rem;
+}
+
+ez-feedback-producer ez-icon svg {
+    width: 1rem;
+    height: 1rem;
 }
 
 

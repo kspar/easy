@@ -75,9 +75,9 @@ class TSLTestComp(
 
     override fun render() = template(
         """
-            <ul class="ez-collapsible collapsible">
+            <ul class="ez-collapsible collapsible" style='margin: 0 0 1rem 0; border: 1px solid var(--ez-border);'>
                 <li>
-                    <div class="collapsible-header">
+                    <div class="collapsible-header" style='border: 0; min-height: 5.5rem; /* to keep height when showing/hiding 3-dot menu */'>
                         <ez-tsl-test-header-left>
                             <ez-collapsible-icon>{{{titleIcon}}}</ez-collapsible-icon>
                             <ez-collapsible-title>{{title}}</ez-collapsible-title>
@@ -89,7 +89,7 @@ class TSLTestComp(
                             <ez-icon-action ez-tsl-test-menu title="{{menuLabel}}" class="waves-effect dropdown-trigger icon-med" tabindex="0" data-target="ez-tsl-test-{{testDst}}">{{{menuIcon}}}</ez-icon-action>
                         </ez-tsl-test-header-right>
                     </div>
-                    <div class="collapsible-body">
+                    <div class="collapsible-body" style='border-bottom: none; border-top: 2px solid var(--ez-attr-key);'>
                         <ez-dst id="{{testTypeDst}}"></ez-dst>
                         <ez-dst id="{{testContentDst}}"></ez-dst>
                     </div>
