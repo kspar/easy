@@ -9,7 +9,7 @@ import pages.Navbar
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
 import pages.links.RegisterLinkPage

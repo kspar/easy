@@ -190,7 +190,7 @@ private object EstStrings : TranslatableStrings() {
     override fun doRestore() = "Taasta"
     override fun doChange() = "Muuda"
     override fun exerciseSaved() = "Ülesanne uuendatud"
-    override fun assessmentAddedMsg() = "Hinnang lisatud."
+    override fun assessmentAddedMsg() = "Hinnang lisatud"
     override fun oldSubmissionNote() = "See on vana esitus."
     override fun toLatestSubmissionLink() = "Vaata viimast esitust."
     override fun loadingAllSubmissions() = "Laen esitusi..."

@@ -11,8 +11,8 @@ import dao.LibraryDAO
 import dao.LibraryDirDAO
 import debug
 import kotlinx.coroutines.await
-import pages.exercise.AddToCourseModalComp
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.AddToCourseModalComp
+import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component

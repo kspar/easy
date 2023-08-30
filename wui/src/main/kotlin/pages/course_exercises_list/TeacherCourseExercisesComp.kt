@@ -16,7 +16,7 @@ import getWindowScrollPosition
 import kotlinx.coroutines.await
 import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp
 import pages.sidenav.Sidenav
 import restore

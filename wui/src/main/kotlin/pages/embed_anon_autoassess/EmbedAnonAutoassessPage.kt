@@ -12,7 +12,7 @@ import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import libheaders.ResizeObserver
 import pages.EasyPage
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.ExercisePage
 import queries.getCurrentQueryParamValue
 import rip.kspar.ezspa.*
 import template
