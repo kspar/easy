@@ -16,6 +16,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.util.SendMailService
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -36,7 +37,8 @@ class StudentSubmitCont(
     private val autoAssessStatusObserver: AutoAssessStatusObserver,
     private val cachingService: CachingService,
     private val autoGradeScheduler: AutoGradeScheduler,
-    private val moodleGradesSyncService: MoodleGradesSyncService
+    private val moodleGradesSyncService: MoodleGradesSyncService,
+    private val mailService: SendMailService,
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -107,7 +109,16 @@ class StudentSubmitCont(
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
             insertAutoAssFailed(submissionId, cachingService, courseExId)
-            return
+            val notification = """
+                Autoassessment failed
+                
+                Course exercise id: $courseExId
+                Submission id: $submissionId
+                Solution:
+                
+                $solution
+            """.trimIndent()
+            mailService.sendSystemNotification(notification)
         }
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
