@@ -35,7 +35,7 @@ class SidenavGeneralSectionComp(
             {{/isTeacherOrAdmin}}
             {{#isAdmin}}
         <!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
-                <li><a id="{{newCourseLinkId}}" class="sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
+                <li><a id="{{newCourseLinkId}}" href='#!' class="sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
             {{/isAdmin}}
             <ez-dst id="{{newCourseModalDst}}"></ez-dst>
         """.trimIndent(),
@@ -60,7 +60,7 @@ class SidenavGeneralSectionComp(
     )
 
     override fun postRender() {
-        getElemByIdOrNull(newCourseLinkId)?.onVanillaClick(false) {
+        getElemByIdOrNull(newCourseLinkId)?.onVanillaClick(true) {
             val courseId = newCourseModal.openWithClosePromise().await()
             courseId?.let {
                 EzSpa.PageManager.navigateTo(CourseExercisesPage.link(courseId))

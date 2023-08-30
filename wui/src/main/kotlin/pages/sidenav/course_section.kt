@@ -54,7 +54,7 @@ class SidenavCourseSectionComp(
             {{#isTeacherOrAdmin}}
                 <li id="{{gradesId}}"><a href="{{gradesLink}}" class="sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
                 <li id="{{participantsId}}"><a href="{{participantsLink}}" class="sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
-                <li><a id="{{updateCourseLinkId}}" class="sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
+                <li><a id="{{updateCourseLinkId}}" href='#!' class="sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
             {{/isTeacherOrAdmin}}
             {{#studentExercises}}
                 <li id='{{id}}'><a href="{{link}}" class="student-course-item {{#green}}circle-green{{/green}} {{#yellow}}circle-yellow{{/yellow}} {{#blue}}circle-blue{{/blue}} {{#grey}}circle-grey{{/grey}} sidenav-close">{{{icon}}}<span class='truncate'>{{title}}</span></a></li>
@@ -114,7 +114,7 @@ class SidenavCourseSectionComp(
     )
 
     override fun postRender() {
-        getElemByIdOrNull(updateModalLinkId)?.onVanillaClick(false) {
+        getElemByIdOrNull(updateModalLinkId)?.onVanillaClick(true) {
             val saved = updateCourseModal.openWithClosePromise().await()
             if (saved) {
                 BasicCourseInfo.invalidate(courseId)

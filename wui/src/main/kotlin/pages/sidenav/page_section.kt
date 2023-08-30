@@ -16,7 +16,7 @@ class SidenavPageSectionComp(
             <li><div class="divider"></div></li>
             <li title="{{pageSectionTitle}}"><a class="subheader truncate">{{pageSectionTitle}}</a></li>
             {{#pageItems}}
-                <li><a class="sidenav-close" id="{{id}}" {{#href}}href="{{href}}"{{/href}}>{{{icon}}}{{text}}</a></li>
+                <li><a class="sidenav-close" id="{{id}}" href="{{href}}">{{{icon}}}{{text}}</a></li>
             {{/pageItems}}
         """.trimIndent(),
         "pageSectionTitle" to pageSection.title,
@@ -25,7 +25,7 @@ class SidenavPageSectionComp(
                 "id" to it.id,
                 "icon" to it.iconHtml,
                 "text" to it.text,
-                "href" to (if (it is Sidenav.Link) it.href else null),
+                "href" to (if (it is Sidenav.Link) it.href else "#!"),
             )
         }
     )

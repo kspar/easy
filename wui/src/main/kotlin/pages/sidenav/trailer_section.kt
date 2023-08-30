@@ -27,7 +27,7 @@ class SidenavTrailerSectionComp(
                 <li><a href="{{issueTrackLink}}" class="sidenav-close">{{{issueTrackIcon}}}{{issueTrackLabel}}</a></li>
             {{/isAdmin}}
             <li><a href="{{accountSettingsLink}}" class="sidenav-close">{{{accountSettingsIcon}}}{{accountSettingsLabel}}</a></li>
-            <li><a id='$logoutId' class="sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
+            <li><a id='$logoutId' href='#!' class="sidenav-close">{{{logOutIcon}}}{{logOutLabel}}</a></li>
         """.trimIndent(),
         "isAdmin" to (activeRole == Role.ADMIN),
         "issueTrackLink" to AppProperties.ISSUE_TRACKER_URL,
