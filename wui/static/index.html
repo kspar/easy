@@ -458,18 +458,6 @@
     </div>
 </script>
 
-<script id="tm-exercise-auto-feedback" type="text/x-handlebars-template">
-    <h4>{{autoLabel}}</h4>
-    <pre class="feedback auto-feedback">{{feedback}}</pre>
-    <div>{{autoGradeLabel}}: <span class="grade-number">{{grade}}</span>/100</div>
-</script>
-
-<script id="tm-exercise-teacher-feedback" type="text/x-handlebars-template">
-    <h4>{{teacherLabel}}</h4>
-    <pre id="teacher-feedback" class="feedback">{{feedback}}</pre>
-    <div>{{teacherGradeLabel}}: <span id="teacher-grade" class="grade-number">{{grade}}</span>/100</div>
-</script>
-
 <script id="tm-teach-exercise-add-grade" type="text/x-handlebars-template">
     <div id="add-grade-wrap" class="toggleable-wrap">
         <div class="row">
@@ -643,7 +631,6 @@
 </script>
 
 <script id="tm-teach-exercise-testing" type="text/x-handlebars-template">
-    <div id="testing-assessment" class="assessment"></div>
     <div class="editor-wrapper">
         <div class="editor-top"></div>
         <textarea id="testing-submission">{{latestSubmission}}</textarea>
@@ -651,6 +638,7 @@
     <div class="center" style="display: flex; justify-content: center;">
         <button id="testing-submit" class="waves-effect waves-light btn">{{checkLabel}}</button>
     </div>
+    <div id="testing-assessment" class="assessment"></div>
 </script>
 
 <script id="tm-teach-exercise-summary" type="text/x-handlebars-template">

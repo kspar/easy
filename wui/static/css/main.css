@@ -500,16 +500,6 @@ ez-student-course-exercise > ez-block-container {
     opacity: inherit;
 }
 
-#exercise-card #submission-info,
-#exercise-card .assessment {
-    margin-bottom: 3rem;
-}
-
-#exercise-card #submission-info {
-    display: flex;
-    flex-wrap: wrap;
-}
-
 #exercise-card .submission-item {
     display: flex;
     justify-content: space-between;
@@ -2506,7 +2496,6 @@ ez-block-container {
 
 ez-block-container ez-block {
     flex-grow: 1;
-    overflow: auto;
 }
 
 

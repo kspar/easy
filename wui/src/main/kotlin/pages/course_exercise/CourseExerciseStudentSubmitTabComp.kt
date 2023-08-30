@@ -221,10 +221,7 @@ class CourseExerciseStudentSubmitTabComp(
     }
 
     private fun clearFeedback() {
-        feedback.validGrade = null
-        feedback.autoFeedback = null
-        feedback.teacherFeedback = null
-        feedback.failed = false
+        feedback.clearAll()
         feedback.rebuild()
     }
 

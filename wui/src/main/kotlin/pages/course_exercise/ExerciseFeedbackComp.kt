@@ -4,11 +4,11 @@ import Icons
 import Str
 import dao.CourseExercisesStudentDAO
 import debug
+import kotlinx.serialization.Serializable
 import libheaders.Materialize
-import pages.exercise.OkV3
-import pages.exercise.V3Status
 import parseTo
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.getElemsByClass
 import template
@@ -18,8 +18,9 @@ class ExerciseFeedbackComp(
     var autoFeedback: String?,
     var teacherFeedback: String?,
     var failed: Boolean = false,
-    parent: Component
-) : Component(parent) {
+    parent: Component?, // temp null for non-wui3
+    dstId: String = IdGenerator.nextId(), // temp
+) : Component(parent, dstId) {
 
     companion object {
         const val autogradeFailedMsg = """
@@ -31,6 +32,45 @@ Kedagi on probleemist ilmselt juba teavitatud,
 ole hea ja proovi hiljem uuesti.
         """
     }
+
+    @Serializable
+    data class OkV3(
+        val result_type: String,
+        val producer: String,
+        // TODO: add finished_at: EzDate
+        val points: Double, // TODO: Int
+        val pre_evaluate_error: String? = null,
+        val tests: List<V3Test>,
+    )
+
+    @Serializable
+    data class V3Test(
+        val title: String,
+        val status: V3Status,
+        val exception_message: String? = null,
+        val user_inputs: List<String>,
+        val created_files: List<V3File>,
+        val actual_output: String? = null,
+        val converted_submission: String? = null,
+        val checks: List<V3Check>,
+    )
+
+    enum class V3Status {
+        PASS, FAIL, SKIP
+    }
+
+    @Serializable
+    data class V3File(
+        val name: String,
+        val content: String,
+    )
+
+    @Serializable
+    data class V3Check(
+        val title: String,
+        val feedback: String,
+        val status: V3Status,
+    )
 
     override fun render(): String {
         val parsedV3 = parseAutofeedback()
@@ -87,6 +127,13 @@ ole hea ja proovi hiljem uuesti.
         val collapsibleElem = getElemById(dstId).getElemsByClass("ez-collapsible").singleOrNull()
         if (collapsibleElem != null)
             Materialize.Collapsible.init(collapsibleElem)
+    }
+
+    fun clearAll() {
+        validGrade = null
+        autoFeedback = null
+        teacherFeedback = null
+        failed = false
     }
 
     private fun parseAutofeedback(): OkV3? =

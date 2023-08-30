@@ -11,6 +11,8 @@ import PaginationConf
 import Role
 import Str
 import cache.BasicCourseInfo
+import dao.CourseExercisesStudentDAO
+import dao.ExerciseDAO
 import debug
 import debugFunStart
 import emptyToNull
@@ -35,9 +37,8 @@ import org.w3c.dom.*
 import pages.EasyPage
 import pages.Title
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
-import pages.exercise.ExercisePage
-import pages.exercise.TestingTabComp
-import pages.exercise.formatFeedback
+import pages.exercise_in_library.ExercisePage
+import pages.exercise_in_library.TestingTabComp
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.*
@@ -213,6 +214,7 @@ object ExerciseSummaryPage : EasyPage() {
         super.destruct()
         rootComp?.destroy()
         rootComp = null
+        Navigation.stopNavigationCatching()
         getHtml().removeClass("wui3", "full-width")
     }
 
@@ -222,6 +224,8 @@ object ExerciseSummaryPage : EasyPage() {
 
     // Bit of a hack until we migrate this page
     private val updateModalDst = IdGenerator.nextId()
+    private val feedbackDstTesting = IdGenerator.nextId()
+    private val feedbackDstSub = IdGenerator.nextId()
 
     private fun buildTeacherExercise(courseId: String, courseExerciseId: String, isAdmin: Boolean) =
         MainScope().launch {
@@ -455,22 +459,22 @@ object ExerciseSummaryPage : EasyPage() {
 
         submitButton.onVanillaClick(true) {
             MainScope().launch {
-                submitButton.disabled = true
-                submitButton.textContent = Str.autoAssessing()
-                val autoAssessmentWrap = getElemById("testing-assessment")
-                autoAssessmentWrap.innerHTML = tmRender(
-                    "tm-exercise-auto-feedback", mapOf(
-                        "autoLabel" to Str.autoAssessmentLabel(),
-                        "autoGradeLabel" to Str.autoGradeLabel(),
-                        "grade" to "-",
-                        "feedback" to Str.autoAssessing()
-                    )
-                )
-                val solution = editor.getValue()
-                val result = postSolution(solution)
-                autoAssessmentWrap.innerHTML = renderAutoAssessment(result.grade, result.feedback)
-                submitButton.textContent = Str.doAutoAssess()
-                submitButton.disabled = false
+                try {
+                    submitButton.disabled = true
+                    submitButton.textContent = Str.autoAssessing()
+                    editor.setOption("readOnly", true)
+                    val autoAssessmentWrap = getElemById("testing-assessment")
+                    autoAssessmentWrap.innerHTML = """<ez-dst id='$feedbackDstTesting'></ez-dst>"""
+                    renderAutoLoaderTesting()
+                    val solution = editor.getValue()
+                    val result = postSolution(solution)
+                    autoAssessmentWrap.innerHTML = """<ez-dst id='$feedbackDstTesting'></ez-dst>"""
+                    renderAutoAssessmentTesting(result.grade, result.feedback, false)
+                } finally {
+                    editor.setOption("readOnly", false)
+                    submitButton.textContent = Str.doAutoAssess()
+                    submitButton.disabled = false
+                }
             }
         }
         fl?.end()
@@ -746,14 +750,21 @@ object ExerciseSummaryPage : EasyPage() {
                 )
             )
 
-            if (gradeAuto != null) {
-                getElemById("assessment-auto").innerHTML =
-                    renderAutoAssessment(gradeAuto, feedbackAuto)
+            getElemById("assessment-auto").innerHTML = """<ez-dst id='$feedbackDstSub'></ez-dst>"""
+
+            val validGrade = when {
+                gradeTeacher != null ->
+                    CourseExercisesStudentDAO.ValidGrade(gradeTeacher, ExerciseDAO.GraderType.TEACHER)
+
+                gradeAuto != null ->
+                    CourseExercisesStudentDAO.ValidGrade(gradeAuto, ExerciseDAO.GraderType.AUTO)
+
+                else -> null
+
             }
-            if (gradeTeacher != null) {
-                getElemById("assessment-teacher").innerHTML =
-                    renderTeacherAssessment(gradeTeacher, feedbackTeacher)
-            }
+
+            if (validGrade != null)
+                renderAssessmentSub(validGrade, feedbackAuto, false, feedbackTeacher)
 
             CodeMirror.fromTextArea(
                 getElemById("student-submission"), objOf(
@@ -766,9 +777,7 @@ object ExerciseSummaryPage : EasyPage() {
                 )
             )
 
-            val validGrade = gradeTeacher ?: gradeAuto
-
-            getElemByIdOrNull("add-grade-link")?.onVanillaClick(true) { toggleAddGradeBox(id, validGrade) }
+            getElemByIdOrNull("add-grade-link")?.onVanillaClick(true) { toggleAddGradeBox(id, validGrade?.grade) }
 
             getElemByIdOrNull("last-submission-link")?.onVanillaClick(true) {
                 val isAllSubsBoxOpen = getElemByIdOrNull("all-submissions-wrap") != null
@@ -952,26 +961,44 @@ object ExerciseSummaryPage : EasyPage() {
         }
     }
 
-    private fun renderTeacherAssessment(grade: Int, feedback: String?): String {
-        return tmRender(
-            "tm-exercise-teacher-feedback", mapOf(
-                "teacherLabel" to Str.teacherAssessmentLabel(),
-                "teacherGradeLabel" to Str.gradeLabel(),
-                "grade" to grade.toString(),
-                "feedback" to feedback
-            )
-        )
+
+    private fun renderAutoLoaderTesting() = renderAutoLoader(feedbackDstTesting)
+
+    private fun renderAutoLoader(dst: String) {
+        val loader = AutogradeLoaderComp(true, null, dst)
+        loader.rebuild()
     }
 
-    private fun renderAutoAssessment(grade: Int, feedback: String?): String {
-        return tmRender(
-            "tm-exercise-auto-feedback", mapOf(
-                "autoLabel" to Str.autoAssessmentLabel(),
-                "autoGradeLabel" to Str.autoGradeLabel(),
-                "grade" to grade.toString(),
-                "feedback" to feedback?.let { formatFeedback(it) },
-            )
+    private fun renderAutoAssessmentTesting(
+        grade: Int,
+        autoFeedback: String?,
+        failed: Boolean
+    ) =
+        renderAutoAssessment(
+            CourseExercisesStudentDAO.ValidGrade(grade, ExerciseDAO.GraderType.AUTO),
+            autoFeedback,
+            null,
+            failed,
+            feedbackDstTesting
         )
+
+    private fun renderAssessmentSub(
+        validGrade: CourseExercisesStudentDAO.ValidGrade,
+        autoFeedback: String?,
+        failed: Boolean,
+        teacherFeedback: String?
+    ) =
+        renderAutoAssessment(validGrade, autoFeedback, teacherFeedback, failed, feedbackDstSub)
+
+    private fun renderAutoAssessment(
+        validGrade: CourseExercisesStudentDAO.ValidGrade?,
+        autoFeedback: String?,
+        teacherFeedback: String?,
+        failed: Boolean,
+        feedbackDst: String
+    ) {
+        val view = ExerciseFeedbackComp(validGrade, autoFeedback, teacherFeedback, failed, null, feedbackDst)
+        view.rebuild()
     }
 
 

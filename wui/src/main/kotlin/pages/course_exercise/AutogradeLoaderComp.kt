@@ -1,12 +1,14 @@
 package pages.course_exercise
 
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import template
 
 class AutogradeLoaderComp(
     var isActive: Boolean,
-    parent: Component
-) : Component(parent) {
+    parent: Component?, // temp null for non-wui3
+    dstId: String = IdGenerator.nextId(), // temp
+) : Component(parent, dstId) {
     override fun render() = if (isActive) template(
         """
             <div class="autograde-animation">
