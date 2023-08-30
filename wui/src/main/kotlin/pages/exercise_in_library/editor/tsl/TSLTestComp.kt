@@ -9,7 +9,6 @@ import kotlinx.coroutines.await
 import libheaders.MCollapsibleInstance
 import libheaders.Materialize
 import libheaders.open
-import pages.exercise_in_library.editor.tsl.tests.TSLFunctionCallTest
 import pages.exercise_in_library.editor.tsl.tests.TSLNotImplementedTest
 import pages.exercise_in_library.editor.tsl.tests.TSLPlaceholderTest
 import pages.exercise_in_library.editor.tsl.tests.TSLProgramExecutionTest
@@ -203,7 +202,7 @@ class TSLTestComp(
         is FunctionContainsReturnTest -> TestType.NOT_IMPLEMENTED
         is FunctionContainsTryExceptTest -> TestType.NOT_IMPLEMENTED
         is FunctionDefinesFunctionTest -> TestType.NOT_IMPLEMENTED
-        is FunctionExecutionTest -> TestType.FUNCTION_EXECUTION
+        is FunctionExecutionTest -> TestType.NOT_IMPLEMENTED
         is FunctionImportsModuleTest -> TestType.NOT_IMPLEMENTED
         is FunctionIsPureTest -> TestType.NOT_IMPLEMENTED
         is FunctionIsRecursiveTest -> TestType.NOT_IMPLEMENTED
@@ -239,14 +238,14 @@ class TSLTestComp(
                     contentDst
                 )
 
-            TestType.FUNCTION_EXECUTION ->
-                TSLFunctionCallTest(
-                    model?.let { it as FunctionExecutionTest },
-                    onUpdate,
-                    onValidChanged,
-                    this,
-                    contentDst
-                )
+//            TestType.FUNCTION_EXECUTION ->
+//                TSLFunctionCallTest(
+//                    model?.let { it as FunctionExecutionTest },
+//                    onUpdate,
+//                    onValidChanged,
+//                    this,
+//                    contentDst
+//                )
 
             TestType.PLACEHOLDER ->
                 TSLPlaceholderTest(model?.let { it as PlaceholderTest }, this, contentDst)
@@ -258,7 +257,7 @@ class TSLTestComp(
     enum class TestType(val optionName: String, val defaultTestTitle: String) {
         PLACEHOLDER("-", "Uus test"),
         PROGRAM_EXECUTION("Programmi väljund", "Programmi väljundi test"),
-        FUNCTION_EXECUTION("Funktsiooni tagastus", "Funktsiooni tagastuse test"),
+//        FUNCTION_EXECUTION("Funktsiooni tagastus", "Funktsiooni tagastuse test"),
 
         NOT_IMPLEMENTED("Ära puutu!", "Kasutajaliideses implementeerimata test")
         ;

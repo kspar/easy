@@ -109,14 +109,18 @@ class TSLDataChecksSection(
                     parent = this
                 ),
                 StringFieldComp(
-                    "Tagasiside õnnestumisel", true,
+                    "", true,
+                    helpText = """Tagasiside õnnestumisel, nt "Leidsin väljundist õige vastuse 42"""",
+                    fieldNameForMessage = "Tagasiside",
                     initialValue = check.passedMessage,
                     onValidChange = { onValidChanged() },
                     onValueChange = { onUpdate() },
                     parent = this
                 ),
                 StringFieldComp(
-                    "Tagasiside ebaõnnestumisel", true,
+                    "", true,
+                    helpText = """Tagasiside ebaõnnestumisel, nt "Ei leidnud programmi väljundist oodatud tulemust 42"""",
+                    fieldNameForMessage = "Tagasiside",
                     initialValue = check.failedMessage,
                     onValidChange = { onValidChanged() },
                     onValueChange = { onUpdate() },
@@ -222,7 +226,7 @@ class TSLDataChecksSection(
                 elementsOrdered = false,
                 beforeMessage = "Väljundi kontroll",
                 passedMessage = "OK",
-                failedMessage = "F"
+                failedMessage = "Viga"
             )
         )
         createAndBuild().await()
