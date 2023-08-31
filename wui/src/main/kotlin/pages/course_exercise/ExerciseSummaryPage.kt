@@ -20,6 +20,7 @@ import getContainer
 import getLastPageOffset
 import highlightCode
 import isNotNullAndTrue
+import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ import libheaders.tabHandler
 import lightboxExerciseImages
 import onSingleClickWithDisabled
 import org.w3c.dom.*
+import org.w3c.dom.events.Event
 import pages.EasyPage
 import pages.Title
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
@@ -226,6 +228,8 @@ object ExerciseSummaryPage : EasyPage() {
     private val updateModalDst = IdGenerator.nextId()
     private val feedbackDstTesting = IdGenerator.nextId()
     private val feedbackDstSub = IdGenerator.nextId()
+
+    private var backAbort = AbortController()
 
     private fun buildTeacherExercise(courseId: String, courseExerciseId: String, isAdmin: Boolean) =
         MainScope().launch {
@@ -917,6 +921,31 @@ object ExerciseSummaryPage : EasyPage() {
         tabs.select("student")
         tabs.updateTabIndicator()
         studentTabLink?.focus()
+
+        // Back in student tab should return to submissions tab
+        // will deregister on first
+        backAbort.abort()
+        backAbort = AbortController()
+        window.addEventListener("popstate", { event ->
+            event as PopStateEvent
+
+            // Only try to do something if we're still on the correct page
+            val t = getElemByIdOrNull("tabs")
+            if (t != null) {
+                if (tabs.index == 3) {
+                    debug { "Back, returning to submissions tab" }
+                    Materialize.Tabs.getInstance(t)?.select("students")
+                } else {
+                    window.history.back()
+                }
+            }
+
+            backAbort.abort()
+
+        }, objOf("signal" to backAbort.signal))
+
+        if (window.location.hash != "#sub")
+            window.history.pushState(null, "", "#sub")
 
         MainScope().launch {
             val submissions =
