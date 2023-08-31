@@ -1,8 +1,5 @@
 import components.ToastIds
 import components.ToastThing
-import kotlinx.browser.localStorage
-import org.w3c.dom.get
-import org.w3c.dom.set
 import rip.kspar.ezspa.objOf
 import kotlin.js.Promise
 
@@ -52,7 +49,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             error("Role change to ${newRole.id} but user doesn't have that role")
         }
         activeRole = newRole
-        localStorage["activeRole"] = newRole.id
+        LocalStore.set(Key.ACTIVE_ROLE, newRole.id)
     }
 
 
@@ -105,7 +102,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
         }
 
     private fun getPersistedRole(): Role? {
-        val persistedRoleStr = localStorage["activeRole"]
+        val persistedRoleStr = LocalStore.get(Key.ACTIVE_ROLE)
         val persistedRole = Role.values().firstOrNull { it.id == persistedRoleStr }
         return when {
             persistedRole == null -> null

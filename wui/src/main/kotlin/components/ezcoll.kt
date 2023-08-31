@@ -89,7 +89,12 @@ class EzCollComp<P>(
 
     data class FilterGroup<P>(val groupLabel: String, val filters: List<Filter<P>>)
 
-    data class Filter<P>(val label: String, val id: String = IdGenerator.nextId(), val predicate: (Item<P>) -> Boolean)
+    data class Filter<P>(
+        val label: String,
+        val startActive: Boolean = false,
+        val id: String = IdGenerator.nextId(),
+        val predicate: (Item<P>) -> Boolean
+    )
 
     data class Sorter<P>(val label: String, val comparator: Comparator<Item<P>>, val id: String = IdGenerator.nextId())
 
@@ -210,6 +215,10 @@ class EzCollComp<P>(
     private val collId = IdGenerator.nextId()
 
     init {
+        activatedFilters = filterGroups.map {
+            it.filters.filter { it.startActive }
+        }.filter { it.isNotEmpty() }
+
         val specs = if (sorters.isNotEmpty() && useFirstSorterAsDefault) {
             items.sortedWith(sorters.first().comparator)
         } else

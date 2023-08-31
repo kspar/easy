@@ -123,22 +123,6 @@
     <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>
 
-<script id="t-c-select" type="text/x-handlebars">
-    <div class="input-field select-wrap">
-        <select id="{{selectId}}" {{#isDisabled}}disabled{{/isDisabled}}>
-            {{#hasEmptyOption}}
-                <option value="">–</option>
-            {{/hasEmptyOption}}
-            {{#options}}
-                <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{label}}</option>
-            {{/options}}
-        </select>
-        {{#selectLabel}}
-            <label>{{selectLabel}}</label>
-        {{/selectLabel}}
-    </div>
-</script>
-
 <script id="t-c-int-field" type="text/x-handlebars">
     <div class="input-field">
         <input id="{{id}}" type="number" min="{{min}}" max="{{max}}" value="{{value}}">
@@ -253,55 +237,6 @@
         {{/inheritingDirs}}
     </ez-exercise-permissions>
 </script>
-
-
-<!-- Grade table page -->
-<script id="t-c-grades-card" type="text/x-handlebars">
-    <div class="title-wrap">
-        <h2 class="title">{{title}}</h2>
-    </div>
-    <div class="card">
-        <div class="card-content">
-            <ez-dst id="{{groupSelectDstId}}"></ez-dst>
-            <ez-dst id="{{tableDstId}}"></ez-dst>
-        </div>
-    </div>
-</script>
-
-<script id="t-c-grades-table" type="text/x-handlebars">
-    <div class="grades-wrap">
-        <div class="grade-table-wrap">
-            <table class="colored truncated-ex">
-                <thead><tr>
-                    <th class="header-spacer"></th>
-                    <th><span class="text" title="{{exerciseCountTitle}}">Σ ({{exerciseCount}})</span></th>
-                    {{#exercises}}
-                        <th><a class="wrap uncolored {{#invisible}}invisible{{/invisible}}" href="{{href}}"><span class="text" title="{{title}}">{{title}}</span></a></th>
-                    {{/exercises}}
-                </tr></thead>
-                <tbody>
-                <tr>
-                    <td class="sticky-col neutral" title="{{studentCountTitle}}">Σ ({{studentCount}})</td>
-                    <td class="neutral"></td>
-                    {{#exerciseSummaries}}
-                        <td class="neutral" title="{{exerciseSummaryTitle}}">{{finishedCount}}</td>
-                    {{/exerciseSummaries}}
-                </tr>
-                {{#students}}
-                    <tr>
-                        <td class="sticky-col neutral truncate" title="{{name}}">{{name}}</td>
-                        <td class="neutral" title="{{studentSummaryTitle}}">{{finishedCount}}</td>
-                        {{#grades}}
-                            <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">{{grade}}{{#teacherGraded}}*{{/teacherGraded}}</td>
-                        {{/grades}}
-                    </tr>
-                {{/students}}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</script>
-
 
 <!-- Participants page -->
 <script id="t-c-participants" type="text/x-handlebars">
@@ -561,7 +496,7 @@
                 <select id="group-select">
                     <option value="">{{allLabel}}</option>
                     {{#groups}}
-                        <option value="{{id}}" {{#hasOneGroup}}selected{{/hasOneGroup}}>{{name}}</option>
+                        <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
                     {{/groups}}
                 </select>
                 <label>{{groupLabel}}</label>

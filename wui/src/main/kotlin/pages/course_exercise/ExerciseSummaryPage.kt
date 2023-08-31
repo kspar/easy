@@ -5,6 +5,8 @@ import Auth
 import DateSerializer
 import EzDate
 import Icons
+import Key
+import LocalStore
 import MathJax
 import PageName
 import PaginationConf
@@ -35,7 +37,6 @@ import libheaders.tabHandler
 import lightboxExerciseImages
 import onSingleClickWithDisabled
 import org.w3c.dom.*
-import org.w3c.dom.events.Event
 import pages.EasyPage
 import pages.Title
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
@@ -527,14 +528,24 @@ object ExerciseSummaryPage : EasyPage() {
             .groups.sortedBy { it.name }
 
         debug { "Groups available: $groups" }
+        val preselectedGroupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP).let {
+            if (groups.map { it.id }.contains(it)) it else null
+        }
+        debug { "Preselected group id: $preselectedGroupId" }
 
         getElemById("students-frame").innerHTML = tmRender(
             "tm-teach-exercise-students-frame", mapOf(
                 "exportSubmissionsLabel" to "Lae alla",
                 "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
                 "allLabel" to "Kõik õpilased",
-                "hasOneGroup" to (groups.size == 1),
-                "groups" to groups.map { mapOf("id" to it.id, "name" to it.name) })
+                "groups" to groups.map {
+                    mapOf(
+                        "id" to it.id,
+                        "name" to it.name,
+                        "selected" to (it.id == preselectedGroupId),
+                    )
+                }
+            )
         )
 
         if (groups.isNotEmpty()) {
@@ -542,14 +553,15 @@ object ExerciseSummaryPage : EasyPage() {
             val groupSelect = getElemByIdAs<HTMLSelectElement>("group-select")
             groupSelect.onChange {
                 MainScope().launch {
-                    val group = groupSelect.value
-                    debug { "Selected group $group" }
-                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, group)
+                    val groupId = groupSelect.value
+                    debug { "Selected group $groupId" }
+                    LocalStore.set(Key.TEACHER_SELECTED_GROUP, groupId.emptyToNull())
+                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId)
                 }
             }
         }
 
-        return if (groups.size == 1) groups[0].id else null
+        return preselectedGroupId
     }
 
     private fun initSelectFields() {
