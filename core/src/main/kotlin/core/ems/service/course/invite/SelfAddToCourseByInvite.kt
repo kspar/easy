@@ -11,7 +11,10 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 
 @RestController
@@ -19,7 +22,9 @@ import org.springframework.web.bind.annotation.*
 class SelfAddToCourseByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("access_added") val accessAdded: Boolean)
+    data class Resp(
+        @JsonProperty("course_id") val courseId: String
+    )
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/courses/self-add/{invite-id}")
@@ -55,8 +60,8 @@ class SelfAddToCourseByInvite {
             }
         }
 
-        log.debug { "$studentId self-adding to course $courseId by invite $inviteId. Accesses added = $accessesAdded/1" }
-        Resp(accessesAdded > 0)
+        log.debug { "$studentId self-added to course $courseId by invite $inviteId" }
+        Resp(courseId.toString())
     }
 }
 
