@@ -104,7 +104,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.containsLoop.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.containsLoop.mustNotContain),
                                         "'before_message'" to PyStr(test.containsLoop.beforeMessage),
                                         "'passed_message'" to PyStr(test.containsLoop.passedMessage),
                                         "'failed_message'" to PyStr(test.containsLoop.failedMessage)
@@ -139,7 +139,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.containsReturn.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.containsReturn.mustNotContain),
                                         "'before_message'" to PyStr(test.containsReturn.beforeMessage),
                                         "'passed_message'" to PyStr(test.containsReturn.passedMessage),
                                         "'failed_message'" to PyStr(test.containsReturn.failedMessage)
@@ -174,7 +174,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.callsCheck.mustNotCall),
+                                        "'expected_value'" to PyBool(!test.callsCheck.mustNotCall),
                                         "'before_message'" to PyStr(test.callsCheck.beforeMessage),
                                         "'passed_message'" to PyStr(test.callsCheck.passedMessage),
                                         "'failed_message'" to PyStr(test.callsCheck.failedMessage)
@@ -197,7 +197,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.isRecursive.mustNotBeRecursive),
+                                        "'expected_value'" to PyBool(!test.isRecursive.mustNotBeRecursive),
                                         "'before_message'" to PyStr(test.isRecursive.beforeMessage),
                                         "'passed_message'" to PyStr(test.isRecursive.passedMessage),
                                         "'failed_message'" to PyStr(test.isRecursive.failedMessage)
@@ -244,7 +244,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.containsTryExcept.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.containsTryExcept.mustNotContain),
                                         "'before_message'" to PyStr(test.containsTryExcept.beforeMessage),
                                         "'passed_message'" to PyStr(test.containsTryExcept.passedMessage),
                                         "'failed_message'" to PyStr(test.containsTryExcept.failedMessage)
@@ -267,7 +267,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.containsLocalVars.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.containsLocalVars.mustNotContain),
                                         "'before_message'" to PyStr(test.containsLocalVars.beforeMessage),
                                         "'passed_message'" to PyStr(test.containsLocalVars.passedMessage),
                                         "'failed_message'" to PyStr(test.containsLocalVars.failedMessage)
@@ -295,10 +295,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 } else {
                     PyDict(
                         mapOf(
-                            "'expected_value'" to PyBool(test.exceptionCheck?.mustNotThrowException),
-                            "'before_message'" to PyStr(test.exceptionCheck?.beforeMessage),
-                            "'passed_message'" to PyStr(test.exceptionCheck?.passedMessage),
-                            "'failed_message'" to PyStr(test.exceptionCheck?.failedMessage)
+                            "'expected_value'" to PyBool(!test.exceptionCheck!!.mustNotThrowException),
+                            "'before_message'" to PyStr(test.exceptionCheck!!.beforeMessage),
+                            "'passed_message'" to PyStr(test.exceptionCheck!!.passedMessage),
+                            "'failed_message'" to PyStr(test.exceptionCheck!!.failedMessage)
                         )
                     )
                 }
@@ -326,7 +326,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.programContainsTryExcept.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.programContainsTryExcept.mustNotContain),
                                         "'before_message'" to PyStr(test.programContainsTryExcept.beforeMessage),
                                         "'passed_message'" to PyStr(test.programContainsTryExcept.passedMessage),
                                         "'failed_message'" to PyStr(test.programContainsTryExcept.failedMessage)
@@ -370,7 +370,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.programContainsLoop.mustNotContain),
+                                        "'expected_value'" to PyBool(!test.programContainsLoop.mustNotContain),
                                         "'before_message'" to PyStr(test.programContainsLoop.beforeMessage),
                                         "'passed_message'" to PyStr(test.programContainsLoop.passedMessage),
                                         "'failed_message'" to PyStr(test.programContainsLoop.failedMessage)

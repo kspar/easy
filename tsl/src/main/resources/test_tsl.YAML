@@ -15,6 +15,7 @@ tests:
         fileContent: Sisendfaili sisu.\nRida2\nRida3\nRida4
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 987
         expectedValue:
           - down
           - up
@@ -45,7 +46,7 @@ tests:
     inputs: null
     passedNext: null
     failedNext: null
-    visibleToUser: null
+    visibleToUser: True
     id: 769
     standardInputData: [
       "a"
@@ -123,6 +124,7 @@ tests:
   - type: program_contains_keyword_test
     id: 8
     genericCheck:
+      id: 876
       checkType: ANY_OF_THESE
       expectedValue:
         - seosta_lapsed_ja_vanemad
@@ -147,6 +149,7 @@ tests:
     id: 10
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
+      id: 765
       checkType: ANY_OF_THESE
       expectedValue:
         - ff.close()
@@ -268,6 +271,7 @@ tests:
     returnValue: 3
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 654
         elementsOrdered: false
         expectedValue:
           - down
@@ -309,6 +313,7 @@ tests:
     createObject: return Lugemik
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 543
         elementsOrdered: false
         expectedValue:
           - 2.3
