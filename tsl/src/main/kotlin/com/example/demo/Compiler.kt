@@ -348,7 +348,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             listOf(
                                 PyDict(
                                     mapOf(
-                                        "'expected_value'" to PyBool(test.programCallsPrint.mustNotCall),
+                                        "'expected_value'" to PyBool(!test.programCallsPrint.mustNotCall),
                                         "'before_message'" to PyStr(test.programCallsPrint.beforeMessage),
                                         "'passed_message'" to PyStr(test.programCallsPrint.passedMessage),
                                         "'failed_message'" to PyStr(test.programCallsPrint.failedMessage)
