@@ -1,4 +1,4 @@
-package core.ems.service.course
+package core.ems.service.course.invite
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize

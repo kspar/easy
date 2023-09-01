@@ -1,4 +1,4 @@
-package core.ems.service.course
+package core.ems.service.course.invite
 
 import core.conf.security.EasyUser
 import core.db.CourseInviteLink

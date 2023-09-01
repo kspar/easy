@@ -1,4 +1,4 @@
-package core.ems.service.course
+package core.ems.service.course.invite
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
@@ -8,11 +8,8 @@ import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.InvalidRequestException
-import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -55,22 +52,13 @@ class GenerateCourseInvite {
     private data class CourseInviteLinkDTO(val inviteId: String, val createdAt: DateTime, val usedCount: Int)
 
     private fun createInvite(courseId: Long, req: Req): String = transaction {
-        if (req.expiresAt.isBeforeNow) {
-            log.debug { "Expiry date cannot be in the past: ${req.expiresAt}" }
-            throw InvalidRequestException(
-                "Expiry date cannot be in the past.",
-                ReqError.INVALID_PARAMETER_VALUE,
-                notify = false
-            )
-        }
-
         val secureRandom = SecureRandom()
         val alphabet = ('A'..'Z')
 
-        // If there is already invite id that is not expired, use the existing one. Otherwise, generate new.
+        // If there is already an existing invite id, don't change it
         val d = CourseInviteLink
             .slice(CourseInviteLink.inviteId, CourseInviteLink.createdAt, CourseInviteLink.usedCount)
-            .select { (CourseInviteLink.course eq courseId) and CourseInviteLink.expiresAt.greater(DateTime.now()) }
+            .select { (CourseInviteLink.course eq courseId) }
             .map {
                 CourseInviteLinkDTO(
                     it[CourseInviteLink.inviteId],
