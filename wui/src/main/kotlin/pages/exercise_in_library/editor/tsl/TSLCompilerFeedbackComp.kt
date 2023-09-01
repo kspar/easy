@@ -4,7 +4,7 @@ import Icons
 import rip.kspar.ezspa.Component
 import template
 
-
+// TODO: replace with WarningComp
 class TSLCompilerFeedbackComp(
     private var feedback: String? = null,
     parent: Component

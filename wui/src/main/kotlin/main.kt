@@ -4,14 +4,15 @@ import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
-import pages.course_exercise.ExerciseSummaryPage
 import pages.Navbar
+import pages.course_exercise.ExerciseSummaryPage
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
+import pages.links.CourseJoinByLinkPage
 import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
@@ -23,7 +24,7 @@ private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
-    RegisterLinkPage,
+    RegisterLinkPage, CourseJoinByLinkPage,
 )
 
 fun main() {

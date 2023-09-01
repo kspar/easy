@@ -20,7 +20,7 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
     fun createLogoutUrl(options: dynamic = definedExternally): String
 
     protected fun init(options: dynamic): Promise<Boolean>
-    protected fun login(options: dynamic = definedExternally)
+    fun login(options: dynamic = definedExternally)
     fun logout(options: dynamic = definedExternally)
     protected fun updateToken(minValidSec: Int): Promise<Boolean>
 }

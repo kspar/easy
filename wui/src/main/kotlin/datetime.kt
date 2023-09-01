@@ -13,6 +13,7 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         fun epoch() = EzDate(Date(0))
         fun future() = EzDate(Date(32529329048000))
         fun nowDelta(deltaMs: Long) = EzDate(Date(Date.now() + deltaMs))
+        fun nowDeltaDays(deltaDays: Int) = nowDelta(deltaDays * 24 * 60 * 60 * 1000L)
     }
 
     enum class Format {
@@ -34,6 +35,11 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
 
     fun isSoonerThanHours(hours: Int) =
         this < nowDelta(hours * 60 * 60 * 1000L)
+
+    fun isOnSameMinute(other: EzDate): Boolean =
+        isOnSameDate(other)
+                && this.date.getHours() == other.date.getHours()
+                && this.date.getMinutes() == other.date.getMinutes()
 
     fun isOnSameDate(other: EzDate): Boolean {
         val isSameDate = this.date.getDate() == other.date.getDate()

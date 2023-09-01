@@ -2,6 +2,7 @@
 object AppProperties {
     const val AppName = "Lahendus"
 
+    const val WUI_ROOT_PRETTY = "dev.lahendus.ut.ee"
     const val WUI_ROOT = "https://dev.lahendus.ut.ee"
     const val EMS_ROOT = "https://dev.ems.lahendus.ut.ee/v2"
 

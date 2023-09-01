@@ -15,7 +15,7 @@ import rip.kspar.ezspa.objOf
 object RegisterLinkPage : EasyPage() {
     override val pageName = PageName.LINK_REGISTER
 
-    override val pathSchema = "/link/register"
+    override val pathSchema = "/register"
 
     override val pageAuth = PageAuth.OPTIONAL
 
@@ -54,4 +54,6 @@ object RegisterLinkPage : EasyPage() {
         debug { "Navigating to register URL: $registerUrl" }
         window.location.href = registerUrl
     }
+
+    fun link() = constructPathLink(emptyMap())
 }

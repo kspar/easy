@@ -54,7 +54,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     fun sendStudentAddedToCoursePending(courseTitle: String, recipientEmail: String) {
         val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
         val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
-        val registerLink = "$wuiBaseUrl/link/register?email=$encodedEmail"
+        val registerLink = "$wuiBaseUrl/register?email=$encodedEmail"
         val text = """
             |Tere!
             |

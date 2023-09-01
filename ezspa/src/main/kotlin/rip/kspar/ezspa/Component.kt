@@ -164,6 +164,8 @@ abstract class Component(
         postChildrenBuilt()
     }
 
+    override fun toString() = plainDstStr(dstId)
+
     // FIXME: temporarily public to optimise ezcoll
     fun buildThis() {
         paint()

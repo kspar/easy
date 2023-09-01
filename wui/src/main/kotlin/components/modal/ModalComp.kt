@@ -18,6 +18,7 @@ open class ModalComp<T>(
     bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     private val onOpen: (() -> Unit)? = null,
+    private val onOpened: (() -> Unit)? = null,
     private val htmlClasses: String = "",
     parent: Component?,
 ) : Component(parent) {
@@ -110,7 +111,10 @@ open class ModalComp<T>(
         val p = Promise<T> { resolve, _ ->
             val modal = Materialize.Modal.init(
                 modalElement,
-                objOf("onCloseStart" to { onModalClose(resolve) })
+                objOf(
+                    "onCloseStart" to { onModalClose(resolve) },
+                    "onOpenEnd" to { onOpened?.invoke() }
+                )
             )
             modal.open()
             mModal = modal
