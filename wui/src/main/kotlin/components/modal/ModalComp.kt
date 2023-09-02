@@ -76,6 +76,8 @@ open class ModalComp<T>(
     )
 
     override fun destroyThis() {
+        // Clear applied inline styles
+        mModal?.close()
         // Remove the destination element since it was created in [create].
         getElemByIdOrNull(dstId)?.remove()
     }
