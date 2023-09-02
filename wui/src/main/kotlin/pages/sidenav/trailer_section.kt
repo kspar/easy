@@ -4,12 +4,12 @@ import AppProperties
 import Auth
 import Icons
 import Role
-import Str
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.onVanillaClick
 import template
+import translation.Str
 
 class SidenavTrailerSectionComp(
     private val activeRole: Role,
@@ -38,9 +38,9 @@ class SidenavTrailerSectionComp(
         "idpLabel" to "Keycloak admin",
         "accountSettingsLink" to Auth.createAccountUrl(),
         "accountSettingsIcon" to Icons.settings,
-        "accountSettingsLabel" to Str.accountData(),
+        "accountSettingsLabel" to Str.accountData,
         "logOutIcon" to Icons.logout,
-        "logOutLabel" to Str.logOut(),
+        "logOutLabel" to Str.logOut,
     )
 
     override fun postRender() {

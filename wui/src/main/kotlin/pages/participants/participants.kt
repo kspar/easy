@@ -2,7 +2,6 @@ package pages.participants
 
 import DateSerializer
 import Icons
-import Str
 import cache.BasicCourseInfo
 import components.PageTabsComp
 import kotlinx.coroutines.await
@@ -14,6 +13,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import tmRender
+import translation.Str
 import kotlin.js.Date
 
 class ParticipantsRootComp(
@@ -127,7 +127,7 @@ class ParticipantsRootComp(
         courseTitle = courseTitlePromise.await().effectiveTitle
 
         Title.update {
-            it.pageTitle = Str.participants()
+            it.pageTitle = Str.participants
             it.parentPageTitle = courseTitle
         }
 

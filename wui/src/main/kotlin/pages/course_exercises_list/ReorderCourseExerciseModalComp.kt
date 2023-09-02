@@ -1,6 +1,5 @@
 package pages.course_exercises_list
 
-import Str
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import components.text.StringComp
@@ -10,6 +9,7 @@ import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
+import translation.Str
 
 class ReorderCourseExerciseModalComp(
     private val courseId: String,
@@ -27,7 +27,7 @@ class ReorderCourseExerciseModalComp(
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
         null,
         "Liiguta",
-        Str.cancel(),
+        Str.cancel,
         "Liigutan...",
         defaultReturnValue = null,
         primaryButtonEnabledInitial = false,

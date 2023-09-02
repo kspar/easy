@@ -1,7 +1,6 @@
 package pages.course_exercises_list
 
 import EzDate
-import Str
 import components.form.DateTimeFieldComp
 import components.form.RadioButtonsComp
 import components.form.StringFieldComp
@@ -16,6 +15,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import show
 import successMessage
+import translation.Str
 import warn
 
 class UpdateCourseExerciseModalComp(
@@ -41,7 +41,7 @@ class UpdateCourseExerciseModalComp(
     private lateinit var openingTime: DateTimeFieldComp
 
     private val modalComp: BinaryModalComp<Boolean?> = BinaryModalComp(
-        "Ülesande sätted", Str.doSave(), Str.cancel(), Str.saving(), fixFooter = true,
+        "Ülesande sätted", Str.doSave, Str.cancel, Str.saving, fixFooter = true,
         primaryAction = ::updateCourseExercise,
         primaryButtonEnabledInitial = false, defaultReturnValue = null, htmlClasses = "update-course-ex-title-modal",
         parent = this

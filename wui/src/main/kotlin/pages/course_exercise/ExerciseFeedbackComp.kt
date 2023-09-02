@@ -1,7 +1,6 @@
 package pages.course_exercise
 
 import Icons
-import Str
 import dao.CourseExercisesStudentDAO
 import debug
 import kotlinx.serialization.Serializable
@@ -12,6 +11,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.getElemsByClass
 import template
+import translation.Str
 
 class ExerciseFeedbackComp(
     var validGrade: CourseExercisesStudentDAO.ValidGrade?,
@@ -101,13 +101,13 @@ ole hea ja proovi hiljem uuesti.
             """.trimIndent(),
             "grade" to validGrade?.let {
                 mapOf(
-                    "label" to Str.gradeLabel(),
+                    "label" to Str.gradeLabel,
                     "points" to it.grade.toString(),
                     "icon" to it.grader_type.icon(),
                 )
             },
             "hasAutoFeedback" to (autoFeedback != null || failed),
-            "autoTitle" to Str.autoAssessmentLabel(),
+            "autoTitle" to Str.autoAssessmentLabel,
             "failed" to failed,
             "failMsg" to autogradeFailedMsg,
             "isRaw" to (autoFeedbackV3Html == null),
@@ -116,7 +116,7 @@ ole hea ja proovi hiljem uuesti.
             "okV3Html" to autoFeedbackV3Html,
             "teacherFeedback" to teacherFeedback?.let {
                 mapOf(
-                    "title" to Str.teacherAssessmentLabel(),
+                    "title" to Str.teacherAssessmentLabel,
                     "feedback" to it,
                 )
             },

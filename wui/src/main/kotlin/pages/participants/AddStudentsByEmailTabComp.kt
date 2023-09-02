@@ -1,7 +1,6 @@
 package pages.participants
 
 import Icons
-import Str
 import components.form.ButtonComp
 import components.form.SelectComp
 import components.form.TextFieldComp
@@ -18,6 +17,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
 import template
+import translation.Str
 
 class AddStudentsByEmailTabComp(
     private val courseId: String,
@@ -61,7 +61,7 @@ class AddStudentsByEmailTabComp(
 
         submitBtn = ButtonComp(
             ButtonComp.Type.PRIMARY,
-            label = Str.doAdd(), clickedLabel = Str.adding(), iconHtml = Icons.add,
+            label = Str.doAdd, clickedLabel = Str.adding, iconHtml = Icons.add,
             onClick = {
                 addStudents(groupSelect?.getValue(), emailField.getValue())
                 onAddingFinished()

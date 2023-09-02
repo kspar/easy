@@ -3,7 +3,6 @@ package pages.sidenav
 import AppProperties
 import Auth
 import Role
-import Str
 import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
@@ -11,6 +10,7 @@ import libheaders.Materialize
 import pages.about.AboutPage
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 import kotlin.js.Promise
 
 enum class ActivePage {
@@ -150,7 +150,7 @@ class SidenavRootComp(
         // TODO: rm when replaced with modal comp
         "newExerciseLabel" to "Uus ülesanne",
         "newExerciseTitleLabel" to "Ülesande nimi",
-        "doSaveLabel" to Str.doSave(),
+        "doSaveLabel" to Str.doSave,
     )
 
     override fun postRender() {

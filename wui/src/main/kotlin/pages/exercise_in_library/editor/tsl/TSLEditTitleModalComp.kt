@@ -1,11 +1,11 @@
 package pages.exercise_in_library.editor.tsl
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class TSLEditTitleModalComp(
     private val onTitleChanged: (String) -> Unit,
@@ -19,7 +19,7 @@ class TSLEditTitleModalComp(
         }
 
     private val modalComp: BinaryModalComp<Unit> = BinaryModalComp(
-        Str.doEditTitle(), Str.doSave(), Str.cancel(), Str.saving(),
+        Str.doEditTitle, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = Unit,
         primaryAction = { onTitleChanged(nameField.getValue()) }, //primaryPostAction = ::reinitialise,
         onOpen = { nameField.focus() }, parent = this

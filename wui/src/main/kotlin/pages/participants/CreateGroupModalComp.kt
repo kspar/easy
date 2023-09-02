@@ -1,6 +1,5 @@
 package pages.participants
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.ConstraintViolation
 import components.form.validation.FieldConstraint
@@ -8,13 +7,14 @@ import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import debug
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class CreateGroupModalComp(
     val courseId: String,
@@ -33,7 +33,7 @@ class CreateGroupModalComp(
     }
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Loo uus rühm", Str.doSave(), Str.cancel(), Str.saving(),
+        "Loo uus rühm", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryAction = { createGroup(groupNameFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { groupNameFieldComp.focus() },

@@ -1,7 +1,6 @@
 package queries
 
 import Icons
-import Str
 import components.ToastId
 import components.ToastIds
 import components.ToastThing
@@ -11,6 +10,7 @@ import kotlinx.serialization.Serializable
 import org.w3c.fetch.Response
 import pages.courses.CoursesPage
 import rip.kspar.ezspa.EzSpa
+import translation.Str
 import truncate
 import kotlin.js.Promise
 
@@ -24,7 +24,7 @@ object ErrorHandlers {
     val noCourseAccessMsg: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             EzSpa.PageManager.navigateTo(CoursesPage.link())
-            ToastThing(Str.noCourseAccessPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,
+            ToastThing(Str.noCourseAccessPageMsg, icon = Icons.errorUnf, displayLengthSec = 10,
                 id = ToastIds.noCourseAccess)
         }
     }

@@ -1,10 +1,10 @@
 package pages.exercise_in_library.editor.tsl
 
-import Str
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class TSLReorderTestModalComp(
     parent: Component,
@@ -19,7 +19,7 @@ class TSLReorderTestModalComp(
 
     private val modalComp: BinaryModalComp<Int?> = BinaryModalComp(
         null,
-        Str.doMove(), Str.cancel(), Str.moving(),
+        Str.doMove, Str.cancel, Str.moving,
         defaultReturnValue = null,
         primaryButtonEnabledInitial = false,
         fixFooter = true,

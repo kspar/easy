@@ -4,6 +4,7 @@ import org.w3c.dom.set
 
 
 enum class Key {
+    LANGUAGE,
     ACTIVE_ROLE,
     TEACHER_SELECTED_GROUP,
 }

@@ -11,7 +11,6 @@ import MathJax
 import PageName
 import PaginationConf
 import Role
-import Str
 import cache.BasicCourseInfo
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
@@ -51,6 +50,7 @@ import saveAsFile
 import successMessage
 import tmRender
 import toEstonianString
+import translation.Str
 import warn
 import kotlin.js.Date
 import kotlin.math.min
@@ -238,9 +238,9 @@ object ExerciseSummaryPage : EasyPage() {
 
             getContainer().innerHTML = tmRender(
                 "tm-teach-exercise", mapOf(
-                    "exerciseLabel" to Str.tabExerciseLabel(),
-                    "testingLabel" to Str.tabTestingLabel(),
-                    "studentSubmLabel" to Str.tabSubmissionsLabel()
+                    "exerciseLabel" to Str.tabExerciseLabel,
+                    "testingLabel" to Str.tabTestingLabel,
+                    "studentSubmLabel" to Str.tabSubmissionsLabel
                 )
             )
 
@@ -288,7 +288,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("crumbs").innerHTML = tmRender(
             "tm-exercise-crumbs", mapOf(
-                "coursesLabel" to Str.myCourses(),
+                "coursesLabel" to Str.myCourses,
                 "coursesHref" to "/courses",
                 "courseTitle" to courseTitle,
                 "courseHref" to "/courses/$courseId/exercises",
@@ -297,17 +297,17 @@ object ExerciseSummaryPage : EasyPage() {
         )
 
         val exerciseMap = mutableMapOf<String, Any?>(
-            "softDeadlineLabel" to Str.softDeadlineLabel(),
-            "hardDeadlineLabel" to Str.hardDeadlineLabel(),
-            "graderTypeLabel" to Str.graderTypeLabel(),
-            "thresholdLabel" to Str.thresholdLabel(),
-            "studentVisibleLabel" to Str.studentVisibleLabel(),
-            "studentVisibleFromTimeLabel" to Str.studentVisibleFromTimeLabel(),
-            "assStudentVisibleLabel" to Str.assStudentVisibleLabel(),
-            "lastModifiedLabel" to Str.lastModifiedLabel(),
+            "softDeadlineLabel" to Str.softDeadlineLabel,
+            "hardDeadlineLabel" to Str.hardDeadlineLabel,
+            "graderTypeLabel" to Str.graderTypeLabel,
+            "thresholdLabel" to Str.thresholdLabel,
+            "studentVisibleLabel" to Str.studentVisibleLabel,
+            "studentVisibleFromTimeLabel" to Str.studentVisibleFromTimeLabel,
+            "assStudentVisibleLabel" to Str.assStudentVisibleLabel,
+            "lastModifiedLabel" to Str.lastModifiedLabel,
             "softDeadline" to exercise.soft_deadline?.toEstonianString(),
             "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-            "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto() else Str.graderTypeTeacher(),
+            "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto else Str.graderTypeTeacher,
             "threshold" to exercise.threshold,
             "studentVisible" to Str.translateBoolean(exercise.student_visible),
             "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.toEstonianString() else null,
@@ -322,7 +322,7 @@ object ExerciseSummaryPage : EasyPage() {
             if (exercise.grading_script != null) {
                 val assetFiles = exercise.assets ?: emptyList()
                 val aaFiles = listOf(AutoAsset("evaluate.sh", exercise.grading_script)) + assetFiles
-                exerciseMap["aaTitle"] = Str.aaTitle()
+                exerciseMap["aaTitle"] = Str.aaTitle
                 exerciseMap["aaFiles"] = aaFiles.mapIndexed { i, file ->
                     objOf(
                         "fileName" to file.file_name,
@@ -442,7 +442,7 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("testing").innerHTML = tmRender(
             "tm-teach-exercise-testing", mapOf(
                 "latestSubmission" to latestSubmission,
-                "checkLabel" to Str.doAutoAssess(),
+                "checkLabel" to Str.doAutoAssess,
             )
         )
         val editor = CodeMirror.fromTextArea(
@@ -466,7 +466,7 @@ object ExerciseSummaryPage : EasyPage() {
             MainScope().launch {
                 try {
                     submitButton.disabled = true
-                    submitButton.textContent = Str.autoAssessing()
+                    submitButton.textContent = Str.autoAssessing
                     editor.setOption("readOnly", true)
                     val autoAssessmentWrap = getElemById("testing-assessment")
                     autoAssessmentWrap.innerHTML = """<ez-dst id='$feedbackDstTesting'></ez-dst>"""
@@ -477,7 +477,7 @@ object ExerciseSummaryPage : EasyPage() {
                     renderAutoAssessmentTesting(result.grade, result.feedback, false)
                 } finally {
                     editor.setOption("readOnly", false)
-                    submitButton.textContent = Str.doAutoAssess()
+                    submitButton.textContent = Str.doAutoAssess
                     submitButton.disabled = false
                 }
             }
@@ -629,9 +629,9 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("students-list").innerHTML = tmRender(
             "tm-teach-exercise-students-list", mapOf(
                 "students" to studentArray,
-                "autoLabel" to Str.gradedAutomatically(),
-                "teacherLabel" to Str.gradedByTeacher(),
-                "missingLabel" to Str.notGradedYet(),
+                "autoLabel" to Str.gradedAutomatically,
+                "teacherLabel" to Str.gradedByTeacher,
+                "missingLabel" to Str.notGradedYet,
                 "hasPagination" to (paginationConf != null),
                 "pageStart" to paginationConf?.pageStart,
                 "pageEnd" to paginationConf?.pageEnd,
@@ -708,10 +708,10 @@ object ExerciseSummaryPage : EasyPage() {
                     "tm-teach-exercise-add-grade", mapOf(
                         "gradePrefill" to validGrade,
                         "hasGradePrefill" to (validGrade != null),
-                        "feedbackLabel" to Str.addAssessmentFeedbackLabel(),
-                        "gradeLabel" to Str.addAssessmentGradeLabel(),
-                        "gradeValidationError" to Str.addAssessmentGradeValidErr(),
-                        "addGradeButton" to Str.addAssessmentButtonLabel()
+                        "feedbackLabel" to Str.addAssessmentFeedbackLabel,
+                        "gradeLabel" to Str.addAssessmentGradeLabel,
+                        "gradeValidationError" to Str.addAssessmentGradeValidErr,
+                        "addGradeButton" to Str.addAssessmentButtonLabel
                     )
                 )
 
@@ -720,7 +720,7 @@ object ExerciseSummaryPage : EasyPage() {
                     val feedback = getElemByIdAs<HTMLTextAreaElement>("feedback").value
                     MainScope().launch {
                         addAssessment(grade, feedback, submissionId)
-                        successMessage { Str.assessmentAddedMsg() }
+                        successMessage { Str.assessmentAddedMsg }
                         buildStudentTab(
                             courseId,
                             courseExerciseId,
@@ -735,13 +735,13 @@ object ExerciseSummaryPage : EasyPage() {
                     }
                 }
 
-                getElemById("add-grade-link").textContent = Str.closeToggleLink()
+                getElemById("add-grade-link").textContent = Str.closeToggleLink
 
             } else {
                 // Grading box is visible
                 debug { "Close add grade" }
                 getElemById("add-grade-section").clear()
-                getElemById("add-grade-link").textContent = Str.addAssessmentLink()
+                getElemById("add-grade-link").textContent = Str.addAssessmentLink
             }
         }
 
@@ -753,15 +753,15 @@ object ExerciseSummaryPage : EasyPage() {
             getElemById("submission-part").innerHTML = tmRender(
                 "tm-teach-exercise-student-submission-sub", mapOf(
                     "id" to id,
-                    "submissionLabel" to Str.submissionHeading(),
+                    "submissionLabel" to Str.submissionHeading,
                     "submissionNo" to number,
-                    "latestSubmissionLabel" to Str.latestSubmissionSuffix(),
-                    "notLatestSubmissionLabel" to Str.oldSubmissionNote(),
-                    "notLatestSubmissionLink" to Str.toLatestSubmissionLink(),
+                    "latestSubmissionLabel" to Str.latestSubmissionSuffix,
+                    "notLatestSubmissionLabel" to Str.oldSubmissionNote,
+                    "notLatestSubmissionLink" to Str.toLatestSubmissionLink,
                     "isLatest" to isLast,
-                    "timeLabel" to Str.submissionTimeLabel(),
+                    "timeLabel" to Str.submissionTimeLabel,
                     "time" to time.toEstonianString(),
-                    "addGradeLink" to Str.addAssessmentLink(),
+                    "addGradeLink" to Str.addAssessmentLink,
                     "solution" to solution
                 )
             )
@@ -813,7 +813,7 @@ object ExerciseSummaryPage : EasyPage() {
         suspend fun paintSubmissionBox() {
             getElemById("all-submissions-section").innerHTML = tmRender(
                 "tm-teach-exercise-all-submissions-placeholder", mapOf(
-                    "text" to Str.loadingAllSubmissions()
+                    "text" to Str.loadingAllSubmissions
                 )
             )
 
@@ -837,9 +837,9 @@ object ExerciseSummaryPage : EasyPage() {
                 )
 
                 val submissionMap = mutableMapOf<String, Any?>(
-                    "autoLabel" to Str.gradedAutomatically(),
-                    "teacherLabel" to Str.gradedByTeacher(),
-                    "missingLabel" to Str.notGradedYet(),
+                    "autoLabel" to Str.gradedAutomatically,
+                    "teacherLabel" to Str.gradedByTeacher,
+                    "missingLabel" to Str.notGradedYet,
                     "id" to it.id,
                     "number" to submissionNumber--,
                     "time" to it.created_at.toEstonianString()
@@ -913,12 +913,12 @@ object ExerciseSummaryPage : EasyPage() {
         suspend fun toggleSubmissionsBox() {
             if (!isSubmissionBoxVisible()) {
                 debug { "Open all submissions" }
-                getElemById("all-submissions-link").textContent = Str.closeToggleLink()
+                getElemById("all-submissions-link").textContent = Str.closeToggleLink
                 paintSubmissionBox()
             } else {
                 debug { "Close all submissions" }
                 getElemById("all-submissions-section").clear()
-                getElemById("all-submissions-link").textContent = Str.allSubmissionsLink()
+                getElemById("all-submissions-link").textContent = Str.allSubmissionsLink
             }
         }
 
@@ -970,7 +970,7 @@ object ExerciseSummaryPage : EasyPage() {
             getElemById("student").innerHTML = tmRender("tm-teach-exercise-student-submission", emptyMap())
             getElemById("all-submissions-part").innerHTML = tmRender(
                 "tm-teach-exercise-student-submission-all", mapOf(
-                    "allSubmissionsLink" to Str.allSubmissionsLink()
+                    "allSubmissionsLink" to Str.allSubmissionsLink
                 )
             )
             paintSubmission(

@@ -1,12 +1,12 @@
 package pages.course_exercise
 
 import EzDate
-import Str
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 
 class CourseExerciseStudentSubmissionsTabComp(
@@ -44,7 +44,7 @@ class CourseExerciseStudentSubmissionsTabComp(
                     it.submissionTime.toHumanString(EzDate.Format.FULL),
                     topAttr = it.validGrade?.let {
                         EzCollComp.SimpleAttr(
-                            Str.gradeLabel(),
+                            Str.gradeLabel,
                             "${it.grade}/100",
                             it.grader_type.icon(),
                             topAttrMinWidth = EzCollComp.CollMinWidth.W400

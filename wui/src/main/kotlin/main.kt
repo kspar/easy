@@ -20,6 +20,8 @@ import pages.sidenav.Sidenav
 import pages.terms.TermsProxyPage
 import queries.*
 import rip.kspar.ezspa.*
+import translation.Str
+import translation.setStrings
 
 
 private val PAGES = listOf(
@@ -31,15 +33,8 @@ private val PAGES = listOf(
 )
 
 fun main() {
-    debug {
-        """
-            
-Hei, mis toimub?
-Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
-Mõlemal juhul tule räägi sellest meie Discordi serveris: discord.gg/${AppProperties.DISCORD_INVITE_ID} :-)
-        """
-    }
-    val funLog = debugFunStart("main")
+    consoleEgg()
+    setStrings()
 
     // Start authentication as soon as possible
     doInPromise {
@@ -63,8 +58,6 @@ Mõlemal juhul tule räägi sellest meie Discordi serveris: discord.gg/${AppProp
         EzSpa.Navigation.enableAnchorLinkInterception()
         EzSpa.Navigation.enableHistoryNavInterception()
     }
-
-    funLog?.end()
 }
 
 fun setSplashText(text: String) {
@@ -138,8 +131,8 @@ private fun initApplication() {
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
     getContainer().innerHTML = tmRender(
         "tm-broken-page", mapOf(
-            "title" to Str.notFoundPageTitle(),
-            "msg" to Str.notFoundPageMsg()
+            "title" to Str.notFoundPageTitle,
+            "msg" to Str.notFoundPageMsg
         )
     )
     Sidenav.refresh(Sidenav.Spec())
@@ -158,5 +151,16 @@ private fun loadContainerQueries() {
         ContainerQueryPolyfill
     } else {
         debug { "Native container queries supported :)" }
+    }
+}
+
+private fun consoleEgg() {
+    debug {
+        """
+            
+Hei, mis toimub?
+Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
+Mõlemal juhul tule räägi sellest meie Discordi serveris: discord.gg/${AppProperties.DISCORD_INVITE_ID} :-)
+        """
     }
 }

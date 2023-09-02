@@ -1,18 +1,18 @@
 package pages.exercise_in_library
 
-import Str
-import components.text.StringComp
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
+import components.text.StringComp
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import errorMessage
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.unionPromise
 import successMessage
+import translation.Str
 
 class AddToCourseModalComp(
     private var exerciseIds: List<String>,
@@ -28,9 +28,9 @@ class AddToCourseModalComp(
 
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
         "Lisa ülesanne kursusele",
-        Str.doAdd(),
-        Str.cancel(),
-        Str.adding(),
+        Str.doAdd,
+        Str.cancel,
+        Str.adding,
         defaultReturnValue = null,
         primaryButtonEnabledInitial = false,
         fixFooter = true,

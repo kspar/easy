@@ -1,7 +1,6 @@
 package pages.course_exercise
 
 import Icons
-import Str
 import components.ToastThing
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
@@ -11,6 +10,7 @@ import kotlinx.coroutines.await
 import observeValueChange
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 
 
 class CourseExerciseStudentSubmitTabComp(
@@ -194,7 +194,7 @@ class CourseExerciseStudentSubmitTabComp(
         currentSubmission = solution
         CourseExercisesStudentDAO.postSubmission(courseId, courseExId, solution).await()
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
-        ToastThing(Str.submitSuccessMsg())
+        ToastThing(Str.submitSuccessMsg)
     }
 
     private suspend fun awaitAutograde() {

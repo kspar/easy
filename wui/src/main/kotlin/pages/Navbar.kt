@@ -2,10 +2,10 @@ package pages
 
 import Auth
 import Icons
-import Str
 import libheaders.Materialize
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 
 object Navbar {
 
@@ -46,9 +46,9 @@ object Navbar {
             """.trimIndent(),
             "sidenavIcon" to Icons.hamburgerMenu,
             "userName" to (Auth.firstName ?: ""),
-            "account" to Str.accountData(),
+            "account" to Str.accountData,
             "accountLink" to Auth.createAccountUrl(),
-            "logOut" to Str.logOut(),
+            "logOut" to Str.logOut,
         )
 
         getElemById(logoutId).onVanillaClick(true) {

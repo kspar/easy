@@ -2,12 +2,12 @@ package pages.course_exercise
 
 import EzDate
 import MathJax
-import Str
 import dao.CourseExercisesStudentDAO
 import highlightCode
 import lightboxExerciseImages
 import rip.kspar.ezspa.Component
 import template
+import translation.Str
 
 
 class CourseExerciseTextComp(
@@ -24,7 +24,7 @@ class CourseExerciseTextComp(
         "title" to courseExercise.effective_title,
         "text" to courseExercise.text_html,
         "deadline" to courseExercise.deadline?.toHumanString(EzDate.Format.FULL),
-        "deadlineLabel" to Str.softDeadlineLabel(),
+        "deadlineLabel" to Str.softDeadlineLabel,
     )
 
     override fun postRender() {

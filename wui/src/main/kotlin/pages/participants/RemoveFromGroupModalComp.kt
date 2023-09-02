@@ -1,20 +1,20 @@
 package pages.participants
 
-import Str
-import components.text.StringComp
 import components.form.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
+import components.text.StringComp
 import debug
 import errorMessage
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class RemoveFromGroupModalComp(
     private val courseId: String,
@@ -35,7 +35,7 @@ class RemoveFromGroupModalComp(
 
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        null, "Eemalda", Str.cancel(), "Eemaldan...",
+        null, "Eemalda", Str.cancel, "Eemaldan...",
         defaultReturnValue = false,
         primaryBtnType = ButtonComp.Type.DANGER, primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
         primaryPostAction = ::reinitialise,

@@ -1,12 +1,12 @@
 package pages.sidenav
 
 import Role
-import Str
 import components.form.SelectComp
 import debug
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 
 
 class SidenavHeadAccountSection(

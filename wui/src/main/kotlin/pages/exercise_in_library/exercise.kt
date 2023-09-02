@@ -1,7 +1,6 @@
 package pages.exercise_in_library
 
 import Icons
-import Str
 import components.BreadcrumbsComp
 import components.EditModeButtonsComp
 import components.PageTabsComp
@@ -22,6 +21,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import successMessage
 import template
+import translation.Str
 
 
 class ExerciseRootComp(
@@ -119,7 +119,7 @@ class ExerciseRootComp(
 
         Title.update {
             it.pageTitle = exercise.title
-            it.parentPageTitle = Str.exerciseLibrary()
+            it.parentPageTitle = Str.exerciseLibrary
         }
 
         Sidenav.replacePageSection(

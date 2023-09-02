@@ -1,6 +1,5 @@
 package pages.participants
 
-import Str
 import components.form.ButtonComp
 import debug
 import kotlinx.coroutines.await
@@ -14,6 +13,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.sleep
 import successMessage
 import tmRender
+import translation.Str
 
 class ParticipantsMoodleTabComp(
     private val courseId: String,

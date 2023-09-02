@@ -4,7 +4,6 @@ import Auth
 import Icons
 import Role
 import ScrollPosition
-import Str
 import components.ToastIds
 import components.ToastThing
 import components.activeToasts
@@ -22,6 +21,7 @@ import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.Page
 import rip.kspar.ezspa.getElemsByClass
 import stringify
+import translation.Str
 
 abstract class EasyPage : Page() {
 
@@ -73,7 +73,7 @@ abstract class EasyPage : Page() {
                 }
 
                 ToastThing(
-                    Str.noPermissionForPageMsg(), icon = Icons.errorUnf, displayLengthSec = 10,
+                    Str.noPermissionForPageMsg, icon = Icons.errorUnf, displayLengthSec = 10,
                     id = ToastIds.noPermissionForPage
                 )
                 Sidenav.refresh(Sidenav.Spec())

@@ -1,6 +1,7 @@
 import components.ToastIds
 import components.ToastThing
 import rip.kspar.ezspa.objOf
+import translation.Str
 import kotlin.js.Promise
 
 enum class Role(val id: String) {
@@ -45,7 +46,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     fun switchToRole(newRole: Role) {
         if (!hasRole(newRole)) {
-            errorMessage { Str.somethingWentWrong() }
+            errorMessage { Str.somethingWentWrong }
             error("Role change to ${newRole.id} but user doesn't have that role")
         }
         activeRole = newRole

@@ -1,7 +1,6 @@
 package pages.exercise_in_library.editor.tsl
 
 import Icons
-import Str
 import components.ToastThing
 import components.form.SelectComp
 import debug
@@ -14,6 +13,7 @@ import pages.exercise_in_library.editor.tsl.tests.TSLPlaceholderTest
 import pages.exercise_in_library.editor.tsl.tests.TSLProgramExecutionTest
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 import tsl.common.model.*
 
 class TSLTestComp(
@@ -30,7 +30,7 @@ class TSLTestComp(
     private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
     private val testType = SelectComp(
-        Str.testType(), TestType.values().map {
+        Str.testType, TestType.values().map {
             SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
         onOptionChange = { changeTestType(it!!) }, parent = this
@@ -52,14 +52,14 @@ class TSLTestComp(
     }
 
     private val testActions = listOf(
-        TestAction(Str.doMove(), Icons.reorder) {
+        TestAction(Str.doMove, Icons.reorder) {
             onReorder(getTestModel())
         },
-        TestAction(Str.doDelete(), Icons.delete) {
+        TestAction(Str.doDelete, Icons.delete) {
             val activeModel = getTestModel()
             debug { "Delete test ${activeModel.id}" }
             onDelete(activeModel)
-            ToastThing(Str.deleted(), ToastThing.Action(Str.doRestore(), {
+            ToastThing(Str.deleted, ToastThing.Action(Str.doRestore, {
                 debug { "Restore test ${activeModel.id}" }
                 onRestore(activeModel, idx, isOpen)
             }))
@@ -104,7 +104,7 @@ class TSLTestComp(
             <ez-dst id='{{editTitleDst}}'></ez-dst>
     """.trimIndent(),
         "title" to activeTitle,
-        "editLabel" to Str.doEditTitle(),
+        "editLabel" to Str.doEditTitle,
         "testTypeDst" to testType.dstId,
         "testContentDst" to contentDst,
         "testDst" to dstId,
@@ -117,7 +117,7 @@ class TSLTestComp(
         },
         "titleIcon" to Icons.robot,
         "editIcon" to Icons.edit,
-        "menuLabel" to Str.doChange() + "...",
+        "menuLabel" to Str.doChange + "...",
         "menuIcon" to Icons.dotsVertical,
         "editTitleDst" to editTitleModal.dstId,
     )
