@@ -9,4 +9,6 @@ enum class PageName {
     EMBED_ANON_AUTOASSESS,
     LINK_REGISTER,
     LINK_JOIN_COURSE,
+    ABOUT,
+    TERMS_PROXY,
 }

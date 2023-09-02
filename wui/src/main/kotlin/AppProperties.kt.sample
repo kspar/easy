@@ -21,6 +21,10 @@ object AppProperties {
     const val MATHJAX_SRC = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
     const val MATHJAX_CONF = "MathJax = {options: {renderActions: {addMenu: [0, '', '']}}};"
 
+    const val REPO_URL = "https://github.com/kspar/easy"
+    const val DISCORD_INVITE_ID = ""
+    const val TOS_URL = ""
+
     const val PARTICIPANTS_ROWS_ON_PAGE = 50
     const val SUBMISSIONS_ROWS_ON_PAGE = 50
 }

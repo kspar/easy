@@ -5,6 +5,7 @@ import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
 import pages.Navbar
+import pages.about.AboutPage
 import pages.course_exercise.ExerciseSummaryPage
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
@@ -16,6 +17,7 @@ import pages.links.CourseJoinByLinkPage
 import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
+import pages.terms.TermsProxyPage
 import queries.*
 import rip.kspar.ezspa.*
 
@@ -25,6 +27,7 @@ private val PAGES = listOf(
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
     RegisterLinkPage, CourseJoinByLinkPage,
+    AboutPage, TermsProxyPage,
 )
 
 fun main() {

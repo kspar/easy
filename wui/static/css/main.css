@@ -271,6 +271,11 @@ svg {
     }
 }
 
+.sidenav {
+    display: flex;
+    flex-direction: column;
+}
+
 .sidenav .user-view {
     padding: 32px 0 10px 32px;
     margin-bottom: 0;
@@ -306,11 +311,6 @@ svg {
 
 .sidenav li {
     line-height: unset;
-}
-
-/* Last item of the trailer section - leave a bit of whitespace below */
-.sidenav .trailer li:last-child {
-    margin-bottom: 3rem;
 }
 
 .sidenav li a,
@@ -386,6 +386,18 @@ svg {
     align-self: start;
     margin-top: 4px;
     margin-left: 0;
+    color: inherit;
+}
+
+ez-sidenav-footer {
+    display: block;
+    margin-top: auto;
+    padding: 2rem 1rem 2rem 3.2rem;
+    font-size: .8em;
+    color: var(--ez-text-inactive);
+}
+
+ez-sidenav-footer a {
     color: inherit;
 }
 
@@ -1156,8 +1168,15 @@ ez-join-course {
 }
 
 
-/** Common **/
+/** About page **/
 
+ez-about {
+    display: block;
+    padding: 2rem;
+}
+
+
+/** Common **/
 
 /** General **/
 

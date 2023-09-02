@@ -1,5 +1,6 @@
 package pages.sidenav
 
+import AppProperties
 import Auth
 import Role
 import Str
@@ -7,6 +8,7 @@ import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
+import pages.about.AboutPage
 import rip.kspar.ezspa.*
 import template
 import kotlin.js.Promise
@@ -134,6 +136,9 @@ class SidenavRootComp(
                 <ez-dst id="{{courseSectionId}}"></ez-dst>
                 <ez-dst id="{{pageSectionId}}"></ez-dst>
                 <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
+                <ez-sidenav-footer>
+                    <a href='${AppProperties.TOS_URL}' target="_blank">Kasutustingimused</a> · <a href=${AboutPage.link()}>Lahendusest</a>
+                </ez-sidenav-footer>
             </ul>
         """.trimIndent(),
         "headSectionId" to headSectionComp.dstId,
