@@ -31,6 +31,14 @@ private val PAGES = listOf(
 )
 
 fun main() {
+    debug {
+        """
+            
+Hei, mis toimub?
+Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
+Mõlemal juhul tule räägi sellest meie Discordi serveris: discord.gg/${AppProperties.DISCORD_INVITE_ID} :-)
+        """
+    }
     val funLog = debugFunStart("main")
 
     // Start authentication as soon as possible
