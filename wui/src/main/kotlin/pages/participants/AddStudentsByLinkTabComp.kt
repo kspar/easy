@@ -27,6 +27,7 @@ class AddStudentsByLinkTabComp(
 
     private lateinit var switch: ToggleComp
     private var validity: DateTimeFieldComp? = null
+    private var usedCount: AddStudentsByLinkUsedCountComp? = null
     private var maxUses: IntFieldComp? = null
     private var warning: WarningComp? = null
     private var save: ButtonComp? = null
@@ -34,7 +35,7 @@ class AddStudentsByLinkTabComp(
     private var currentLink: CoursesTeacherDAO.ExistingLink? = null
 
     override val children: List<Component>
-        get() = listOfNotNull(switch, validity, maxUses, warning, save)
+        get() = listOfNotNull(switch, validity, usedCount, maxUses, warning, save)
 
     override fun create() = doInPromise {
         val link = CoursesTeacherDAO.getJoinLink(courseId).await()
@@ -48,15 +49,17 @@ class AddStudentsByLinkTabComp(
         )
 
         if (link != null) {
+            usedCount = AddStudentsByLinkUsedCountComp(courseId, link.used_count, this)
+
             validity = DateTimeFieldComp(
-                "Aktiivne kuni", true,
+                "Aktiivne kuni", true, showRequiredMsg = false,
                 initialValue = link.expires_at,
                 onValueChange = { updateSaveBtn() },
                 parent = this
             )
 
             maxUses = IntFieldComp(
-                "", true, minValue = 0, maxValue = 10000, fieldNameForMessage = "Kasutuskordade arv",
+                "", true, minValue = 0, maxValue = 10000,
                 initialValue = link.allowed_uses,
                 onValueChange = { updateSaveBtn() },
                 parent = this
@@ -69,6 +72,8 @@ class AddStudentsByLinkTabComp(
                 onClick = { updateJoinLink() }, parent = this
             )
         } else {
+            usedCount?.destroy()
+            usedCount = null
             validity = null
             maxUses = null
             warning = null
@@ -83,13 +88,12 @@ class AddStudentsByLinkTabComp(
                 {{#isEnabled}}
                     <ez-block-container style='margin-top: 3rem; gap: 0 4rem;'>
                         <ez-block style='flex-grow: 0;'>$validity</ez-block>
-                        <ez-block>
-                            Kasutatud {{used}} / 
+                        <ez-block>Kasutatud $usedCount / 
                             <ez-inline-flex style='margin-left: .2rem;'>$maxUses</ez-inline-flex>    
                         </ez-block>
                     </ez-block-container>
                     $warning
-                    <ez-flex>$save</ez-flex>
+                    <ez-flex style='margin-bottom: 1rem'>$save</ez-flex>
                     <ez-link-wrap>
                         ${Icons.lahendus}<ez-link>{{link}}</ez-link>                    
                     </ez-link-wrap>
@@ -108,36 +112,44 @@ class AddStudentsByLinkTabComp(
     private fun updateSaveBtn() {
         if (switch.isToggled) {
 
+            val link = currentLink!!
+            val validityField = validity!!
+            val validityFieldValue = validityField.getValue()
+            val maxUsesField = maxUses!!
+            val maxUsesValue = maxUsesField.getIntValue()
+            val saveBtn = save!!
+            val warningMsg = warning!!
+
             // Button is enabled when fields are valid
-            val isValid = validity!!.isValid && maxUses!!.isValid
-            save?.setEnabled(isValid)
+            val isValid = validityField.isValid && maxUsesField.isValid
+            saveBtn.setEnabled(isValid)
 
             // Show save btn only when there are unsaved changes
             val isSomethingToSave = when {
-                !currentLink!!.expires_at.isOnSameMinute(validity?.getValue()!!)
-                        || currentLink!!.allowed_uses != maxUses!!.getIntValue() -> true
-
+                validityFieldValue == null -> true
+                !link.expires_at.isOnSameMinute(validityFieldValue) -> true
+                link.allowed_uses != maxUsesValue -> true
                 else -> false
             }
-            save?.show(isSomethingToSave)
+            saveBtn.show(isSomethingToSave)
 
             // Show warning only when saved
             if (!isSomethingToSave) {
                 when {
-                    validity?.getValue()!! < EzDate.now() -> {
-                        warning!!.setMsg("Link on aegunud")
+                    validityFieldValue != null && validityFieldValue < EzDate.now() -> {
+                        warningMsg.setMsg("Link on aegunud")
                     }
 
-                    currentLink!!.used_count >= maxUses?.getIntValue()!! -> {
-                        warning!!.setMsg("Lingi kasutuskordade arv on täis")
+                    maxUsesValue != null && link.used_count >= maxUsesValue -> {
+                        warningMsg.setMsg("Lingi kasutuskordade arv on täis")
                     }
 
                     else -> {
-                        warning!!.setMsg(null)
+                        warningMsg.setMsg(null)
                     }
                 }
             } else {
-                warning!!.setMsg(null)
+                warningMsg.setMsg(null)
             }
         }
     }

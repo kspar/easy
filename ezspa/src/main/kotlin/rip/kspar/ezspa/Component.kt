@@ -77,9 +77,10 @@ abstract class Component(
      */
     fun destroy() {
         // If is created, then assume all lateinit children are initialized
-        if (isCreated)
+        if (isCreated) {
             children.forEach { it.destroy() }
-        destroyThis()
+            destroyThis()
+        }
     }
 
     /**
@@ -95,6 +96,7 @@ abstract class Component(
      * Returns a promise that resolves when everything is complete.
      */
     open fun createAndBuild(): Promise<*> = doInPromise {
+        destroy()
         paintLoading()
         create()?.await()
         isCreated = true
@@ -159,6 +161,7 @@ abstract class Component(
      * Rebuild this component and its children.
      */
     fun rebuild() {
+        destroy()
         buildThis()
         children.forEach { it.rebuild() }
         postChildrenBuilt()
