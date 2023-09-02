@@ -937,6 +937,7 @@ ez-course-join-link ez-link-wrap {
     align-items: center;
     margin-top: 2rem;
     font-family: monospace;
+    font-size: 2rem;
 }
 
 ez-course-join-link ez-link-wrap ez-icon {
@@ -947,9 +948,9 @@ ez-course-join-link ez-link-wrap ez-icon {
     color: var(--ez-btn-active-text);
 }
 
-@media only screen and (min-width: 500px) {
+@media only screen and (max-width: 500px) {
     ez-course-join-link ez-link-wrap {
-        font-size: 2rem;
+        font-size: .9em;
     }
 }
 
@@ -1783,6 +1784,16 @@ fieldset > legend .input-field input[type=text]:disabled {
 
 .modal .modal-footer .secondary-btn {
     margin-right: 1rem;
+}
+
+@media only screen and (max-width: 499px) {
+    .modal {
+        width: 95%;
+    }
+    .modal .modal-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 
