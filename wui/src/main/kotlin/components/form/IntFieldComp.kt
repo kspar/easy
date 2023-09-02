@@ -26,7 +26,7 @@ class IntFieldComp(
     parent: Component
 ) : ValidatableFieldComp<String>(
     fieldNameForMessage,
-    if (isRequired) StringConstraints.NotBlank() else null,
+    if (isRequired) StringConstraints.NotBlank(fieldNameForMessage.isNotBlank()) else null,
     listOf(IntConstraints.MustBeInt(), IntConstraints.MinMax(minValue, maxValue)) + constraints,
     onValidChange,
     parent
