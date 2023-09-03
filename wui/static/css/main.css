@@ -658,6 +658,18 @@ ez-student-course-exercise > ez-block-container {
     padding-bottom: 2rem;
 }
 
+.update-course-ex-title-modal ez-datetime-field {
+    display: block;
+}
+
+.update-course-ex-title-modal .update-course-exercise-deadline {
+    padding-top: 2.5rem;
+}
+
+.update-course-ex-title-modal .update-course-exercise-closing {
+    padding-top: 1rem;
+}
+
 ez-deadline-close,
 ez-deadline-close ez-icon {
     color: var(--ez-yellow-text);

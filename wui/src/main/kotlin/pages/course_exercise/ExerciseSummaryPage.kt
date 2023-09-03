@@ -348,6 +348,8 @@ object ExerciseSummaryPage : EasyPage() {
                                 exercise.title_alias,
                                 exercise.student_visible,
                                 exercise.student_visible_from?.let { EzDate(it) },
+                                exercise.soft_deadline?.let { EzDate(it) },
+                                exercise.hard_deadline?.let { EzDate(it) },
                             ),
                             null,
                             dstId = updateModalDst

@@ -14,8 +14,8 @@ import dao.ExerciseDAO
 import debug
 import getWindowScrollPosition
 import kotlinx.coroutines.await
-import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
+import pages.course_exercise.ExerciseSummaryPage
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.CreateExerciseModalComp
 import pages.sidenav.Sidenav
@@ -24,6 +24,7 @@ import rip.kspar.ezspa.*
 import successMessage
 import template
 import tmRender
+import translation.Str
 import kotlin.js.Promise
 
 class TeacherCourseExercisesComp(
@@ -37,6 +38,7 @@ class TeacherCourseExercisesComp(
         val titleAlias: String?,
         val isAutoeval: Boolean,
         val deadline: EzDate?,
+        val closingTime: EzDate?,
         val isVisible: Boolean,
         val visibleFrom: EzDate?,
         val completed: Int,
@@ -70,8 +72,8 @@ class TeacherCourseExercisesComp(
         val props = exercises.map {
             ExProps(
                 it.id, it.ordering_idx, it.library_title, it.title_alias,
-                it.grader_type == ExerciseDAO.GraderType.AUTO, it.soft_deadline, it.isVisibleNow,
-                it.student_visible_from,
+                it.grader_type == ExerciseDAO.GraderType.AUTO, it.soft_deadline, it.hard_deadline,
+                it.isVisibleNow, it.student_visible_from,
                 it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count
             )
         }
@@ -84,12 +86,14 @@ class TeacherCourseExercisesComp(
                 titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, "Peidetud") else null,
                 titleStatus = if (!it.isVisible) EzCollComp.TitleStatus.INACTIVE else EzCollComp.TitleStatus.NORMAL,
                 titleLink = ExerciseSummaryPage.link(courseId, it.id),
-                // TODO: date attr
-                // TODO: unf icon
-                // TODO: editable with datetime picker
-//                topAttr = if (it.deadline != null) {
-//                    EzCollComp.SimpleAttr("Tähtaeg", it.deadline.toEstonianString(), Icons.pending, )
-//                } else null
+                // TODO: editable?
+                topAttr = if (it.deadline != null) {
+                    EzCollComp.SimpleAttr(
+                        Str.deadlineLabel,
+                        it.deadline.toHumanString(EzDate.Format.FULL),
+                        Icons.pending
+                    )
+                } else null,
                 progressBar = EzCollComp.ProgressBar(it.completed, it.started, it.ungraded, it.unstarted, true),
                 isSelectable = true,
                 actions = listOf(
@@ -209,6 +213,8 @@ class TeacherCourseExercisesComp(
                 item.props.titleAlias,
                 item.props.isVisible,
                 item.props.visibleFrom,
+                item.props.deadline,
+                item.props.closingTime,
             ),
             this,
             dstId = updateModalDst
