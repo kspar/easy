@@ -87,7 +87,10 @@ class CourseExerciseStudentSubmitTabComp(
         }
 
         editor = CodeEditorComp(
-            CodeEditorComp.File("${Str.solutionCodeTabName}.py", content?.content),
+            CodeEditorComp.File(
+                "${Str.solutionCodeTabName}.py", content?.content,
+                editability = if (isOpenForSubmissions) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
+            ),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
