@@ -25,7 +25,7 @@ class StatisticsController(private val statisticsService: StatisticsService) {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: StatResp?, caller: EasyUser): StatResp {
-        log.debug { "${caller.id} is querying statistics." }
+        log.debug { "Public statistics query by ${caller.id}" }
         return runBlocking { statisticsService.getOrWaitStatUpdate(dto) }
     }
 }
