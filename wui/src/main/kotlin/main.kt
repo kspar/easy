@@ -160,11 +160,14 @@ private fun loadContainerQueries() {
 
 private fun consoleEgg() {
     debug {
-        """
+        template(
+            """
             
 Hei, mis toimub?
 Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
-Mõlemal juhul tule räägi sellest meie Discordi serveris: discord.gg/${AppProperties.DISCORD_INVITE_ID} :-)
-        """
+Mõlemal juhul tule räägi sellest meie Discordi serveris: {{d}}/${AppProperties.DISCORD_INVITE_ID} :-)
+        """,
+            "d" to "discord.gg"
+        )
     }
 }
