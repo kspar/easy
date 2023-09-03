@@ -295,11 +295,6 @@ svg {
     padding-bottom: 0;
 }
 
-.sidenav .user-view .role {
-    margin-top: .5rem;
-    color: #777;
-}
-
 .sidenav .role-select-wrap {
     margin-top: .5rem;
     width: 12rem;
