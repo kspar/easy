@@ -36,6 +36,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
         @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+        @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
         @JsonProperty("grader_type") val graderType: GraderType,
         @JsonProperty("ordering_idx") val orderingIndex: Int,
