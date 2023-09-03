@@ -79,6 +79,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                 CourseExercise.id,
                 CourseExercise.gradeThreshold,
                 CourseExercise.softDeadline,
+                CourseExercise.hardDeadline,
                 CourseExercise.studentVisibleFrom,
                 ExerciseVer.graderType,
                 ExerciseVer.title,
