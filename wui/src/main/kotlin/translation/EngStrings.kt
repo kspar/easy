@@ -77,6 +77,7 @@ object EngStrings : TranslatableStrings() {
     override val tabSubmit = ""
     override val tabAllSubmissions=""
     override val draftSaveFailedMsg= ""
+    override val exerciseClosedForSubmissions = "This exercise is closed and does not allow any new submissions"
     override val solutionEditorStatusDraft=""
     override val solutionEditorStatusSubmission=""
     override val submissionSingular=""

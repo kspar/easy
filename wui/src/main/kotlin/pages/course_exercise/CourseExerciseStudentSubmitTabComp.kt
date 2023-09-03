@@ -4,8 +4,10 @@ import Icons
 import components.ToastThing
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
+import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
+import hide
 import kotlinx.coroutines.await
 import observeValueChange
 import rip.kspar.ezspa.*
@@ -17,6 +19,7 @@ class CourseExerciseStudentSubmitTabComp(
     private val courseId: String,
     private val courseExId: String,
     private val graderType: ExerciseDAO.GraderType,
+    private val isOpenForSubmissions: Boolean,
     private val onNewSubmission: () -> Unit,
     parent: Component
 ) : Component(parent) {
@@ -26,6 +29,7 @@ class CourseExerciseStudentSubmitTabComp(
     private lateinit var editor: CodeEditorComp
     private lateinit var syncIcon: CourseExerciseEditorStatusComp
     private lateinit var submitBtn: ButtonComp
+    private val warning = WarningComp(parent = this)
     private lateinit var feedback: ExerciseFeedbackComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
 
@@ -40,7 +44,7 @@ class CourseExerciseStudentSubmitTabComp(
 
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, syncIcon, submitBtn, feedback, autogradeLoader)
+        get() = listOfNotNull(editor, syncIcon, warning, submitBtn, feedback, autogradeLoader)
 
     override fun create() = doInPromise {
         val submissionP = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId)
@@ -93,6 +97,7 @@ class CourseExerciseStudentSubmitTabComp(
             ButtonComp.Type.PRIMARY,
             if (graderType == ExerciseDAO.GraderType.AUTO) Str.doSubmitAndCheck else Str.doSubmit,
             if (graderType == ExerciseDAO.GraderType.AUTO) Icons.robot else null,
+            isEnabledInitial = isOpenForSubmissions,
             onClick = {
                 try {
                     setEditorEditable(false)
@@ -128,6 +133,7 @@ class CourseExerciseStudentSubmitTabComp(
                 $editor
             </div>
             <div id='${submitBtn.dstId}' style='display: flex; justify-content: center; margin-top: 3rem;'></div>
+            $warning
             $autogradeLoader
             $feedback
         """.trimIndent(),
@@ -152,6 +158,10 @@ class CourseExerciseStudentSubmitTabComp(
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, isDraft)
         if (isAutogradeInProgressInitial)
             submitBtn.click()
+        if (!isOpenForSubmissions) {
+            submitBtn.hide()
+            warning.setMsg(Str.exerciseClosedForSubmissions)
+        }
     }
 
     private suspend fun saveDraft(content: String, retryCount: Int = 0) {

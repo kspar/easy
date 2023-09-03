@@ -50,6 +50,7 @@ class StudentCourseExerciseComp(
                             courseId,
                             courseExId,
                             courseEx.grader_type,
+                            courseEx.is_open,
                             ::updateSubmissions,
                             it
                         )

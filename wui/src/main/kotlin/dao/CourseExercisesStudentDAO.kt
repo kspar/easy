@@ -3,12 +3,14 @@ package dao
 import EzDate
 import EzDateSerializer
 import Icons
+import components.ToastThing
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import translation.Str
 import kotlin.js.Promise
 
 object CourseExercisesStudentDAO {
@@ -52,7 +54,8 @@ object CourseExercisesStudentDAO {
         val deadline: EzDate?,
         val grader_type: ExerciseDAO.GraderType,
         val threshold: Int,
-        val instructions_html: String?
+        val instructions_html: String?,
+        val is_open: Boolean,
     )
 
     fun getCourseExerciseDetails(courseId: String, courseExId: String): Promise<ExerciseDetails> = doInPromise {
@@ -152,7 +155,14 @@ object CourseExercisesStudentDAO {
             ReqMethod.POST,
             mapOf("solution" to solution),
             successChecker = { http200 },
-            errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
+            errorHandlers = listOf(
+                ErrorHandlers.noCourseAccessMsg,
+                ErrorHandlers.noVisibleExerciseMsg,
+                {
+                    it.handleByCode(RespError.COURSE_EXERCISE_CLOSED) {
+                        ToastThing(Str.exerciseClosedForSubmissions, icon = Icons.errorUnf)
+                    }
+                })
         ).await()
     }
 

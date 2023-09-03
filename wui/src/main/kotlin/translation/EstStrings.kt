@@ -110,6 +110,7 @@ sealed class TranslatableStrings {
     abstract val tabSubmit: String
     abstract val tabAllSubmissions: String
     abstract val draftSaveFailedMsg: String
+    abstract val exerciseClosedForSubmissions: String
     abstract val solutionEditorStatusDraft: String
     abstract val solutionEditorStatusSubmission: String
     abstract val submissionSingular: String
@@ -201,6 +202,7 @@ object EstStrings : TranslatableStrings() {
     override val tabSubmit = "Esitamine"
     override val tabAllSubmissions = "Kõik esitused"
     override val draftSaveFailedMsg = "Mustandi salvestamine ebaõnnestus"
+    override val exerciseClosedForSubmissions = "See ülesanne on suletud ja ei luba enam uusi esitusi"
     override val solutionEditorStatusDraft = "Esitamata mustand"
     override val solutionEditorStatusSubmission = "Viimane esitus"
     override val submissionSingular = "esitus"
