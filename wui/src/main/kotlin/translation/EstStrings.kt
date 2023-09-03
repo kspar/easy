@@ -161,6 +161,18 @@ sealed class TranslatableStrings {
     // Exercise page
     abstract val testType: String
 
+    // About page
+    abstract val aboutS1: String
+    abstract val aboutS2: String
+    abstract val aboutS3: String
+    abstract val aboutS4: String
+    abstract val aboutS5: String
+    abstract val aboutS6: String
+    abstract val aboutSponsors: String
+    abstract val statsAutograding: String
+    abstract val statsSubmissions: String
+    abstract val statsAccounts: String
+
     // Datetime
     abstract val today: String
     abstract val yesterday: String
@@ -299,6 +311,17 @@ ole hea ja proovi hiljem uuesti.
     override val coursesSingular = "kursus"
     override val coursesPlural = "kursust"
     override val completedBadgeLabel = "Tehtud!"
+
+    override val aboutS1="Lahenduse keskkonda haldab ja arendab"
+    override val aboutS2="Tartu Ülikooli arvutiteaduse instituut"
+    override val aboutS3="Lahendus põhineb vabavaralisel rakendusel"
+    override val aboutS4=", mida arendatakse samuti arvutiteaduse instituudis"
+    override val aboutS5="Kui sul on Lahenduse kasutamise või arenduse kohta küsimusi, või kui leidsid kuskilt vea, siis tule räägi sellest"
+    override val aboutS6="Lahenduse Discordi serveris"
+    override val aboutSponsors="Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
+    override val statsAutograding="Hetkel kontrollitavaid lahendusi"
+    override val statsSubmissions="Esitusi kokku"
+    override val statsAccounts="Kasutajaid kokku"
 
     override val today = "täna"
     override val yesterday = "eile"

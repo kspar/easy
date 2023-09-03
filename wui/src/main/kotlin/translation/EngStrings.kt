@@ -131,6 +131,17 @@ of the issue, please try again later.
 
     override val testType = "Test type"
 
+    override val aboutS1="Lahendus is operated and developed by the"
+    override val aboutS2="Institute of Computer Science at the University of Tartu"
+    override val aboutS3="Lahendus is based on an open-source application called"
+    override val aboutS4=" which is also developed at the Institute of Computer Science"
+    override val aboutS5="If you have any questions about Lahendus or are interested in its development, or if you found a bug, then come talk to us in"
+    override val aboutS6="our Discord server"
+    override val aboutSponsors="The development of Lahendus and easy, and creating some of the exercises has been supported by"
+    override val statsAutograding="Submissions being autograded"
+    override val statsSubmissions="Total submissions"
+    override val statsAccounts="Total accounts"
+
     override val today = "today"
     override val yesterday = "yesterday"
     override val tomorrow = "tomorrow"
