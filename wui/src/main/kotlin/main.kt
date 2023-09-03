@@ -21,7 +21,7 @@ import pages.terms.TermsProxyPage
 import queries.*
 import rip.kspar.ezspa.*
 import translation.Str
-import translation.setStrings
+import translation.updateLanguage
 
 
 private val PAGES = listOf(
@@ -34,7 +34,10 @@ private val PAGES = listOf(
 
 fun main() {
     consoleEgg()
-    setStrings()
+
+    // Weird hack: strings have to be set first here to fetch possible locale from localstorage
+    // but then refreshed again after auth because we might get a preference from there
+    updateLanguage()
 
     // Start authentication as soon as possible
     doInPromise {
@@ -45,6 +48,7 @@ fun main() {
             if (Auth.authenticated) {
                 setSplashText("Uuendan andmeid")
                 updateAccountData()
+                updateLanguage()
             }
         }
         refreshCurrentPathFromBrowser()

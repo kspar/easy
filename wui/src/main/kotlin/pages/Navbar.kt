@@ -6,6 +6,7 @@ import libheaders.Materialize
 import rip.kspar.ezspa.*
 import template
 import translation.Str
+import translation.activeLanguage
 import translation.changeLanguage
 
 object Navbar {
@@ -51,7 +52,7 @@ object Navbar {
             "sidenavIcon" to Icons.hamburgerMenu,
             "userName" to (Auth.firstName ?: ""),
             "account" to Str.accountData,
-            "accountLink" to Auth.createAccountUrl(),
+            "accountLink" to Auth.createAccountUrl(objOf("locale" to activeLanguage.localeId)),
             "logOut" to Str.logOut,
         )
 
@@ -60,7 +61,7 @@ object Navbar {
         }
 
         getElemById(logoutId).onVanillaClick(true) {
-            Auth.logout()
+            Auth.logout(objOf("locale" to activeLanguage.localeId))
         }
 
         initProfileDropdown()

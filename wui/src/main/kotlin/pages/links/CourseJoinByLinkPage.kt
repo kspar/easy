@@ -9,6 +9,8 @@ import kotlinx.dom.removeClass
 import pages.EasyPage
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.getHtml
+import rip.kspar.ezspa.objOf
+import translation.activeLanguage
 
 object CourseJoinByLinkPage : EasyPage() {
 
@@ -39,7 +41,7 @@ object CourseJoinByLinkPage : EasyPage() {
             }
             // FIXME: for migration, replace with PageAuth.REQUIRED
             !Auth.authenticated -> {
-                Auth.login()
+                Auth.login(objOf("locale" to activeLanguage.localeId))
             }
 
             else -> {

@@ -2,6 +2,7 @@ import components.ToastIds
 import components.ToastThing
 import rip.kspar.ezspa.objOf
 import translation.Str
+import translation.activeLanguage
 import kotlin.js.Promise
 
 enum class Role(val id: String) {
@@ -16,9 +17,8 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
     val tokenParsed: dynamic
     val authenticated: Boolean
 
-    fun createAccountUrl(): String
+    fun createAccountUrl(options: dynamic = definedExternally): String
     fun createRegisterUrl(options: dynamic = definedExternally): String
-    fun createLogoutUrl(options: dynamic = definedExternally): String
 
     protected fun init(options: dynamic): Promise<Boolean>
     fun login(options: dynamic = definedExternally)
@@ -69,7 +69,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                     else -> {
                         if (isRequired) {
                             debug { "Redirecting to login" }
-                            login()
+                            login(objOf("locale" to activeLanguage.localeId))
                         }
                     }
                 }
@@ -77,7 +77,9 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             }.catch {
                 permanentErrorMessage(
                     false,
-                    UserMessageAction("Proovi uuesti", onActivate = ::login)
+                    UserMessageAction(
+                        "Proovi uuesti",
+                        onActivate = { login(objOf("locale" to activeLanguage.localeId)) })
                 ) { "Autentimine ebaõnnestus." }
                 reject(RuntimeException("Authentication error"))
             }
@@ -93,7 +95,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 debug { "Token refresh failed" }
                 ToastThing(
                     "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida.",
-                    ToastThing.Action("Logi sisse", ::login),
+                    ToastThing.Action("Logi sisse", { login(objOf("locale" to activeLanguage.localeId)) }),
                     Icons.errorUnf,
                     displayLengthSec = ToastThing.LONG_TIME,
                     id = ToastIds.loginToContinue
