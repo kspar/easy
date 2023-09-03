@@ -13,8 +13,6 @@ object AboutPage : EasyPage() {
 
     override val pathSchema = "/about"
 
-    override val pageAuth = PageAuth.OPTIONAL
-
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
         getHtml().addClass("wui3")

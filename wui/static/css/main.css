@@ -1182,6 +1182,13 @@ ez-about {
     padding: 2rem;
 }
 
+ez-about-live-stat {
+    display: inline;
+    font-family: monospace;
+    font-weight: bold;
+    margin-left: .3rem;
+}
+
 ez-about-sponsors {
     display: flex;
     align-items: center;
