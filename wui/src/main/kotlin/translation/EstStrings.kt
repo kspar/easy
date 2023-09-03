@@ -47,7 +47,7 @@ sealed class TranslatableStrings {
         Role.ADMIN -> roleAdmin
     }
 
-    fun translateStudents(count: Int) = if (count == 1) coursesStudent else coursesStudents
+    fun translateStudents(count: Int) = if (count == 1) studentsPlural else studentsSingular
     fun translateExercises(count: Int) = if (count == 1) exerciseSingular else exercisePlural
     fun translatePermission(permission: DirAccess) =
         when (permission) {
@@ -88,8 +88,8 @@ sealed class TranslatableStrings {
     // Courses page
     abstract val coursesTitle: String
     abstract val coursesTitleAdmin: String
-    abstract val coursesStudents: String
-    abstract val coursesStudent: String
+    abstract val studentsSingular: String
+    abstract val studentsPlural: String
     abstract val enrolledOnCourseAttrKey: String
     abstract val coursesSingular: String
     abstract val coursesPlural: String
@@ -174,10 +174,22 @@ object EstStrings : TranslatableStrings() {
     override val notFoundPageMsg = "Siin pole midagi kasulikku näha. :("
     override val noPermissionForPageMsg = "Sul puudub õigus selle lehe vaatamiseks. :("
     override val noCourseAccessPageMsg = "Sul puudub ligipääs sellele kursusele. :("
+    override val somethingWentWrong =
+        "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
+    override val yes = "jah"
+    override val no = "ei"
+    override val myCourses = "Minu kursused"
+    override val exerciseLibrary = "Ülesandekogu"
+    override val gradedAutomatically = "Automaatselt hinnatud"
+    override val gradedByTeacher = "Õpetaja poolt hinnatud"
+    override val notGradedYet = "Hindamata"
+
+
+
 
 
     override val solutionCodeTabName = "lahendus"
-    override val solutionEditorPlaceholder = "Kirjuta või lohista lahendus siia..."
+    override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
     override val roleStudent = "Õpilane"
@@ -219,13 +231,10 @@ object EstStrings : TranslatableStrings() {
     override val assStudentVisibleLabel = "Hinnangud õpilastele nähtavad"
     override val lastModifiedLabel = "Viimati muudetud"
     override val submissionTimeLabel = "Esitamise aeg"
-    override val yes = "jah"
-    override val no = "ei"
-    override val coursesStudents = "õpilast"
-    override val coursesStudent = "õpilane"
+
+    override val studentsSingular = "õpilast"
+    override val studentsPlural = "õpilane"
     override val enrolledOnCourseAttrKey = "Kursusel on"
-    override val somethingWentWrong =
-        "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
 
     override val coursesTitleAdmin = "Kõik kursused"
     override val accountData = "Konto seaded"
@@ -240,12 +249,8 @@ object EstStrings : TranslatableStrings() {
     override val linkAbout = "Lahendusest"
     override val linkTOS = "Kasutustingimused"
     override val coursesTitle = "Minu kursused"
-    override val myCourses = "Minu kursused"
-    override val exerciseLibrary = "Ülesandekogu"
     override val deadlineLabel = "Tähtaeg"
-    override val gradedAutomatically = "Automaatselt hinnatud"
-    override val gradedByTeacher = "Õpetaja poolt hinnatud"
-    override val notGradedYet = "Hindamata"
+
     override val completedLabel = "Lõpetanud"
     override val startedLabel = "Nässu läinud"
     override val ungradedLabel = "Hindamata"
