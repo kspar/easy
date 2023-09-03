@@ -8,11 +8,12 @@ import components.EzCollComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
-import pages.course_exercise.ExerciseSummaryPage
 import pages.Title
+import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 
 class StudentCourseExercisesListComp(
     private val courseId: String,
@@ -58,7 +59,7 @@ class StudentCourseExercisesListComp(
                 // TODO: badge only if 100 regardless of threshold
                 titleIcon = if (it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED)
                     EzCollComp.TitleIcon(
-                        """<ez-exercise-badge>${Icons.awardWithCheck}</ez-exercise-badge>""", "Tehtud!"
+                        """<ez-exercise-badge>${Icons.awardWithCheck}</ez-exercise-badge>""", Str.completedBadgeLabel
                     ) else null,
                 titleLink = ExerciseSummaryPage.link(courseId, it.id),
                 topAttr = if (it.deadline != null) {
@@ -67,13 +68,17 @@ class StudentCourseExercisesListComp(
                                 it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED)
                     ) {
                         EzCollComp.RenderedAttr(
-                            "Tähtaeg", it.deadline, {
+                            Str.deadlineLabel, it.deadline, {
                                 """<ez-deadline-close>${it.toHumanString(EzDate.Format.FULL)}</ez-deadline-close>"""
                             }, """<ez-deadline-close>${Icons.alarmClock}</ez-deadline-close>""",
                             { it.toHumanString(EzDate.Format.FULL) }
                         )
                     } else {
-                        EzCollComp.SimpleAttr("Tähtaeg", it.deadline.toHumanString(EzDate.Format.FULL), Icons.pending)
+                        EzCollComp.SimpleAttr(
+                            Str.deadlineLabel,
+                            it.deadline.toHumanString(EzDate.Format.FULL),
+                            Icons.pending
+                        )
                     }
                 } else null,
                 progressBar = EzCollComp.ProgressBar(translateStatusToProgress(it.status)),
@@ -81,7 +86,7 @@ class StudentCourseExercisesListComp(
         }
 
         coll = EzCollComp(
-            items, EzCollComp.Strings("ülesanne", "ülesannet"),
+            items, EzCollComp.Strings(Str.exerciseSingular, Str.exercisePlural),
             parent = this
         )
     }

@@ -64,7 +64,7 @@ class StudentCoursesComp(
                     titleLink = CourseExercisesPage.link(it.id),
                 )
             },
-            EzCollComp.Strings("kursus", "kursust"),
+            EzCollComp.Strings(Str.coursesSingular, Str.coursesPlural),
             parent = this
         )
     }

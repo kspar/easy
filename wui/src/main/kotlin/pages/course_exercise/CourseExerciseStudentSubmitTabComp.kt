@@ -83,15 +83,15 @@ class CourseExerciseStudentSubmitTabComp(
         }
 
         editor = CodeEditorComp(
-            CodeEditorComp.File("lahendus.py", content?.content),
-            placeholder = "Kirjuta või lohista lahendus siia...", parent = this
+            CodeEditorComp.File("${Str.solutionCodeTabName}.py", content?.content),
+            placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
         syncIcon = CourseExerciseEditorStatusComp("", CourseExerciseEditorStatusComp.Status.IN_SYNC, this)
 
         submitBtn = ButtonComp(
             ButtonComp.Type.PRIMARY,
-            if (graderType == ExerciseDAO.GraderType.AUTO) "Esita ja kontrolli" else "Esita",
+            if (graderType == ExerciseDAO.GraderType.AUTO) Str.doSubmitAndCheck else Str.doSubmit,
             if (graderType == ExerciseDAO.GraderType.AUTO) Icons.robot else null,
             onClick = {
                 try {
@@ -107,7 +107,7 @@ class CourseExerciseStudentSubmitTabComp(
                     setEditorEditable(true)
                 }
             },
-            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) "Kontrollin..." else "Salvestan...",
+            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) Str.autoAssessing else Str.saving,
             parent = this
         )
 
@@ -124,12 +124,12 @@ class CourseExerciseStudentSubmitTabComp(
     override fun render() = template(
         """
             <div style="position: relative">
-                <ez-dst id='${syncIcon.dstId}'></ez-dst>
-                <ez-dst id="${editor.dstId}"></ez-dst>
+                $syncIcon
+                $editor
             </div>
             <div id='${submitBtn.dstId}' style='display: flex; justify-content: center; margin-top: 3rem;'></div>
-            <ez-dst id='${autogradeLoader.dstId}'></ez-dst>
-            <ez-dst id='${feedback.dstId}'></ez-dst>
+            $autogradeLoader
+            $feedback
         """.trimIndent(),
     )
 
@@ -157,8 +157,8 @@ class CourseExerciseStudentSubmitTabComp(
     private suspend fun saveDraft(content: String, retryCount: Int = 0) {
         if (retryCount > 2) {
             syncFailToast = ToastThing(
-                "Mustandi salvestamine ebaõnnestus",
-                ToastThing.Action("Proovi uuesti", { saveDraft(content) }),
+                Str.draftSaveFailedMsg,
+                ToastThing.Action(Str.tryAgain, { saveDraft(content) }),
                 Icons.errorUnf, displayLengthSec = ToastThing.LONG_TIME, id = syncFailToastId
             )
             updateStatus(CourseExerciseEditorStatusComp.Status.SYNC_FAILED)
@@ -183,8 +183,8 @@ class CourseExerciseStudentSubmitTabComp(
     private fun updateStatus(status: CourseExerciseEditorStatusComp.Status, isDraft: Boolean? = null) {
         if (isDraft != null)
             syncIcon.msg = when {
-                isDraft -> "Esitamata mustand"
-                else -> "Viimane esitus"
+                isDraft -> Str.solutionEditorStatusDraft
+                else -> Str.solutionEditorStatusSubmission
             }
         syncIcon.status = status
         syncIcon.rebuild()

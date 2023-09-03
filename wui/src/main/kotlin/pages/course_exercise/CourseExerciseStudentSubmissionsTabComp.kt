@@ -53,7 +53,7 @@ class CourseExerciseStudentSubmissionsTabComp(
                     progressBar = EzCollComp.ProgressBar(calculateSubmissionStatus(it.validGrade, threshold)),
                 )
             },
-            EzCollComp.Strings("esitus", "esitust"),
+            EzCollComp.Strings(Str.submissionSingular, Str.submissionPlural),
             compact = true,
             parent = this
         )

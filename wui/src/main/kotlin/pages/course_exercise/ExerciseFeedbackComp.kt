@@ -22,17 +22,6 @@ class ExerciseFeedbackComp(
     dstId: String = IdGenerator.nextId(), // temp
 ) : Component(parent, dstId) {
 
-    companion object {
-        const val autogradeFailedMsg = """
-
-           ¯\_(ツ)_/¯
-           
-Automaatne testimine ebaõnnestus.
-Kedagi on probleemist ilmselt juba teavitatud, 
-ole hea ja proovi hiljem uuesti.
-        """
-    }
-
     @Serializable
     data class OkV3(
         val result_type: String,
@@ -109,7 +98,7 @@ ole hea ja proovi hiljem uuesti.
             "hasAutoFeedback" to (autoFeedback != null || failed),
             "autoTitle" to Str.autoAssessmentLabel,
             "failed" to failed,
-            "failMsg" to autogradeFailedMsg,
+            "failMsg" to Str.autogradeFailedMsg,
             "isRaw" to (autoFeedbackV3Html == null),
             "isV3" to (autoFeedbackV3Html != null),
             "rawFeedback" to autoFeedback,
@@ -194,7 +183,7 @@ ole hea ja proovi hiljem uuesti.
                 "status" to it.status.mapToIcon(),
                 "title" to it.title,
                 "exception" to if (it.exception_message != null) mapOf(
-                    "msg" to "Programmi käivitamisel tekkis viga:",
+                    "msg" to Str.autogradeException,
                     "error" to it.exception_message
                 ) else null,
 
@@ -208,7 +197,7 @@ ole hea ja proovi hiljem uuesti.
                 },
 
                 "files" to if (it.created_files.isNotEmpty()) mapOf(
-                    "msg" to "Enne programmi käivitamist lõin failid:",
+                    "msg" to Str.autogradeCreatedFiles,
                     "value" to it.created_files.joinToString("\n") {
                         val content = it.content.split("\n").joinToString("\n") { "  $it" }
                         "  --- ${it.name} ---\n$content"
@@ -216,12 +205,12 @@ ole hea ja proovi hiljem uuesti.
                 ) else null,
 
                 "inputs" to if (it.user_inputs.isNotEmpty()) mapOf(
-                    "msg" to "Andsin programmile sisendid:",
+                    "msg" to Str.autogradeStdIn,
                     "value" to it.user_inputs.joinToString("\n") { "  $it" },
                 ) else null,
 
                 "outputs" to if (it.actual_output != null) mapOf(
-                    "msg" to "Programmi täielik väljund oli:",
+                    "msg" to Str.autogradeStdOut,
                     "value" to it.actual_output.trim('\n').split("\n").joinToString("\n") { "  $it" },
                 ) else null,
             )

@@ -6,10 +6,12 @@ import libheaders.Materialize
 import rip.kspar.ezspa.*
 import template
 import translation.Str
+import translation.changeLanguage
 
 object Navbar {
 
-    val logoutId = IdGenerator.nextId()
+    private val logoutId = IdGenerator.nextId()
+    private val changeLanguageId = IdGenerator.nextId()
 
     fun build() {
         getElemById("nav-wrap").innerHTML = template(
@@ -40,16 +42,22 @@ object Navbar {
                 </nav>
                 <!-- Profile dropdown menu structure -->
                 <ul id="profile-dropdown" class="dropdown-content">
+                    <li><a id='$changeLanguageId'>{{otherLanguage}}</a></li>
                     <li><a href="{{accountLink}}">{{account}}</a></li>
                     <li><a id='$logoutId'>{{logOut}}</a></li>
                 </ul>
             """.trimIndent(),
+            "otherLanguage" to Str.otherLanguage,
             "sidenavIcon" to Icons.hamburgerMenu,
             "userName" to (Auth.firstName ?: ""),
             "account" to Str.accountData,
             "accountLink" to Auth.createAccountUrl(),
             "logOut" to Str.logOut,
         )
+
+        getElemById(changeLanguageId).onVanillaClick(true) {
+            changeLanguage()
+        }
 
         getElemById(logoutId).onVanillaClick(true) {
             Auth.logout()

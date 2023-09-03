@@ -69,7 +69,7 @@ class TestingTabComp(
 
         editor = CodeEditorComp(
             CodeEditorComp.File(editorTabName, latestSubmission),
-            placeholder = "Kirjuta või lohista lahendus siia...", parent = this
+            placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
         feedback = ExerciseFeedbackComp(null, null, null, false, this)

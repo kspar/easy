@@ -55,7 +55,7 @@ class SidenavGeneralSectionComp(
         "coursesLabel" to Str.myCourses,
         "libLabel" to Str.exerciseLibrary,
         "articlesLabel" to "Artiklid",
-        "newCourseLabel" to "Uus kursus",
+        "newCourseLabel" to Str.newCourse,
         "newCourseModalDst" to newCourseModal.dstId,
     )
 

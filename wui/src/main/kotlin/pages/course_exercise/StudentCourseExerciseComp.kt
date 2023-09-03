@@ -11,6 +11,7 @@ import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 
 
 class StudentCourseExerciseComp(
@@ -43,7 +44,7 @@ class StudentCourseExerciseComp(
         tabs = PageTabsComp(
             type = PageTabsComp.Type.SUBPAGE,
             tabs = listOf(
-                PageTabsComp.Tab("Esita", preselected = true,
+                PageTabsComp.Tab(Str.tabSubmit, preselected = true,
                     compProvider = {
                         CourseExerciseStudentSubmitTabComp(
                             courseId,
@@ -53,7 +54,7 @@ class StudentCourseExerciseComp(
                             it
                         )
                     }),
-                PageTabsComp.Tab("Kõik esitused",
+                PageTabsComp.Tab(Str.tabAllSubmissions,
                     compProvider = {
                         CourseExerciseStudentSubmissionsTabComp(courseId, courseExId, courseEx.threshold, it)
                             .also { submissionsTab = it }

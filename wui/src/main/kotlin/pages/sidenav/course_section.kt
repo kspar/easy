@@ -13,6 +13,7 @@ import pages.participants.ParticipantsPage
 import rip.kspar.ezspa.*
 import successMessage
 import template
+import translation.Str
 import kotlin.js.Promise
 
 class SidenavCourseSectionComp(
@@ -74,10 +75,10 @@ class SidenavCourseSectionComp(
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
         "updateCourseIcon" to Icons.settings,
-        "exercisesLabel" to if (activeRole == Role.STUDENT) "Kõik ülesanded" else "Ülesanded",
-        "gradesLabel" to "Hinded",
-        "participantsLabel" to "Osalejad",
-        "updateCourseLabel" to "Kursuse sätted",
+        "exercisesLabel" to if (activeRole == Role.STUDENT) Str.allExercises else Str.exercises,
+        "gradesLabel" to Str.gradesLabel,
+        "participantsLabel" to Str.participants,
+        "updateCourseLabel" to Str.courseSettings,
         "updateModalDst" to updateCourseModal.dstId,
         "studentExercises" to studentExercises.map {
             mapOf(

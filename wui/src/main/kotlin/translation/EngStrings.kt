@@ -3,11 +3,10 @@ package translation
 
 object EngStrings : TranslatableStrings() {
 
+    override val otherLanguage = "Eesti keeles"
     override val notFoundPageTitle = "Page not found"
     override val notFoundPageMsg = "Nothing to see here :("
-    override val noPermissionForPageTitle = "No access"
     override val noPermissionForPageMsg = "Seems like you have no permission to look here. :("
-    override val noCourseAccessPageTitle = "No access to this course"
     override val noCourseAccessPageMsg = ""
     override val somethingWentWrong = ""
     override val yes = ""
@@ -24,9 +23,9 @@ object EngStrings : TranslatableStrings() {
     override val adding = ""
     override val cancel = ""
     override val solutionCodeTabName = ""
-    override val new = ""
-    override val exercise = ""
-    override val exercises = ""
+    override val solutionEditorPlaceholder =""
+    override val exerciseSingular = ""
+    override val exercisePlural = ""
     override val doEditTitle = ""
     override val doMove = ""
     override val moving = ""
@@ -35,47 +34,36 @@ object EngStrings : TranslatableStrings() {
     override val doRestore = ""
     override val doChange = ""
 
-
     override val permissionP = ""
     override val permissionPR = ""
     override val permissionPRA = ""
     override val permissionPRAW = ""
     override val permissionPRAWM = ""
 
-
-    override val topMenuCourses = ""
-    override val activeRoleLabel = ""
     override val roleAdmin = ""
     override val roleTeacher = ""
     override val roleStudent = ""
     override val accountData = ""
     override val logOut = ""
-    override val roleChangeStudentSuffix = ""
 
-
-    override val sidenavHeader = ""
     override val newExercise = ""
-    override val addExistingExercise = ""
+    override val newCourse = ""
+    override val allExercises = ""
+    override val exercises = ""
     override val participants = ""
     override val gradesLabel = ""
+    override val courseSettings = ""
+    override val linkAbout = ""
+    override val linkTOS = ""
 
-
-    override val noCoursesLabel = ""
     override val coursesTitle = ""
     override val coursesTitleAdmin = ""
-    override val fetchingCoursesFailed = ""
-    override val newCourseLink = ""
     override val coursesStudents = ""
     override val coursesStudent = ""
     override val enrolledOnCourseAttrKey = ""
     override val coursesSingular = ""
     override val coursesPlural = ""
-
-
-    override val courseCreationFailed = ""
-    override val newCourseName = ""
-    override val addNewCourse = ""
-
+    override val completedBadgeLabel = ""
 
     override val deadlineLabel = ""
     override val completedLabel = ""
@@ -83,11 +71,16 @@ object EngStrings : TranslatableStrings() {
     override val ungradedLabel = ""
     override val unstartedLabel = ""
 
-
     override val tabExerciseLabel = ""
     override val tabTestingLabel = ""
     override val tabSubmissionsLabel = ""
-    override val tabSubmitLabel = ""
+    override val tabSubmit = ""
+    override val tabAllSubmissions=""
+    override val draftSaveFailedMsg= ""
+    override val solutionEditorStatusDraft=""
+    override val solutionEditorStatusSubmission=""
+    override val submissionSingular=""
+    override val submissionPlural=""
     override val softDeadlineLabel = ""
     override val hardDeadlineLabel = ""
     override val graderTypeLabel = ""
@@ -99,11 +92,11 @@ object EngStrings : TranslatableStrings() {
     override val graderTypeAuto = ""
     override val graderTypeTeacher = ""
     override val autoAssessmentLabel = ""
-    override val autoGradeLabel = ""
     override val teacherAssessmentLabel = ""
     override val gradeLabel = ""
     override val doAutoAssess = ""
     override val autoAssessing = ""
+    override val tryAgain=""
     override val addAssessmentLink = ""
     override val addAssessmentGradeLabel = ""
     override val addAssessmentFeedbackLabel = ""
@@ -111,8 +104,8 @@ object EngStrings : TranslatableStrings() {
     override val addAssessmentButtonLabel = ""
     override val assessmentAddedMsg = ""
     override val submissionTimeLabel = ""
-    override val submitAndCheckLabel = ""
-    override val lastSubmTimeLabel = ""
+    override val doSubmitAndCheck = "Submit and check"
+    override val doSubmit = "Submit"
     override val submissionHeading = ""
     override val latestSubmissionSuffix = ""
     override val allSubmissionsLink = ""
@@ -121,11 +114,17 @@ object EngStrings : TranslatableStrings() {
     override val toLatestSubmissionLink = ""
     override val aaTitle = ""
     override val submitSuccessMsg = ""
+    override val autogradeException=""
+    override val autogradeFailedMsg=""
+    override val autogradeCreatedFiles=""
+    override val autogradeStdIn=""
+    override val autogradeStdOut=""
 
-
-    override val usedOnCoursesLabel = ""
-    override val previewLabel = ""
-    override val exerciseSaved = ""
     override val testType = ""
-
+    override val today=""
+    override val yesterday=""
+    override val monthList= listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
 }

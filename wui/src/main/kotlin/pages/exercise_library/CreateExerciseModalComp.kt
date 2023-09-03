@@ -26,7 +26,7 @@ class CreateExerciseModalComp(
     data class ExIds(val exerciseId: String, val courseExerciseId: String?)
 
     private val modalComp: BinaryModalComp<ExIds?> = BinaryModalComp(
-        "Uus ülesanne", Str.doSave, Str.cancel, Str.saving,
+        Str.newExercise, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createExercise(titleField.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { titleField.focus() }, parent = this
