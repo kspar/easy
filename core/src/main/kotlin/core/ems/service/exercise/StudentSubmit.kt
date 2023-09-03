@@ -170,6 +170,7 @@ class StudentSubmitCont(
             }.value
         }
 
+        cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
         cachingService.invalidate(countSubmissionsCache)
         cachingService.evictSelectLatestValidGrades(courseExId)
         return id
