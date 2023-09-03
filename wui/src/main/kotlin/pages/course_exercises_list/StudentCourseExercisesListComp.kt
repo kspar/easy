@@ -25,6 +25,7 @@ class StudentCourseExercisesListComp(
         val title: String,
         val graderType: ExerciseDAO.GraderType,
         val deadline: EzDate?,
+        val isOpen: Boolean,
         val status: CourseExercisesStudentDAO.SubmissionStatus,
         val grade: Int?,
         val gradedBy: ExerciseDAO.GraderType?,
@@ -46,8 +47,8 @@ class StudentCourseExercisesListComp(
 
         val props = exercises.map {
             ExProps(
-                it.id, it.icon, it.effective_title, it.grader_type, it.deadline, it.status, it.grade, it.graded_by,
-                it.ordering_idx
+                it.id, it.icon, it.effective_title, it.grader_type, it.deadline, it.is_open, it.status,
+                it.grade, it.graded_by, it.ordering_idx
             )
         }
 
@@ -64,6 +65,7 @@ class StudentCourseExercisesListComp(
                 titleLink = ExerciseSummaryPage.link(courseId, it.id),
                 topAttr = if (it.deadline != null) {
                     if (it.deadline.isSoonerThanHours(24) &&
+                        it.isOpen &&
                         (it.status == CourseExercisesStudentDAO.SubmissionStatus.STARTED ||
                                 it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED)
                     ) {

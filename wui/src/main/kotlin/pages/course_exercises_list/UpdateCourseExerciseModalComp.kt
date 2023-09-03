@@ -111,7 +111,7 @@ class UpdateCourseExerciseModalComp(
         softDeadline = DateTimeFieldComp(
             "Tähtaeg", false,
             initialValue = exercise.softDeadline,
-            helpText = "Nähtav tähtaeg, aga esitusi lubatakse ka pärast seda aega",
+            helpText = "Nähtav tähtaeg, esitamist lubatakse ka pärast tähtaega",
             htmlClasses = "update-course-exercise-deadline",
             parent = this
         )

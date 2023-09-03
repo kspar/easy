@@ -164,6 +164,7 @@ sealed class TranslatableStrings {
     // Datetime
     abstract val today: String
     abstract val yesterday: String
+    abstract val tomorrow: String
     abstract val monthList: List<String>
 }
 
@@ -296,6 +297,7 @@ ole hea ja proovi hiljem uuesti.
 
     override val today = "täna"
     override val yesterday = "eile"
+    override val tomorrow = "homme"
     override val monthList = listOf(
         "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
         "juuli", "august", "september", "oktoober", "november", "detsember"

@@ -61,6 +61,11 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         if (this.isOnSameDate(yesterday))
             return "${Str.yesterday} $paddedHours:$paddedMins"
 
+        // Tomorrow
+        val tomorrow = nowDelta(86_400_000)
+        if (this.isOnSameDate(tomorrow))
+            return "${Str.tomorrow} $paddedHours:$paddedMins"
+
         // Later
         val day = this.date.getDate().toString()
         val monthName = Str.monthList[this.date.getMonth()]

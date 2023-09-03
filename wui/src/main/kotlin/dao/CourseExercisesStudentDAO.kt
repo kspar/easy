@@ -27,6 +27,7 @@ object CourseExercisesStudentDAO {
         val grader_type: ExerciseDAO.GraderType,
         @Serializable(with = EzDateSerializer::class)
         val deadline: EzDate?,
+        val is_open: Boolean,
         val status: SubmissionStatus,
         val grade: Int?,
         val graded_by: ExerciseDAO.GraderType?,
