@@ -30,7 +30,7 @@ class AddStudentsByLinkUsedCountComp(
         debug { "Starting live update for used count" }
         job = MainScope().launch {
             while (true) {
-                delay(5000)
+                delay(10_000)
                 val link = CoursesTeacherDAO.getJoinLink(courseId).await()
                 val new = link?.used_count
                 if (new != null && new != usedCount) {
