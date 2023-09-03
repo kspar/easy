@@ -32,8 +32,13 @@ internal fun setupLinkInterception() {
         // Don't intercept links to external hosts
         val targetHost = anchorElement.hostname
         val currentHost = window.location.hostname
+        val anchorTarget = anchorElement.target
         if (targetHost != currentHost) {
             EzSpa.Logger.debug { "$LOG_PREFIX Click not intercepted - destination is not local, target host: $targetHost, current host: $currentHost" }
+            return@onVanillaClick
+        }
+        if (anchorTarget.isNotBlank()) {
+            EzSpa.Logger.debug { "$LOG_PREFIX Click not intercepted - anchor target is not blank" }
             return@onVanillaClick
         }
 

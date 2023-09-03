@@ -17,5 +17,7 @@ object TermsProxyPage : EasyPage() {
         super.build(pageStateStr)
         window.location.href = AppProperties.TOS_URL
     }
+
+    fun link() = constructPathLink(emptyMap())
 }
 
