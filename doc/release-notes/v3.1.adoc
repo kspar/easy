@@ -1,0 +1,22 @@
+
+
+= Release notes: v3.1
+
+
+=== Highlights
+
+* New and shiny wui3 student views
+* Wui in english - at least all student views for now
+* About page with live statistics
+* Terms of service link
+* TSL Compose UI with only "program execution" type tests for now
+* OkV3 feedback HTML format, currently used only by TSL
+* Deadlines and closing times for course exercises
+* Join a course by link!
+* Send email invitation to both active and pending students
+* Persist and preselect chosen group in various pages
+* <Back> button in teacher course exercise student submission tab redirects back to submissions tab
+* If a student or teacher only has one course, they are automatically redirected from / to that course's page
+
+
+https://easy.myjetbrains.com/youtrack/issues?q=State:%20Resolved%20In%20release:%20v3.1%20[Resolved issues]
