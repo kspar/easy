@@ -159,7 +159,7 @@ class TSLRootComp(
         return TSL(
             validateFiles = true,
             tslVersion = "1.0",
-            requiredFiles = listOf("submission.py"),
+            requiredFiles = listOf("lahendus.py"),
             tests = tests
         )
     }
