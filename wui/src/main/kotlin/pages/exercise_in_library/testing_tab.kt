@@ -4,6 +4,8 @@ import DateSerializer
 import Icons
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
+import dao.CourseExercisesStudentDAO
+import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.course_exercise.AutogradeLoaderComp
@@ -100,6 +102,7 @@ class TestingTabComp(
 
             autogradeLoader.isActive = false
             autogradeLoader.rebuild()
+            feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(a.grade, ExerciseDAO.GraderType.AUTO)
             feedback.autoFeedback = a.feedback
             feedback.rebuild()
         } finally {
