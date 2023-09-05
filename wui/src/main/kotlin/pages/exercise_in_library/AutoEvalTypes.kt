@@ -29,7 +29,7 @@ object AutoEvalTypes {
         ),
 
         TypeTemplate(
-            "TSL Spec", "tiivad:tsl-spec",
+            "TSL YAML", "tiivad:tsl-spec",
             7, 30, TypeEditor.TSL_YAML,
             "TODO TSL YAML",
             """
@@ -37,13 +37,6 @@ object AutoEvalTypes {
                 python generated_0.py
             """.trimIndent(),
         ),
-
-//        TypeTemplate(
-//            "edutest", "edutest",
-//            7, 30, TypeEditor.CODE_EDITOR,
-//            "TODO edutest",
-//            "",
-//        ),
 
         TypeTemplate(
             "Python Grader", "pygrader",
