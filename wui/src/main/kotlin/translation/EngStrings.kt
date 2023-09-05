@@ -125,8 +125,8 @@ Automatic testing failed.
 Someone has probably already been notified 
 of the issue, please try again later.
         """
-    override val autogradeCreatedFiles = "Before running the program, these files were created:"
-    override val autogradeStdIn = "These inputs were provided to the program:"
+    override val autogradeCreatedFiles = "Before running the program, the following files were created:"
+    override val autogradeStdIn = "Inputs provided to the program:"
     override val autogradeStdOut = "The program's full output:"
 
     override val testType = "Test type"
