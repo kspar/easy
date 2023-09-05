@@ -24,6 +24,8 @@ class TSLTabComposeComp(
     private lateinit var testsList: TSLTestsListComp
     private lateinit var addTestBtn: ButtonComp
 
+    private var isEditable: Boolean = false
+
     override val children: List<Component>
         get() = listOf(testsList, addTestBtn)
 
@@ -34,11 +36,10 @@ class TSLTabComposeComp(
 
     override fun render() = template(
         """
-            <ez-tsl-tests id="{{tests}}" style="display: flex; flex-direction: column;"></ez-tsl-tests>
-            <ez-tsl-add-test id="{{btn}}"></ez-tsl-add-test>
-        """.trimIndent(),
-        "tests" to testsList.dstId,
-        "btn" to addTestBtn.dstId
+            <ez-tsl-tests id="${testsList.dstId}" class='${if (isEditable) "editable" else ""}' 
+                style="display: flex; flex-direction: column;"></ez-tsl-tests>
+            <ez-tsl-add-test id="${addTestBtn.dstId}"></ez-tsl-add-test>
+        """.trimIndent()
     )
 
     fun getComposedTests() = testsList.updateAndGetTests()
@@ -53,6 +54,7 @@ class TSLTabComposeComp(
     }
 
     fun setEditable(nowEditable: Boolean) {
+        isEditable = nowEditable
         getElemBySelector("ez-tsl-tests").let {
             if (nowEditable) it.addClass("editable")
             else it.removeClass("editable")
