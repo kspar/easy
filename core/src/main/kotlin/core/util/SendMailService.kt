@@ -117,7 +117,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         feedback: String, recipientEmail: String
     ) {
         val subject =
-            """Uus tagasiside kommentaar ülesandele $exerciseTitle / New feedback comment on exercise $exerciseTitle"""
+            """Uus kommentaar ($exerciseTitle) / New feedback comment ($exerciseTitle)"""
         val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
         val text = """
             |Tere!
