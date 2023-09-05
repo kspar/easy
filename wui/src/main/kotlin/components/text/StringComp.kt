@@ -1,6 +1,7 @@
 package components.text
 
 import rip.kspar.ezspa.Component
+import template
 
 class StringComp(
     var parts: List<Part>,
@@ -23,9 +24,20 @@ class StringComp(
 
     override fun render() = parts.joinToString("", "<p>", "</p>") {
         when (it.type) {
-            PartType.NORMAL -> it.content
-            PartType.SEMIBOLD -> """<ez-string class="semibold">${it.content}</ez-string>"""
-            PartType.BOLD -> """<ez-string class="bold">${it.content}</ez-string>"""
+            PartType.NORMAL -> template(
+                """{{txt}}""",
+                "txt" to it.content
+            )
+
+            PartType.SEMIBOLD -> template(
+                """<ez-string class="semibold">{{txt}}</ez-string>""".trimIndent(),
+                "txt" to it.content
+            )
+
+            PartType.BOLD -> template(
+                """<ez-string class="bold">{{txt}}</ez-string>""".trimIndent(),
+                "txt" to it.content
+            )
         }
     }
 }

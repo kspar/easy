@@ -5,7 +5,6 @@ import CONTENT_CONTAINER_ID
 import PageName
 import Role
 import ScrollPosition
-import Str
 import getWindowScrollPosition
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
@@ -19,6 +18,7 @@ import parseTo
 import restore
 import rip.kspar.ezspa.*
 import stringify
+import translation.Str
 import warn
 import kotlin.js.Promise
 
@@ -38,7 +38,7 @@ object CoursesPage : EasyPage() {
         get() = Sidenav.Spec(activePage = ActivePage.MY_COURSES)
 
     override val titleSpec: Title.Spec
-        get() = Title.Spec(Str.myCourses())
+        get() = Title.Spec(Str.myCourses)
 
     override val pathSchema = "/courses"
 

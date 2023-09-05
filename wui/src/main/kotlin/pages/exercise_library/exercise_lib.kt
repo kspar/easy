@@ -2,7 +2,6 @@ package pages.exercise_library
 
 import EzDate
 import Icons
-import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
@@ -19,6 +18,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import successMessage
+import translation.Str
 
 
 class ExerciseLibComp(
@@ -82,7 +82,7 @@ class ExerciseLibComp(
             BreadcrumbsComp(createDirChainCrumbs(parents, currentDir.name), this)
 
         } else {
-            BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+            BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary)), this)
         }
 
         val libResp = libRespPromise.await()
@@ -95,7 +95,7 @@ class ExerciseLibComp(
         if (currentDirAccess == null || currentDirAccess >= DirAccess.PRA) {
             Sidenav.replacePageSection(
                 Sidenav.PageSection(
-                    libResp.current_dir?.name ?: Str.exerciseLibrary(),
+                    libResp.current_dir?.name ?: Str.exerciseLibrary,
 
                     buildList {
                         add(Sidenav.Action(Icons.newExercise, "Uus ülesanne") {

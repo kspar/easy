@@ -17,6 +17,9 @@ val JsonUtil = Json {
 fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =
     JsonUtil.decodeFromString(deserializer, this)
 
+fun <T> String.parseToOrNull(deserializer: DeserializationStrategy<T>): T? =
+    if (this.isBlank()) null else parseTo(deserializer)
+
 fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.encodeToString(this, obj)
 
 

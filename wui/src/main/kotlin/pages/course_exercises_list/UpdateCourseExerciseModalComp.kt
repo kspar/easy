@@ -1,7 +1,6 @@
 package pages.course_exercises_list
 
 import EzDate
-import Str
 import components.form.DateTimeFieldComp
 import components.form.RadioButtonsComp
 import components.form.StringFieldComp
@@ -16,6 +15,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import show
 import successMessage
+import translation.Str
 import warn
 
 class UpdateCourseExerciseModalComp(
@@ -27,7 +27,8 @@ class UpdateCourseExerciseModalComp(
 ) : Component(parent, dstId) {
 
     data class CourseExercise(
-        val id: String, val title: String, val alias: String?, val isVisible: Boolean, val visibleFrom: EzDate?
+        val id: String, val title: String, val alias: String?, val isVisible: Boolean, val visibleFrom: EzDate?,
+        val softDeadline: EzDate?, val hardDeadline: EzDate?,
     )
 
     private val optionIdVisible = IdGenerator.nextId()
@@ -40,8 +41,11 @@ class UpdateCourseExerciseModalComp(
     private lateinit var visibleRadio: RadioButtonsComp
     private lateinit var openingTime: DateTimeFieldComp
 
+    private lateinit var softDeadline: DateTimeFieldComp
+    private lateinit var hardDeadline: DateTimeFieldComp
+
     private val modalComp: BinaryModalComp<Boolean?> = BinaryModalComp(
-        "Ülesande sätted", Str.doSave(), Str.cancel(), Str.saving(), fixFooter = true,
+        "Ülesande sätted", Str.doSave, Str.cancel, Str.saving, fixFooter = true,
         primaryAction = ::updateCourseExercise,
         primaryButtonEnabledInitial = false, defaultReturnValue = null, htmlClasses = "update-course-ex-title-modal",
         parent = this
@@ -104,7 +108,23 @@ class UpdateCourseExerciseModalComp(
             parent = modalComp
         )
 
-        modalComp.setContentComps { listOf(title, aliasComp, visibleRadio, openingTime) }
+        softDeadline = DateTimeFieldComp(
+            "Tähtaeg", false,
+            initialValue = exercise.softDeadline,
+            helpText = "Nähtav tähtaeg, esitamist lubatakse ka pärast tähtaega",
+            htmlClasses = "update-course-exercise-deadline",
+            parent = this
+        )
+
+        hardDeadline = DateTimeFieldComp(
+            "Sulgemise aeg", false,
+            initialValue = exercise.hardDeadline,
+            helpText = "Pärast seda aega esitamist enam ei lubata, õpilaste eest peidetud",
+            htmlClasses = "update-course-exercise-closing",
+            parent = this
+        )
+
+        modalComp.setContentComps { listOf(title, aliasComp, visibleRadio, openingTime, softDeadline, hardDeadline) }
     }
 
     override fun render() = ""
@@ -140,6 +160,8 @@ class UpdateCourseExerciseModalComp(
         debug { "Is hidden selected: ${isHiddenSelected()}" }
         debug { "Opens later selected: ${isOpensLaterSelected()}" }
         debug { "Visible from: ${exercise.visibleFrom} -> ${openingTime.getValue()}" }
+        debug { "Deadline: ${softDeadline.getValue()}" }
+        debug { "Closing time: ${hardDeadline.getValue()}" }
 
         val update = CourseExercisesTeacherDAO.CourseExerciseUpdate(
             replace = CourseExercisesTeacherDAO.CourseExerciseReplace(
@@ -154,11 +176,17 @@ class UpdateCourseExerciseModalComp(
                         .also { if (it == null) warn { "Opens later selected but date is null" } }
 
                     else -> null
-                }
+                },
+                softDeadline = softDeadline.getValue(),
+                hardDeadline = hardDeadline.getValue(),
             ),
             delete = buildSet {
                 if (alias.isBlank() || alias == exercise.title)
                     add(CourseExercisesTeacherDAO.CourseExerciseDelete.TITLE_ALIAS)
+                if (softDeadline.getValue() == null)
+                    add(CourseExercisesTeacherDAO.CourseExerciseDelete.SOFT_DEADLINE)
+                if (hardDeadline.getValue() == null)
+                    add(CourseExercisesTeacherDAO.CourseExerciseDelete.HARD_DEADLINE)
             }
         )
 

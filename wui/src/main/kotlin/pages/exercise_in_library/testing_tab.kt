@@ -2,7 +2,6 @@ package pages.exercise_in_library
 
 import DateSerializer
 import Icons
-import Str
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
 import kotlinx.coroutines.await
@@ -14,6 +13,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 import kotlin.js.Date
 import kotlin.js.Promise
 
@@ -43,14 +43,14 @@ class TestingTabComp(
         val feedback: String?
     )
 
-    private val editorTabName = "${Str.solutionCodeTabName()}.py"
+    private val editorTabName = "${Str.solutionCodeTabName}.py"
     private val assessmentId = IdGenerator.nextId()
 
     private lateinit var editor: CodeEditorComp
 
     private val submitBtn = ButtonComp(
-        ButtonComp.Type.PRIMARY, Str.doAutoAssess(), Icons.robot, ::submit,
-        clickedLabel = Str.autoAssessing(), parent = this
+        ButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
+        clickedLabel = Str.autoAssessing, parent = this
     )
 
     private lateinit var feedback: ExerciseFeedbackComp
@@ -69,7 +69,7 @@ class TestingTabComp(
 
         editor = CodeEditorComp(
             CodeEditorComp.File(editorTabName, latestSubmission),
-            placeholder = "Kirjuta või lohista lahendus siia...", parent = this
+            placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
         feedback = ExerciseFeedbackComp(null, null, null, false, this)

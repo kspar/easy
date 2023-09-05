@@ -20,3 +20,5 @@ external class ResizeBorderBoxEntry {
     // height
     val blockSize: Double
 }
+
+external class TypeError : Throwable

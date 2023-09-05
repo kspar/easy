@@ -24,6 +24,8 @@ object CourseExercisesTeacherDAO {
         val student_visible_from: EzDate?,
         @Serializable(with = EzDateSerializer::class)
         val soft_deadline: EzDate?,
+        @Serializable(with = EzDateSerializer::class)
+        val hard_deadline: EzDate?,
         val grader_type: ExerciseDAO.GraderType,
         val ordering_idx: Int,
         val unstarted_count: Int,

@@ -33,6 +33,7 @@ class StudentReadExercisesController {
         @JsonProperty("grader_type") val graderType: GraderType,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("deadline") val softDeadline: DateTime?,
+        @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
         @JsonProperty("status") val status: StudentExerciseStatus,
         @JsonProperty("grade") val grade: Int?,
         @JsonProperty("graded_by") val gradedBy: GraderType?,
@@ -55,7 +56,7 @@ class StudentReadExercisesController {
     private fun selectStudentExercises(courseId: Long, studentId: String): Resp {
 
         data class ExercisePartial(
-            val courseExId: Long, val title: String, val deadline: DateTime?, val threshold: Int,
+            val courseExId: Long, val title: String, val deadline: DateTime?, val isOpen: Boolean, val threshold: Int,
             val titleAlias: String?, val graderType: GraderType,
         )
 
@@ -69,6 +70,7 @@ class StudentReadExercisesController {
                         ExerciseVer.graderType,
                         CourseExercise.id,
                         CourseExercise.softDeadline,
+                        CourseExercise.hardDeadline,
                         CourseExercise.gradeThreshold,
                         CourseExercise.orderIdx,
                         CourseExercise.titleAlias
@@ -81,10 +83,12 @@ class StudentReadExercisesController {
                     }
                     .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                     .map {
+                        val hardDeadline = it[CourseExercise.hardDeadline]
                         ExercisePartial(
                             it[CourseExercise.id].value,
                             it[ExerciseVer.title],
                             it[CourseExercise.softDeadline],
+                            hardDeadline == null || hardDeadline.isAfterNow,
                             it[CourseExercise.gradeThreshold],
                             it[CourseExercise.titleAlias],
                             it[ExerciseVer.graderType],
@@ -130,12 +134,12 @@ class StudentReadExercisesController {
                             else -> StudentExerciseStatus.STARTED
                         }
 
-
                         ExerciseResp(
                             ex.courseExId.toString(),
                             ex.titleAlias ?: ex.title,
                             ex.graderType,
                             ex.deadline,
+                            ex.isOpen,
                             status,
                             grade,
                             gradedBy,

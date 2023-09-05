@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.CourseService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.getTeacherRestrictedCourseGroups
+import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -26,19 +28,23 @@ import org.springframework.web.bind.annotation.RestController
 class TeacherReadCourseExercisesController(val courseService: CourseService) {
     private val log = KotlinLogging.logger {}
 
-    data class CourseExerciseResp(@JsonProperty("id") val id: String,
-                                  @JsonProperty("library_title") val libraryTitle: String,
-                                  @JsonProperty("title_alias") val titleAlias: String?,
-                                  @JsonSerialize(using = DateTimeSerializer::class)
-                                  @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
-                                  @JsonSerialize(using = DateTimeSerializer::class)
-                                  @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-                                  @JsonProperty("grader_type") val graderType: GraderType,
-                                  @JsonProperty("ordering_idx") val orderingIndex: Int,
-                                  @JsonProperty("unstarted_count") val unstartedCount: Int,
-                                  @JsonProperty("ungraded_count") val ungradedCount: Int,
-                                  @JsonProperty("started_count") val startedCount: Int,
-                                  @JsonProperty("completed_count") val completedCount: Int)
+    data class CourseExerciseResp(
+        @JsonProperty("id") val id: String,
+        @JsonProperty("library_title") val libraryTitle: String,
+        @JsonProperty("title_alias") val titleAlias: String?,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+        @JsonProperty("grader_type") val graderType: GraderType,
+        @JsonProperty("ordering_idx") val orderingIndex: Int,
+        @JsonProperty("unstarted_count") val unstartedCount: Int,
+        @JsonProperty("ungraded_count") val ungradedCount: Int,
+        @JsonProperty("started_count") val startedCount: Int,
+        @JsonProperty("completed_count") val completedCount: Int
+    )
 
     data class Resp(@JsonProperty("exercises") val courseExercises: List<CourseExerciseResp>)
 
@@ -70,19 +76,22 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
         val students = studentQuery.map { it[Student.id].value }
 
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id,
-                        CourseExercise.gradeThreshold,
-                        CourseExercise.softDeadline,
-                        CourseExercise.studentVisibleFrom,
-                        ExerciseVer.graderType,
-                        ExerciseVer.title,
-                        CourseExercise.titleAlias)
-                .select {
-                    CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
-                }
-                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                .mapIndexed { i, ex ->
-                    val ceId = ex[CourseExercise.id].value
+            .slice(
+                CourseExercise.id,
+                CourseExercise.gradeThreshold,
+                CourseExercise.softDeadline,
+                CourseExercise.hardDeadline,
+                CourseExercise.studentVisibleFrom,
+                ExerciseVer.graderType,
+                ExerciseVer.title,
+                CourseExercise.titleAlias
+            )
+            .select {
+                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
+            }
+            .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+            .mapIndexed { i, ex ->
+                val ceId = ex[CourseExercise.id].value
 
                 val latestSubmissionValidGrades =
                     courseService.selectLatestValidGrades(ceId, students).map { it.grade }
@@ -101,19 +110,20 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                                 "started: $startedCount, completed: $completedCount, students in course: $studentCount"
                     }
 
-                    CourseExerciseResp(
-                            ex[CourseExercise.id].value.toString(),
-                            ex[ExerciseVer.title],
-                            ex[CourseExercise.titleAlias],
-                            ex[CourseExercise.studentVisibleFrom],
-                            ex[CourseExercise.softDeadline],
-                            ex[ExerciseVer.graderType],
-                            i,
-                            unstartedCount,
-                            ungradedCount,
-                            startedCount,
-                            completedCount
-                    )
-                }
+                CourseExerciseResp(
+                    ex[CourseExercise.id].value.toString(),
+                    ex[ExerciseVer.title],
+                    ex[CourseExercise.titleAlias],
+                    ex[CourseExercise.studentVisibleFrom],
+                    ex[CourseExercise.softDeadline],
+                    ex[CourseExercise.hardDeadline],
+                    ex[ExerciseVer.graderType],
+                    i,
+                    unstartedCount,
+                    ungradedCount,
+                    startedCount,
+                    completedCount
+                )
+            }
     }
 }

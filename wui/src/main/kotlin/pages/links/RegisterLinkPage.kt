@@ -11,11 +11,12 @@ import queries.createQueryString
 import queries.getCurrentQueryParamValue
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.objOf
+import translation.activeLanguage
 
 object RegisterLinkPage : EasyPage() {
     override val pageName = PageName.LINK_REGISTER
 
-    override val pathSchema = "/link/register"
+    override val pathSchema = "/register"
 
     override val pageAuth = PageAuth.OPTIONAL
 
@@ -34,7 +35,7 @@ object RegisterLinkPage : EasyPage() {
                 // Logged in with different account
                 debug { "Logged in with email: ${Auth.email} but required email: $email" }
                 // Log out, redirects back to this page
-                Auth.logout()
+                Auth.logout(objOf("locale" to activeLanguage.localeId))
                 return
             }
         }
@@ -54,4 +55,6 @@ object RegisterLinkPage : EasyPage() {
         debug { "Navigating to register URL: $registerUrl" }
         window.location.href = registerUrl
     }
+
+    fun link() = constructPathLink(emptyMap())
 }

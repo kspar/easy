@@ -15,6 +15,7 @@ import kotlin.js.Date
 class DateTimeFieldComp(
     private val label: String,
     private val isRequired: Boolean,
+    private val showRequiredMsg: Boolean = true,
     private val notInPast: Boolean = false,
     private val notInFuture: Boolean = false,
     private val paintRequiredOnCreate: Boolean = false,
@@ -22,13 +23,14 @@ class DateTimeFieldComp(
     private val fieldNameForMessage: String = label,
     private val initialValue: EzDate? = null,
     private val helpText: String = "",
+    private val htmlClasses: String = "",
     constraints: List<FieldConstraint<EzDate?>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
     private val onValueChange: ((EzDate?) -> Unit)? = null,
     parent: Component
 ) : ValidatableFieldComp<EzDate?>(
     fieldNameForMessage,
-    if (isRequired) DateTimeConstraints.NonNullAndValid else null,
+    if (isRequired) DateTimeConstraints.NonNullAndValid(showRequiredMsg) else null,
     buildList {
         if (notInPast) add(DateTimeConstraints.NotInPast)
         if (notInFuture) add(DateTimeConstraints.NotInFuture)
@@ -47,12 +49,15 @@ class DateTimeFieldComp(
 
     override fun render() = template(
         """
-            <div class="input-field">
-                <input id="{{id}}" type="datetime-local" min="{{min}}" max="{{max}}" value="{{value}}">
-                <label for="{{id}}" class="active">{{label}}</label>
-                <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
-            </div>
+            <ez-datetime-field class='{{class}}'>
+                <div class="input-field" style='min-width: 10rem;'>
+                    <input id="{{id}}" type="datetime-local" min="{{min}}" max="{{max}}" value="{{value}}">
+                    <label for="{{id}}" class="active">{{label}}</label>
+                    <span id="field-helper-{{id}}" class="helper-text {{#helpText}}has-text{{/helpText}}">{{helpText}}</span>
+                </div>
+            </ez-datetime-field>
         """.trimIndent(),
+        "class" to htmlClasses,
         "id" to inputId,
         "min" to if (notInPast) EzDate.now().toDatetimeFieldString() else null,
         "max" to if (notInFuture) EzDate.now().toDatetimeFieldString() else null,

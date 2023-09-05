@@ -2,13 +2,13 @@ package pages.sidenav
 
 import Icons
 import Role
-import Str
 import kotlinx.coroutines.await
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise_library.ExerciseLibraryPage
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 
 class SidenavGeneralSectionComp(
     private val activeRole: Role,
@@ -52,10 +52,10 @@ class SidenavGeneralSectionComp(
         "libIcon" to Icons.library,
         "articlesIcon" to Icons.articles,
         "newCourseIcon" to Icons.newCourse,
-        "coursesLabel" to Str.myCourses(),
-        "libLabel" to Str.exerciseLibrary(),
+        "coursesLabel" to Str.myCourses,
+        "libLabel" to Str.exerciseLibrary,
         "articlesLabel" to "Artiklid",
-        "newCourseLabel" to "Uus kursus",
+        "newCourseLabel" to Str.newCourse,
         "newCourseModalDst" to newCourseModal.dstId,
     )
 

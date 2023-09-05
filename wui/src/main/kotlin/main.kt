@@ -4,30 +4,40 @@ import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
-import pages.course_exercise.ExerciseSummaryPage
 import pages.Navbar
+import pages.about.AboutPage
+import pages.course_exercise.ExerciseSummaryPage
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
+import pages.links.CourseJoinByLinkPage
 import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
+import pages.terms.TermsProxyPage
 import queries.*
 import rip.kspar.ezspa.*
+import translation.Str
+import translation.updateLanguage
 
 
 private val PAGES = listOf(
     CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
-    RegisterLinkPage,
+    RegisterLinkPage, CourseJoinByLinkPage,
+    AboutPage, TermsProxyPage,
 )
 
 fun main() {
-    val funLog = debugFunStart("main")
+    consoleEgg()
+
+    // Weird hack: strings have to be set first here to fetch possible locale from localstorage
+    // but then refreshed again after auth because we might get a preference from there
+    updateLanguage()
 
     // Start authentication as soon as possible
     doInPromise {
@@ -38,6 +48,7 @@ fun main() {
             if (Auth.authenticated) {
                 setSplashText("Uuendan andmeid")
                 updateAccountData()
+                updateLanguage()
             }
         }
         refreshCurrentPathFromBrowser()
@@ -51,8 +62,6 @@ fun main() {
         EzSpa.Navigation.enableAnchorLinkInterception()
         EzSpa.Navigation.enableHistoryNavInterception()
     }
-
-    funLog?.end()
 }
 
 fun setSplashText(text: String) {
@@ -126,8 +135,8 @@ private fun initApplication() {
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
     getContainer().innerHTML = tmRender(
         "tm-broken-page", mapOf(
-            "title" to Str.notFoundPageTitle(),
-            "msg" to Str.notFoundPageMsg()
+            "title" to Str.notFoundPageTitle,
+            "msg" to Str.notFoundPageMsg
         )
     )
     Sidenav.refresh(Sidenav.Spec())
@@ -146,5 +155,19 @@ private fun loadContainerQueries() {
         ContainerQueryPolyfill
     } else {
         debug { "Native container queries supported :)" }
+    }
+}
+
+private fun consoleEgg() {
+    debug {
+        template(
+            """
+            
+Hei, mis toimub?
+Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
+Mõlemal juhul tule räägi sellest meie Discordi serveris: {{d}}/${AppProperties.DISCORD_INVITE_ID} :-)
+        """,
+            "d" to "discord.gg"
+        )
     }
 }

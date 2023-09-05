@@ -58,7 +58,7 @@ fun Node.onChange(f: suspend (event: Event) -> Unit): ActiveListener {
 }
 
 
-fun Node.onInput(debounceDelay: Int = 250, f: (event: Event) -> Unit): ActiveListener {
+fun Node.onInput(debounceDelay: Int = 250, f: suspend (event: Event) -> Unit): ActiveListener {
     val listener = createEventListenerWithDebounce(debounceDelay, f)
     this.addEventListener("input", listener)
     return ActiveListener(this, "input", listener)
@@ -89,7 +89,7 @@ fun Element.onENTER(f: suspend (KeyboardEvent) -> Unit): ActiveListener {
     return ActiveListener(this, "keydown", listener)
 }
 
-fun createEventListenerWithDebounce(debounceDelay: Int, handler: (event: Event) -> Unit): (Event) -> Unit {
+fun createEventListenerWithDebounce(debounceDelay: Int, handler: suspend (event: Event) -> Unit): (Event) -> Unit {
     var isWaiting = false
     var lastCallTime = Date.now()
     lateinit var latestEvent: Event

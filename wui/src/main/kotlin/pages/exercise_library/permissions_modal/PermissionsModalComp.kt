@@ -3,7 +3,6 @@ package pages.exercise_library.permissions_modal
 import Auth
 import Icons
 import Role
-import Str
 import components.form.SelectComp
 import components.form.StringFieldComp
 import components.modal.ModalComp
@@ -17,6 +16,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import tmRender
+import translation.Str
 import kotlin.js.Promise
 
 class PermissionsModalComp(

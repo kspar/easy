@@ -1,6 +1,5 @@
 package pages.grade_table
 
-import Str
 import cache.BasicCourseInfo
 import components.BreadcrumbsComp
 import components.Crumb
@@ -8,6 +7,7 @@ import kotlinx.coroutines.await
 import pages.Title
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 import kotlin.js.Promise
 
 class GradeTableRootComponent(
@@ -28,13 +28,13 @@ class GradeTableRootComponent(
             listOf(
                 Crumb.myCourses,
                 Crumb(courseTitle, "/courses/$courseId/exercises"),
-                Crumb(Str.gradesLabel())
+                Crumb(Str.gradesLabel)
             ), this
         )
         cardComp = GradeTableCardComp(courseId, courseTitle, this)
 
         Title.update {
-            it.pageTitle = Str.gradesLabel()
+            it.pageTitle = Str.gradesLabel
             it.parentPageTitle = courseTitle
         }
     }

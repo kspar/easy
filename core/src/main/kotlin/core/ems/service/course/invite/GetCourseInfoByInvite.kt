@@ -20,28 +20,36 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
-class FindCourseTitleByInvite {
+class GetCourseInfoByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("course_title") val courseId: String)
+    data class Resp(
+        @JsonProperty("course_id") val courseId: String,
+        @JsonProperty("course_title") val courseTitle: String,
+    )
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/invite/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
         log.debug { "Finding course title by invite $inviteId by ${caller.id}" }
 
-        return selectCourseTitleByInvite(inviteId)
+        return selectCourseInfoByInvite(inviteId)
     }
 
-    private fun selectCourseTitleByInvite(inviteId: String): Resp = transaction {
+    private fun selectCourseInfoByInvite(inviteId: String): Resp = transaction {
         (CourseInviteLink innerJoin Course)
-            .slice(Course.title, Course.alias)
+            .slice(Course.id, Course.title, Course.alias)
             .select {
                 (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)
 
-            }.map { Resp(it[Course.alias] ?: it[Course.title].toString()) }
+            }.map {
+                Resp(
+                    it[Course.id].value.toString(),
+                    it[Course.alias] ?: it[Course.title].toString()
+                )
+            }
             .singleOrInvalidRequest(false)
     }
 }

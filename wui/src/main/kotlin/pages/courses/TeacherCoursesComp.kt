@@ -1,7 +1,6 @@
 package pages.courses
 
 import Icons
-import Str
 import components.EzCollComp
 import dao.CoursesTeacherDAO
 import debug
@@ -15,6 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 import kotlin.js.Promise
 
 
@@ -66,14 +66,14 @@ class TeacherCoursesComp(
                     course.effectiveTitle,
                     titleLink = CourseExercisesPage.link(course.id),
                     topAttr = EzCollComp.SimpleAttr(
-                        Str.enrolledOnCourseAttrKey(),
+                        Str.enrolledOnCourseAttrKey,
                         "${course.student_count} ${Str.translateStudents(course.student_count)}",
                         Icons.user,
                         onClick = { EzSpa.PageManager.navigateTo(ParticipantsPage.link(course.id)); EzCollComp.ResultUnmodified }
                     )
                 )
             },
-            EzCollComp.Strings(Str.coursesSingular(), Str.coursesPlural()),
+            EzCollComp.Strings(Str.coursesSingular, Str.coursesPlural),
             parent = this
         )
     }
@@ -85,7 +85,7 @@ class TeacherCoursesComp(
             </div>
             <ez-dst id="{{collDst}}"></ez-dst>
         """.trimIndent(),
-        "title" to if (isAdmin) Str.coursesTitleAdmin() else Str.coursesTitle(),
+        "title" to if (isAdmin) Str.coursesTitleAdmin else Str.coursesTitle,
         "collDst" to coll.dstId,
     )
 

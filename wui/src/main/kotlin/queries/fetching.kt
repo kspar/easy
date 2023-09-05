@@ -8,6 +8,7 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
 import org.w3c.fetch.Response
 import parseTo
+import parseToOrNull
 import rip.kspar.ezspa.*
 import warn
 import kotlin.js.Promise
@@ -104,6 +105,9 @@ val Response.http204: Boolean
 
 fun <T> Response.parseTo(deserializer: DeserializationStrategy<T>): Promise<T> =
     text().then { it.parseTo(deserializer) }
+
+fun <T> Response.parseToOrNull(deserializer: DeserializationStrategy<T>): Promise<T?> =
+    text().then { it.parseToOrNull(deserializer) }
 
 
 private var abortControllers = mutableListOf<AbortController>()

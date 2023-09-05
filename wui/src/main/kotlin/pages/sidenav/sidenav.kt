@@ -2,13 +2,15 @@ package pages.sidenav
 
 import Auth
 import Role
-import Str
 import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
+import pages.about.AboutPage
+import pages.terms.TermsProxyPage
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 import kotlin.js.Promise
 
 enum class ActivePage {
@@ -129,23 +131,18 @@ class SidenavRootComp(
     override fun render(): String = template(
         """
             <ul id="sidenav" class="sidenav sidenav-fixed">
-                <ez-dst id="{{headSectionId}}"></ez-dst>
-                <ez-dst id="{{generalSectionId}}"></ez-dst>
-                <ez-dst id="{{courseSectionId}}"></ez-dst>
-                <ez-dst id="{{pageSectionId}}"></ez-dst>
-                <ez-dst id="{{trailerSectionId}}" class="trailer"></ez-dst>
+            $headSectionComp
+            $generalSectionComp
+                <ez-dst id="$courseSectionDstId"></ez-dst>
+                <ez-dst id="$pageSectionDstId"></ez-dst>
+                <ez-dst id="${trailerSectionComp.dstId}" class="trailer"></ez-dst>
+                <ez-sidenav-footer>
+                    <a href=${AboutPage.link()}>{{about}}</a> · <a href='${TermsProxyPage.link()}' target="_blank">{{tos}}</a>
+                </ez-sidenav-footer>
             </ul>
         """.trimIndent(),
-        "headSectionId" to headSectionComp.dstId,
-        "generalSectionId" to generalSectionComp.dstId,
-        "courseSectionId" to courseSectionDstId,
-        "pageSectionId" to pageSectionDstId,
-        "trailerSectionId" to trailerSectionComp.dstId,
-
-        // TODO: rm when replaced with modal comp
-        "newExerciseLabel" to "Uus ülesanne",
-        "newExerciseTitleLabel" to "Ülesande nimi",
-        "doSaveLabel" to Str.doSave(),
+        "tos" to Str.linkTOS,
+        "about" to Str.linkAbout,
     )
 
     override fun postRender() {

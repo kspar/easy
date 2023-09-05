@@ -1,12 +1,12 @@
 package pages.sidenav
 
 import Role
-import Str
 import components.form.SelectComp
 import debug
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 
 
 class SidenavHeadAccountSection(
@@ -39,9 +39,6 @@ class SidenavHeadAccountSection(
                     <div class="background"></div>
                     <div class="name attr truncate">{{userName}}</div>
                     <div class="email attr truncate">{{userEmail}}</div>
-                    {{^canSwitchRole}}
-                        <div class="role attr">{{userRole}}</div>
-                    {{/canSwitchRole}}
                     {{#canSwitchRole}}
                         <div class="role-select-wrap">
                             <ez-dst id="{{roleSelectId}}"></ez-dst>
@@ -53,7 +50,6 @@ class SidenavHeadAccountSection(
         "userName" to userName,
         "userEmail" to userEmail,
         "canSwitchRole" to (availableRoles.size > 1),
-        "userRole" to Str.translateRole(activeRole),
         "rolesAvailable" to availableRoles.map {
             mapOf("id" to it.id, "name" to Str.translateRole(it), "isSelected" to (it == activeRole))
         },

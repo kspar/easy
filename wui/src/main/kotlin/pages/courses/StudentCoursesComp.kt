@@ -1,7 +1,6 @@
 package pages.courses
 
 import Icons
-import Str
 import components.EzCollComp
 import dao.CoursesStudentDAO
 import debug
@@ -14,6 +13,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 import kotlin.js.Promise
 
 
@@ -64,7 +64,7 @@ class StudentCoursesComp(
                     titleLink = CourseExercisesPage.link(it.id),
                 )
             },
-            EzCollComp.Strings("kursus", "kursust"),
+            EzCollComp.Strings(Str.coursesSingular, Str.coursesPlural),
             parent = this
         )
     }
@@ -76,7 +76,7 @@ class StudentCoursesComp(
             </div>
             <ez-dst id="{{collDst}}"></ez-dst>
         """.trimIndent(),
-        "title" to Str.coursesTitle(),
+        "title" to Str.coursesTitle,
         "collDst" to coll.dstId
     )
 

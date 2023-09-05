@@ -28,7 +28,7 @@ class TextFieldComp(
     parent: Component
 ) : ValidatableFieldComp<String>(
     fieldNameForMessage,
-    if (isRequired) StringConstraints.NotBlank() else null,
+    if (isRequired) StringConstraints.NotBlank(fieldNameForMessage.isNotBlank()) else null,
     constraints,
     onValidChange,
     parent

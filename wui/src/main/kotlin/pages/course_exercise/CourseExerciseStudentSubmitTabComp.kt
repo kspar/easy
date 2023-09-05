@@ -1,22 +1,25 @@
 package pages.course_exercise
 
 import Icons
-import Str
 import components.ToastThing
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
+import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
+import hide
 import kotlinx.coroutines.await
 import observeValueChange
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 
 
 class CourseExerciseStudentSubmitTabComp(
     private val courseId: String,
     private val courseExId: String,
     private val graderType: ExerciseDAO.GraderType,
+    private val isOpenForSubmissions: Boolean,
     private val onNewSubmission: () -> Unit,
     parent: Component
 ) : Component(parent) {
@@ -26,6 +29,7 @@ class CourseExerciseStudentSubmitTabComp(
     private lateinit var editor: CodeEditorComp
     private lateinit var syncIcon: CourseExerciseEditorStatusComp
     private lateinit var submitBtn: ButtonComp
+    private val warning = WarningComp(parent = this)
     private lateinit var feedback: ExerciseFeedbackComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
 
@@ -40,7 +44,7 @@ class CourseExerciseStudentSubmitTabComp(
 
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, syncIcon, submitBtn, feedback, autogradeLoader)
+        get() = listOfNotNull(editor, syncIcon, warning, submitBtn, feedback, autogradeLoader)
 
     override fun create() = doInPromise {
         val submissionP = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId)
@@ -83,16 +87,20 @@ class CourseExerciseStudentSubmitTabComp(
         }
 
         editor = CodeEditorComp(
-            CodeEditorComp.File("lahendus.py", content?.content),
-            placeholder = "Kirjuta või lohista lahendus siia...", parent = this
+            CodeEditorComp.File(
+                "${Str.solutionCodeTabName}.py", content?.content,
+                editability = if (isOpenForSubmissions) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
+            ),
+            placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
         syncIcon = CourseExerciseEditorStatusComp("", CourseExerciseEditorStatusComp.Status.IN_SYNC, this)
 
         submitBtn = ButtonComp(
             ButtonComp.Type.PRIMARY,
-            if (graderType == ExerciseDAO.GraderType.AUTO) "Esita ja kontrolli" else "Esita",
+            if (graderType == ExerciseDAO.GraderType.AUTO) Str.doSubmitAndCheck else Str.doSubmit,
             if (graderType == ExerciseDAO.GraderType.AUTO) Icons.robot else null,
+            isEnabledInitial = isOpenForSubmissions,
             onClick = {
                 try {
                     setEditorEditable(false)
@@ -107,7 +115,7 @@ class CourseExerciseStudentSubmitTabComp(
                     setEditorEditable(true)
                 }
             },
-            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) "Kontrollin..." else "Salvestan...",
+            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) Str.autoAssessing else Str.saving,
             parent = this
         )
 
@@ -124,12 +132,13 @@ class CourseExerciseStudentSubmitTabComp(
     override fun render() = template(
         """
             <div style="position: relative">
-                <ez-dst id='${syncIcon.dstId}'></ez-dst>
-                <ez-dst id="${editor.dstId}"></ez-dst>
+                $syncIcon
+                $editor
             </div>
             <div id='${submitBtn.dstId}' style='display: flex; justify-content: center; margin-top: 3rem;'></div>
-            <ez-dst id='${autogradeLoader.dstId}'></ez-dst>
-            <ez-dst id='${feedback.dstId}'></ez-dst>
+            $warning
+            $autogradeLoader
+            $feedback
         """.trimIndent(),
     )
 
@@ -152,13 +161,17 @@ class CourseExerciseStudentSubmitTabComp(
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, isDraft)
         if (isAutogradeInProgressInitial)
             submitBtn.click()
+        if (!isOpenForSubmissions) {
+            submitBtn.hide()
+            warning.setMsg(Str.exerciseClosedForSubmissions)
+        }
     }
 
     private suspend fun saveDraft(content: String, retryCount: Int = 0) {
         if (retryCount > 2) {
             syncFailToast = ToastThing(
-                "Mustandi salvestamine ebaõnnestus",
-                ToastThing.Action("Proovi uuesti", { saveDraft(content) }),
+                Str.draftSaveFailedMsg,
+                ToastThing.Action(Str.tryAgain, { saveDraft(content) }),
                 Icons.errorUnf, displayLengthSec = ToastThing.LONG_TIME, id = syncFailToastId
             )
             updateStatus(CourseExerciseEditorStatusComp.Status.SYNC_FAILED)
@@ -183,8 +196,8 @@ class CourseExerciseStudentSubmitTabComp(
     private fun updateStatus(status: CourseExerciseEditorStatusComp.Status, isDraft: Boolean? = null) {
         if (isDraft != null)
             syncIcon.msg = when {
-                isDraft -> "Esitamata mustand"
-                else -> "Viimane esitus"
+                isDraft -> Str.solutionEditorStatusDraft
+                else -> Str.solutionEditorStatusSubmission
             }
         syncIcon.status = status
         syncIcon.rebuild()
@@ -194,7 +207,7 @@ class CourseExerciseStudentSubmitTabComp(
         currentSubmission = solution
         CourseExercisesStudentDAO.postSubmission(courseId, courseExId, solution).await()
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
-        ToastThing(Str.submitSuccessMsg())
+        ToastThing(Str.submitSuccessMsg)
     }
 
     private suspend fun awaitAutograde() {

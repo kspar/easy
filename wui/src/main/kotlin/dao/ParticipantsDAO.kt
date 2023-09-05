@@ -13,7 +13,7 @@ object ParticipantsDAO {
     fun sendStudentCourseInvites(courseId: String, emails: List<String>) = doInPromise {
         debug { "Sending course invites to students $emails" }
         fetchEms("/courses/${courseId.encodeURIComponent()}/students/invite", ReqMethod.POST,
-            mapOf("pending_students" to emails.map { mapOf("email" to it) }),
+            mapOf("emails" to emails.map { mapOf("email" to it) }),
             successChecker = { http200 }).await()
         Unit
     }

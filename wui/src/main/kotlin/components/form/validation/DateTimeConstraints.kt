@@ -4,9 +4,9 @@ import EzDate
 
 class DateTimeConstraints {
 
-    object NonNullAndValid : FieldConstraint<EzDate?>() {
+    class NonNullAndValid(private val showMsg: Boolean) : FieldConstraint<EzDate?>() {
         override fun validate(value: EzDate?, fieldNameForMessage: String): ConstraintViolation<EzDate?>? = when {
-            value == null -> violation("Kuupäev või kellaaeg on puudu või vigane")
+            value == null -> violation(if (showMsg) "Kuupäev või kellaaeg on puudu või vigane" else "")
             else -> null
         }
     }

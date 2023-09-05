@@ -46,6 +46,23 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Mõnusat progemist!
             |Lahenduse meeskond
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |You were added to the course $courseTitle in Lahendus by your email address $recipientEmail.
+            |
+            |To access the course, go to $wuiBaseUrl and log in using the email address $recipientEmail.
+            |
+            |If you've forgotten your password, then feel free to use the Forgot password? feature on the login page.
+            |
+            |If you can't see the course after logging in, make sure your account's email address is $recipientEmail.
+            |
+            |Happy coding!
+            |The Lahendus Team
+            |
         """.trimMargin()
         sendUserEmail(recipientEmail, subject, text)
     }
@@ -54,7 +71,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     fun sendStudentAddedToCoursePending(courseTitle: String, recipientEmail: String) {
         val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
         val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
-        val registerLink = "$wuiBaseUrl/link/register?email=$encodedEmail"
+        val registerLink = "$wuiBaseUrl/register?email=$encodedEmail"
         val text = """
             |Tere!
             |
@@ -69,6 +86,24 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Mõnusat progemist!
             |Lahenduse meeskond
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |You were added to the course $courseTitle in Lahendus by your email address $recipientEmail.
+            |
+            |We think that there's no account in Lahendus with this email address. To access the course, click on the following link and create an account:
+            |  $registerLink
+            |  
+            |If you already have an account at Lahendus, then make sure its email address is $recipientEmail. You can change the email address in your account settings. Once you've changed the email address to $recipientEmail, you should automatically get access to this course.
+            | 
+            |If you already have an account with this email address, then simply log in and you should automatically get access to the course. If you've forgotten your password, then feel free to use the Forgot password? feature on the login page. 
+            |
+            |Happy coding!
+            |The Lahendus Team
+            |
         """.trimMargin()
         sendUserEmail(recipientEmail, subject, text)
     }
