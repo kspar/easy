@@ -194,6 +194,12 @@ class ExerciseFeedbackComp(
                         "status" to it.status.mapToIcon(),
                         "feedback" to it.feedback,
                     )
+                }.ifEmpty {
+                    mapOf(
+                        "pass" to true,
+                        "status" to V3Status.PASS.mapToIcon(),
+                        "feedback" to Str.autogradeNoChecksInTest,
+                    )
                 },
 
                 "files" to if (it.created_files.isNotEmpty()) mapOf(
@@ -209,7 +215,7 @@ class ExerciseFeedbackComp(
                     "value" to it.user_inputs.joinToString("\n") { "  $it" },
                 ) else null,
 
-                "outputs" to if (it.actual_output != null) mapOf(
+                "outputs" to if (!it.actual_output.isNullOrBlank()) mapOf(
                     "msg" to Str.autogradeStdOut,
                     "value" to it.actual_output.trim('\n').split("\n").joinToString("\n") { "  $it" },
                 ) else null,

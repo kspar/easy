@@ -156,6 +156,7 @@ sealed class TranslatableStrings {
     abstract val autogradeCreatedFiles: String
     abstract val autogradeStdIn: String
     abstract val autogradeStdOut: String
+    abstract val autogradeNoChecksInTest: String
 
 
     // Exercise page
@@ -298,6 +299,7 @@ ole hea ja proovi hiljem uuesti.
     override val autogradeCreatedFiles = "Enne programmi käivitamist lõin failid:"
     override val autogradeStdIn = "Andsin programmile sisendid:"
     override val autogradeStdOut = "Programmi täielik väljund oli:"
+    override val autogradeNoChecksInTest = "Siin pole midagi kontrollida. See vist tähendab, et kõik on OK?"
 
     override val exerciseSingular = "ülesanne"
     override val exercisePlural = "ülesannet"

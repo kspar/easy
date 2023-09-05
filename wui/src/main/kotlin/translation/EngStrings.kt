@@ -128,6 +128,7 @@ of the issue, please try again later.
     override val autogradeCreatedFiles = "Before running the program, the following files were created:"
     override val autogradeStdIn = "Inputs provided to the program:"
     override val autogradeStdOut = "The program's full output:"
+    override val autogradeNoChecksInTest= "There weren't any checks to run. I guess that means we're fine?"
 
     override val testType = "Test type"
 
