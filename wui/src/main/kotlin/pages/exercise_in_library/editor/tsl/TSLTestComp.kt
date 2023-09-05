@@ -153,7 +153,7 @@ class TSLTestComp(
 
         Materialize.Dropdown.init(
             getElemById(dstId).getElemBySelector("[ez-tsl-test-menu]"),
-            objOf("constrainWidth" to false, "coverTrigger" to false)
+            objOf("constrainWidth" to false, "coverTrigger" to false, "container" to getBody())
         )
     }
 
