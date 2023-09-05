@@ -2658,7 +2658,6 @@ ez-block-container ez-block {
 }
 
 .ez-collapsible .collapsible-body {
-    overflow-x: auto;
     padding: 2rem 1rem;
 }
 
@@ -3045,6 +3044,7 @@ ez-feedback-check.fail ez-icon {
 ez-feedback-data {
     display: block;
     margin-top: 3rem;
+    overflow-x: auto;
 }
 
 ez-feedback-data pre {
