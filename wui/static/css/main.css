@@ -2658,6 +2658,7 @@ ez-block-container ez-block {
 }
 
 .ez-collapsible .collapsible-body {
+    overflow-x: auto;
     padding: 2rem 1rem;
 }
 
