@@ -9,6 +9,7 @@ import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
@@ -26,8 +27,13 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncService, val cacheService: CachingService) {
+class TeacherAssessController(
+    val moodleGradesSyncService: MoodleGradesSyncService,
+    val cacheService: CachingService,
+    val sendMailService: SendMailService,
+) {
     private val log = KotlinLogging.logger {}
+
     data class Req(
         @JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
         @JsonProperty("feedback", required = false) @field:Size(max = 100000) val feedback: String?
@@ -57,6 +63,8 @@ class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncServi
 
         insertTeacherAssessment(callerId, submissionId, assessment, courseExId)
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
+        if (assessment.feedback != null)
+            sendNotification(courseId, courseExId, submissionId, assessment.feedback)
     }
 
     private fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean {
@@ -82,6 +90,41 @@ class TeacherAssessController(val moodleGradesSyncService: MoodleGradesSyncServi
         }
         cacheService.evictSelectLatestValidGrades(courseExId)
     }
+
+    private fun sendNotification(courseId: Long, courseExId: Long, submissionId: Long, feedback: String) {
+        transaction {
+            val courseTitle = Course
+                .slice(Course.alias, Course.title)
+                .select {
+                    Course.id.eq(courseId)
+                }.map {
+                    it[Course.alias] ?: it[Course.title]
+                }.single()
+
+            val exerciseTitle = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(CourseExercise.titleAlias, ExerciseVer.title)
+                .select {
+                    CourseExercise.id.eq(courseExId) and ExerciseVer.validTo.isNull()
+                }.map {
+                    it[CourseExercise.titleAlias] ?: it[ExerciseVer.title]
+                }.single()
+
+            val studentEmail = (Submission innerJoin Student innerJoin Account)
+                .slice(Account.email)
+                .select {
+                    Submission.id.eq(submissionId)
+                }.map {
+                    it[Account.email]
+                }.single()
+
+            sendMailService.sendStudentGotNewTeacherFeedback(
+                courseId,
+                courseExId,
+                exerciseTitle,
+                courseTitle,
+                feedback,
+                studentEmail
+            )
+        }
+    }
 }
-
-

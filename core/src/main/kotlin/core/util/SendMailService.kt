@@ -32,7 +32,8 @@ class SendMailService(private val mailSender: JavaMailSender) {
 
     @Async
     fun sendStudentAddedToCourseActive(courseTitle: String, recipientEmail: String) {
-        val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
+        val subject =
+            """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
         val text = """
             |Tere!
             |
@@ -69,7 +70,8 @@ class SendMailService(private val mailSender: JavaMailSender) {
 
     @Async
     fun sendStudentAddedToCoursePending(courseTitle: String, recipientEmail: String) {
-        val subject = """Sind lisati Lahenduse kursusele "$courseTitle" """
+        val subject =
+            """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
         val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
         val registerLink = "$wuiBaseUrl/register?email=$encodedEmail"
         val text = """
@@ -105,6 +107,39 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |The Lahendus Team
             |
         """.trimMargin()
+        sendUserEmail(recipientEmail, subject, text)
+    }
+
+    @Async
+    fun sendStudentGotNewTeacherFeedback(
+        courseId: Long, courseExId: Long,
+        exerciseTitle: String, courseTitle: String,
+        feedback: String, recipientEmail: String
+    ) {
+        val subject =
+            """Uus tagasiside kommentaar ülesandele $exerciseTitle / New feedback comment on exercise $exerciseTitle"""
+        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val text = """
+            |Tere!
+            |
+            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" lisati tagasiside kommentaar:
+            |
+            |$feedback
+            |
+            |Vaata oma esitust ja tagasisidet siin: $exerciseLink
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |Your submission for exercise $exerciseTitle on course $courseTitle received a new feedback comment:
+            |
+            |$feedback
+            |
+            |See your submission and the feedback here: $exerciseLink
+            |
+            """.trimMargin()
         sendUserEmail(recipientEmail, subject, text)
     }
 
