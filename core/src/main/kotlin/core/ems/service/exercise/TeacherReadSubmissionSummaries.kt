@@ -46,8 +46,8 @@ class TeacherReadSubmissionSummariesController {
     data class StudentsResp(@JsonProperty("student_id") val studentId: String,
                             @JsonProperty("given_name") val studentGivenName: String,
                             @JsonProperty("family_name") val studentFamilyName: String,
-                            @JsonSerialize(using = DateTimeSerializer::class)
                             @JsonProperty("submission_id") val submissionId: String?,
+                            @JsonSerialize(using = DateTimeSerializer::class)
                             @JsonProperty("submission_time") val submissionTime: DateTime?,
                             @JsonProperty("grade") val grade: Int?,
                             @JsonProperty("graded_by") val gradedBy: GraderType?,
