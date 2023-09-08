@@ -47,6 +47,7 @@ class TeacherReadSubmissionSummariesController {
                             @JsonProperty("given_name") val studentGivenName: String,
                             @JsonProperty("family_name") val studentFamilyName: String,
                             @JsonSerialize(using = DateTimeSerializer::class)
+                            @JsonProperty("submission_id") val submissionId: String?,
                             @JsonProperty("submission_time") val submissionTime: DateTime?,
                             @JsonProperty("grade") val grade: Int?,
                             @JsonProperty("graded_by") val gradedBy: GraderType?,
@@ -126,7 +127,7 @@ class TeacherReadSubmissionSummariesController {
                             Student innerJoin Account leftJoin
                             (Submission leftJoin AutomaticAssessment leftJoin TeacherAssessment))
                 .slice(
-                    distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
+                    distinctStudentId, Account.givenName, Account.familyName, Submission.id, Submission.createdAt,
                     autoGradeAlias, TeacherAssessment.grade, validGradeAlias, groupsString
                 )
                 .select {
@@ -135,7 +136,7 @@ class TeacherReadSubmissionSummariesController {
                 }
                 // Grouping for groupsString since there can be many groups
                 .groupBy(
-                    distinctStudentId, Account.givenName, Account.familyName, Submission.createdAt,
+                    distinctStudentId, Account.givenName, Account.familyName, Submission.id, Submission.createdAt,
                     autoGradeAlias, TeacherAssessment.grade, validGradeAlias, AutomaticAssessment.createdAt,
                     TeacherAssessment.createdAt
                 )
@@ -221,6 +222,7 @@ class TeacherReadSubmissionSummariesController {
                         it[subTable[distinctStudentId]].value,
                         it[subTable[Account.givenName]],
                         it[subTable[Account.familyName]],
+                        it[subTable[Submission.id]]?.value?.toString(),
                         it[subTable[Submission.createdAt]],
                         validGradePair?.first,
                         validGradePair?.second,
