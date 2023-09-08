@@ -85,7 +85,7 @@ class TeacherCourseExercisesComp(
                 it.effectiveTitle,
                 titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, "Peidetud") else null,
                 titleStatus = if (!it.isVisible) EzCollComp.TitleStatus.INACTIVE else EzCollComp.TitleStatus.NORMAL,
-                titleLink = ExerciseSummaryPage.link(courseId, it.id),
+                titleAction = { EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, it.id)) },
                 // TODO: editable?
                 topAttr = if (it.deadline != null) {
                     EzCollComp.SimpleAttr(

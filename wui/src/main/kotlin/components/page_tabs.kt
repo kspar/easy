@@ -2,10 +2,8 @@ package components
 
 import libheaders.MTabsInstance
 import libheaders.Materialize
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.getElemById
-import rip.kspar.ezspa.objOf
+import rip.kspar.ezspa.*
+import show
 import template
 
 
@@ -24,6 +22,7 @@ class PageTabsComp(
         val onActivate: ((tabId: String) -> Unit)? = null,
         val id: String = IdGenerator.nextId(),
         val preselected: Boolean = false,
+        val hidden: Boolean = false,
         val compProvider: (parentComp: PageTabsComp) -> Component,
     )
 
@@ -43,7 +42,7 @@ class PageTabsComp(
             <ez-tabs-header>
                 <ul id="{{tabsId}}" class="tabs">
                     <!-- On one line, avoid whitespace between items -->
-                    {{#tabs}}<li class="tab"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
+                    {{#tabs}}<li id='tab-{{id}}' class="tab {{#isHidden}}display-none{{/isHidden}}"><a href="#{{id}}" class="{{#isPreselected}}active{{/isPreselected}}">{{label}}</a></li>{{/tabs}}
                 </ul>
                 {{#trailerElementId}}
                     <ez-tabs-trailer id="{{trailerElementId}}"></ez-tabs-trailer>
@@ -66,6 +65,7 @@ class PageTabsComp(
                 "label" to tab.title,
                 "compDstId" to comp.dstId,
                 "isPreselected" to tab.preselected,
+                "isHidden" to tab.hidden,
             )
         },
         "tabsId" to tabsId,
@@ -93,10 +93,15 @@ class PageTabsComp(
     }
 
     fun setSelectedTabById(tabId: String) {
+        getElemById("tab-$tabId").show()
         mtabs.select(tabId)
     }
 
     fun getTabComps() = tabComps
 
     fun refreshIndicator() = mtabs.updateTabIndicator()
+
+    fun setTabTitle(tabId: String, title: String) {
+        getElemBySelector("#tab-$tabId > a").textContent = title
+    }
 }

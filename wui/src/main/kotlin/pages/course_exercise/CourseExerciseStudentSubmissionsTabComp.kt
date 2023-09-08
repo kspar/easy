@@ -13,11 +13,13 @@ class CourseExerciseStudentSubmissionsTabComp(
     private val courseId: String,
     private val courseExId: String,
     private val threshold: Int,
+    private val onOpenSubmission: suspend (CourseExercisesStudentDAO.StudentSubmission) -> Unit,
     parent: Component
 ) : Component(parent) {
 
     data class Props(
-        val number: Int, // TODO: this should come from service
+        val submission: CourseExercisesStudentDAO.StudentSubmission,
+        val number: Int,
         val solution: String,
         val submissionTime: EzDate,
         val autogradeStatus: CourseExercisesStudentDAO.AutogradeStatus,
@@ -31,10 +33,9 @@ class CourseExerciseStudentSubmissionsTabComp(
 
     override fun create() = doInPromise {
         val submissions = CourseExercisesStudentDAO.getSubmissions(courseId, courseExId).await()
-            .sortedBy { it.submission_time }
-            .mapIndexed { i, sub ->
-                Props(i + 1, sub.solution, sub.submission_time, sub.autograde_status, sub.validGrade)
-            }.reversed()
+            .map { sub ->
+                Props(sub, sub.number, sub.solution, sub.submission_time, sub.autograde_status, sub.validGrade)
+            }
 
         list = EzCollComp(
             submissions.map {
@@ -42,6 +43,7 @@ class CourseExerciseStudentSubmissionsTabComp(
                     it,
                     EzCollComp.ItemTypeText("#${it.number}"),
                     it.submissionTime.toHumanString(EzDate.Format.FULL),
+                    titleAction = { onOpenSubmission(it.submission) },
                     topAttr = it.validGrade?.let {
                         EzCollComp.SimpleAttr(
                             Str.gradeLabel,

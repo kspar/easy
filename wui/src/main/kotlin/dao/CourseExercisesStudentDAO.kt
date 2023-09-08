@@ -81,6 +81,7 @@ object CourseExercisesStudentDAO {
     @Serializable
     data class StudentSubmission(
         val id: String,
+        val number: Int,
         val solution: String,
         @Serializable(with = EzDateSerializer::class)
         val submission_time: EzDate,
@@ -167,13 +168,33 @@ object CourseExercisesStudentDAO {
         ).await()
     }
 
-    fun awaitAutograde(courseId: String, courseExId: String): Promise<StudentSubmission> = doInPromise {
+    @Serializable
+    data class AwaitedSubmission(
+        val id: String,
+        val solution: String,
+        @Serializable(with = EzDateSerializer::class)
+        val submission_time: EzDate,
+        val autograde_status: AutogradeStatus,
+        val grade_auto: Int?,
+        val feedback_auto: String?,
+        val grade_teacher: Int?,
+        val feedback_teacher: String?
+    ) {
+        val validGrade: ValidGrade?
+            get() = when {
+                grade_teacher != null -> ValidGrade(grade_teacher, ExerciseDAO.GraderType.TEACHER)
+                grade_auto != null -> ValidGrade(grade_auto, ExerciseDAO.GraderType.AUTO)
+                else -> null
+            }
+    }
+
+    fun awaitAutograde(courseId: String, courseExId: String): Promise<AwaitedSubmission> = doInPromise {
         fetchEms(
             "/student/courses/${courseId.encodeURIComponent()}/exercises/${courseExId.encodeURIComponent()}/submissions/latest/await",
             ReqMethod.GET,
             successChecker = { http200 },
             errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
         ).await()
-            .parseTo(StudentSubmission.serializer()).await()
+            .parseTo(AwaitedSubmission.serializer()).await()
     }
 }

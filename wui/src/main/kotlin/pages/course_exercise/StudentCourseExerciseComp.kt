@@ -9,6 +9,7 @@ import pages.Title
 import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
 import translation.Str
@@ -25,6 +26,9 @@ class StudentCourseExerciseComp(
     private lateinit var tabs: PageTabsComp
 
     private lateinit var submissionsTab: CourseExerciseStudentSubmissionsTabComp
+    private lateinit var oldSubmissionTab: CourseExerciseStudentOldSubmissionTabComp
+    private val oldSubmissionTabId = IdGenerator.nextId()
+
 
     override val children: List<Component>
         get() = listOf(exerciseTextComp, tabs)
@@ -55,11 +59,24 @@ class StudentCourseExerciseComp(
                             it
                         )
                     }),
-                PageTabsComp.Tab(Str.tabAllSubmissions,
+                PageTabsComp.Tab(Str.tabMySubmissions,
                     compProvider = {
-                        CourseExerciseStudentSubmissionsTabComp(courseId, courseExId, courseEx.threshold, it)
-                            .also { submissionsTab = it }
+                        CourseExerciseStudentSubmissionsTabComp(
+                            courseId,
+                            courseExId,
+                            courseEx.threshold,
+                            { openSubmission(it) },
+                            it
+                        ).also { submissionsTab = it }
                     }),
+                PageTabsComp.Tab(
+                    "",
+                    id = oldSubmissionTabId, hidden = true,
+                    compProvider = {
+                        CourseExerciseStudentOldSubmissionTabComp(parent = it)
+                            .also { oldSubmissionTab = it }
+                    },
+                ),
             ),
             parent = this
         )
@@ -80,5 +97,11 @@ class StudentCourseExerciseComp(
     private fun updateSubmissions() {
         Sidenav.refresh(ExerciseSummaryPage.sidenavSpec, true)
         submissionsTab.createAndBuild()
+    }
+
+    private suspend fun openSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {
+        tabs.setTabTitle(oldSubmissionTabId, "#" + submission.number.toString())
+        tabs.setSelectedTabById(oldSubmissionTabId)
+        oldSubmissionTab.setSubmission(submission)
     }
 }

@@ -2,6 +2,7 @@ package components
 
 import Icons
 import debug
+import ifExistsStr
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.clear
@@ -35,7 +36,7 @@ class EzCollComp<P>(
         val title: String,
         val titleIcon: TitleIcon? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
-        val titleLink: String? = null,
+        val titleAction: (suspend (P) -> Unit)? = null,
         val topAttr: Attr<P>? = null,
         val bottomAttrs: List<Attr<P>> = emptyList(),
         val progressBar: ProgressBar? = null,
@@ -731,7 +732,7 @@ class EzCollItemComp<P>(
                             <ezc-center>
                                 <ezc-first>
                                     <ezc-title>
-                                        <a {{#titleLink}}href="{{titleLink}}"{{/titleLink}}>{{title}}</a>
+                                        <a id='title-{{itemId}}' ${spec.titleAction.ifExistsStr { "href='#!'" }}>{{title}}</a>
                                         {{#titleIcon}}<ezc-title-icon title="{{titleIconLabel}}">{{{titleIcon}}}</ezc-title-icon>{{/titleIcon}}
                                     </ezc-title>
                                     {{#topAttr}}
@@ -846,7 +847,6 @@ class EzCollItemComp<P>(
         "title" to spec.title,
         "titleIcon" to spec.titleIcon?.icon,
         "titleIconLabel" to spec.titleIcon?.label,
-        "titleLink" to spec.titleLink,
         "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
@@ -899,6 +899,13 @@ class EzCollItemComp<P>(
     )
 
     public override fun postRender() {
+        val titleAction = spec.titleAction
+        if (titleAction != null) {
+            getElemById("title-${spec.id}").onVanillaClick(true) {
+                titleAction.invoke(spec.props)
+            }
+        }
+
         if (isExpandable) {
             initExpanding()
             updateExpanded()

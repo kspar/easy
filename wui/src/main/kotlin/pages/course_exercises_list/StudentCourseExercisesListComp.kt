@@ -11,6 +11,7 @@ import kotlinx.coroutines.await
 import pages.Title
 import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import template
 import translation.Str
@@ -62,7 +63,7 @@ class StudentCourseExercisesListComp(
                     EzCollComp.TitleIcon(
                         """<ez-exercise-badge>${Icons.awardWithCheck}</ez-exercise-badge>""", Str.completedBadgeLabel
                     ) else null,
-                titleLink = ExerciseSummaryPage.link(courseId, it.id),
+                titleAction = { EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, it.id)) },
                 topAttr = if (it.deadline != null) {
                     if (it.deadline.isSoonerThanHours(24) &&
                         it.isOpen &&

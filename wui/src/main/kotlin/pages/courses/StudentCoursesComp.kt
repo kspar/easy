@@ -61,7 +61,7 @@ class StudentCoursesComp(
                     CourseProps(it.id, it.effectiveTitle),
                     EzCollComp.ItemTypeIcon(Icons.articles),
                     it.effectiveTitle,
-                    titleLink = CourseExercisesPage.link(it.id),
+                    titleAction = { EzSpa.PageManager.navigateTo(CourseExercisesPage.link(it.id)) },
                 )
             },
             EzCollComp.Strings(Str.coursesSingular, Str.coursesPlural),
