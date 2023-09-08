@@ -1,21 +1,23 @@
 package core.ems.service.code
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.marcinmoskala.math.combinations
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.libraryExercise
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.util.DateTimeSerializer
+import core.util.forEachCombination
 import me.xdrop.fuzzywuzzy.FuzzySearch
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import java.util.*
@@ -64,6 +66,9 @@ class TeacherCheckSimilarityController {
 
     data class RespSubmission(
         @JsonProperty("id") val id: String,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("created_at") val createdAt: DateTime,
+        // TODO: number
         @JsonProperty("solution") val solution: String,
         @JsonProperty("given_name") val givenName: String,
         @JsonProperty("family_name") val familyName: String,
@@ -99,7 +104,11 @@ class TeacherCheckSimilarityController {
         val submissionResp: List<RespSubmission> = selectSubmissions(exerciseId, courses, submissions)
         log.info { "Analyzing source code similarity for ${submissionResp.size} submissions." }
 
+        // Return top 100 highest scores
         val scoresResp: List<RespScore> = calculateScores(submissionResp)
+            .sortedByDescending { it.scoreA + it.scoreB }
+            .take(100)
+
         return Resp(submissionResp, scoresResp)
     }
 }
@@ -116,6 +125,7 @@ private fun selectSubmissions(
             .slice(
                 Course.title,
                 Submission.id,
+                Submission.createdAt,
                 Submission.solution,
                 Account.givenName,
                 Account.familyName
@@ -143,6 +153,7 @@ private fun selectSubmissions(
         query.map {
             TeacherCheckSimilarityController.RespSubmission(
                 it[Submission.id].value.toString(),
+                it[Submission.createdAt],
                 it[Submission.solution],
                 it[Account.givenName],
                 it[Account.familyName],
@@ -152,28 +163,32 @@ private fun selectSubmissions(
     }
 }
 
-// TODO: 28.09.2022 add diff-match-batch Google's diff algorithm
-// TODO: 28.09.2022 set some timeout
+// TODO: 28.09.2022 add diff-match-batch Google's diff algorithm?
+// TODO: 28.09.2022 set a timeout
 private fun calculateScores(submissions: List<TeacherCheckSimilarityController.RespSubmission>): List<TeacherCheckSimilarityController.RespScore> {
-    return submissions.toSet()
-        .combinations(2)
-        .mapNotNull {
-            it.zipWithNext().firstOrNull()
-        }
-        .map {
-            TeacherCheckSimilarityController.RespScore(
-                it.first.id,
-                it.second.id,
-                diceCoefficient(
-                    it.first.solution,
-                    it.second.solution
-                ),
-                fuzzy(
-                    it.first.solution,
-                    it.second.solution
-                )
+    if (submissions.size < 2) {
+        return emptyList()
+    }
+    val result = mutableSetOf<TeacherCheckSimilarityController.RespScore>()
+    submissions.forEachCombination(2) {
+        val first = it.toList()[0]
+        val second = it.toList()[1]
+        val r = TeacherCheckSimilarityController.RespScore(
+            first.id,
+            second.id,
+            diceCoefficient(
+                first.solution,
+                second.solution
+            ),
+            fuzzy(
+                first.solution,
+                second.solution
             )
-        }
+        )
+
+        result.add(r)
+    }
+    return result.toList()
 }
 
 private fun fuzzy(s1: String, s2: String): Int {
@@ -184,7 +199,6 @@ private fun fuzzy(s1: String, s2: String): Int {
  * Rewrote from: https://github.com/rrice/java-string-similarity
  * https://en.wikipedia.org/wiki/S%c3%b8rensen%e2%80%93Dice_coefficient
  */
-
 private fun diceCoefficient(first: String, second: String): Int {
     val s1 = splitIntoBigrams(first)
     val s2 = splitIntoBigrams(second)
