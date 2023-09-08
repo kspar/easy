@@ -287,7 +287,7 @@ object EstStrings : TranslatableStrings() {
     override val graderTypeAuto = "automaatne"
     override val graderTypeTeacher = "manuaalne"
     override val addAssessmentGradeLabel = "Hinne (0-100)"
-    override val addAssessmentFeedbackLabel = "Tagasiside"
+    override val addAssessmentFeedbackLabel = "Kommentaar"
     override val addAssessmentGradeValidErr = "Hinne peab olema arv 0 ja 100 vahel."
     override val addAssessmentButtonLabel = "Lisa hinnang"
     override val aaTitle = "Automaatkontroll"

@@ -373,12 +373,15 @@
                 <label for="feedback">{{feedbackLabel}}</label>
             </div>
         </div>
-        <div class="row">
+        <div class="row" style="margin-bottom: 0;">
             <div class="input-field col xs6 s5 m4">
                 <input id="grade" type="number" min="0" max="100" class="validate" value="{{gradePrefill}}">
                 <label for="grade" {{#hasGradePrefill}}class="active"{{/hasGradePrefill}}>{{gradeLabel}}</label>
                 <span class="helper-text" data-error="{{gradeValidationError}}"></span>
             </div>
+        </div>
+        <div class="row">
+            <div>Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga.</div>
         </div>
         <button id="grade-button" class="waves-effect waves-light btn">{{addGradeButton}}</button>
     </div>

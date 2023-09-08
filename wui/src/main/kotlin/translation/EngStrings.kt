@@ -105,7 +105,7 @@ object EngStrings : TranslatableStrings() {
     override val download = "Download"
     override val addAssessmentLink = "► Add assessment"
     override val addAssessmentGradeLabel = "Grade (0-100)"
-    override val addAssessmentFeedbackLabel = "Feedback"
+    override val addAssessmentFeedbackLabel = "Comment"
     override val addAssessmentGradeValidErr = "The grade has to be an integer between 0 and 100."
     override val addAssessmentButtonLabel = "Add assessment"
     override val assessmentAddedMsg = "Assessment added"
