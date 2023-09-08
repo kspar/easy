@@ -108,7 +108,7 @@ sealed class TranslatableStrings {
 
     // Course exercise page
     abstract val tabSubmit: String
-    abstract val tabAllSubmissions: String
+    abstract val tabMySubmissions: String
     abstract val draftSaveFailedMsg: String
     abstract val exerciseClosedForSubmissions: String
     abstract val solutionEditorStatusDraft: String
@@ -225,8 +225,8 @@ object EstStrings : TranslatableStrings() {
     override val submissionHeading = "Esitus"
     override val latestSubmissionSuffix = "(viimane esitus)"
     override val allSubmissionsLink = "► Vaata kõiki esitusi"
-    override val tabSubmit = "Esitamine"
-    override val tabAllSubmissions = "Kõik esitused"
+    override val tabSubmit = "Esita"
+    override val tabMySubmissions = "Minu esitused"
     override val draftSaveFailedMsg = "Mustandi salvestamine ebaõnnestus"
     override val exerciseClosedForSubmissions = "See ülesanne on suletud ja ei luba enam uusi esitusi"
     override val solutionEditorStatusDraft = "Esitamata mustand"
