@@ -98,7 +98,7 @@ class ExerciseLibComp(
                     libResp.current_dir?.name ?: Str.exerciseLibrary,
 
                     buildList {
-                        add(Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                        add(Sidenav.Action(Icons.newExercise, Str.newExercise) {
                             val ids = newExerciseModal.openWithClosePromise().await()
                             if (ids != null) {
                                 EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))

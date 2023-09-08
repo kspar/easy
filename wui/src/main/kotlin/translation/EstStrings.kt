@@ -39,6 +39,8 @@ sealed class TranslatableStrings {
     abstract val doAutoAssess: String
     abstract val autoAssessing: String
     abstract val tryAgain: String
+    abstract val accountGroup: String
+    abstract val download: String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes else no
     fun translateRole(role: Role) = when (role) {
@@ -78,6 +80,8 @@ sealed class TranslatableStrings {
     abstract val newCourse: String
     abstract val allExercises: String
     abstract val exercises: String
+    abstract val openInLib: String
+    abstract val exerciseSettings: String
     abstract val participants: String
     abstract val gradesLabel: String
     abstract val courseSettings: String
@@ -198,9 +202,6 @@ object EstStrings : TranslatableStrings() {
     override val notGradedYet = "Hindamata"
 
 
-
-
-
     override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val roleAdmin = "Admin"
@@ -256,6 +257,8 @@ object EstStrings : TranslatableStrings() {
     override val newCourse = "Uus kursus"
     override val allExercises = "Kõik ülesanded"
     override val exercises = "Ülesanded"
+    override val openInLib = "Ava ülesandekogus"
+    override val exerciseSettings = "Ülesande sätted"
     override val participants = "Osalejad"
     override val gradesLabel = "Hinded"
     override val courseSettings = "Kursuse sätted"
@@ -277,6 +280,8 @@ object EstStrings : TranslatableStrings() {
     override val doAutoAssess = "Kontrolli"
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
+    override val accountGroup = "Rühm"
+    override val download = "Lae alla"
     override val addAssessmentLink = "► Lisa hinnang"
     override val closeToggleLink = "▼ Sulge"
     override val graderTypeAuto = "automaatne"
@@ -314,16 +319,17 @@ ole hea ja proovi hiljem uuesti.
     override val coursesPlural = "kursust"
     override val completedBadgeLabel = "Tehtud!"
 
-    override val aboutS1="Lahenduse keskkonda haldab ja arendab"
-    override val aboutS2="Tartu Ülikooli arvutiteaduse instituut"
-    override val aboutS3="Lahendus põhineb vabavaralisel rakendusel"
-    override val aboutS4=", mida arendatakse samuti arvutiteaduse instituudis"
-    override val aboutS5="Kui sul on Lahenduse kasutamise või arenduse kohta küsimusi, või kui leidsid kuskilt vea, siis tule räägi sellest"
-    override val aboutS6="Lahenduse Discordi serveris"
-    override val aboutSponsors="Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
-    override val statsAutograding="Hetkel kontrollitavaid lahendusi"
-    override val statsSubmissions="Esitusi kokku"
-    override val statsAccounts="Kasutajaid kokku"
+    override val aboutS1 = "Lahenduse keskkonda haldab ja arendab"
+    override val aboutS2 = "Tartu Ülikooli arvutiteaduse instituut"
+    override val aboutS3 = "Lahendus põhineb vabavaralisel rakendusel"
+    override val aboutS4 = ", mida arendatakse samuti arvutiteaduse instituudis"
+    override val aboutS5 =
+        "Kui sul on Lahenduse kasutamise või arenduse kohta küsimusi, või kui leidsid kuskilt vea, siis tule räägi sellest"
+    override val aboutS6 = "Lahenduse Discordi serveris"
+    override val aboutSponsors = "Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
+    override val statsAutograding = "Hetkel kontrollitavaid lahendusi"
+    override val statsSubmissions = "Esitusi kokku"
+    override val statsAccounts = "Kasutajaid kokku"
 
     override val today = "täna"
     override val yesterday = "eile"

@@ -339,7 +339,7 @@ object ExerciseSummaryPage : EasyPage() {
         Sidenav.replacePageSection(
             Sidenav.PageSection(
                 effectiveTitle, listOf(
-                    Sidenav.Action(Icons.settings, "Ülesande sätted") {
+                    Sidenav.Action(Icons.settings, Str.exerciseSettings) {
                         val m = UpdateCourseExerciseModalComp(
                             courseId,
                             UpdateCourseExerciseModalComp.CourseExercise(
@@ -362,7 +362,7 @@ object ExerciseSummaryPage : EasyPage() {
                             build(null)
                         }
                     },
-                    Sidenav.Link(Icons.library, "Vaata ülesandekogus", ExercisePage.link(exercise.exercise_id))
+                    Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id))
                 )
             )
         )
@@ -537,8 +537,8 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("students-frame").innerHTML = tmRender(
             "tm-teach-exercise-students-frame", mapOf(
-                "exportSubmissionsLabel" to "Lae alla",
-                "groupLabel" to if (groups.isNotEmpty()) "Rühm" else null,
+                "exportSubmissionsLabel" to Str.download,
+                "groupLabel" to if (groups.isNotEmpty()) Str.accountGroup else null,
                 "allLabel" to "Kõik õpilased",
                 "groups" to groups.map {
                     mapOf(

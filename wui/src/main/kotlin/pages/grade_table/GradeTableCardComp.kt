@@ -10,6 +10,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 
 class GradeTableCardComp(
     private val courseId: String,
@@ -57,7 +58,7 @@ class GradeTableCardComp(
                     add(SelectComp.Option(it.name, it.id, it.id == preselectedGroupId))
                 }
             }
-            groupSelectComp = SelectComp("Rühm", options, onOptionChange = ::handleGroupChange, parent = this)
+            groupSelectComp = SelectComp(Str.accountGroup, options, onOptionChange = ::handleGroupChange, parent = this)
         }
 
         tableComp = GradeTableTableComp(

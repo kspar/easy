@@ -14,6 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class ParticipantsStudentsListComp(
     private val courseId: String,
@@ -128,7 +129,7 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.FilterGroup(
-                            "Rühm",
+                            Str.accountGroup,
                             listOf(EzCollComp.Filter<StudentProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
                                     groups.map { g ->
                                         EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }

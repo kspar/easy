@@ -102,7 +102,7 @@ class TeacherCourseExercisesComp(
                         if (it.isVisible) "Peida" else "Avalikusta", onActivate = ::showHide
                     ),
                     EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
-                    EzCollComp.Action(Icons.settings, "Ülesande sätted", onActivate = ::updateCourseExercise),
+                    EzCollComp.Action(Icons.settings, Str.exerciseSettings, onActivate = ::updateCourseExercise),
                     EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
                 ),
             )
@@ -126,8 +126,8 @@ class TeacherCourseExercisesComp(
 
         Sidenav.replacePageSection(
             Sidenav.PageSection(
-                "Ülesanded", listOf(
-                    Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                Str.exercises, listOf(
+                    Sidenav.Action(Icons.newExercise, Str.newExercise) {
                         val ids = newExerciseModal.openWithClosePromise().await()
                         if (ids != null) {
                             if (ids.courseExerciseId != null) {
@@ -135,7 +135,7 @@ class TeacherCourseExercisesComp(
                                 EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
                                 successMessage { "Ülesanne loodud" }
                             } else {
-                                val action = UserMessageAction("Ava ülesandekogus") {
+                                val action = UserMessageAction(Str.openInLib) {
                                     EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
                                 }
                                 successMessage(action = action) { "Ülesanne loodud" }
