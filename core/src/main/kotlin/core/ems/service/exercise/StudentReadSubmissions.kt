@@ -23,6 +23,7 @@ class StudentReadSubmissionsController {
 
     data class SubmissionResp(
             @JsonProperty("id") val submissionId: String,
+            @JsonProperty("number") val number: Int,
             @JsonProperty("solution") val solution: String,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("submission_time") val submissionTime: DateTime,
@@ -96,9 +97,10 @@ class StudentReadSubmissionsController {
         val submissions = wrapQuery
             .orderBy(subTable[Submission.createdAt] to SortOrder.DESC)
             .limit(limit ?: count.toInt(), offset ?: 0)
-            .map {
+            .mapIndexed { i, it ->
                 SubmissionResp(
                     it[subTable[distinctSubmissionId]].value.toString(),
+                    count.toInt() - i,
                     it[subTable[Submission.solution]],
                     it[subTable[Submission.createdAt]],
                     it[subTable[Submission.autoGradeStatus]],
