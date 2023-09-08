@@ -174,7 +174,8 @@ class TeacherReadSubmissionSummariesController {
                 // Slice is needed because aliased columns are not included by default
                 .slice(
                     subTable[distinctStudentId], subTable[Account.givenName], subTable[Account.familyName],
-                    subTable[Submission.createdAt], subTable[TeacherAssessment.grade], subTable[autoGradeAlias],
+                    subTable[Submission.id], subTable[Submission.createdAt],
+                    subTable[TeacherAssessment.grade], subTable[autoGradeAlias],
                     subTable[validGradeAlias], subTable[groupsString]
                 )
                 .selectAll()
