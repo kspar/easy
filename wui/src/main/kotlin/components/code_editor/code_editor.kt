@@ -12,7 +12,8 @@ import libheaders.CodeMirrorInstance
 import libheaders.tabHandler
 import negation
 import rip.kspar.ezspa.*
-import tmRender
+import strIfTrue
+import template
 import warn
 
 
@@ -100,8 +101,31 @@ class CodeEditorComp(
     override val children: List<Component>
         get() = listOfNotNull(editToggleComp, createFileModalComp)
 
-    override fun render(): String = tmRender(
-        "t-c-code-editor",
+    override fun render(): String = template(
+        """
+            <div id="{{editorId}}" 
+                class="editor-wrapper {{^showLineNums}}no-gutter{{/showLineNums}} ${(tabs.size == 1).strIfTrue { "single-tab" }}">
+                {{#showTabs}}
+                    <div class="editor-top">
+                        <div class="left-side">
+                            <ez-code-edit-tabs>
+                                {{#tabs}}
+                                    {{{tab}}}
+                                {{/tabs}}
+                            </ez-code-edit-tabs>
+                            {{#canCreate}}
+                                <ez-icon-action id="{{createId}}">{{{createIcon}}}</ez-icon-action>
+                            {{/canCreate}}
+                        </div>
+                        <div class="right-side">
+                            <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
+                        </div>
+                    </div>
+                {{/showTabs}}
+                <textarea id="{{textareaId}}"></textarea>
+                <ez-dst id="{{createModalId}}"></ez-dst>
+            </div>
+        """.trimIndent(),
         "editorId" to editorId,
         "textareaId" to textareaId,
         "toggleId" to editToggleId,
@@ -200,8 +224,13 @@ class CodeEditorComp(
         return Tab(f.name, CodeMirror.Doc(f.content.orEmpty(), mode), IdGenerator.nextId(), f.editability, mode)
     }
 
-    private fun tabToHtml(tab: Tab) =
-        tmRender("t-code-editor-tab", mapOf("id" to tab.id, "name" to tab.filename))
+    private fun tabToHtml(tab: Tab) = template(
+        """
+            <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
+        """.trimIndent(),
+        "id" to tab.id,
+        "name" to tab.filename
+    )
 
     private fun refreshTabActions() {
         tabs.forEach { CodeMirror.autoLoadMode(editor, it.lang) }

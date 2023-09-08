@@ -15,7 +15,7 @@ class CourseExerciseEditorStatusComp(
     override fun render() = template(
         """
             <div style="position: absolute; right: 1.5rem; top: .5rem; display: flex; align-items: center" class='icon-med'>
-                <span style='padding-right: 1rem; color: var(--ez-icon-col);'>{{msg}}</span>
+                <span style='padding-right: 1rem; color: var(--ez-icon-col); cursor: default;'>{{msg}}</span>
                 {{{icon}}}            
             </div>
         """.trimIndent(),

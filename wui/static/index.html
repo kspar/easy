@@ -91,34 +91,6 @@
     </div>
 </script>
 
-<script id="t-c-code-editor" type="text/x-handlebars">
-    <div id="{{editorId}}" class="editor-wrapper {{^showLineNums}}no-gutter{{/showLineNums}}">
-        {{#showTabs}}
-            <div class="editor-top">
-                <div class="left-side">
-                    <ez-code-edit-tabs>
-                        {{#tabs}}
-                            {{{tab}}}
-                        {{/tabs}}
-                    </ez-code-edit-tabs>
-                    {{#canCreate}}
-                        <ez-icon-action id="{{createId}}">{{{createIcon}}}</ez-icon-action>
-                    {{/canCreate}}
-                </div>
-                <div class="right-side">
-                    <span class="top-item"><ez-dst id="{{toggleId}}"></ez-dst></span>
-                </div>
-            </div>
-        {{/showTabs}}
-        <textarea id="{{textareaId}}"></textarea>
-        <ez-dst id="{{createModalId}}"></ez-dst>
-    </div>
-</script>
-
-<script id="t-code-editor-tab" type="text/x-handlebars">
-    <a id="{{id}}" class="top-item editor-tab" href="#!">{{name}}</a>
-</script>
-
 <script id="t-c-link" type="text/x-handlebars">
     <a id="{{id}}" href="#!">{{{iconHtml}}}{{label}}</a>
 </script>

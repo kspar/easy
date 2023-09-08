@@ -887,6 +887,7 @@ ez-exercise-autoeval > ez-block-container {
 }
 
 ez-code-edit-tabs {
+    margin-left: 1.5rem;
     margin-right: 1rem;
 }
 
@@ -901,6 +902,12 @@ ez-code-edit-tabs {
     color: #555;
     cursor: default;
     box-shadow: inset 2px 3px 8px -2px rgba(0, 0, 0, 0.15);
+}
+
+.editor-wrapper.single-tab .editor-top .editor-tab.active {
+    color: inherit;
+    border: none;
+    box-shadow: none;
 }
 
 .editor-top .editor-tab:not(:last-child) {
