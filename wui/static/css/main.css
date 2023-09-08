@@ -831,6 +831,12 @@ ez-code-edit.readonly .CodeMirror-cursors {
     stroke: #ccedcc;
 }
 
+/* Remove char-based diff underlines - creates too much noise */
+.CodeMirror-merge-r-deleted, .CodeMirror-merge-l-deleted,
+.CodeMirror-merge-r-inserted, .CodeMirror-merge-l-inserted {
+    background-image: none;
+}
+
 
 /* Old code editor */
 
