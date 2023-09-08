@@ -52,6 +52,7 @@ object EngStrings : TranslatableStrings() {
     override val allExercises = "All exercises"
     override val exercises = "Exercises"
     override val openInLib = "Open in exercise library"
+    override val similarityAnalysis = "Similarity analysis"
     override val exerciseSettings = "Exercise settings"
     override val participants = "Participants"
     override val gradesLabel = "Grades"
@@ -135,6 +136,12 @@ of the issue, please try again later.
     override val autogradeNoChecksInTest = "There weren't any checks to run. I guess that means we're fine?"
 
     override val testType = "Test type"
+    override val exerciseTitle = "Exercise"
+    override val findSimilarities = "Find similarities"
+    override val searching = "Searching..."
+    override val topSimilarPairs = "Top similarities"
+    override val diceSimilarity = "Sørensen–Dice score"
+    override val levenshteinSimilarity = "Levenshtein score"
 
     override val aboutS1 = "Lahendus is operated and developed by the"
     override val aboutS2 = "Institute of Computer Science at the University of Tartu"

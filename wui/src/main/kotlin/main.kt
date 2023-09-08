@@ -6,6 +6,7 @@ import libheaders.ContainerQueryPolyfill
 import pages.EasyPage
 import pages.Navbar
 import pages.about.AboutPage
+import pages.about.SimilarityAnalysisPage
 import pages.course_exercise.ExerciseSummaryPage
 import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
@@ -25,7 +26,8 @@ import translation.updateLanguage
 
 
 private val PAGES = listOf(
-    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage, ParticipantsPage,
+    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, SimilarityAnalysisPage,
+    GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
     RegisterLinkPage, CourseJoinByLinkPage,

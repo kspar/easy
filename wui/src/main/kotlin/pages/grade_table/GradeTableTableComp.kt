@@ -1,6 +1,7 @@
 package pages.grade_table
 
 import Icons
+import dao.ExerciseDAO
 import debug
 import kotlinx.browser.document
 import kotlinx.coroutines.await
@@ -50,13 +51,9 @@ class GradeTableTableComp(
     data class Grade(
         val student_id: String,
         val grade: Int? = null,
-        val grader_type: GraderType? = null,
+        val grader_type: ExerciseDAO.GraderType? = null,
         val feedback: String? = null
     )
-
-    enum class GraderType {
-        AUTO, TEACHER
-    }
 
     enum class ExerciseStatus {
         UNSTARTED, UNGRADED, UNFINISHED, FINISHED
@@ -81,7 +78,7 @@ class GradeTableTableComp(
     data class GradeCell(
         val grade: Int?,
         val status: ExerciseStatus,
-        val grader: GraderType?,
+        val grader: ExerciseDAO.GraderType?,
     )
 
 
@@ -104,7 +101,7 @@ class GradeTableTableComp(
 
         val allStudents = gradeTable.students.map { it.student_id }.toSet()
 
-        data class GradeWithInfo(val grade: Int?, val status: ExerciseStatus, val grader: GraderType?)
+        data class GradeWithInfo(val grade: Int?, val status: ExerciseStatus, val grader: ExerciseDAO.GraderType?)
 
         val gradesMap = mutableMapOf<String, MutableList<GradeWithInfo>>()
         gradeTable.exercises.forEach { ex ->
@@ -160,7 +157,7 @@ class GradeTableTableComp(
             val grades = student.grades.map {
                 objOf(
                     "grade" to (it.grade?.toString() ?: "-"),
-                    "teacherGraded" to (it.grader == GraderType.TEACHER),
+                    "teacherGraded" to (it.grader == ExerciseDAO.GraderType.TEACHER),
                     "unstarted" to (it.status == ExerciseStatus.UNSTARTED),
                     "ungraded" to (it.status == ExerciseStatus.UNGRADED),
                     "unfinished" to (it.status == ExerciseStatus.UNFINISHED),

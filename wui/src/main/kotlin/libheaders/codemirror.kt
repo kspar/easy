@@ -4,11 +4,20 @@ import org.w3c.dom.Element
 import rip.kspar.ezspa.objOf
 
 @JsName("CodeMirror")
-external object CodeMirror {
-    var modeURL: String
-    fun fromTextArea(element: Element, options: dynamic): CodeMirrorInstance
-    fun autoLoadMode(editor: CodeMirrorInstance, mode: dynamic)
-    fun findModeByFileName(filename: String): ModeInfo?
+external class CodeMirror {
+
+    companion object {
+        var modeURL: String
+        fun fromTextArea(element: Element, options: dynamic): CodeMirrorInstance
+        fun autoLoadMode(editor: CodeMirrorInstance, mode: dynamic)
+        fun findModeByFileName(filename: String): ModeInfo?
+    }
+
+    class MergeView(
+        element: Element,
+        options: dynamic
+    ) : CodeMirrorInstance
+
     class ModeInfo {
         val mode: dynamic
     }
@@ -21,7 +30,7 @@ external object CodeMirror {
     }
 }
 
-external class CodeMirrorInstance {
+sealed external class CodeMirrorInstance {
     fun getValue(): String
     fun setValue(value: String)
     fun setOption(key: String, value: dynamic)

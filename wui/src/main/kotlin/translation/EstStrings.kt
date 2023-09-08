@@ -81,6 +81,7 @@ sealed class TranslatableStrings {
     abstract val allExercises: String
     abstract val exercises: String
     abstract val openInLib: String
+    abstract val similarityAnalysis: String
     abstract val exerciseSettings: String
     abstract val participants: String
     abstract val gradesLabel: String
@@ -165,6 +166,14 @@ sealed class TranslatableStrings {
 
     // Exercise page
     abstract val testType: String
+
+    // Similarity page
+    abstract val exerciseTitle: String
+    abstract val findSimilarities: String
+    abstract val searching: String
+    abstract val topSimilarPairs: String
+    abstract val diceSimilarity: String
+    abstract val levenshteinSimilarity: String
 
     // About page
     abstract val aboutS1: String
@@ -258,6 +267,7 @@ object EstStrings : TranslatableStrings() {
     override val allExercises = "Kõik ülesanded"
     override val exercises = "Ülesanded"
     override val openInLib = "Ava ülesandekogus"
+    override val similarityAnalysis = "Lahenduste võrdlus"
     override val exerciseSettings = "Ülesande sätted"
     override val participants = "Osalejad"
     override val gradesLabel = "Hinded"
@@ -314,6 +324,12 @@ ole hea ja proovi hiljem uuesti.
     override val permissionPRAW = "Muutja"
     override val permissionPRAWM = "Moderaator"
     override val testType = "Testi tüüp"
+    override val exerciseTitle = "Ülesanne"
+    override val findSimilarities = "Leia sarnasused"
+    override val searching = "Otsin..."
+    override val topSimilarPairs = "Kõige sarnasemad paarid"
+    override val diceSimilarity = "Sørensen–Dice'i sarnasus"
+    override val levenshteinSimilarity = "Levenshteini sarnasus"
 
     override val coursesSingular = "kursus"
     override val coursesPlural = "kursust"

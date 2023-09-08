@@ -13,6 +13,7 @@ import PaginationConf
 import Role
 import cache.BasicCourseInfo
 import dao.CourseExercisesStudentDAO
+import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
 import debug
 import debugFunStart
@@ -38,6 +39,7 @@ import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.EasyPage
 import pages.Title
+import pages.about.SimilarityAnalysisPage
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp
@@ -59,50 +61,6 @@ object ExerciseSummaryPage : EasyPage() {
 
     private const val PAGE_STEP = AppProperties.SUBMISSIONS_ROWS_ON_PAGE
 
-    @Serializable
-    data class TeacherExercise(
-        val exercise_id: String,
-        val title: String,
-        val title_alias: String?,
-        val instructions_html: String?,
-        val instructions_adoc: String?,
-        val text_html: String?,
-        val text_adoc: String?,
-        val student_visible: Boolean,
-        @Serializable(with = DateSerializer::class)
-        val student_visible_from: Date?,
-        @Serializable(with = DateSerializer::class)
-        val hard_deadline: Date?,
-        @Serializable(with = DateSerializer::class)
-        val soft_deadline: Date?,
-        val grader_type: GraderType,
-        val threshold: Int,
-        @Serializable(with = DateSerializer::class)
-        val last_modified: Date,
-        val assessments_student_visible: Boolean,
-        val grading_script: String?,
-        val container_image: String?,
-        val max_time_sec: Int?,
-        val max_mem_mb: Int?,
-        val assets: List<AutoAsset>?,
-        val executors: List<AutoExecutor>?
-    )
-
-    @Serializable
-    data class AutoAsset(
-        val file_name: String,
-        val file_content: String
-    )
-
-    @Serializable
-    data class AutoExecutor(
-        val id: String,
-        val name: String
-    )
-
-    enum class GraderType {
-        AUTO, TEACHER
-    }
 
     @Serializable
     data class AutoassResult(
@@ -136,7 +94,7 @@ object ExerciseSummaryPage : EasyPage() {
         @Serializable(with = DateSerializer::class)
         val submission_time: Date?,
         val grade: Int?,
-        val graded_by: GraderType?,
+        val graded_by: ExerciseDAO.GraderType?,
         val groups: String? = null
     )
 
@@ -251,7 +209,7 @@ object ExerciseSummaryPage : EasyPage() {
             // Could be optimised to load exercise details & students in parallel,
             // requires passing an exercisePromise to buildStudents since the threshold is needed for painting
             val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
-            if (exerciseDetails.grader_type == GraderType.AUTO)
+            if (exerciseDetails.grader_type == ExerciseDAO.GraderType.AUTO)
                 buildTeacherTesting(courseId, exerciseDetails.exercise_id)
             buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
 
@@ -265,7 +223,7 @@ object ExerciseSummaryPage : EasyPage() {
         courseId: String,
         courseExerciseId: String,
         isAdmin: Boolean
-    ): TeacherExercise {
+    ): CourseExercisesTeacherDAO.TeacherCourseExerciseDetails {
         val fl = debugFunStart("buildTeacherSummaryAndCrumbs")
 
         val exercisePromise = fetchEms(
@@ -275,7 +233,7 @@ object ExerciseSummaryPage : EasyPage() {
 
         val courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         val exercise = exercisePromise.await()
-            .parseTo(TeacherExercise.serializer()).await()
+            .parseTo(CourseExercisesTeacherDAO.TeacherCourseExerciseDetails.serializer()).await()
 
         val effectiveTitle = exercise.title_alias ?: exercise.title
 
@@ -307,7 +265,7 @@ object ExerciseSummaryPage : EasyPage() {
             "lastModifiedLabel" to Str.lastModifiedLabel,
             "softDeadline" to exercise.soft_deadline?.toEstonianString(),
             "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-            "graderType" to if (exercise.grader_type == GraderType.AUTO) Str.graderTypeAuto else Str.graderTypeTeacher,
+            "graderType" to if (exercise.grader_type == ExerciseDAO.GraderType.AUTO) Str.graderTypeAuto else Str.graderTypeTeacher,
             "threshold" to exercise.threshold,
             "studentVisible" to Str.translateBoolean(exercise.student_visible),
             "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.toEstonianString() else null,
@@ -321,7 +279,8 @@ object ExerciseSummaryPage : EasyPage() {
         val aaFiles =
             if (exercise.grading_script != null) {
                 val assetFiles = exercise.assets ?: emptyList()
-                val aaFiles = listOf(AutoAsset("evaluate.sh", exercise.grading_script)) + assetFiles
+                val aaFiles =
+                    listOf(CourseExercisesTeacherDAO.AutoAsset("evaluate.sh", exercise.grading_script)) + assetFiles
                 exerciseMap["aaTitle"] = Str.aaTitle
                 exerciseMap["aaFiles"] = aaFiles.mapIndexed { i, file ->
                     objOf(
@@ -362,6 +321,11 @@ object ExerciseSummaryPage : EasyPage() {
                             build(null)
                         }
                     },
+                    Sidenav.Link(
+                        Icons.compareSimilarity,
+                        Str.similarityAnalysis,
+                        SimilarityAnalysisPage.link(courseId, courseExerciseId, exercise.exercise_id)
+                    ),
                     Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id))
                 )
             )
@@ -381,7 +345,7 @@ object ExerciseSummaryPage : EasyPage() {
         return exercise
     }
 
-    private fun initAaFileEditor(aaFiles: List<AutoAsset>) {
+    private fun initAaFileEditor(aaFiles: List<CourseExercisesTeacherDAO.AutoAsset>) {
         val docs = aaFiles.mapIndexed { i, file ->
             val mode = if (i == 0) "shell" else "python"
             CodeMirror.Doc(file.file_content, mode)
@@ -593,11 +557,11 @@ object ExerciseSummaryPage : EasyPage() {
             )
 
             when (student.graded_by) {
-                GraderType.AUTO -> {
+                ExerciseDAO.GraderType.AUTO -> {
                     studentMap["evalAuto"] = true
                 }
 
-                GraderType.TEACHER -> {
+                ExerciseDAO.GraderType.TEACHER -> {
                     studentMap["evalTeacher"] = true
                 }
 

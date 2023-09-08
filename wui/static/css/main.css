@@ -807,6 +807,33 @@ ez-exercise-autoeval > ez-block-container {
 
 /* Code editor */
 
+ez-code-edit.readonly .CodeMirror-cursors {
+    visibility: hidden;
+}
+
+
+/* Merge */
+
+.CodeMirror-merge-r-chunk-start {
+    border-top: 1px solid #ebffeb;
+}
+
+.CodeMirror-merge-r-chunk {
+    background: #ebffeb;
+}
+
+.CodeMirror-merge-r-chunk-end {
+    border-bottom: 1px solid #ebffeb;
+}
+
+.CodeMirror-merge-r-connect {
+    fill: #ebffeb;
+    stroke: #ccedcc;
+}
+
+
+/* Old code editor */
+
 .editor-wrapper {
     margin-top: 2rem;
     margin-bottom: 2rem;
