@@ -3,6 +3,8 @@ import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
+import libheaders.OverlayScrollbars
+import org.w3c.dom.Element
 import pages.EasyPage
 import pages.Navbar
 import pages.about.AboutPage
@@ -36,6 +38,7 @@ private val PAGES = listOf(
 
 fun main() {
     consoleEgg()
+    initScrollbar(getBody(), false)
 
     // Weird hack: strings have to be set first here to fetch possible locale from localstorage
     // but then refreshed again after auth because we might get a preference from there
@@ -81,6 +84,7 @@ suspend fun buildStatics() {
     if (!isEmbedded()) {
         Navbar.build()
         Sidenav.build()
+        initScrollbar(getElemById("sidenav"), true)
     } else {
         // Note that appending += to innerHTML would destroy existing event handlers
         // TODO: is there an issue with having sidenav-wrap in main as well here?
@@ -158,6 +162,19 @@ private fun loadContainerQueries() {
     } else {
         debug { "Native container queries supported :)" }
     }
+}
+
+private fun initScrollbar(element: Element, autoHide: Boolean) {
+    OverlayScrollbars.OverlayScrollbars(
+        element,
+        objOf(
+            "scrollbars" to
+                    objOf(
+                        "autoHide" to if (autoHide) "leave" else "never",
+                        "autoHideDelay" to 100,
+                    )
+        )
+    )
 }
 
 private fun consoleEgg() {
