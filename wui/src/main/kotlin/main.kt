@@ -168,6 +168,8 @@ private fun initScrollbar(element: Element, autoHide: Boolean) {
     OverlayScrollbars.OverlayScrollbars(
         element,
         objOf(
+            // use native if they are overlaid already like on mobile
+            "showNativeOverlaidScrollbars" to true,
             "scrollbars" to
                     objOf(
                         "autoHide" to if (autoHide) "leave" else "never",
