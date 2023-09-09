@@ -271,7 +271,8 @@ svg {
     }
 }
 
-.sidenav {
+.sidenav,
+.sidenav > div {
     display: flex;
     flex-direction: column;
 }

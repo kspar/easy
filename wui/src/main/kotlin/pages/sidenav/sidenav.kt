@@ -131,8 +131,8 @@ class SidenavRootComp(
     override fun render(): String = template(
         """
             <ul id="sidenav" class="sidenav sidenav-fixed">
-            $headSectionComp
-            $generalSectionComp
+                $headSectionComp
+                $generalSectionComp
                 <ez-dst id="$courseSectionDstId"></ez-dst>
                 <ez-dst id="$pageSectionDstId"></ez-dst>
                 <ez-dst id="${trailerSectionComp.dstId}" class="trailer"></ez-dst>
