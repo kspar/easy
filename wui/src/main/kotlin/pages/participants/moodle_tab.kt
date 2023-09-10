@@ -1,5 +1,6 @@
 package pages.participants
 
+import Icons
 import components.form.ButtonComp
 import debug
 import kotlinx.coroutines.await
@@ -39,11 +40,11 @@ class ParticipantsMoodleTabComp(
     override fun create() = doInPromise {
         syncStudentsBtn = ButtonComp(
             ButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", Icons.doSync, ::syncStudents,
-            true, "Sünkroniseerin...", parent = this
+            moodleStatus.students_synced, "Sünkroniseerin...", parent = this
         )
         syncGradesBtn = ButtonComp(
             ButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", Icons.doSync, ::syncGrades,
-            true, "Sünkroniseerin...", parent = this
+            moodleStatus.grades_synced, "Sünkroniseerin...", parent = this
         )
     }
 
@@ -126,7 +127,7 @@ class ParticipantsMoodleTabComp(
                     successChecker = { http200 }).await()
                     .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
 
-                val status = when(type) {
+                val status = when (type) {
                     SyncType.STUDENTS -> moodleProps?.sync_students_in_progress
                     SyncType.GRADES -> moodleProps?.sync_grades_in_progress
                 }
