@@ -1097,6 +1097,19 @@ ez-join-course {
 }
 
 
+/** Similarity analysis page **/
+
+ez-similarity-select-exercise {
+    display: flex;
+    margin-top: 2rem;
+}
+
+ez-similarity-select-exercise .input-field {
+    width: 30%;
+    min-width: 25rem;
+}
+
+
 /** Grade table page **/
 
 .grade-table-wrap {
@@ -1593,6 +1606,11 @@ textarea.materialize-textarea {
     background-color: rgba(0, 0, 0, 0.08);
 }
 
+.select-wrapper {
+    /* fix caret position outside of text */
+    padding-right: 3rem;
+}
+
 .select-wrapper .caret {
     fill: #666;
 }
@@ -1604,6 +1622,12 @@ textarea.materialize-textarea {
 .select-wrapper + label {
     /* Font size for fixed labels */
     font-size: 1.2rem;
+}
+
+.select-wrapper input.select-dropdown {
+    /* fix caret position outside of text */
+    padding-right: 3rem;
+    text-overflow: ellipsis;
 }
 
 .select-wrapper input.select-dropdown:focus {
@@ -2085,6 +2109,10 @@ ezc-ctrl-filter[filter="on"] ez-icon-action {
 
 ezc-ctrl-filter[filter="on"] ez-icon > svg {
     color: var(--ez-btn-active-text);
+}
+
+ezc-ctrl-filter .select-wrapper input.select-dropdown {
+    padding: 0;
 }
 
 ezc-ctrl-filter .dropdown-content li.optgroup:not(:first-child) {

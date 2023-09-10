@@ -5,6 +5,7 @@ import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import pages.EasyPage
+import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import queries.createQueryString
 import queries.getCurrentQueryParamValue
@@ -20,18 +21,17 @@ object SimilarityAnalysisPage : EasyPage() {
         get() = getCurrentQueryParamValue("course")!!
 
     override val sidenavSpec: Sidenav.Spec
-        get() = Sidenav.Spec(courseId)
+        get() = Sidenav.Spec(courseId, ActivePage.COURSE_SIMILARITY_ANALYSIS)
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
         getHtml().addClass("wui3")
 
         val courseId = getCurrentQueryParamValue("course")!!
-        val courseExerciseId = getCurrentQueryParamValue("courseExercise")!!
-        val exerciseId = getCurrentQueryParamValue("exercise")!!
+        val exerciseId = getCurrentQueryParamValue("exercise")
 
         doInPromise {
-            SimilarityComp(courseId, courseExerciseId, exerciseId).createAndBuild().await()
+            SimilarityComp(courseId, exerciseId).createAndBuild().await()
         }
     }
 
@@ -40,11 +40,10 @@ object SimilarityAnalysisPage : EasyPage() {
         getHtml().removeClass("wui3")
     }
 
-    fun link(courseId: String? = null, courseExerciseId: String? = null, exerciseId: String? = null) =
+    fun link(courseId: String? = null, exerciseId: String? = null) =
         constructPathLink(emptyMap()) +
                 createQueryString(params = buildMap {
                     if (courseId != null) put("course", courseId)
-                    if (courseExerciseId != null) put("courseExercise", courseExerciseId)
                     if (exerciseId != null) put("exercise", exerciseId)
                 })
 }

@@ -20,6 +20,7 @@ object CourseExercisesTeacherDAO {
     @Serializable
     data class Exercise(
         val id: String,
+        val exercise_id: String,
         val library_title: String,
         val title_alias: String? = null,
         @Serializable(with = EzDateSerializer::class)

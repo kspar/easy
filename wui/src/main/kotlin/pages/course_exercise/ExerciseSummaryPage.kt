@@ -39,7 +39,6 @@ import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.EasyPage
 import pages.Title
-import pages.about.SimilarityAnalysisPage
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp
@@ -321,11 +320,6 @@ object ExerciseSummaryPage : EasyPage() {
                             build(null)
                         }
                     },
-                    Sidenav.Link(
-                        Icons.compareSimilarity,
-                        Str.similarityAnalysis,
-                        SimilarityAnalysisPage.link(courseId, courseExerciseId, exercise.exercise_id)
-                    ),
                     Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id))
                 )
             )

@@ -6,6 +6,7 @@ import cache.BasicCourseInfo
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import kotlinx.dom.removeClass
+import pages.about.SimilarityAnalysisPage
 import pages.course_exercise.ExerciseSummaryPage
 import pages.course_exercises_list.CourseExercisesPage
 import pages.grade_table.GradeTablePage
@@ -34,6 +35,7 @@ class SidenavCourseSectionComp(
     private val exercisesItemId = IdGenerator.nextId()
     private val gradesItemId = IdGenerator.nextId()
     private val participantsItemId = IdGenerator.nextId()
+    private val similarityItemId = IdGenerator.nextId()
 
     override val children
         get() = listOf(updateCourseModal)
@@ -55,6 +57,7 @@ class SidenavCourseSectionComp(
             {{#isTeacherOrAdmin}}
                 <li id="{{gradesId}}"><a href="{{gradesLink}}" class="sidenav-close">{{{gradesIcon}}}{{gradesLabel}}</a></li>
                 <li id="{{participantsId}}"><a href="{{participantsLink}}" class="sidenav-close">{{{participantsIcon}}}{{participantsLabel}}</a></li>
+                <li id="$similarityItemId"><a href="{{similarityLink}}" class="sidenav-close">{{{similarityIcon}}}{{similarityLabel}}</a></li>
                 <li><a id="{{updateCourseLinkId}}" href='#!' class="sidenav-close">{{{updateCourseIcon}}}{{updateCourseLabel}}</a></li>
             {{/isTeacherOrAdmin}}
             {{#studentExercises}}
@@ -71,13 +74,16 @@ class SidenavCourseSectionComp(
         "exercisesLink" to CourseExercisesPage.link(courseId),
         "gradesLink" to GradeTablePage.link(courseId),
         "participantsLink" to ParticipantsPage.link(courseId),
+        "similarityLink" to SimilarityAnalysisPage.link(courseId),
         "exercisesIcon" to Icons.courseExercises,
         "gradesIcon" to Icons.courseGrades,
         "participantsIcon" to Icons.courseParticipants,
+        "similarityIcon" to Icons.compareSimilarity,
         "updateCourseIcon" to Icons.settings,
         "exercisesLabel" to if (activeRole == Role.STUDENT) Str.allExercises else Str.exercises,
         "gradesLabel" to Str.gradesLabel,
         "participantsLabel" to Str.participants,
+        "similarityLabel" to Str.similarityAnalysis,
         "updateCourseLabel" to Str.courseSettings,
         "updateModalDst" to updateCourseModal.dstId,
         "studentExercises" to studentExercises.map {
@@ -112,6 +118,7 @@ class SidenavCourseSectionComp(
         ActivePage.COURSE_EXERCISES to exercisesItemId,
         ActivePage.COURSE_GRADES to gradesItemId,
         ActivePage.COURSE_PARTICIPANTS to participantsItemId,
+        ActivePage.COURSE_SIMILARITY_ANALYSIS to similarityItemId,
     )
 
     override fun postRender() {
