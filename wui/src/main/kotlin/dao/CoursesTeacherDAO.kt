@@ -100,4 +100,25 @@ object CoursesTeacherDAO {
             .parseToOrNull(ExistingLink.serializer()).await()
     }
 
+
+    @Serializable
+    data class Groups(
+        val groups: List<Group>,
+        val self_is_restricted: Boolean,
+    )
+
+    @Serializable
+    data class Group(
+        val id: String,
+        val name: String
+    )
+
+    fun getGroups(courseId: String) = doInPromise {
+        fetchEms(
+            "/courses/${courseId.encodeURIComponent()}/groups", ReqMethod.GET, successChecker = { http200 }
+        ).await()
+            .parseTo(Groups.serializer()).await()
+            .groups.sortedBy { it.name }
+    }
+
 }

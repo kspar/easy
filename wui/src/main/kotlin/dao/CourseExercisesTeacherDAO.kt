@@ -194,9 +194,10 @@ object CourseExercisesTeacherDAO {
         val groups: String?
     )
 
-    fun getLatestSubmissions(courseId: String, courseExerciseId: String) = doInPromise {
+    fun getLatestSubmissions(courseId: String, courseExerciseId: String, groupId: String? = null) = doInPromise {
         debug { "Get latest submissions for course $courseId exercise $courseExerciseId" }
-        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/latest/students",
+        val q = if (groupId != null) createQueryString("group" to groupId) else ""
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/latest/students$q",
             ReqMethod.GET,
             successChecker = { http200 }).await()
             .parseTo(LatestSubmissions.serializer()).await()

@@ -3,8 +3,8 @@ package pages.grade_table
 import Key
 import LocalStore
 import components.form.SelectComp
+import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
@@ -17,18 +17,6 @@ class GradeTableCardComp(
     private val courseTitle: String,
     parent: Component?
 ) : Component(parent) {
-
-    @Serializable
-    data class Groups(
-        val groups: List<Group>,
-        val self_is_restricted: Boolean,
-    )
-
-    @Serializable
-    data class Group(
-        val id: String,
-        val name: String
-    )
 
     private var groupSelectComp: SelectComp? = null
     private lateinit var tableComp: GradeTableTableComp
@@ -44,7 +32,7 @@ class GradeTableCardComp(
             "/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
             errorHandler = ErrorHandlers.noCourseAccessMsg
         ).await()
-            .parseTo(Groups.serializer()).await()
+            .parseTo(CoursesTeacherDAO.Groups.serializer()).await()
             .groups.sortedBy { it.name }
 
         val preselectedGroupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)?.let {
