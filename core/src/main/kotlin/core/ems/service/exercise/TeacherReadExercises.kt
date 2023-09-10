@@ -30,6 +30,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
 
     data class CourseExerciseResp(
         @JsonProperty("id") val id: String,
+        @JsonProperty("exercise_id") val exerciseId: String,
         @JsonProperty("library_title") val libraryTitle: String,
         @JsonProperty("title_alias") val titleAlias: String?,
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -82,6 +83,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                 CourseExercise.softDeadline,
                 CourseExercise.hardDeadline,
                 CourseExercise.studentVisibleFrom,
+                Exercise.id,
                 ExerciseVer.graderType,
                 ExerciseVer.title,
                 CourseExercise.titleAlias
@@ -112,6 +114,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
 
                 CourseExerciseResp(
                     ex[CourseExercise.id].value.toString(),
+                    ex[Exercise.id].value.toString(),
                     ex[ExerciseVer.title],
                     ex[CourseExercise.titleAlias],
                     ex[CourseExercise.studentVisibleFrom],
