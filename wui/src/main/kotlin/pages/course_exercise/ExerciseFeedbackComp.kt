@@ -187,20 +187,21 @@ class ExerciseFeedbackComp(
                     "error" to it.exception_message
                 ) else null,
 
-                "checks" to it.checks.map {
-                    mapOf(
-                        "pass" to (it.status == V3Status.PASS),
-                        "fail" to (it.status == V3Status.FAIL),
-                        "status" to it.status.mapToIcon(),
-                        "feedback" to it.feedback,
-                    )
-                }.ifEmpty {
+                "checks" to if (it.checks.isEmpty() && it.exception_message == null)
                     mapOf(
                         "pass" to true,
                         "status" to V3Status.PASS.mapToIcon(),
                         "feedback" to Str.autogradeNoChecksInTest,
                     )
-                },
+                else
+                    it.checks.map {
+                        mapOf(
+                            "pass" to (it.status == V3Status.PASS),
+                            "fail" to (it.status == V3Status.FAIL),
+                            "status" to it.status.mapToIcon(),
+                            "feedback" to it.feedback,
+                        )
+                    },
 
                 "files" to if (it.created_files.isNotEmpty()) mapOf(
                     "msg" to Str.autogradeCreatedFiles,
