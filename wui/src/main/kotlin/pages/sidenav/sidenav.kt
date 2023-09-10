@@ -137,7 +137,7 @@ class SidenavRootComp(
                 <ez-dst id="$pageSectionDstId"></ez-dst>
                 <ez-dst id="${trailerSectionComp.dstId}" class="trailer"></ez-dst>
                 <ez-sidenav-footer>
-                    <a href=${AboutPage.link()}>{{about}}</a> · <a href='${TermsProxyPage.link()}' target="_blank">{{tos}}</a>
+                    <a href=${AboutPage.link()} class='sidenav-close'>{{about}}</a> · <a href='${TermsProxyPage.link()}' target="_blank" class='sidenav-close'>{{tos}}</a>
                 </ez-sidenav-footer>
             </ul>
         """.trimIndent(),
