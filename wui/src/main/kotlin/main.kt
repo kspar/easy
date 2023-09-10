@@ -3,7 +3,6 @@ import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
-import libheaders.OverlayScrollbars
 import org.w3c.dom.Element
 import pages.EasyPage
 import pages.Navbar
@@ -165,18 +164,18 @@ private fun loadContainerQueries() {
 }
 
 private fun initScrollbar(element: Element, autoHide: Boolean) {
-    OverlayScrollbars.OverlayScrollbars(
-        element,
-        objOf(
-            // use native if they are overlaid already like on mobile
-            "showNativeOverlaidScrollbars" to true,
-            "scrollbars" to
-                    objOf(
-                        "autoHide" to if (autoHide) "leave" else "never",
-                        "autoHideDelay" to 100,
-                    )
-        )
-    )
+//    OverlayScrollbars.OverlayScrollbars(
+//        element,
+//        objOf(
+//             use native if they are overlaid already like on mobile
+//            "showNativeOverlaidScrollbars" to true,
+//            "scrollbars" to
+//                    objOf(
+//                        "autoHide" to if (autoHide) "leave" else "never",
+//                        "autoHideDelay" to 100,
+//                    )
+//        )
+//    )
 }
 
 private fun consoleEgg() {
