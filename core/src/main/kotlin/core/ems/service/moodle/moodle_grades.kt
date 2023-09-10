@@ -55,14 +55,14 @@ class MoodleGradesSyncService {
     fun syncSingleGradeToMoodle(submissionId: Long) {
         transaction {
             (Submission innerJoin CourseExercise innerJoin Course)
-                    .slice(Course.id, CourseExercise.id)
+                    .slice(Course.id, CourseExercise.id, Course.moodleShortName, Course.moodleSyncGrades)
                     .select { Submission.id eq submissionId }
                     .single()
                     .apply {
-                        val shortname = selectCourseShortName(this[Course.id].value)
-                        // TODO: respect Course.syncGrades
+                        val shortname = this[Course.moodleShortName]
+                        val isGradesSynced = this[Course.moodleSyncGrades]
 
-                        if (!shortname.isNullOrBlank()) {
+                        if (!shortname.isNullOrBlank() && isGradesSynced) {
                             val singleExercise = selectSingleCourseExerciseSubmission(
                                     this[Course.id].value,
                                     this[CourseExercise.id].value,

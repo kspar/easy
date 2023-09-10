@@ -29,7 +29,7 @@ class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyn
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId, true) }
-        assertCourseIsMoodleLinked(courseId)
+        assertCourseIsMoodleLinked(courseId, requireGradesSynced = true)
 
         return try {
             moodleGradesSyncService.syncCourseGradesToMoodle(courseId)
