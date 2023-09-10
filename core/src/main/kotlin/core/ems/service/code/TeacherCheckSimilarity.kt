@@ -99,7 +99,7 @@ class TeacherCheckSimilarityController {
             courses.forEach { teacherOnCourse(it, true) }
         }
 
-        val submissions = body.submissions?.map { it.id.idToLongOrInvalidReq() } ?: emptyList()
+        val submissions = body.submissions?.map { it.id.idToLongOrInvalidReq() }
 
         val submissionResp: List<RespSubmission> = selectSubmissions(exerciseId, courses, submissions)
         log.info { "Analyzing source code similarity for ${submissionResp.size} submissions." }
@@ -117,7 +117,7 @@ class TeacherCheckSimilarityController {
 private fun selectSubmissions(
     exerciseId: Long,
     courses: List<Long>,
-    submissions: List<Long>
+    submissions: List<Long>?
 ): List<TeacherCheckSimilarityController.RespSubmission> {
     return transaction {
 
@@ -135,7 +135,7 @@ private fun selectSubmissions(
                         (CourseExercise.course inList courses)
             }
 
-        if (submissions.isNotEmpty()) {
+        if (submissions != null) {
             query.andWhere {
                 Submission.id inList submissions
             }
