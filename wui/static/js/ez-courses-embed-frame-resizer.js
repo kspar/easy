@@ -1,14 +1,13 @@
-window.addEventListener("message", function (m) {
+window.addEventListener("message", m => {
     try {
-        if (JSON.parse(m.data).type !== "ez-frame-resize") {
-            console.log('Ez frame resizer - got message with unknown type ' + update.type)
+        const update = JSON.parse(m.data)
+        if (update.type !== "ez-frame-resize") {
+            console.log("Ez frame resizer - got message with unknown type " + update.type)
             return
         }
 
-        document.querySelector("object[data=\"" + JSON.parse(m.data).url + "\"]")
-            .setAttribute("height", JSON.parse(m.data).height + "px")
+        document.querySelector("object[data=\"" + update.url + "\"]")
+            .setAttribute("height", update.height + "px")
 
-    } catch (error) {
-        console.log('Ez frame resizer - got non-JSON message')
-    }
+    } catch (error) {}
 });
