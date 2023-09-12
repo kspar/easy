@@ -13,7 +13,6 @@ import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import libheaders.ResizeObserver
-import org.intellij.lang.annotations.Language
 import pages.course_exercise.ExerciseFeedbackComp
 import pages.exercise_in_library.ExercisePage
 import rip.kspar.ezspa.Component
@@ -107,26 +106,6 @@ class EmbedAnonAutoassessRootComp(
 
             observer.observe(getBody())
         }
-
-        @Language("javascript")
-        val a =
-            """
-                window.addEventListener("message",function(m){
-                try {
-                    const update = JSON.parse(m.data)
-                    if (update.type !== 'ez-frame-resize') {
-                        console.log('Ez frame resizer - got message with unknown type ' + update.type)
-                        return
-                    }
-                    
-                    document.querySelector('object[data="'+ update.url + '"]')
-                        .setAttribute('height', update.height + 'px')
-                
-                } catch (error) {
-                    console.log('Ez frame resizer - got non-JSON message')
-                }
-                });
-        """.trimIndent()
     }
 
     override fun renderLoading() = "Laen ülesannet..."
