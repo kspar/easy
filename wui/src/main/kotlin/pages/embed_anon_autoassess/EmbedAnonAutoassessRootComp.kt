@@ -42,8 +42,6 @@ class EmbedAnonAutoassessRootComp(
     override fun create() = doInPromise {
         exercise = AnonymousExerciseDAO.getExerciseDetails(exerciseId).await()
 
-        debug { exercise.anonymous_autoassess_template }
-
         val file =
             CodeEditorComp.File("lahendus.py", if (showTemplate) exercise.anonymous_autoassess_template else null)
         editor = CodeEditorComp(
