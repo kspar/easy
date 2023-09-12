@@ -123,6 +123,7 @@ class ExerciseFeedbackComp(
         autoFeedback = null
         teacherFeedback = null
         failed = false
+        rebuild()
     }
 
     private fun parseAutofeedback(): OkV3? =

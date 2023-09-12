@@ -94,7 +94,6 @@ class TestingTabComp(
             editor.setFileEditable(editorTabName, false)
 
             feedback.clearAll()
-            feedback.rebuild()
             autogradeLoader.isActive = true
             autogradeLoader.rebuild()
 

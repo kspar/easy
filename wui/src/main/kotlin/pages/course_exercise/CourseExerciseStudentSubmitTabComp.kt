@@ -107,7 +107,7 @@ class CourseExerciseStudentSubmitTabComp(
                     if (!isAutogradeInProgressInitial)
                         submit(editor.getActiveTabContent()!!)
                     isAutogradeInProgressInitial = false
-                    clearFeedback()
+                    feedback.clearAll()
                     if (graderType == ExerciseDAO.GraderType.AUTO)
                         awaitAutograde()
                     onNewSubmission()
@@ -231,11 +231,6 @@ class CourseExerciseStudentSubmitTabComp(
 
         // Repeating this status to mitigate the edit-submit race condition
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
-    }
-
-    private fun clearFeedback() {
-        feedback.clearAll()
-        feedback.rebuild()
     }
 
     private fun setEditorEditable(editable: Boolean) {
