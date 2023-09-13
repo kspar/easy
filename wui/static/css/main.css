@@ -1394,6 +1394,16 @@ a i.pre-link-icon {
     margin-right: .4rem;
 }
 
+ez-link a {
+    display: flex;
+    align-items: center;
+}
+
+ez-link ez-icon {
+    display: inline-flex;
+    margin-right: .8rem;
+}
+
 
 /** Notes **/
 
