@@ -64,8 +64,9 @@ class ExerciseFeedbackComp(
     override fun render(): String {
         val parsedV3 = parseAutofeedback()
         val autoFeedbackV3Html = parsedV3?.renderV3Html()
-        return template(
-            """
+        return if (validGrade == null && autoFeedback == null && teacherFeedback == null && !failed) "" else
+            template(
+                """
                 <ez-feedback>
                     {{#grade}}
                         <ez-grade>{{label}}: <ez-grade-no class="grade-number">{{points}}</ez-grade-no>/100 {{{icon}}}</ez-grade>
@@ -88,28 +89,28 @@ class ExerciseFeedbackComp(
                     {{/hasAutoFeedback}}
                 </ez-feedback>
             """.trimIndent(),
-            "grade" to validGrade?.let {
-                mapOf(
-                    "label" to Str.gradeLabel,
-                    "points" to it.grade.toString(),
-                    "icon" to it.grader_type.icon(),
-                )
-            },
-            "hasAutoFeedback" to (autoFeedback != null || failed),
-            "autoTitle" to Str.autoAssessmentLabel,
-            "failed" to failed,
-            "failMsg" to Str.autogradeFailedMsg,
-            "isRaw" to (autoFeedbackV3Html == null),
-            "isV3" to (autoFeedbackV3Html != null),
-            "rawFeedback" to autoFeedback,
-            "okV3Html" to autoFeedbackV3Html,
-            "teacherFeedback" to teacherFeedback?.let {
-                mapOf(
-                    "title" to Str.teacherAssessmentLabel,
-                    "feedback" to it,
-                )
-            },
-        )
+                "grade" to validGrade?.let {
+                    mapOf(
+                        "label" to Str.gradeLabel,
+                        "points" to it.grade.toString(),
+                        "icon" to it.grader_type.icon(),
+                    )
+                },
+                "hasAutoFeedback" to (autoFeedback != null || failed),
+                "autoTitle" to Str.autoAssessmentLabel,
+                "failed" to failed,
+                "failMsg" to Str.autogradeFailedMsg,
+                "isRaw" to (autoFeedbackV3Html == null),
+                "isV3" to (autoFeedbackV3Html != null),
+                "rawFeedback" to autoFeedback,
+                "okV3Html" to autoFeedbackV3Html,
+                "teacherFeedback" to teacherFeedback?.let {
+                    mapOf(
+                        "title" to Str.teacherAssessmentLabel,
+                        "feedback" to it,
+                    )
+                },
+            )
     }
 
     override fun postRender() {
