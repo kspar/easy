@@ -5,6 +5,8 @@ import PageName
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import pages.EasyPage
+import pages.exercise_library.createPathChainSuffix
+import queries.createQueryString
 import queries.getCurrentQueryParamValue
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getHtml
@@ -12,7 +14,7 @@ import rip.kspar.ezspa.getHtml
 object EmbedAnonAutoassessPage : EasyPage() {
     override val pageName = PageName.EMBED_ANON_AUTOASSESS
 
-    override val pathSchema = "/embed/exercises/{exerciseId}/summary"
+    override val pathSchema = "/embed/exercises/{exerciseId}/**"
 
     override val pageAuth = PageAuth.NONE
     override val isEmbedded = true
@@ -32,15 +34,26 @@ object EmbedAnonAutoassessPage : EasyPage() {
         }
 
         val showTitle = getCurrentQueryParamValue("title") != null
+        val submit = getCurrentQueryParamValue("submit") != null
         val showTemplate = getCurrentQueryParamValue("template") != null
-        val dynamicResize = getCurrentQueryParamValue("resize-handler") != null
+        val courseId = getCurrentQueryParamValue("course")
+        val ceExId = getCurrentQueryParamValue("exercise")
+        val titleAlias = getCurrentQueryParamValue("title-alias")
+        val dynamicResize = getCurrentQueryParamValue("dynamic-resize") != null
+
 
         doInPromise {
             rootComp = EmbedAnonAutoassessRootComp(
                 exerciseId,
-                showTitle,
-                showTemplate,
-                dynamicResize,
+                showTitle = showTitle,
+                titleAlias = titleAlias,
+                showTemplate = showTemplate,
+                dynamicResize = dynamicResize,
+                showSubmit = submit,
+                courseExerciseLink = if (courseId != null && ceExId != null) EmbedAnonAutoassessRootComp.CourseExercise(
+                    courseId,
+                    ceExId
+                ) else null,
                 CONTENT_CONTAINER_ID
             ).also {
                 it.createAndBuild().await()
@@ -52,4 +65,28 @@ object EmbedAnonAutoassessPage : EasyPage() {
         super.destruct()
         rootComp?.destroy()
     }
+
+    fun link(
+        exerciseId: String, showTitle: Boolean, showSubmit: Boolean, showTemplate: Boolean, dynamicResize: Boolean,
+        titleAlias: String?, linkCourseId: String?, linkCourseExerciseId: String?, titleForPath: String?,
+    ) = constructPathLink(mapOf("exerciseId" to exerciseId)) +
+            createPathChainSuffix(if (titleForPath != null) listOf(titleForPath) else emptyList()) +
+            createQueryString(
+                params = buildMap {
+                    if (showTitle)
+                        set("title", null)
+                    if (showSubmit)
+                        set("submit", null)
+                    if (showTemplate)
+                        set("template", null)
+                    if (dynamicResize)
+                        set("dynamic-resize", null)
+                    if (titleAlias != null)
+                        set("title-alias", titleAlias)
+                    if (linkCourseId != null)
+                        set("course", linkCourseId)
+                    if (linkCourseExerciseId != null)
+                        set("exercise", linkCourseExerciseId)
+                }
+            )
 }

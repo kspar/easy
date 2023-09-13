@@ -2,7 +2,6 @@ package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tsl.common.model.*
 
 
 @Serializable
@@ -13,7 +12,7 @@ data class ProgramExecutionTest(
     val inputFiles: List<FileData> = emptyList(),
     val genericChecks: List<GenericCheck> = emptyList(),
     val outputFileChecks: List<OutputFileCheck> = emptyList(),
-    val exceptionCheck: ExceptionCheck? = null,
+    var exceptionCheck: ExceptionCheck? = null,
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programmi käivituse test"

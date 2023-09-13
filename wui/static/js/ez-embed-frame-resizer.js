@@ -6,7 +6,7 @@ window.addEventListener("message", m => {
             return
         }
 
-        document.querySelector("object[data=\"" + update.url + "\"]")
+        document.querySelector("iframe[src=\"" + update.url + "\"]")
             .setAttribute("height", update.height + "px")
 
     } catch (error) {}

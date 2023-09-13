@@ -11,6 +11,7 @@ import kotlin.js.Date
 
 val JsonUtil = Json {
     ignoreUnknownKeys = true
+    encodeDefaults = true
 }
 
 

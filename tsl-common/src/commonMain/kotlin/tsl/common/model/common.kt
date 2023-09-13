@@ -93,7 +93,7 @@ data class FieldData(
 // TODO: rename to DataCheck or ValueCheck?
 @Serializable
 data class GenericCheck(
-    val id: Long,
+    var id: Long,
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>,
