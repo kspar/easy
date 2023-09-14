@@ -2,7 +2,6 @@ package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tsl.common.model.*
 
 
 @Serializable
@@ -15,6 +14,8 @@ data class ClassImportsModuleTest(
     override fun getDefaultName(): String {
         return "Klass impordib mooduli"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 
@@ -28,6 +29,8 @@ data class ClassDefinesFunctionTest(
     override fun getDefaultName(): String {
         return "Klass defineerib funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 
@@ -41,6 +44,8 @@ data class ClassCallsClassTest(
     override fun getDefaultName(): String {
         return "Klass kutsub välja teise klassi"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -54,6 +59,8 @@ data class ClassFunctionCallsFunctionTest(
     override fun getDefaultName(): String {
         return "Klassi funktsioon kutsub välja funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -67,4 +74,6 @@ data class ClassInstanceTest(
     override fun getDefaultName(): String {
         return "Klassi isendi loomise test"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }

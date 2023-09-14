@@ -5,6 +5,7 @@ import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 import tsl.common.model.PlaceholderTest
 import tsl.common.model.Test
 
@@ -53,6 +54,13 @@ class TSLTestsListComp(
     fun isValid() = testComps.none { !it.isValid() }
 
 
+    private suspend fun copyTest(test: Test, title: String) = changeTests {
+        val testCopy = test.copyTest(IdGenerator.nextLongId())
+        testCopy.name = title + " " + Str.copySuffix
+        val newIndex = it.indexOfFirst { it.id == test.id } + 1
+        it.add(newIndex, testCopy)
+    }
+
     private suspend fun removeTest(deletedTest: Test) = changeTests {
         it.remove(deletedTest)
     }
@@ -90,7 +98,17 @@ class TSLTestsListComp(
     }
 
     private fun createTestComp(idx: Int, testModel: Test) =
-        TSLTestComp(idx, testModel, onUpdate, onValidChanged, ::removeTest, ::restoreTest, ::moveTest, parent = this)
+        TSLTestComp(
+            idx,
+            testModel,
+            onUpdate,
+            onValidChanged,
+            ::copyTest,
+            ::removeTest,
+            ::restoreTest,
+            ::moveTest,
+            parent = this
+        )
 
     private suspend fun changeTests(change: (tests: MutableList<Test>) -> Unit) {
         updateAndGetTests()

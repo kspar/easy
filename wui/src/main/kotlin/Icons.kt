@@ -67,5 +67,6 @@ object Icons {
     const val spinner = "<ez-spinner class=\"preloader-wrapper active\"><div class=\"spinner-layer\"><div class=\"circle-clipper left\"><div class=\"circle\"></div></div><div class=\"gap-patch\"><div class=\"circle\"></div></div><div class=\"circle-clipper right\"><div class=\"circle\"></div></div></div></ez-spinner>"
     const val lahendus = "<ez-icon><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M11 0l6 4.8V0zm6 4.8V7 4.8zM7 0v10.1h10V7L8.4 0zm6.9 13.9h10V24H14zM0 13.9h10.1V24H.1z\"></path></svg></ez-icon>"
     const val compareSimilarity = "<ez-icon><svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 -960 960 960\" width=\"24\"><path d=\"m320-160-56-57 103-103H80v-80h287L264-503l56-57 200 200-200 200Zm320-240L440-600l200-200 56 57-103 103h287v80H593l103 103-56 57Z\"/></svg></ez-icon>"
+    const val duplicateUnf = "<ez-icon><svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 -960 960 960\" width=\"24\"><path d=\"M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z\"/></svg></ez-icon>"
 //    const val  = "<ez-icon></ez-icon>"
 }

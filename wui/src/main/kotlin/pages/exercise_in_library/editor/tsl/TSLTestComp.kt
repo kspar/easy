@@ -21,11 +21,14 @@ class TSLTestComp(
     private val initialModel: Test,
     private val onUpdate: () -> Unit,
     private val onValidChanged: () -> Unit,
+    private val onCopy: suspend (Test, String) -> Unit,
     private val onDelete: suspend (Test) -> Unit,
     private val onRestore: suspend (Test, Int, Boolean) -> Unit,
     private val onReorder: suspend (Test) -> Unit,
     parent: Component
 ) : Component(parent) {
+
+    // TODO: feedback message fields shorter, prefix icons (pass/fail) and maybe show help messages only on focus?
 
     private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
@@ -52,6 +55,9 @@ class TSLTestComp(
     }
 
     private val testActions = listOf(
+        TestAction(Str.doDuplicate, Icons.duplicateUnf) {
+            onCopy(getTestModel(), activeTitle)
+        },
         TestAction(Str.doMove, Icons.reorder) {
             onReorder(getTestModel())
         },

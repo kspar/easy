@@ -53,6 +53,8 @@ sealed class Test : TSLModel {
     //return_value
     //fun_arguments
     //fun_param_count
+
+    abstract fun copyTest(newId: Long): Test
 }
 
 @Serializable
@@ -61,6 +63,7 @@ data class PlaceholderTest(
     override val id: Long,
 ) : Test() {
     override fun getDefaultName() = "Uus test"
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 enum class CheckType {

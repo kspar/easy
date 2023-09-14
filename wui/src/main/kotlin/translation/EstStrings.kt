@@ -36,6 +36,7 @@ sealed class TranslatableStrings {
     abstract val deleted: String
     abstract val doRestore: String
     abstract val doChange: String
+    abstract val doDuplicate: String
     abstract val doAutoAssess: String
     abstract val autoAssessing: String
     abstract val tryAgain: String
@@ -175,6 +176,7 @@ sealed class TranslatableStrings {
 
     // Exercise page
     abstract val testType: String
+    abstract val copySuffix: String
 
     // Similarity page
     abstract val exerciseTitle: String
@@ -237,6 +239,7 @@ object EstStrings : TranslatableStrings() {
     override val deleted = "Kustutatud"
     override val doRestore = "Taasta"
     override val doChange = "Muuda"
+    override val doDuplicate = "Tee koopia"
     override val assessmentAddedMsg = "Hinnang lisatud"
     override val oldSubmissionNote = "See on vana esitus."
     override val toLatestSubmissionLink = "Vaata viimast esitust."
@@ -341,6 +344,7 @@ ole hea ja proovi hiljem uuesti.
     override val permissionPRAW = "Muutja"
     override val permissionPRAWM = "Moderaator"
     override val testType = "Testi tüüp"
+    override val copySuffix = "(koopia)"
     override val exerciseTitle = "Ülesanne"
     override val findSimilarities = "Leia sarnasused"
     override val searching = "Otsin..."

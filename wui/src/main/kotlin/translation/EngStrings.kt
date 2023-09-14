@@ -34,6 +34,7 @@ object EngStrings : TranslatableStrings() {
     override val deleted = "Deleted"
     override val doRestore = "Restore"
     override val doChange = "Change"
+    override val doDuplicate = "Copy"
 
     override val permissionP = "Passthrough"
     override val permissionPR = "Viewer"
@@ -144,6 +145,7 @@ of the issue, please try again later.
     override val autogradeNoChecksInTest = "There weren't any checks to run. I guess that means we're fine?"
 
     override val testType = "Test type"
+    override val copySuffix = "(copy)"
     override val exerciseTitle = "Exercise"
     override val findSimilarities = "Find similarities"
     override val searching = "Searching..."
