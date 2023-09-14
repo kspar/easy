@@ -14,6 +14,7 @@ import org.w3c.dom.events.Event
 import rip.kspar.ezspa.*
 import template
 import tmRender
+import translation.Str
 import kotlin.js.Promise
 
 class EzCollComp<P>(
@@ -327,12 +328,12 @@ class EzCollComp<P>(
             "selectActions" to massActions.map { mapOf("actionHtml" to "${it.iconHtml} ${it.text}", "id" to it.id) },
             "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
             "isEmpty" to items.isEmpty(),
-            "applyLabel" to "Rakenda...",
+            "applyLabel" to Str.ezcollApply,
             "applyExpandIcon" to Icons.dropdownBtnExpand,
             "applyShortIcon" to Icons.dotsHorizontal,
-            "filterLabel" to "Filtreeri",
-            "orderLabel" to "Järjesta",
-            "removeFiltersLabel" to "Eemalda filtrid",
+            "filterLabel" to Str.ezcollDoFilter,
+            "orderLabel" to Str.ezcollDoSort,
+            "removeFiltersLabel" to Str.ezcollRemoveFilters,
             "filterGroups" to filterGroups.map {
                 mapOf(
                     "groupLabel" to it.groupLabel,
@@ -353,11 +354,11 @@ class EzCollComp<P>(
             },
             "emptyPlaceholder" to tmRender(
                 "t-s-missing-content-wandering-eyes",
-                "text" to "Siin pole veel midagi näidata."
+                "text" to Str.ezcollEmpty,
             ),
             "noMatchingItemsPlaceholder" to tmRender(
                 "t-s-missing-content-wandering-eyes",
-                "text" to "Valitud filtritele ei vasta ükski rida."
+                "text" to Str.ezcollNoMatchingItems
             ),
         )
     }
@@ -529,7 +530,7 @@ class EzCollComp<P>(
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").clear()
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent =
                 "$visibleItemsCount / $totalItemsCount"
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = "kuvatud"
+            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = Str.ezcollShown
         } else {
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "N ="
             getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
@@ -632,7 +633,7 @@ class EzCollComp<P>(
         if (checkedItems.isEmpty())
             selectedCountEl.textContent = ""
         else
-            selectedCountEl.textContent = "${checkedItems.size} valitud"
+            selectedCountEl.textContent = "${checkedItems.size} ${Str.ezcollSelected}"
     }
 
     private fun updateAllCheckbox() {

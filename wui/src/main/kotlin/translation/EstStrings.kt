@@ -42,6 +42,15 @@ sealed class TranslatableStrings {
     abstract val accountGroup: String
     abstract val download: String
 
+    abstract val ezcollEmpty: String
+    abstract val ezcollNoMatchingItems: String
+    abstract val ezcollApply: String
+    abstract val ezcollDoFilter: String
+    abstract val ezcollDoSort: String
+    abstract val ezcollRemoveFilters: String
+    abstract val ezcollShown: String
+    abstract val ezcollSelected: String
+
     fun translateBoolean(bool: Boolean) = if (bool) yes else no
     fun translateRole(role: Role) = when (role) {
         Role.STUDENT -> roleStudent
@@ -292,6 +301,14 @@ object EstStrings : TranslatableStrings() {
     override val tryAgain = "Proovi uuesti"
     override val accountGroup = "Rühm"
     override val download = "Lae alla"
+    override val ezcollEmpty = "Siin pole veel midagi näidata"
+    override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
+    override val ezcollApply = "Rakenda..."
+    override val ezcollDoFilter = "Filtreeri..."
+    override val ezcollDoSort = "Järjesta..."
+    override val ezcollRemoveFilters = "Eemalda filtrid"
+    override val ezcollShown = "kuvatud"
+    override val ezcollSelected = "valitud"
     override val addAssessmentLink = "► Lisa hinnang"
     override val closeToggleLink = "▼ Sulge"
     override val graderTypeAuto = "automaatne"
