@@ -141,6 +141,7 @@ data class ExceptionCheck(
 
 @Serializable
 data class ReturnValueCheck(
+    val returnValue: String,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String

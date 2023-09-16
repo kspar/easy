@@ -51,6 +51,22 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 } else {
                     PyList(test.arguments.map { PyStr(it, false) })
                 }
+                val returnValueChecks: PyList = if (test.returnValueCheck == null) {
+                    PyList(listOf())
+                } else {
+                    PyList(
+                        listOf(
+                            PyDict(
+                                mapOf(
+                                    "'expected_value'" to PyStr(test.returnValueCheck?.returnValue, false),
+                                    "'before_message'" to PyStr(test.returnValueCheck?.beforeMessage),
+                                    "'passed_message'" to PyStr(test.returnValueCheck?.passedMessage),
+                                    "'failed_message'" to PyStr(test.returnValueCheck?.failedMessage)
+                                )
+                            )
+                        )
+                    )
+                }
                 PyExecuteTest(
                     test,
                     "function_execution_test",
@@ -62,18 +78,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "arguments" to arguments,
                         "standard_input_data" to standardInputData,
                         "input_files" to inputFiles,
-                        "return_value_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyStr(test.returnValue, false),
-                                        "'before_message'" to PyStr(test.returnValueCheck?.beforeMessage),
-                                        "'passed_message'" to PyStr(test.returnValueCheck?.passedMessage),
-                                        "'failed_message'" to PyStr(test.returnValueCheck?.failedMessage)
-                                    )
-                                )
-                            )
-                        ),
+                        "return_value_checks" to returnValueChecks,
                         "param_value_checks" to PyList(
                             test.paramValueChecks.map {
                                 PyDict(

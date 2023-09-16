@@ -268,7 +268,11 @@ tests:
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    returnValue: 3
+    returnValueCheck:
+      returnValue: 3
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     genericChecks:
       - checkType: ANY_OF_THESE
         id: 654
@@ -295,7 +299,11 @@ tests:
     functionName: võta_hind
     functionType: METHOD
     createObject: return Raamat("Harry Potter", 10.7)
-    returnValue: 10.7
+    returnValueCheck:
+      returnValue: 10.7
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     name: Funktsiooni käivituse test (isendimeetod).
 
   - type: function_execution_test
@@ -303,7 +311,11 @@ tests:
     functionName: loe
     functionType: METHOD
     createObject: return Lugemik
-    returnValue: True
+    returnValueCheck:
+      returnValue: True
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     name: Funktsiooni käivituse test (klassimeetod).
 
   - type: function_execution_test
@@ -320,7 +332,6 @@ tests:
         beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
         passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
         failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
-    returnValue: True
     name: Funktsiooni käivituse test (klassimeetod).
 
   - type: class_imports_module_test
