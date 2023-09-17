@@ -21,7 +21,10 @@ data class FunctionExecutionTest(
     val genericChecks: List<GenericCheck> = emptyList(),
     val returnValueCheck: ReturnValueCheck? = null,
     val paramValueChecks: List<ParamValueCheck> = emptyList(),
-    val outputFileChecks: List<OutputFileCheck> = emptyList()
+    val outputFileChecks: List<OutputFileCheck> = emptyList(),
+    val outOfInputsErrorMsg: String = "Programm küsis rohkem sisendeid kui testil oli anda",
+    val functionNotDefinedErrorMsg: String = "Funktsioon ei ole defineeritud",
+    val tooManyArgumentsProvidedErrorMsg: String = "Funktsioon võtab sisendiks vähem argumente kui testil oli ette antud"
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsiooni käivitus"

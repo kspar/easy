@@ -92,8 +92,11 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                                 )
                             }
                         ),
-                        "contains_checks" to PyGenericChecks(test.genericChecks),
-                        "output_file_checks" to PyOutputTests(test.outputFileChecks)
+                        "standard_output_checks" to PyGenericChecks(test.genericChecks),
+                        "output_file_checks" to PyOutputTests(test.outputFileChecks),
+                        "out_of_inputs_error_msg" to PyStr(test.outOfInputsErrorMsg),
+                        "function_not_defined_error_msg" to PyStr(test.functionNotDefinedErrorMsg),
+                        "too_many_arguments_provided_error_msg" to PyStr(test.tooManyArgumentsProvidedErrorMsg)
                     )
                 ).generatePyString()
             }
