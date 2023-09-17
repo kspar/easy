@@ -2779,10 +2779,6 @@ ez-tsl-add-test button {
     margin-top: 3rem;
 }
 
-ez-tsl-stdin-textarea textarea.materialize-textarea {
-    min-height: 6rem;
-}
-
 ez-tsl-compiler-feedback {
     display: flex;
     margin-top: 2rem;
@@ -2804,11 +2800,15 @@ ez-tsl-compiler-feedback ez-icon > svg {
 
 ez-tsl-inline-field {
     display: inline-flex;
-    margin: 0 .5rem;
+    margin: 0 1rem;
 }
 
 ez-tsl-inline-field .input-field {
     margin-bottom: 0;
+}
+
+ez-tsl-field-text-value {
+    display: block;
 }
 
 ez-tsl-field-text-value .input-field {
@@ -2818,6 +2818,14 @@ ez-tsl-field-text-value .input-field {
 ez-tsl-add-button {
     display: flex;
     margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+ez-tsl-section-title {
+    display: flex;
+    font-size: 1.1em;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
 }
 
 

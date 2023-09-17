@@ -31,7 +31,7 @@ class TSLDataChecksSection(
     private lateinit var sections: List<CheckSection>
 
     private val addCheckBtn =
-        ButtonComp(ButtonComp.Type.FLAT, "Lisa kontroll", Icons.add, ::addCheck, parent = this)
+        ButtonComp(ButtonComp.Type.FLAT, "Väljundi kontroll", Icons.add, ::addCheck, parent = this)
 
     override val children: List<Component>
         get() = listOf(addCheckBtn) + sections.flatMap {
@@ -172,8 +172,8 @@ class TSLDataChecksSection(
                     <ez-dst id='{{downBtnDst}}'></ez-dst>
                     <ez-dst id='{{deleteBtnDst}}'></ez-dst>
                 </legend>
-                    Väljundis <ez-tsl-inline-field id='{{typeDst}}'></ez-tsl-inline-field> 
-                    järgmistest <ez-tsl-inline-field id='{{comparisonDst}}'></ez-tsl-inline-field>: 
+                    Väljundis <ez-tsl-inline-field id='{{typeDst}}' style='width: 20rem;'></ez-tsl-inline-field> 
+                    järgmistest <ez-tsl-inline-field id='{{comparisonDst}}' style='width: 13rem;'></ez-tsl-inline-field>: 
                     <ez-tsl-field-text-value id='{{valueDst}}'></ez-tsl-field-text-value>
                     <ez-dst id='{{okMsgDst}}'></ez-dst>
                     <ez-dst id='{{nokMsgDst}}'></ez-dst>
@@ -248,7 +248,7 @@ class TSLDataChecksSection(
             it.downBtn.show(nowEditable)
             it.deleteBtn.show(nowEditable)
         }
-        addCheckBtn.setEnabled(nowEditable)
+        addCheckBtn.show(nowEditable)
     }
 
     fun isValid() = sections.all {

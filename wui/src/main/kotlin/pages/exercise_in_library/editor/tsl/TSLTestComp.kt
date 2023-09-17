@@ -262,8 +262,8 @@ class TSLTestComp(
 
     enum class TestType(val optionName: String, val defaultTestTitle: String) {
         PLACEHOLDER("-", "Uus test"),
-        PROGRAM_EXECUTION("Programmi väljund", "Programmi väljundi test"),
-//        FUNCTION_EXECUTION("Funktsiooni tagastus", "Funktsiooni tagastuse test"),
+        PROGRAM_EXECUTION("Programmi käivitus", "Programmi käivituse test"),
+//        FUNCTION_EXECUTION("Funktsiooni väljakutse", "Funktsiooni väljakutse test"),
 
         NOT_IMPLEMENTED("Ära puutu!", "Kasutajaliideses implementeerimata test")
         ;

@@ -3,8 +3,9 @@ package pages.exercise_in_library.editor.tsl.sections
 import Icons
 import components.form.ButtonComp
 import components.form.TextFieldComp
-import hide
+import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.doInPromise
 import show
 import template
 
@@ -15,56 +16,61 @@ class TSLStdInSection(
     parent: Component,
 ) : Component(parent) {
 
-    private val showBtn =
-        ButtonComp(ButtonComp.Type.FLAT, "Lisa kasutaja sisend", Icons.add, ::showSection, parent = this)
+    private var showField: Boolean = inputs.isNotEmpty()
 
-    private val textField = TextFieldComp(
-        "Kasutaja sisendid", false, "42 &#x0a;andmed.txt",
-        startActive = true,
-        initialValue = inputs.joinToString("\n"),
-        helpText = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real",
-        // TODO: onUnfocus or debounce for performance
-        onValueChange = { onUpdate() },
-        onValidChange = { onValidChanged() },
-        parent = this
-    )
+    private var showBtn: ButtonComp? = null
+    private var textField: TextFieldComp? = null
 
     override val children: List<Component>
-        get() = listOf(showBtn, textField)
+        get() = listOfNotNull(showBtn, textField)
 
-    override fun render() = template(
-        """
-            <ez-dst id='{{btnDst}}'></ez-dst>
-            <ez-tsl-stdin-textarea id='{{inputDst}}'></ez-tsl-stdin-textarea>
-        """.trimIndent(),
-        "btnDst" to showBtn.dstId,
-        "inputDst" to textField.dstId,
-    )
-
-    override fun postRender() {
-        if (inputs.isEmpty()) {
-            textField.hide()
+    override fun create() = doInPromise {
+        if (showField) {
+            textField = TextFieldComp(
+                "", false, "42",
+                startActive = true,
+                initialValue = inputs.joinToString("\n"),
+                helpText = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real",
+                // TODO: onUnfocus or debounce for performance
+                onValueChange = { onUpdate() },
+                onValidChange = { onValidChanged() },
+                parent = this
+            )
+            showBtn = null
         } else {
-            showBtn.hide()
+            textField = null
+            showBtn = ButtonComp(ButtonComp.Type.FLAT, "Kasutaja sisend", Icons.add, ::showSection, parent = this)
         }
     }
 
-    override fun postChildrenBuilt() {
-        textField.validateInitial()
-    }
+    override fun render() = template(
+        """
+            {{#showField}}
+                <ez-flex style='align-items: baseline; color: var(--ez-text-inactive); margin-top: 2rem;'>
+                    <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslStdInput}</ez-inline-flex>
+                    Kasutaja sisendid
+                </ez-flex>
+                <ez-tsl-field-text-value style='padding-left: 3rem;' id='${textField?.dstId}'></ez-tsl-field-text-value>
+            {{/showField}}
+            {{^showField}}
+                <ez-tsl-add-button id='${showBtn?.dstId}'></ez-tsl-add-button>
+            {{/showField}}
+        """.trimIndent(),
+        "showField" to showField,
+    )
 
-    fun getInputs(): List<String> = textField.getValue().split("\n").filter(String::isNotBlank)
+    fun getInputs(): List<String> = textField?.getValue().orEmpty().split("\n").filter(String::isNotBlank)
 
     private suspend fun showSection() {
-        showBtn.hide()
-        textField.show()
+        showField = true
+        createAndBuild().await()
     }
 
     fun setEditable(nowEditable: Boolean) {
-        showBtn.setEnabled(nowEditable)
-        textField.isDisabled = !nowEditable
-        textField.rebuild()
+        showBtn?.show(nowEditable)
+        textField?.isDisabled = !nowEditable
+        textField?.rebuild()
     }
 
-    fun isValid() = textField.isValid
+    fun isValid() = textField?.isValid ?: true
 }

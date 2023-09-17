@@ -8,6 +8,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.objOf
 import tsl.common.model.FunctionExecutionTest
 import tsl.common.model.FunctionType
+import tsl.common.model.ReturnValueCheck
 import tsl.common.model.Test
 
 class TSLFunctionCallTest(
@@ -60,9 +61,16 @@ class TSLFunctionCallTest(
     override fun getTSLModel(): Test {
         return FunctionExecutionTest(
             testId,
-            "fun",
+            "func",
             FunctionType.FUNCTION,
-            returnValue = "foo"
+            arguments = listOf("'a'", "42"),
+            returnValueCheck = ReturnValueCheck(
+                returnValue = "43",
+                "",
+                "OK",
+                "F"
+            ),
+            genericChecks = listOf(),
         )
     }
 
