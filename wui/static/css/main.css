@@ -511,7 +511,7 @@ ez-student-course-exercise > ez-block-container {
 #exercise-card .submission-item {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
 }
 
 #exercise-card .group-select-wrap {
@@ -551,15 +551,24 @@ ez-student-course-exercise > ez-block-container {
 }
 
 #exercise-card .time {
+    display: flex;
+    align-items: center;
     font-size: 0.8em;
     margin: 0 1rem;
     flex-shrink: 1;
 }
 
+#exercise-card .time ez-icon {
+    display: inline-flex;
+    margin-right: 1rem;
+}
+
+
 #exercise-card .grade {
     display: flex;
     align-items: center;
     font-size: 0.8em;
+    margin-left: 1rem;
 }
 
 #exercise-card .eval-logo-auto,

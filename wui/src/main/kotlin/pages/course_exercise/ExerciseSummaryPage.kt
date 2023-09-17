@@ -12,6 +12,7 @@ import PageName
 import PaginationConf
 import Role
 import cache.BasicCourseInfo
+import compareTo
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
@@ -210,7 +211,13 @@ object ExerciseSummaryPage : EasyPage() {
             val exerciseDetails = buildTeacherSummaryAndCrumbs(courseId, courseExerciseId, isAdmin)
             if (exerciseDetails.grader_type == ExerciseDAO.GraderType.AUTO)
                 buildTeacherTesting(courseId, exerciseDetails.exercise_id)
-            buildTeacherStudents(courseId, courseExerciseId, exerciseDetails.exercise_id, exerciseDetails.threshold)
+            buildTeacherStudents(
+                courseId,
+                courseExerciseId,
+                exerciseDetails.exercise_id,
+                exerciseDetails.threshold,
+                exerciseDetails.soft_deadline
+            )
 
             initTooltips()
 
@@ -450,12 +457,13 @@ object ExerciseSummaryPage : EasyPage() {
         courseId: String,
         courseExerciseId: String,
         exerciseId: String,
-        threshold: Int
+        threshold: Int,
+        deadline: Date?,
     ) {
         val fl = debugFunStart("buildTeacherStudents")
         getElemById("students").innerHTML = tmRender("tm-teach-exercise-students")
-        val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold)
-        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, defaultGroupId)
+        val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold, deadline)
+        buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, deadline, defaultGroupId)
 
         getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
             debug { "Downloading submissions" }
@@ -478,7 +486,8 @@ object ExerciseSummaryPage : EasyPage() {
         courseId: String,
         courseExerciseId: String,
         exerciseId: String,
-        threshold: Int
+        threshold: Int,
+        deadline: Date?
     ): String? {
         val groups = fetchEms(
             "/courses/$courseId/groups", ReqMethod.GET, successChecker = { http200 },
@@ -516,7 +525,7 @@ object ExerciseSummaryPage : EasyPage() {
                     val groupId = groupSelect.value
                     debug { "Selected group $groupId" }
                     LocalStore.set(Key.TEACHER_SELECTED_GROUP, groupId.emptyToNull())
-                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId)
+                    buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, deadline, groupId)
                 }
             }
         }
@@ -530,7 +539,7 @@ object ExerciseSummaryPage : EasyPage() {
 
     private suspend fun buildTeacherStudentsList(
         courseId: String, courseExerciseId: String, exerciseId: String,
-        threshold: Int, groupId: String?, offset: Int = 0
+        threshold: Int, deadline: Date?, groupId: String?, offset: Int = 0
     ) {
 
         val q = createQueryString("group" to groupId, "limit" to PAGE_STEP.toString(), "offset" to offset.toString())
@@ -546,7 +555,12 @@ object ExerciseSummaryPage : EasyPage() {
                 "givenName" to student.given_name,
                 "familyName" to student.family_name,
                 "groups" to student.groups,
-                "time" to student.submission_time?.toEstonianString(),
+                "deadlineIcon" to if (
+                    student.submission_time != null &&
+                    deadline != null &&
+                    deadline < student.submission_time
+                ) Icons.alarmClock else null,
+                "time" to student.submission_time?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
                 "points" to student.grade?.toString()
             )
 
@@ -604,16 +618,32 @@ object ExerciseSummaryPage : EasyPage() {
 
         if (paginationConf?.canGoBack.isNotNullAndTrue) {
             getElemsByClass("go-first").onVanillaClick(true) {
-                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, 0)
+                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, deadline, groupId, 0)
             }
             getElemsByClass("go-back").onVanillaClick(true) {
-                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset - PAGE_STEP)
+                buildTeacherStudentsList(
+                    courseId,
+                    courseExerciseId,
+                    exerciseId,
+                    threshold,
+                    deadline,
+                    groupId,
+                    offset - PAGE_STEP
+                )
             }
         }
 
         if (paginationConf?.canGoForward.isNotNullAndTrue) {
             getElemsByClass("go-forward").onVanillaClick(true) {
-                buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, groupId, offset + PAGE_STEP)
+                buildTeacherStudentsList(
+                    courseId,
+                    courseExerciseId,
+                    exerciseId,
+                    threshold,
+                    deadline,
+                    groupId,
+                    offset + PAGE_STEP
+                )
             }
             getElemsByClass("go-last").onVanillaClick(true) {
                 buildTeacherStudentsList(
@@ -621,6 +651,7 @@ object ExerciseSummaryPage : EasyPage() {
                     courseExerciseId,
                     exerciseId,
                     threshold,
+                    deadline,
                     groupId,
                     getLastPageOffset(studentTotal, PAGE_STEP)
                 )
@@ -636,7 +667,17 @@ object ExerciseSummaryPage : EasyPage() {
                 ?: error("No data-family-name found on student item")
 
             it.onVanillaClick(true) {
-                buildStudentTab(courseId, courseExerciseId, exerciseId, threshold, id, givenName, familyName, false)
+                buildStudentTab(
+                    courseId,
+                    courseExerciseId,
+                    exerciseId,
+                    threshold,
+                    deadline,
+                    id,
+                    givenName,
+                    familyName,
+                    false
+                )
             }
         }
 
@@ -645,7 +686,7 @@ object ExerciseSummaryPage : EasyPage() {
 
 
     private fun buildStudentTab(
-        courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int,
+        courseId: String, courseExerciseId: String, exerciseId: String, threshold: Int, deadline: Date?,
         studentId: String, givenName: String, familyName: String, isAllSubsOpen: Boolean
     ) {
 
@@ -686,12 +727,13 @@ object ExerciseSummaryPage : EasyPage() {
                             courseExerciseId,
                             exerciseId,
                             threshold,
+                            deadline,
                             studentId,
                             givenName,
                             familyName,
                             isSubmissionBoxVisible()
                         )
-                        buildTeacherStudents(courseId, courseExerciseId, exerciseId, threshold)
+                        buildTeacherStudents(courseId, courseExerciseId, exerciseId, threshold, deadline)
                     }
                 }
 
@@ -762,6 +804,7 @@ object ExerciseSummaryPage : EasyPage() {
                     courseExerciseId,
                     exerciseId,
                     threshold,
+                    deadline,
                     studentId,
                     givenName,
                     familyName,
