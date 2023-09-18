@@ -2,7 +2,6 @@ package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tsl.common.model.*
 
 
 @Serializable
@@ -13,11 +12,13 @@ data class ProgramExecutionTest(
     val inputFiles: List<FileData> = emptyList(),
     val genericChecks: List<GenericCheck> = emptyList(),
     val outputFileChecks: List<OutputFileCheck> = emptyList(),
-    val exceptionCheck: ExceptionCheck? = null,
+    var exceptionCheck: ExceptionCheck? = null,
 ) : Test() {
     override fun getDefaultName(): String {
         return "Programmi käivituse test"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -29,6 +30,8 @@ data class ProgramContainsTryExceptTest(
     override fun getDefaultName(): String {
         return "Programm sisaldab 'try/except' plokki"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -40,6 +43,8 @@ data class ProgramCallsPrintTest(
     override fun getDefaultName(): String {
         return "Programm kutsub välja 'print' käsu"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -51,6 +56,8 @@ data class ProgramContainsLoopTest(
     override fun getDefaultName(): String {
         return "Programm sisaldab tsüklit"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -62,6 +69,8 @@ data class ProgramImportsModuleTest(
     override fun getDefaultName(): String {
         return "Programm impordib mooduli"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -73,6 +82,8 @@ data class ProgramContainsKeywordTest(
     override fun getDefaultName(): String {
         return "Programm sisaldab märksõna"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -84,6 +95,8 @@ data class ProgramCallsFunctionTest(
     override fun getDefaultName(): String {
         return "Programm kutsub välja funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -95,6 +108,8 @@ data class ProgramDefinesFunctionTest(
     override fun getDefaultName(): String {
         return "Programm defineerib funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -106,6 +121,8 @@ data class ProgramDefinesClassTest(
     override fun getDefaultName(): String {
         return "Programm defineerib klassi"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -121,6 +138,8 @@ data class ProgramDefinesSubclassTest(
     override fun getDefaultName(): String {
         return "Programm defineerib alamklassi"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -132,6 +151,8 @@ data class ProgramCallsClassTest(
     override fun getDefaultName(): String {
         return "Programm kutsub välja klassi"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -143,4 +164,6 @@ data class ProgramCallsClassFunctionTest(
     override fun getDefaultName(): String {
         return "Programm kutsub välja klassi funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }

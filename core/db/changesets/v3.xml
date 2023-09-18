@@ -3,9 +3,14 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
-
+    <changeSet id="110923-1" author="kspar">
+        <createIndex tableName="submission" indexName="submissions_by_student_on_exercise">
+            <column name="course_exercise_id"/>
+            <column name="student_id"/>
+        </createIndex>
+    </changeSet>
 
 
 

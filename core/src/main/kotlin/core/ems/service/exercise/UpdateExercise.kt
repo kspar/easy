@@ -1,6 +1,6 @@
 package core.ems.service.exercise
 
-import com.example.demo.TSL_SPEC_FORMAT
+import com.example.demo.TSLSpecFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
@@ -69,7 +69,7 @@ class UpdateExercise(private val adocService: AdocService) {
         val reqModified = if (req.containerImage == tslContainerName) {
             val compileResult = compileTSLToResp(
                 req.assets!!.single { it.fileName == tslSpecFilename }.fileContent,
-                TSL_SPEC_FORMAT.JSON
+                TSLSpecFormat.JSON
             )
 
             val metaStr = compileResult.meta?.let {

@@ -14,6 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class ParticipantsStudentsListComp(
     private val courseId: String,
@@ -88,8 +89,7 @@ class ParticipantsStudentsListComp(
                 },
                 isSelectable = isEditable,
                 actions = if (isEditable) buildList {
-                    if (!p.isActive)
-                        add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
+                    add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
                     add(EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup))
                     add(EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup))
                     add(
@@ -106,16 +106,11 @@ class ParticipantsStudentsListComp(
 
         val massActions = if (isEditable) buildList {
             if (hasGroups) {
-                add(
-                    EzCollComp.MassAction<StudentProps>(Icons.addToGroup, "Lisa rühma", ::addToGroup)
-                )
-                add(
-                    EzCollComp.MassAction<StudentProps>(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup)
-                )
+                add(EzCollComp.MassAction(Icons.addToGroup, "Lisa rühma", ::addToGroup))
+                add(EzCollComp.MassAction(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup))
             }
-            add(
-                EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse)
-            )
+            add(EzCollComp.MassAction(Icons.sendEmail, "Saada kutse", ::sendInvite))
+            add(EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse))
         } else emptyList()
 
         studentsColl = EzCollComp(
@@ -134,7 +129,7 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.FilterGroup(
-                            "Rühm",
+                            Str.accountGroup,
                             listOf(EzCollComp.Filter<StudentProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
                                     groups.map { g ->
                                         EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }
@@ -303,9 +298,6 @@ class ParticipantsStudentsListComp(
     private suspend fun sendInvite(item: EzCollComp.Item<StudentProps>): EzCollComp.Result = sendInvite(listOf(item))
 
     private suspend fun sendInvite(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
-        // TODO: allow active students ("saada teavitus") as well
-        // TODO: mass action
-
         ParticipantsDAO.sendStudentCourseInvites(courseId, items.map { it.props.email }).await()
         successMessage { "Saadetud" }
         return EzCollComp.ResultUnmodified

@@ -14,6 +14,9 @@ import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
+import core.exception.InvalidRequestException
+import core.exception.ReqError
+import core.util.SendMailService
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -34,7 +37,8 @@ class StudentSubmitCont(
     private val autoAssessStatusObserver: AutoAssessStatusObserver,
     private val cachingService: CachingService,
     private val autoGradeScheduler: AutoGradeScheduler,
-    private val moodleGradesSyncService: MoodleGradesSyncService
+    private val moodleGradesSyncService: MoodleGradesSyncService,
+    private val mailService: SendMailService,
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -59,6 +63,9 @@ class StudentSubmitCont(
     }
 
     private fun submitSolution(courseExId: Long, solution: String, studentId: String) {
+        if (!isCourseExerciseOpenForSubmit(courseExId))
+            throw InvalidRequestException("Exercise is not open for submissions", ReqError.COURSE_EXERCISE_CLOSED)
+
         when (selectGraderType(courseExId)) {
             GraderType.TEACHER -> {
                 log.debug { "Creating new submission to teacher-graded exercise $courseExId by $studentId" }
@@ -102,11 +109,29 @@ class StudentSubmitCont(
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
             insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
-            return
+            val notification = """
+                Autoassessment failed
+                
+                Course exercise id: $courseExId
+                Submission id: $submissionId
+                Solution:
+                
+                $solution
+            """.trimIndent()
+            mailService.sendSystemNotification(notification)
         }
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
     }
 
+    private fun isCourseExerciseOpenForSubmit(courseExId: Long) =
+        transaction {
+            CourseExercise.slice(CourseExercise.hardDeadline)
+                .select { CourseExercise.id eq courseExId }
+                .map { it[CourseExercise.hardDeadline] }
+                .single()
+        }.let {
+            it == null || it.isAfterNow
+        }
 
     private fun selectGraderType(courseExId: Long): GraderType {
         return transaction {
@@ -145,6 +170,7 @@ class StudentSubmitCont(
             }.value
         }
 
+        cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
         cachingService.invalidate(countSubmissionsCache)
         return id
     }

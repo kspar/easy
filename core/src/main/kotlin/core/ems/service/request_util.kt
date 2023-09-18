@@ -16,6 +16,11 @@ fun <T> List<T>.singleOrInvalidRequest(): T {
     )
 }
 
+fun <T> List<T>.singleOrInvalidRequest(notify: Boolean): T {
+    return this.singleOrNull() ?: throw InvalidRequestException(
+        "Entity not found", ReqError.ENTITY_WITH_ID_NOT_FOUND, notify = notify
+    )
+}
 
 fun HttpServletRequest.getOptionalHeader(headerName: String): String? {
     val headerValue: String? = this.getHeader(headerName)

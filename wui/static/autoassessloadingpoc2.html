@@ -18,84 +18,10 @@
 <style>
 
 
-    body {
-        display: flex;
-        min-height: 100vh;
-        flex-direction: column;
-    }
-
-    main {
-        flex: 1 0 auto;
-    }
-
-    footer.page-footer {
-        padding-top: 5px;
-        padding-bottom: 10px;
-    }
-
-    footer .fa-github:hover {
-        opacity: 0.7;
-    }
-
-    footer .fa-github {
-        color: #fff;
-        font-size: 4.5rem;
-        margin-top: 25px;
-    }
-
-    footer .footer-heading {
-        font-size: 2.5rem;
-        margin-top: 25px;
-        font-weight: 400;
-    }
-
-    footer .statistics-subheading {
-        font-size: 1.3rem;
-        font-variant: all-small-caps;
-        letter-spacing: 3px;
-    }
-
-    footer .statistics-value {
-        font-size: 2.1rem;
-        font-weight: 500;
-        letter-spacing: 2px;
-    }
-
-    footer .version-string {
-        font-size: 1.3rem;
-    }
-
-    footer hr {
-        border-color: rgba(255, 255, 255, 0.31);
-    }
-
-    footer .row {
-        margin-bottom: 3px;
-    }
-
-    footer .content-wrap {
-        display: flex;
-        justify-content: space-between;
-        flex-direction: row;
-    }
-
-    footer .statistics-wrap {
-        width: 75%;
-    }
-
-    @media screen and (max-width: 992px) {
-        footer .statistics-wrap {
-            width: 100%;
-        }
-
-        footer .content-wrap {
-            flex-direction: column;
-        }
-
-    }
 
 
-    .missing-content-wrap-small .robot-small {
+
+    .autograde-animation .robot {
         display: flex;
         justify-content: space-between;
         flex-shrink: 0;
@@ -108,7 +34,7 @@
         z-index: 2;
     }
 
-    .missing-content-wrap-small .robot-yaw-small {
+    .autograde-animation .robot-jaw {
         flex-shrink: 0;
         width: 37px;
         height: 7px;
@@ -118,7 +44,7 @@
         animation: eating 500ms 2900ms 7;
     }
 
-    .missing-content-wrap-small .antenna-small {
+    .autograde-animation .antenna {
         width: 6px;
         height: 7px;
         flex-shrink: 0;
@@ -126,7 +52,7 @@
         background-color: #a8a8a8;
     }
 
-    .missing-content-wrap-small .antennaball-small {
+    .autograde-animation .antennaball {
         width: 12px;
         height: 12px;
         flex-shrink: 0;
@@ -136,7 +62,7 @@
     }
 
 
-    .missing-content-wrap-small .robot-eye-small {
+    .autograde-animation .eye {
         background: white;
         width: 10px;
         height: 10px;
@@ -144,7 +70,7 @@
         animation: eye-blink 3s infinite;
     }
 
-    .missing-content-wrap-small .prog-wrap {
+    .autograde-animation .prog {
         display: flex;
         flex-direction: column;
         justify-content: space-around;
@@ -157,7 +83,7 @@
 
     }
 
-    .missing-content-wrap-small {
+    .autograde-animation {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -169,13 +95,13 @@
     }
 
 
-    .auto-wrap {
+    .wrap {
         background-color: #f5f5f5;
         width: 300px;
         height: 180px;
     }
 
-    .auto-robots-wrap {
+    .robots {
         display: flex;
         flex-direction: column;
         height: 180px;
@@ -184,7 +110,7 @@
         transform: translateY(-180px);
     }
 
-    .small-robot-wrap {
+    .robot-wrap {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -196,51 +122,51 @@
     }
 
 
-    .auto-robots-wrap .robot-row:nth-child(1) {
+    .robots .robot-row:nth-child(1) {
         transform: translateX(-68px);
     }
 
-    .auto-robots-wrap .robot-row:nth-child(2) {
+    .robots .robot-row:nth-child(2) {
         transform: translateX(330px);
     }
 
-    .auto-robots-wrap .robot-row:nth-child(3) {
+    .robots .robot-row:nth-child(3) {
         transform: translateX(-68px);
     }
 
-    .auto-robots-wrap .robot-row:nth-child(4) {
+    .robots .robot-row:nth-child(4) {
         transform: translateX(330px);
     }
 
-    .auto-robots-wrap .robot-row:nth-child(1) > :nth-child(1) {
+    .robots .robot-row:nth-child(1) > :nth-child(1) {
         animation: appear 500ms 1s forwards, disappear 500ms 7s forwards,
         eating-direction 4s 2600ms forwards linear;
     }
 
-    .auto-robots-wrap .robot-row:nth-child(2) > :nth-child(2) {
+    .robots .robot-row:nth-child(2) > :nth-child(2) {
         animation: appear 500ms 1400ms forwards, disappear 500ms 7400ms forwards,
         eating-direction-middle 4s 2600ms forwards linear;
     }
 
-    .auto-robots-wrap .robot-row:nth-child(3) > :nth-child(1) {
+    .robots .robot-row:nth-child(3) > :nth-child(1) {
         animation: appear 500ms 1800ms forwards, disappear 500ms 7800ms forwards,
         eating-direction 4s 2600ms forwards linear;
     }
 
-    .auto-robots-wrap .robot-row:nth-child(4) > :nth-child(2) {
+    .robots .robot-row:nth-child(4) > :nth-child(2) {
         animation: appear 500ms 2200ms forwards, disappear 500ms 8200ms forwards,
         eating-direction-middle 4s 2600ms forwards linear;
     }
 
-    .auto-robots-wrap .robot-row:nth-child(2) > :nth-child(1) {
+    .robots .robot-row:nth-child(2) > :nth-child(1) {
         transform-origin: right;
     }
 
-    .auto-robots-wrap .robot-row:nth-child(4) > :nth-child(1) {
+    .robots .robot-row:nth-child(4) > :nth-child(1) {
         transform-origin: right;
     }
 
-    .shade-line {
+    .shade {
         height: 40px;
         width: 1px;
         background-color: #f5f5f5;
@@ -252,7 +178,7 @@
         display: flex;
     }
 
-    .auto-wrap pre {
+    .wrap pre {
         margin-top: 19px;
     }
 
@@ -350,66 +276,66 @@
         <div class="title-wrap">
             <h3 class="title no-crumb">Minu kursused</h3>
         </div>
-        <div class="missing-content-wrap-small">
-            <div class="auto-wrap">
-                <div class="prog-wrap">
+        <div class="autograde-animation">
+            <div class="wrap">
+                <div class="prog">
                     <pre>def fibo(n):</pre>
                     <pre>    if n == 0 or n == 1:</pre>
                     <pre>        return n</pre>
                     <pre>    return fibo(n-1) + fibo(n-2)</pre>
                 </div>
-                <div class="auto-robots-wrap">
+                <div class="robots">
                     <div class="robot-row">
 
-                        <div class="small-robot-wrap">
-                            <div class="antennaball-small"></div>
-                            <div class="antenna-small"></div>
-                            <div class="robot-small">
-                                <div class="robot-eye-small"></div>
-                                <div class="robot-eye-small"></div>
+                        <div class="robot-wrap">
+                            <div class="antennaball"></div>
+                            <div class="antenna"></div>
+                            <div class="robot">
+                                <div class="eye"></div>
+                                <div class="eye"></div>
                             </div>
-                            <div class="robot-yaw-small"></div>
+                            <div class="robot-jaw"></div>
                         </div>
-                        <div class="shade-line"></div>
+                        <div class="shade"></div>
 
                     </div>
                     <div class="robot-row">
-                        <div class="shade-line"></div>
-                        <div class="small-robot-wrap">
-                            <div class="antennaball-small"></div>
-                            <div class="antenna-small"></div>
-                            <div class="robot-small">
-                                <div class="robot-eye-small"></div>
-                                <div class="robot-eye-small"></div>
+                        <div class="shade"></div>
+                        <div class="robot-wrap">
+                            <div class="antennaball"></div>
+                            <div class="antenna"></div>
+                            <div class="robot">
+                                <div class="eye"></div>
+                                <div class="eye"></div>
                             </div>
-                            <div class="robot-yaw-small"></div>
+                            <div class="robot-jaw"></div>
 
                         </div>
                     </div>
                     <div class="robot-row">
 
-                        <div class="small-robot-wrap">
-                            <div class="antennaball-small"></div>
-                            <div class="antenna-small"></div>
-                            <div class="robot-small">
-                                <div class="robot-eye-small"></div>
-                                <div class="robot-eye-small"></div>
+                        <div class="robot-wrap">
+                            <div class="antennaball"></div>
+                            <div class="antenna"></div>
+                            <div class="robot">
+                                <div class="eye"></div>
+                                <div class="eye"></div>
                             </div>
-                            <div class="robot-yaw-small"></div>
+                            <div class="robot-jaw"></div>
 
                         </div>
-                        <div class="shade-line"></div>
+                        <div class="shade"></div>
                     </div>
                     <div class="robot-row">
-                        <div class="shade-line"></div>
-                        <div class="small-robot-wrap">
-                            <div class="antennaball-small"></div>
-                            <div class="antenna-small"></div>
-                            <div class="robot-small">
-                                <div class="robot-eye-small"></div>
-                                <div class="robot-eye-small"></div>
+                        <div class="shade"></div>
+                        <div class="robot-wrap">
+                            <div class="antennaball"></div>
+                            <div class="antenna"></div>
+                            <div class="robot">
+                                <div class="eye"></div>
+                                <div class="eye"></div>
                             </div>
-                            <div class="robot-yaw-small"></div>
+                            <div class="robot-jaw"></div>
 
                         </div>
                     </div>

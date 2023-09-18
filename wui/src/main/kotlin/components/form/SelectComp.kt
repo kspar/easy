@@ -4,7 +4,7 @@ import emptyToNull
 import libheaders.Materialize
 import org.w3c.dom.HTMLSelectElement
 import rip.kspar.ezspa.*
-import tmRender
+import template
 
 class SelectComp(
     private val label: String? = null,
@@ -21,7 +21,22 @@ class SelectComp(
     private val selectId = IdGenerator.nextId()
     private var initialValue: String? = null
 
-    override fun render() = tmRender("t-c-select",
+    override fun render() = template(
+        """
+            <div class="input-field select-wrap">
+            <select id="{{selectId}}" {{#isDisabled}}disabled{{/isDisabled}}>
+                {{#hasEmptyOption}}
+                    <option value="">–</option>
+                {{/hasEmptyOption}}
+                {{#options}}
+                    <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{label}}</option>
+                {{/options}}
+            </select>
+            {{#selectLabel}}
+                <label>{{selectLabel}}</label>
+            {{/selectLabel}}
+        </div>
+        """.trimIndent(),
         "selectId" to selectId,
         "selectLabel" to label,
         "isDisabled" to isDisabled,

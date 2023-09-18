@@ -1,6 +1,5 @@
 package pages.participants
 
-import Str
 import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
@@ -15,6 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class AddTeachersModalComp(
     private val courseId: String,
@@ -23,7 +23,7 @@ class AddTeachersModalComp(
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Lisa õpetajaid", Str.doAdd(), Str.cancel(), Str.adding(),
+        "Lisa õpetajaid", Str.doAdd, Str.cancel, Str.adding,
         defaultReturnValue = false,
         fixFooter = true,
         isWide = true,

@@ -1,6 +1,5 @@
 package pages.sidenav
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
@@ -15,13 +14,14 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class CreateCourseModalComp(
     parent: Component,
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
-        "Uus kursus", Str.doSave(), Str.cancel(), Str.saving(),
+        "Uus kursus", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createCourse(courseTitleFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { courseTitleFieldComp.focus() },

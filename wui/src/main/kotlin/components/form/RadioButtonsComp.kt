@@ -7,7 +7,7 @@ import components.form.validation.ValidatableFieldComp
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
 import rip.kspar.ezspa.*
-import tmRender
+import template
 
 
 class RadioButtonsComp(
@@ -29,9 +29,11 @@ class RadioButtonsComp(
 ) {
     data class Button(
         val label: String,
-        val id: String = IdGenerator.nextId(),
+        val value: String = IdGenerator.nextId(),
         val type: Type = Type.SELECTABLE
-    )
+    ) {
+        val id: String = IdGenerator.nextId()
+    }
 
     enum class Type { SELECTABLE, PRESELECTED, DISABLED }
 
@@ -50,8 +52,24 @@ class RadioButtonsComp(
 
     override val paintEmptyViolationInitial = paintRequired
 
-    override fun render() = tmRender(
-        "t-c-radio-buttons",
+    override fun render() = template(
+        """
+            <ez-radio-buttons id="{{elementId}}">
+            {{#buttons}}
+                {{#hasLines}}
+                    <ez-radio-line-label>{{label}}</ez-radio-line-label>
+                {{/hasLines}}
+                <label for="{{id}}" class="{{#hasLines}}line{{/hasLines}}">
+                    <input id="{{id}}" value="{{id}}" name="{{groupId}}" type="radio" {{#isSelected}}checked{{/isSelected}} {{#isDisabled}}disabled="disabled"{{/isDisabled}}>
+                        <span>
+                            {{^hasLines}}{{label}}{{/hasLines}}
+                            {{#hasLines}}<ez-radio-line></ez-radio-line>{{/hasLines}}
+                        </span>
+                </label>
+            {{/buttons}}
+            <span id="field-helper-{{elementId}}" class="helper-text"></span>
+        </ez-radio-buttons>
+        """.trimIndent(),
         "elementId" to elementId,
         "buttons" to buttons.map {
             mapOf(
@@ -79,7 +97,7 @@ class RadioButtonsComp(
     fun getSelectedOption(): Button? {
         val el = getElement().getElemBySelectorOrNull("input[name=$groupId]:checked") as? HTMLInputElement
         return if (el != null) {
-            buttons.first { it.id == el.value }
+            buttons.first { it.id == el.id }
         } else null
     }
 }

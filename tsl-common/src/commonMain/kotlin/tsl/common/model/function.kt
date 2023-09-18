@@ -2,7 +2,6 @@ package tsl.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tsl.common.model.*
 
 
 enum class FunctionType {
@@ -19,15 +18,19 @@ data class FunctionExecutionTest(
     val arguments: List<String> = emptyList(),
     val standardInputData: List<String> = emptyList(),
     val inputFiles: List<FileData> = emptyList(),
-    val returnValue: String? = null,
     val genericChecks: List<GenericCheck> = emptyList(),
     val returnValueCheck: ReturnValueCheck? = null,
     val paramValueChecks: List<ParamValueCheck> = emptyList(),
-    val outputFileChecks: List<OutputFileCheck> = emptyList()
+    val outputFileChecks: List<OutputFileCheck> = emptyList(),
+    val outOfInputsErrorMsg: String = "Programm küsis rohkem sisendeid kui testil oli anda",
+    val functionNotDefinedErrorMsg: String = "Funktsioon ei ole defineeritud",
+    val tooManyArgumentsProvidedErrorMsg: String = "Funktsioon võtab sisendiks vähem argumente kui testil oli ette antud"
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsiooni käivitus"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -40,6 +43,8 @@ data class FunctionContainsLoopTest(
     override fun getDefaultName(): String {
         return "Funktsioon sisaldab tsüklit"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -52,6 +57,8 @@ data class FunctionContainsKeywordTest(
     override fun getDefaultName(): String {
         return "Funktsioon sisaldab märksõna"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -64,6 +71,8 @@ data class FunctionContainsReturnTest(
     override fun getDefaultName(): String {
         return "Funktsioon sisaldab 'return' käsku"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -76,6 +85,8 @@ data class FunctionCallsFunctionTest(
     override fun getDefaultName(): String {
         return "Funktsioon kutsub välja teist funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -88,6 +99,8 @@ data class FunctionCallsPrintTest(
     override fun getDefaultName(): String {
         return "Funktsioon kutsub välja 'print' käsu"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -100,6 +113,8 @@ data class FunctionIsRecursiveTest(
     override fun getDefaultName(): String {
         return "Funktsioon on rekursiivne"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -112,6 +127,8 @@ data class FunctionDefinesFunctionTest(
     override fun getDefaultName(): String {
         return "Funktsioon defineerib enda sees uue funktsiooni"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -124,6 +141,8 @@ data class FunctionImportsModuleTest(
     override fun getDefaultName(): String {
         return "Funktsioon impordib mooduli"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -136,6 +155,8 @@ data class FunctionContainsTryExceptTest(
     override fun getDefaultName(): String {
         return "Funktsioon sisaldab 'try/except' plokki"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 @Serializable
@@ -148,4 +169,6 @@ data class FunctionIsPureTest(
     override fun getDefaultName(): String {
         return "Funktsioon kasutab vaid lokaalseid muutujaid"
     }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
 }

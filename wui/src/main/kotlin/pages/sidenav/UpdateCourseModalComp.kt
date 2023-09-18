@@ -1,6 +1,5 @@
 package pages.sidenav
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
@@ -10,6 +9,7 @@ import emptyToNull
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class UpdateCourseModalComp(
     private val courseId: String,
@@ -23,7 +23,7 @@ class UpdateCourseModalComp(
     private lateinit var alias: StringFieldComp
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Kursuse sätted", Str.doSave(), Str.cancel(), Str.saving(),
+        "Kursuse sätted", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryButtonEnabledInitial = false,
         primaryAction = { updateCourse() }, onOpen = { alias.focus() },

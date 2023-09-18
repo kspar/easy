@@ -3,33 +3,45 @@ import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
+import org.w3c.dom.Element
 import pages.EasyPage
-import pages.ExerciseSummaryPage
 import pages.Navbar
-import pages.OldParticipantsPage
-import pages.course_exercises.CourseExercisesPage
+import pages.about.AboutPage
+import pages.about.SimilarityAnalysisPage
+import pages.course_exercise.ExerciseSummaryPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.embed_anon_autoassess.EmbedAnonAutoassessPage
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
+import pages.links.CourseJoinByLinkPage
 import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
+import pages.terms.TermsProxyPage
 import queries.*
 import rip.kspar.ezspa.*
+import translation.Str
+import translation.updateLanguage
 
 
 private val PAGES = listOf(
-    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, GradeTablePage,
-    OldParticipantsPage, ParticipantsPage,
+    CoursesPage, CourseExercisesPage, ExerciseSummaryPage, SimilarityAnalysisPage,
+    GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
-    RegisterLinkPage,
+    RegisterLinkPage, CourseJoinByLinkPage,
+    AboutPage, TermsProxyPage,
 )
 
 fun main() {
-    val funLog = debugFunStart("main")
+    consoleEgg()
+    initScrollbar(getBody(), false)
+
+    // Weird hack: strings have to be set first here to fetch possible locale from localstorage
+    // but then refreshed again after auth because we might get a preference from there
+    updateLanguage()
 
     // Start authentication as soon as possible
     doInPromise {
@@ -40,6 +52,7 @@ fun main() {
             if (Auth.authenticated) {
                 setSplashText("Uuendan andmeid")
                 updateAccountData()
+                updateLanguage()
             }
         }
         refreshCurrentPathFromBrowser()
@@ -53,8 +66,6 @@ fun main() {
         EzSpa.Navigation.enableAnchorLinkInterception()
         EzSpa.Navigation.enableHistoryNavInterception()
     }
-
-    funLog?.end()
 }
 
 fun setSplashText(text: String) {
@@ -72,6 +83,7 @@ suspend fun buildStatics() {
     if (!isEmbedded()) {
         Navbar.build()
         Sidenav.build()
+        initScrollbar(getElemById("sidenav"), true)
     } else {
         // Note that appending += to innerHTML would destroy existing event handlers
         // TODO: is there an issue with having sidenav-wrap in main as well here?
@@ -128,8 +140,8 @@ private fun initApplication() {
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
     getContainer().innerHTML = tmRender(
         "tm-broken-page", mapOf(
-            "title" to Str.notFoundPageTitle(),
-            "msg" to Str.notFoundPageMsg()
+            "title" to Str.notFoundPageTitle,
+            "msg" to Str.notFoundPageMsg
         )
     )
     Sidenav.refresh(Sidenav.Spec())
@@ -148,5 +160,34 @@ private fun loadContainerQueries() {
         ContainerQueryPolyfill
     } else {
         debug { "Native container queries supported :)" }
+    }
+}
+
+private fun initScrollbar(element: Element, autoHide: Boolean) {
+//    OverlayScrollbars.OverlayScrollbars(
+//        element,
+//        objOf(
+//             use native if they are overlaid already like on mobile
+//            "showNativeOverlaidScrollbars" to true,
+//            "scrollbars" to
+//                    objOf(
+//                        "autoHide" to if (autoHide) "leave" else "never",
+//                        "autoHideDelay" to 100,
+//                    )
+//        )
+//    )
+}
+
+private fun consoleEgg() {
+    debug {
+        template(
+            """
+            
+Hei, mis toimub?
+Kas leidsid mingi vea, mille uurimiseks oli vaja brauseri konsool lahti teha? Või huvitab sind lihtsalt Lahenduse tehniline pool?
+Mõlemal juhul tule räägi sellest meie Discordi serveris: {{d}}/${AppProperties.DISCORD_INVITE_ID} :-)
+        """,
+            "d" to "discord.gg"
+        )
     }
 }

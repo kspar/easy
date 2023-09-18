@@ -1,6 +1,5 @@
 package pages.exercise_library
 
-import Str
 import components.form.CheckboxComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
@@ -9,13 +8,14 @@ import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
+import translation.Str
 
 class CreateExerciseModalComp(
     private val dirId: String?,
@@ -26,7 +26,7 @@ class CreateExerciseModalComp(
     data class ExIds(val exerciseId: String, val courseExerciseId: String?)
 
     private val modalComp: BinaryModalComp<ExIds?> = BinaryModalComp(
-        "Uus ülesanne", Str.doSave(), Str.cancel(), Str.saving(),
+        Str.newExercise, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createExercise(titleField.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { titleField.focus() }, parent = this

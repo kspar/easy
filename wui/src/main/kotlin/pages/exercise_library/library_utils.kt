@@ -8,7 +8,7 @@ enum class DirAccess {
     P, PR, PRA, PRAW, PRAWM
 }
 
-private val pathWhitelistRegex = Regex("[^A-Za-z0-9ÕÄÖÜŠŽõäöüšž_ ]")
+private val pathWhitelistRegex = Regex("[^A-Za-z0-9ÕÄÖÜŠŽõäöüšž()._\\- ]")
 
 fun createPathChainSuffix(items: List<String>): String =
     items.joinToString("/", "/") {

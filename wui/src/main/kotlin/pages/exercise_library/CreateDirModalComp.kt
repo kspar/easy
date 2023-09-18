@@ -1,6 +1,5 @@
 package pages.exercise_library
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
@@ -8,6 +7,7 @@ import dao.LibraryDirDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class CreateDirModalComp(
     private val parentDirId: String?,
@@ -16,7 +16,7 @@ class CreateDirModalComp(
 
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
-        "Uus kaust", Str.doSave(), Str.cancel(), Str.saving(),
+        "Uus kaust", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createDir(nameField.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { nameField.focus() }, parent = this

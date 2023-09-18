@@ -24,13 +24,14 @@ class StudentReadSubmissionsController {
     private val log = KotlinLogging.logger {}
 
     data class SubmissionResp(
-        @JsonProperty("id") val submissionId: String,
-        @JsonProperty("solution") val solution: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("submission_time") val submissionTime: DateTime,
-        @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
-        @JsonProperty("grade") val grade: GradeResp?
-    )
+            @JsonProperty("id") val submissionId: String,
+            @JsonProperty("number") val number: Int,
+            @JsonProperty("solution") val solution: String,
+            @JsonSerialize(using = DateTimeSerializer::class)
+            @JsonProperty("submission_time") val submissionTime: DateTime,
+            @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
+            @JsonProperty("grade") val grade: GradeResp?)
+
 
     data class Resp(
         @JsonProperty("submissions") val submissions: List<SubmissionResp>,
@@ -92,9 +93,10 @@ class StudentReadSubmissionsController {
 
         val submissions = submissionsQuery
             .limit(limit ?: count.toInt(), offset ?: 0)
-            .map {
+            .mapIndexed { i, it ->
                 SubmissionResp(
                     it[Submission.id].value.toString(),
+                    count.toInt() - i,
                     it[Submission.solution],
                     it[Submission.createdAt],
                     it[Submission.autoGradeStatus],

@@ -2,10 +2,11 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
-import core.ems.service.*
+import core.ems.service.ExercisesResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.selectAllCourseExercisesLatestSubmissions
 import mu.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,7 +31,6 @@ class TeacherReadCourseExercisesController {
         val courseId = courseIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId, true) }
-
         return Resp(selectAllCourseExercisesLatestSubmissions(courseId))
     }
 

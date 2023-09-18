@@ -9,7 +9,7 @@ import tsl.common.model.TSLFormat
 import java.io.File
 
 
-enum class TSL_SPEC_FORMAT { JSON, YAML }
+enum class TSLSpecFormat { JSON, YAML }
 
 private val yamlConfiguration = YamlConfiguration(polymorphismStyle = PolymorphismStyle.Property)
 private val TSLYAMLFormat = Yaml(configuration = yamlConfiguration)
@@ -26,14 +26,14 @@ fun compileTSL(
     tslSpec: String,
     tslCompilerVersion: String,
     backendID: String,
-    format: TSL_SPEC_FORMAT
+    format: TSLSpecFormat
 ): CompiledResult {
 
     when (backendID) {
         "tiivad" -> {
             val parseTree = when (format) {
-                TSL_SPEC_FORMAT.JSON -> TSLFormat.decodeFromString<TSL>(tslSpec)
-                TSL_SPEC_FORMAT.YAML -> TSLYAMLFormat.decodeFromString<TSL>(tslSpec)
+                TSLSpecFormat.JSON -> TSLFormat.decodeFromString<TSL>(tslSpec)
+                TSLSpecFormat.YAML -> TSLYAMLFormat.decodeFromString<TSL>(tslSpec)
             }
 
             // val irTree = IRTree(parseTree) TODO: Uncomment me if we will use intermediate tree (so far, we don't need)
@@ -57,13 +57,13 @@ fun compileTSL(
 
 fun main() {
     // TODO: Lisage siia faili nimi, mis asub juurkaustas:
-    //var fileName = "tsl/src/main/kotlin/com/example/demo/test_tsl.YAML"
     val fileName = "tsl/src/main/resources/test_tsl.YAML"
+    //val fileName = "tsl/src/main/resources/test_tsl.json"
     println(fileName)
 
     val inputText = File(fileName).readText(Charsets.UTF_8)
 
-    val compiledResult = compileTSL(inputText, "1.0.0", "tiivad", TSL_SPEC_FORMAT.YAML)
+    val compiledResult = compileTSL(inputText, "1.0.0", "tiivad", TSLSpecFormat.YAML)
     println(compiledResult.backendID)
     println(compiledResult.backendVersion)
     println(compiledResult.generatedScripts[0])

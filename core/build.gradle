@@ -98,7 +98,6 @@ dependencies {
 
     // Source code similarity
     implementation 'me.xdrop:fuzzywuzzy:1.2.0'
-    implementation "com.marcinmoskala:DiscreteMathToolkit:1.0.3"
 
     // Temporary JWT parsing for username migration
     implementation 'com.auth0:java-jwt:3.18.3'

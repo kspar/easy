@@ -1,5 +1,6 @@
 package dao
 
+import DateSerializer
 import EzDate
 import EzDateSerializer
 import debug
@@ -8,6 +9,7 @@ import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import kotlin.js.Date
 import kotlin.js.Promise
 
 object CourseExercisesTeacherDAO {
@@ -18,12 +20,15 @@ object CourseExercisesTeacherDAO {
     @Serializable
     data class Exercise(
         val id: String,
+        val exercise_id: String,
         val library_title: String,
         val title_alias: String? = null,
         @Serializable(with = EzDateSerializer::class)
         val student_visible_from: EzDate?,
         @Serializable(with = EzDateSerializer::class)
         val soft_deadline: EzDate?,
+        @Serializable(with = EzDateSerializer::class)
+        val hard_deadline: EzDate?,
         val grader_type: ExerciseDAO.GraderType,
         val ordering_idx: Int,
         val unstarted_count: Int,
@@ -40,7 +45,7 @@ object CourseExercisesTeacherDAO {
         debug { "Get exercises for teacher course $courseId" }
         fetchEms(
             "/teacher/courses/${courseId.encodeURIComponent()}/exercises", ReqMethod.GET,
-            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessPage)
+            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg)
         ).await()
             .parseTo(Exercises.serializer()).await().exercises
             .sortedBy { it.ordering_idx }
@@ -114,5 +119,87 @@ object CourseExercisesTeacherDAO {
             successChecker = { http200 }).await()
 
         Unit
+    }
+
+
+    @Serializable
+    data class TeacherCourseExerciseDetails(
+        val exercise_id: String,
+        val title: String,
+        val title_alias: String?,
+        val instructions_html: String?,
+        val instructions_adoc: String?,
+        val text_html: String?,
+        val text_adoc: String?,
+        val student_visible: Boolean,
+        @Serializable(with = DateSerializer::class)
+        val student_visible_from: Date?,
+        @Serializable(with = DateSerializer::class)
+        val hard_deadline: Date?,
+        @Serializable(with = DateSerializer::class)
+        val soft_deadline: Date?,
+        val grader_type: ExerciseDAO.GraderType,
+        val threshold: Int,
+        @Serializable(with = DateSerializer::class)
+        val last_modified: Date,
+        val assessments_student_visible: Boolean,
+        val grading_script: String?,
+        val container_image: String?,
+        val max_time_sec: Int?,
+        val max_mem_mb: Int?,
+        val assets: List<AutoAsset>?,
+        val executors: List<AutoExecutor>?
+    ) {
+        val effectiveTitle = title_alias ?: title
+    }
+
+    @Serializable
+    data class AutoAsset(
+        val file_name: String,
+        val file_content: String
+    )
+
+    @Serializable
+    data class AutoExecutor(
+        val id: String,
+        val name: String
+    )
+
+    fun getCourseExerciseDetails(courseId: String, courseExerciseId: String) = doInPromise {
+        fetchEms(
+            "/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}",
+            ReqMethod.GET,
+            successChecker = { http200 },
+            errorHandler = ErrorHandlers.noCourseAccessMsg
+        ).await().parseTo(TeacherCourseExerciseDetails.serializer()).await()
+    }
+
+
+    @Serializable
+    data class LatestSubmissions(
+        val student_count: Long,
+        val students: List<LatestSubmission>
+    )
+
+    @Serializable
+    data class LatestSubmission(
+        val student_id: String,
+        val given_name: String,
+        val family_name: String,
+        val submission_id: String?,
+        @Serializable(with = EzDateSerializer::class)
+        val submission_time: EzDate?,
+        val grade: Int?,
+        val graded_by: ExerciseDAO.GraderType?,
+        val groups: String?
+    )
+
+    fun getLatestSubmissions(courseId: String, courseExerciseId: String, groupId: String? = null) = doInPromise {
+        debug { "Get latest submissions for course $courseId exercise $courseExerciseId" }
+        val q = if (groupId != null) createQueryString("group" to groupId) else ""
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/latest/students$q",
+            ReqMethod.GET,
+            successChecker = { http200 }).await()
+            .parseTo(LatestSubmissions.serializer()).await()
     }
 }

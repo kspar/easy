@@ -30,6 +30,7 @@ enum class ReqError(val errorCodeStr: String) {
 
     TSL_COMPILE_FAILED("TSL_COMPILE_FAILED"),
 
+    COURSE_EXERCISE_CLOSED("COURSE_EXERCISE_CLOSED"),
 }
 
 

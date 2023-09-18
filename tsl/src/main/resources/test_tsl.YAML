@@ -15,6 +15,7 @@ tests:
         fileContent: Sisendfaili sisu.\nRida2\nRida3\nRida4
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 987
         expectedValue:
           - down
           - up
@@ -38,6 +39,25 @@ tests:
       passedMessage: Programm ei visanud erindit.
       failedMessage: Programm viskas erindi.
     name: Programmi käivituse test.
+
+  - type: program_execution_test
+    pointsWeight: 1
+    name: null
+    inputs: null
+    passedNext: null
+    failedNext: null
+    visibleToUser: True
+    id: 769
+    standardInputData: [
+      "a"
+    ]
+    inputFiles: [
+    ]
+    genericChecks: [
+    ]
+    outputFileChecks: [
+    ]
+    exceptionCheck: null
 
   - type: program_imports_module_test
     id: 2
@@ -104,6 +124,7 @@ tests:
   - type: program_contains_keyword_test
     id: 8
     genericCheck:
+      id: 876
       checkType: ANY_OF_THESE
       expectedValue:
         - seosta_lapsed_ja_vanemad
@@ -128,6 +149,7 @@ tests:
     id: 10
     functionName: seosta_lapsed_ja_vanemad
     genericCheck:
+      id: 765
       checkType: ANY_OF_THESE
       expectedValue:
         - ff.close()
@@ -246,9 +268,14 @@ tests:
     inputFiles:
       - fileName: sisendfail.txt
         fileContent: Sisendfaili sisu.
-    returnValue: 3
+    returnValueCheck:
+      returnValue: 3
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 654
         elementsOrdered: false
         expectedValue:
           - down
@@ -272,7 +299,11 @@ tests:
     functionName: võta_hind
     functionType: METHOD
     createObject: return Raamat("Harry Potter", 10.7)
-    returnValue: 10.7
+    returnValueCheck:
+      returnValue: 10.7
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     name: Funktsiooni käivituse test (isendimeetod).
 
   - type: function_execution_test
@@ -280,7 +311,11 @@ tests:
     functionName: loe
     functionType: METHOD
     createObject: return Lugemik
-    returnValue: True
+    returnValueCheck:
+      returnValue: True
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
     name: Funktsiooni käivituse test (klassimeetod).
 
   - type: function_execution_test
@@ -290,13 +325,13 @@ tests:
     createObject: return Lugemik
     genericChecks:
       - checkType: ANY_OF_THESE
+        id: 543
         elementsOrdered: false
         expectedValue:
           - 2.3
         beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
         passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
         failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
-    returnValue: True
     name: Funktsiooni käivituse test (klassimeetod).
 
   - type: class_imports_module_test

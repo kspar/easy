@@ -2,19 +2,22 @@ package pages.sidenav
 
 import Auth
 import Role
-import Str
 import debug
 import kotlinx.coroutines.await
 import libheaders.MSidenavInstance
 import libheaders.Materialize
+import pages.about.AboutPage
+import pages.terms.TermsProxyPage
 import rip.kspar.ezspa.*
-import tmRender
+import template
+import translation.Str
 import kotlin.js.Promise
 
 enum class ActivePage {
-    MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS,
+    MY_COURSES, COURSE_EXERCISES, COURSE_GRADES, COURSE_PARTICIPANTS, COURSE_SIMILARITY_ANALYSIS,
     LIBRARY,
     ARTICLES,
+    STUDENT_EXERCISE,
 }
 
 object Sidenav {
@@ -66,11 +69,17 @@ object Sidenav {
         sidenavComp.createAndBuild().await()
     }
 
-    fun refresh(spec: Spec) {
+    fun refresh(spec: Spec, forceUpdateCourse: Boolean = false) {
         doInPromise {
             // TODO: test, is this necessary?
             sidenavComp.updateRole(if (Auth.authenticated) Auth.activeRole else Role.STUDENT).await()
-            sidenavComp.updateCourse(spec.courseId).await()
+
+            // Updating the course section takes time but active page should change ASAP,
+            // so let's update it now and later again after rebuild
+            if (forceUpdateCourse)
+                sidenavComp.updateActivePage(spec.activePage).await()
+
+            sidenavComp.updateCourse(spec.courseId, forceUpdateCourse).await()
             sidenavComp.updateActivePage(spec.activePage).await()
             sidenavComp.updatePageItems(spec.pageSection).await()
         }
@@ -119,18 +128,21 @@ class SidenavRootComp(
             trailerSectionComp
         )
 
-    override fun render(): String = tmRender(
-        "t-c-sidenav",
-        "headSectionId" to headSectionComp.dstId,
-        "generalSectionId" to generalSectionComp.dstId,
-        "courseSectionId" to courseSectionDstId,
-        "pageSectionId" to pageSectionDstId,
-        "trailerSectionId" to trailerSectionComp.dstId,
-
-        // TODO: rm when replaced with modal comp
-        "newExerciseLabel" to "Uus ülesanne",
-        "newExerciseTitleLabel" to "Ülesande nimi",
-        "doSaveLabel" to Str.doSave(),
+    override fun render(): String = template(
+        """
+            <ul id="sidenav" class="sidenav sidenav-fixed">
+                $headSectionComp
+                $generalSectionComp
+                <ez-dst id="$courseSectionDstId"></ez-dst>
+                <ez-dst id="$pageSectionDstId"></ez-dst>
+                <ez-dst id="${trailerSectionComp.dstId}" class="trailer"></ez-dst>
+                <ez-sidenav-footer>
+                    <a href=${AboutPage.link()} class='sidenav-close'>{{about}}</a> · <a href='${TermsProxyPage.link()}' target="_blank" class='sidenav-close'>{{tos}}</a>
+                </ez-sidenav-footer>
+            </ul>
+        """.trimIndent(),
+        "tos" to Str.linkTOS,
+        "about" to Str.linkAbout,
     )
 
     override fun postRender() {
@@ -172,15 +184,15 @@ class SidenavRootComp(
         }
     }
 
-    fun updateCourse(newCourseId: String?) = doInPromise {
-        if (courseId != newCourseId) {
+    fun updateCourse(newCourseId: String?, force: Boolean) = doInPromise {
+        if (courseId != newCourseId || force) {
             debug { "Sidenav updating course section" }
             courseId = newCourseId
 
             when {
                 newCourseId != null -> {
                     val comp = SidenavCourseSectionComp(activeRole, newCourseId, this, courseSectionDstId)
-                    courseSectionComp?.destroy()
+                    // Recreate without destroying i.e. visually the content will change in-place without clearing first
                     courseSectionComp = comp
                     comp.createAndBuild().await()
                 }
@@ -194,12 +206,8 @@ class SidenavRootComp(
     }
 
     fun updateActivePage(newActivePage: ActivePage?) = doInPromise {
-        if (activePage != newActivePage) {
-            debug { "Sidenav updating active page" }
-            activePage = newActivePage
-
-            refreshActivePage()
-        }
+        activePage = newActivePage
+        refreshActivePage()
     }
 
     private fun refreshActivePage() {

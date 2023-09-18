@@ -53,6 +53,8 @@ sealed class Test : TSLModel {
     //return_value
     //fun_arguments
     //fun_param_count
+
+    abstract fun copyTest(newId: Long): Test
 }
 
 @Serializable
@@ -61,6 +63,7 @@ data class PlaceholderTest(
     override val id: Long,
 ) : Test() {
     override fun getDefaultName() = "Uus test"
+    override fun copyTest(newId: Long) = copy(id = newId)
 }
 
 enum class CheckType {
@@ -76,13 +79,13 @@ enum class DataCategory {
 }
 
 @Serializable
-class FileData(
+data class FileData(
     val fileName: String,
     val fileContent: String
 )
 
 @Serializable
-class FieldData(
+data class FieldData(
     val fieldName: String,
     val fieldContent: String
 )
@@ -90,8 +93,10 @@ class FieldData(
 // TODO: Kui on nt vaja kontrollida nimede olemasolu, siis kuidas me kontrollime,
 //  et näiteks 3 nime eksisteerib väljundis, aga 2 nime mitte?
 
+// TODO: rename to DataCheck or ValueCheck?
 @Serializable
 data class GenericCheck(
+    var id: Long,
     val checkType: CheckType,
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>,
@@ -127,7 +132,7 @@ data class OutputFileCheck(
 ) : Check()
 
 @Serializable
-class ExceptionCheck(
+data class ExceptionCheck(
     val mustNotThrowException: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -135,14 +140,15 @@ class ExceptionCheck(
 ) : Check()
 
 @Serializable
-class ReturnValueCheck(
+data class ReturnValueCheck(
+    val returnValue: String,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
 ) : Check()
 
 @Serializable
-class ParamValueCheck(
+data class ParamValueCheck(
     val paramNumber: Int,
     val expectedValue: String,
     override val beforeMessage: String,
@@ -151,7 +157,7 @@ class ParamValueCheck(
 ) : Check()
 
 @Serializable
-class ClassInstanceCheck(
+data class ClassInstanceCheck(
     val fieldsFinal: List<FieldData> = emptyList(),
     val checkName: Boolean,
     val checkValue: Boolean,
@@ -163,7 +169,7 @@ class ClassInstanceCheck(
 
 
 @Serializable
-class ContainsCheck(
+data class ContainsCheck(
     val mustNotContain: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -171,7 +177,7 @@ class ContainsCheck(
 ) : Check()
 
 @Serializable
-class RecursiveCheck(
+data class RecursiveCheck(
     val mustNotBeRecursive: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,
@@ -179,7 +185,7 @@ class RecursiveCheck(
 ) : Check()
 
 @Serializable
-class CallsCheck(
+data class CallsCheck(
     val mustNotCall: Boolean,
     override val beforeMessage: String,
     override val passedMessage: String,

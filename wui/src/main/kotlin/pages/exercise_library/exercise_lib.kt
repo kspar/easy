@@ -2,7 +2,6 @@ package pages.exercise_library
 
 import EzDate
 import Icons
-import Str
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
@@ -11,14 +10,15 @@ import dao.LibraryDAO
 import dao.LibraryDirDAO
 import debug
 import kotlinx.coroutines.await
-import pages.exercise.AddToCourseModalComp
-import pages.exercise.ExercisePage
+import pages.exercise_in_library.AddToCourseModalComp
+import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
 import successMessage
+import translation.Str
 
 
 class ExerciseLibComp(
@@ -82,7 +82,7 @@ class ExerciseLibComp(
             BreadcrumbsComp(createDirChainCrumbs(parents, currentDir.name), this)
 
         } else {
-            BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary())), this)
+            BreadcrumbsComp(listOf(Crumb(Str.exerciseLibrary)), this)
         }
 
         val libResp = libRespPromise.await()
@@ -95,10 +95,10 @@ class ExerciseLibComp(
         if (currentDirAccess == null || currentDirAccess >= DirAccess.PRA) {
             Sidenav.replacePageSection(
                 Sidenav.PageSection(
-                    libResp.current_dir?.name ?: Str.exerciseLibrary(),
+                    libResp.current_dir?.name ?: Str.exerciseLibrary,
 
                     buildList {
-                        add(Sidenav.Action(Icons.newExercise, "Uus ülesanne") {
+                        add(Sidenav.Action(Icons.newExercise, Str.newExercise) {
                             val ids = newExerciseModal.openWithClosePromise().await()
                             if (ids != null) {
                                 EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
@@ -148,7 +148,7 @@ class ExerciseLibComp(
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
                 titleIcon = if (p.isShared) EzCollComp.TitleIcon(Icons.teacher, "Jagatud") else null,
-                titleLink = ExercisePage.link(p.exerciseId),
+                titleAction = { EzSpa.PageManager.navigateTo(ExercisePage.link(p.exerciseId)) },
                 topAttr = EzCollComp.SimpleAttr(
                     "Viimati muudetud",
                     "${p.modifiedAt.toHumanString(EzDate.Format.DATE)} · ${p.modifiedBy}",
@@ -176,7 +176,7 @@ class ExerciseLibComp(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isShared) Icons.sharedFolder else Icons.library),
                 p.title,
-                titleLink = ExerciseLibraryPage.linkToDir(p.dirId),
+                titleAction = { EzSpa.PageManager.navigateTo(ExerciseLibraryPage.linkToDir(p.dirId)) },
 //                bottomAttrs = listOf(
 //                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
 //                    EzCollComp.SimpleAttr(

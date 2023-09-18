@@ -1,11 +1,7 @@
+import translation.Str
 import kotlin.js.Date
 import kotlin.math.roundToInt
 
-
-val MONTHS = listOf(
-    "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
-    "juuli", "august", "september", "oktoober", "november", "detsember"
-)
 
 data class EzDate(val date: Date) : Comparable<EzDate> {
     companion object {
@@ -13,6 +9,7 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         fun epoch() = EzDate(Date(0))
         fun future() = EzDate(Date(32529329048000))
         fun nowDelta(deltaMs: Long) = EzDate(Date(Date.now() + deltaMs))
+        fun nowDeltaDays(deltaDays: Int) = nowDelta(deltaDays * 24 * 60 * 60 * 1000L)
     }
 
     enum class Format {
@@ -26,11 +23,19 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
         FULL,
     }
 
-    // this is before other - this < other
+    // this is before other == this < other
     override fun compareTo(other: EzDate): Int =
         (this.date.getTime() - other.date.getTime()).roundToInt()
 
     override fun toString() = toHumanString(Format.FULL)
+
+    fun isSoonerThanHours(hours: Int) =
+        this < nowDelta(hours * 60 * 60 * 1000L)
+
+    fun isOnSameMinute(other: EzDate): Boolean =
+        isOnSameDate(other)
+                && this.date.getHours() == other.date.getHours()
+                && this.date.getMinutes() == other.date.getMinutes()
 
     fun isOnSameDate(other: EzDate): Boolean {
         val isSameDate = this.date.getDate() == other.date.getDate()
@@ -49,16 +54,21 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
 
         // Today
         if (this.isOnSameDate(now))
-            return "täna $paddedHours:$paddedMins"
+            return "${Str.today} $paddedHours:$paddedMins"
 
         // Yesterday
         val yesterday = nowDelta(-86_400_000)  // -24 hrs
         if (this.isOnSameDate(yesterday))
-            return "eile $paddedHours:$paddedMins"
+            return "${Str.yesterday} $paddedHours:$paddedMins"
+
+        // Tomorrow
+        val tomorrow = nowDelta(86_400_000)
+        if (this.isOnSameDate(tomorrow))
+            return "${Str.tomorrow} $paddedHours:$paddedMins"
 
         // Later
         val day = this.date.getDate().toString()
-        val monthName = MONTHS[this.date.getMonth()]
+        val monthName = Str.monthList[this.date.getMonth()]
         val year4digit = this.date.getFullYear().toString()
         return when (format) {
             Format.SHORT -> {
@@ -110,7 +120,7 @@ fun Date.toEstonianString(): String {
     val d = this
     val paddedHours = d.getHours().toString().padStart(2, '0')
     val paddedMins = d.getMinutes().toString().padStart(2, '0')
-    return "${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
+    return "${d.getDate()}. ${Str.monthList[d.getMonth()]} ${d.getFullYear()}, $paddedHours:$paddedMins"
 }
 
 operator fun Date.compareTo(other: Date): Int =

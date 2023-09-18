@@ -2,6 +2,7 @@ package dao
 
 import EzDate
 import EzDateSerializer
+import Icons
 import blankToNull
 import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
@@ -65,7 +66,12 @@ object ExerciseDAO {
     }
 
     enum class GraderType {
-        AUTO, TEACHER
+        AUTO, TEACHER;
+
+        fun icon() = when (this) {
+            AUTO -> Icons.robot
+            TEACHER -> Icons.teacherFace
+        }
     }
 
     class NoLibAccessException : Exception()
@@ -160,4 +166,42 @@ object ExerciseDAO {
             }
         }
     }
+
+
+    @Serializable
+    data class Similarity(
+        val submissions: List<SimilarSubmission>,
+        val scores: List<SimilarityScore>
+    )
+
+    @Serializable
+    data class SimilarSubmission(
+        val id: String,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        val solution: String,
+        val given_name: String,
+        val family_name: String,
+        val course_title: String
+    )
+
+    @Serializable
+    data class SimilarityScore(
+        val sub_1: String,
+        val sub_2: String,
+        val score_a: Int,
+        val score_b: Int
+    )
+
+    fun checkSimilarity(exerciseId: String, courses: List<String>, submissionIds: List<String>): Promise<Similarity> =
+        doInPromise {
+            debug { "Checking similarity for exercise $exerciseId on courses $courses" }
+            fetchEms("/exercises/${exerciseId.encodeURIComponent()}/similarity", ReqMethod.POST,
+                mapOf(
+                    "courses" to courses.map { mapOf("id" to it) },
+                    "submissions" to submissionIds.map { mapOf("id" to it) },
+                ),
+                successChecker = { http200 }
+            ).await().parseTo(Similarity.serializer()).await()
+        }
 }

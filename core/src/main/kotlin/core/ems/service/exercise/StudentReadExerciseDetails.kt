@@ -37,7 +37,8 @@ class StudentReadExerciseDetailsController {
         @JsonProperty("deadline") val softDeadline: DateTime?,
         @JsonProperty("grader_type") val graderType: GraderType,
         @JsonProperty("threshold") val threshold: Int,
-        @JsonProperty("instructions_html") val instructionsHtml: String?
+        @JsonProperty("instructions_html") val instructionsHtml: String?,
+        @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
     )
 
     @Secured("ROLE_STUDENT")
@@ -62,7 +63,8 @@ class StudentReadExerciseDetailsController {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(
                 ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
-                CourseExercise.softDeadline, CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
+                CourseExercise.softDeadline, CourseExercise.hardDeadline,
+                CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
                 CourseExercise.titleAlias
             )
             .select {
@@ -71,13 +73,15 @@ class StudentReadExerciseDetailsController {
                         ExerciseVer.validTo.isNull()
             }
             .map {
+                val hardDeadline = it[CourseExercise.hardDeadline]
                 Resp(
                     it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
                     it[ExerciseVer.textHtml],
                     it[CourseExercise.softDeadline],
                     it[ExerciseVer.graderType],
                     it[CourseExercise.gradeThreshold],
-                    it[CourseExercise.instructionsHtml]
+                    it[CourseExercise.instructionsHtml],
+                    hardDeadline == null || hardDeadline.isAfterNow,
                 )
             }
             .singleOrInvalidRequest()

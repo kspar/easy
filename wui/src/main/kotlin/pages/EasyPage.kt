@@ -1,20 +1,27 @@
 package pages
 
 import Auth
+import Icons
 import Role
 import ScrollPosition
-import Str
+import components.ToastIds
+import components.ToastThing
+import components.activeToasts
+import debug
 import getContainer
 import getWindowScrollPosition
 import kotlinx.dom.clear
 import kotlinx.serialization.Serializable
 import libheaders.Materialize
+import pages.course_exercises_list.CourseExercisesPage
+import pages.courses.CoursesPage
 import pages.sidenav.Sidenav
 import parseTo
+import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.Page
 import rip.kspar.ezspa.getElemsByClass
 import stringify
-import tmRender
+import translation.Str
 
 abstract class EasyPage : Page() {
 
@@ -44,18 +51,34 @@ abstract class EasyPage : Page() {
     // Title with no info by default
     open val titleSpec: Title.Spec = Title.Spec()
 
+    // Course ID if this page involves a course
+    open val courseId: String? = null
+
     final override fun assertAuthorisation() {
         super.assertAuthorisation()
 
-        if (pageAuth == PageAuth.REQUIRED && (!Auth.authenticated || allowedRoles.none { it == Auth.activeRole })) {
-            getContainer().innerHTML = tmRender(
-                "tm-no-access-page", mapOf(
-                    "title" to Str.noPermissionForPageTitle(),
-                    "msg" to Str.noPermissionForPageMsg()
+        if (pageAuth == PageAuth.REQUIRED) {
+            if (!Auth.authenticated) {
+                error("Not authenticated")
+            }
+
+            if (allowedRoles.none { it == Auth.activeRole }) {
+                val c = courseId
+                if (c != null) {
+                    debug { "Navigate to course exercise page" }
+                    EzSpa.PageManager.navigateTo(CourseExercisesPage.link(c))
+                } else {
+                    debug { "Navigate to courses page" }
+                    EzSpa.PageManager.navigateTo(CoursesPage.link())
+                }
+
+                ToastThing(
+                    Str.noPermissionForPageMsg, icon = Icons.errorUnf, displayLengthSec = 10,
+                    id = ToastIds.noPermissionForPage
                 )
-            )
-            Sidenav.refresh(Sidenav.Spec())
-            error("User is not one of $allowedRoles")
+                Sidenav.refresh(Sidenav.Spec())
+                error("Role ${Auth.activeRole} not allowed")
+            }
         }
     }
 
@@ -80,7 +103,7 @@ abstract class EasyPage : Page() {
             .forEach { it?.destroy() }
 
         // Dismiss toasts
-        Materialize.Toast.dismissAll()
+        activeToasts.forEach { it.value.dismiss() }
     }
 
 

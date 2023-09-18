@@ -15,6 +15,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
 import toEstonianString
+import translation.Str
 import kotlin.js.Date
 
 
@@ -110,7 +111,7 @@ class ParticipantsTeachersListComp(
         val filterGroups = buildList {
             if (hasGroups) add(
                 EzCollComp.FilterGroup(
-                    "Rühm",
+                    Str.accountGroup,
                     listOf(EzCollComp.Filter<TeacherProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
                             groups.map { g ->
                                 EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }

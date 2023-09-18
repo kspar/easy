@@ -27,11 +27,18 @@ fun partitionElementsWithAction(
     selectedElements.forEach(activeAction)
 }
 
-fun Element.show(doShow: Boolean = true) {
-    if (doShow)
-        this.removeClass("display-none")
-    else
-        this.addClass("display-none")
+fun Element.show(doShow: Boolean = true, retainSpace: Boolean = false) {
+    if (retainSpace) {
+        if (doShow)
+            this.removeClass("hidden")
+        else
+            this.addClass("hidden")
+    } else {
+        if (doShow)
+            this.removeClass("display-none")
+        else
+            this.addClass("display-none")
+    }
 }
 
-fun Element.hide() = show(false)
+fun Element.hide(retainSpace: Boolean = false) = show(false, retainSpace)

@@ -2,13 +2,13 @@ package pages.sidenav
 
 import Icons
 import Role
-import Str
 import kotlinx.coroutines.await
-import pages.course_exercises.CourseExercisesPage
+import pages.course_exercises_list.CourseExercisesPage
 import pages.courses.CoursesPage
 import pages.exercise_library.ExerciseLibraryPage
 import rip.kspar.ezspa.*
-import tmRender
+import template
+import translation.Str
 
 class SidenavGeneralSectionComp(
     private val activeRole: Role,
@@ -26,8 +26,19 @@ class SidenavGeneralSectionComp(
 
     override val children = listOf(newCourseModal)
 
-    override fun render(): String = tmRender(
-        "t-c-sidenav-general-section",
+    override fun render(): String = template(
+        """
+            <li><div class="divider"></div></li>
+            <li id="{{coursesId}}"><a href="{{coursesLink}}" class="sidenav-close">{{{coursesIcon}}}{{coursesLabel}}</a></li>
+            {{#isTeacherOrAdmin}}
+                <li id="{{libId}}"><a href="{{libLink}}" class="sidenav-close">{{{libIcon}}}{{libLabel}}</a></li>
+            {{/isTeacherOrAdmin}}
+            {{#isAdmin}}
+        <!--        <li id="{{articlesId}}"><a href="{{articlesLink}}" class="sidenav-close">{{{articlesIcon}}}{{articlesLabel}}</a></li>-->
+                <li><a id="{{newCourseLinkId}}" href='#!' class="sidenav-close">{{{newCourseIcon}}}{{newCourseLabel}}</a></li>
+            {{/isAdmin}}
+            <ez-dst id="{{newCourseModalDst}}"></ez-dst>
+        """.trimIndent(),
         "isTeacherOrAdmin" to listOf(Role.TEACHER, Role.ADMIN).contains(activeRole),
         "isAdmin" to (activeRole == Role.ADMIN),
         "coursesId" to coursesItemId,
@@ -41,15 +52,15 @@ class SidenavGeneralSectionComp(
         "libIcon" to Icons.library,
         "articlesIcon" to Icons.articles,
         "newCourseIcon" to Icons.newCourse,
-        "coursesLabel" to Str.myCourses(),
-        "libLabel" to Str.exerciseLibrary(),
+        "coursesLabel" to Str.myCourses,
+        "libLabel" to Str.exerciseLibrary,
         "articlesLabel" to "Artiklid",
-        "newCourseLabel" to "Uus kursus",
+        "newCourseLabel" to Str.newCourse,
         "newCourseModalDst" to newCourseModal.dstId,
     )
 
     override fun postRender() {
-        getElemByIdOrNull(newCourseLinkId)?.onVanillaClick(false) {
+        getElemByIdOrNull(newCourseLinkId)?.onVanillaClick(true) {
             val courseId = newCourseModal.openWithClosePromise().await()
             courseId?.let {
                 EzSpa.PageManager.navigateTo(CourseExercisesPage.link(courseId))

@@ -17,6 +17,8 @@ fun template(@Language("handlebars") templateStr: String, data: Map<String, Any?
 fun template(@Language("handlebars") templateStr: String, vararg dataPairs: Pair<String, Any?>): String =
     template(templateStr, mapOf(*dataPairs))
 
+fun escapeHTML(html: String) = template("{{v}}", "v" to html)
+
 
 private fun render(template: String, data: Map<String, Any?>): String {
     return Mustache.render(template, data.toJsObj())

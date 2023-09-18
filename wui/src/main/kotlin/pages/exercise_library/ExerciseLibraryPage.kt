@@ -3,7 +3,6 @@ package pages.exercise_library
 import CONTENT_CONTAINER_ID
 import PageName
 import Role
-import Str
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
@@ -13,6 +12,7 @@ import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getHtml
+import translation.Str
 
 object ExerciseLibraryPage : EasyPage() {
 
@@ -28,7 +28,7 @@ object ExerciseLibraryPage : EasyPage() {
         get() = Sidenav.Spec(activePage = ActivePage.LIBRARY)
 
     override val titleSpec: Title.Spec
-        get() = Title.Spec(Str.exerciseLibrary())
+        get() = Title.Spec(Str.exerciseLibrary)
 
     // root - /library/dir/root
     // dir - /library/dir/{dirId}/parent1/parent2/dir

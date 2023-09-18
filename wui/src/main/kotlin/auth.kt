@@ -1,7 +1,8 @@
-import kotlinx.browser.localStorage
-import org.w3c.dom.get
-import org.w3c.dom.set
+import components.ToastIds
+import components.ToastThing
 import rip.kspar.ezspa.objOf
+import translation.Str
+import translation.activeLanguage
 import kotlin.js.Promise
 
 enum class Role(val id: String) {
@@ -16,12 +17,11 @@ open external class InternalKeycloak(confUrl: String = definedExternally) {
     val tokenParsed: dynamic
     val authenticated: Boolean
 
-    fun createAccountUrl(): String
+    fun createAccountUrl(options: dynamic = definedExternally): String
     fun createRegisterUrl(options: dynamic = definedExternally): String
-    fun createLogoutUrl(options: dynamic = definedExternally): String
 
     protected fun init(options: dynamic): Promise<Boolean>
-    protected fun login(options: dynamic = definedExternally)
+    fun login(options: dynamic = definedExternally)
     fun logout(options: dynamic = definedExternally)
     protected fun updateToken(minValidSec: Int): Promise<Boolean>
 }
@@ -46,11 +46,11 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
 
     fun switchToRole(newRole: Role) {
         if (!hasRole(newRole)) {
-            errorMessage { Str.somethingWentWrong() }
+            errorMessage { Str.somethingWentWrong }
             error("Role change to ${newRole.id} but user doesn't have that role")
         }
         activeRole = newRole
-        localStorage["activeRole"] = newRole.id
+        LocalStore.set(Key.ACTIVE_ROLE, newRole.id)
     }
 
 
@@ -69,7 +69,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                     else -> {
                         if (isRequired) {
                             debug { "Redirecting to login" }
-                            login()
+                            login(objOf("locale" to activeLanguage.localeId))
                         }
                     }
                 }
@@ -77,7 +77,9 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             }.catch {
                 permanentErrorMessage(
                     false,
-                    UserMessageAction("Proovi uuesti", onActivate = ::login)
+                    UserMessageAction(
+                        "Proovi uuesti",
+                        onActivate = { login(objOf("locale" to activeLanguage.localeId)) })
                 ) { "Autentimine ebaõnnestus." }
                 reject(RuntimeException("Authentication error"))
             }
@@ -91,16 +93,19 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 resolve(refreshed)
             }.catch {
                 debug { "Token refresh failed" }
-                permanentErrorMessage(
-                    true,
-                    UserMessageAction("Logi sisse", onActivate = ::login)
-                ) { "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida." }
+                ToastThing(
+                    "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida.",
+                    ToastThing.Action("Logi sisse", { login(objOf("locale" to activeLanguage.localeId)) }),
+                    Icons.errorUnf,
+                    displayLengthSec = ToastThing.LONG_TIME,
+                    id = ToastIds.loginToContinue
+                )
                 reject(RuntimeException("Token refresh failed"))
             }
         }
 
     private fun getPersistedRole(): Role? {
-        val persistedRoleStr = localStorage["activeRole"]
+        val persistedRoleStr = LocalStore.get(Key.ACTIVE_ROLE)
         val persistedRole = Role.values().firstOrNull { it.id == persistedRoleStr }
         return when {
             persistedRole == null -> null

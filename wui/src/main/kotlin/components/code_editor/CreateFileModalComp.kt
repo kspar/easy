@@ -1,14 +1,14 @@
 package components.code_editor
 
-import Str
 import components.form.StringFieldComp
 import components.form.validation.ConstraintViolation
 import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
+import translation.Str
 
 class CreateFileModalComp(
     existingFilenames: List<String>,
@@ -28,7 +28,7 @@ class CreateFileModalComp(
 
     // FIXME: does not allow multiple code editors on same page due to constant id
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
-        "Uus fail", Str.doSave(), Str.cancel(),
+        "Uus fail", Str.doSave, Str.cancel,
         defaultReturnValue = null,
         primaryAction = { filenameField.getValue() }, primaryPostAction = ::reinitialise,
         onOpen = { filenameField.focus() }, parent = this
