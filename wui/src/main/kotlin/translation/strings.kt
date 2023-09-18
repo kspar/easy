@@ -149,12 +149,7 @@ sealed class TranslatableStrings {
     abstract val tabSubmissionsLabel: String
     abstract val softDeadlineLabel: String
     abstract val hardDeadlineLabel: String
-    abstract val graderTypeLabel: String
-    abstract val thresholdLabel: String
-    abstract val studentVisibleLabel: String
     abstract val studentVisibleFromTimeLabel: String
-    abstract val assStudentVisibleLabel: String
-    abstract val lastModifiedLabel: String
     abstract val graderTypeAuto: String
     abstract val graderTypeTeacher: String
     abstract val autoAssessmentLabel: String
@@ -279,12 +274,7 @@ object EstStrings : TranslatableStrings() {
     override val doSubmit = "Esita"
     override val softDeadlineLabel = "Tähtaeg"
     override val hardDeadlineLabel = "Sulgemise aeg"
-    override val graderTypeLabel = "Hindamine"
-    override val thresholdLabel = "Lävend"
-    override val studentVisibleLabel = "Õpilastele nähtav"
     override val studentVisibleFromTimeLabel = "Muutub nähtavaks"
-    override val assStudentVisibleLabel = "Hinnangud õpilastele nähtavad"
-    override val lastModifiedLabel = "Viimati muudetud"
     override val submissionTimeLabel = "Esitamise aeg"
 
     override val studentsSingular = "õpilane"
@@ -511,13 +501,8 @@ object EngStrings : TranslatableStrings() {
     override val submissionSingular = "submission"
     override val submissionPlural = "submissions"
     override val softDeadlineLabel = "Deadline"
-    override val hardDeadlineLabel = "Closing time"
-    override val graderTypeLabel = "Grading"
-    override val thresholdLabel = "Threshold"
-    override val studentVisibleLabel = "Visible to students"
+    override val hardDeadlineLabel = "Submissions allowed until"
     override val studentVisibleFromTimeLabel = "Visible from"
-    override val assStudentVisibleLabel = "Assessments visible to students"
-    override val lastModifiedLabel = "Last modified"
     override val graderTypeAuto = "automatic"
     override val graderTypeTeacher = "manual"
     override val autoAssessmentLabel = "Automated tests"

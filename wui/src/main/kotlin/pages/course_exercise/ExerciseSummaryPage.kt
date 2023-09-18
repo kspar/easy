@@ -51,7 +51,6 @@ import rip.kspar.ezspa.*
 import saveAsFile
 import successMessage
 import tmRender
-import toEstonianString
 import translation.Str
 import warn
 import kotlin.js.Date
@@ -263,20 +262,12 @@ object ExerciseSummaryPage : EasyPage() {
         val exerciseMap = mutableMapOf<String, Any?>(
             "softDeadlineLabel" to Str.softDeadlineLabel,
             "hardDeadlineLabel" to Str.hardDeadlineLabel,
-            "graderTypeLabel" to Str.graderTypeLabel,
-            "thresholdLabel" to Str.thresholdLabel,
-            "studentVisibleLabel" to Str.studentVisibleLabel,
             "studentVisibleFromTimeLabel" to Str.studentVisibleFromTimeLabel,
-            "assStudentVisibleLabel" to Str.assStudentVisibleLabel,
-            "lastModifiedLabel" to Str.lastModifiedLabel,
-            "softDeadline" to exercise.soft_deadline?.toEstonianString(),
-            "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-            "graderType" to if (exercise.grader_type == ExerciseDAO.GraderType.AUTO) Str.graderTypeAuto else Str.graderTypeTeacher,
-            "threshold" to exercise.threshold,
-            "studentVisible" to Str.translateBoolean(exercise.student_visible),
-            "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.toEstonianString() else null,
-            "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
-            "lastModified" to exercise.last_modified.toEstonianString(),
+            "softDeadline" to exercise.soft_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
+            "hardDeadline" to exercise.hard_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
+            "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.let {
+                EzDate(it).toHumanString(EzDate.Format.FULL)
+            } else null,
             "exerciseTitle" to effectiveTitle,
             "exerciseText" to exercise.text_html,
             "updateModalDst" to updateModalDst,
@@ -763,7 +754,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "notLatestSubmissionLink" to Str.toLatestSubmissionLink,
                     "isLatest" to isLast,
                     "timeLabel" to Str.submissionTimeLabel,
-                    "time" to time.toEstonianString(),
+                    "time" to EzDate(time).toHumanString(EzDate.Format.FULL),
                     "addGradeLink" to Str.addAssessmentLink,
                     "solution" to solution
                 )
@@ -846,7 +837,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "missingLabel" to Str.notGradedYet,
                     "id" to it.id,
                     "number" to submissionNumber--,
-                    "time" to it.created_at.toEstonianString()
+                    "time" to EzDate(it.created_at).toHumanString(EzDate.Format.FULL)
                 )
 
                 val validGrade = when {

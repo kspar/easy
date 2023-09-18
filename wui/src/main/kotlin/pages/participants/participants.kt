@@ -1,6 +1,7 @@
 package pages.participants
 
-import DateSerializer
+import EzDate
+import EzDateSerializer
 import Icons
 import cache.BasicCourseInfo
 import components.PageTabsComp
@@ -14,7 +15,6 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import tmRender
 import translation.Str
-import kotlin.js.Date
 
 class ParticipantsRootComp(
     private val courseId: String,
@@ -37,8 +37,8 @@ class ParticipantsRootComp(
         val given_name: String,
         val family_name: String,
         val groups: List<Group>,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date?
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate?
     )
 
     @Serializable
@@ -49,15 +49,15 @@ class ParticipantsRootComp(
         val family_name: String,
         val groups: List<Group>,
         val moodle_username: String? = null,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date?
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate?
     )
 
     @Serializable
     data class PendingStudent(
         val email: String,
-        @Serializable(with = DateSerializer::class)
-        val valid_from: Date,
+        @Serializable(with = EzDateSerializer::class)
+        val valid_from: EzDate,
         val groups: List<Group>
     )
 

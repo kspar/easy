@@ -1,5 +1,6 @@
 package pages.participants
 
+import EzDate
 import Icons
 import components.EzCollComp
 import components.form.ButtonComp
@@ -14,9 +15,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
-import toEstonianString
 import translation.Str
-import kotlin.js.Date
 
 
 class ParticipantsTeachersListComp(
@@ -30,7 +29,7 @@ class ParticipantsTeachersListComp(
 
     data class TeacherProps(
         val firstName: String, val lastName: String,
-        val email: String, val username: String, val createdAt: Date?,
+        val email: String, val username: String, val createdAt: EzDate?,
         val groups: List<GroupProp>
     )
 
@@ -84,10 +83,6 @@ class ParticipantsTeachersListComp(
                 bottomAttrs = listOfNotNull(
                     EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf),
                     EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf),
-                    p.createdAt?.let {
-                        // TODO: date attr
-                        EzCollComp.SimpleAttr("Kursusele lisatud", p.createdAt.toEstonianString(), Icons.joinedTimeUnf)
-                    }
                 ),
                 isSelectable = isEditable,
                 actions = actions
