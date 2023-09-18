@@ -423,7 +423,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "indentUnit" to 4,
                 "matchBrackets" to true,
                 "extraKeys" to tabHandler,
-                "placeholder" to "Kirjuta või lohista lahendus siia...",
+                "placeholder" to Str.solutionEditorPlaceholder,
             )
         )
 
@@ -465,7 +465,7 @@ object ExerciseSummaryPage : EasyPage() {
         val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold, deadline)
         buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, deadline, defaultGroupId)
 
-        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
+        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled(Str.downloading) {
             debug { "Downloading submissions" }
             val selectedGroupId = getElemByIdAsOrNull<HTMLSelectElement>("group-select")?.value.emptyToNull()
             val groupsList = selectedGroupId?.let { listOf(mapOf("id" to it)) }
@@ -504,9 +504,9 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("students-frame").innerHTML = tmRender(
             "tm-teach-exercise-students-frame", mapOf(
-                "exportSubmissionsLabel" to Str.download,
+                "exportSubmissionsLabel" to Str.doDownload,
                 "groupLabel" to if (groups.isNotEmpty()) Str.accountGroup else null,
-                "allLabel" to "Kõik õpilased",
+                "allLabel" to Str.allStudents,
                 "groups" to groups.map {
                     mapOf(
                         "id" to it.id,
@@ -610,7 +610,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "pageStart" to paginationConf?.pageStart,
                 "pageEnd" to paginationConf?.pageEnd,
                 "pageTotal" to paginationConf?.pageTotal,
-                "pageTotalLabel" to ", kokku ",
+                "pageTotalLabel" to ", ${Str.total} ",
                 "canGoBack" to paginationConf?.canGoBack,
                 "canGoForward" to paginationConf?.canGoForward
             )
@@ -712,7 +712,8 @@ object ExerciseSummaryPage : EasyPage() {
                         "feedbackLabel" to Str.addAssessmentFeedbackLabel,
                         "gradeLabel" to Str.addAssessmentGradeLabel,
                         "gradeValidationError" to Str.addAssessmentGradeValidErr,
-                        "addGradeButton" to Str.addAssessmentButtonLabel
+                        "addGradeButton" to Str.addAssessmentButtonLabel,
+                        "feedbackEmailNote" to Str.feedbackEmailNote,
                     )
                 )
 

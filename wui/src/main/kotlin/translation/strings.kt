@@ -40,11 +40,13 @@ sealed class TranslatableStrings {
     abstract val doRestore: String
     abstract val doChange: String
     abstract val doDuplicate: String
+    abstract val doExpand: String
     abstract val doAutoAssess: String
     abstract val autoAssessing: String
     abstract val tryAgain: String
     abstract val accountGroup: String
-    abstract val download: String
+    abstract val doDownload: String
+    abstract val downloading: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -125,8 +127,6 @@ sealed class TranslatableStrings {
     abstract val submissionsWillBeDeleted: String
     abstract val removeExercise: String
     abstract val removeExercisesPlural: String
-
-    // TODO: use in ezcoll
     abstract val completedLabel: String
     abstract val startedLabel: String
     abstract val ungradedLabel: String
@@ -177,6 +177,9 @@ sealed class TranslatableStrings {
     abstract val toLatestSubmissionLink: String
     abstract val aaTitle: String
     abstract val submitSuccessMsg: String
+    abstract val allStudents: String
+    abstract val total: String
+    abstract val feedbackEmailNote: String
 
     abstract val autogradeException: String
     abstract val autogradeFailedMsg: String
@@ -256,6 +259,7 @@ object EstStrings : TranslatableStrings() {
     override val doRestore = "Taasta"
     override val doChange = "Muuda"
     override val doDuplicate = "Tee koopia"
+    override val doExpand = "Laienda"
     override val assessmentAddedMsg = "Hinnang lisatud"
     override val oldSubmissionNote = "See on vana esitus."
     override val toLatestSubmissionLink = "Vaata viimast esitust."
@@ -314,10 +318,10 @@ object EstStrings : TranslatableStrings() {
     override val removeExercise = "Eemalda ülesanne"
     override val removeExercisesPlural = "ülesannet"
 
-    override val completedLabel = "Lõpetanud"
-    override val startedLabel = "Nässu läinud"
-    override val ungradedLabel = "Hindamata"
-    override val unstartedLabel = "Esitamata"
+    override val completedLabel = "lahendatud"
+    override val startedLabel = "nässu läinud"
+    override val ungradedLabel = "hindamata"
+    override val unstartedLabel = "esitamata"
     override val tabExerciseLabel = "Ülesanne"
     override val tabTestingLabel = "Katsetamine"
     override val tabSubmissionsLabel = "Esitused"
@@ -328,7 +332,8 @@ object EstStrings : TranslatableStrings() {
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
     override val accountGroup = "Rühm"
-    override val download = "Lae alla"
+    override val doDownload = "Lae alla"
+    override val downloading = "Laen..."
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -347,6 +352,9 @@ object EstStrings : TranslatableStrings() {
     override val addAssessmentButtonLabel = "Lisa hinnang"
     override val aaTitle = "Automaatkontroll"
     override val submitSuccessMsg = "Lahendus esitatud"
+    override val allStudents = "Kõik õpilased"
+    override val total = "kokku"
+    override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
     override val autogradeFailedMsg = """
 
@@ -440,6 +448,7 @@ object EngStrings : TranslatableStrings() {
     override val doRestore = "Restore"
     override val doChange = "Change"
     override val doDuplicate = "Copy"
+    override val doExpand = "Expand"
 
     override val permissionP = "Passthrough"
     override val permissionPR = "Viewer"
@@ -485,10 +494,10 @@ object EngStrings : TranslatableStrings() {
     override val submissionsWillBeDeleted = "Students' submissions will be deleted."
     override val removeExercise = "Remove exercise"
     override val removeExercisesPlural = "exercises"
-    override val completedLabel = "Completed"
-    override val startedLabel = "Unsuccessful"
-    override val ungradedLabel = "Ungraded"
-    override val unstartedLabel = "Not submitted"
+    override val completedLabel = "completed"
+    override val startedLabel = "unsuccessful"
+    override val ungradedLabel = "ungraded"
+    override val unstartedLabel = "not submitted"
 
     override val tabExerciseLabel = "Exercise"
     override val tabTestingLabel = "Testing"
@@ -518,7 +527,8 @@ object EngStrings : TranslatableStrings() {
     override val autoAssessing = "Checking..."
     override val tryAgain = "Try again"
     override val accountGroup = "Group"
-    override val download = "Download"
+    override val doDownload = "Download"
+    override val downloading = "Downloading..."
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
@@ -544,6 +554,9 @@ object EngStrings : TranslatableStrings() {
     override val toLatestSubmissionLink = "View the latest submission."
     override val aaTitle = "Automated tests"
     override val submitSuccessMsg = "Solution submitted"
+    override val allStudents = "All students"
+    override val total = "total"
+    override val feedbackEmailNote = "If you added a comment then the student will be notified by email."
     override val autogradeException = "There was an exception during the program's execution:"
     override val autogradeFailedMsg = """
 
