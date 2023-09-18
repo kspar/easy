@@ -3058,10 +3058,6 @@ ez-feedback {
     margin-top: 4rem;
 }
 
-ez-feedback pre {
-    font-size: 1.4rem;
-}
-
 ez-assessment {
     display: flex;
     flex-direction: column;
@@ -3069,14 +3065,22 @@ ez-assessment {
     margin-bottom: 2rem;
 }
 
+ez-feedback pre {
+    font-size: 1.4rem;
+    overflow: auto;
+}
+
 /* TODO: add prefixes once we're fully migrated to wui3 */
 /*ez-assessment*/ pre.feedback {
+    padding: 1rem;
     font-size: 1.4rem;
+    white-space: normal;
+    overflow: auto;
 }
 
 /*ez-assessment*/ pre.auto-feedback {
     background-color: #f5f5f5;
-    overflow: auto;
+    white-space: pre;
 }
 
 /*ez-assessment*/ .grade-number {
