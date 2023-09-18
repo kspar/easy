@@ -35,7 +35,7 @@ class EzCollComp<P>(
         val title: String,
         val titleIcon: TitleIcon? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
-        val titleAction: (suspend (P) -> Unit)? = null,
+        val titleInteraction: TitleInteraction? = null,
         val topAttr: Attr<P>? = null,
         val bottomAttrs: List<Attr<P>> = emptyList(),
         val progressBar: ProgressBar? = null,
@@ -63,6 +63,10 @@ class EzCollComp<P>(
     }
 
     data class TitleIcon(val icon: String, val label: String)
+
+    sealed interface TitleInteraction
+    data class TitleAction<P>(val action: suspend (P) -> Unit) : TitleInteraction
+    data class TitleLink(val href: String) : TitleInteraction
 
     data class Action<P>(
         val iconHtml: String,

@@ -1,6 +1,5 @@
 package components
 
-import ifExistsStr
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import libheaders.Materialize
@@ -56,7 +55,7 @@ class EzCollItemComp<P>(
                             <ezc-center>
                                 <ezc-first>
                                     <ezc-title>
-                                        <a id='title-{{itemId}}' ${spec.titleAction.ifExistsStr { "href='#!'" }}>{{title}}</a>
+                                        <a id='title-{{itemId}}' {{#titleInteraction}}href='{{href}}'{{/titleInteraction}}>{{title}}</a>
                                         {{#titleIcon}}<ezc-title-icon title="{{titleIconLabel}}">{{{titleIcon}}}</ezc-title-icon>{{/titleIcon}}
                                     </ezc-title>
                                     {{#topAttr}}
@@ -173,6 +172,14 @@ class EzCollItemComp<P>(
         "title" to spec.title,
         "titleIcon" to spec.titleIcon?.icon,
         "titleIconLabel" to spec.titleIcon?.label,
+        "titleInteraction" to spec.titleInteraction?.let {
+            mapOf(
+                "href" to when(it) {
+                    is EzCollComp.TitleAction<*> -> "#!"
+                    is EzCollComp.TitleLink -> it.href
+                }
+            )
+        },
         "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
@@ -225,10 +232,10 @@ class EzCollItemComp<P>(
     )
 
     public override fun postRender() {
-        val titleAction = spec.titleAction
-        if (titleAction != null) {
+        val titleInteraction = spec.titleInteraction
+        if (titleInteraction != null && titleInteraction is EzCollComp.TitleAction<*>) {
             getElemById("title-${spec.id}").onVanillaClick(true) {
-                titleAction.invoke(spec.props)
+                titleInteraction.unsafeCast<EzCollComp.TitleAction<P>>().action.invoke(spec.props)
             }
         }
 

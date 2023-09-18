@@ -148,7 +148,7 @@ class ExerciseLibComp(
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
                 titleIcon = if (p.isShared) EzCollComp.TitleIcon(Icons.teacher, "Jagatud") else null,
-                titleAction = { EzSpa.PageManager.navigateTo(ExercisePage.link(p.exerciseId)) },
+                titleInteraction = EzCollComp.TitleLink(ExercisePage.link(p.exerciseId)),
                 topAttr = EzCollComp.SimpleAttr(
                     "Viimati muudetud",
                     "${p.modifiedAt.toHumanString(EzDate.Format.DATE)} · ${p.modifiedBy}",
@@ -176,7 +176,7 @@ class ExerciseLibComp(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isShared) Icons.sharedFolder else Icons.library),
                 p.title,
-                titleAction = { EzSpa.PageManager.navigateTo(ExerciseLibraryPage.linkToDir(p.dirId)) },
+                titleInteraction = EzCollComp.TitleLink(ExerciseLibraryPage.linkToDir(p.dirId)),
 //                bottomAttrs = listOf(
 //                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
 //                    EzCollComp.SimpleAttr(

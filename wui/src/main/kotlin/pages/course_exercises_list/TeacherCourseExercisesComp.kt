@@ -83,9 +83,9 @@ class TeacherCourseExercisesComp(
                 it,
                 if (it.isAutoeval) EzCollComp.ItemTypeIcon(Icons.robot) else EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 it.effectiveTitle,
-                titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, "Peidetud") else null,
+                titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, Str.hidden) else null,
                 titleStatus = if (!it.isVisible) EzCollComp.TitleStatus.INACTIVE else EzCollComp.TitleStatus.NORMAL,
-                titleAction = { EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, it.id)) },
+                titleInteraction = EzCollComp.TitleLink(ExerciseSummaryPage.link(courseId, it.id)),
                 // TODO: editable?
                 topAttr = if (it.deadline != null) {
                     EzCollComp.SimpleAttr(
@@ -99,28 +99,28 @@ class TeacherCourseExercisesComp(
                 actions = listOf(
                     EzCollComp.Action(
                         if (it.isVisible) Icons.hidden else Icons.visible,
-                        if (it.isVisible) "Peida" else "Avalikusta", onActivate = ::showHide
+                        if (it.isVisible) Str.doHide else Str.doReveal, onActivate = ::showHide
                     ),
-                    EzCollComp.Action(Icons.reorder, "Liiguta", onActivate = ::move),
+                    EzCollComp.Action(Icons.reorder, Str.doMove, onActivate = ::move),
                     EzCollComp.Action(Icons.settings, Str.exerciseSettings, onActivate = ::updateCourseExercise),
-                    EzCollComp.Action(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse)
+                    EzCollComp.Action(Icons.delete, Str.doRemoveFromCourse, onActivate = ::removeFromCourse)
                 ),
             )
         }
 
         coll = EzCollComp(
-            items, EzCollComp.Strings("ülesanne", "ülesannet"),
+            items, EzCollComp.Strings(Str.exerciseSingular, Str.exercisePlural),
             massActions = listOf(
-                EzCollComp.MassAction(Icons.visible, "Avalikusta", onActivate = { setVisibility(it, true) }),
-                EzCollComp.MassAction(Icons.hidden, "Peida", onActivate = { setVisibility(it, false) }),
-                EzCollComp.MassAction(Icons.delete, "Eemalda kursuselt", onActivate = ::removeFromCourse),
+                EzCollComp.MassAction(Icons.visible, Str.doReveal, onActivate = { setVisibility(it, true) }),
+                EzCollComp.MassAction(Icons.hidden, Str.doHide, onActivate = { setVisibility(it, false) }),
+                EzCollComp.MassAction(Icons.delete, Str.doRemoveFromCourse, onActivate = ::removeFromCourse),
             ), filterGroups = listOf(), parent = this
         )
 
         reorderModal = ReorderCourseExerciseModalComp(courseId, this)
 
         removeModal = ConfirmationTextModalComp(
-            null, "Eemalda", "Tühista", "Eemaldan...",
+            null, Str.doRemove, Str.cancel, Str.removing,
             primaryBtnType = ButtonComp.Type.DANGER, parent = this
         )
 
@@ -133,12 +133,12 @@ class TeacherCourseExercisesComp(
                             if (ids.courseExerciseId != null) {
                                 // was added to course
                                 EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
-                                successMessage { "Ülesanne loodud" }
+                                successMessage { Str.exerciseCreated }
                             } else {
                                 val action = UserMessageAction(Str.openInLib) {
                                     EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
                                 }
-                                successMessage(action = action) { "Ülesanne loodud" }
+                                successMessage(action = action) { Str.exerciseCreated }
                             }
                         }
                     }
@@ -184,7 +184,7 @@ class TeacherCourseExercisesComp(
             } else Promise.resolve(Unit)
         }
         promises.unionPromise().await()
-        successMessage { if (nowVisible) "Avalikustatud" else "Peidetud" }
+        successMessage { if (nowVisible) Str.revealed else Str.hidden }
         recreate()
         return EzCollComp.ResultUnmodified
     }
@@ -195,7 +195,7 @@ class TeacherCourseExercisesComp(
         reorderModal.allExercises = CourseExercisesTeacherDAO.getCourseExercises(courseId).await().map {
             ReorderCourseExerciseModalComp.CourseExercise(it.id, it.effectiveTitle, it.ordering_idx)
         }
-        reorderModal.setText(StringComp.boldTriple("Liiguta ", item.props.effectiveTitle, "..."))
+        reorderModal.setText(StringComp.boldTriple(Str.doMove + " ", item.props.effectiveTitle, "..."))
         reorderModal.createAndBuild().await()
         val modalReturn = reorderModal.openWithClosePromise().await()
         if (modalReturn != null) {
@@ -237,13 +237,13 @@ class TeacherCourseExercisesComp(
         debug { "Removing exercises ${items.map { it.title }}?" }
 
         val subCount = items.sumOf { it.props.completed + it.props.started + it.props.ungraded }
-        val submissionWarning = if (subCount > 0) "Õpilaste esitused kustutatakse." else ""
+        val submissionWarning = if (subCount > 0) Str.submissionsWillBeDeleted else ""
 
         val text = if (items.size == 1) {
             val item = items[0]
-            StringComp.boldTriple("Eemalda ülesanne ", item.title, "? $submissionWarning")
+            StringComp.boldTriple(Str.removeExercise + " ", item.title, "? $submissionWarning")
         } else {
-            StringComp.boldTriple("Eemalda ", items.size.toString(), " ülesannet? $submissionWarning")
+            StringComp.boldTriple(Str.doRemove + " ", items.size.toString(), " ${Str.removeExercisesPlural}? $submissionWarning")
         }
 
         removeModal.setText(text)
@@ -254,7 +254,7 @@ class TeacherCourseExercisesComp(
                 CourseExercisesTeacherDAO.removeExerciseFromCourse(courseId, it.props.id).await()
             }
 
-            successMessage { "Eemaldatud" }
+            successMessage { Str.removed }
 
             true
         }

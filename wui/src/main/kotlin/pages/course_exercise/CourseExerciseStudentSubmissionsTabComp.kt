@@ -43,7 +43,7 @@ class CourseExerciseStudentSubmissionsTabComp(
                     it,
                     EzCollComp.ItemTypeText("#${it.number}"),
                     it.submissionTime.toHumanString(EzDate.Format.FULL),
-                    titleAction = { onOpenSubmission(it.submission) },
+                    titleInteraction = EzCollComp.TitleAction<Props> { onOpenSubmission(it.submission) },
                     topAttr = it.validGrade?.let {
                         EzCollComp.SimpleAttr(
                             Str.gradeLabel,
