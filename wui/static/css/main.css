@@ -3074,7 +3074,7 @@ ez-feedback pre {
 /*ez-assessment*/ pre.feedback {
     padding: 1rem;
     font-size: 1.4rem;
-    white-space: normal;
+    white-space: pre-wrap;
     overflow: auto;
 }
 
