@@ -821,6 +821,15 @@ ez-code-edit.readonly .CodeMirror-cursors {
     visibility: hidden;
 }
 
+/* Text cursor on empty editor part where there are no lines */
+.CodeMirror-scroll {
+    cursor: text;
+}
+
+.CodeMirror-gutter {
+    cursor: auto;
+}
+
 
 /* Merge */
 
