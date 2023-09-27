@@ -41,7 +41,7 @@ class AnonymousReadExerciseDetails {
 
     private fun selectAnonymousExerciseDetails(exerciseId: Long): Resp = transaction {
         (Exercise innerJoin ExerciseVer).slice(
-            ExerciseVer.title, ExerciseVer.textHtml, Exercise.anonymousAutoassessTemplate
+            ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, Exercise.anonymousAutoassessTemplate
         ).select {
             Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
         }.map {
