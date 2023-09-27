@@ -80,6 +80,9 @@ html.embedded body {
 
 html.embedded.light body {
     background-color: white !important;
+}
+
+html.embedded.light.bordered body {
     border: 1px solid #ccc;
 }
 
@@ -812,6 +815,11 @@ ez-exercise-autoeval > ez-block-container {
 
 #anonauto button:not([disabled]) {
     padding-bottom: .4rem;
+}
+
+#anonauto .CodeMirror-scroll {
+    min-height: 8rem;
+    max-height: none;
 }
 
 
