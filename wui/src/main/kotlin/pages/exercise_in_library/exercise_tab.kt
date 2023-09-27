@@ -33,6 +33,7 @@ class ExerciseTabComp(
         val title: String,
         val textAdoc: String,
         val textHtml: String,
+        val embedConfig: ExerciseDAO.EmbedConfig?,
     )
 
     private lateinit var attributes: ExerciseAttributesComp
@@ -59,6 +60,7 @@ class ExerciseTabComp(
         attributes.getEditedTitle().also { it ?: warn { "editedTitle == null" } }.orEmpty(),
         textView.getEditedAdoc().also { it ?: warn { "editedAdoc == null" } }.orEmpty(),
         textView.getEditedHtml().also { it ?: warn { "editedHtml == null" } }.orEmpty(),
+        attributes.getEmbedConfig(),
     )
 }
 
@@ -126,6 +128,10 @@ class ExerciseAttributesComp(
     }
 
     fun getEditedTitle() = (titleComp as? StringFieldComp)?.getValue()
+
+    fun getEmbedConfig() = if (exercise.is_anonymous_autoassess_enabled)
+        ExerciseDAO.EmbedConfig(exercise.anonymous_autoassess_template)
+    else null
 
     fun isValid() = titleComp.let { if (it is StringFieldComp) it.isValid else true }
 }

@@ -39,6 +39,10 @@ object ExerciseDAO {
         val text_html: String? = null,
         val on_courses: List<OnCourse>,
         val on_courses_no_access: Int,
+        val is_anonymous_autoassess_enabled: Boolean,
+        val anonymous_autoassess_template: String?,
+        val successful_anonymous_submission_count: Int,
+        val unsuccessful_anonymous_submission_count: Int,
     )
 
     @Serializable
@@ -100,6 +104,11 @@ object ExerciseDAO {
         val textAdoc: String?,
         val textHtml: String?,
         val autoeval: Autoeval?,
+        val embedConfig: EmbedConfig?,
+    )
+
+    data class EmbedConfig(
+        val template: String? = null
     )
 
     data class Autoeval(
@@ -127,8 +136,8 @@ object ExerciseDAO {
                 "max_time_sec" to it.autoeval?.maxTime,
                 "max_mem_mb" to it.autoeval?.maxMem,
                 "assets" to it.autoeval?.assets?.map { mapOf("file_name" to it.key, "file_content" to it.value) },
-                "anonymous_autoassess_enabled" to false,
-                "anonymous_autoassess_template" to null,
+                "anonymous_autoassess_enabled" to (it.embedConfig != null),
+                "anonymous_autoassess_template" to it.embedConfig?.template,
             )
         }
 
