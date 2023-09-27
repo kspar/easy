@@ -49,7 +49,7 @@ object EmbedAnonAutoassessPage : EasyPage() {
                 titleAlias = titleAlias,
                 showTemplate = showTemplate,
                 dynamicResize = dynamicResize,
-                showSubmit = submit,
+                submit = submit,
                 courseExerciseLink = if (courseId != null && ceExId != null) EmbedAnonAutoassessRootComp.CourseExercise(
                     courseId,
                     ceExId

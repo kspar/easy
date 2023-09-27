@@ -196,6 +196,9 @@ sealed class TranslatableStrings {
     abstract val diceSimilarity: String
     abstract val levenshteinSimilarity: String
 
+    // Exercise embed page
+    abstract val noAutogradeWarning: String
+
     // About page
     abstract val aboutS1: String
     abstract val aboutS2: String
@@ -374,6 +377,8 @@ ole hea ja proovi hiljem uuesti.
     override val topSimilarPairs = "Kõige sarnasemad paarid"
     override val diceSimilarity = "Sørensen–Dice'i sarnasus"
     override val levenshteinSimilarity = "Levenshteini sarnasus"
+    override val noAutogradeWarning =
+        "Sellel ülesandel pole automaatseid teste. Lisa testid või eemalda `submit` query parameeter."
 
     override val coursesSingular = "kursus"
     override val coursesPlural = "kursust"
@@ -564,6 +569,8 @@ of the issue, please try again later.
     override val topSimilarPairs = "Top similarities"
     override val diceSimilarity = "Sørensen–Dice score"
     override val levenshteinSimilarity = "Levenshtein score"
+    override val noAutogradeWarning =
+        "This exercise does not have any automatic tests. Add tests or remove the `submit` query parameter."
 
     override val aboutS1 = "Lahendus is operated and developed by the"
     override val aboutS2 = "Institute of Computer Science at the University of Tartu"
