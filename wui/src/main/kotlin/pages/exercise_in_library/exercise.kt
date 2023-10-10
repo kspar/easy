@@ -212,7 +212,8 @@ class ExerciseRootComp(
                     autoevalProps.maxTime,
                     autoevalProps.maxMem,
                 )
-            else null
+            else null,
+            exerciseProps.embedConfig,
         )
 
         val merge = mergeChanges(updatedExercise)
@@ -259,14 +260,27 @@ class ExerciseRootComp(
             )
         else null
 
+        val remoteEmbed = if (remote.is_anonymous_autoassess_enabled)
+            ExerciseDAO.EmbedConfig(
+                remote.anonymous_autoassess_template
+            )
+        else null
+
+        val initialEmbed = if (initial.is_anonymous_autoassess_enabled)
+            ExerciseDAO.EmbedConfig(
+                initial.anonymous_autoassess_template
+            )
+        else null
+
         val title = mergeValue(local.title, remote.title, initial.title)
         val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
         val textHtml = mergeValue(local.textHtml, remote.text_html, initial.text_html)
         val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
+        val embed = mergeValue(local.embedConfig, remoteEmbed, initialEmbed)
 
         return MergeResult(
-            listOf(title, textAdoc, textHtml, autoeval).any { it.second },
-            ExerciseDAO.UpdatedExercise(title.first, textAdoc.first, textHtml.first, autoeval.first)
+            listOf(title, textAdoc, textHtml, autoeval, embed).any { it.second },
+            ExerciseDAO.UpdatedExercise(title.first, textAdoc.first, textHtml.first, autoeval.first, embed.first)
         )
     }
 

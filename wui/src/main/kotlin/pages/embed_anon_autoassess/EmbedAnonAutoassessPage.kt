@@ -29,17 +29,17 @@ object EmbedAnonAutoassessPage : EasyPage() {
 
         getHtml().addClass("embedded", "light")
 
-        if (getCurrentQueryParamValue("border") != null) {
+        if (getCurrentQueryParamValue("no-border") == null) {
             getHtml().addClass("bordered")
         }
 
-        val showTitle = getCurrentQueryParamValue("title") != null
+        val showTitle = getCurrentQueryParamValue("no-title") == null
         val submit = getCurrentQueryParamValue("submit") != null
-        val showTemplate = getCurrentQueryParamValue("template") != null
+        val showTemplate = getCurrentQueryParamValue("no-template") == null
         val courseId = getCurrentQueryParamValue("course")
         val ceExId = getCurrentQueryParamValue("exercise")
         val titleAlias = getCurrentQueryParamValue("title-alias")
-        val dynamicResize = getCurrentQueryParamValue("dynamic-resize") != null
+        val dynamicResize = getCurrentQueryParamValue("no-dynamic-resize") == null
 
 
         doInPromise {
@@ -49,7 +49,7 @@ object EmbedAnonAutoassessPage : EasyPage() {
                 titleAlias = titleAlias,
                 showTemplate = showTemplate,
                 dynamicResize = dynamicResize,
-                showSubmit = submit,
+                submit = submit,
                 courseExerciseLink = if (courseId != null && ceExId != null) EmbedAnonAutoassessRootComp.CourseExercise(
                     courseId,
                     ceExId
@@ -67,20 +67,23 @@ object EmbedAnonAutoassessPage : EasyPage() {
     }
 
     fun link(
-        exerciseId: String, showTitle: Boolean, showSubmit: Boolean, showTemplate: Boolean, dynamicResize: Boolean,
-        titleAlias: String?, linkCourseId: String?, linkCourseExerciseId: String?, titleForPath: String?,
+        exerciseId: String, showTitle: Boolean, showBorder: Boolean, showSubmit: Boolean, showTemplate: Boolean,
+        dynamicResize: Boolean, titleAlias: String?, linkCourseId: String?, linkCourseExerciseId: String?,
+        titleForPath: String?,
     ) = constructPathLink(mapOf("exerciseId" to exerciseId)) +
             createPathChainSuffix(if (titleForPath != null) listOf(titleForPath) else emptyList()) +
             createQueryString(
                 params = buildMap {
-                    if (showTitle)
-                        set("title", null)
+                    if (!showTitle)
+                        set("no-title", null)
+                    if (!showBorder)
+                        set("no-border", null)
                     if (showSubmit)
                         set("submit", null)
-                    if (showTemplate)
-                        set("template", null)
-                    if (dynamicResize)
-                        set("dynamic-resize", null)
+                    if (!showTemplate)
+                        set("no-template", null)
+                    if (!dynamicResize)
+                        set("no-dynamic-resize", null)
                     if (titleAlias != null)
                         set("title-alias", titleAlias)
                     if (linkCourseId != null)

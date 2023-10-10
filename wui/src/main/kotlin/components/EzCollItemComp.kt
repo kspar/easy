@@ -1,6 +1,5 @@
 package components
 
-import ifExistsStr
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import libheaders.Materialize
@@ -9,6 +8,7 @@ import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.Event
 import rip.kspar.ezspa.*
 import template
+import translation.Str
 
 class EzCollItemComp<P>(
     var spec: EzCollComp.Item<P>,
@@ -56,7 +56,7 @@ class EzCollItemComp<P>(
                             <ezc-center>
                                 <ezc-first>
                                     <ezc-title>
-                                        <a id='title-{{itemId}}' ${spec.titleAction.ifExistsStr { "href='#!'" }}>{{title}}</a>
+                                        <a id='title-{{itemId}}' {{#titleInteraction}}href='{{href}}'{{/titleInteraction}}>{{title}}</a>
                                         {{#titleIcon}}<ezc-title-icon title="{{titleIconLabel}}">{{{titleIcon}}}</ezc-title-icon>{{/titleIcon}}
                                     </ezc-title>
                                     {{#topAttr}}
@@ -95,10 +95,10 @@ class EzCollItemComp<P>(
                                         {{#progressBar}}{{#showAttr}}
                                             <ezc-fold-attr>
                                                 <ezc-fold-value><ezc-attr-text style='flex-wrap: wrap;'>
-                                                    {{#green}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-green);"></ezc-progress-label-circle>{{green}} lahendatud</ez-progress-label>{{/green}}
-                                                    {{#yellow}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-yellow);"></ezc-progress-label-circle>{{yellow}} nässu läinud</ez-progress-label>{{/yellow}}
-                                                    {{#blue}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-blue);"></ezc-progress-label-circle>{{blue}} hindamata</ez-progress-label>{{/blue}}
-                                                    {{#grey}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-grey);"></ezc-progress-label-circle>{{grey}} esitamata</ez-progress-label>{{/grey}}
+                                                    {{#green}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-green);"></ezc-progress-label-circle>{{green}} {{greenLabel}}</ez-progress-label>{{/green}}
+                                                    {{#yellow}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-yellow);"></ezc-progress-label-circle>{{yellow}} {{yellowLabel}}</ez-progress-label>{{/yellow}}
+                                                    {{#blue}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-blue);"></ezc-progress-label-circle>{{blue}} {{blueLabel}}</ez-progress-label>{{/blue}}
+                                                    {{#grey}}<ez-progress-label><ezc-progress-label-circle style="background-color: var(--ez-grey);"></ezc-progress-label-circle>{{grey}} {{greyLabel}}</ez-progress-label>{{/grey}}
                                                 </ezc-attr-text></ezc-fold-value>
                                             </ezc-fold-attr>
                                         {{/showAttr}}{{/progressBar}}
@@ -173,6 +173,14 @@ class EzCollItemComp<P>(
         "title" to spec.title,
         "titleIcon" to spec.titleIcon?.icon,
         "titleIconLabel" to spec.titleIcon?.label,
+        "titleInteraction" to spec.titleInteraction?.let {
+            mapOf(
+                "href" to when(it) {
+                    is EzCollComp.TitleAction<*> -> "#!"
+                    is EzCollComp.TitleLink -> it.href
+                }
+            )
+        },
         "inactive" to (spec.titleStatus == EzCollComp.TitleStatus.INACTIVE),
         "topAttr" to spec.topAttr?.let {
             mapOf(
@@ -203,11 +211,15 @@ class EzCollItemComp<P>(
                     "grey" to it.grey,
                     "showAttr" to it.showAttr,
                     "labelValue" to buildList {
-                        if (it.green > 0) add("${it.green} lahendatud")
-                        if (it.yellow > 0) add("${it.yellow} nässu läinud")
-                        if (it.blue > 0) add("${it.blue} hindamata")
-                        if (it.grey > 0) add("${it.grey} esitamata")
-                    }.joinToString(" / ")
+                        if (it.green > 0) add("${it.green} ${Str.completedLabel}")
+                        if (it.yellow > 0) add("${it.yellow} ${Str.startedLabel}")
+                        if (it.blue > 0) add("${it.blue} ${Str.ungradedLabel}")
+                        if (it.grey > 0) add("${it.grey} ${Str.unstartedLabel}")
+                    }.joinToString(" / "),
+                    "greenLabel" to Str.completedLabel,
+                    "yellowLabel" to Str.startedLabel,
+                    "blueLabel" to Str.ungradedLabel,
+                    "greyLabel" to Str.unstartedLabel,
                 )
             else null
         },
@@ -220,15 +232,15 @@ class EzCollItemComp<P>(
                 "minCollWidth" to it.shortcutMinCollWidth.valuePx,
             )
         },
-        "actionMenuTitle" to "Muuda...",
-        "expandItemTitle" to "Laienda",
+        "actionMenuTitle" to Str.doChange + "...",
+        "expandItemTitle" to Str.doExpand,
     )
 
     public override fun postRender() {
-        val titleAction = spec.titleAction
-        if (titleAction != null) {
+        val titleInteraction = spec.titleInteraction
+        if (titleInteraction != null && titleInteraction is EzCollComp.TitleAction<*>) {
             getElemById("title-${spec.id}").onVanillaClick(true) {
-                titleAction.invoke(spec.props)
+                titleInteraction.unsafeCast<EzCollComp.TitleAction<P>>().action.invoke(spec.props)
             }
         }
 

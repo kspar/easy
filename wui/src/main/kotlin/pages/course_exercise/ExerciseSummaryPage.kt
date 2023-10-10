@@ -51,7 +51,6 @@ import rip.kspar.ezspa.*
 import saveAsFile
 import successMessage
 import tmRender
-import toEstonianString
 import translation.Str
 import warn
 import kotlin.js.Date
@@ -263,20 +262,12 @@ object ExerciseSummaryPage : EasyPage() {
         val exerciseMap = mutableMapOf<String, Any?>(
             "softDeadlineLabel" to Str.softDeadlineLabel,
             "hardDeadlineLabel" to Str.hardDeadlineLabel,
-            "graderTypeLabel" to Str.graderTypeLabel,
-            "thresholdLabel" to Str.thresholdLabel,
-            "studentVisibleLabel" to Str.studentVisibleLabel,
             "studentVisibleFromTimeLabel" to Str.studentVisibleFromTimeLabel,
-            "assStudentVisibleLabel" to Str.assStudentVisibleLabel,
-            "lastModifiedLabel" to Str.lastModifiedLabel,
-            "softDeadline" to exercise.soft_deadline?.toEstonianString(),
-            "hardDeadline" to exercise.hard_deadline?.toEstonianString(),
-            "graderType" to if (exercise.grader_type == ExerciseDAO.GraderType.AUTO) Str.graderTypeAuto else Str.graderTypeTeacher,
-            "threshold" to exercise.threshold,
-            "studentVisible" to Str.translateBoolean(exercise.student_visible),
-            "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.toEstonianString() else null,
-            "assStudentVisible" to Str.translateBoolean(exercise.assessments_student_visible),
-            "lastModified" to exercise.last_modified.toEstonianString(),
+            "softDeadline" to exercise.soft_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
+            "hardDeadline" to exercise.hard_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
+            "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.let {
+                EzDate(it).toHumanString(EzDate.Format.FULL)
+            } else null,
             "exerciseTitle" to effectiveTitle,
             "exerciseText" to exercise.text_html,
             "updateModalDst" to updateModalDst,
@@ -423,7 +414,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "indentUnit" to 4,
                 "matchBrackets" to true,
                 "extraKeys" to tabHandler,
-                "placeholder" to "Kirjuta või lohista lahendus siia...",
+                "placeholder" to Str.solutionEditorPlaceholder,
             )
         )
 
@@ -465,7 +456,7 @@ object ExerciseSummaryPage : EasyPage() {
         val defaultGroupId = buildTeacherStudentsFrame(courseId, courseExerciseId, exerciseId, threshold, deadline)
         buildTeacherStudentsList(courseId, courseExerciseId, exerciseId, threshold, deadline, defaultGroupId)
 
-        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled("Laen...") {
+        getElemByIdAs<HTMLButtonElement>("export-submissions-button").onSingleClickWithDisabled(Str.downloading) {
             debug { "Downloading submissions" }
             val selectedGroupId = getElemByIdAsOrNull<HTMLSelectElement>("group-select")?.value.emptyToNull()
             val groupsList = selectedGroupId?.let { listOf(mapOf("id" to it)) }
@@ -504,9 +495,9 @@ object ExerciseSummaryPage : EasyPage() {
 
         getElemById("students-frame").innerHTML = tmRender(
             "tm-teach-exercise-students-frame", mapOf(
-                "exportSubmissionsLabel" to Str.download,
+                "exportSubmissionsLabel" to Str.doDownload,
                 "groupLabel" to if (groups.isNotEmpty()) Str.accountGroup else null,
-                "allLabel" to "Kõik õpilased",
+                "allLabel" to Str.allStudents,
                 "groups" to groups.map {
                     mapOf(
                         "id" to it.id,
@@ -610,7 +601,7 @@ object ExerciseSummaryPage : EasyPage() {
                 "pageStart" to paginationConf?.pageStart,
                 "pageEnd" to paginationConf?.pageEnd,
                 "pageTotal" to paginationConf?.pageTotal,
-                "pageTotalLabel" to ", kokku ",
+                "pageTotalLabel" to ", ${Str.total} ",
                 "canGoBack" to paginationConf?.canGoBack,
                 "canGoForward" to paginationConf?.canGoForward
             )
@@ -712,7 +703,8 @@ object ExerciseSummaryPage : EasyPage() {
                         "feedbackLabel" to Str.addAssessmentFeedbackLabel,
                         "gradeLabel" to Str.addAssessmentGradeLabel,
                         "gradeValidationError" to Str.addAssessmentGradeValidErr,
-                        "addGradeButton" to Str.addAssessmentButtonLabel
+                        "addGradeButton" to Str.addAssessmentButtonLabel,
+                        "feedbackEmailNote" to Str.feedbackEmailNote,
                     )
                 )
 
@@ -762,7 +754,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "notLatestSubmissionLink" to Str.toLatestSubmissionLink,
                     "isLatest" to isLast,
                     "timeLabel" to Str.submissionTimeLabel,
-                    "time" to time.toEstonianString(),
+                    "time" to EzDate(time).toHumanString(EzDate.Format.FULL),
                     "addGradeLink" to Str.addAssessmentLink,
                     "solution" to solution
                 )
@@ -845,7 +837,7 @@ object ExerciseSummaryPage : EasyPage() {
                     "missingLabel" to Str.notGradedYet,
                     "id" to it.id,
                     "number" to submissionNumber--,
-                    "time" to it.created_at.toEstonianString()
+                    "time" to EzDate(it.created_at).toHumanString(EzDate.Format.FULL)
                 )
 
                 val validGrade = when {

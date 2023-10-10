@@ -15,7 +15,8 @@ object AnonymousExerciseDAO {
     data class AnonExercise(
         val title: String,
         val text_html: String?,
-        val anonymous_autoassess_template: String?
+        val anonymous_autoassess_template: String?,
+        val submit_allowed: Boolean,
     )
 
     fun getExerciseDetails(exerciseId: String) = doInPromise {

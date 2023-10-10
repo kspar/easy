@@ -88,8 +88,13 @@
 }
 
 #exercise-text details > .content {
-    border-top: 1px solid #bbb;
-    border-bottom: 1px solid #bbb;
+    padding: 1rem 2rem;
+    background-color: #f6f6f6;
+}
+
+/* The following sibling - prevents margin when listing is not followed by anything, e.g. inside collapsible */
+#exercise-text .listingblock + * {
+    margin-top: 2rem;
 }
 
 #exercise-text .listingblock > .title {
@@ -104,6 +109,10 @@
 #exercise-text .imageblock.text-center {
     display: flex;
     justify-content: center;
+}
+
+#exercise-text blockquote {
+    border-left: 5px solid var(--ez-green);
 }
 
 

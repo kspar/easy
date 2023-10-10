@@ -64,7 +64,7 @@ class TeacherCoursesComp(
                     CourseProps(course.id, course.effectiveTitle),
                     EzCollComp.ItemTypeIcon(Icons.articles),
                     course.effectiveTitle,
-                    titleAction = { EzSpa.PageManager.navigateTo(CourseExercisesPage.link(course.id)) },
+                    titleInteraction = EzCollComp.TitleLink(CourseExercisesPage.link(course.id)),
                     topAttr = EzCollComp.SimpleAttr(
                         Str.enrolledOnCourseAttrKey,
                         "${course.student_count} ${Str.translateStudents(course.student_count)}",

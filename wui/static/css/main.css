@@ -80,6 +80,9 @@ html.embedded body {
 
 html.embedded.light body {
     background-color: white !important;
+}
+
+html.embedded.light.bordered body {
     border: 1px solid #ccc;
 }
 
@@ -814,11 +817,25 @@ ez-exercise-autoeval > ez-block-container {
     padding-bottom: .4rem;
 }
 
+#anonauto .CodeMirror-scroll {
+    min-height: 8rem;
+    max-height: none;
+}
+
 
 /* Code editor */
 
 ez-code-edit.readonly .CodeMirror-cursors {
     visibility: hidden;
+}
+
+/* Text cursor on empty editor part where there are no lines */
+.CodeMirror-scroll {
+    cursor: text;
+}
+
+.CodeMirror-gutter {
+    cursor: auto;
 }
 
 

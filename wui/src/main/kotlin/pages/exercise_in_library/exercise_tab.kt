@@ -1,5 +1,6 @@
 package pages.exercise_in_library
 
+import EzDate
 import MathJax
 import components.UnorderedListComp
 import components.code_editor.CodeEditorComp
@@ -12,14 +13,12 @@ import kotlinx.serialization.Serializable
 import lightboxExerciseImages
 import observeValueChange
 import pages.course_exercise.ExerciseSummaryPage
-import rip.kspar.ezspa.plainDstStr
 import queries.ReqMethod
 import queries.fetchEms
 import queries.http200
 import queries.parseTo
 import rip.kspar.ezspa.*
 import tmRender
-import toEstonianString
 import warn
 import kotlin.js.Promise
 
@@ -34,6 +33,7 @@ class ExerciseTabComp(
         val title: String,
         val textAdoc: String,
         val textHtml: String,
+        val embedConfig: ExerciseDAO.EmbedConfig?,
     )
 
     private lateinit var attributes: ExerciseAttributesComp
@@ -60,6 +60,7 @@ class ExerciseTabComp(
         attributes.getEditedTitle().also { it ?: warn { "editedTitle == null" } }.orEmpty(),
         textView.getEditedAdoc().also { it ?: warn { "editedAdoc == null" } }.orEmpty(),
         textView.getEditedHtml().also { it ?: warn { "editedHtml == null" } }.orEmpty(),
+        attributes.getEmbedConfig(),
     )
 }
 
@@ -98,9 +99,9 @@ class ExerciseAttributesComp(
         "modifiedAtLabel" to "Viimati muudetud",
         "onCoursesLabel" to "Kasutusel kursustel",
         "notUsedOnAnyCoursesLabel" to "Mitte ühelgi!",
-        "createdAt" to exercise.created_at.toEstonianString(),
+        "createdAt" to exercise.created_at.toHumanString(EzDate.Format.DATE),
         "createdBy" to exercise.owner_id,
-        "modifiedAt" to exercise.last_modified.toEstonianString(),
+        "modifiedAt" to exercise.last_modified.toHumanString(EzDate.Format.DATE),
         "modifiedBy" to exercise.last_modified_by_id,
         "onCoursesListDst" to onCoursesList.dstId,
         "onCoursesCount" to (exercise.on_courses.size + exercise.on_courses_no_access),
@@ -127,6 +128,10 @@ class ExerciseAttributesComp(
     }
 
     fun getEditedTitle() = (titleComp as? StringFieldComp)?.getValue()
+
+    fun getEmbedConfig() = if (exercise.is_anonymous_autoassess_enabled)
+        ExerciseDAO.EmbedConfig(exercise.anonymous_autoassess_template)
+    else null
 
     fun isValid() = titleComp.let { if (it is StringFieldComp) it.isValid else true }
 }
