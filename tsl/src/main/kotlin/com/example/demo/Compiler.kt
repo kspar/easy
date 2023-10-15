@@ -96,7 +96,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "output_file_checks" to PyOutputTests(test.outputFileChecks),
                         "out_of_inputs_error_msg" to PyStr(test.outOfInputsErrorMsg),
                         "function_not_defined_error_msg" to PyStr(test.functionNotDefinedErrorMsg),
-                        "too_many_arguments_provided_error_msg" to PyStr(test.tooManyArgumentsProvidedErrorMsg)
+                        "wrong_number_of_arguments_provided_error_msg" to PyStr(test.wrongNumberOfArgumentsProvidedErrorMsg)
                     )
                 ).generatePyString()
             }
