@@ -57,8 +57,8 @@ fun compileTSL(
 
 fun main() {
     // TODO: Lisage siia faili nimi, mis asub juurkaustas:
-    //val fileName = "tsl/src/main/resources/test_tsl.YAML"
-    val fileName = "tsl/src/main/resources/test_tsl.json"
+    val fileName = "tsl/src/main/resources/test_tsl.YAML"
+    //val fileName = "tsl/src/main/resources/test_tsl.json"
     println(fileName)
 
     val inputText = File(fileName).readText(Charsets.UTF_8)

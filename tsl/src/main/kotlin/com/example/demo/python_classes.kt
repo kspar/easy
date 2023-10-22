@@ -41,7 +41,8 @@ class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive()
                         "'before_message'" to PyStr(it.beforeMessage),
                         "'passed_message'" to PyStr(it.passedMessage),
                         "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString())
+                        "'data_category'" to PyStr(it.dataCategory.toString()),
+                        "'ignore_case'" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()
@@ -68,7 +69,8 @@ class PyGenericChecksLong(val genericChecksLong: List<GenericCheckLong>?) : PyAS
                         "'before_message'" to PyStr(it.beforeMessage),
                         "'passed_message'" to PyStr(it.passedMessage),
                         "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString())
+                        "'data_category'" to PyStr(it.dataCategory.toString()),
+                        "'ignore_case'" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()
@@ -92,7 +94,8 @@ class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimiti
                         "'before_message'" to PyStr(it.beforeMessage),
                         "'passed_message'" to PyStr(it.passedMessage),
                         "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString())
+                        "'data_category'" to PyStr(it.dataCategory.toString()),
+                        "'ignore_case'" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()
