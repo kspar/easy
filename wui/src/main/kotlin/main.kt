@@ -136,6 +136,7 @@ private fun initApplication() {
     CodeMirror.modeURL = AppProperties.CM_MODE_URL_TEMPLATE
 
     loadContainerQueries()
+//    mentionMaterialComponents()
 }
 
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
