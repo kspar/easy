@@ -4,9 +4,15 @@ import rip.kspar.ezspa.Component
 import template
 
 class AttrsComp(
-    val attrs: Map<String, String>,
+    attrs: Map<String, String>,
     parent: Component,
 ) : Component(parent) {
+
+    var attrs = attrs
+        set(value) {
+            field = value
+            rebuild()
+        }
 
     override fun render() = template(
         """

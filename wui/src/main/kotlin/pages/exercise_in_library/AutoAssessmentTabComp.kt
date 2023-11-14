@@ -5,7 +5,7 @@ import kotlinx.coroutines.await
 import pages.exercise_in_library.editor.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import tmRender
+import template
 import warn
 import kotlin.js.Promise
 
@@ -25,7 +25,7 @@ class AutoAssessmentTabComp(
         val maxMem: Int?,
     )
 
-    data class SavableProps(
+    data class EditedAutoassess(
         val evalScript: String,
         val assets: Map<String, String>,
         val containerImage: String,
@@ -93,10 +93,13 @@ class AutoAssessmentTabComp(
         }
     }
 
-    override fun render(): String = tmRender(
-        "t-c-exercise-tab-aa",
-        "attrsDstId" to attrs.dstId,
-        "editorDstId" to editor?.dstId,
+    override fun render(): String = template(
+        """
+            <ez-exercise-autoassess-tab>
+                <ez-dst id="${attrs.dstId}"></ez-dst>
+                <ez-dst id="${editor?.dstId}"></ez-dst>
+            </ez-exercise-autoassess-tab>
+        """.trimIndent(),
     )
 
     override fun postChildrenBuilt() {
@@ -122,10 +125,10 @@ class AutoAssessmentTabComp(
         editor?.setEditable(nowEditable)
     }
 
-    fun getEditedProps(): SavableProps? {
+    fun getEditedProps(): EditedAutoassess? {
         val container = attrs.getEditedContainerImage()
         return if (container != null) {
-            SavableProps(
+            EditedAutoassess(
                 editor!!.getEvalScript(),
                 editor!!.getAssets(),
                 container,

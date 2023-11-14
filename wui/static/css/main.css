@@ -731,11 +731,11 @@ ez-exercise-badge ez-icon {
 
 /** Exercise page **/
 
-#global-exercise ez-tabs.toplevel > ez-tabs-content {
-    margin-top: 2rem;
+#global-exercise > ez-block-container {
+    gap: 2rem 5rem;
 }
 
-@container tabs (width < 750px) {
+@container subpage-tabs (width < 650px) {
     #global-exercise ez-tabs-trailer ez-btn-content ez-btn-text {
         display: none;
     }
@@ -743,6 +743,16 @@ ez-exercise-badge ez-icon {
 
 #global-exercise .attr-list ul {
     margin-top: 0;
+}
+
+#global-exercise ez-tabs.toplevel > ez-tabs-content {
+    display: flex;
+    flex-direction: column;
+    margin-top: 3rem;
+}
+
+#global-exercise ez-exercise-testing-tab ez-warning {
+    margin-bottom: 2rem;
 }
 
 #DIR_PERMISSIONS .modal .modal-content {
@@ -798,10 +808,6 @@ ez-exercise-permissions ez-permission-name ez-icon {
 ez-exercise-permissions ez-permission-email {
     font-size: 1.2rem;
     color: var(--ezc-attr-immutable-col);
-}
-
-ez-exercise-autoeval > ez-block-container {
-    margin-top: 3rem;
 }
 
 
@@ -2824,6 +2830,10 @@ ez-tsl-compiler-feedback ez-icon > svg {
     height: 3rem;
 }
 
+ez-tsl-compiler-feedback pre {
+    overflow-x: auto;
+}
+
 ez-tsl-inline-field {
     display: inline-flex;
     margin: 0 1rem;
@@ -3049,6 +3059,11 @@ ez-tabs.toplevel > ez-tabs-header .tabs > .tab > a.active {
     color: var(--ez-green);
 }
 
+
+ez-tabs.subpage > ez-tabs-header {
+    container-type: inline-size;
+    container-name: subpage-tabs
+}
 
 ez-tabs.subpage > ez-tabs-header .tabs .indicator {
     background-color: var(--ez-tabs-subpage-active);

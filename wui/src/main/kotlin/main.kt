@@ -158,8 +158,6 @@ private fun loadContainerQueries() {
         debug { "Native container queries NOT supported, using polyfill :(" }
         // Just including the reference in code forces the module to be included/loaded
         ContainerQueryPolyfill
-    } else {
-        debug { "Native container queries supported :)" }
     }
 }
 

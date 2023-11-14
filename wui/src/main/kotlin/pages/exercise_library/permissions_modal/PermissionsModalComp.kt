@@ -15,7 +15,7 @@ import pages.exercise_library.ExerciseLibraryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
-import tmRender
+import template
 import translation.Str
 import kotlin.js.Promise
 
@@ -196,8 +196,34 @@ class PermissionsListComp(
         }.sortedByDescending { it.id.toInt() }  // hack to order by parents' closeness
     }
 
-    override fun render() = tmRender(
-        "t-c-exercise-permissions",
+    override fun render() = template(
+        """
+            <ez-exercise-permissions>
+                <ez-add-permission id="{{newAccessDst}}"></ez-add-permission>
+                {{#directPermissions}}
+                    <ez-permission>
+                        <ez-permission-subject>
+                            <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                            <ez-permission-email>{{email}}</ez-permission-email>
+                        </ez-permission-subject>
+                        <ez-dst id="{{selectDst}}"></ez-dst>
+                    </ez-permission>
+                {{/directPermissions}}
+        
+                {{#inheritingDirs}}
+                    <ez-inheriting-dir>{{dirLabel}} <a {{^isCurrent}}href="{{dirHref}}"{{/isCurrent}}>{{dirName}}</a> {{#isCurrent}}{{currentDirLabel}}{{/isCurrent}}</ez-inheriting-dir>
+                    {{#permissions}}
+                        <ez-permission class="inherited">
+                            <ez-permission-subject>
+                                <ez-permission-name>{{#isGroup}}{{{groupIcon}}}{{/isGroup}}{{name}}</ez-permission-name>
+                                <ez-permission-email>{{email}}</ez-permission-email>
+                            </ez-permission-subject>
+                            <ez-permission-access>{{access}}</ez-permission-access>
+                        </ez-permission>
+                    {{/permissions}}
+                {{/inheritingDirs}}
+            </ez-exercise-permissions>
+        """.trimIndent(),
         "newAccessDst" to newAccessInput.dstId,
         "groupIcon" to Icons.groups,
         "dirLabel" to "Päritud kaustalt",

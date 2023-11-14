@@ -31,7 +31,7 @@ object ExercisePage : EasyPage() {
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
 
-        getHtml().addClass("wui3")
+        getHtml().addClass("wui3", "full-width")
 
         MainScope().launch {
             val r = ExerciseRootComp(
@@ -53,7 +53,7 @@ object ExercisePage : EasyPage() {
         super.destruct()
         root?.destroy()
         Navigation.stopNavigationCatching()
-        getHtml().removeClass("wui3")
+        getHtml().removeClass("wui3", "full-width")
     }
 
     fun link(exerciseId: String): String = constructPathLink(mapOf("exerciseId" to exerciseId))

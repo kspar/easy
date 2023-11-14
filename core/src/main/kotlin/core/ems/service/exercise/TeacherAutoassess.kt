@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.exerciseViaCourse
 import core.ems.service.access_control.libraryExercise
+import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import kotlinx.coroutines.runBlocking
@@ -35,7 +35,8 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
 
     data class Resp(
         @JsonProperty("grade") val grade: Int,
-        @JsonProperty("feedback") val feedback: String?
+        @JsonProperty("feedback") val feedback: String?,
+        @JsonProperty("timestamp") val timestamp: DateTime,
     )
 
 
@@ -59,7 +60,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
                 libraryExercise(exerciseId, DirAccessLevel.PR)
         }
 
-        insertTeacherSubmission(exerciseId, dto.solution, caller.id)
+        val submissionTime = insertTeacherSubmission(exerciseId, dto.solution, caller.id)
 
         val aaId = getAutoExerciseId(exerciseId)
             ?: throw InvalidRequestException(
@@ -74,7 +75,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
         // this service submits and returns
         // and another service .../await will wait for the assessment to finish and return the result
 
-        return Resp(aaResult.grade, aaResult.feedback)
+        return Resp(aaResult.grade, aaResult.feedback, submissionTime)
     }
 
     private fun getAutoExerciseId(exerciseId: Long): Long? {
@@ -87,14 +88,16 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
         }
     }
 
-    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String) {
+    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String): DateTime {
+        val now = DateTime.now()
         transaction {
             TeacherSubmission.insert {
                 it[TeacherSubmission.solution] = solution
-                it[createdAt] = DateTime.now()
+                it[createdAt] = now
                 it[exercise] = EntityID(exerciseId, TeacherSubmission)
                 it[teacher] = EntityID(teacherId, Teacher)
             }
         }
+        return now
     }
 }

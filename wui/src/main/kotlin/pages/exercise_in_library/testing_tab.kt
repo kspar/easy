@@ -1,9 +1,12 @@
 package pages.exercise_in_library
 
-import DateSerializer
+import EzDate
+import EzDateSerializer
 import Icons
 import components.code_editor.CodeEditorComp
 import components.form.ButtonComp
+import components.text.AttrsComp
+import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
@@ -12,11 +15,9 @@ import pages.course_exercise.AutogradeLoaderComp
 import pages.course_exercise.ExerciseFeedbackComp
 import queries.*
 import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
 import translation.Str
-import kotlin.js.Date
 import kotlin.js.Promise
 
 
@@ -35,19 +36,22 @@ class TestingTabComp(
     data class LatestSubmission(
         val id: String,
         val solution: String,
-        @Serializable(with = DateSerializer::class)
-        val created_at: Date,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
     )
 
     @Serializable
     data class AutoAssessmentDTO(
         val grade: Int,
-        val feedback: String?
+        val feedback: String?,
+        @Serializable(with = EzDateSerializer::class)
+        val timestamp: EzDate = EzDate.now(),
     )
 
     private val editorTabName = "${Str.solutionCodeTabName}.py"
-    private val assessmentId = IdGenerator.nextId()
 
+    private lateinit var warning: WarningComp
+    private lateinit var attrs: AttrsComp
     private lateinit var editor: CodeEditorComp
 
     private val submitBtn = ButtonComp(
@@ -59,7 +63,7 @@ class TestingTabComp(
     private lateinit var autogradeLoader: AutogradeLoaderComp
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, submitBtn, feedback, autogradeLoader)
+        get() = listOfNotNull(warning, attrs, editor, submitBtn, feedback, autogradeLoader)
 
     override fun create(): Promise<*> = doInPromise {
         val submissions =
@@ -67,10 +71,20 @@ class TestingTabComp(
                 ReqMethod.GET,
                 successChecker = { http200 }
             ).await().parseTo(LatestSubmissions.serializer()).await()
-        val latestSubmission = submissions.submissions.getOrNull(0)?.solution
+        val latestSubmission = submissions.submissions.getOrNull(0)
+
+        warning = WarningComp(parent = this)
+
+        attrs = AttrsComp(
+            buildMap {
+                if (latestSubmission != null)
+                    put("Viimane katsetus", latestSubmission.created_at.toHumanString(EzDate.Format.FULL))
+            },
+            this
+        )
 
         editor = CodeEditorComp(
-            CodeEditorComp.File(editorTabName, latestSubmission),
+            CodeEditorComp.File(editorTabName, latestSubmission?.solution.orEmpty()),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
@@ -80,13 +94,23 @@ class TestingTabComp(
 
     override fun render() = template(
         """
-            <ez-dst id="$assessmentId"></ez-dst>
-            <ez-dst id="${editor.dstId}"></ez-dst>
-            <div id='${submitBtn.dstId}' style="display: flex; justify-content: center; margin-top: 3rem;"></div>
-            <ez-dst id='${autogradeLoader.dstId}'></ez-dst>
-            <ez-dst id='${feedback.dstId}'></ez-dst>
+            <ez-exercise-testing-tab>
+                <ez-dst id="${warning.dstId}"></ez-dst>
+                <ez-dst id="${attrs.dstId}"></ez-dst>
+                <ez-dst id="${editor.dstId}"></ez-dst>
+                <div id='${submitBtn.dstId}' style="display: flex; justify-content: center; margin-top: 3rem;"></div>
+                <ez-dst id='${autogradeLoader.dstId}'></ez-dst>
+                <ez-dst id='${feedback.dstId}'></ez-dst>
+            </ez-exercise-testing-tab>
         """.trimIndent(),
     )
+
+    fun setEditing(nowEditing: Boolean) {
+        if (nowEditing)
+            warning.setMsg("Kui oled automaatkontrollis muudatusi teinud, siis pead enne nende jõustumist ülesande salvestama.")
+        else
+            warning.setMsg(null)
+    }
 
 
     private suspend fun submit() {
@@ -104,6 +128,7 @@ class TestingTabComp(
             feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(a.grade, ExerciseDAO.GraderType.AUTO)
             feedback.autoFeedback = a.feedback
             feedback.rebuild()
+            attrs.attrs = mapOf("Viimane katsetus" to a.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
             editor.setFileEditable(editorTabName, true)
         }

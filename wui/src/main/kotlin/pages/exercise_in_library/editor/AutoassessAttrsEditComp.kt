@@ -4,7 +4,7 @@ import components.form.IntFieldComp
 import components.form.SelectComp
 import pages.exercise_in_library.AutoEvalTypes
 import rip.kspar.ezspa.Component
-import tmRender
+import template
 
 
 class AutoassessAttrsEditComp(
@@ -24,7 +24,7 @@ class AutoassessAttrsEditComp(
 
     private val timeField = if (containerImage != null)
         IntFieldComp(
-            "Lubatud käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
+            "Käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
             fieldNameForMessage = "Väärtus",
             // autofilled from template, should only be edited by user, not inserted
             // but is recreated on type change, so invalid/missing value should be painted on create
@@ -35,7 +35,7 @@ class AutoassessAttrsEditComp(
 
     private val memField = if (containerImage != null)
         IntFieldComp(
-            "Lubatud mälukasutus (MB)", true, 10, 50, initialValue = maxMem,
+            "Mälukasutus (MB)", true, 10, 50, initialValue = maxMem,
             fieldNameForMessage = "Väärtus",
             paintRequiredOnCreate = true,
             onValidChange = ::onElementValidChange,
@@ -46,11 +46,24 @@ class AutoassessAttrsEditComp(
     override val children: List<Component>
         get() = listOfNotNull(typeSelect, timeField, memField)
 
-    override fun render() = tmRender(
-        "t-c-exercise-tab-aa-attrs-edit",
-        "typeDstId" to typeSelect.dstId,
+    override fun render() = template(
+        """
+            <ez-exercise-autoeval>
+                <ez-block-container>
+                    <ez-block style="padding-right: 5rem;">
+                        <div id="${typeSelect.dstId}"></div>
+                    </ez-block>
+                    <ez-block style="flex-grow: 0">
+                        <ez-block-container>
+                            {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 18rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
+                            {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 15rem; flex-grow: 0;"></ez-block>{{/memDstId}}
+                        </ez-block-container>
+                    </ez-block>
+                </ez-block-container>
+            </ez-exercise-autoeval>
+        """.trimIndent(),
         "timeDstId" to timeField?.dstId,
-        "memDstId" to memField?.dstId
+        "memDstId" to memField?.dstId,
     )
 
     private fun onElementValidChange(_notUsed: Boolean = true) {

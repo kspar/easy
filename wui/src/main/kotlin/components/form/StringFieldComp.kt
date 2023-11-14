@@ -21,7 +21,7 @@ class StringFieldComp(
     private val helpText: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
-    private val onValueChange: ((String) -> Unit)? = null,
+    private val onValueChange: (suspend (String) -> Unit)? = null,
     private val onENTER: (suspend (String) -> Unit)? = null,
     private val trimValue: Boolean = true,
     parent: Component
