@@ -8,6 +8,9 @@ spring:
     jdbc-url: "<url>"
     username: "<username>"
     password: "<password>"
+    hikari:
+      maximum-pool-size: 90
+      minimum-idle: 10
   mail:
     host: "<mailhost>"
     properties:
