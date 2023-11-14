@@ -1,6 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.AutoGradeScheduler
 import core.conf.security.EasyUser
 import core.db.*
@@ -10,6 +11,7 @@ import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import core.util.DateTimeSerializer
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -36,6 +38,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
     data class Resp(
         @JsonProperty("grade") val grade: Int,
         @JsonProperty("feedback") val feedback: String?,
+        @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("timestamp") val timestamp: DateTime,
     )
 
