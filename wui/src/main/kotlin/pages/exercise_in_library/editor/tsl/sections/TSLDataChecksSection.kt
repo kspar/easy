@@ -165,7 +165,7 @@ class TSLDataChecksSection(
     override fun render() = template(
         """
             {{#checks}}
-                <fieldset style='border: 1px solid #ccc; border-radius: .5rem; color: var(--ez-text-inactive); margin-top: 3rem;'>
+                <fieldset class='ez-tsl-check'>
                 <legend>
                     <ez-dst id='{{titleDst}}'></ez-dst>
                     <ez-dst id='{{upBtnDst}}'></ez-dst>
@@ -224,7 +224,7 @@ class TSLDataChecksSection(
                 dataCategory = DataCategory.CONTAINS_STRINGS,
                 expectedValue = listOf(),
                 elementsOrdered = false,
-                beforeMessage = "Väljundi kontroll",
+                beforeMessage = "",
                 passedMessage = "OK",
                 failedMessage = "Viga"
             )

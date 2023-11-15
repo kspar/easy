@@ -27,7 +27,7 @@ class TSLStdInSection(
     override fun create() = doInPromise {
         if (showField) {
             textField = TextFieldComp(
-                "", false, "42",
+                "", false,
                 startActive = true,
                 initialValue = inputs.joinToString("\n"),
                 helpText = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real",
@@ -46,7 +46,7 @@ class TSLStdInSection(
     override fun render() = template(
         """
             {{#showField}}
-                <ez-flex style='align-items: baseline; color: var(--ez-text-inactive); margin-top: 2rem;'>
+                <ez-flex style='align-items: baseline; color: var(--ez-text-inactive); margin-top: 1.5rem;'>
                     <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslStdInput}</ez-inline-flex>
                     Kasutaja sisendid
                 </ez-flex>

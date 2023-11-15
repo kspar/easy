@@ -38,11 +38,11 @@ class TSLProgramExecutionTest(
 
     override fun render() = template(
         """
-            <ez-tsl-section-title>Sisendid</ez-tsl-section-title>
+            <ez-tsl-section-title>Sisendandmed</ez-tsl-section-title>
             $stdInSection
             $inputFilesSection
             
-            <ez-tsl-section-title>Väljundid</ez-tsl-section-title>
+            <ez-tsl-section-title>Kontrollid</ez-tsl-section-title>
             $dataChecks
         """.trimIndent()
     )
