@@ -50,7 +50,7 @@ class TSLStdInSection(
                     <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslStdInput}</ez-inline-flex>
                     Kasutaja sisendid
                 </ez-flex>
-                <ez-tsl-field-text-value style='padding-left: 3rem;' id='${textField?.dstId}'></ez-tsl-field-text-value>
+                <ez-tsl-input-data-field id='${textField?.dstId}'></ez-tsl-input-data-field>
             {{/showField}}
             {{^showField}}
                 <ez-tsl-add-button id='${showBtn?.dstId}'></ez-tsl-add-button>

@@ -42,7 +42,6 @@ class TSLReturnCheckSection(
 
             passMsg = StringFieldComp(
                 "", true,
-                helpText = """Tagasiside õnnestumisel, nt "Leidsin väljundist õige vastuse 42"""",
                 fieldNameForMessage = "Tagasiside",
                 initialValue = check?.passedMessage ?: "Funktsioon tagastas õige väärtuse {expected}",
                 onValidChange = { onValidChanged() },
@@ -51,7 +50,6 @@ class TSLReturnCheckSection(
             )
             failMsg = StringFieldComp(
                 "", true,
-                helpText = """Tagasiside ebaõnnestumisel, nt "Ei leidnud programmi väljundist oodatud tulemust 42"""",
                 fieldNameForMessage = "Tagasiside",
                 initialValue = check?.failedMessage
                     ?: "Ootasin, et funktsioon tagastaks {expected}, aga tagastas {actual}",
@@ -77,8 +75,14 @@ class TSLReturnCheckSection(
                 <fieldset class='ez-tsl-check'>
                     <ez-flex style='margin-top: 1.5rem'>Tagastusväärtus peab olema:</ez-flex>
                     $returnField
-                    $passMsg
-                    $failMsg
+                    <ez-flex style='color: var(--ez-text-inactive);'>
+                        <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.check}</ez-inline-flex>
+                        <ez-tsl-feedback-msg style='flex-grow: 1;'>$passMsg</ez-tsl-feedback-msg>
+                    </ez-flex>
+                    <ez-flex style='color: var(--ez-text-inactive);'>
+                        <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.close}</ez-inline-flex>
+                        <ez-tsl-feedback-msg style='flex-grow: 1;'>$failMsg</ez-tsl-feedback-msg>
+                    </ez-flex>
                 </fieldset>
             {{/showField}}
             {{^showField}}

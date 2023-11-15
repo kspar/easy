@@ -847,6 +847,7 @@ ez-code-edit.readonly .CodeMirror-cursors {
 ez-code-editor-field-help {
     display: flex;
     margin-top: 0.6rem;
+    margin-bottom: 1rem;
     font-size: 1.2rem;
     /* same as text fields */
     color: rgba(0,0,0,0.54);
@@ -2851,12 +2852,21 @@ ez-tsl-inline-field .input-field {
     margin-bottom: 0;
 }
 
-ez-tsl-field-text-value {
+ez-tsl-input-data-field {
     display: block;
+    padding-left: 3rem;
 }
 
-ez-tsl-field-text-value .input-field {
+ez-tsl-input-data-field .input-field {
     margin: 0 0 3rem 0;
+}
+
+ez-tsl-check-after-sentence-field .input-field {
+    margin: 0 0 2rem 0;
+}
+
+ez-tsl-feedback-msg .input-field {
+    margin-bottom: 1rem;
 }
 
 ez-tsl-add-button {
