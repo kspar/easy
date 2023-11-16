@@ -11,6 +11,8 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -19,7 +21,6 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
-
 
 @RestController
 @RequestMapping("/v2")
