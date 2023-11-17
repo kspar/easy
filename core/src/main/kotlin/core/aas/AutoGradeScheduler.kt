@@ -3,6 +3,7 @@ package core.aas
 import core.db.*
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -14,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
 import kotlin.math.min
-
 
 private val log = KotlinLogging.logger {}
 

@@ -5,6 +5,7 @@ import core.db.ManagementNotification
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction

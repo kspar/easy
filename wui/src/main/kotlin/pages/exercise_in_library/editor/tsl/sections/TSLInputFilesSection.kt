@@ -78,7 +78,7 @@ class TSLInputFilesSection(
                     Tekstifail <ez-tsl-inline-field id='{{filenameDst}}'></ez-tsl-inline-field>
                     <ez-inline-flex style='align-self: center;' id='{{deleteBtnDst}}'></ez-inline-flex>
                 </ez-flex>
-                <ez-tsl-field-text-value style='padding-left: 3rem;' id='{{contentDst}}'></ez-tsl-field-text-value>
+                <ez-tsl-input-data-field id='{{contentDst}}'></ez-tsl-input-data-field>
             {{/files}}
             <ez-tsl-add-button id='{{btnDst}}'></ez-tsl-add-button>
         """.trimIndent(),

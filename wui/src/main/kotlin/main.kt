@@ -3,6 +3,7 @@ import kotlinx.coroutines.await
 import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
+import libheaders.OverlayScrollbars
 import org.w3c.dom.Element
 import pages.EasyPage
 import pages.Navbar
@@ -135,6 +136,7 @@ private fun initApplication() {
     CodeMirror.modeURL = AppProperties.CM_MODE_URL_TEMPLATE
 
     loadContainerQueries()
+//    mentionMaterialComponents()
 }
 
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {
@@ -158,24 +160,22 @@ private fun loadContainerQueries() {
         debug { "Native container queries NOT supported, using polyfill :(" }
         // Just including the reference in code forces the module to be included/loaded
         ContainerQueryPolyfill
-    } else {
-        debug { "Native container queries supported :)" }
     }
 }
 
 private fun initScrollbar(element: Element, autoHide: Boolean) {
-//    OverlayScrollbars.OverlayScrollbars(
-//        element,
-//        objOf(
-//             use native if they are overlaid already like on mobile
-//            "showNativeOverlaidScrollbars" to true,
-//            "scrollbars" to
-//                    objOf(
-//                        "autoHide" to if (autoHide) "leave" else "never",
-//                        "autoHideDelay" to 100,
-//                    )
-//        )
-//    )
+    OverlayScrollbars.OverlayScrollbars(
+        element,
+        objOf(
+            // use native if they are overlaid already like on mobile
+            "showNativeOverlaidScrollbars" to true,
+            "scrollbars" to
+                    objOf(
+                        "autoHide" to if (autoHide) "leave" else "never",
+                        "autoHideDelay" to 100,
+                    )
+        )
+    )
 }
 
 private fun consoleEgg() {

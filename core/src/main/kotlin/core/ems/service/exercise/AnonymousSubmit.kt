@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Size
 import kotlin.coroutines.EmptyCoroutineContext
-
 
 @RestController
 @RequestMapping("/v2")

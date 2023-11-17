@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
-
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 
 @RestController
 @RequestMapping("/v2")

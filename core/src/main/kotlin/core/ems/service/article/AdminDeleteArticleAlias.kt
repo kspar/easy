@@ -8,6 +8,7 @@ import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction

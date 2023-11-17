@@ -13,7 +13,7 @@ class StringFieldComp(
     private val label: String,
     private val isRequired: Boolean,
     private val placeholder: String? = null,
-    var isDisabled: Boolean = false,
+    isDisabled: Boolean = false,
     private val paintRequiredOnCreate: Boolean = false,
     private val paintRequiredOnInput: Boolean = true,
     private val fieldNameForMessage: String = label,
@@ -21,7 +21,7 @@ class StringFieldComp(
     private val helpText: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
-    private val onValueChange: ((String) -> Unit)? = null,
+    private val onValueChange: (suspend (String) -> Unit)? = null,
     private val onENTER: (suspend (String) -> Unit)? = null,
     private val trimValue: Boolean = true,
     parent: Component
@@ -33,6 +33,12 @@ class StringFieldComp(
     parent
 ) {
     private val inputId = IdGenerator.nextId()
+
+    var isDisabled: Boolean = isDisabled
+        set(value) {
+            field = value
+            rebuild()
+        }
 
     override fun getValue(): String = getElement().value.let { if (trimValue) it.trim() else it }
     override fun getElement(): HTMLInputElement = getElemByIdAs(inputId)

@@ -29,13 +29,13 @@ class InsertOrUpdate<Key : Any>(
     private val keys: List<Column<*>>,
     private val excluded: List<Column<*>>
 ) : InsertStatement<Key>(table, isIgnore) {
-    override fun prepareSQL(transaction: Transaction): String {
+    override fun prepareSQL(transaction: Transaction, prepared: Boolean): String {
         val tm = TransactionManager.current()
         val updateCols = table.columns.minus(excluded)
         val updateSetter = updateCols.joinToString { "${tm.identity(it)} = EXCLUDED.${tm.identity(it)}" }
         val keyColsStr = keys.joinToString { tm.identity(it) }
         val onConflict = "ON CONFLICT ($keyColsStr) DO UPDATE SET $updateSetter"
-        return "${super.prepareSQL(transaction)} $onConflict"
+        return "${super.prepareSQL(transaction, prepared)} $onConflict"
     }
 }
 
@@ -70,4 +70,8 @@ class IsNullExp(val expr: Expression<*>) : Op<Boolean>() {
 fun SortOrder.complement() = when (this) {
     SortOrder.ASC -> SortOrder.DESC
     SortOrder.DESC -> SortOrder.ASC
+    SortOrder.ASC_NULLS_FIRST -> SortOrder.DESC_NULLS_FIRST
+    SortOrder.DESC_NULLS_FIRST -> SortOrder.ASC_NULLS_FIRST
+    SortOrder.ASC_NULLS_LAST -> SortOrder.DESC_NULLS_LAST
+    SortOrder.DESC_NULLS_LAST -> SortOrder.ASC_NULLS_LAST
 }

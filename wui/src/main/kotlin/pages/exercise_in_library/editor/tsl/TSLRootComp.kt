@@ -94,6 +94,9 @@ class TSLRootComp(
 
     fun setActiveTab(tab: Tab) = tabs.setSelectedTabById(tab.id)
 
+    // Only check TSL spec changes, ignore compose
+    override fun hasUnsavedChanges() = tslComp.getTsl() != initialTslSpecStr
+
     private suspend fun updateCompose(newTsl: String?) {
         val tslSpec = if (newTsl.isNullOrBlank()) {
             createEmptyTslSpec().also { tslComp.setTsl(it) }

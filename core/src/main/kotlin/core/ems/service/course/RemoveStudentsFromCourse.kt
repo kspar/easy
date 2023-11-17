@@ -2,7 +2,10 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.StudentCourseAccess
+import core.db.StudentCourseGroup
+import core.db.StudentPendingAccess
+import core.db.StudentPendingCourseGroup
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.canTeacherOrAdminAccessCourseGroup
 import core.ems.service.access_control.teacherOnCourse
@@ -11,6 +14,8 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.ForbiddenException
 import core.exception.ReqError
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
@@ -20,7 +25,6 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
-
 
 @RestController
 @RequestMapping("/v2")

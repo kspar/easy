@@ -102,6 +102,7 @@ data class GenericCheck(
     val expectedValue: List<String>,
     val elementsOrdered: Boolean? = false,
     val dataCategory: DataCategory = DataCategory.EQUALS,
+    val ignoreCase: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -113,6 +114,7 @@ data class GenericCheckLong(
     val nothingElse: Boolean? = null,
     val expectedValue: List<String>,
     val dataCategory: DataCategory = DataCategory.EQUALS,
+    val ignoreCase: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String
@@ -126,6 +128,7 @@ data class OutputFileCheck(
     val expectedValue: List<String>,
     val elementsOrdered: Boolean? = false,
     val dataCategory: DataCategory = DataCategory.EQUALS,
+    val ignoreCase: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,
     override val failedMessage: String

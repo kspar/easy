@@ -110,7 +110,6 @@ class TSLDataChecksSection(
                 ),
                 StringFieldComp(
                     "", true,
-                    helpText = """Tagasiside õnnestumisel, nt "Leidsin väljundist õige vastuse 42"""",
                     fieldNameForMessage = "Tagasiside",
                     initialValue = check.passedMessage,
                     onValidChange = { onValidChanged() },
@@ -119,7 +118,6 @@ class TSLDataChecksSection(
                 ),
                 StringFieldComp(
                     "", true,
-                    helpText = """Tagasiside ebaõnnestumisel, nt "Ei leidnud programmi väljundist oodatud tulemust 42"""",
                     fieldNameForMessage = "Tagasiside",
                     initialValue = check.failedMessage,
                     onValidChange = { onValidChanged() },
@@ -165,7 +163,7 @@ class TSLDataChecksSection(
     override fun render() = template(
         """
             {{#checks}}
-                <fieldset style='border: 1px solid #ccc; border-radius: .5rem; color: var(--ez-text-inactive); margin-top: 3rem;'>
+                <fieldset class='ez-tsl-check'>
                 <legend>
                     <ez-dst id='{{titleDst}}'></ez-dst>
                     <ez-dst id='{{upBtnDst}}'></ez-dst>
@@ -174,9 +172,16 @@ class TSLDataChecksSection(
                 </legend>
                     Väljundis <ez-tsl-inline-field id='{{typeDst}}' style='width: 20rem;'></ez-tsl-inline-field> 
                     järgmistest <ez-tsl-inline-field id='{{comparisonDst}}' style='width: 13rem;'></ez-tsl-inline-field>: 
-                    <ez-tsl-field-text-value id='{{valueDst}}'></ez-tsl-field-text-value>
-                    <ez-dst id='{{okMsgDst}}'></ez-dst>
-                    <ez-dst id='{{nokMsgDst}}'></ez-dst>
+                    <ez-tsl-check-after-sentence-field id='{{valueDst}}'></ez-tsl-check-after-sentence-field>
+                    <ez-flex style='color: var(--ez-text-inactive);'>
+                        <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.check}</ez-inline-flex>
+                        <ez-tsl-feedback-msg id='{{okMsgDst}}' style='flex-grow: 1;'></ez-tsl-feedback-msg>
+                    </ez-flex>
+                    <ez-flex style='color: var(--ez-text-inactive);'>
+                        <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.close}</ez-inline-flex>
+                        <ez-tsl-feedback-msg id='{{nokMsgDst}}' style='flex-grow: 1;'></ez-tsl-feedback-msg>
+                    </ez-flex>
+                    
                     <!-- TODO: "more options" expand -->
                     <ez-dst style='display: none;' id='{{orderDst}}'></ez-dst>
                 </fieldset>
@@ -224,9 +229,9 @@ class TSLDataChecksSection(
                 dataCategory = DataCategory.CONTAINS_STRINGS,
                 expectedValue = listOf(),
                 elementsOrdered = false,
-                beforeMessage = "Väljundi kontroll",
-                passedMessage = "OK",
-                failedMessage = "Viga"
+                beforeMessage = "",
+                passedMessage = "Leidsin programmi väljundist õige vastuse {expected}",
+                failedMessage = "Ei leidnud programmi väljundist oodatud vastust {expected}"
             )
         )
         createAndBuild().await()

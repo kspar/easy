@@ -10,7 +10,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemById
 import rip.kspar.ezspa.getElemByIdOrNull
-import tmRender
+import template
 
 class AutoassessTSLYAMLEditorComp(
     private val evaluateScript: String,
@@ -47,9 +47,11 @@ class AutoassessTSLYAMLEditorComp(
         )
     }
 
-    override fun render() = tmRender(
-        "t-c-exercise-tab-aa-tsl-yaml",
-        "editorDst" to codeEditor.dstId,
+    override fun render() = template(
+        """
+            <pre id="tsl-yaml-compiler-feedback"></pre>
+            <ez-dst id="${codeEditor.dstId}"></ez-dst>
+        """.trimIndent(),
     )
 
     override fun postRender() {
