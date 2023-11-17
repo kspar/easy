@@ -7,6 +7,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
 import template
+import warn
 
 
 class CodeFieldComp(
@@ -27,7 +28,12 @@ class CodeFieldComp(
     var isDisabled: Boolean = isDisabled
         set(value) {
             field = value
-            editor.setFileEditable(editorFilename, !value)
+            // Dirty hack for an unknown problem
+            try {
+                editor.setFileEditable(editorFilename, !value)
+            } catch (e: NoSuchElementException) {
+                warn { "Unable to set editor ${editor.dstId} to disabled:$value" }
+            }
         }
 
     private var isCurrentlyValid = !isRequired || initialValue.isNotBlank()
