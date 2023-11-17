@@ -24,7 +24,7 @@ data class FunctionExecutionTest(
     val outputFileChecks: List<OutputFileCheck> = emptyList(),
     val outOfInputsErrorMsg: String = "Programm küsis rohkem sisendeid kui testil oli anda",
     val functionNotDefinedErrorMsg: String = "Funktsioon ei ole defineeritud",
-    val functionHasWrongNumberOfArgsErrorMsg: String = "Funktsioon võtab sisendiks vale arvu argumente"
+    val tooManyArgumentsProvidedErrorMsg: String = "Funktsioon võtab sisendiks vale arvu argumente"
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsiooni käivitus"
