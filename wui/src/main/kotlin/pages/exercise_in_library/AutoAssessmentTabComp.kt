@@ -120,9 +120,10 @@ class AutoAssessmentTabComp(
             // restore saved
             aaProps = savedProps
             createAndBuild().await()
+        } else {
+            attrs.setEditable(nowEditable)
+            editor?.setEditable(nowEditable)
         }
-        attrs.setEditable(nowEditable)
-        editor?.setEditable(nowEditable)
     }
 
     fun getEditedProps(): EditedAutoassess? {

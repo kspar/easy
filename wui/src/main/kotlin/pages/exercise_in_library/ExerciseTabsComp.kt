@@ -148,9 +148,15 @@ class ExerciseTabsComp(
         exerciseTab.setEditable(nowEditing)
 
         // aa tab: attrs, editor
-        val editorView = autoassessTab.getEditorActiveView()
+
+        // Cannot restore editor view due to a timing bug:
+        // setEditable here actually createAndBuilds itself when switching to not editing
+        // and its descendant TSLRootComp recreates its children inside postChildrenBuilt using a promise without waiting it to resolve.
+        // Therefore, setEditable here will actually return in a state where not all children have been built,
+        // and will likely fail due to something being uninitialised.
+//        val editorView = autoassessTab.getEditorActiveView()
         autoassessTab.setEditable(nowEditing)
-        autoassessTab.setEditorActiveView(editorView)
+//        autoassessTab.setEditorActiveView(editorView)
 
         // testing tab: warning
         testingTab?.setEditing(nowEditing)
