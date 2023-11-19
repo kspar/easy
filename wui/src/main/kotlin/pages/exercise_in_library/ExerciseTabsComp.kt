@@ -35,7 +35,7 @@ class ExerciseTabsComp(
 
     private lateinit var exerciseTab: ExerciseTextEditTabComp
     private lateinit var autoassessTab: AutoAssessmentTabComp
-    private lateinit var testingTab: TestingTabComp
+    private var testingTab: TestingTabComp? = null
 
     override val children: List<Component>
         get() = listOf(tabs)
@@ -153,7 +153,7 @@ class ExerciseTabsComp(
         autoassessTab.setEditorActiveView(editorView)
 
         // testing tab: warning
-        testingTab.setEditing(nowEditing)
+        testingTab?.setEditing(nowEditing)
 
         return true
     }
