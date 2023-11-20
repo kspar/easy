@@ -10,7 +10,6 @@ import kotlinx.dom.removeClass
 import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
 import libheaders.tabHandler
-import negation
 import rip.kspar.ezspa.*
 import strIfTrue
 import template
@@ -330,7 +329,7 @@ class CodeEditorComp(
     }
 
     private fun toggleEdit() {
-        toggleEditEnabled = toggleEditEnabled.negation
+        toggleEditEnabled = !toggleEditEnabled
         refreshEditability()
     }
 
