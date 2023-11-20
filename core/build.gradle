@@ -5,7 +5,7 @@ liquibaseProperties.load(new FileInputStream(
 
 buildscript {
     ext {
-        springBootVersion = '2.6.6'
+        springBootVersion = '2.7.17'
         liquibaseVersion = '2.0.4'
     }
     repositories {
@@ -69,9 +69,9 @@ dependencies {
     implementation 'org.jetbrains.exposed:exposed-jdbc:0.44.1'
 
     implementation 'com.zaxxer:HikariCP:3.4.5'
-    implementation "org.postgresql:postgresql:42.2.14"
+    implementation 'org.postgresql:postgresql:42.6.0'
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.3'
-    liquibaseRuntime 'org.postgresql:postgresql:42.2.14'
+    liquibaseRuntime 'org.postgresql:postgresql:42.6.0'
 
     // Kotlin support
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
