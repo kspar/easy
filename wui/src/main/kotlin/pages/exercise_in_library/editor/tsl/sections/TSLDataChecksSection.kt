@@ -8,6 +8,7 @@ import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import show
 import template
+import translation.Str
 import tsl.common.model.CheckType
 import tsl.common.model.DataCategory
 import tsl.common.model.GenericCheck
@@ -230,8 +231,8 @@ class TSLDataChecksSection(
                 expectedValue = listOf(),
                 elementsOrdered = false,
                 beforeMessage = "",
-                passedMessage = "Leidsin programmi väljundist õige vastuse {expected}",
-                failedMessage = "Ei leidnud programmi väljundist oodatud vastust {expected}"
+                passedMessage = Str.tslStdoutCheckContainsAllPass,
+                failedMessage = Str.tslStdoutCheckContainsAllFail
             )
         )
         createAndBuild().await()

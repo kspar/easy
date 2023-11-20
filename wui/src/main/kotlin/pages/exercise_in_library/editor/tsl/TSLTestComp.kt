@@ -29,12 +29,10 @@ class TSLTestComp(
     parent: Component
 ) : Component(parent) {
 
-    // TODO: feedback message fields shorter, prefix icons (pass/fail) and maybe show help messages only on focus?
-
     private val editTitleModal = TSLEditTitleModalComp(::changeTitle, this)
 
     private val testType = SelectComp(
-        Str.testType, TestType.values().map {
+        Str.tslTestType, TestType.values().map {
             SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
         onOptionChange = { changeTestType(it!!) }, parent = this
