@@ -2,10 +2,13 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
-import core.ems.service.*
+import core.db.TeacherAssessment
+import core.ems.service.AdocService
+import core.ems.service.assertAssessmentControllerChecks
+import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
