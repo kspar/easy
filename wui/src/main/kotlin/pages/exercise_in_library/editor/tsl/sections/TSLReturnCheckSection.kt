@@ -9,6 +9,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import show
 import template
+import translation.Str
 import tsl.common.model.ReturnValueCheck
 
 class TSLReturnCheckSection(
@@ -35,24 +36,24 @@ class TSLReturnCheckSection(
                 isRequired = false,
                 fileExtension = "py",
                 initialValue = check?.returnValue.orEmpty(),
-                helpText = "Oodatav funktsiooni tagastusväärtus Pythoni süntaksis",
+                helpText = Str.tslReturnCheckValueHelp,
                 onValueChange = { onUpdate() },
                 parent = this
             )
 
             passMsg = StringFieldComp(
                 "", true,
-                fieldNameForMessage = "Tagasiside",
-                initialValue = check?.passedMessage ?: "Funktsioon tagastas õige väärtuse {expected}",
+                fieldNameForMessage = Str.feedback,
+                initialValue = check?.passedMessage ?: Str.tslReturnCheckPass,
                 onValidChange = { onValidChanged() },
                 onValueChange = { onUpdate() },
                 parent = this
             )
             failMsg = StringFieldComp(
                 "", true,
-                fieldNameForMessage = "Tagasiside",
+                fieldNameForMessage = Str.feedback,
                 initialValue = check?.failedMessage
-                    ?: "Ootasin, et funktsioon tagastaks {expected}, aga tagastas {actual}",
+                    ?: Str.tslReturnCheckFail,
                 onValidChange = { onValidChanged() },
                 onValueChange = { onUpdate() },
                 parent = this
@@ -64,7 +65,7 @@ class TSLReturnCheckSection(
             passMsg = null
             failMsg = null
             showBtn = ButtonComp(
-                ButtonComp.Type.FLAT, "Tagastusväärtuse kontroll", Icons.add, ::showSection, parent = this
+                ButtonComp.Type.FLAT, Str.tslReturnCheck, Icons.add, ::showSection, parent = this
             )
         }
     }
@@ -73,7 +74,7 @@ class TSLReturnCheckSection(
         """
             {{#showField}}
                 <fieldset class='ez-tsl-check'>
-                    <ez-flex style='margin-top: 1.5rem'>Tagastusväärtus peab olema:</ez-flex>
+                    <ez-flex style='margin-top: 1.5rem'>{{returnCheckMsg}}</ez-flex>
                     $returnField
                     <ez-flex style='color: var(--ez-text-inactive);'>
                         <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.check}</ez-inline-flex>
@@ -89,6 +90,7 @@ class TSLReturnCheckSection(
                 <ez-tsl-add-button id='${showBtn?.dstId}'></ez-tsl-add-button>
             {{/showField}}
         """.trimIndent(),
+        "returnCheckMsg" to Str.tslReturnCheckPrefixMsg,
         "showField" to showField,
     )
 

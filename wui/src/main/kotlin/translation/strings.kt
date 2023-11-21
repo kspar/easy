@@ -47,6 +47,7 @@ sealed class TranslatableStrings {
     abstract val accountGroup: String
     abstract val doDownload: String
     abstract val downloading: String
+    abstract val feedback: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -185,8 +186,18 @@ sealed class TranslatableStrings {
 
 
     // Exercise page
-    abstract val testType: String
-    abstract val copySuffix: String
+
+
+    // TSL UI
+    abstract val tslTestType: String
+    abstract val tslCopySuffix: String
+    abstract val tslStdoutCheckContainsAllPass: String
+    abstract val tslStdoutCheckContainsAllFail: String
+    abstract val tslReturnCheck: String
+    abstract val tslReturnCheckPrefixMsg: String
+    abstract val tslReturnCheckValueHelp: String
+    abstract val tslReturnCheckPass: String
+    abstract val tslReturnCheckFail: String
 
     // Similarity page
     abstract val exerciseTitle: String
@@ -327,6 +338,7 @@ object EstStrings : TranslatableStrings() {
     override val accountGroup = "Rühm"
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
+    override val feedback = "Tagasiside"
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -369,8 +381,15 @@ ole hea ja proovi hiljem uuesti.
     override val permissionPRA = "Lisaja"
     override val permissionPRAW = "Muutja"
     override val permissionPRAWM = "Moderaator"
-    override val testType = "Testi tüüp"
-    override val copySuffix = "(koopia)"
+    override val tslTestType = "Testi tüüp"
+    override val tslCopySuffix = "(koopia)"
+    override val tslStdoutCheckContainsAllPass = "Leidsin programmi väljundist õige vastuse {expected}"
+    override val tslStdoutCheckContainsAllFail = "Ei leidnud programmi väljundist oodatud vastust {expected}"
+    override val tslReturnCheck = "Tagastusväärtuse kontroll"
+    override val tslReturnCheckPrefixMsg = "Tagastusväärtus peab olema:"
+    override val tslReturnCheckValueHelp = "Oodatav funktsiooni tagastusväärtus Pythoni süntaksis"
+    override val tslReturnCheckPass = "Funktsioon tagastas õige väärtuse {expected}"
+    override val tslReturnCheckFail = "Ootasin, et funktsioon tagastaks {expected}, aga tagastas {actual}"
     override val exerciseTitle = "Ülesanne"
     override val findSimilarities = "Leia sarnasused"
     override val searching = "Otsin..."
@@ -519,6 +538,7 @@ object EngStrings : TranslatableStrings() {
     override val accountGroup = "Group"
     override val doDownload = "Download"
     override val downloading = "Downloading..."
+    override val feedback = "Feedback"
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
@@ -561,8 +581,15 @@ of the issue, please try again later.
     override val autogradeStdOut = "The program's full output:"
     override val autogradeNoChecksInTest = "There weren't any checks to run. I guess that means we're fine?"
 
-    override val testType = "Test type"
-    override val copySuffix = "(copy)"
+    override val tslTestType = "Test type"
+    override val tslCopySuffix = "(copy)"
+    override val tslStdoutCheckContainsAllPass = "Found the expected value in the program's output: {expected}"
+    override val tslStdoutCheckContainsAllFail = "Can't find the expected value in the program's output: {expected}"
+    override val tslReturnCheck = "Return value check"
+    override val tslReturnCheckPrefixMsg = "The return value must be:"
+    override val tslReturnCheckValueHelp = "Expected function return value in Python syntax"
+    override val tslReturnCheckPass = "Function returned the correct value {expected}"
+    override val tslReturnCheckFail = "Expected the function to return {expected}, but instead it returned {actual}"
     override val exerciseTitle = "Exercise"
     override val findSimilarities = "Find similarities"
     override val searching = "Searching..."

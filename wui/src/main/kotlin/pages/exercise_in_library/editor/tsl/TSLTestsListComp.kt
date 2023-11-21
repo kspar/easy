@@ -56,7 +56,7 @@ class TSLTestsListComp(
 
     private suspend fun copyTest(test: Test, title: String) = changeTests {
         val testCopy = test.copyTest(IdGenerator.nextLongId())
-        testCopy.name = title + " " + Str.copySuffix
+        testCopy.name = title + " " + Str.tslCopySuffix
         val newIndex = it.indexOfFirst { it.id == test.id } + 1
         it.add(newIndex, testCopy)
     }
