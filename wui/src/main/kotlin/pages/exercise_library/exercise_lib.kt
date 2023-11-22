@@ -1,6 +1,7 @@
 package pages.exercise_library
 
 import EzDate
+import HumanStringComparator
 import Icons
 import components.BreadcrumbsComp
 import components.Crumb
@@ -222,21 +223,21 @@ class ExerciseLibComp(
                 EzCollComp.Sorter<Props>("Nime järgi",
                     compareBy<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) 1 else 0
-                    }.thenBy {
+                    }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
                 EzCollComp.Sorter("Muutmisaja järgi",
                     compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.future()
-                    }.thenBy {
+                    }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
                 EzCollComp.Sorter<Props>("Populaarsuse järgi",
                     compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
-                    }.thenBy {
+                    }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),

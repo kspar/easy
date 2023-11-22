@@ -1,6 +1,7 @@
 package pages.participants
 
 import EzDate
+import HumanStringComparator
 import Icons
 import components.EzCollComp
 import components.form.ButtonComp
@@ -118,11 +119,11 @@ class ParticipantsTeachersListComp(
         val sorters = buildList {
             if (hasGroups) add(
                 EzCollComp.Sorter("Rühma ja nime järgi",
-                    compareBy<EzCollComp.Item<TeacherProps>> { it.props.groups.getOrNull(0)?.name }
-                        .thenBy { it.props.groups.getOrNull(1)?.name }
-                        .thenBy { it.props.groups.getOrNull(2)?.name }
-                        .thenBy { it.props.groups.getOrNull(3)?.name }
-                        .thenBy { it.props.groups.getOrNull(4)?.name }
+                    compareBy<EzCollComp.Item<TeacherProps>, String?>(HumanStringComparator) { it.props.groups.getOrNull(0)?.name }
+                        .thenBy(HumanStringComparator) { it.props.groups.getOrNull(1)?.name }
+                        .thenBy(HumanStringComparator) { it.props.groups.getOrNull(2)?.name }
+                        .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
+                        .thenBy(HumanStringComparator) { it.props.groups.getOrNull(4)?.name }
                         .thenBy { it.props.lastName.lowercase() }
                         .thenBy { it.props.firstName.lowercase() })
             )

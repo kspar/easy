@@ -1,5 +1,6 @@
 package pages.participants
 
+import HumanStringComparator
 import Icons
 import components.EzCollComp
 import components.form.ButtonComp
@@ -141,11 +142,11 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.Sorter("Rühma ja nime järgi",
-                            compareBy<EzCollComp.Item<StudentProps>> { it.props.groups.getOrNull(0)?.name }
-                                .thenBy { it.props.groups.getOrNull(1)?.name }
-                                .thenBy { it.props.groups.getOrNull(2)?.name }
-                                .thenBy { it.props.groups.getOrNull(3)?.name }
-                                .thenBy { it.props.groups.getOrNull(4)?.name }
+                            compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) { it.props.groups.getOrNull(0)?.name }
+                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(1)?.name }
+                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(2)?.name }
+                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
+                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(4)?.name }
                                 .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
                                 .thenBy { it.props.firstName?.lowercase() })
                     )
