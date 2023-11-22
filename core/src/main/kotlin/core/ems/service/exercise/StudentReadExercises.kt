@@ -9,13 +9,13 @@ import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.experimental.suspendedTransactionAsync
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -66,97 +66,100 @@ class StudentReadExercisesController {
 
         data class SubmissionPartial(val id: Long, val solution: String, val createdAt: DateTime)
 
-        return transaction {
+
+        val partials = transaction {
+            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(
+                    ExerciseVer.title,
+                    ExerciseVer.graderType,
+                    CourseExercise.id,
+                    CourseExercise.softDeadline,
+                    CourseExercise.hardDeadline,
+                    CourseExercise.gradeThreshold,
+                    CourseExercise.orderIdx,
+                    CourseExercise.titleAlias
+                )
+                .select {
+                    CourseExercise.course eq courseId and
+                            ExerciseVer.validTo.isNull() and
+                            CourseExercise.studentVisibleFrom.isNotNull() and
+                            CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
+                }
+                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                .map {
+                    val hardDeadline = it[CourseExercise.hardDeadline]
+                    ExercisePartial(
+                        it[CourseExercise.id].value,
+                        it[ExerciseVer.title],
+                        it[CourseExercise.softDeadline],
+                        hardDeadline == null || hardDeadline.isAfterNow,
+                        it[CourseExercise.gradeThreshold],
+                        it[CourseExercise.titleAlias],
+                        it[ExerciseVer.graderType],
+                    )
+                }
+        }
+
+        return Resp(
             runBlocking {
-                Resp(
-                    (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                        .slice(
-                            ExerciseVer.title,
-                            ExerciseVer.graderType,
-                            CourseExercise.id,
-                            CourseExercise.softDeadline,
-                            CourseExercise.hardDeadline,
-                            CourseExercise.gradeThreshold,
-                            CourseExercise.orderIdx,
-                            CourseExercise.titleAlias
-                        )
-                        .select {
-                            CourseExercise.course eq courseId and
-                                    ExerciseVer.validTo.isNull() and
-                                    CourseExercise.studentVisibleFrom.isNotNull() and
-                                    CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
-                        }
-                        .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                        .map {
-                            val hardDeadline = it[CourseExercise.hardDeadline]
-                            ExercisePartial(
-                                it[CourseExercise.id].value,
-                                it[ExerciseVer.title],
-                                it[CourseExercise.softDeadline],
-                                hardDeadline == null || hardDeadline.isAfterNow,
-                                it[CourseExercise.gradeThreshold],
-                                it[CourseExercise.titleAlias],
-                                it[ExerciseVer.graderType],
-                            )
-                        }.mapIndexed { i, ex ->
-                            async(Dispatchers.IO) {
-                                transaction {
-                                    val lastSub =
-                                        Submission
-                                            .select {
-                                                Submission.courseExercise eq ex.courseExId and
-                                                        (Submission.student eq studentId)
-                                            }
-                                            .orderBy(Submission.createdAt, SortOrder.DESC)
-                                            .limit(1)
-                                            .map {
-                                                SubmissionPartial(
-                                                    it[Submission.id].value,
-                                                    it[Submission.solution],
-                                                    it[Submission.createdAt]
-                                                )
-                                            }
-                                            .firstOrNull()
-
-                                    var gradedBy: GraderType? = null
-                                    var grade: Int? = null
-
-                                    if (lastSub != null) {
-                                        grade = lastTeacherGrade(lastSub.id)
-                                        if (grade != null) {
-                                            gradedBy = GraderType.TEACHER
-                                        } else {
-                                            grade = lastAutoGrade(lastSub.id)
-                                            if (grade != null) {
-                                                gradedBy = GraderType.AUTO
-                                            }
-                                        }
-                                    }
-
-                                    val status: StudentExerciseStatus = when {
-                                        lastSub == null -> StudentExerciseStatus.UNSTARTED
-                                        grade == null -> StudentExerciseStatus.UNGRADED
-                                        grade >= ex.threshold -> StudentExerciseStatus.COMPLETED
-                                        else -> StudentExerciseStatus.STARTED
-                                    }
-
-                                    ExerciseResp(
-                                        ex.courseExId.toString(),
-                                        ex.titleAlias ?: ex.title,
-                                        ex.graderType,
-                                        ex.deadline,
-                                        ex.isOpen,
-                                        status,
-                                        grade,
-                                        gradedBy,
-                                        i
+                partials.mapIndexed { i, ex ->
+                    suspendedTransactionAsync(Dispatchers.IO) {
+                        val lastSub =
+                            Submission
+                                .select {
+                                    Submission.courseExercise eq ex.courseExId and
+                                            (Submission.student eq studentId)
+                                }
+                                .orderBy(Submission.createdAt, SortOrder.DESC)
+                                .limit(1)
+                                .map {
+                                    SubmissionPartial(
+                                        it[Submission.id].value,
+                                        it[Submission.solution],
+                                        it[Submission.createdAt]
                                     )
                                 }
+                                .firstOrNull()
+
+                        var gradedBy: GraderType? = null
+                        var grade: Int? = null
+
+                        if (lastSub != null) {
+                            grade = lastTeacherGrade(lastSub.id)
+                            if (grade != null) {
+                                gradedBy = GraderType.TEACHER
+                            } else {
+                                grade = lastAutoGrade(lastSub.id)
+                                if (grade != null) {
+                                    gradedBy = GraderType.AUTO
+                                }
                             }
-                        }.awaitAll()
-                )
+                        }
+
+                        val status: StudentExerciseStatus = when {
+                            lastSub == null -> StudentExerciseStatus.UNSTARTED
+                            grade == null -> StudentExerciseStatus.UNGRADED
+                            grade >= ex.threshold -> StudentExerciseStatus.COMPLETED
+                            else -> StudentExerciseStatus.STARTED
+                        }
+
+                        ExerciseResp(
+                            ex.courseExId.toString(),
+                            ex.titleAlias ?: ex.title,
+                            ex.graderType,
+                            ex.deadline,
+                            ex.isOpen,
+                            status,
+                            grade,
+                            gradedBy,
+                            i
+                        )
+
+                    }
+
+                }.awaitAll()
             }
-        }
+        )
     }
 
     private fun lastAutoGrade(submissionId: Long): Int? =
