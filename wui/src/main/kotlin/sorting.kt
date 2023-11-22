@@ -1,4 +1,3 @@
-
 private val chunkRegex = Regex("\\D+|\\d+(\\.\\d+)?")
 private val numericChunkRegex = Regex("\\d+(\\.\\d+)?")
 
