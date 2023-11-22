@@ -10,6 +10,7 @@ import pages.EasyPage
 import pages.Title
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
+import restore
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getHtml
 import translation.Str
@@ -38,6 +39,7 @@ object ExerciseLibraryPage : EasyPage() {
 
     override fun build(pageStateStr: String?) {
         super.build(pageStateStr)
+        val scrollPosition = pageStateStr.getScrollPosFromState()
         getHtml().addClass("wui3")
 
         val dirId = getDirId().let { if (it == "root") null else it }
@@ -45,6 +47,7 @@ object ExerciseLibraryPage : EasyPage() {
         doInPromise {
             rootComp = ExerciseLibComp(dirId, ::setWildcardPath, CONTENT_CONTAINER_ID)
                 .also { it.createAndBuild().await() }
+            scrollPosition?.restore()
         }
     }
 
@@ -52,6 +55,10 @@ object ExerciseLibraryPage : EasyPage() {
         super.destruct()
         getHtml().removeClass("wui3")
         rootComp?.destroy()
+    }
+
+    override fun onPreNavigation() {
+        updateStateWithScrollPos()
     }
 
     fun linkToRoot() = linkToDir("root")
