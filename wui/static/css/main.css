@@ -755,6 +755,10 @@ ez-exercise-badge ez-icon {
     margin-bottom: 2rem;
 }
 
+#global-exercise ez-exercise-edit-tab .CodeMirror-scroll {
+    max-height: none;
+}
+
 #DIR_PERMISSIONS .modal .modal-content {
     padding-bottom: 2rem;
 }

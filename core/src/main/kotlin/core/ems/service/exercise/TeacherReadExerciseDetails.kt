@@ -7,6 +7,8 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.getImplicitDirFromExercise
+import core.ems.service.hasAccountDirAccess
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
@@ -53,7 +55,8 @@ class TeacherReadExDetailsCont {
         @JsonProperty("max_time_sec") val maxTime: Int?,
         @JsonProperty("max_mem_mb") val maxMem: Int?,
         @JsonProperty("assets") val assets: List<RespAsset>?,
-        @JsonProperty("executors") val executors: List<RespExecutor>?
+        @JsonProperty("executors") val executors: List<RespExecutor>?,
+        @JsonProperty("has_lib_access") val hasLibAccess: Boolean,
     )
 
     data class RespAsset(
@@ -80,10 +83,10 @@ class TeacherReadExDetailsCont {
 
         caller.assertAccess { teacherOnCourse(courseId, true) }
 
-        return selectCourseExerciseDetails(courseId, courseExerciseIdString.idToLongOrInvalidReq())
+        return selectCourseExerciseDetails(courseId, courseExerciseIdString.idToLongOrInvalidReq(), caller)
     }
 
-    private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long): Resp = transaction {
+    private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long, caller: EasyUser): Resp = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(
                 Exercise.id,
@@ -117,8 +120,12 @@ class TeacherReadExDetailsCont {
                         selectAutoExercise(autoExerciseId)
                     } else null
 
+                val exerciseId = it[Exercise.id].value
+                val hasLibAccess =
+                    hasAccountDirAccess(caller, getImplicitDirFromExercise(exerciseId), DirAccessLevel.PR)
+
                 Resp(
-                    it[Exercise.id].value.toString(),
+                    exerciseId.toString(),
                     it[ExerciseVer.title],
                     it[CourseExercise.titleAlias],
                     it[CourseExercise.instructionsHtml],
@@ -143,7 +150,8 @@ class TeacherReadExDetailsCont {
                             it.id.toString(),
                             it.name
                         )
-                    }
+                    },
+                    hasLibAccess,
                 )
             }
             .singleOrInvalidRequest()

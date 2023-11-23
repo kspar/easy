@@ -1,5 +1,6 @@
 package pages.participants
 
+import HumanStringComparator
 import Icons
 import components.EzCollComp
 import components.form.ButtonComp
@@ -65,7 +66,7 @@ class ParticipantsGroupsListComp(
         groupsColl = EzCollComp(
             items, EzCollComp.Strings("rühm", "rühma"),
             sorters = listOf(
-                EzCollComp.Sorter("Nime järgi", compareBy { it.props.name })
+                EzCollComp.Sorter("Nime järgi", compareBy(HumanStringComparator) { it.props.name })
             ),
             parent = this
         )

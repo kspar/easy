@@ -294,32 +294,36 @@ object ExerciseSummaryPage : EasyPage() {
 
         Sidenav.replacePageSection(
             Sidenav.PageSection(
-                effectiveTitle, listOf(
-                    Sidenav.Action(Icons.settings, Str.exerciseSettings) {
-                        val m = UpdateCourseExerciseModalComp(
-                            courseId,
-                            UpdateCourseExerciseModalComp.CourseExercise(
-                                courseExerciseId,
-                                exercise.title,
-                                exercise.title_alias,
-                                exercise.student_visible,
-                                exercise.student_visible_from?.let { EzDate(it) },
-                                exercise.soft_deadline?.let { EzDate(it) },
-                                exercise.hard_deadline?.let { EzDate(it) },
-                            ),
-                            null,
-                            dstId = updateModalDst
-                        )
+                effectiveTitle,
+                buildList {
+                    add(
+                        Sidenav.Action(Icons.settings, Str.exerciseSettings) {
+                            val m = UpdateCourseExerciseModalComp(
+                                courseId,
+                                UpdateCourseExerciseModalComp.CourseExercise(
+                                    courseExerciseId,
+                                    exercise.title,
+                                    exercise.title_alias,
+                                    exercise.student_visible,
+                                    exercise.student_visible_from?.let { EzDate(it) },
+                                    exercise.soft_deadline?.let { EzDate(it) },
+                                    exercise.hard_deadline?.let { EzDate(it) },
+                                ),
+                                null,
+                                dstId = updateModalDst
+                            )
 
-                        m.createAndBuild().await()
-                        val modalReturn = m.openWithClosePromise().await()
-                        m.destroy()
-                        if (modalReturn != null) {
-                            build(null)
+                            m.createAndBuild().await()
+                            val modalReturn = m.openWithClosePromise().await()
+                            m.destroy()
+                            if (modalReturn != null) {
+                                build(null)
+                            }
                         }
-                    },
-                    Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id))
-                )
+                    )
+                    if (exercise.has_lib_access)
+                        add(Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id)))
+                }
             )
         )
 

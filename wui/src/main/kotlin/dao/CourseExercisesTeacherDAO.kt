@@ -148,7 +148,8 @@ object CourseExercisesTeacherDAO {
         val max_time_sec: Int?,
         val max_mem_mb: Int?,
         val assets: List<AutoAsset>?,
-        val executors: List<AutoExecutor>?
+        val executors: List<AutoExecutor>?,
+        val has_lib_access: Boolean,
     ) {
         val effectiveTitle = title_alias ?: title
     }
