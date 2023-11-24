@@ -76,9 +76,7 @@ class AutoassessTSLYAMLEditorComp(
             val result = TSLDAO.compile(tslSpec, TSLDAO.FORMAT.YAML).await()
             debug { "Compilation finished" }
 
-            compilerFeedbackEl.textContent = result.feedback?.let {
-                "Kompilaatori viga:\n$it"
-            }.orEmpty()
+            compilerFeedbackEl.textContent = result.feedback
 
             result.scripts?.forEach {
                 codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)

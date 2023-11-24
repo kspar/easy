@@ -1,7 +1,6 @@
 package pages
 
 import Auth
-import Icons
 import Role
 import ScrollPosition
 import components.ToastIds
@@ -73,7 +72,7 @@ abstract class EasyPage : Page() {
                 }
 
                 ToastThing(
-                    Str.noPermissionForPageMsg, icon = Icons.errorUnf, displayLengthSec = 10,
+                    Str.noPermissionForPageMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG,
                     id = ToastIds.noPermissionForPage
                 )
                 Sidenav.refresh(Sidenav.Spec())

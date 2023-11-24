@@ -6,6 +6,7 @@ import debug
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.plainDstStr
 import show
+import translation.Str
 
 class EditModeButtonsComp(
     private val onModeChange: suspend (Boolean) -> Boolean,
@@ -22,19 +23,19 @@ class EditModeButtonsComp(
 
     private val startEditBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Muuda", Icons.edit, clickedLabel = "Laen...",
+            ButtonComp.Type.FLAT, Str.doChange, Icons.edit, clickedLabel = Str.loading,
             onClick = { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, "Tühista", Icons.close, {
+            ButtonComp.Type.FLAT, Str.cancel, Icons.close, {
                 if (canCancel())
                     changeEditMode(false)
             }, parent = this
         )
     private val saveBtn =
         ButtonComp(
-            ButtonComp.Type.PRIMARY, "Salvesta", Icons.check, clickedLabel = "Salvestan...",
+            ButtonComp.Type.PRIMARY, Str.doSave, Icons.check, clickedLabel = Str.saving,
             onClick = { onSave() }, parent = this
         )
 

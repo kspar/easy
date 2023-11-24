@@ -1,5 +1,7 @@
 package pages.exercise_in_library
 
+import translation.Str
+
 object AutoEvalTypes {
 
     data class TypeTemplate(
@@ -20,7 +22,7 @@ object AutoEvalTypes {
         TypeTemplate(
             "TSL", "tiivad:tsl-compose",
             7, 30, TypeEditor.TSL_COMPOSE,
-            "TODO TSL",
+            "",
             """
                 cd student-submission
                 python generated_0.py
@@ -53,7 +55,7 @@ object AutoEvalTypes {
                         
                         @test
                         @expose_ast
-                        @set_description("Näidistest")
+                        @set_description("Test 1")
                         def test1(m, AST):
                             pass
                     """.trimIndent()
@@ -61,7 +63,7 @@ object AutoEvalTypes {
         ),
 
         TypeTemplate(
-            "tkinter pildituvastus", "imgrec",
+            Str.autoAssessTypeImgRec, "imgrec",
             20, 50, TypeEditor.CODE_EDITOR,
             "TODO imgrec",
             """

@@ -3,6 +3,7 @@ package components
 import components.text.LinkComp
 import rip.kspar.ezspa.Component
 import tmRender
+import translation.Str
 
 class UnorderedListComp(
     val allItems: List<Item>,
@@ -15,7 +16,7 @@ class UnorderedListComp(
     private var shownItems = if (allItems.size <= maxItemsToShow) allItems else allItems.subList(0, maxItemsToShow - 1)
 
     private val expandLink = LinkComp(
-        "Näita kõiki...", onClick = ::expand, parent = this
+        Str.unorderedListExpand, onClick = ::expand, parent = this
     )
 
     override val children: List<Component>

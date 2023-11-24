@@ -35,6 +35,7 @@ class TSLTestComp(
         Str.tslTestType, TestType.values().map {
             SelectComp.Option(it.optionName, it.name, getTestTypeFromModel(initialModel) == it)
         },
+        unconstrainedPosition = true,
         onOptionChange = { changeTestType(it!!) }, parent = this
     )
 
@@ -260,11 +261,11 @@ class TSLTestComp(
         }
 
     enum class TestType(val optionName: String, val defaultTestTitle: String) {
-        PLACEHOLDER("-", "Uus test"),
-        PROGRAM_EXECUTION("Programmi käivitus", "Programmi käivituse test"),
-        FUNCTION_EXECUTION("Funktsiooni väljakutse", "Funktsiooni väljakutse test"),
+        PLACEHOLDER(Str.tslPlaceholderTest.first, Str.tslPlaceholderTest.second),
+        PROGRAM_EXECUTION(Str.tslProgExecTest.first, Str.tslProgExecTest.second),
+        FUNCTION_EXECUTION(Str.tslFuncCallTest.first, Str.tslFuncCallTest.second),
 
-        NOT_IMPLEMENTED("Ära puutu!", "Kasutajaliideses implementeerimata test")
+        NOT_IMPLEMENTED(Str.tslNotImplTest.first, Str.tslNotImplTest.second)
         ;
 
         companion object {

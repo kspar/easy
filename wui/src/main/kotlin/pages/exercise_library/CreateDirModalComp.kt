@@ -16,14 +16,14 @@ class CreateDirModalComp(
 
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
-        "Uus kaust", Str.doSave, Str.cancel, Str.saving,
+        Str.newDirectory, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createDir(nameField.getValue()) }, primaryPostAction = ::reinitialise,
         onOpen = { nameField.focus() }, parent = this
     )
 
     private val nameField = StringFieldComp(
-        "Kausta nimi",
+        Str.directoryName,
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,

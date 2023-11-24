@@ -26,7 +26,7 @@ class TSLEditTitleModalComp(
     )
 
     private val nameField = StringFieldComp(
-        "Testi pealkiri",
+        Str.tslTestTitle,
         true,
         initialValue = title,
         constraints = listOf(StringConstraints.Length(max = 100)),

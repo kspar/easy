@@ -11,6 +11,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 import tsl.common.model.FileData
 import tsl.common.model.FunctionExecutionTest
 import tsl.common.model.FunctionType
@@ -79,7 +80,7 @@ class TSLFunctionCallTest(
             isRequired = false,
             fileExtension = "py",
             initialValue = initialModel?.arguments?.joinToString("\n").orEmpty(),
-            helpText = "Argumendid eraldi ridadel ja Pythoni süntaksis, nt sõne \"abc\" või arv 42",
+            helpText = Str.tslFuncArgsFieldHelp,
             onValueChange = { onUpdate() },
             parent = this
         )
@@ -100,13 +101,13 @@ class TSLFunctionCallTest(
     override fun render() = template(
         """
             <ez-tsl-function-call-test>
-                <div style='color: var(--ez-text-inactive);'>Funktsiooni nimi</div>
+                <div style='color: var(--ez-text-inactive);'>{{funcName}}</div>
                 $funcName
                 
-                <ez-tsl-section-title>Sisendandmed</ez-tsl-section-title>
+                <ez-tsl-section-title>{{inputs}}</ez-tsl-section-title>
                 <ez-flex style='align-items: baseline; color: var(--ez-text-inactive); margin-top: 1.5rem;'>
                     <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslFunctionArgs}</ez-inline-flex>
-                    Funktsiooni argumendid
+                    {{args}}
                 </ez-flex>
                 <div style='padding-left: 3rem; margin-bottom: 3rem;'>
                     $args
@@ -115,14 +116,17 @@ class TSLFunctionCallTest(
                 $stdInSection
                 $inputFiles
                 
-                <ez-tsl-section-title>Kontrollid</ez-tsl-section-title>
+                <ez-tsl-section-title>{{checks}}</ez-tsl-section-title>
                 $returnCheck
                 $dataChecks
             </ez-tsl-function-call-test>
             
         """.trimIndent(),
-
-        )
+        "funcName" to Str.tslFuncName,
+        "inputs" to Str.tslInputs,
+        "checks" to Str.tslChecks,
+        "args" to Str.tslFuncArgs,
+    )
 
     override fun getTSLModel(): Test {
         return FunctionExecutionTest(

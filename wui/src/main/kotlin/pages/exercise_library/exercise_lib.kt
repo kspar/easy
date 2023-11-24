@@ -6,6 +6,7 @@ import Icons
 import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
+import components.ToastThing
 import dao.ExerciseDAO
 import dao.LibraryDAO
 import dao.LibraryDirDAO
@@ -103,22 +104,22 @@ class ExerciseLibComp(
                             val ids = newExerciseModal.openWithClosePromise().await()
                             if (ids != null) {
                                 EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
-                                successMessage { "Ülesanne loodud" }
+                                ToastThing(Str.msgExerciseCreated)
                             }
                         })
-                        add(Sidenav.Action(Icons.newFolder, "Uus kaust") {
+                        add(Sidenav.Action(Icons.newDirectory, Str.newDirectory) {
                             if (newDirModal.openWithClosePromise().await() != null)
                                 createAndBuild().await()
                         })
 
                         if (currentDirAccess == DirAccess.PRAWM) {
-                            add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                            add(Sidenav.Action(Icons.addPerson, Str.share) {
                                 // Set dirId here to avoid loading permissions if user has no M access
                                 currentDirPermissionsModal.dirId = dirId
                                 val permissionsChanged = currentDirPermissionsModal.refreshAndOpen().await()
                                 debug { "Permissions changed: $permissionsChanged" }
                                 if (permissionsChanged) {
-                                    successMessage { "Õigused muudetud" }
+                                    successMessage { Str.permissionsChanged }
                                     createAndBuild().await()
                                 }
                             })
@@ -148,15 +149,15 @@ class ExerciseLibComp(
                 else
                     EzCollComp.ItemTypeIcon(Icons.teacherFace),
                 p.title,
-                titleIcon = if (p.isShared) EzCollComp.TitleIcon(Icons.teacher, "Jagatud") else null,
+                titleIcon = if (p.isShared) EzCollComp.TitleIcon(Icons.teacher, Str.shared) else null,
                 titleInteraction = EzCollComp.TitleLink(ExercisePage.link(p.exerciseId)),
                 topAttr = EzCollComp.SimpleAttr(
-                    "Viimati muudetud",
+                    Str.modifiedAt,
                     "${p.modifiedAt.toHumanString(EzDate.Format.DATE)} · ${p.modifiedBy}",
                     longValue = "${p.modifiedAt.toHumanString(EzDate.Format.FULL)} · ${p.modifiedBy}"
                 ),
                 bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("Kasutusel", "${p.coursesCount} kursusel", Icons.courses),
+                    EzCollComp.SimpleAttr(Str.libUsedOnCourses1, "${p.coursesCount} ${Str.libUsedOnCourses2}", Icons.courses),
 //                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
 //                    EzCollComp.SimpleAttr(
 //                        "Mul on lubatud",
@@ -167,9 +168,9 @@ class ExerciseLibComp(
                 ),
                 isSelectable = true,
                 actions = buildList {
-                    add(EzCollComp.Action(Icons.add, "Lisa kursusele", onActivate = ::addToCourse))
+                    add(EzCollComp.Action(Icons.add, Str.addToCourse, onActivate = ::addToCourse))
                     if (p.access == DirAccess.PRAWM)
-                        add(EzCollComp.Action(Icons.addPerson, "Jagamine", onActivate = ::permissions))
+                        add(EzCollComp.Action(Icons.addPerson, Str.share, onActivate = ::permissions))
                 },
             )
         } + dirProps.map { p ->
@@ -190,51 +191,51 @@ class ExerciseLibComp(
                 isSelectable = false,
                 actions = buildList {
                     if (p.access == DirAccess.PRAWM)
-                        add(EzCollComp.Action(Icons.addPerson, "Jagamine", onActivate = ::permissions))
+                        add(EzCollComp.Action(Icons.addPerson, Str.share, onActivate = ::permissions))
 //                    EzCollComp.Action(Icons.delete, "Kustuta", onActivate = {}),
                 },
             )
         }
 
         ezcoll = EzCollComp<Props>(
-            items, EzCollComp.Strings("asi", "asja"),
+            items, EzCollComp.Strings(Str.itemSingular, Str.itemPlural),
             massActions = listOf(
-                EzCollComp.MassAction<Props>(Icons.add, "Lisa kursusele", ::addToCourse)
+                EzCollComp.MassAction<Props>(Icons.add, Str.addToCourse, ::addToCourse)
             ),
             filterGroups = listOf(
                 EzCollComp.FilterGroup<Props>(
-                    "Jagamine", listOf(
-                        EzCollComp.Filter("Jagatud") { it.props.isShared },
-                        EzCollComp.Filter("Privaatsed") { !it.props.isShared },
+                    Str.share, listOf(
+                        EzCollComp.Filter(Str.shared) { it.props.isShared },
+                        EzCollComp.Filter(Str.private) { !it.props.isShared },
                     )
                 ),
                 EzCollComp.FilterGroup<Props>(
-                    "Hindamine", listOf(
-                        EzCollComp.Filter("Automaatkontrolliga") {
+                    Str.grading, listOf(
+                        EzCollComp.Filter(Str.gradingAuto) {
                             it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.AUTO
                         },
-                        EzCollComp.Filter("Käsitsi hinnatavad") {
+                        EzCollComp.Filter(Str.gradingTeacher) {
                             it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.TEACHER
                         },
                     )
                 ),
             ),
             sorters = listOf(
-                EzCollComp.Sorter<Props>("Nime järgi",
+                EzCollComp.Sorter<Props>(Str.sortByName,
                     compareBy<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) 1 else 0
                     }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
-                EzCollComp.Sorter("Muutmisaja järgi",
+                EzCollComp.Sorter(Str.sortByModified,
                     compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.future()
                     }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
-                EzCollComp.Sorter<Props>("Populaarsuse järgi",
+                EzCollComp.Sorter<Props>(Str.sortByPopularity,
                     compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
                     }.thenBy(HumanStringComparator) {

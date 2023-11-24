@@ -1,17 +1,16 @@
 package pages.exercise_in_library
 
+import Icons
+import components.ToastIds
+import components.ToastThing
 import components.form.RadioButtonsComp
 import components.modal.BinaryModalComp
 import components.text.StringComp
 import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
-import errorMessage
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.plainDstStr
-import rip.kspar.ezspa.unionPromise
-import successMessage
+import pages.course_exercise.ExerciseSummaryPage
+import rip.kspar.ezspa.*
 import translation.Str
 
 class AddToCourseModalComp(
@@ -27,7 +26,7 @@ class AddToCourseModalComp(
     ) : this(listOf(exerciseId), exerciseTitle, parent)
 
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
-        "Lisa ülesanne kursusele",
+        Str.addToCourseModalTitle,
         Str.doAdd,
         Str.cancel,
         Str.adding,
@@ -70,11 +69,13 @@ class AddToCourseModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    private fun singleExerciseText(title: String) = StringComp.boldTriple("Lisa ", title, " kursusele:")
+    private fun singleExerciseText(title: String) =
+        StringComp.boldTriple(Str.addToCourseModalText1, title, Str.addToCourseModalText2)
+
     private fun multiExerciseText(exerciseCount: Int) = StringComp.boldTriple(
-        "Lisa ",
+        Str.addToCourseModalText1,
         exerciseCount.toString(),
-        " ${Str.translateExercises(exerciseCount)} kursusele:"
+        " ${Str.translateExercises(exerciseCount)}${Str.addToCourseModalText2}"
     )
 
     private fun setText(parts: List<StringComp.Part>) {
@@ -92,12 +93,23 @@ class AddToCourseModalComp(
         }.unionPromise().await()
         // show fail message only if one exercise was added
         if (courseExIds.size == 1) {
-            if (courseExIds.first() != null)
-                successMessage { "Lisatud" }
+            val ceId = courseExIds.first()
+            if (ceId != null)
+                ToastThing(
+                    Str.added,
+                    ToastThing.Action(Str.goToIt, {
+                        EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ceId))
+                    }),
+                    id = ToastIds.exerciseAddedToCourse
+                )
             else
-                errorMessage { "See ülesanne on kursusel juba olemas" }
+                ToastThing(
+                    Str.exerciseAlreadyOnCourse,
+                    icon = ToastThing.ERROR,
+                    id = ToastIds.exerciseAddedToCourse
+                )
         } else {
-            successMessage { "Lisatud" }
+            ToastThing(Str.added, id = ToastIds.exerciseAddedToCourse)
         }
     }
 }
@@ -131,7 +143,7 @@ class AddToCourseModalCoursesListComp(
 
     override fun render() = plainDstStr(radioButtons.dstId)
 
-    override fun renderLoading() = "Laen kursuseid..."
+    override fun renderLoading() = Icons.spinner
 
     override fun postChildrenBuilt() {
         radioButtons.validateInitial()

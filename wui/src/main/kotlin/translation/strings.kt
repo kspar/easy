@@ -24,6 +24,8 @@ sealed class TranslatableStrings {
     abstract val saving: String
     abstract val doAdd: String
     abstract val adding: String
+    abstract val added: String
+    abstract val goToIt: String
     abstract val cancel: String
     abstract val solutionCodeTabName: String
     abstract val solutionEditorPlaceholder: String
@@ -31,6 +33,8 @@ sealed class TranslatableStrings {
     abstract val exercisePlural: String
     abstract val doEditTitle: String
     abstract val doMove: String
+    abstract val moveUp: String
+    abstract val moveDown: String
     abstract val moving: String
     abstract val doRemove: String
     abstract val removing: String
@@ -48,6 +52,9 @@ sealed class TranslatableStrings {
     abstract val doDownload: String
     abstract val downloading: String
     abstract val feedback: String
+    abstract val type: String
+    abstract val value: String
+    abstract val loading: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -57,6 +64,13 @@ sealed class TranslatableStrings {
     abstract val ezcollRemoveFilters: String
     abstract val ezcollShown: String
     abstract val ezcollSelected: String
+
+    abstract val unorderedListExpand: String
+
+    abstract val logIn: String
+    abstract val authFailed: String
+    abstract val authRefreshFailed: String
+    abstract val serverErrorMsg: String
 
     fun translateBoolean(bool: Boolean) = if (bool) yes else no
     fun translateRole(role: Role) = when (role) {
@@ -76,6 +90,8 @@ sealed class TranslatableStrings {
             DirAccess.PRAWM -> permissionPRAWM
         }
 
+    abstract fun translateServerError(httpStatus: Short, code: String?, msg: String): String
+
     abstract val permissionP: String
     abstract val permissionPR: String
     abstract val permissionPRA: String
@@ -92,7 +108,6 @@ sealed class TranslatableStrings {
 
 
     // Sidenav
-    abstract val newExercise: String
     abstract val newCourse: String
     abstract val allExercises: String
     abstract val exercises: String
@@ -124,7 +139,6 @@ sealed class TranslatableStrings {
     abstract val doReveal: String
     abstract val revealed: String
     abstract val doRemoveFromCourse: String
-    abstract val exerciseCreated: String
     abstract val submissionsWillBeDeleted: String
     abstract val removeExercise: String
     abstract val removeExercisesPlural: String
@@ -143,7 +157,6 @@ sealed class TranslatableStrings {
     abstract val solutionEditorStatusSubmission: String
     abstract val submissionSingular: String
     abstract val submissionPlural: String
-
 
     abstract val tabExerciseLabel: String
     abstract val tabTestingLabel: String
@@ -176,7 +189,7 @@ sealed class TranslatableStrings {
     abstract val allStudents: String
     abstract val total: String
     abstract val feedbackEmailNote: String
-
+    abstract val noVisibleExerciseError: String
     abstract val autogradeException: String
     abstract val autogradeFailedMsg: String
     abstract val autogradeCreatedFiles: String
@@ -185,30 +198,126 @@ sealed class TranslatableStrings {
     abstract val autogradeNoChecksInTest: String
 
 
+    // Exercise library page
+    abstract val newExercise: String
+    abstract val newDirectory: String
+    abstract val share: String
+    abstract val permissionsChanged: String
+    abstract val shared: String
+    abstract val private: String
+    abstract val directoryName: String
+    abstract val exerciseTitle: String
+    abstract val addToThisCourse: String
+    abstract val shareUserFieldHelp: String
+    abstract val allUsers: String
+    abstract val inheritedFrom: String
+    abstract val thisDirectorySuffix: String
+    abstract val removeAccess: String
+    abstract val msgExerciseCreated: String
+    abstract val libUsedOnCourses1: String
+    abstract val libUsedOnCourses2: String
+    abstract val addToCourse: String
+    abstract val itemSingular: String
+    abstract val itemPlural: String
+    abstract val grading: String
+    abstract val gradingAuto: String
+    abstract val gradingTeacher: String
+    abstract val sortByName: String
+    abstract val sortByModified: String
+    abstract val sortByPopularity: String
+
+
     // Exercise page
+    abstract val tabExercise: String
+    abstract val tabAutoassess: String
+    abstract val tabTesting: String
+    abstract val addToCourseModalTitle: String
+    abstract val addToCourseModalText1: String
+    abstract val addToCourseModalText2: String
+    abstract val exerciseAlreadyOnCourse: String
+    abstract val autoAssessTypeImgRec: String
+    abstract val usedOnCourses: String
+    abstract val hiddenCourses: String
+    abstract val modifiedAt: String
+    abstract val exerciseCreatedAtPhrase: String
+    abstract val exerciseSaved: String
+    abstract val noAccessToLibExerciseMsg: String
+    abstract val updatedInEditMsg: String
+    abstract val mergeConflictMsg: String
+    abstract val exerciseUnsavedChangesMsg: String
+    abstract val lastTestingAttempt: String
+    abstract val testingEditedWarnMsg: String
+    abstract val autoassessType: String
+    abstract val allowedExecTime: String
+    abstract val allowedExecTimeField: String
+    abstract val secAbbrev: String
+    abstract val allowedExecMem: String
+    abstract val allowedExecMemField: String
 
 
     // TSL UI
+    abstract val tslPlaceholderTest: Pair<String, String>
+    abstract val tslProgExecTest: Pair<String, String>
+    abstract val tslFuncCallTest: Pair<String, String>
+    abstract val tslNotImplTest: Pair<String, String>
+
+    abstract val tslAddTest: String
+    abstract val tslTestsTab: String
+    abstract val tslSpecTab: String
+    abstract val tslGeneratedTab: String
+    abstract val tslTestTitle: String
     abstract val tslTestType: String
     abstract val tslCopySuffix: String
+    abstract val tslInputs: String
+    abstract val tslChecks: String
+
+    abstract val tslStdin: String
+    abstract val tslStdinFieldHelp: String
+    abstract val tslStdins: String
+
+    abstract val tslInputFile: String
+    abstract val tslInputFileName: String
+    abstract val tslInputFileContent: String
+    abstract val tslInputFileSent1: String
+
+    abstract val tslFuncArgsFieldHelp: String
+    abstract val tslFuncName: String
+    abstract val tslFuncArgs: String
+
+    abstract val tslStdoutCheck: String
+    abstract val tslStdoutOutputs: String
     abstract val tslStdoutCheckContainsAllPass: String
     abstract val tslStdoutCheckContainsAllFail: String
+    abstract val tslStdoutContainsAll: String
+    abstract val tslStdoutContainsOne: String
+    abstract val tslStdoutNotContainsOne: String
+    abstract val tslStdoutNotContainsAll: String
+    abstract val tslStdoutDataString: String
+    abstract val tslStdoutDataNumber: String
+    abstract val tslStdoutDataLine: String
+    abstract val tslStdoutOrdered: String
+    abstract val tslStdoutCheckSent1: String
+    abstract val tslStdoutCheckSent2: String
+
     abstract val tslReturnCheck: String
     abstract val tslReturnCheckPrefixMsg: String
     abstract val tslReturnCheckValueHelp: String
     abstract val tslReturnCheckPass: String
     abstract val tslReturnCheckFail: String
 
+
     // Similarity page
-    abstract val exerciseTitle: String
+    abstract val exercise: String
     abstract val findSimilarities: String
     abstract val searching: String
     abstract val topSimilarPairs: String
     abstract val diceSimilarity: String
     abstract val levenshteinSimilarity: String
 
+
     // Exercise embed page
     abstract val noAutogradeWarning: String
+
 
     // About page
     abstract val aboutS1: String
@@ -221,6 +330,7 @@ sealed class TranslatableStrings {
     abstract val statsAutograding: String
     abstract val statsSubmissions: String
     abstract val statsAccounts: String
+
 
     // Datetime
     abstract val today: String
@@ -246,7 +356,6 @@ object EstStrings : TranslatableStrings() {
     override val gradedByTeacher = "Õpetaja poolt hinnatud"
     override val notGradedYet = "Hindamata"
 
-
     override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val roleAdmin = "Admin"
@@ -256,9 +365,13 @@ object EstStrings : TranslatableStrings() {
     override val saving = "Salvestan..."
     override val doAdd = "Lisa"
     override val adding = "Lisan..."
+    override val added = "Lisatud"
+    override val goToIt = "Vaata"
     override val cancel = "Tühista"
     override val doEditTitle = "Muuda pealkirja"
     override val doMove = "Liiguta"
+    override val moveUp = "Liiguta üles"
+    override val moveDown = "Liiguta alla"
     override val moving = "Liigutan..."
     override val doRemove = "Eemalda"
     override val removing = "Eemaldan..."
@@ -299,6 +412,19 @@ object EstStrings : TranslatableStrings() {
     override val accountData = "Konto seaded"
     override val logOut = "Logi välja"
     override val newExercise = "Uus ülesanne"
+    override val newDirectory = "Uus kaust"
+    override val share = "Jagamine"
+    override val permissionsChanged = "Õigused muudetud"
+    override val shared = "Jagatud"
+    override val private = "Privaatsed"
+    override val directoryName = "Kausta nimi"
+    override val exerciseTitle = "Ülesande pealkiri"
+    override val addToThisCourse = "Lisa sellele kursusele"
+    override val shareUserFieldHelp = "Jagamiseks sisesta kasutaja email"
+    override val allUsers = "Kõik kasutajad"
+    override val inheritedFrom = "Päritud kaustalt"
+    override val thisDirectorySuffix = "(see kaust)"
+    override val removeAccess = "Eemalda juurdepääs"
     override val newCourse = "Uus kursus"
     override val allExercises = "Kõik ülesanded"
     override val exercises = "Ülesanded"
@@ -317,7 +443,6 @@ object EstStrings : TranslatableStrings() {
     override val doReveal = "Avalikusta"
     override val revealed = "Avalikustatud"
     override val doRemoveFromCourse = "Eemalda kursuselt"
-    override val exerciseCreated = "Ülesanne loodud"
     override val submissionsWillBeDeleted = "Õpilaste esitused kustutatakse."
     override val removeExercise = "Eemalda ülesanne"
     override val removeExercisesPlural = "ülesannet"
@@ -339,6 +464,9 @@ object EstStrings : TranslatableStrings() {
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
     override val feedback = "Tagasiside"
+    override val type = "Tüüp"
+    override val value = "Väärtus"
+    override val loading = "Laen..."
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -347,6 +475,30 @@ object EstStrings : TranslatableStrings() {
     override val ezcollRemoveFilters = "Eemalda filtrid"
     override val ezcollShown = "kuvatud"
     override val ezcollSelected = "valitud"
+    override val unorderedListExpand = "Näita kõiki..."
+    override val logIn = "Logi sisse"
+    override val authFailed = "Autentimine ebaõnnestus"
+    override val authRefreshFailed = "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida."
+    override val serverErrorMsg =
+        "Midagi läks valesti, palun proovi hiljem uuesti. Server tagastas ootamatu vastuse HTTP staatusega"
+
+    override fun translateServerError(httpStatus: Short, code: String?, msg: String) =
+        if (code != null)
+            """
+                Midagi läks valesti, palun proovi hiljem uuesti. 
+                Server tagastas vea:
+                HTTP staatus: $httpStatus
+                Kood: $code
+                Sõnum: $msg
+            """.trimIndent()
+        else
+            """
+                Midagi läks valesti, palun proovi hiljem uuesti. 
+                Server tagastas ootamatu vastuse:
+                HTTP staatus: $httpStatus
+                Vastus: $msg
+            """.trimIndent()
+
     override val addAssessmentLink = "► Lisa hinnang"
     override val closeToggleLink = "▼ Sulge"
     override val graderTypeAuto = "automaatne"
@@ -360,6 +512,7 @@ object EstStrings : TranslatableStrings() {
     override val allStudents = "Kõik õpilased"
     override val total = "kokku"
     override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
+    override val noVisibleExerciseError = "Seda ülesannet ei eksisteeri või see on peidetud"
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
     override val autogradeFailedMsg = """
 
@@ -373,7 +526,56 @@ ole hea ja proovi hiljem uuesti.
     override val autogradeStdIn = "Andsin programmile sisendid:"
     override val autogradeStdOut = "Programmi täielik väljund oli:"
     override val autogradeNoChecksInTest = "Siin pole midagi kontrollida. See vist tähendab, et kõik on OK?"
+    override val msgExerciseCreated = "Ülesanne loodud"
+    override val modifiedAt = "Viimane muudatus"
+    override val exerciseCreatedAtPhrase = "loodud"
+    override val noAccessToLibExerciseMsg = "Sul pole ülesandekogus sellele ülesandele ligipääsu"
+    override val updatedInEditMsg = "Seda ülesannet on vahepeal muudetud, näitan uut versiooni"
+    override val mergeConflictMsg =
+        "Seda ülesannet on vahepeal muudetud ja lokaalsed muudatused lähevad varem tehtud muudatustega konflikti. Kas soovid vahepeal tehtud muudatused oma lokaalsete muudatustega üle kirjutada?"
+    override val exerciseUnsavedChangesMsg =
+        "Siin lehel on salvestamata muudatusi. Kas oled kindel, et soovid muutmise lõpetada ilma salvestamata?"
+    override val lastTestingAttempt = "Viimane katsetus"
+    override val testingEditedWarnMsg =
+        "Kui oled automaatkontrollis muudatusi teinud, siis pead enne nende jõustumist ülesande salvestama."
 
+    override val autoassessType = "Automaatkontrolli tüüp"
+    override val allowedExecTime = "Lubatud käivitusaeg"
+    override val allowedExecTimeField = "Käivitusaeg (s)"
+    override val secAbbrev = "s"
+    override val allowedExecMem = "Lubatud mälukasutus"
+    override val allowedExecMemField = "Mälukasutus (MB)"
+    override val tslPlaceholderTest = "-" to "Uus test"
+    override val tslProgExecTest = "Programmi käivitus" to "Programmi käivituse test"
+    override val tslFuncCallTest = "Funktsiooni väljakutse" to "Funktsiooni väljakutse test"
+    override val tslNotImplTest = "Ära puutu!" to "Kasutajaliideses implementeerimata test"
+    override val tslAddTest = "Lisa test"
+    override val tslTestsTab = "Testid"
+    override val tslSpecTab = "TSL"
+    override val tslGeneratedTab = "Genereeritud skriptid"
+    override val tslTestTitle = "Testi pealkiri"
+    override val exerciseSaved = "Ülesanne salvestatud"
+    override val libUsedOnCourses1 = "Kasutusel"
+    override val libUsedOnCourses2 = "kursusel"
+    override val addToCourse = "Lisa kursusele"
+    override val itemSingular = "asi"
+    override val itemPlural = "asja"
+    override val grading = "Hindamine"
+    override val gradingAuto = "Automaatkontrolliga"
+    override val gradingTeacher = "Ilma automaatkontrollita"
+    override val sortByName = "Nime järgi"
+    override val sortByModified = "Muutmisaja järgi"
+    override val sortByPopularity = "Populaarsuse järgi"
+    override val tabExercise = "Ülesanne"
+    override val tabAutoassess = "Automaatkontroll"
+    override val tabTesting = "Katsetamine"
+    override val addToCourseModalTitle = "Lisa ülesanne kursusele"
+    override val addToCourseModalText1 = "Lisa "
+    override val addToCourseModalText2 = " kursusele:"
+    override val exerciseAlreadyOnCourse = "See ülesanne on kursusel juba olemas"
+    override val autoAssessTypeImgRec = "tkinter pildituvastus"
+    override val usedOnCourses = "Kasutusel kursustel"
+    override val hiddenCourses = "peidetud kursust"
     override val exerciseSingular = "ülesanne"
     override val exercisePlural = "ülesannet"
     override val permissionP = "Läbikäija"
@@ -383,14 +585,38 @@ ole hea ja proovi hiljem uuesti.
     override val permissionPRAWM = "Moderaator"
     override val tslTestType = "Testi tüüp"
     override val tslCopySuffix = "(koopia)"
+    override val tslInputs = "Sisendandmed"
+    override val tslChecks = "Kontrollid"
+    override val tslStdin = "Kasutaja sisend"
+    override val tslStdinFieldHelp = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real"
+    override val tslStdins = "Kasutaja sisendid"
+    override val tslInputFile = "Sisendfail"
+    override val tslInputFileName = "Faili nimi"
+    override val tslInputFileContent = "Faili sisu"
+    override val tslInputFileSent1 = "Tekstifail"
+    override val tslFuncArgsFieldHelp = "Argumendid eraldi ridadel ja Pythoni süntaksis, nt sõne \"abc\" või arv 42"
+    override val tslFuncName = "Funktsiooni nimi"
+    override val tslFuncArgs = "Funktsiooni argumendid"
+    override val tslStdoutCheck = "Väljundi kontroll"
+    override val tslStdoutOutputs = "Oodatavad õpilase programmi väljundid, iga väärtus eraldi real"
     override val tslStdoutCheckContainsAllPass = "Leidsin programmi väljundist õige vastuse {expected}"
     override val tslStdoutCheckContainsAllFail = "Ei leidnud programmi väljundist oodatud vastust {expected}"
+    override val tslStdoutContainsAll = "leiduvad kõik"
+    override val tslStdoutContainsOne = "leidub vähemalt üks"
+    override val tslStdoutNotContainsOne = "ei leidu vähemalt ühte"
+    override val tslStdoutNotContainsAll = "ei leidu mitte ühtegi"
+    override val tslStdoutDataString = "sõnedest"
+    override val tslStdoutDataNumber = "arvudest"
+    override val tslStdoutDataLine = "ridadest"
+    override val tslStdoutOrdered = "Väärtuste järjekord peab oleme sama"
+    override val tslStdoutCheckSent1 = "Väljundis"
+    override val tslStdoutCheckSent2 = "järgmistest"
     override val tslReturnCheck = "Tagastusväärtuse kontroll"
     override val tslReturnCheckPrefixMsg = "Tagastusväärtus peab olema:"
     override val tslReturnCheckValueHelp = "Oodatav funktsiooni tagastusväärtus Pythoni süntaksis"
     override val tslReturnCheckPass = "Funktsioon tagastas õige väärtuse {expected}"
     override val tslReturnCheckFail = "Ootasin, et funktsioon tagastaks {expected}, aga tagastas {actual}"
-    override val exerciseTitle = "Ülesanne"
+    override val exercise = "Ülesanne"
     override val findSimilarities = "Leia sarnasused"
     override val searching = "Otsin..."
     override val topSimilarPairs = "Kõige sarnasemad paarid"
@@ -426,7 +652,6 @@ ole hea ja proovi hiljem uuesti.
 
 
 object EngStrings : TranslatableStrings() {
-
     override val otherLanguage = "Eesti keeles"
     override val notFoundPageTitle = "Page not found"
     override val notFoundPageMsg = "Nothing to see here :("
@@ -446,6 +671,8 @@ object EngStrings : TranslatableStrings() {
     override val saving = "Saving..."
     override val doAdd = "Add"
     override val adding = "Adding..."
+    override val added = "Added"
+    override val goToIt = "Go"
     override val cancel = "Cancel"
     override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Write, paste or drag your solution here..."
@@ -453,6 +680,8 @@ object EngStrings : TranslatableStrings() {
     override val exercisePlural = "exercises"
     override val doEditTitle = "Edit title"
     override val doMove = "Move"
+    override val moveUp = "Move up"
+    override val moveDown = "Move down"
     override val moving = "Moving..."
     override val doRemove = "Remove"
     override val removing = "Removing..."
@@ -477,6 +706,19 @@ object EngStrings : TranslatableStrings() {
     override val logOut = "Log out"
 
     override val newExercise = "New exercise"
+    override val newDirectory = "New directory"
+    override val share = "Share"
+    override val permissionsChanged = "Permissions changed"
+    override val shared = "Shared"
+    override val private = "Private"
+    override val directoryName = "Directory name"
+    override val exerciseTitle = "Exercise title"
+    override val addToThisCourse = "Add to this course"
+    override val shareUserFieldHelp = "Enter user's email to share"
+    override val allUsers = "All users"
+    override val inheritedFrom = "Inherited from"
+    override val thisDirectorySuffix = "(this directory)"
+    override val removeAccess = "Remove access"
     override val newCourse = "New course"
     override val allExercises = "All exercises"
     override val exercises = "Exercises"
@@ -504,7 +746,6 @@ object EngStrings : TranslatableStrings() {
     override val doReveal = "Reveal"
     override val revealed = "Revealed"
     override val doRemoveFromCourse = "Remove from course"
-    override val exerciseCreated = "Exercise created"
     override val submissionsWillBeDeleted = "Students' submissions will be deleted."
     override val removeExercise = "Remove exercise"
     override val removeExercisesPlural = "exercises"
@@ -539,6 +780,9 @@ object EngStrings : TranslatableStrings() {
     override val doDownload = "Download"
     override val downloading = "Downloading..."
     override val feedback = "Feedback"
+    override val type = "Type"
+    override val value = "Value"
+    override val loading = "Loading..."
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
@@ -547,6 +791,29 @@ object EngStrings : TranslatableStrings() {
     override val ezcollRemoveFilters = "Remove filters"
     override val ezcollShown = "shown"
     override val ezcollSelected = "selected"
+    override val unorderedListExpand = "Show all..."
+    override val logIn = "Log in"
+    override val authFailed = "Authentication failed"
+    override val authRefreshFailed = "Refreshing your session failed, log in to continue"
+    override val serverErrorMsg = "Something went wrong, please try again later. The server responded with HTTP status"
+
+    override fun translateServerError(httpStatus: Short, code: String?, msg: String) =
+        if (code != null)
+            """
+                Something went wrong, please try again later.
+                The server returned an error:
+                HTTP status: $httpStatus
+                Code: $code
+                Message: $msg
+            """.trimIndent()
+        else
+            """
+                Something went wrong, please try again later.
+                The server returned an expected response:
+                HTTP status: $httpStatus
+                Response: $msg
+            """.trimIndent()
+
     override val addAssessmentLink = "► Add assessment"
     override val addAssessmentGradeLabel = "Grade (0-100)"
     override val addAssessmentFeedbackLabel = "Comment"
@@ -567,6 +834,7 @@ object EngStrings : TranslatableStrings() {
     override val allStudents = "All students"
     override val total = "total"
     override val feedbackEmailNote = "If you added a comment then the student will be notified by email."
+    override val noVisibleExerciseError = "This exercise does not exist or is hidden"
     override val autogradeException = "There was an exception during the program's execution:"
     override val autogradeFailedMsg = """
 
@@ -580,17 +848,91 @@ of the issue, please try again later.
     override val autogradeStdIn = "Inputs provided to the program:"
     override val autogradeStdOut = "The program's full output:"
     override val autogradeNoChecksInTest = "There weren't any checks to run. I guess that means we're fine?"
+    override val msgExerciseCreated = "Exercise created"
+    override val modifiedAt = "Last modified"
+    override val exerciseCreatedAtPhrase = "created"
+    override val exerciseSaved = "Exercise saved"
+    override val noAccessToLibExerciseMsg = "You do not have access to this exercise in the exercise library"
+    override val updatedInEditMsg = "This exercise has been modified, showing new version"
+    override val mergeConflictMsg =
+        "This exercise has been modified and the changes conflict with your local changes. Would you like to overwrite the modified exercise with your local changes?"
+    override val exerciseUnsavedChangesMsg =
+        "You have unsaved changes. Are you sure you wish to stop editing without saving?"
+    override val lastTestingAttempt = "Last attempt"
+    override val testingEditedWarnMsg =
+        "If you've made changes in the automated tests, then you have to save the exercise for the changes to take effect."
+    override val autoassessType = "Autoassessment type"
+    override val allowedExecTime = "Allowed execution time"
+    override val allowedExecTimeField = "Allowed time (sec)"
+    override val secAbbrev = "sec"
+    override val allowedExecMem = "Allowed memory usage"
+    override val allowedExecMemField = "Allowed memory (MB)"
+    override val tslPlaceholderTest = "-" to "New test"
+    override val tslProgExecTest = "Program execution" to "Program execution test"
+    override val tslFuncCallTest = "Function call" to "Function call test"
+    override val tslNotImplTest = "Don't touch!" to "Test not implemented in the UI"
+    override val tslAddTest = "Add test"
+    override val tslTestsTab = "Tests"
+    override val tslSpecTab = "TSL"
+    override val tslGeneratedTab = "Generated scripts"
+    override val tslTestTitle = "Test title"
+    override val libUsedOnCourses1 = "Used on"
+    override val libUsedOnCourses2 = "courses"
+    override val addToCourse = "Add to course"
+    override val itemSingular = "item"
+    override val itemPlural = "items"
+    override val grading = "Grading"
+    override val gradingAuto = "With automatic tests"
+    override val gradingTeacher = "Without automatic tests"
+    override val sortByName = "By name"
+    override val sortByModified = "By last modification"
+    override val sortByPopularity = "By popularity"
+    override val tabExercise = "Exercise"
+    override val tabAutoassess = "Automated tests"
+    override val tabTesting = "Testing"
+    override val addToCourseModalTitle = "Add exercise to course"
+    override val addToCourseModalText1 = "Add "
+    override val addToCourseModalText2 = " to course:"
+    override val exerciseAlreadyOnCourse = "This exercise already exists on this course"
+    override val autoAssessTypeImgRec = "tkinter image recognition"
+    override val usedOnCourses = "Used on courses"
+    override val hiddenCourses = "hidden courses"
 
     override val tslTestType = "Test type"
     override val tslCopySuffix = "(copy)"
+    override val tslInputs = "Inputs"
+    override val tslChecks = "Checks"
+    override val tslStdin = "User input"
+    override val tslStdinFieldHelp = "Standard inputs provided to the program, each input on a separate line"
+    override val tslStdins = "User inputs"
+    override val tslInputFile = "Input file"
+    override val tslInputFileName = "File name"
+    override val tslInputFileContent = "File content"
+    override val tslInputFileSent1 = "Text file"
+    override val tslFuncArgsFieldHelp =
+        "Arguments on separate lines and in Python syntax, e.g. string \"abc\" or integer 42"
+    override val tslFuncName = "Function name"
+    override val tslFuncArgs = "Function arguments"
+    override val tslStdoutCheck = "Standard output check"
+    override val tslStdoutOutputs = "Expected program outputs, each value on a separate line"
     override val tslStdoutCheckContainsAllPass = "Found the expected value in the program's output: {expected}"
     override val tslStdoutCheckContainsAllFail = "Can't find the expected value in the program's output: {expected}"
+    override val tslStdoutContainsAll = "contains all"
+    override val tslStdoutContainsOne = "contains at least one"
+    override val tslStdoutNotContainsOne = "doesn't contain at least one"
+    override val tslStdoutNotContainsAll = "doesn't contain any"
+    override val tslStdoutDataString = "strings"
+    override val tslStdoutDataNumber = "numbers"
+    override val tslStdoutDataLine = "lines"
+    override val tslStdoutOrdered = "The values must be in the same order"
+    override val tslStdoutCheckSent1 = "Output"
+    override val tslStdoutCheckSent2 = "of the following"
     override val tslReturnCheck = "Return value check"
     override val tslReturnCheckPrefixMsg = "The return value must be:"
     override val tslReturnCheckValueHelp = "Expected function return value in Python syntax"
     override val tslReturnCheckPass = "Function returned the correct value {expected}"
     override val tslReturnCheckFail = "Expected the function to return {expected}, but instead it returned {actual}"
-    override val exerciseTitle = "Exercise"
+    override val exercise = "Exercise"
     override val findSimilarities = "Find similarities"
     override val searching = "Searching..."
     override val topSimilarPairs = "Top similarities"

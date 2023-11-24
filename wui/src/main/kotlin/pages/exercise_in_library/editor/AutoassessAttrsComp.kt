@@ -2,9 +2,10 @@ package pages.exercise_in_library.editor
 
 import components.text.AttrsComp
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
+import translation.Str
 import kotlin.js.Promise
 
 
@@ -32,11 +33,11 @@ class AutoassessAttrsComp(
         else
             AttrsComp(
                 buildMap {
-                    set("Tüüp", visualTypeName)
+                    set(Str.type, visualTypeName)
                     if (maxTime != null)
-                        set("Lubatud käivitusaeg", "$maxTime s")
+                        set(Str.allowedExecTime, "$maxTime ${Str.secAbbrev}")
                     if (maxMem != null)
-                        set("Lubatud mälukasutus", "$maxMem MB")
+                        set(Str.allowedExecMem, "$maxMem MB")
                 }, this
             )
     }

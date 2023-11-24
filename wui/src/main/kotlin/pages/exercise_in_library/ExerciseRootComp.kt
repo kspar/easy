@@ -2,10 +2,10 @@ package pages.exercise_in_library
 
 import Icons
 import components.BreadcrumbsComp
+import components.ToastThing
 import dao.ExerciseDAO
 import dao.LibraryDirDAO
 import debug
-import errorMessage
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import pages.Title
@@ -43,7 +43,7 @@ class ExerciseRootComp(
         val exercise = try {
             ExerciseDAO.getExercise(exerciseId).await()
         } catch (e: ExerciseDAO.NoLibAccessException) {
-            errorMessage { "Sul pole ülesandekogus sellele ülesandele ligipääsu" }
+            ToastThing(Str.noAccessToLibExerciseMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG)
             error("No exercise lib access to exercise $exerciseId")
         }
         initialExercise = exercise
@@ -55,7 +55,10 @@ class ExerciseRootComp(
         crumbs = BreadcrumbsComp(createDirChainCrumbs(parents, exercise.title), this)
 
         exercisePane = ExerciseComp(exercise, this)
-        tabsPane = ExerciseTabsComp(exerciseId, exercise, ::updatePreview, ::updateTitle, ::saveExercise, ::recreate, this)
+        tabsPane = ExerciseTabsComp(
+            exerciseId, exercise,
+            ::updatePreview, ::updateTitle, ::saveExercise, ::recreate, this
+        )
 
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
         // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
@@ -69,20 +72,20 @@ class ExerciseRootComp(
         Sidenav.replacePageSection(
             Sidenav.PageSection(
                 exercise.title, buildList {
-                    add(Sidenav.Action(Icons.add, "Lisa kursusele") {
+                    add(Sidenav.Action(Icons.add, Str.addToCourse) {
                         val r = addToCourseModal.openWithClosePromise().await()
                         if (r != null) {
                             recreate()
                         }
                     })
                     if (exercise.effective_access == DirAccess.PRAWM) {
-                        add(Sidenav.Action(Icons.addPerson, "Jagamine") {
+                        add(Sidenav.Action(Icons.addPerson, Str.share) {
                             // Set dirId here to avoid loading permissions if user has no M access
                             permissionsModal.dirId = exercise.dir_id
                             val permissionsChanged = permissionsModal.refreshAndOpen().await()
                             debug { "Permissions changed: $permissionsChanged" }
                             if (permissionsChanged)
-                                successMessage { "Õigused muudetud" }
+                                successMessage { Str.permissionsChanged }
                         })
                     }
                 }
@@ -148,17 +151,14 @@ class ExerciseRootComp(
         val merge = mergeChanges(updatedExercise)
 
         if (merge.conflict) {
-            val forceSave = window.confirm(
-                "Seda ülesannet on vahepeal muudetud ja lokaalsed muudatused lähevad varem tehtud muudatustega konflikti. " +
-                        "Kas soovid vahepeal tehtud muudatused oma lokaalsete muudatustega üle kirjutada?"
-            )
+            val forceSave = window.confirm(Str.mergeConflictMsg)
             if (!forceSave)
                 return false
         }
 
         ExerciseDAO.updateExercise(exerciseId, merge.merged).await()
 
-        successMessage { "Ülesanne salvestatud" }
+        successMessage { Str.exerciseSaved }
         recreate()
         return true
     }

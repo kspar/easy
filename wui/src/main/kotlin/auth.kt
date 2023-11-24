@@ -75,12 +75,14 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 }
                 resolve(authenticated)
             }.catch {
-                permanentErrorMessage(
-                    false,
-                    UserMessageAction(
-                        "Proovi uuesti",
-                        onActivate = { login(objOf("locale" to activeLanguage.localeId)) })
-                ) { "Autentimine ebaõnnestus." }
+                ToastThing(
+                    Str.authFailed,
+                    ToastThing.Action(Str.tryAgain, { login(objOf("locale" to activeLanguage.localeId)) }),
+                    icon = ToastThing.ERROR,
+                    isDismissable = false,
+                    displayTime = ToastThing.PERMANENT,
+                    id = ToastIds.authFail
+                )
                 reject(RuntimeException("Authentication error"))
             }
         }
@@ -94,10 +96,10 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
             }.catch {
                 debug { "Token refresh failed" }
                 ToastThing(
-                    "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida.",
-                    ToastThing.Action("Logi sisse", { login(objOf("locale" to activeLanguage.localeId)) }),
-                    Icons.errorUnf,
-                    displayLengthSec = ToastThing.LONG_TIME,
+                    Str.authRefreshFailed,
+                    ToastThing.Action(Str.logIn, { login(objOf("locale" to activeLanguage.localeId)) }),
+                    icon = ToastThing.ERROR,
+                    displayTime = ToastThing.PERMANENT,
                     id = ToastIds.loginToContinue
                 )
                 reject(RuntimeException("Token refresh failed"))

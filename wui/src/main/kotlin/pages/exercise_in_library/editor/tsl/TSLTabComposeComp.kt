@@ -10,6 +10,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemBySelector
 import show
 import template
+import translation.Str
 import tsl.common.model.Test
 
 
@@ -31,7 +32,7 @@ class TSLTabComposeComp(
 
     override fun create() = doInPromise {
         testsList = TSLTestsListComp(tests, onUpdate, onValidChanged, this)
-        addTestBtn = ButtonComp(ButtonComp.Type.PRIMARY, "Lisa test", Icons.add, ::addTest, parent = this)
+        addTestBtn = ButtonComp(ButtonComp.Type.PRIMARY, Str.tslAddTest, Icons.add, ::addTest, parent = this)
     }
 
     override fun render() = template(

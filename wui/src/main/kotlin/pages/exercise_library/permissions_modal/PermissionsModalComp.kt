@@ -8,7 +8,6 @@ import components.form.StringFieldComp
 import components.modal.ModalComp
 import dao.LibraryDirDAO
 import debug
-import errorMessage
 import kotlinx.coroutines.await
 import pages.exercise_library.DirAccess
 import pages.exercise_library.ExerciseLibraryPage
@@ -37,7 +36,7 @@ class PermissionsModalComp(
 
     override fun create() = doInPromise {
         modalComp = ModalComp(
-            "Jagamine", onOpen = { }, fixFooter = true,
+            Str.share, fixFooter = true,
             defaultReturnValue = false,
             bodyCompsProvider = {
                 val list = PermissionsListLoaderComp(
@@ -124,7 +123,7 @@ class PermissionsListComp(
                 accesses.direct_groups.map { it.id }
 
         newAccessInput = StringFieldComp(
-            "", false, "Jagamiseks sisesta kasutaja email",
+            "", false, Str.shareUserFieldHelp,
             // TODO: should have a button or some other way to activate this on mobile
             onENTER = ::onNewAccess,
             parent = this
@@ -147,7 +146,7 @@ class PermissionsListComp(
             // Any
             accesses.direct_any?.let {
                 val select = createSelectPermission(it.access, PermissionSubjectAny, Auth.activeRole == Role.ADMIN)
-                add(DirectAccess("Kõik kasutajad", true, null, it.access, select))
+                add(DirectAccess(Str.allUsers, true, null, it.access, select))
             }
 
             // Groups
@@ -178,7 +177,7 @@ class PermissionsListComp(
         accesses.inherited_any?.let {
             it.inherited_from!!
             dirs.getOrPut(it.inherited_from) { mutableListOf() }
-                .add(InheritedAccess("Kõik kasutajad", true, null, it.access))
+                .add(InheritedAccess(Str.allUsers, true, null, it.access))
         }
 
         // Groups
@@ -226,8 +225,8 @@ class PermissionsListComp(
         """.trimIndent(),
         "newAccessDst" to newAccessInput.dstId,
         "groupIcon" to Icons.groups,
-        "dirLabel" to "Päritud kaustalt",
-        "currentDirLabel" to "(see kaust)",
+        "dirLabel" to Str.inheritedFrom,
+        "currentDirLabel" to Str.thisDirectorySuffix,
         "directPermissions" to directAccesses.map {
             mapOf(
                 "isGroup" to it.isGroup,
@@ -274,7 +273,7 @@ class PermissionsListComp(
                 add(SelectComp.Option(Str.translatePermission(DirAccess.PRAW), "PRAW", access == DirAccess.PRAW))
                 add(SelectComp.Option(Str.translatePermission(DirAccess.PRAWM), "PRAWM", access == DirAccess.PRAWM))
                 if (access != DirAccess.P)
-                    add(SelectComp.Option("Eemalda juurdepääs", ""))
+                    add(SelectComp.Option(Str.removeAccess, ""))
             },
             onOptionChange = {
                 val selectedAccess = when (it) {
@@ -296,17 +295,7 @@ class PermissionsListComp(
 
     private suspend fun onNewAccess(subjectStr: String) {
         val subject = when {
-            subjectStr.lowercase() == "kõik kasutajad" -> {
-                if (Auth.activeRole == Role.ADMIN)
-                    PermissionSubjectAny
-                else {
-                    errorMessage {
-                        "Sul pole õigust kõikidele kasutajatele jagamiseks, pöördu selle sooviga administraatori poole."
-                    }
-                    return
-                }
-            }
-
+            subjectStr.lowercase() == "all" && Auth.activeRole == Role.ADMIN -> PermissionSubjectAny
             subjectStr.contains("@") -> PermissionSubjectNewAcc(subjectStr)
             else -> PermissionSubjectGroup(subjectStr)
         }

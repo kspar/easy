@@ -25,7 +25,7 @@ class TSLInputFilesSection(
     )
 
     private val addBtn =
-        ButtonComp(ButtonComp.Type.FLAT, "Sisendfail", Icons.add, ::addFile, parent = this)
+        ButtonComp(ButtonComp.Type.FLAT, Str.tslInputFile, Icons.add, ::addFile, parent = this)
 
     private lateinit var sections: List<FileSection>
 
@@ -40,7 +40,7 @@ class TSLInputFilesSection(
             val filenameField = StringFieldComp(
                 "", true,
                 placeholder = "file.txt",
-                fieldNameForMessage = "Faili nimi",
+                fieldNameForMessage = Str.tslInputFileName,
                 initialValue = it.key,
                 onValidChange = { onValidChanged() },
                 onValueChange = { onUpdate() },
@@ -59,7 +59,7 @@ class TSLInputFilesSection(
                 ),
                 TextFieldComp(
                     "", false,
-                    helpText = "Faili sisu",
+                    helpText = Str.tslInputFileContent,
                     startActive = true,
                     initialValue = it.value,
                     onValueChange = { onUpdate() },
@@ -75,7 +75,7 @@ class TSLInputFilesSection(
             {{#files}}
                 <ez-flex style='align-items: baseline; color: var(--ez-text-inactive);'>
                     <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslInputFile}</ez-inline-flex>
-                    Tekstifail <ez-tsl-inline-field id='{{filenameDst}}'></ez-tsl-inline-field>
+                    {{sent1}} <ez-tsl-inline-field id='{{filenameDst}}'></ez-tsl-inline-field>
                     <ez-inline-flex style='align-self: center;' id='{{deleteBtnDst}}'></ez-inline-flex>
                 </ez-flex>
                 <ez-tsl-input-data-field id='{{contentDst}}'></ez-tsl-input-data-field>
@@ -90,6 +90,7 @@ class TSLInputFilesSection(
             )
         },
         "btnDst" to addBtn.dstId,
+        "sent1" to Str.tslInputFileSent1,
     )
 
     fun updateAndGetFiles(): Map<String, String> {
