@@ -735,7 +735,7 @@ ez-exercise-badge ez-icon {
     gap: 2rem 5rem;
 }
 
-@container subpage-tabs (width < 650px) {
+@container tabs (width < 650px) {
     #global-exercise ez-tabs-trailer ez-btn-content ez-btn-text {
         display: none;
     }
