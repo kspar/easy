@@ -6,9 +6,11 @@ import components.UnorderedListComp
 import dao.ExerciseDAO
 import highlightCode
 import lightboxExerciseImages
+import org.w3c.dom.HTMLDetailsElement
 import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemsBySelector
 import rip.kspar.ezspa.plainDstStr
 import template
 import translation.Str
@@ -97,6 +99,13 @@ class ExerciseTextComp(
     parent: Component?
 ) : Component(parent) {
 
+    // Remember from destroyThis to postRender which <details> elements were open and reopen them.
+    // Only works if the number of <details> elements did not change -
+    // then we make the assumption that their order also did not change,
+    // even though it's technically possible to drag & drop editor contents so that this will misbehave.
+    // List of booleans, each representing one <details> and its open status
+    private var detailsOpen = emptyList<Boolean>()
+
     override fun render() = template(
         """
             <h2 style="margin-top: 4rem;">{{title}}</h2>
@@ -110,5 +119,22 @@ class ExerciseTextComp(
         highlightCode()
         MathJax.formatPageIfNeeded(textHtml)
         lightboxExerciseImages()
+
+        // Reopen <details>
+        val details = getDetailsElements()
+        if (details.size == detailsOpen.size) {
+            details.zip(detailsOpen) { d: HTMLDetailsElement, open: Boolean ->
+                d.open = open
+            }
+        }
     }
+
+    override fun destroyThis(): Unit? {
+        // Remember which <details> were open
+        detailsOpen = getDetailsElements().map { it.open }
+        return super.destroyThis()
+    }
+
+    private fun getDetailsElements() = getElemsBySelector("#exercise-text details")
+        .filterIsInstance<HTMLDetailsElement>()
 }
