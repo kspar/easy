@@ -23,7 +23,7 @@ class EditModeButtonsComp(
 
     private val startEditBtn =
         ButtonComp(
-            ButtonComp.Type.FLAT, Str.doChange, Icons.edit, clickedLabel = Str.loading,
+            ButtonComp.Type.FLAT, Str.doEdit, Icons.edit, clickedLabel = Str.loading,
             onClick = { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =

@@ -42,7 +42,7 @@ sealed class TranslatableStrings {
     abstract val doDelete: String
     abstract val deleted: String
     abstract val doRestore: String
-    abstract val doChange: String
+    abstract val doEdit: String
     abstract val doDuplicate: String
     abstract val doExpand: String
     abstract val doAutoAssess: String
@@ -379,7 +379,7 @@ object EstStrings : TranslatableStrings() {
     override val doDelete = "Kustuta"
     override val deleted = "Kustutatud"
     override val doRestore = "Taasta"
-    override val doChange = "Muuda"
+    override val doEdit = "Muuda"
     override val doDuplicate = "Tee koopia"
     override val doExpand = "Laienda"
     override val assessmentAddedMsg = "Hinnang lisatud"
@@ -689,7 +689,7 @@ object EngStrings : TranslatableStrings() {
     override val doDelete = "Delete"
     override val deleted = "Deleted"
     override val doRestore = "Restore"
-    override val doChange = "Change"
+    override val doEdit = "Edit"
     override val doDuplicate = "Copy"
     override val doExpand = "Expand"
 

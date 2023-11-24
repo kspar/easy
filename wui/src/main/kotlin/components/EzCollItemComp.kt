@@ -232,7 +232,7 @@ class EzCollItemComp<P>(
                 "minCollWidth" to it.shortcutMinCollWidth.valuePx,
             )
         },
-        "actionMenuTitle" to Str.doChange + "...",
+        "actionMenuTitle" to Str.doEdit + "...",
         "expandItemTitle" to Str.doExpand,
     )
 

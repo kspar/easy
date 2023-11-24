@@ -123,7 +123,7 @@ class TSLTestComp(
         },
         "titleIcon" to Icons.robot,
         "editIcon" to Icons.edit,
-        "menuLabel" to Str.doChange + "...",
+        "menuLabel" to Str.doEdit + "...",
         "menuIcon" to Icons.dotsVertical,
         "editTitleDst" to editTitleModal.dstId,
     )
