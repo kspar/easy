@@ -3243,6 +3243,7 @@ ez-feedback-producer {
     align-items: center;
     justify-content: end;
     font-size: .7em;
+    cursor: default;
 }
 
 ez-feedback-producer ez-icon {
