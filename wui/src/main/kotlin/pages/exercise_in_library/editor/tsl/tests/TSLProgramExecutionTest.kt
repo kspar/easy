@@ -7,6 +7,7 @@ import pages.exercise_in_library.editor.tsl.sections.TSLStdInSection
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import template
+import translation.Str
 import tsl.common.model.FileData
 import tsl.common.model.ProgramExecutionTest
 import tsl.common.model.Test
@@ -38,13 +39,15 @@ class TSLProgramExecutionTest(
 
     override fun render() = template(
         """
-            <ez-tsl-section-title>Sisendandmed</ez-tsl-section-title>
+            <ez-tsl-section-title>{{inputs}}</ez-tsl-section-title>
             $stdInSection
             $inputFilesSection
             
-            <ez-tsl-section-title>Kontrollid</ez-tsl-section-title>
+            <ez-tsl-section-title>{{checks}}</ez-tsl-section-title>
             $dataChecks
-        """.trimIndent()
+        """.trimIndent(),
+        "inputs" to Str.tslInputs,
+        "checks" to Str.tslChecks,
     )
 
     override fun getTSLModel(): Test {

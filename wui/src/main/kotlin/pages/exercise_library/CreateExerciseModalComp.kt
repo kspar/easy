@@ -33,7 +33,7 @@ class CreateExerciseModalComp(
     )
 
     private val titleField = StringFieldComp(
-        "Ülesande pealkiri",
+        Str.exerciseTitle,
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 100)),
         onValidChange = ::updateSubmitBtn,
@@ -43,7 +43,7 @@ class CreateExerciseModalComp(
 
     // TODO: should save/remember addToCourse checkbox default value, requires EZ-1491
     private val addToCourseCheckbox: CheckboxComp? = if (allowAddingToCourseId != null)
-        CheckboxComp("Lisa sellele kursusele", initialValue = true, parent = modalComp)
+        CheckboxComp(Str.addToThisCourse, initialValue = true, parent = modalComp)
     else null
 
     override val children: List<Component>

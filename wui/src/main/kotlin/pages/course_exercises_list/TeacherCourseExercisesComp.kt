@@ -3,9 +3,9 @@ package pages.course_exercises_list
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
-import UserMessageAction
 import cache.BasicCourseInfo
 import components.EzCollComp
+import components.ToastThing
 import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
@@ -133,12 +133,14 @@ class TeacherCourseExercisesComp(
                             if (ids.courseExerciseId != null) {
                                 // was added to course
                                 EzSpa.PageManager.navigateTo(ExerciseSummaryPage.link(courseId, ids.courseExerciseId))
-                                successMessage { Str.exerciseCreated }
+                                ToastThing(Str.msgExerciseCreated)
                             } else {
-                                val action = UserMessageAction(Str.openInLib) {
-                                    EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId))
-                                }
-                                successMessage(action = action) { Str.exerciseCreated }
+                                ToastThing(
+                                    Str.msgExerciseCreated,
+                                    ToastThing.Action(
+                                        Str.openInLib,
+                                        { EzSpa.PageManager.navigateTo(ExercisePage.link(ids.exerciseId)) })
+                                )
                             }
                         }
                     }
@@ -243,7 +245,11 @@ class TeacherCourseExercisesComp(
             val item = items[0]
             StringComp.boldTriple(Str.removeExercise + " ", item.title, "? $submissionWarning")
         } else {
-            StringComp.boldTriple(Str.doRemove + " ", items.size.toString(), " ${Str.removeExercisesPlural}? $submissionWarning")
+            StringComp.boldTriple(
+                Str.doRemove + " ",
+                items.size.toString(),
+                " ${Str.removeExercisesPlural}? $submissionWarning"
+            )
         }
 
         removeModal.setText(text)

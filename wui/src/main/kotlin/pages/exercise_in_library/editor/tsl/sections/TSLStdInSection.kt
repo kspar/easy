@@ -8,6 +8,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import show
 import template
+import translation.Str
 
 class TSLStdInSection(
     private var inputs: List<String>,
@@ -30,7 +31,7 @@ class TSLStdInSection(
                 "", false,
                 startActive = true,
                 initialValue = inputs.joinToString("\n"),
-                helpText = "Õpilase programmile antavad kasutaja sisendid, iga sisend eraldi real",
+                helpText = Str.tslStdinFieldHelp,
                 // TODO: onUnfocus or debounce for performance
                 onValueChange = { onUpdate() },
                 onValidChange = { onValidChanged() },
@@ -39,7 +40,7 @@ class TSLStdInSection(
             showBtn = null
         } else {
             textField = null
-            showBtn = ButtonComp(ButtonComp.Type.FLAT, "Kasutaja sisend", Icons.add, ::showSection, parent = this)
+            showBtn = ButtonComp(ButtonComp.Type.FLAT, Str.tslStdin, Icons.add, ::showSection, parent = this)
         }
     }
 
@@ -48,7 +49,7 @@ class TSLStdInSection(
             {{#showField}}
                 <ez-flex style='align-items: baseline; color: var(--ez-text-inactive); margin-top: 1.5rem;'>
                     <ez-inline-flex style='align-self: center; margin-right: 1rem;'>${Icons.tslStdInput}</ez-inline-flex>
-                    Kasutaja sisendid
+                    {{stdins}}
                 </ez-flex>
                 <ez-tsl-input-data-field id='${textField?.dstId}'></ez-tsl-input-data-field>
             {{/showField}}
@@ -57,6 +58,7 @@ class TSLStdInSection(
             {{/showField}}
         """.trimIndent(),
         "showField" to showField,
+        "stdins" to Str.tslStdins,
     )
 
     fun getInputs(): List<String> = textField?.getValue().orEmpty().split("\n").filter(String::isNotBlank)

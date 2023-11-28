@@ -1,11 +1,9 @@
 package queries
 
-import Icons
 import components.ToastId
 import components.ToastIds
 import components.ToastThing
 import debug
-import errorMessage
 import kotlinx.serialization.Serializable
 import org.w3c.fetch.Response
 import pages.courses.CoursesPage
@@ -24,17 +22,19 @@ object ErrorHandlers {
     val noCourseAccessMsg: RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             EzSpa.PageManager.navigateTo(CoursesPage.link())
-            ToastThing(Str.noCourseAccessPageMsg, icon = Icons.errorUnf, displayLengthSec = 10,
-                id = ToastIds.noCourseAccess)
+            ToastThing(
+                Str.noCourseAccessPageMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG,
+                id = ToastIds.noCourseAccess
+            )
         }
     }
 
     val noVisibleExerciseMsg: RespErrorHandler =
-        noEntityFoundMessage("Seda ülesannet ei eksisteeri või see on peidetud", ToastIds.noVisibleCourseExercise)
+        noEntityFoundMessage(Str.noVisibleExerciseError, ToastIds.noVisibleCourseExercise)
 
     fun noEntityFoundMessage(msg: String, toastId: ToastId): RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND) {
-            ToastThing(msg, icon = Icons.errorUnf, displayLengthSec = 10, id = toastId)
+            ToastThing(msg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG, id = toastId)
         }
     }
 
@@ -43,25 +43,21 @@ object ErrorHandlers {
         val status = this.status
         if (errorBody == null) {
             this.text().then { body ->
-                errorMessage {
-                    """Midagi läks valesti, palun proovi hiljem uuesti. 
-                    |Server tagastas ootamatu vastuse:
-                    |HTTP staatus: $status
-                    |Vastus: ${body.truncate(150)}
-                """.trimMargin()
-                }
+                ToastThing(
+                    Str.translateServerError(status, null, body.truncate(150)),
+                    icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                )
             }.catch {
-                errorMessage { "Midagi läks valesti, palun proovi hiljem uuesti. Server tagastas ootamatu vastuse HTTP staatusega $status." }
+                ToastThing(
+                    Str.serverErrorMsg + " " + status,
+                    icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                )
             }
         } else {
-            errorMessage {
-                """Midagi läks valesti, palun proovi hiljem uuesti. 
-                |Server tagastas vea:
-                |HTTP staatus: $status
-                |Kood: ${errorBody.code}
-                |Sõnum: ${errorBody.log_msg}
-            """.trimMargin()
-            }
+            ToastThing(
+                Str.translateServerError(status, errorBody.code, errorBody.log_msg),
+                icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+            )
         }
         true
     }

@@ -78,7 +78,7 @@ class TestingTabComp(
         attrs = AttrsComp(
             buildMap {
                 if (latestSubmission != null)
-                    put("Viimane katsetus", latestSubmission.created_at.toHumanString(EzDate.Format.FULL))
+                    put(Str.lastTestingAttempt, latestSubmission.created_at.toHumanString(EzDate.Format.FULL))
             },
             this
         )
@@ -107,7 +107,7 @@ class TestingTabComp(
 
     fun setEditing(nowEditing: Boolean) {
         if (nowEditing)
-            warning.setMsg("Kui oled automaatkontrollis muudatusi teinud, siis pead enne nende jõustumist ülesande salvestama.")
+            warning.setMsg(Str.testingEditedWarnMsg)
         else
             warning.setMsg(null)
     }
@@ -128,7 +128,7 @@ class TestingTabComp(
             feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(a.grade, ExerciseDAO.GraderType.AUTO)
             feedback.autoFeedback = a.feedback
             feedback.rebuild()
-            attrs.attrs = mapOf("Viimane katsetus" to a.timestamp.toHumanString(EzDate.Format.FULL))
+            attrs.attrs = mapOf(Str.lastTestingAttempt to a.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
             editor.setFileEditable(editorTabName, true)
         }

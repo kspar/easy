@@ -15,6 +15,7 @@ import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
 import rip.kspar.ezspa.objOf
 import template
+import translation.Str
 import kotlin.js.Promise
 
 class ExerciseTextEditTabComp(
@@ -45,7 +46,7 @@ class ExerciseTextEditTabComp(
 
     override fun create(): Promise<*> = doInPromise {
         titleField = StringFieldComp(
-            "Ülesande pealkiri", true,
+            Str.exerciseTitle, true,
             initialValue = title,
             isDisabled = true,
             onValueChange = exerciseTitleChanged,
@@ -78,7 +79,8 @@ class ExerciseTextEditTabComp(
 
     override fun postRender() {
         doInPromise {
-            observeValueChange(300, 150,
+            observeValueChange(
+                300, 150,
                 // if adoc exists, then show preview at start as well, else keep legacy html in editor
                 doActionFirst = textAdoc.isNotEmpty(),
                 valueProvider = { getCurrentAdoc() },

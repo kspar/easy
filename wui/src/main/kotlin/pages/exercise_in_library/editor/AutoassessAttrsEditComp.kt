@@ -5,6 +5,7 @@ import components.form.SelectComp
 import pages.exercise_in_library.AutoEvalTypes
 import rip.kspar.ezspa.Component
 import template
+import translation.Str
 
 
 class AutoassessAttrsEditComp(
@@ -17,15 +18,15 @@ class AutoassessAttrsEditComp(
 ) : Component(parent) {
 
     private val typeSelect = SelectComp(
-        "Automaatkontrolli tüüp", AutoEvalTypes.templates.map {
+        Str.autoassessType, AutoEvalTypes.templates.map {
             SelectComp.Option(it.name, it.container, it.container == containerImage)
-        }, true, onOptionChange = onTypeChanged, parent = this
+        }, true, unconstrainedPosition = true, onOptionChange = onTypeChanged, parent = this
     )
 
     private val timeField = if (containerImage != null)
         IntFieldComp(
-            "Käivitusaeg (s)", true, 1, 60, initialValue = maxTime,
-            fieldNameForMessage = "Väärtus",
+            Str.allowedExecTimeField, true, 1, 60, initialValue = maxTime,
+            fieldNameForMessage = Str.value,
             // autofilled from template, should only be edited by user, not inserted
             // but is recreated on type change, so invalid/missing value should be painted on create
             paintRequiredOnCreate = true,
@@ -35,8 +36,8 @@ class AutoassessAttrsEditComp(
 
     private val memField = if (containerImage != null)
         IntFieldComp(
-            "Mälukasutus (MB)", true, 10, 50, initialValue = maxMem,
-            fieldNameForMessage = "Väärtus",
+            Str.allowedExecMemField, true, 10, 50, initialValue = maxMem,
+            fieldNameForMessage = Str.value,
             paintRequiredOnCreate = true,
             onValidChange = ::onElementValidChange,
             parent = this
@@ -55,8 +56,8 @@ class AutoassessAttrsEditComp(
                     </ez-block>
                     <ez-block style="flex-grow: 0">
                         <ez-block-container>
-                            {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 18rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
-                            {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 15rem; flex-grow: 0;"></ez-block>{{/memDstId}}
+                            {{#timeDstId}}<ez-block id="{{timeDstId}}" style="width: 19rem; padding-right: 3rem; flex-grow: 0;"></ez-block>{{/timeDstId}}
+                            {{#memDstId}}<ez-block id="{{memDstId}}" style="width: 16rem; flex-grow: 0;"></ez-block>{{/memDstId}}
                         </ez-block-container>
                     </ez-block>
                 </ez-block-container>

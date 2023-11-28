@@ -96,8 +96,8 @@ class AutoAssessmentTabComp(
     override fun render(): String = template(
         """
             <ez-exercise-autoassess-tab>
-                <ez-dst id="${attrs.dstId}"></ez-dst>
-                <ez-dst id="${editor?.dstId}"></ez-dst>
+                $attrs
+                ${editor?.toString() ?: ""}
             </ez-exercise-autoassess-tab>
         """.trimIndent(),
     )

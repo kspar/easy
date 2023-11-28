@@ -32,7 +32,7 @@ class TSLDataChecksSection(
     private lateinit var sections: List<CheckSection>
 
     private val addCheckBtn =
-        ButtonComp(ButtonComp.Type.FLAT, "Väljundi kontroll", Icons.add, ::addCheck, parent = this)
+        ButtonComp(ButtonComp.Type.FLAT, Str.tslStdoutCheck, Icons.add, ::addCheck, parent = this)
 
     override val children: List<Component>
         get() = listOf(addCheckBtn) + sections.flatMap {
@@ -49,7 +49,7 @@ class TSLDataChecksSection(
                 check.id,
                 TextFieldComp(
                     "", false, "",
-                    helpText = "Oodatavad õpilase programmi väljundid, iga väärtus eraldi real",
+                    helpText = Str.tslStdoutOutputs,
                     startActive = true,
                     initialValue = check.expectedValue.joinToString("\n"),
                     onValueChange = { onUpdate() },
@@ -59,22 +59,22 @@ class TSLDataChecksSection(
                 SelectComp(
                     options = listOf(
                         SelectComp.Option(
-                            "leiduvad kõik",
+                            Str.tslStdoutContainsAll,
                             CheckType.ALL_OF_THESE.name,
                             check.checkType == CheckType.ALL_OF_THESE
                         ),
                         SelectComp.Option(
-                            "leidub vähemalt üks",
+                            Str.tslStdoutContainsOne,
                             CheckType.ANY_OF_THESE.name,
                             check.checkType == CheckType.ANY_OF_THESE
                         ),
                         SelectComp.Option(
-                            "ei leidu vähemalt ühte",
+                            Str.tslStdoutNotContainsOne,
                             CheckType.MISSING_AT_LEAST_ONE_OF_THESE.name,
                             check.checkType == CheckType.MISSING_AT_LEAST_ONE_OF_THESE
                         ),
                         SelectComp.Option(
-                            "ei leidu mitte ühtegi",
+                            Str.tslStdoutNotContainsAll,
                             CheckType.NONE_OF_THESE.name,
                             check.checkType == CheckType.NONE_OF_THESE
                         ),
@@ -85,17 +85,17 @@ class TSLDataChecksSection(
                 SelectComp(
                     options = listOf(
                         SelectComp.Option(
-                            "sõnedest",
+                            Str.tslStdoutDataString,
                             DataCategory.CONTAINS_STRINGS.name,
                             check.dataCategory == DataCategory.CONTAINS_STRINGS
                         ),
                         SelectComp.Option(
-                            "arvudest",
+                            Str.tslStdoutDataNumber,
                             DataCategory.CONTAINS_NUMBERS.name,
                             check.dataCategory == DataCategory.CONTAINS_NUMBERS
                         ),
                         SelectComp.Option(
-                            "ridadest",
+                            Str.tslStdoutDataLine,
                             DataCategory.CONTAINS_LINES.name,
                             check.dataCategory == DataCategory.CONTAINS_LINES
                         ),
@@ -104,14 +104,14 @@ class TSLDataChecksSection(
                     parent = this
                 ),
                 CheckboxComp(
-                    "Väärtuste järjekord peab oleme sama",
+                    Str.tslStdoutOrdered,
                     initialValue = check.elementsOrdered ?: false,
                     onValueChange = { onUpdate() },
                     parent = this
                 ),
                 StringFieldComp(
                     "", true,
-                    fieldNameForMessage = "Tagasiside",
+                    fieldNameForMessage = Str.feedback,
                     initialValue = check.passedMessage,
                     onValidChange = { onValidChanged() },
                     onValueChange = { onUpdate() },
@@ -119,14 +119,14 @@ class TSLDataChecksSection(
                 ),
                 StringFieldComp(
                     "", true,
-                    fieldNameForMessage = "Tagasiside",
+                    fieldNameForMessage = Str.feedback,
                     initialValue = check.failedMessage,
                     onValidChange = { onValidChanged() },
                     onValueChange = { onUpdate() },
                     parent = this
                 ),
                 IconButtonComp(
-                    Icons.arrowUp, "Liiguta üles", {
+                    Icons.arrowUp, Str.moveUp, {
                         updateAndGetChecks()
                         val currentModel = checks.first { it.id == check.id }
                         val currentIdx = checks.indexOf(currentModel)
@@ -139,7 +139,7 @@ class TSLDataChecksSection(
                     parent = this
                 ),
                 IconButtonComp(
-                    Icons.arrowDown, "Liiguta alla", {
+                    Icons.arrowDown, Str.moveDown, {
                         updateAndGetChecks()
                         val currentModel = checks.first { it.id == check.id }
                         val currentIdx = checks.indexOf(currentModel)
@@ -151,7 +151,7 @@ class TSLDataChecksSection(
                     isEnabledInitial = i != checks.size - 1,
                     parent = this
                 ),
-                IconButtonComp(Icons.delete, "Kustuta", {
+                IconButtonComp(Icons.delete, Str.doDelete, {
                     updateAndGetChecks()
                     checks.removeAll { it.id == check.id }
                     createAndBuild().await()
@@ -171,8 +171,8 @@ class TSLDataChecksSection(
                     <ez-dst id='{{downBtnDst}}'></ez-dst>
                     <ez-dst id='{{deleteBtnDst}}'></ez-dst>
                 </legend>
-                    Väljundis <ez-tsl-inline-field id='{{typeDst}}' style='width: 20rem;'></ez-tsl-inline-field> 
-                    järgmistest <ez-tsl-inline-field id='{{comparisonDst}}' style='width: 13rem;'></ez-tsl-inline-field>: 
+                    {{sent1}} <ez-tsl-inline-field id='{{typeDst}}' style='width: 20rem;'></ez-tsl-inline-field> 
+                    {{sent2}} <ez-tsl-inline-field id='{{comparisonDst}}' style='width: 13rem;'></ez-tsl-inline-field>: 
                     <ez-tsl-check-after-sentence-field id='{{valueDst}}'></ez-tsl-check-after-sentence-field>
                     <ez-flex style='color: var(--ez-text-inactive);'>
                         <ez-inline-flex style='margin-right: 1rem; margin-bottom: .8rem;'>${Icons.check}</ez-inline-flex>
@@ -203,7 +203,9 @@ class TSLDataChecksSection(
             )
         },
         "addBtnDst" to addCheckBtn.dstId,
-    )
+        "sent1" to Str.tslStdoutCheckSent1,
+        "sent2" to Str.tslStdoutCheckSent2,
+        )
 
     fun updateAndGetChecks(): List<GenericCheck> {
         checks = sections.map {

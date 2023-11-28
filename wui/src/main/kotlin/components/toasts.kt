@@ -19,19 +19,26 @@ object ToastIds {
     val noVisibleCourseExercise = IdGenerator.nextId()
     val noPermissionForPage = IdGenerator.nextId()
     val loginToContinue = IdGenerator.nextId()
+    val exerciseAddedToCourse = IdGenerator.nextId()
+    val authFail = IdGenerator.nextId()
 }
 
 class ToastThing(
     private val text: String,
     private val action: Action? = null,
-    private val icon: String = Icons.check,
+    private val icon: String = SUCCESS,
     private val isDismissable: Boolean = true,
-    private val displayLengthSec: Int = 5,
+    private val displayTime: Int = SHORT,
     val id: ToastId = IdGenerator.nextId(),
 ) {
 
     companion object {
-        const val LONG_TIME = 60 * 60 * 24 * 365
+        const val SHORT = 5
+        const val LONG = 10
+        const val PERMANENT = 60 * 60 * 24 * 365
+
+        const val SUCCESS = Icons.check
+        const val ERROR = Icons.errorUnf
     }
 
     data class Action(
@@ -62,7 +69,7 @@ class ToastThing(
         )
 
         doInPromise {
-            sleep(displayLengthSec * 1000).await()
+            sleep(displayTime * 1000).await()
             dismiss()
         }
 

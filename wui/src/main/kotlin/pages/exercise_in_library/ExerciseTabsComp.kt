@@ -2,6 +2,7 @@ package pages.exercise_in_library
 
 import components.EditModeButtonsComp
 import components.PageTabsComp
+import components.ToastThing
 import dao.ExerciseDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -9,7 +10,7 @@ import pages.exercise_in_library.editor.AutoassessEditorComp
 import pages.exercise_library.DirAccess
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import successMessage
+import translation.Str
 
 
 class ExerciseTabsComp(
@@ -46,7 +47,7 @@ class ExerciseTabsComp(
             type = PageTabsComp.Type.TOP_LEVEL,
             tabs = buildList {
                 add(
-                    PageTabsComp.Tab("Ülesanne", preselected = true, id = TAB_ID_EXERCISE) {
+                    PageTabsComp.Tab(Str.tabExercise, preselected = true, id = TAB_ID_EXERCISE) {
                         ExerciseTextEditTabComp(
                             initialExercise.title,
                             initialExercise.text_adoc.orEmpty(),
@@ -62,7 +63,7 @@ class ExerciseTabsComp(
 
                 add(
                     PageTabsComp.Tab(
-                        "Automaatkontroll",
+                        Str.tabAutoassess,
                         id = TAB_ID_AUTOASSESS,
                         onActivate = { autoassessTab.refreshTSLTabs() }) {
                         val aaProps = if (initialExercise.grading_script != null) {
@@ -82,7 +83,7 @@ class ExerciseTabsComp(
 
                 if (initialExercise.grader_type == ExerciseDAO.GraderType.AUTO) {
                     add(
-                        PageTabsComp.Tab("Katsetamine", id = TAB_ID_TESTING) {
+                        PageTabsComp.Tab(Str.tabTesting, id = TAB_ID_TESTING) {
                             TestingTabComp(exerciseId, it)
                                 .also { testingTab = it }
                         }
@@ -135,7 +136,7 @@ class ExerciseTabsComp(
     private suspend fun editModeChanged(nowEditing: Boolean): Boolean {
         // Check if exercise has changed before editing
         if (nowEditing && hasExerciseChanged()) {
-            successMessage { "Seda ülesannet on vahepeal muudetud, näitan uut versiooni" }
+            ToastThing(Str.updatedInEditMsg)
             refreshExercise()
             return false
         }
@@ -178,6 +179,6 @@ class ExerciseTabsComp(
 
     private suspend fun wishesToCancel() =
         if (hasUnsavedChanges())
-            window.confirm("Siin lehel on salvestamata muudatusi. Kas oled kindel, et soovid muutmise lõpetada ilma salvestamata?")
+            window.confirm(Str.exerciseUnsavedChangesMsg)
         else true
 }

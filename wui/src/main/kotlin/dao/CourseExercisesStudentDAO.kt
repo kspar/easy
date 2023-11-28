@@ -162,7 +162,7 @@ object CourseExercisesStudentDAO {
                 ErrorHandlers.noVisibleExerciseMsg,
                 {
                     it.handleByCode(RespError.COURSE_EXERCISE_CLOSED) {
-                        ToastThing(Str.exerciseClosedForSubmissions, icon = Icons.errorUnf)
+                        ToastThing(Str.exerciseClosedForSubmissions, icon = ToastThing.ERROR)
                     }
                 })
         ).await()

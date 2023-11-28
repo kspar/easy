@@ -44,7 +44,7 @@ class SimilarityComp(
         val exercises = CourseExercisesTeacherDAO.getCourseExercises(courseId).await()
 
         selectExercise = SelectComp(
-            Str.exerciseTitle,
+            Str.exercise,
             exercises.map {
                 SelectComp.Option(it.effectiveTitle, it.exercise_id, it.exercise_id == exerciseId)
             },

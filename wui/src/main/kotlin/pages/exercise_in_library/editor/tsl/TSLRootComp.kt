@@ -11,6 +11,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import template
+import translation.Str
 import tsl.common.model.TSL
 import tsl.common.model.TSLFormat
 import tsl.common.model.Test
@@ -34,18 +35,18 @@ class TSLRootComp(
         PageTabsComp.Type.SUBPAGE,
         listOf(
             PageTabsComp.Tab(
-                "Testid",
+                Str.tslTestsTab,
                 compProvider = { TSLTabComposeComp(emptyList(), ::updateTsl, onValidChanged, it) },
                 id = Tab.COMPOSE.id
             ),
             PageTabsComp.Tab(
-                "TSL",
+                Str.tslSpecTab,
                 compProvider = { TSLTabTslComp(initialTslSpecStr, ::updateCompose, it) },
                 onActivate = { tslComp.refreshEditor() },
                 id = Tab.SPEC.id
             ),
             PageTabsComp.Tab(
-                "Genereeritud skriptid",
+                Str.tslGeneratedTab,
                 compProvider = { TSLTabScriptsComp(assets - TSL_SPEC_FILENAME_JSON, it) },
                 onActivate = { scriptsComp.refreshEditor() },
                 id = Tab.GENERATED.id

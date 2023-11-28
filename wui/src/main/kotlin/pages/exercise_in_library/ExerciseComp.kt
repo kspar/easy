@@ -6,11 +6,14 @@ import components.UnorderedListComp
 import dao.ExerciseDAO
 import highlightCode
 import lightboxExerciseImages
+import org.w3c.dom.HTMLDetailsElement
 import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemsBySelector
 import rip.kspar.ezspa.plainDstStr
 import template
+import translation.Str
 import kotlin.js.Promise
 
 
@@ -62,7 +65,7 @@ class ExerciseAttributesComp(
                     ExerciseSummaryPage.link(it.id, it.course_exercise_id)
                 )
             } + if (exercise.on_courses_no_access > 0)
-                listOf(UnorderedListComp.Item("(+ ${exercise.on_courses_no_access} peidetud kursust)"))
+                listOf(UnorderedListComp.Item("+ ${exercise.on_courses_no_access} ${Str.hiddenCourses}"))
             else emptyList(),
             maxItemsToShow = 5,
             parent = this
@@ -71,21 +74,21 @@ class ExerciseAttributesComp(
 
     override fun render(): String = template(
         """
-            <ez-attr><ez-attr-label>{{createdAtLabel}}:</ez-attr-label>{{createdAt}} · {{createdBy}}</ez-attr>
-            <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label>{{modifiedAt}} · {{modifiedBy}}</ez-attr>
+            <ez-attr><ez-attr-label>{{modifiedAtLabel}}:</ez-attr-label><span title='{{modifiedTitle}}'>{{modifiedAt}} · {{modifiedBy}}</span></ez-attr>
             <ez-attr><ez-attr-label>{{onCoursesLabel}}{{#onCoursesCount}} ({{onCoursesCount}}){{/onCoursesCount}}:</ez-attr-label>{{^onCoursesCount}}{{notUsedOnAnyCoursesLabel}}{{/onCoursesCount}}</ez-attr>
             <ez-dst class="attr-list" id="{{onCoursesListDst}}"></ez-dst>
         """.trimIndent(),
-        "createdAtLabel" to "Loodud",
-        "modifiedAtLabel" to "Viimati muudetud",
-        "onCoursesLabel" to "Kasutusel kursustel",
-        "notUsedOnAnyCoursesLabel" to "Mitte ühelgi!",
-        "createdAt" to exercise.created_at.toHumanString(EzDate.Format.DATE),
-        "createdBy" to exercise.owner_id,
+        "modifiedAtLabel" to Str.modifiedAt,
+        "onCoursesLabel" to Str.usedOnCourses,
+        "notUsedOnAnyCoursesLabel" to "-",
         "modifiedAt" to exercise.last_modified.toHumanString(EzDate.Format.DATE),
         "modifiedBy" to exercise.last_modified_by_id,
         "onCoursesListDst" to onCoursesList.dstId,
         "onCoursesCount" to (exercise.on_courses.size + exercise.on_courses_no_access),
+        "modifiedTitle" to
+                "${Str.modifiedAt} " +
+                "${exercise.last_modified.toHumanString(EzDate.Format.FULL)} (${exercise.last_modified_by_id}), " +
+                "${Str.exerciseCreatedAtPhrase} ${exercise.created_at.toHumanString(EzDate.Format.FULL)} (${exercise.owner_id})"
     )
 }
 
@@ -95,6 +98,13 @@ class ExerciseTextComp(
     var textHtml: String,
     parent: Component?
 ) : Component(parent) {
+
+    // Remember from destroyThis to postRender which <details> elements were open and reopen them.
+    // Only works if the number of <details> elements did not change -
+    // then we make the assumption that their order also did not change,
+    // even though it's technically possible to drag & drop editor contents so that this will misbehave.
+    // List of booleans, each representing one <details> and its open status
+    private var detailsOpen = emptyList<Boolean>()
 
     override fun render() = template(
         """
@@ -109,5 +119,22 @@ class ExerciseTextComp(
         highlightCode()
         MathJax.formatPageIfNeeded(textHtml)
         lightboxExerciseImages()
+
+        // Reopen <details>
+        val details = getDetailsElements()
+        if (details.size == detailsOpen.size) {
+            details.zip(detailsOpen) { d: HTMLDetailsElement, open: Boolean ->
+                d.open = open
+            }
+        }
     }
+
+    override fun destroyThis(): Unit? {
+        // Remember which <details> were open
+        detailsOpen = getDetailsElements().map { it.open }
+        return super.destroyThis()
+    }
+
+    private fun getDetailsElements() = getElemsBySelector("#exercise-text details")
+        .filterIsInstance<HTMLDetailsElement>()
 }
