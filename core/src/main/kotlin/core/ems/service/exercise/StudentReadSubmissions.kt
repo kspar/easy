@@ -29,6 +29,7 @@ class StudentReadSubmissionsController {
             @JsonProperty("solution") val solution: String,
             @JsonSerialize(using = DateTimeSerializer::class)
             @JsonProperty("submission_time") val submissionTime: DateTime,
+            @JsonProperty("seen") val seen: Boolean,
             @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
             @JsonProperty("grade") val grade: GradeResp?)
 
@@ -78,7 +79,8 @@ class StudentReadSubmissionsController {
                 Submission.createdAt,
                 Submission.autoGradeStatus,
                 Submission.isAutoGrade,
-                Submission.grade
+                Submission.grade,
+                Submission.seen
             )
             .select {
                 CourseExercise.course eq courseId and
@@ -99,6 +101,7 @@ class StudentReadSubmissionsController {
                     count.toInt() - i,
                     it[Submission.solution],
                     it[Submission.createdAt],
+                    it[Submission.seen],
                     it[Submission.autoGradeStatus],
                     toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
                 )

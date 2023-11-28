@@ -26,7 +26,7 @@ fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long)
 }
 
 fun selectStudentBySubmissionId(submissionId: Long) =
-    transaction { Submission.select { Submission.id eq submissionId }.map { it[Submission.student] }.single() }
+    transaction { Submission.slice(Submission.student).select { Submission.id eq submissionId }.map { it[Submission.student] }.single() }
 
 
 data class GradeResp(@JsonProperty("grade") val grade: Int, @JsonProperty("is_autograde") val isAutograde: Boolean)
@@ -34,7 +34,7 @@ data class GradeResp(@JsonProperty("grade") val grade: Int, @JsonProperty("is_au
 
 fun getSubmissionNumbers(studentId: String, courseExId: Long) = transaction {
     Submission.slice(Submission.id)
-        .select { Submission.student eq studentId and (CourseExercise.id eq courseExId) }
+        .select { Submission.student eq studentId and (Submission.courseExercise eq courseExId) }
         .orderBy(Submission.createdAt, SortOrder.ASC).map { it[Submission.id].value }
         .mapIndexed { index, id -> id to index + 1 }.toMap()
 }

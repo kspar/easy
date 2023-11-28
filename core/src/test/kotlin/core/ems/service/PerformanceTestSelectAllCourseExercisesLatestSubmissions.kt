@@ -182,6 +182,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                         this[Submission.autoGradeStatus] = AutoGradeStatus.NONE
                         this[Submission.grade] = 71
                         this[Submission.isAutoGrade] = false
+                        this[Submission.seen] = false
                     }
                 }
             }

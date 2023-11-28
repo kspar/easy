@@ -12,6 +12,13 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="271123-1" author="priit">
+        <addColumn tableName="submission">
+            <column name="seen" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 
 </databaseChangeLog>

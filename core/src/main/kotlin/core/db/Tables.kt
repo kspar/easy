@@ -175,6 +175,7 @@ object Submission : LongIdTable("submission") {
     val grade = integer("grade").nullable()
     val isAutoGrade = bool("is_auto_grade").nullable()
     val autoGradeStatus = enumerationByName("auto_grade_status", 20, AutoGradeStatus::class)
+    val seen = bool("seen")
 }
 
 object TeacherAssessment : LongIdTable("teacher_assessment") {
