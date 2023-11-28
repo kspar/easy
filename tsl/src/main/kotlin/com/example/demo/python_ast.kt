@@ -49,7 +49,7 @@ class PyStr(val value: String?, private val forceString: Boolean = true) : PyAST
             return value
         }
         if (forceString) {
-            return "'''${value.replace("'''", "\\'''").trim()}'''"
+            return "'''${value.replace("\n", "\\n".replace("'''", "\\'''").trim())}'''"
         }
         return value
     }
