@@ -6,13 +6,13 @@ import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
-import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -22,7 +22,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -133,25 +134,6 @@ class StudentSubmitCont(
             it == null || it.isAfterNow
         }
 
-    private fun selectGraderType(courseExId: Long): GraderType {
-        return transaction {
-            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.graderType)
-                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.graderType] }
-                .single()
-        }
-    }
-
-    private fun selectAutoExId(courseExId: Long): Long? {
-        return transaction {
-            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.autoExerciseId)
-                .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.autoExerciseId] }
-                .single()?.value
-        }
-    }
 
     private fun insertSubmission(
         courseExId: Long,
@@ -174,58 +156,5 @@ class StudentSubmitCont(
         cachingService.invalidate(countSubmissionsCache)
         return id
     }
-
-    private fun insertAutoAssessment(
-        newGrade: Int,
-        newFeedback: String?,
-        submissionId: Long,
-        cachingService: CachingService,
-        courseExId: Long,
-        studentId: String
-    ) {
-        transaction {
-            AutomaticAssessment.insert {
-                it[student] = studentId
-                it[courseExercise] = courseExId
-                it[submission] = submissionId
-                it[createdAt] = DateTime.now()
-                it[grade] = newGrade
-                it[feedback] = newFeedback
-            }
-
-            Submission.update({ Submission.id eq submissionId }) {
-                it[autoGradeStatus] = AutoGradeStatus.COMPLETED
-                if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
-                    it[grade] = newGrade
-                    it[isAutoGrade] = true
-                }
-            }
-
-            cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
-        }
-    }
-
-    private fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, studentId: String, courseExId: Long) {
-        transaction {
-            Submission.update({ Submission.id eq submissionId }) {
-                it[autoGradeStatus] = AutoGradeStatus.FAILED
-                if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
-                    it[grade] = null
-                    it[isAutoGrade] = true
-                }
-            }
-        }
-
-        cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
-    }
-
-    private fun anyPreviousTeacherAssessmentContainsGrade(studentId: String, courseExercise: Long): Boolean =
-        transaction {
-            TeacherAssessment
-                .select {
-                    (TeacherAssessment.student eq studentId) and (TeacherAssessment.courseExercise eq courseExercise) and TeacherAssessment.grade.isNotNull()
-                }.count() > 0
-        }
-
 }
 
