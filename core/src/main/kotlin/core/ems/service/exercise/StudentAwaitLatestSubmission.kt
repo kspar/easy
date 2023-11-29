@@ -34,7 +34,7 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
         caller: EasyUser
     ) {
 
-        log.debug { "Getting latest submission for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
+        log.info { "Getting latest submission for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 

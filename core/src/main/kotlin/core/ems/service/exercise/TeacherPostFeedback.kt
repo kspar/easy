@@ -41,7 +41,7 @@ class TeacherFeedbackController(val adocService: AdocService) {
         caller: EasyUser
     ) {
 
-        log.debug { "Set feedback by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.info { "Set feedback by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
         val (callerId, courseExId, submissionId) = assertAssessmentControllerChecks(
             caller,

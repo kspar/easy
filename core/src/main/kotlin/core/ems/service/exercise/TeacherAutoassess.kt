@@ -51,7 +51,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
         @Valid @RequestBody dto: Req,
         caller: EasyUser
     ): Resp {
-        log.debug { "Teacher/admin ${caller.id} autoassessing solution to exercise $exerciseIdStr" }
+        log.info { "Teacher/admin ${caller.id} autoassessing solution to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
         val courseId = courseIdStr?.idToLongOrInvalidReq()
 

@@ -54,7 +54,7 @@ class UpdateExercise(private val adocService: AdocService) {
     @PutMapping("/exercises/{exerciseId}")
     fun controller(@PathVariable("exerciseId") exIdString: String, @Valid @RequestBody req: Req, caller: EasyUser) {
 
-        log.debug { "Update exercise $exIdString by ${caller.id}" }
+        log.info { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }

@@ -24,11 +24,11 @@ import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class CreateDirController {
+    private val log = KotlinLogging.logger {}
+
     data class Req(
         @JsonProperty("name") @field:NotBlank @field:Size(max = 100) val name: String,
         @JsonProperty("parent_dir_id") @field:Size(max = 100) val parentId: String?,
@@ -39,7 +39,7 @@ class CreateDirController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/lib/dirs")
     fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
-        log.debug { "Creating lib dir ${body.name} in dir ${body.parentId} by ${caller.id}" }
+        log.info { "Creating lib dir ${body.name} in dir ${body.parentId} by ${caller.id}" }
 
         val parentId = body.parentId?.idToLongOrInvalidReq()
 
@@ -50,10 +50,8 @@ class CreateDirController {
 
         return Resp(insertDir(body.name, parentId, caller).toString())
     }
-}
 
-private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser): Long {
-    return transaction {
+    private fun insertDir(newDirName: String, parentDirId: Long?, caller: EasyUser): Long = transaction {
         val now = DateTime.now()
 
         val newDirId = Dir.insertAndGetId {

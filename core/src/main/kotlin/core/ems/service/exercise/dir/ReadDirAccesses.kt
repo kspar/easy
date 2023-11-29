@@ -82,7 +82,7 @@ class ReadDirAccesses {
     ): Resp {
         val log = KotlinLogging.logger {}
 
-        log.debug { "Read accesses for dir $dirIdString by ${caller.id}" }
+        log.info { "Read accesses for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
 

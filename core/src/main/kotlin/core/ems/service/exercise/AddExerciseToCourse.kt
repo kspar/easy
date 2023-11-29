@@ -4,18 +4,23 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.AdocService
+import core.ems.service.IDX_STEP
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.isExerciseOnCourse
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.max
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -59,7 +64,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         @Valid @RequestBody body: Req,
         caller: EasyUser
     ): Resp {
-        log.debug { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
+        log.info { "Adding exercise ${body.exerciseId} to course $courseIdString by ${caller.id}" }
 
         val courseId = courseIdString.idToLongOrInvalidReq()
         val exerciseId = body.exerciseId.idToLongOrInvalidReq()

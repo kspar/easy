@@ -34,7 +34,7 @@ class PutDirAccess {
         @PathVariable("dirId") dirIdString: String,
         caller: EasyUser
     ) {
-        log.debug { "Put dir access ${body.level} to group:${body.groupId}, email:${body.email} or any:${body.anyAccess} for dir $dirIdString by ${caller.id}" }
+        log.info { "Put dir access ${body.level} to group:${body.groupId}, email:${body.email} or any:${body.anyAccess} for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
 

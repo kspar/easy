@@ -17,12 +17,12 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 
 @RestController
 @RequestMapping("/v2")
 class ReadDirParentsController {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("parents") val parents: List<ParentDirResp>,
@@ -40,7 +40,7 @@ class ReadDirParentsController {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Read parents for dir $dirIdString by ${caller.id}" }
+        log.info { "Read parents for dir $dirIdString by ${caller.id}" }
 
         val dirId = dirIdString.idToLongOrInvalidReq()
         caller.assertAccess { libraryDir(dirId, DirAccessLevel.P) }
@@ -69,18 +69,16 @@ class ReadDirParentsController {
 
     private data class ParentDir(val id: Long, val name: String, val parentId: Long?)
 
-    private fun selectDir(dirId: Long): ParentDir {
-        return transaction {
-            Dir.slice(Dir.name, Dir.parentDir)
-                .select {
-                    Dir.id eq dirId
-                }.map {
-                    ParentDir(
-                        dirId,
-                        it[Dir.name],
-                        it[Dir.parentDir]?.value,
-                    )
-                }.single()
-        }
+    private fun selectDir(dirId: Long): ParentDir = transaction {
+        Dir.slice(Dir.name, Dir.parentDir)
+            .select {
+                Dir.id eq dirId
+            }.map {
+                ParentDir(
+                    dirId,
+                    it[Dir.name],
+                    it[Dir.parentDir]?.value,
+                )
+            }.single()
     }
 }

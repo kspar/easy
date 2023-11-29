@@ -33,7 +33,7 @@ class RemoveExerciseFromCourse {
         @PathVariable("courseExerciseId") courseExIdStr: String,
         caller: EasyUser
     ) {
-        log.debug { "Delete course exercise $courseExIdStr on course $courseIdStr by ${caller.id}" }
+        log.info { "Delete course exercise $courseExIdStr on course $courseIdStr by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 

@@ -28,7 +28,7 @@ class TeacherReadSubmissionSummariesController {
         caller: EasyUser
     ): ExercisesResp {
 
-        log.debug {
+        log.info {
             "Getting submission summaries for ${caller.id} on course exercise $courseExerciseIdString on course $courseIdString"
         }
         val courseId = courseIdString.idToLongOrInvalidReq()

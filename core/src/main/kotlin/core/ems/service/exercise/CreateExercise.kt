@@ -56,7 +56,7 @@ class CreateExercise(private val adocService: AdocService) {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/exercises")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
-        log.debug { "Create exercise '${dto.title}' in dir ${dto.parentDirIdStr} by ${caller.id}" }
+        log.info { "Create exercise '${dto.title}' in dir ${dto.parentDirIdStr} by ${caller.id}" }
 
         val parentDirId = dto.parentDirIdStr?.idToLongOrInvalidReq()
 

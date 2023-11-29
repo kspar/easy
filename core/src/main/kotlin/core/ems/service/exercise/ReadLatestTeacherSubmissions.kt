@@ -45,13 +45,13 @@ class ReadLatestTeacherSubmissions {
         caller: EasyUser
     ): Resp? {
 
-        log.debug { "Getting latest teacher submissions for ${caller.id} on exercise $exerciseIdStr" }
+        log.info { "Getting latest teacher submissions for ${caller.id} on exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
         return selectLatestTeacherSubmissions(exerciseId, caller.id, offsetStr?.toLongOrNull(), limitStr?.toIntOrNull())
     }
 
-    private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, offset: Long?, limit: Int?): Resp {
-        return transaction {
+    private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, offset: Long?, limit: Int?): Resp =
+        transaction {
             val selectQuery = TeacherSubmission
                 .select {
                     (TeacherSubmission.exercise eq exerciseId) and
@@ -73,5 +73,4 @@ class ReadLatestTeacherSubmissions {
 
             Resp(submissions.size, submissions)
         }
-    }
 }

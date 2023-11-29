@@ -31,7 +31,7 @@ class AnonymousReadExerciseDetails {
     @GetMapping("/unauth/exercises/{exerciseId}/anonymous/details")
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String): Resp {
 
-        log.debug { "Getting anonymous exercise details for exercise $exerciseIdStr" }
+        log.info { "Getting anonymous exercise details for exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)

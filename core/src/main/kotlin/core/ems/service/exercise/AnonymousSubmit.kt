@@ -47,7 +47,7 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     @PostMapping("/unauth/exercises/{exerciseId}/anonymous/autoassess")
     fun controller(@PathVariable("exerciseId") exerciseIdStr: String, @Valid @RequestBody solutionBody: Req): Resp {
 
-        log.debug { "Anonymous submission to exercise $exerciseIdStr" }
+        log.info { "Anonymous submission to exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)

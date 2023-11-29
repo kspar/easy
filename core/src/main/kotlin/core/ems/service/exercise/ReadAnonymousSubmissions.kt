@@ -37,7 +37,7 @@ class ReadAnonymousSubmissions {
     @GetMapping("/exercises/{exerciseId}/anonymous/submissions")
     fun controller(@PathVariable("exerciseId") exerciseIdString: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting anonymous submissions for '${caller.id}' on exercise '$exerciseIdString'" }
+        log.info { "Getting anonymous submissions for '${caller.id}' on exercise '$exerciseIdString'" }
         val exerciseId = exerciseIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }

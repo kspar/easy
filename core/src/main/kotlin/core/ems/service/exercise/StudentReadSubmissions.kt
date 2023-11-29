@@ -48,7 +48,7 @@ class StudentReadSubmissionsController {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Getting submissions for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr (limit: $limitStr, offset: $offsetStr)" }
+        log.info { "Getting submissions for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr (limit: $limitStr, offset: $offsetStr)" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 

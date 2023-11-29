@@ -78,7 +78,7 @@ class TeacherReadExDetailsCont {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Getting exercise details for ${caller.id} for course exercise $courseExerciseIdString on course $courseIdString" }
+        log.info { "Getting exercise details for ${caller.id} for course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId, true) }

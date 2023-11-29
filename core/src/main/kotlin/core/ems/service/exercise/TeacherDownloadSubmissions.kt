@@ -42,7 +42,7 @@ class TeacherDownloadSubmissionsController {
         response: HttpServletResponse
     ) {
 
-        log.debug { "${caller.id} is downloading submissions for exercise $exerciseIdStr on courses ${req.courses} " }
+        log.info { "${caller.id} is downloading submissions for exercise $exerciseIdStr on courses ${req.courses} " }
 
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 

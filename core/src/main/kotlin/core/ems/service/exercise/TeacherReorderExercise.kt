@@ -38,7 +38,7 @@ class TeacherReorderExerciseController {
         caller: EasyUser
     ) {
 
-        log.debug { "Reorder course exercise $courseExerciseIdStr to new index ${dto.newIndex} (caller: ${caller.id})" }
+        log.info { "Reorder course exercise $courseExerciseIdStr to new index ${dto.newIndex} (caller: ${caller.id})" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()

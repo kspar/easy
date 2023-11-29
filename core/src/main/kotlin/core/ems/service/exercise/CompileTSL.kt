@@ -48,7 +48,7 @@ class CompileTSL {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/tsl/compile")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
-        log.debug { "Compile TSL by ${caller.id}" }
+        log.info { "Compile TSL by ${caller.id}" }
 
         val resp = try {
             compileTSLToResp(dto.tslSpec, dto.format)

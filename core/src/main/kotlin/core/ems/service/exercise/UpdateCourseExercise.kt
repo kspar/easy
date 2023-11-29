@@ -76,7 +76,7 @@ class UpdateCourseExercise(private val adocService: AdocService) {
         @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
-        log.debug { "Update course exercise $courseExIdStr on course $courseIdStr by ${caller.id}" }
+        log.info { "Update course exercise $courseExIdStr on course $courseIdStr by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 

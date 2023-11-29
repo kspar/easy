@@ -42,7 +42,7 @@ class StudentReadLatestSubmissionDraftController {
         response: HttpServletResponse, caller: EasyUser
     ): Resp? {
 
-        log.debug { "Getting latest submission draft for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
+        log.info { "Getting latest submission draft for student ${caller.id} on course exercise $courseExerciseIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 

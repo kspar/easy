@@ -30,7 +30,7 @@ class SetSubmissionSeen {
         @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
-        log.debug { "Setting submissions seen by ${caller.id} for submission $submissionIdString" }
+        log.info { "Setting submissions seen by ${caller.id} for submission $submissionIdString" }
 
         val (_, _, submissionId) = assertAssessmentControllerChecks(
             caller,

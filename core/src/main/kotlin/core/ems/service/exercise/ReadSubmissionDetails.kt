@@ -43,7 +43,7 @@ class ReadSubmissionDetails {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Getting submissions details for ${caller.id} on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.info { "Getting submissions details for ${caller.id} on course exercise $courseExerciseIdString on course $courseIdString" }
 
 
         val (_, courseExId, submissionId) = assertAssessmentControllerChecks(

@@ -43,7 +43,7 @@ class ReadAllSubmissionsByStudent {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Getting submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.info { "Getting submissions for ${caller.id} by $studentId on course exercise $courseExerciseIdString on course $courseIdString" }
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 

@@ -40,7 +40,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
         caller: EasyUser
     ) {
 
-        log.debug { "Set grade by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
+        log.info { "Set grade by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
         val (callerId, courseExId, submissionId) = assertAssessmentControllerChecks(
             caller,

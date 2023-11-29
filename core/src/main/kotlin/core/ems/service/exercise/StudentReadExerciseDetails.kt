@@ -49,7 +49,7 @@ class StudentReadExerciseDetailsController {
         caller: EasyUser
     ): Resp? {
 
-        log.debug { "Getting exercise details for student ${caller.id} on course exercise $courseExIdStr" }
+        log.info { "Getting exercise details for student ${caller.id} on course exercise $courseExIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 

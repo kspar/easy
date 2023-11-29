@@ -80,7 +80,7 @@ class ReadExercise {
     @GetMapping("/exercises/{exerciseId}")
     fun controller(@PathVariable("exerciseId") exIdString: String, caller: EasyUser): Resp {
 
-        log.debug { "Read exercise $exIdString by ${caller.id}" }
+        log.info { "Read exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }

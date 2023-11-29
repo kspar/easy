@@ -53,7 +53,7 @@ class StudentSubmitCont(
         @Valid @RequestBody solutionBody: Req, caller: EasyUser
     ) {
 
-        log.debug { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
+        log.info { "Creating new submission by ${caller.id} on course exercise $courseExIdStr on course $courseIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 

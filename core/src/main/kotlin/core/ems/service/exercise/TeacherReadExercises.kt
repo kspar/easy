@@ -27,7 +27,7 @@ class TeacherReadCourseExercisesController {
     @GetMapping("/teacher/courses/{courseId}/exercises")
     fun controller(@PathVariable("courseId") courseIdString: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
+        log.info { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId, true) }
