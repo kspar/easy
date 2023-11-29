@@ -1,9 +1,11 @@
 package core.aas.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.conf.security.EasyUser
 import core.db.ContainerImage
 import core.exception.InvalidRequestException
 import core.exception.ReqError
+import mu.KotlinLogging
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -18,6 +20,7 @@ import javax.validation.constraints.NotBlank
 @RestController
 @RequestMapping("/v2")
 class CreateImageController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("id", required = true) @field:NotBlank val id: String)
 
@@ -25,13 +28,12 @@ class CreateImageController {
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/container-images")
-    fun controller(@Valid @RequestBody body: Req): Resp {
+    fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
+        log.info { "${caller.id} is creating container image (id = ${body.id})" }
         return Resp(createContainerImage(body))
     }
-}
 
-private fun createContainerImage(newContainer: CreateImageController.Req): String {
-    return transaction {
+    private fun createContainerImage(newContainer: Req): String = transaction {
 
         if (ContainerImage.select { ContainerImage.id eq newContainer.id }.count() == 0L) {
             ContainerImage.insertAndGetId { it[id] = newContainer.id }.value
@@ -44,4 +46,6 @@ private fun createContainerImage(newContainer: CreateImageController.Req): Strin
             )
         }
     }
+
 }
+

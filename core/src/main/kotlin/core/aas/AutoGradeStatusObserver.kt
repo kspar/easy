@@ -6,7 +6,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 
-private val log = KotlinLogging.logger {}
 
 enum class ObserverCallerType {
     TEACHER,
@@ -15,6 +14,8 @@ enum class ObserverCallerType {
 
 @Service
 class AutoAssessStatusObserver {
+    private val log = KotlinLogging.logger {}
+
     private data class KeyPair(val submissionId: Long, val callerType: ObserverCallerType)
 
     private val statuses: MutableMap<KeyPair, Job> = ConcurrentHashMap()

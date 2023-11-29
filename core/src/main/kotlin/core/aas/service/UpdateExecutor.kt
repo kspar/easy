@@ -21,11 +21,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class UpdateExecutorController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
@@ -39,13 +39,11 @@ class UpdateExecutorController {
     @PutMapping("/executors/{executorId}")
     fun controller(@PathVariable("executorId") executorId: String, @Valid @RequestBody body: Req, caller: EasyUser) {
 
-        log.debug { "Update executor $executorId by ${caller.id}" }
+        log.info { "Update executor $executorId by ${caller.id}" }
         updateExecutor(executorId.idToLongOrInvalidReq(), body)
     }
-}
 
-private fun updateExecutor(executorId: Long, body: UpdateExecutorController.Req) {
-    return transaction {
+    private fun updateExecutor(executorId: Long, body: Req) = transaction {
         val executorExists =
             Executor.select { Executor.id eq executorId }
                 .count() == 1L

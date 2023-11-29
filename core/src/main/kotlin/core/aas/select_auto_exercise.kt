@@ -21,34 +21,32 @@ data class AutoExerciseExecutorBasic(
 )
 
 
-fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails {
-    return transaction {
+fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails = transaction {
 
-        val assets =
-            Asset.select { Asset.autoExercise eq autoExerciseId }
-                .map { it[Asset.fileName] to it[Asset.fileContent] }
+    val assets =
+        Asset.select { Asset.autoExercise eq autoExerciseId }
+            .map { it[Asset.fileName] to it[Asset.fileContent] }
 
-        val executors =
-            (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
-                .select { AutoExercise.id eq autoExerciseId }
-                .map {
-                    AutoExerciseExecutorBasic(
-                        it[Executor.id].value,
-                        it[Executor.name]
-                    )
-                }
+    val executors =
+        (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
+            .select { AutoExercise.id eq autoExerciseId }
+            .map {
+                AutoExerciseExecutorBasic(
+                    it[Executor.id].value,
+                    it[Executor.name]
+                )
+            }
 
-        AutoExercise.select {
-            AutoExercise.id eq autoExerciseId
-        }.map {
-            AutoExerciseDetails(
-                it[AutoExercise.gradingScript],
-                it[AutoExercise.containerImage].value,
-                it[AutoExercise.maxTime],
-                it[AutoExercise.maxMem],
-                assets,
-                executors
-            )
-        }.single()
-    }
+    AutoExercise.select {
+        AutoExercise.id eq autoExerciseId
+    }.map {
+        AutoExerciseDetails(
+            it[AutoExercise.gradingScript],
+            it[AutoExercise.containerImage].value,
+            it[AutoExercise.maxTime],
+            it[AutoExercise.maxMem],
+            assets,
+            executors
+        )
+    }.single()
 }

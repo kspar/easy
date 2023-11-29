@@ -11,29 +11,25 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
-
 
 @RestController
 @RequestMapping("/v2")
 class ReadImagesController {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(@JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/container-images")
     fun controller(caller: EasyUser): List<Resp> {
-        log.debug { "Getting images for ${caller.id}" }
+        log.info { "Getting images for ${caller.id}" }
         return selectAllImages()
     }
-}
 
-
-private fun selectAllImages(): List<ReadImagesController.Resp> {
-    return transaction {
+    private fun selectAllImages(): List<Resp> = transaction {
         ContainerImage
             .selectAll()
             .sortedBy { ContainerImage.id }
-            .map { ReadImagesController.Resp(it[ContainerImage.id].value) }
+            .map { Resp(it[ContainerImage.id].value) }
     }
 }

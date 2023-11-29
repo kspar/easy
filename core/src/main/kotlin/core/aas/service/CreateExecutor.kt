@@ -2,7 +2,9 @@ package core.aas.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoGradeScheduler
+import core.conf.security.EasyUser
 import core.db.Executor
+import mu.KotlinLogging
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
@@ -17,6 +19,7 @@ import javax.validation.constraints.Size
 @RestController
 @RequestMapping("/v2")
 class CreateExecutorController(private val autoGradeScheduler: AutoGradeScheduler) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("name", required = true) @field:NotBlank @field:Size(max = 100) val name: String,
@@ -28,15 +31,15 @@ class CreateExecutorController(private val autoGradeScheduler: AutoGradeSchedule
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/executors")
-    fun controller(@Valid @RequestBody body: Req): Resp {
+    fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
+        log.info { "${caller.id} is creating executor (name = ${body.name})" }
+
         val executorId = insertExecutor(body)
         autoGradeScheduler.addExecutorsFromDB()
         return Resp(executorId.toString())
     }
-}
 
-private fun insertExecutor(newExecutor: CreateExecutorController.Req): Long {
-    return transaction {
+    private fun insertExecutor(newExecutor: Req): Long = transaction {
         Executor.insertAndGetId {
             it[name] = newExecutor.name
             it[baseUrl] = newExecutor.baseUrl
@@ -45,3 +48,4 @@ private fun insertExecutor(newExecutor: CreateExecutorController.Req): Long {
         }
     }.value
 }
+

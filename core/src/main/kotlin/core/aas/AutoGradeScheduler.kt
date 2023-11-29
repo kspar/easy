@@ -112,7 +112,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
             executors.putIfAbsent(it, PriorityLevel.values().associateWith { FunctionScheduler(::callExecutor) })
         }
 
-        log.debug { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
+        log.info { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
     }
 
     /**
@@ -126,6 +126,6 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
                 it[autoGradeStatus] = AutoGradeStatus.FAILED
             }
         }
-        log.debug { "Set $updated AutoGradeStatus from ${AutoGradeStatus.IN_PROGRESS} to ${AutoGradeStatus.FAILED}." }
+        log.info { "Set $updated AutoGradeStatus from ${AutoGradeStatus.IN_PROGRESS} to ${AutoGradeStatus.FAILED}." }
     }
 }

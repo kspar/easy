@@ -13,12 +13,11 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
-
 
 @RestController
 @RequestMapping("/v2")
 class ReadExecutorController {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("id") val id: String,
@@ -32,17 +31,14 @@ class ReadExecutorController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/executors")
     fun controller(caller: EasyUser): List<Resp> {
-        log.debug { "Getting executors for ${caller.id}" }
+        log.info { "Getting executors for ${caller.id}" }
         return selectAllExecutors()
     }
-}
 
-
-private fun selectAllExecutors(): List<ReadExecutorController.Resp> {
-    return transaction {
+    private fun selectAllExecutors(): List<Resp> = transaction {
         Executor.selectAll().sortedBy { Executor.id }
             .map {
-                ReadExecutorController.Resp(
+                Resp(
                     it[Executor.id].value.toString(),
                     it[Executor.name],
                     it[Executor.baseUrl],
