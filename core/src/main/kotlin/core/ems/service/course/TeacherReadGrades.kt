@@ -19,7 +19,7 @@ class TeacherReadGradesController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/teacher/{courseId}/grades")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): List<ExercisesResp> {
-        log.debug { "Getting grades for ${caller.id} on course $courseIdStr" }
+        log.info { "Getting grades for ${caller.id} on course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 

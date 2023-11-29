@@ -40,7 +40,7 @@ class GenerateCourseInvite {
     ): Resp {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        log.debug { "Creating invite on course $courseId by ${caller.id}" }
+        log.info { "Creating invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
             teacherOnCourse(courseId, false)

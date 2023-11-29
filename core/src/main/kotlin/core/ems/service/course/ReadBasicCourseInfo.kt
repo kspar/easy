@@ -30,7 +30,7 @@ class ReadBasicCourseInfo {
     @GetMapping("/courses/{courseId}/basic")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting basic course info for ${caller.id} for course $courseIdStr" }
+        log.info { "Getting basic course info for ${caller.id} for course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
@@ -39,18 +39,17 @@ class ReadBasicCourseInfo {
         return selectCourseInfo(courseId)
     }
 
-    private fun selectCourseInfo(courseId: Long): Resp =
-        transaction {
-            Course.slice(Course.title, Course.alias)
-                .select {
-                    Course.id eq courseId
-                }
-                .map {
-                    Resp(
-                        it[Course.title],
-                        it[Course.alias],
-                    )
-                }
-                .single()
-        }
+    private fun selectCourseInfo(courseId: Long): Resp = transaction {
+        Course.slice(Course.title, Course.alias)
+            .select {
+                Course.id eq courseId
+            }
+            .map {
+                Resp(
+                    it[Course.title],
+                    it[Course.alias],
+                )
+            }
+            .single()
+    }
 }

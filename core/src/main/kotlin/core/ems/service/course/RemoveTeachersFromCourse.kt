@@ -41,7 +41,7 @@ class RemoveTeachersFromCourseController {
         caller: EasyUser
     ) {
 
-        log.debug { "Removing teachers ${teachers.teachers.map { it.id }} from course $courseIdStr" }
+        log.info { "Removing teachers ${teachers.teachers.map { it.id }} from course $courseIdStr" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
@@ -76,7 +76,7 @@ class RemoveTeachersFromCourseController {
                 }
             }
 
-            log.debug { "Removing access from teachers (the rest already have no access): $teachersWithAccess" }
+            log.info { "Removing access from teachers (the rest already have no access): $teachersWithAccess" }
 
         }
     }

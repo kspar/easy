@@ -19,11 +19,11 @@ import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadParticipantsOnCourseController {
+    private val log = KotlinLogging.logger {}
 
     data class TeachersResp(
         @JsonProperty("id") val id: String,
@@ -69,7 +69,7 @@ class ReadParticipantsOnCourseController {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Getting participants on course $courseIdStr for ${caller.id} (role: $roleReq)" }
+        log.info { "Getting participants on course $courseIdStr for ${caller.id} (role: $roleReq)" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
@@ -87,6 +87,7 @@ class ReadParticipantsOnCourseController {
                     null,
                 )
             }
+
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId)
                 val studentsPending = selectStudentsPendingOnCourse(courseId, restrictedGroups)
@@ -98,6 +99,7 @@ class ReadParticipantsOnCourseController {
                     studentsMoodle
                 )
             }
+
             Role.ALL.paramValue, null -> {
                 val students = selectStudentsOnCourse(courseId)
                 val teachers = selectTeachersOnCourse(courseId)
@@ -110,6 +112,7 @@ class ReadParticipantsOnCourseController {
                     studentsMoodle
                 )
             }
+
             else -> throw InvalidRequestException("Invalid parameter value role=$roleReq")
         }
     }

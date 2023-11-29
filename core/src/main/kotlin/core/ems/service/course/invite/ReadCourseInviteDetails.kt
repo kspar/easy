@@ -39,7 +39,7 @@ class ReadCourseInviteDetails {
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp? {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        log.debug { "Reading course invite on course $courseId by ${caller.id}" }
+        log.info { "Reading course invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
             teacherOnCourse(courseId, false)

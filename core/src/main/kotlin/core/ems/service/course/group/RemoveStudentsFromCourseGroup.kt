@@ -63,7 +63,7 @@ class RemoveStudentsFromCourseGroupController {
         val pendingStudentEmails = body.pendingStudents.map { it.email }
         val moodlePendingStudentUnames = body.moodlePendingStudents.map { it.moodleUsername }
 
-        log.debug {
+        log.info {
             "Remove students $activeStudentIds, $pendingStudentEmails, $moodlePendingStudentUnames from group " +
                     "$groupIdStr on course $courseIdStr by ${caller.id}"
         }

@@ -25,7 +25,7 @@ class DeleteCourseInvite {
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        log.debug { "Deleting course invite on course $courseId by ${caller.id}" }
+        log.info { "Deleting course invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
             teacherOnCourse(courseId, false)

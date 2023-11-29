@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadStudentCourses {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("courses") val courses: List<CourseResp>
@@ -32,7 +32,7 @@ class ReadStudentCourses {
     @GetMapping("/student/courses")
     fun controller(caller: EasyUser): Resp {
         val callerId = caller.id
-        log.debug { "Getting courses for student $callerId" }
+        log.info { "Getting courses for student $callerId" }
         return selectCoursesForStudent(callerId)
     }
 

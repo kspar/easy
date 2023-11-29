@@ -45,7 +45,7 @@ class RemoveTeachersFromCourseGroupController {
         caller: EasyUser
     ): Resp {
         val teacherIds = body.teachers.map { it.id }
-        log.debug { "Remove teachers $teacherIds from group $groupIdStr on course $courseIdStr by ${caller.id}" }
+        log.info { "Remove teachers $teacherIds from group $groupIdStr on course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()

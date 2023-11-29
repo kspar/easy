@@ -39,7 +39,7 @@ class SendPendingInvite(val sendMailService: SendMailService) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val emails = body.students.map { it.email }
 
-        log.debug { "Sending email invites to students $emails on course $courseId by ${caller.id}" }
+        log.info { "Sending email invites to students $emails on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
             teacherOnCourse(courseId, true)

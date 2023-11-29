@@ -50,7 +50,7 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
         @RequestBody @Valid body: Req, caller: EasyUser
     ): Resp {
 
-        log.debug { "Adding access to course $courseIdStr to students $body by ${caller.id}" }
+        log.info { "Adding access to course $courseIdStr to students $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         val students = body.students.map {
@@ -97,8 +97,8 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
             }.count() == 0L
         }
 
-        log.debug { "Granting access to students (the rest already have access): $newStudentsWithAccount" }
-        log.debug { "Granting pending access to students: $studentsNoAccount" }
+        log.info { "Granting access to students (the rest already have access): $newStudentsWithAccount" }
+        log.info { "Granting pending access to students: $studentsNoAccount" }
 
         newStudentsWithAccount.forEach { newStudent ->
             // TODO: maybe can batchInsert

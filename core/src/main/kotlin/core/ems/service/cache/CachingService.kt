@@ -1,10 +1,10 @@
 package core.ems.service.cache
 
 import core.db.*
-import core.ems.service.*
 import core.ems.service.article.ReadArticleDetailsController
-import core.exception.InvalidRequestException
-import core.exception.ReqError
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.selectArticleAliases
+import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -23,14 +23,13 @@ const val countSubmissionsCache = "submissions"
 const val teacherCache = "teacher"
 const val countTotalUsersCache = "users"
 
-private val log = KotlinLogging.logger {}
-
 
 /**
  * Has to be a separate Spring component. Do not use directly - only through other Services.
  */
 @Service
 class CachingService(val cacheManager: CacheManager) {
+    private val log = KotlinLogging.logger {}
 
     fun invalidate(cacheName: String) {
         log.debug { "Invalidating '$cacheName' cache." }
@@ -45,8 +44,8 @@ class CachingService(val cacheManager: CacheManager) {
     }
 
     @Cacheable(articleCache)
-    fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp {
-        return transaction {
+    fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp =
+        transaction {
 
             val articleId = ArticleAlias.slice(ArticleAlias.article)
                 .select { ArticleAlias.id eq articleIdOrAlias }
@@ -104,10 +103,8 @@ class CachingService(val cacheManager: CacheManager) {
                         if (isAdmin) it[Article.public] else null,
                         if (isAdmin) selectArticleAliases(it[Article.id].value) else null
                     )
-                }.singleOrNull()
-                ?: throw InvalidRequestException("No article with id $articleId found", ReqError.ARTICLE_NOT_FOUND)
+                }.singleOrInvalidRequest()
         }
-    }
 
 
     data class Acc(
@@ -122,47 +119,39 @@ class CachingService(val cacheManager: CacheManager) {
     ) : Serializable
 
     @Cacheable(value = [accountCache], unless = "#result == null")
-    fun selectAccount(username: String): Acc? {
+    fun selectAccount(username: String): Acc? = transaction {
         log.debug { "$username not in 'account' cache. Executing select." }
-        return transaction {
-            Account.select { Account.id eq username }
-                .map {
-                    Acc(
-                        it[Account.id].value,
-                        it[Account.email],
-                        it[Account.moodleUsername],
-                        it[Account.givenName],
-                        it[Account.familyName],
-                        it[Account.createdAt],
-                        it[Account.idMigrationDone],
-                        it[Account.preMigrationId],
-                    )
-                }.singleOrNull()
-        }
+        Account.select { Account.id eq username }
+            .map {
+                Acc(
+                    it[Account.id].value,
+                    it[Account.email],
+                    it[Account.moodleUsername],
+                    it[Account.givenName],
+                    it[Account.familyName],
+                    it[Account.createdAt],
+                    it[Account.idMigrationDone],
+                    it[Account.preMigrationId],
+                )
+            }.singleOrNull()
     }
 
     @Cacheable(value = [studentCache], unless = "#result == false")
-    fun studentExists(studentUsername: String): Boolean {
+    fun studentExists(studentUsername: String): Boolean = transaction {
         log.debug { "$studentUsername not in 'student' cache. Executing select." }
-        return transaction {
-            Student.select { Student.id eq studentUsername }.count() == 1L
-        }
+        Student.select { Student.id eq studentUsername }.count() == 1L
     }
 
     @Cacheable(value = [teacherCache], unless = "#result == false")
-    fun teacherExists(teacherUsername: String): Boolean {
+    fun teacherExists(teacherUsername: String): Boolean = transaction {
         log.debug { "$teacherUsername not in 'teacher' cache. Executing select." }
-        return transaction {
-            Teacher.select { Teacher.id eq teacherUsername }.count() == 1L
-        }
+        Teacher.select { Teacher.id eq teacherUsername }.count() == 1L
     }
 
     @Cacheable(value = [adminCache], unless = "#result == false")
-    fun adminExists(adminUsername: String): Boolean {
+    fun adminExists(adminUsername: String): Boolean = transaction {
         log.debug { "$adminUsername not in 'admin' cache. Executing select." }
-        return transaction {
-            Admin.select { Admin.id eq adminUsername }.count() == 1L
-        }
+        Admin.select { Admin.id eq adminUsername }.count() == 1L
     }
 
     @Cacheable(countSubmissionsCache)

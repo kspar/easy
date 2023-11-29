@@ -15,11 +15,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class UpdateCourse {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String,
@@ -29,7 +29,7 @@ class UpdateCourse {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/courses/{courseId}")
     fun controller(@PathVariable("courseId") courseIdStr: String, @Valid @RequestBody dto: Req, caller: EasyUser) {
-        log.debug { "Update course $courseIdStr by ${caller.id}" }
+        log.info { "Update course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         caller.assertAccess {

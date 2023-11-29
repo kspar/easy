@@ -54,7 +54,7 @@ class AddTeachersToCourse {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Adding access to course $courseIdStr to teachers $body by ${caller.id}" }
+        log.info { "Adding access to course $courseIdStr to teachers $body by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess {

@@ -33,7 +33,7 @@ class DeleteCourseGroupController {
         @PathVariable("groupId") groupIdStr: String,
         caller: EasyUser
     ) {
-        log.debug { "Delete group $groupIdStr on course $courseIdStr by ${caller.id}" }
+        log.info { "Delete group $groupIdStr on course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()

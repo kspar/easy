@@ -29,7 +29,7 @@ class SelfAddToCourseByInvite {
     @Secured("ROLE_STUDENT")
     @PostMapping("/courses/self-add/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
-        log.debug { "Self adding to course by invite $inviteId by ${caller.id}" }
+        log.info { "Self adding to course by invite $inviteId by ${caller.id}" }
 
         return selfAddByInvite(inviteId, caller.id)
     }

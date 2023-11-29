@@ -31,7 +31,7 @@ class GetCourseInfoByInvite {
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/invite/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
-        log.debug { "Finding course title by invite $inviteId by ${caller.id}" }
+        log.info { "Finding course title by invite $inviteId by ${caller.id}" }
 
         return selectCourseInfoByInvite(inviteId)
     }

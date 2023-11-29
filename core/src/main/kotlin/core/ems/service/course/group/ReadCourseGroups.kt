@@ -37,7 +37,7 @@ class ReadCourseGroupsController {
     @GetMapping("/courses/{courseId}/groups")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting all groups on course $courseIdStr for ${caller.id}" }
+        log.info { "Getting all groups on course $courseIdStr for ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         caller.assertAccess { teacherOnCourse(courseId, true) }

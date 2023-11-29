@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadTeacherCourses {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("courses") val courses: List<CourseResp>
@@ -35,10 +35,10 @@ class ReadTeacherCourses {
         val callerId = caller.id
 
         val courses = if (caller.isAdmin()) {
-            log.debug { "Getting courses for admin $callerId" }
+            log.info { "Getting courses for admin $callerId" }
             selectCoursesForAdmin()
         } else {
-            log.debug { "Getting courses for teacher $callerId" }
+            log.info { "Getting courses for teacher $callerId" }
             selectCoursesForTeacher(callerId)
         }
 

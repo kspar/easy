@@ -41,7 +41,7 @@ class AddTeachersToCourseGroupController {
         caller: EasyUser
     ) {
         val teacherIds = dto.teachers.map { it.id }
-        log.debug { "Add teachers $teacherIds to group $groupIdStr on course $courseIdStr by ${caller.id}" }
+        log.info { "Add teachers $teacherIds to group $groupIdStr on course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()

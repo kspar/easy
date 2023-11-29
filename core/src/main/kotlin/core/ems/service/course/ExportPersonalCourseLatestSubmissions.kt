@@ -35,7 +35,7 @@ class ExportPersonalCourseLatestSubmissions {
     @Secured("ROLE_STUDENT")
     @GetMapping("/courses/{courseId}/export/submissions")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): ResponseEntity<ByteArrayResource> {
-        log.debug { "'${caller.id}' is exporting its own submissions in course '$courseIdStr'" }
+        log.info { "'${caller.id}' is exporting its own submissions in course '$courseIdStr'" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         caller.assertAccess { studentOnCourse(courseId) }

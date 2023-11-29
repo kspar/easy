@@ -40,7 +40,7 @@ class CreateCourseGroupController {
         @Valid @RequestBody dto: Req,
         caller: EasyUser
     ): Resp {
-        log.debug { "Create group '${dto.name}' on course $courseIdStr by ${caller.id}" }
+        log.info { "Create group '${dto.name}' on course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 

@@ -27,11 +27,10 @@ import javax.validation.constraints.Size
 import kotlin.math.roundToInt
 
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class TeacherCheckSimilarityController {
+    private val log = KotlinLogging.logger {}
 
     /**
      * How to call this service:
@@ -91,7 +90,7 @@ class TeacherCheckSimilarityController {
         caller: EasyUser
     ): Resp {
 
-        log.debug { "Calculate similarity for exercise '$exIdString' by ${caller.id} with body: $body" }
+        log.info { "Calculate similarity for exercise '$exIdString' by ${caller.id} with body: $body" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
         val courses = body.courses.map { it.id.idToLongOrInvalidReq() }
 
@@ -111,15 +110,12 @@ class TeacherCheckSimilarityController {
 
         return Resp(submissionResp, scoresResp)
     }
-}
 
-
-private fun selectSubmissions(
-    exerciseId: Long,
-    courses: List<Long>,
-    submissions: List<Long>?
-): List<TeacherCheckSimilarityController.RespSubmission> {
-    return transaction {
+    private fun selectSubmissions(
+        exerciseId: Long,
+        courses: List<Long>,
+        submissions: List<Long>?
+    ): List<RespSubmission> = transaction {
 
         val query = (Course innerJoin CourseExercise innerJoin (Submission innerJoin (Student innerJoin Account)))
             .slice(
@@ -151,7 +147,7 @@ private fun selectSubmissions(
 
 
         query.map {
-            TeacherCheckSimilarityController.RespSubmission(
+            RespSubmission(
                 it[Submission.id].value.toString(),
                 it[Submission.createdAt],
                 it[Submission.solution],
@@ -161,56 +157,52 @@ private fun selectSubmissions(
             )
         }
     }
-}
 
-// TODO: 28.09.2022 add diff-match-batch Google's diff algorithm?
-// TODO: 28.09.2022 set a timeout
-private fun calculateScores(submissions: List<TeacherCheckSimilarityController.RespSubmission>): List<TeacherCheckSimilarityController.RespScore> {
-    if (submissions.size < 2) {
-        return emptyList()
-    }
-    val result = mutableSetOf<TeacherCheckSimilarityController.RespScore>()
-    submissions.forEachCombination(2) {
-        val first = it.toList()[0]
-        val second = it.toList()[1]
-        val r = TeacherCheckSimilarityController.RespScore(
-            first.id,
-            second.id,
-            diceCoefficient(
-                first.solution,
-                second.solution
-            ),
-            fuzzy(
-                first.solution,
-                second.solution
+    // TODO: 28.09.2022 add diff-match-batch Google's diff algorithm?
+    // TODO: 28.09.2022 set a timeout
+    private fun calculateScores(submissions: List<RespSubmission>): List<RespScore> {
+        if (submissions.size < 2) {
+            return emptyList()
+        }
+        val result = mutableSetOf<RespScore>()
+        submissions.forEachCombination(2) {
+            val first = it.toList()[0]
+            val second = it.toList()[1]
+            val r = RespScore(
+                first.id,
+                second.id,
+                diceCoefficient(
+                    first.solution,
+                    second.solution
+                ),
+                fuzzy(
+                    first.solution,
+                    second.solution
+                )
             )
-        )
 
-        result.add(r)
+            result.add(r)
+        }
+        return result.toList()
     }
-    return result.toList()
-}
 
-private fun fuzzy(s1: String, s2: String): Int {
-    return FuzzySearch.ratio(s1, s2)
-}
+    private fun fuzzy(s1: String, s2: String): Int = FuzzySearch.ratio(s1, s2)
 
-/**
- * Rewrote from: https://github.com/rrice/java-string-similarity
- * https://en.wikipedia.org/wiki/S%c3%b8rensen%e2%80%93Dice_coefficient
- */
-private fun diceCoefficient(first: String, second: String): Int {
-    val s1 = splitIntoBigrams(first)
-    val s2 = splitIntoBigrams(second)
+    /**
+     * Rewrote from: https://github.com/rrice/java-string-similarity
+     * https://en.wikipedia.org/wiki/S%c3%b8rensen%e2%80%93Dice_coefficient
+     */
+    private fun diceCoefficient(first: String, second: String): Int {
+        val s1 = splitIntoBigrams(first)
+        val s2 = splitIntoBigrams(second)
 
-    s1.retainAll(s2)
+        s1.retainAll(s2)
 
-    val nt = s1.size
-    return (100 * (2.0 * nt / (s1.size + s2.size))).roundToInt()
-}
+        val nt = s1.size
+        return (100 * (2.0 * nt / (s1.size + s2.size))).roundToInt()
+    }
 
-private fun splitIntoBigrams(s: String): TreeSet<String> {
-    return when {
+    private fun splitIntoBigrams(s: String): TreeSet<String> = when {
         s.length < 2 -> TreeSet<String>(listOf(s))
         else -> TreeSet<String>(s.windowed(2))
     }

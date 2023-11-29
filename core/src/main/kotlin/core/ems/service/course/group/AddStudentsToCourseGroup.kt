@@ -3,8 +3,12 @@ package core.ems.service.course.group
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
-import core.ems.service.access_control.*
+import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.canStudentAccessCourse
+import core.ems.service.access_control.courseGroupAccessible
+import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.assertGroupExistsOnCourse
+import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
@@ -55,7 +59,7 @@ class AddStudentsToCourseGroupController {
         val pendingStudentEmails = body.pendingStudents.map { it.email }
         val moodlePendingStudentUnames = body.moodlePendingStudents.map { it.moodleUsername }
 
-        log.debug {
+        log.info {
             "Add students $activeStudentIds, $pendingStudentEmails, $moodlePendingStudentUnames " +
                     "to group $groupIdStr on course $courseIdStr by ${caller.id}"
         }

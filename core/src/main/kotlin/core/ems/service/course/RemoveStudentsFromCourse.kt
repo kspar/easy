@@ -63,7 +63,7 @@ class RemoveStudentsFromCourseController(val cachingService: CachingService) {
         caller: EasyUser
     ): Resp {
 
-        log.debug {
+        log.info {
             "Removing active students ${body.activeStudents.map { it.id }} and " +
                     "pending students ${body.pendingStudents.map { it.email }} from course $courseIdStr by ${caller.id}"
         }
@@ -82,7 +82,7 @@ class RemoveStudentsFromCourseController(val cachingService: CachingService) {
         assertCallerCanAccessStudents(caller, courseId, studentIds, pendingStudentEmails)
 
         val (deleted, pendingDeleted) = deleteStudentsFromCourse(courseId, studentIds, pendingStudentEmails)
-        log.debug { "Removed $deleted active students and $pendingDeleted pending students" }
+        log.info { "Removed $deleted active students and $pendingDeleted pending students" }
 
         return Resp(deleted, pendingDeleted)
     }
