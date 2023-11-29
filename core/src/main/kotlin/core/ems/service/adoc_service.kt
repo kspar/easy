@@ -32,8 +32,8 @@ class AdocService {
         options.setAttributes(attributes)
 
         doctor.javaExtensionRegistry()
-                .postprocessor(LinkExternaliserProcessor())
-                .postprocessor(EasyCodeProcessor())
+            .postprocessor(LinkExternaliserProcessor())
+            .postprocessor(EasyCodeProcessor())
     }
 
     fun adocToHtml(content: String): String {
@@ -46,7 +46,7 @@ class LinkExternaliserProcessor : Postprocessor() {
         val jdoc = Jsoup.parse(output, "UTF-8")
         jdoc.getElementsByTag("a").forEach {
             it.attr("target", "_blank")
-                    .attr("rel", "noopener noreferrer")
+                .attr("rel", "noopener noreferrer")
         }
         return jdoc.body().html()
     }

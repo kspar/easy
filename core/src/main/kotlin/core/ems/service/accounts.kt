@@ -15,19 +15,15 @@ fun getUsernameByEmail(email: String): String? = transaction {
         }.singleOrNull()
 }
 
-fun teacherExists(username: String): Boolean {
-    return transaction {
-        Teacher.select {
-            Teacher.id eq username
-        }.count() > 0
-    }
+fun teacherExists(username: String): Boolean = transaction {
+    Teacher.select {
+        Teacher.id eq username
+    }.count() > 0
 }
 
-fun accountExists(username: String): Boolean {
-    return transaction {
-        Account.select {
-            Account.id eq username
-        }.count() > 0
-    }
+fun accountExists(username: String): Boolean = transaction {
+    Account.select {
+        Account.id eq username
+    }.count() > 0
 }
 

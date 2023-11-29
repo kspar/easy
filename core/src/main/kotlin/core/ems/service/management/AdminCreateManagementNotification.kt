@@ -15,29 +15,32 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AdminCreateManagementNotificationsController {
+    private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("message", required = true)
-                   @field:NotBlank @field:Size(max = 1000) val message: String)
+    data class Req(
+        @JsonProperty("message", required = true)
+        @field:NotBlank @field:Size(max = 1000) val message: String
+    )
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/management/notifications")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {
 
-        log.debug { "${caller.id} is creating new system management notification: $dto" }
+        log.info { "${caller.id} is creating new system management notification: $dto" }
 
         insertMessage(dto)
     }
-}
 
-private fun insertMessage(dto: AdminCreateManagementNotificationsController.Req) {
-    transaction {
-        ManagementNotification.insert {
-            it[message] = dto.message
+    private fun insertMessage(dto: Req) {
+        transaction {
+            ManagementNotification.insert {
+                it[message] = dto.message
+            }
         }
     }
 }
+

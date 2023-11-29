@@ -28,13 +28,15 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class UploadStoredFiledController {
 
-    data class Req(@JsonProperty("filename", required = true)
-                   @field:NotBlank
-                   @field:Size(max = 259)
-                   val filename: String,
-                   @field:NotBlank
-                   @field:Size(max = 134640000) // Approx 100,98 MB
-                   @JsonProperty("data", required = true) val data: String)
+    data class Req(
+        @JsonProperty("filename", required = true)
+        @field:NotBlank
+        @field:Size(max = 259)
+        val filename: String,
+        @field:NotBlank
+        @field:Size(max = 134640000) // Approx 100,98 MB
+        @JsonProperty("data", required = true) val data: String
+    )
 
     data class Resp(@JsonProperty("id") val id: String)
 
@@ -42,14 +44,11 @@ class UploadStoredFiledController {
     @PostMapping("/files")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
-        log.debug { "${caller.id} is uploading a file." }
+        log.info { "${caller.id} is uploading a file." }
         return Resp(insertStoredFile(caller.id, dto))
     }
-}
 
-
-private fun insertStoredFile(creator: String, req: UploadStoredFiledController.Req): String {
-    return transaction {
+    private fun insertStoredFile(creator: String, req: Req): String = transaction {
 
         val time = DateTime.now()
         val hash = hashString(req.data + time.toInstant().millis, "SHA-256", 20)
@@ -67,13 +66,13 @@ private fun insertStoredFile(creator: String, req: UploadStoredFiledController.R
             it[owner] = EntityID(creator, Teacher)
         }.value
     }
+
+    // https://gist.github.com/lovubuntu/164b6b9021f5ba54cefc67f60f7a1a25
+    private fun hashString(input: String, algorithm: String, n: Int): String = MessageDigest
+        .getInstance(algorithm)
+        .digest(input.toByteArray())
+        .take(n)
+        .fold("") { str, it -> str + "%02x".format(it) }
 }
 
-// https://gist.github.com/lovubuntu/164b6b9021f5ba54cefc67f60f7a1a25
-private fun hashString(input: String, algorithm: String, n: Int): String {
-    return MessageDigest
-            .getInstance(algorithm)
-            .digest(input.toByteArray())
-            .take(n)
-            .fold("", { str, it -> str + "%02x".format(it) })
-}
+

@@ -13,14 +13,16 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class CommonReadManagementNotificationsController {
+    private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("messages")
-                    @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>)
+    data class Resp(
+        @JsonProperty("messages")
+        @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>
+    )
 
     data class MessageResp(@JsonProperty("message") val message: String)
 
@@ -28,23 +30,23 @@ class CommonReadManagementNotificationsController {
     @GetMapping("/management/common/notifications")
     fun controller(caller: EasyUser): Resp {
 
-        log.debug { "Getting common system management notifications for ${caller.id}" }
+        log.info { "Getting common system management notifications for ${caller.id}" }
 
         return selectMessages()
     }
+
+    private fun selectMessages(): Resp = transaction {
+        Resp(
+            ManagementNotification.selectAll()
+                .orderBy(ManagementNotification.id, SortOrder.DESC)
+                .map {
+                    MessageResp(
+                        it[ManagementNotification.message]
+                    )
+                })
+    }
+
 }
 
-private fun selectMessages(): CommonReadManagementNotificationsController.Resp {
-    return transaction {
-        CommonReadManagementNotificationsController.Resp(
-                ManagementNotification.selectAll()
-                        .orderBy(ManagementNotification.id, SortOrder.DESC)
-                        .map {
-                            CommonReadManagementNotificationsController.MessageResp(
-                                    it[ManagementNotification.message]
-                            )
-                        })
-    }
-}
 
 

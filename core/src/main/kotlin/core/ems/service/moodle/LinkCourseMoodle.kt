@@ -17,7 +17,6 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
@@ -25,6 +24,7 @@ class MoodleLinkCourseController(
     val moodleStudentsSyncService: MoodleStudentsSyncService,
     val moodleGradesSyncService: MoodleGradesSyncService,
 ) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("moodle_props") val moodleProps: MoodleReq?,
@@ -46,10 +46,10 @@ class MoodleLinkCourseController(
     ) {
 
         if (body.moodleProps == null) {
-            log.debug { "Unlinking course $courseIdStr from Moodle by ${caller.id} (force: ${body.force})" }
+            log.info { "Unlinking course $courseIdStr from Moodle by ${caller.id} (force: ${body.force})" }
         } else {
             val moodleProps = body.moodleProps
-            log.debug {
+            log.info {
                 "Linking Moodle course ${moodleProps.moodleShortName} with course $courseIdStr by ${caller.id} " +
                         "(sync students: ${moodleProps.syncStudents}, sync grades: ${moodleProps.syncGrades}, force: ${body.force})"
             }

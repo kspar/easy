@@ -33,14 +33,16 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class ReportLogController(private val mailService: SendMailService) {
 
-    data class Req(@JsonProperty("log_level", required = true)
-                   @field:NotBlank @field:Size(max = 5) val logLevel: String,
+    data class Req(
+        @JsonProperty("log_level", required = true)
+        @field:NotBlank @field:Size(max = 5) val logLevel: String,
 
-                   @JsonProperty("log_message", required = true)
-                   @field:NotBlank @field:Size(max = 10000) val logMessage: String,
+        @JsonProperty("log_message", required = true)
+        @field:NotBlank @field:Size(max = 10000) val logMessage: String,
 
-                   @JsonProperty("client_id", required = true)
-                   @field:NotBlank @field:Size(max = 100) val clientId: String)
+        @JsonProperty("client_id", required = true)
+        @field:NotBlank @field:Size(max = 100) val clientId: String
+    )
 
     enum class LogLevel(val paramValue: String) {
         DEBUG("DEBUG"),
@@ -58,25 +60,29 @@ class ReportLogController(private val mailService: SendMailService) {
     @PostMapping("/management/log")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {
 
-        log.debug { "${caller.id} is logging $dto" }
+        log.info { "${caller.id} is logging $dto" }
 
         when (dto.logLevel) {
             DEBUG.paramValue -> {
                 insertLog(dto, caller, DEBUG)
                 notifyAdmin(dto, caller, DEBUG, mailService)
             }
+
             INFO.paramValue -> {
                 insertLog(dto, caller, INFO)
                 notifyAdmin(dto, caller, INFO, mailService)
             }
+
             WARN.paramValue -> {
                 insertLog(dto, caller, WARN)
                 notifyAdmin(dto, caller, WARN, mailService)
             }
+
             ERROR.paramValue -> {
                 insertLog(dto, caller, ERROR)
                 notifyAdmin(dto, caller, ERROR, mailService)
             }
+
             else -> throw InvalidRequestException("Invalid log level ${dto.logLevel}")
         }
     }

@@ -35,7 +35,7 @@ class ReadCourseMoodlePropsController {
     @GetMapping("/courses/{courseId}/moodle")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting Moodle props for course $courseIdStr by ${caller.id}" }
+        log.info { "Getting Moodle props for course $courseIdStr by ${caller.id}" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 

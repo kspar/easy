@@ -25,7 +25,7 @@ class MoodleAllStudentsSyncController(val moodleStudentsSyncService: MoodleStude
         caller: EasyUser
     ): MoodleSyncedOperationResponse {
 
-        log.debug { "Syncing students on course $courseIdStr with Moodle by ${caller.id}" }
+        log.info { "Syncing students on course $courseIdStr with Moodle by ${caller.id}" }
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId, true) }

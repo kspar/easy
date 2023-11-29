@@ -247,7 +247,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             val syncedStudentsCount = newAccesses.size
             val syncedPendingStudentsCount = newPendingAccesses.size
-            log.debug { "Synced $syncedStudentsCount students and $syncedPendingStudentsCount pending students" }
+            log.info { "Synced $syncedStudentsCount students and $syncedPendingStudentsCount pending students" }
             MoodleSyncedStudents(newAccesses.size, newPendingAccesses.size)
         }
     }

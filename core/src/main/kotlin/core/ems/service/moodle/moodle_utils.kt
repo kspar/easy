@@ -32,21 +32,19 @@ fun selectCourseShortName(
     courseId: Long,
     requireStudentsSynced: Boolean = false,
     requireGradesSynced: Boolean = false
-): String? {
-    return transaction {
-        Course.slice(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
-            .select {
-                Course.id eq courseId
-            }.map {
-                if (requireStudentsSynced && !it[Course.moodleSyncStudents]) {
-                    return@transaction null
-                }
-                if (requireGradesSynced && !it[Course.moodleSyncGrades]) {
-                    return@transaction null
-                }
-
-                it[Course.moodleShortName]
+): String? = transaction {
+    Course.slice(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
+        .select {
+            Course.id eq courseId
+        }.map {
+            if (requireStudentsSynced && !it[Course.moodleSyncStudents]) {
+                return@transaction null
             }
-            .singleOrNull()
-    }
+            if (requireGradesSynced && !it[Course.moodleSyncGrades]) {
+                return@transaction null
+            }
+
+            it[Course.moodleShortName]
+        }
+        .singleOrNull()
 }

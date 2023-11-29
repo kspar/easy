@@ -15,20 +15,18 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletResponse
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadStoredFileController {
+    private val log = KotlinLogging.logger {}
 
 
     @Secured("ROLE_ADMIN", "ROLE_TEACHER", "ROLE_STUDENT")
     @GetMapping("/resource/{fileId}")
-    fun controller(@PathVariable("fileId") fileIdString: String,
-                   caller: EasyUser,
-                   response: HttpServletResponse) {
+    fun controller(@PathVariable("fileId") fileIdString: String, caller: EasyUser, response: HttpServletResponse) {
 
-        log.debug { "${caller.id} is querying file $fileIdString" }
+        log.info { "${caller.id} is querying file $fileIdString" }
         val storedFile = selectFile(fileIdString)
 
         if (storedFile != null) {
@@ -39,15 +37,15 @@ class ReadStoredFileController {
             response.status = HttpServletResponse.SC_NOT_FOUND
         }
     }
-}
 
-data class TempStoredFile(val type: String, val name: String, val blob: ByteArray)
+    data class TempStoredFile(val type: String, val name: String, val blob: ByteArray)
 
-private fun selectFile(fileIdString: String): TempStoredFile? {
-    return transaction {
+    private fun selectFile(fileIdString: String): TempStoredFile? = transaction {
         StoredFile.slice(type, data, filename)
-                .select { StoredFile.id eq fileIdString }
-                .map { TempStoredFile(it[type], it[filename], it[data]) }
-                .firstOrNull()
+            .select { StoredFile.id eq fileIdString }
+            .map { TempStoredFile(it[type], it[filename], it[data]) }
+            .firstOrNull()
     }
 }
+
+

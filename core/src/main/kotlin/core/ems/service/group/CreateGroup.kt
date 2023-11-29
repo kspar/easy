@@ -20,11 +20,12 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class CreateGroupController {
+    private val log = KotlinLogging.logger {}
+
     data class Req(
         @JsonProperty("name") @field:NotBlank @field:Size(max = 100) val name: String,
         @JsonProperty("color") @field:Size(min = 1, max = 100) val color: String?,
@@ -36,15 +37,13 @@ class CreateGroupController {
     @PostMapping("/groups")
     fun controller(@Valid @RequestBody body: Req, caller: EasyUser): Resp {
 
-        log.debug { "Create group '${body.name}' (color: ${body.color}) by ${caller.id}" }
+        log.info { "Create group '${body.name}' (color: ${body.color}) by ${caller.id}" }
 
         val groupId = insertGroup(body, caller)
         return Resp(groupId.toString())
     }
-}
 
-private fun insertGroup(newGroup: CreateGroupController.Req, caller: EasyUser): Long {
-    return transaction {
+    private fun insertGroup(newGroup: Req, caller: EasyUser): Long = transaction {
         val now = DateTime.now()
 
         val groupId = Group.insertAndGetId {

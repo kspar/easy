@@ -24,11 +24,11 @@ import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
 
-private val log = KotlinLogging.logger {}
 
 
 @Service
 class MoodleGradesSyncService {
+    private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
@@ -71,7 +71,7 @@ class MoodleGradesSyncService {
                             if (singleExercise.grades.isNotEmpty()) {
                                 sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
                                 val grade = singleExercise.grades[0]
-                                log.debug { "Moodle synced grade ${grade.grade} for ${grade.username} to exercise ${singleExercise.idnumber} on course $shortname" }
+                                log.info { "Moodle synced grade ${grade.grade} for ${grade.username} to exercise ${singleExercise.idnumber} on course $shortname" }
                             } else {
                                 log.warn { "Skipping Moodle grade sync due to no existing grades to sync." }
                             }
@@ -139,8 +139,8 @@ class MoodleGradesSyncService {
     /**
      * Helper function to generate grade batches of 200.
      */
-    private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> {
-        return exercises.flatMap {
+    private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> =
+        exercises.flatMap {
             val chunks = it.grades.chunked(200) { grades ->
                 MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, grades.toMutableList())))
             }
@@ -151,11 +151,10 @@ class MoodleGradesSyncService {
                 listOf(MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, emptyList()))))
             }
         }
-    }
 
 
-    private fun selectSingleCourseExerciseSubmission(courseId: Long, courseExId: Long, submissionId: Long): MoodleReqExercise {
-        return transaction {
+    private fun selectSingleCourseExerciseSubmission(courseId: Long, courseExId: Long, submissionId: Long): MoodleReqExercise =
+        transaction {
             (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
                     .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId)
                     .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and (CourseExercise.id eq courseExId) }
@@ -167,36 +166,33 @@ class MoodleGradesSyncService {
                         )
                     }.single()
         }
+
+
+    private fun selectExercisesOnCourse(courseId: Long): List<MoodleReqExercise> = transaction {
+        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+                .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId,
+                        CourseExercise.orderIdx)
+                .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+                .map { ex ->
+
+                    val grades =
+                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
+                                    .mapNotNull {
+                                        selectLatestGradeForSubmission(it)
+                                    }
+
+                    MoodleReqExercise(
+                            ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
+                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                            grades
+                    )
+                }
     }
 
 
-    private fun selectExercisesOnCourse(courseId: Long): List<MoodleReqExercise> {
-        return transaction {
-            (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                    .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId,
-                            CourseExercise.orderIdx)
-                    .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                    .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                    .map { ex ->
-
-                        val grades =
-                                selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
-                                        .mapNotNull {
-                                            selectLatestGradeForSubmission(it)
-                                        }
-
-                        MoodleReqExercise(
-                                ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
-                                ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                                grades
-                        )
-                    }
-        }
-    }
-
-
-    private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? {
-        return (Submission innerJoin Student innerJoin Account)
+    private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? =
+        (Submission innerJoin Student innerJoin Account)
             .slice(Account.moodleUsername, Account.id, Submission.grade)
             .select { Submission.id eq submissionId }
             .map {
@@ -215,5 +211,4 @@ class MoodleGradesSyncService {
 
             }
             .singleOrNull()
-    }
 }

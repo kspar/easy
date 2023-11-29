@@ -30,7 +30,7 @@ class ExportPersonalData {
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/account/export")
     fun controller(caller: EasyUser): ResponseEntity<ByteArrayResource> {
-        log.debug { "'${caller.id}' is exporting personal data." }
+        log.info { "'${caller.id}' is exporting personal data." }
 
         val jsons = listOfNotNull(
             JsonFile("account.json", selectAccountJSON(caller.id)),

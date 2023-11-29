@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class AdminDeleteManagementNotification {
+    private val log = KotlinLogging.logger {}
 
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/management/notifications/{notificationId}")
@@ -27,20 +27,21 @@ class AdminDeleteManagementNotification {
 
         val notificationId = notificationIdStr.idToLongOrInvalidReq()
 
-        log.debug { "${caller.id} is requests deleting system management notification with ID $notificationId" }
+        log.info { "${caller.id} is requests deleting system management notification with ID $notificationId" }
 
         deleteMessage(notificationId)
     }
-}
 
-private fun deleteMessage(notificationId: Long) {
-    transaction {
+    private fun deleteMessage(notificationId: Long) {
+        transaction {
 
-        val messageExists = ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1L
+            val messageExists =
+                ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1L
 
-        if (!messageExists) {
-            throw InvalidRequestException("No message with ID $notificationId found.")
+            if (!messageExists) {
+                throw InvalidRequestException("No message with ID $notificationId found.")
+            }
+            ManagementNotification.deleteWhere { ManagementNotification.id eq notificationId }
         }
-        ManagementNotification.deleteWhere { ManagementNotification.id eq notificationId }
     }
 }
