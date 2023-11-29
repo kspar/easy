@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class DeleteArticleAliasController(private val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     @Secured("ROLE_ADMIN")
     @DeleteMapping("/articles/{articleId}/aliases/{aliasId}")
@@ -32,7 +32,7 @@ class DeleteArticleAliasController(private val cachingService: CachingService) {
         caller: EasyUser
     ) {
 
-        log.debug { "${caller.id} is deleting alias '$alias' for the article $articleIdString" }
+        log.info { "${caller.id} is deleting alias '$alias' for the article '$articleIdString'" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
         assertArticleExists(articleId)
@@ -41,14 +41,12 @@ class DeleteArticleAliasController(private val cachingService: CachingService) {
         deleteAlias(articleId, alias)
         cachingService.invalidate(articleCache)
     }
-}
 
-
-private fun deleteAlias(articleId: Long, alias: String) {
-    transaction {
-        ArticleAlias.deleteWhere {
-            (ArticleAlias.id eq alias) and (ArticleAlias.article eq articleId)
+    private fun deleteAlias(articleId: Long, alias: String) {
+        transaction {
+            ArticleAlias.deleteWhere {
+                (ArticleAlias.id eq alias) and (ArticleAlias.article eq articleId)
+            }
         }
     }
 }
-

@@ -7,15 +7,13 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object SysConf {
 
-    // TODO: make it cachable and evict cache after certain amount of time
-    fun getProp(key: String): String? {
-        return transaction {
-            SystemConfiguration.select {
-                SystemConfiguration.id eq key
-            }.map {
-                it[SystemConfiguration.value]
-            }.firstOrNull()
-        }
+    // TODO: make it cacheable and evict cache after certain amount of time
+    fun getProp(key: String): String? = transaction {
+        SystemConfiguration.select {
+            SystemConfiguration.id eq key
+        }.map {
+            it[SystemConfiguration.value]
+        }.firstOrNull()
     }
 
     fun putProp(key: String, value: String) {

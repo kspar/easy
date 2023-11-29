@@ -1,13 +1,13 @@
 package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.ems.service.cache.articleCache
 import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
 import core.db.ArticleAlias
 import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
+import core.ems.service.cache.articleCache
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -23,11 +23,11 @@ import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Pattern
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class CreateArticleAliasController(private val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("alias", required = true)
@@ -41,7 +41,7 @@ class CreateArticleAliasController(private val cachingService: CachingService) {
     @PostMapping("/articles/{articleId}/aliases")
     fun controller(@Valid @RequestBody req: Req, @PathVariable("articleId") articleIdString: String, caller: EasyUser) {
 
-        log.debug { "${caller.id} is creating alias for the article $articleIdString" }
+        log.info { "${caller.id} is creating alias '${req.alias}' for the article '$articleIdString'" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
         assertArticleExists(articleId)
@@ -49,21 +49,26 @@ class CreateArticleAliasController(private val cachingService: CachingService) {
         insertAlias(caller.id, articleId, req.alias)
         cachingService.invalidate(articleCache)
     }
-}
 
+    private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
+        transaction {
+            if (ArticleAlias.select { ArticleAlias.id eq alias }.count() > 0) {
+                throw InvalidRequestException(
+                    "Article alias '$alias' is already in use.",
+                    ReqError.ARTICLE_ALIAS_IN_USE
+                )
+            }
 
-private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
-    transaction {
-        if (ArticleAlias.select { ArticleAlias.id eq alias }.count() > 0) {
-            throw InvalidRequestException("Article alias '$alias' is already in use.", ReqError.ARTICLE_ALIAS_IN_USE)
-        }
-
-        ArticleAlias.insert {
-            it[id] = org.jetbrains.exposed.dao.id.EntityID(alias, ArticleAlias)
-            it[owner] = org.jetbrains.exposed.dao.id.EntityID(createdBy, Admin)
-            it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
-            it[createdAt] = DateTime.now()
+            ArticleAlias.insert {
+                it[id] = org.jetbrains.exposed.dao.id.EntityID(alias, ArticleAlias)
+                it[owner] = org.jetbrains.exposed.dao.id.EntityID(createdBy, Admin)
+                it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
+                it[createdAt] = DateTime.now()
+            }
         }
     }
+
 }
+
+
 

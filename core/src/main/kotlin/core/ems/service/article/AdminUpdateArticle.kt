@@ -1,7 +1,6 @@
 package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.ems.service.cache.articleCache
 import core.conf.security.EasyUser
 import core.db.Account
 import core.db.Article
@@ -10,6 +9,7 @@ import core.db.StoredFile
 import core.ems.service.AdocService
 import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
+import core.ems.service.cache.articleCache
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -25,11 +25,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class UpdateArticleController(private val adocService: AdocService, private val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
@@ -42,7 +42,7 @@ class UpdateArticleController(private val adocService: AdocService, private val 
     @PutMapping("/articles/{articleId}")
     fun controller(@Valid @RequestBody req: Req, @PathVariable("articleId") articleIdString: String, caller: EasyUser) {
 
-        log.debug { "Update article '$articleIdString' by ${caller.id}" }
+        log.info { "${caller.id} is updating article '$articleIdString'" }
         val articleId = articleIdString.idToLongOrInvalidReq()
 
         assertArticleExists(articleId)
@@ -51,12 +51,9 @@ class UpdateArticleController(private val adocService: AdocService, private val 
         updateArticle(caller.id, articleId, req, html)
         cachingService.invalidate(articleCache)
     }
-}
 
-private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleController.Req, html: String?) {
-    val time = DateTime.now()
-
-    return transaction {
+    private fun updateArticle(authorId: String, articleId: Long, req: Req, html: String?) = transaction {
+        val time = DateTime.now()
 
         Article.update({ Article.id eq articleId }) {
             it[public] = req.public
@@ -94,4 +91,3 @@ private fun updateArticle(authorId: String, articleId: Long, req: UpdateArticleC
         }
     }
 }
-

@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.io.Serializable
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class ReadArticleDetailsController(private val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     data class Resp(
         @JsonProperty("id") val id: String,
@@ -56,7 +56,7 @@ class ReadArticleDetailsController(private val cachingService: CachingService) {
     @GetMapping("/articles/{articleId}")
     fun controller(@PathVariable("articleId") articleIdString: String, caller: EasyUser): Resp {
 
-        log.debug { "Getting article $articleIdString details for ${caller.id}" }
+        log.info { "${caller.id} is reading article '$articleIdString' details" }
         return cachingService.selectLatestArticleVersion(articleIdString, caller.isAdmin())
     }
 }

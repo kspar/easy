@@ -1,7 +1,6 @@
 package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.ems.service.cache.articleCache
 import core.conf.security.EasyUser
 import core.db.Admin
 import core.db.Article
@@ -9,6 +8,7 @@ import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.AdocService
 import core.ems.service.cache.CachingService
+import core.ems.service.cache.articleCache
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -26,11 +26,11 @@ import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class CreateArticleController(private val adocService: AdocService, private val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
@@ -44,21 +44,17 @@ class CreateArticleController(private val adocService: AdocService, private val 
     @PostMapping("/articles")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
-        log.debug { "Create article '${dto.title}' by ${caller.id}" }
-
+        log.info { "${caller.id} is creating article '${dto.title}'" }
         val html = dto.textAdoc?.let { adocService.adocToHtml(it) }
 
         val articleId = insertArticle(caller.id, dto, html).toString()
         cachingService.invalidate(articleCache)
         return Resp(articleId)
     }
-}
 
+    private fun insertArticle(ownerId: String, req: Req, html: String?): Long = transaction {
+        val adminId = EntityID(ownerId, Admin)
 
-private fun insertArticle(ownerId: String, req: CreateArticleController.Req, html: String?): Long {
-    val adminId = EntityID(ownerId, Admin)
-
-    return transaction {
         val time = DateTime.now()
 
         val articleId = Article.insertAndGetId {
@@ -90,4 +86,3 @@ private fun insertArticle(ownerId: String, req: CreateArticleController.Req, htm
         articleId.value
     }
 }
-
