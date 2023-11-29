@@ -13,6 +13,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
     }
 
     fun generateAssessmentCodes(): String {
+        if (irTree.requiredFiles.isEmpty()) {
+            throw Exception("The requiredFiles list cannot be empty.")
+        }
+
         val assessmentCode = "from tiivad import *\n"
         var validationCode = ""
         if (irTree.validateFiles) {
@@ -543,13 +547,12 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             test.classInstanceChecks.map {
                                 PyDict(
                                     mapOf(
-                                        "'fields_final'" to PyList(listOf(it.fieldsFinal.map {
+                                        "'fields_final'" to PyList(it.fieldsFinal.map {
                                             PyPair(
                                                 PyStr(it.fieldName),
                                                 PyStr(it.fieldContent, forceString = false)
                                             )
-                                        }
-                                            .let { PyList(it) })),
+                                        }),
                                         "'check_name'" to PyBool(it.checkName),
                                         "'check_value'" to PyBool(it.checkValue),
                                         "'nothing_else'" to PyBool(it.nothingElse),
