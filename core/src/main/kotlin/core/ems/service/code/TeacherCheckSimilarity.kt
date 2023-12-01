@@ -117,7 +117,7 @@ class TeacherCheckSimilarityController {
         submissions: List<Long>?
     ): List<RespSubmission> = transaction {
 
-        val query = (Course innerJoin CourseExercise innerJoin (Submission innerJoin (Student innerJoin Account)))
+        val query = (Course innerJoin CourseExercise innerJoin (Submission innerJoin Account))
             .slice(
                 Course.title,
                 Submission.id,

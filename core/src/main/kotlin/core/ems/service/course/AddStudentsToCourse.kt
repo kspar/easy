@@ -78,10 +78,10 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
         val studentsNoAccount = mutableSetOf<StudentNoAccount>()
 
         students.forEach {
-            val studentId = (Student innerJoin Account)
-                .slice(Student.id)
-                .select { Account.email.lowerCase() eq it.email }
-                .map { it[Student.id].value }
+            val studentId = Account
+                .slice(Account.id)
+                .select { Account.email.lowerCase() eq it.email and Account.isStudent }
+                .map { it[Account.id].value }
                 .singleOrNull()
 
             if (studentId != null) {

@@ -19,29 +19,15 @@ object Account : IdTable<String>("account") {
     val moodleUsername = text("moodle_username").nullable()
     val idMigrationDone = bool("id_migration_done")
     val preMigrationId = text("pre_migration_id").nullable()
+    val isTeacher = bool("is_teacher")
+    val isStudent = bool("is_student")
+    val isAdmin = bool("is_admin")
 }
 
-object Student : IdTable<String>("student") {
-    override val id = reference("username", Account)
-    override val primaryKey = PrimaryKey(id)
-    val createdAt = datetime("created_at")
-}
-
-object Teacher : IdTable<String>("teacher") {
-    override val id = reference("username", Account)
-    override val primaryKey = PrimaryKey(id)
-    val createdAt = datetime("created_at")
-}
-
-object Admin : IdTable<String>("admin") {
-    override val id = reference("username", Account)
-    override val primaryKey = PrimaryKey(id)
-    val createdAt = datetime("created_at")
-}
 
 object Exercise : LongIdTable("exercise") {
     val dir = reference("dir_id", Dir).nullable()
-    val owner = reference("owned_by_id", Teacher)
+    val owner = reference("owned_by_id", Account)
     val createdAt = datetime("created_at")
     val public = bool("public")
     val anonymousAutoassessEnabled = bool("anonymous_autoassess_enabled")
@@ -53,7 +39,7 @@ object Exercise : LongIdTable("exercise") {
 
 object ExerciseVer : LongIdTable("exercise_version") {
     val exercise = reference("exercise_id", Exercise)
-    val author = reference("author_id", Teacher)
+    val author = reference("author_id", Account)
     val previous = reference("previous_id", ExerciseVer).nullable()
     val autoExerciseId = reference("auto_exercise_id", AutoExercise).nullable()
     val validFrom = datetime("valid_from")
@@ -112,7 +98,7 @@ object CourseExercise : LongIdTable("course_exercise") {
 }
 
 object TeacherCourseAccess : Table("teacher_course_access") {
-    val teacher = reference("teacher_id", Teacher)
+    val teacher = reference("teacher_id", Account)
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(teacher, course)
@@ -126,7 +112,7 @@ object TeacherCourseGroup : Table("teacher_course_group_access") {
 }
 
 object StudentCourseAccess : Table("student_course_access") {
-    val student = reference("student_id", Student)
+    val student = reference("student_id", Account)
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(student, course)
@@ -169,7 +155,7 @@ object StudentPendingCourseGroup : Table("student_pending_course_group_access") 
 
 object Submission : LongIdTable("submission") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
-    val student = reference("student_id", Student)
+    val student = reference("student_id", Account)
     val createdAt = datetime("created_at")
     val solution = text("solution")
     val grade = integer("grade").nullable()
@@ -243,14 +229,14 @@ object ExecutorContainerImage : Table("executor_container_image") {
 
 object SubmissionDraft : Table("submission_draft") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
-    val student = reference("student_id", Student)
+    val student = reference("student_id", Account)
     val createdAt = datetime("created_at")
     val solution = text("solution")
     override val primaryKey = PrimaryKey(courseExercise, student)
 }
 
 object TeacherSubmission : LongIdTable("teacher_submission") {
-    val teacher = reference("teacher_id", Teacher)
+    val teacher = reference("teacher_id", Account)
     val exercise = reference("exercise_id", Exercise)
     val createdAt = datetime("created_at")
     val solution = text("solution")
@@ -271,7 +257,7 @@ object LogReport : LongIdTable("log_report") {
 }
 
 object Article : LongIdTable("article") {
-    val owner = reference("owner_id", Admin)
+    val owner = reference("owner_id", Account)
     val createdAt = datetime("created_at")
     val public = bool("public")
 }
@@ -279,7 +265,7 @@ object Article : LongIdTable("article") {
 object ArticleVersion : LongIdTable("article_version") {
     val article = reference("article_id", Article)
     val previous = reference("previous_id", ArticleVersion).nullable()
-    val author = reference("author_id", Admin)
+    val author = reference("author_id", Account)
     val validFrom = datetime("valid_from")
     val validTo = datetime("valid_to").nullable()
     val title = text("title")
@@ -292,7 +278,7 @@ object ArticleAlias : IdTable<String>("article_alias") {
     override val primaryKey = PrimaryKey(id)
     val article = reference("article_id", Article)
     val createdAt = datetime("created_at")
-    val owner = reference("created_by_id", Admin)
+    val owner = reference("created_by_id", Account)
 }
 
 object StoredFile : IdTable<String>("stored_file") {
@@ -306,7 +292,7 @@ object StoredFile : IdTable<String>("stored_file") {
     val filename = text("filename")
     val data = binary("data")
     val createdAt = datetime("created_at")
-    val owner = reference("created_by_id", Teacher)
+    val owner = reference("created_by_id", Account)
 }
 
 object Group : LongIdTable("group") {

@@ -3,7 +3,6 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseExercise
-import core.db.Student
 import core.db.SubmissionDraft
 import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
@@ -51,7 +50,7 @@ class StudentSubmitDraftController {
             listOf(SubmissionDraft.courseExercise, SubmissionDraft.student)
         ) {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
-            it[student] = EntityID(studentId, Student)
+            it[student] = studentId
             it[createdAt] = DateTime.now()
             it[solution] = submission
         }

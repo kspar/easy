@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/v2")
 class ReadDirAccesses {
+    private val log = KotlinLogging.logger {}
+
 
     // Include all direct accesses and only effective inherited accesses
     data class Resp(
@@ -80,7 +82,6 @@ class ReadDirAccesses {
         @PathVariable("dirId") dirIdString: String,
         caller: EasyUser
     ): Resp {
-        val log = KotlinLogging.logger {}
 
         log.info { "Read accesses for dir $dirIdString by ${caller.id}" }
 

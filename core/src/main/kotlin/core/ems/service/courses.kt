@@ -260,7 +260,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
     }
 
 fun selectStudentsOnCourse(courseId: Long): List<StudentsResp> = transaction {
-    (Account innerJoin Student innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
+    (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
         .slice(
             Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
             StudentCourseAccess.createdAt, CourseGroup.id, CourseGroup.name

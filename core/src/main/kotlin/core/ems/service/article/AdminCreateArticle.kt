@@ -2,7 +2,6 @@ package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Admin
 import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
@@ -10,7 +9,6 @@ import core.ems.service.AdocService
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
@@ -53,19 +51,17 @@ class CreateArticleController(private val adocService: AdocService, private val 
     }
 
     private fun insertArticle(ownerId: String, req: Req, html: String?): Long = transaction {
-        val adminId = EntityID(ownerId, Admin)
-
         val time = DateTime.now()
 
         val articleId = Article.insertAndGetId {
-            it[owner] = adminId
+            it[owner] = ownerId
             it[public] = req.public
             it[createdAt] = time
         }
 
         ArticleVersion.insert {
             it[article] = articleId
-            it[author] = adminId
+            it[author] = ownerId
             it[validFrom] = time
             it[title] = req.title
             it[textHtml] = html
@@ -79,8 +75,8 @@ class CreateArticleController(private val adocService: AdocService, private val 
                 .filter { html.contains(it) }
 
             StoredFile.update({ StoredFile.id inList inUse }) {
-                it[StoredFile.usageConfirmed] = true
-                it[StoredFile.article] = articleId
+                it[usageConfirmed] = true
+                it[article] = articleId
             }
         }
         articleId.value

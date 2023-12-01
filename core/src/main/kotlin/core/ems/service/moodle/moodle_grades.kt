@@ -192,7 +192,7 @@ class MoodleGradesSyncService {
 
 
     private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? =
-        (Submission innerJoin Student innerJoin Account)
+        (Submission innerJoin Account)
             .slice(Account.moodleUsername, Account.id, Submission.grade)
             .select { Submission.id eq submissionId }
             .map {

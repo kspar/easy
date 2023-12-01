@@ -2,11 +2,11 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Teacher
 import core.db.TeacherCourseAccess
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.teacherExists
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -55,10 +55,7 @@ class RemoveTeachersFromCourseController {
     private fun deleteTeachersFromCourse(teachers: Req, courseId: Long) {
         transaction {
             teachers.teachers.forEach { teacher ->
-                val teacherExists =
-                    Teacher.select { Teacher.id eq teacher.id }
-                        .count() == 1L
-                if (!teacherExists) {
+                if (!teacherExists(teacher.id)) {
                     throw InvalidRequestException("Teacher not found: $teacher")
                 }
             }

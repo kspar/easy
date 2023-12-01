@@ -21,7 +21,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -144,8 +143,8 @@ class StudentSubmitCont(
     ): Long {
         val id = transaction {
             Submission.insertAndGetId {
-                it[courseExercise] = EntityID(courseExId, CourseExercise)
-                it[student] = EntityID(studentId, Student)
+                it[courseExercise] = courseExId
+                it[student] = studentId
                 it[createdAt] = DateTime.now()
                 it[solution] = submission
                 it[autoGradeStatus] = autoAss

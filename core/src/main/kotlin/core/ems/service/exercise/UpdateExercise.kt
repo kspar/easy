@@ -88,57 +88,53 @@ class UpdateExercise(private val adocService: AdocService) {
         updateExercise(exerciseId, caller.id, reqModified, html)
     }
 
-    private fun updateExercise(exerciseId: Long, authorId: String, req: Req, html: String?) {
-
+    private fun updateExercise(exerciseId: Long, authorId: String, req: Req, html: String?) = transaction {
         val now = DateTime.now()
 
-        transaction {
+        val newAutoExerciseId =
+            if (req.graderType == GraderType.AUTO) {
+                insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
+                    req.assets?.map { it.fileName to it.fileContent })
 
-            val newAutoExerciseId =
-                if (req.graderType == GraderType.AUTO) {
-                    insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
-                        req.assets?.map { it.fileName to it.fileContent })
-
-                } else null
+            } else null
 
 
-            Exercise.update({ Exercise.id eq exerciseId }) {
-                it[public] = req.public
-                it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
-                it[anonymousAutoassessTemplate] = req.anonymousAutoassessTemplate
-            }
+        Exercise.update({ Exercise.id eq exerciseId }) {
+            it[public] = req.public
+            it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
+            it[anonymousAutoassessTemplate] = req.anonymousAutoassessTemplate
+        }
 
-            val lastVersionId = ExerciseVer
-                .select { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.id].value }
-                .first()
+        val lastVersionId = ExerciseVer
+            .select { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.id].value }
+            .first()
 
-            ExerciseVer.update({ ExerciseVer.id eq lastVersionId }) {
-                it[validTo] = now
-            }
+        ExerciseVer.update({ ExerciseVer.id eq lastVersionId }) {
+            it[validTo] = now
+        }
 
-            ExerciseVer.insert {
+        ExerciseVer.insert {
+            it[exercise] = exerciseId
+            it[author] = authorId
+            it[validFrom] = now
+            it[previous] = lastVersionId
+            it[graderType] = req.graderType
+            it[title] = req.title
+            it[textHtml] = html
+            it[textAdoc] = req.textAdoc
+            it[autoExerciseId] = newAutoExerciseId
+        }
+
+        if (html != null) {
+            val inUse = StoredFile.slice(StoredFile.id)
+                .select { StoredFile.usageConfirmed eq false }
+                .map { it[StoredFile.id].value }
+                .filter { html.contains(it) }
+
+            StoredFile.update({ StoredFile.id inList inUse }) {
+                it[usageConfirmed] = true
                 it[exercise] = EntityID(exerciseId, Exercise)
-                it[author] = EntityID(authorId, Teacher)
-                it[validFrom] = now
-                it[previous] = EntityID(lastVersionId, ExerciseVer)
-                it[graderType] = req.graderType
-                it[title] = req.title
-                it[textHtml] = html
-                it[textAdoc] = req.textAdoc
-                it[autoExerciseId] = newAutoExerciseId
-            }
-
-            if (html != null) {
-                val inUse = StoredFile.slice(StoredFile.id)
-                    .select { StoredFile.usageConfirmed eq false }
-                    .map { it[StoredFile.id].value }
-                    .filter { html.contains(it) }
-
-                StoredFile.update({ StoredFile.id inList inUse }) {
-                    it[usageConfirmed] = true
-                    it[exercise] = EntityID(exerciseId, Exercise)
-                }
             }
         }
     }

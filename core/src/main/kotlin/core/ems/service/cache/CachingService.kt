@@ -53,13 +53,13 @@ class CachingService(val cacheManager: CacheManager) {
                 .singleOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
 
             val authorAlias = Account.alias("author_account_1")
-            val adminAlias = Admin.alias("author_admin_1")
+            val ownerAlias = Account.alias("author_owner_1")
 
-            Article.innerJoin(Account innerJoin Admin)
+            Article.innerJoin(Account)
                 .innerJoin(
                     ArticleVersion
-                        .innerJoin(adminAlias, { adminAlias[Admin.id] }, { ArticleVersion.author })
-                        .innerJoin(authorAlias, { authorAlias[Account.id] }, { adminAlias[Admin.id] })
+                        .innerJoin(ownerAlias, { ownerAlias[Account.id] }, { ArticleVersion.author })
+                        .innerJoin(authorAlias, { authorAlias[Account.id] }, { ownerAlias[Account.id] })
                 )
                 .slice(
                     Article.id,
@@ -139,19 +139,19 @@ class CachingService(val cacheManager: CacheManager) {
     @Cacheable(value = [studentCache], unless = "#result == false")
     fun studentExists(studentUsername: String): Boolean = transaction {
         log.debug { "$studentUsername not in 'student' cache. Executing select." }
-        Student.select { Student.id eq studentUsername }.count() == 1L
+        Account.select { Account.id eq studentUsername and Account.isStudent}.count() == 1L
     }
 
     @Cacheable(value = [teacherCache], unless = "#result == false")
     fun teacherExists(teacherUsername: String): Boolean = transaction {
         log.debug { "$teacherUsername not in 'teacher' cache. Executing select." }
-        Teacher.select { Teacher.id eq teacherUsername }.count() == 1L
+        Account.select { Account.id eq teacherUsername and Account.isTeacher}.count() == 1L
     }
 
     @Cacheable(value = [adminCache], unless = "#result == false")
     fun adminExists(adminUsername: String): Boolean = transaction {
         log.debug { "$adminUsername not in 'admin' cache. Executing select." }
-        Admin.select { Admin.id eq adminUsername }.count() == 1L
+        Account.select { Account.id eq adminUsername and Account.isAdmin}.count() == 1L
     }
 
     @Cacheable(countSubmissionsCache)

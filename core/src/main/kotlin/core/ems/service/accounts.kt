@@ -1,7 +1,7 @@
 package core.ems.service
 
 import core.db.Account
-import core.db.Teacher
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -16,8 +16,8 @@ fun getUsernameByEmail(email: String): String? = transaction {
 }
 
 fun teacherExists(username: String): Boolean = transaction {
-    Teacher.select {
-        Teacher.id eq username
+    Account.select {
+        Account.id eq username and Account.isTeacher
     }.count() > 0
 }
 

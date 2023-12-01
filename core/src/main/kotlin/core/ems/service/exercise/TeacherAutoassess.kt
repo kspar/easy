@@ -14,7 +14,6 @@ import core.exception.ReqError
 import core.util.DateTimeSerializer
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -81,26 +80,24 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
         return Resp(aaResult.grade, aaResult.feedback, submissionTime)
     }
 
-    private fun getAutoExerciseId(exerciseId: Long): Long? {
-        return transaction {
-            (Exercise innerJoin ExerciseVer)
-                .slice(ExerciseVer.autoExerciseId)
-                .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
-                .map { it[ExerciseVer.autoExerciseId] }
-                .single()?.value
-        }
+    private fun getAutoExerciseId(exerciseId: Long): Long? = transaction {
+        (Exercise innerJoin ExerciseVer)
+            .slice(ExerciseVer.autoExerciseId)
+            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.autoExerciseId] }
+            .single()?.value
     }
 
-    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String): DateTime {
-        val now = DateTime.now()
+    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String): DateTime =
         transaction {
+            val now = DateTime.now()
+
             TeacherSubmission.insert {
                 it[TeacherSubmission.solution] = solution
                 it[createdAt] = now
-                it[exercise] = EntityID(exerciseId, TeacherSubmission)
-                it[teacher] = EntityID(teacherId, Teacher)
+                it[exercise] = exerciseId
+                it[teacher] = teacherId
             }
+            now
         }
-        return now
-    }
 }

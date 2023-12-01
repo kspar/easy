@@ -3,10 +3,8 @@ package core.ems.service.file
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StoredFile
-import core.db.Teacher
 import mu.KotlinLogging
 import org.apache.tika.Tika
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -22,11 +20,10 @@ import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 
-private val log = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/v2")
 class UploadStoredFiledController {
+    private val log = KotlinLogging.logger {}
 
     data class Req(
         @JsonProperty("filename", required = true)
@@ -56,14 +53,14 @@ class UploadStoredFiledController {
         val mimeType: String = Tika().detect(content)
 
         StoredFile.insertAndGetId {
-            it[id] = EntityID(hash, StoredFile)
+            it[id] = hash
             it[type] = mimeType
             it[data] = content
             it[filename] = req.filename
             it[createdAt] = time
             it[usageConfirmed] = false
             it[sizeBytes] = content.size.toLong()
-            it[owner] = EntityID(creator, Teacher)
+            it[owner] = creator
         }.value
     }
 

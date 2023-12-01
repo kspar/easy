@@ -2,8 +2,6 @@ package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Admin
-import core.db.Article
 import core.db.ArticleAlias
 import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
@@ -60,9 +58,9 @@ class CreateArticleAliasController(private val cachingService: CachingService) {
             }
 
             ArticleAlias.insert {
-                it[id] = org.jetbrains.exposed.dao.id.EntityID(alias, ArticleAlias)
-                it[owner] = org.jetbrains.exposed.dao.id.EntityID(createdBy, Admin)
-                it[article] = org.jetbrains.exposed.dao.id.EntityID(articleId, Article)
+                it[id] = alias
+                it[owner] = createdBy
+                it[article] = articleId
                 it[createdAt] = DateTime.now()
             }
         }

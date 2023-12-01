@@ -254,27 +254,24 @@ private fun insertAccount(accountData: AccountData) {
 
 private fun updateStudent(student: AccountData) {
     transaction {
-        Student.insertIgnore {
-            it[id] = EntityID(student.username, Student)
-            it[createdAt] = DateTime.now()
+        Account.update({ Account.id eq student.username }) {
+            it[isStudent] = true
         }
     }
 }
 
 private fun updateTeacher(teacher: AccountData) {
     transaction {
-        Teacher.insertIgnore {
-            it[id] = EntityID(teacher.username, Teacher)
-            it[createdAt] = DateTime.now()
+        Account.update({ Account.id eq teacher.username }) {
+            it[isTeacher] = true
         }
     }
 }
 
 private fun updateAdmin(admin: AccountData) {
     transaction {
-        Admin.insertIgnore {
-            it[id] = EntityID(admin.username, Admin)
-            it[createdAt] = DateTime.now()
+        Account.update({ Account.id eq admin.username }) {
+            it[isAdmin] = true
         }
     }
 }

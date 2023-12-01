@@ -180,7 +180,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
 
             // Diff accesses before and after to send notifications for only new accesses
-            val previousStudentEmails = (StudentCourseAccess innerJoin Student innerJoin Account).select {
+            val previousStudentEmails = (StudentCourseAccess innerJoin Account).select {
                 StudentCourseAccess.course.eq(courseId)
             }.map {
                 it[Account.email]

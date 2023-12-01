@@ -2,18 +2,22 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
-import core.ems.service.*
+import core.db.Account
+import core.db.TeacherCourseAccess
+import core.db.TeacherCourseGroup
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.canTeacherAccessCourse
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.assertGroupExistsOnCourse
+import core.ems.service.getUsernameByEmail
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.teacherExists
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -98,16 +102,16 @@ class AddTeachersToCourse {
             log.debug { "Granting access to teachers (the rest already have access): $teachersWithoutAccess" }
 
             TeacherCourseAccess.batchInsert(teachersWithoutAccess) {
-                this[TeacherCourseAccess.teacher] = EntityID(it.id, Teacher)
-                this[TeacherCourseAccess.course] = EntityID(courseId, Course)
+                this[TeacherCourseAccess.teacher] = it.id
+                this[TeacherCourseAccess.course] = courseId
                 this[TeacherCourseAccess.createdAt] = time
             }
 
             teachersWithoutAccess.forEach { teacher ->
                 TeacherCourseGroup.batchInsert(teacher.groups) { groupId ->
-                    this[TeacherCourseGroup.teacher] = EntityID(teacher.id, Teacher)
-                    this[TeacherCourseGroup.course] = EntityID(courseId, Course)
-                    this[TeacherCourseGroup.courseGroup] = EntityID(groupId, CourseGroup)
+                    this[TeacherCourseGroup.teacher] = teacher.id
+                    this[TeacherCourseGroup.course] = courseId
+                    this[TeacherCourseGroup.courseGroup] = groupId
                 }
             }
 
@@ -117,9 +121,8 @@ class AddTeachersToCourse {
     }
 
     private fun insertTeacher(teacherId: String) {
-        Teacher.insert {
-            it[id] = EntityID(teacherId, Teacher)
-            it[createdAt] = DateTime.now()
+        Account.update({ Account.id eq teacherId }) {
+            it[Account.isTeacher] = true
         }
     }
 }

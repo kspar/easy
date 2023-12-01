@@ -70,7 +70,7 @@ class SendPendingInvite(val sendMailService: SendMailService) {
                 existsPending || existsMoodlePending
             }
             val activeEmails = emails.filter {
-                (StudentCourseAccess innerJoin Student innerJoin Account).select {
+                (StudentCourseAccess innerJoin Account).select {
                     Account.email.eq(it) and StudentCourseAccess.course.eq(courseId)
                 }.count() == 1L
             }

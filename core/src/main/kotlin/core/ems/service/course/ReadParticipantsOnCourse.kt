@@ -121,10 +121,10 @@ class ReadParticipantsOnCourseController {
     data class ParticipantGroup(val id: Long, val name: String)
 
 
-    private fun selectStudentsPendingOnCourse(courseId: Long, restrictedGroups: List<Long>): List<StudentPendingResp> {
-        data class PendingStudent(val email: String, val validFrom: DateTime)
+    private fun selectStudentsPendingOnCourse(courseId: Long, restrictedGroups: List<Long>): List<StudentPendingResp> =
+        transaction {
+            data class PendingStudent(val email: String, val validFrom: DateTime)
 
-        return transaction {
             (StudentPendingAccess leftJoin StudentPendingCourseGroup leftJoin CourseGroup)
                 .slice(
                     StudentPendingAccess.email,
@@ -158,51 +158,48 @@ class ReadParticipantsOnCourseController {
                     )
                 }
         }
-    }
 
     private fun selectMoodleStudentsPendingOnCourse(
         courseId: Long,
         restrictedGroups: List<Long>
-    ): List<StudentMoodlePendingResp> {
+    ): List<StudentMoodlePendingResp> = transaction {
         data class PendingStudent(val moodleUsername: String, val email: String)
 
-        return transaction {
-            (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
-                .slice(
-                    StudentMoodlePendingAccess.moodleUsername,
-                    StudentMoodlePendingAccess.email,
-                    CourseGroup.id,
-                    CourseGroup.name
-                ).select {
-                    StudentMoodlePendingAccess.course eq courseId
-                }.groupBy({
-                    PendingStudent(
-                        it[StudentMoodlePendingAccess.moodleUsername],
-                        it[StudentMoodlePendingAccess.email]
-                    )
-                }) {
-                    val groupId: EntityID<Long>? = it[CourseGroup.id]
-                    if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
-                }
-                .map { (student, groups) ->
-                    student to groups.filterNotNull()
-                }
-                .filter { (student, groups) ->
-                    restrictedGroups.isEmpty() || groups.isEmpty() || groups.any { restrictedGroups.contains(it.id) }
-                }
-                .map { (student, groups) ->
-                    StudentMoodlePendingResp(
-                        student.moodleUsername,
-                        student.email,
-                        groups.map {
-                            GroupResp(it.id.toString(), it.name)
-                        }
-                    )
-                }
-        }
+        (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
+            .slice(
+                StudentMoodlePendingAccess.moodleUsername,
+                StudentMoodlePendingAccess.email,
+                CourseGroup.id,
+                CourseGroup.name
+            ).select {
+                StudentMoodlePendingAccess.course eq courseId
+            }.groupBy({
+                PendingStudent(
+                    it[StudentMoodlePendingAccess.moodleUsername],
+                    it[StudentMoodlePendingAccess.email]
+                )
+            }) {
+                val groupId: EntityID<Long>? = it[CourseGroup.id]
+                if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
+            }
+            .map { (student, groups) ->
+                student to groups.filterNotNull()
+            }
+            .filter { (student, groups) ->
+                restrictedGroups.isEmpty() || groups.isEmpty() || groups.any { restrictedGroups.contains(it.id) }
+            }
+            .map { (student, groups) ->
+                StudentMoodlePendingResp(
+                    student.moodleUsername,
+                    student.email,
+                    groups.map {
+                        GroupResp(it.id.toString(), it.name)
+                    }
+                )
+            }
     }
 
-    private fun selectTeachersOnCourse(courseId: Long): List<TeachersResp> {
+    private fun selectTeachersOnCourse(courseId: Long): List<TeachersResp> = transaction {
         data class TeacherOnCourse(
             val id: String,
             val email: String,
@@ -211,37 +208,35 @@ class ReadParticipantsOnCourseController {
             val createdAt: DateTime?
         )
 
-        return transaction {
-            (Account innerJoin Teacher innerJoin TeacherCourseAccess leftJoin TeacherCourseGroup leftJoin CourseGroup)
-                .slice(
-                    Account.id, Account.email, Account.givenName, Account.familyName,
-                    CourseGroup.id, CourseGroup.name, TeacherCourseAccess.createdAt
-                ).select {
-                    TeacherCourseAccess.course eq courseId
-                }.groupBy({
-                    TeacherOnCourse(
-                        it[Account.id].value,
-                        it[Account.email],
-                        it[Account.givenName],
-                        it[Account.familyName],
-                        it[TeacherCourseAccess.createdAt]
-                    )
-                }) {
-                    val groupId: EntityID<Long>? = it[CourseGroup.id]
-                    if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
-                }
-                .map { (teacher, groups) ->
-                    TeachersResp(
-                        teacher.id,
-                        teacher.email,
-                        teacher.givenName,
-                        teacher.familyName,
-                        teacher.createdAt,
-                        groups.filterNotNull().map {
-                            GroupResp(it.id.toString(), it.name)
-                        }
-                    )
-                }
-        }
+        (Account innerJoin TeacherCourseAccess leftJoin TeacherCourseGroup leftJoin CourseGroup)
+            .slice(
+                Account.id, Account.email, Account.givenName, Account.familyName,
+                CourseGroup.id, CourseGroup.name, TeacherCourseAccess.createdAt
+            ).select {
+                TeacherCourseAccess.course eq courseId
+            }.groupBy({
+                TeacherOnCourse(
+                    it[Account.id].value,
+                    it[Account.email],
+                    it[Account.givenName],
+                    it[Account.familyName],
+                    it[TeacherCourseAccess.createdAt]
+                )
+            }) {
+                val groupId: EntityID<Long>? = it[CourseGroup.id]
+                if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
+            }
+            .map { (teacher, groups) ->
+                TeachersResp(
+                    teacher.id,
+                    teacher.email,
+                    teacher.givenName,
+                    teacher.familyName,
+                    teacher.createdAt,
+                    groups.filterNotNull().map {
+                        GroupResp(it.id.toString(), it.name)
+                    }
+                )
+            }
     }
 }

@@ -78,7 +78,7 @@ class TeacherDownloadSubmissionsController {
     private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Long>, caller: EasyUser): List<Zip> =
         transaction {
 
-            val join1 = Submission innerJoin CourseExercise innerJoin (Student innerJoin Account)
+            val join1 = Submission innerJoin CourseExercise innerJoin Account
             val join2 = StudentCourseAccess leftJoin (StudentCourseGroup innerJoin CourseGroup)
 
             val query = Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
