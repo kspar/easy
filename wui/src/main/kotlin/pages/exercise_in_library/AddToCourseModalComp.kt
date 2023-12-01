@@ -10,7 +10,10 @@ import dao.CoursesTeacherDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import pages.course_exercise.ExerciseSummaryPage
-import rip.kspar.ezspa.*
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.EzSpa
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.plainDstStr
 import translation.Str
 
 class AddToCourseModalComp(
@@ -89,8 +92,8 @@ class AddToCourseModalComp(
 
     private suspend fun addToCourse(courseId: String) {
         val courseExIds = exerciseIds.map {
-            ExerciseDAO.addExerciseToCourse(it, courseId)
-        }.unionPromise().await()
+            ExerciseDAO.addExerciseToCourse(it, courseId).await()
+        }
         // show fail message only if one exercise was added
         if (courseExIds.size == 1) {
             val ceId = courseExIds.first()
