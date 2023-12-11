@@ -8,11 +8,6 @@ easy is an educational software platform for managing programming exercises and 
 
 Easy consists of several applications - some web-based, some desktop, some IDE plugins. This repository contains the core web application.
 
-The development of Lahendus and easy, and creating some exercises has been supported by:
-- [Haridus- ja Noorteamet](https://harno.ee/)
-- [Majandus- ja Kommunikatsiooniministeerium](https://www.mkm.ee/)
-- [IT Akadeemia](https://harno.ee/it-akadeemia-programm)
-
 
 ### Related
 - Lahendus allows submitting solutions directly from [Thonny](https://thonny.org/) (Python IDE for beginners) by providing the [`thonny-easy` plugin](https://github.com/kspar/thonny-easy).
@@ -22,7 +17,6 @@ The development of Lahendus and easy, and creating some exercises has been suppo
 
 
 ## Contributing
-Easy and Lahendus are developed at and sponsored by the [Institute of Computer Science at the University of Tartu](https://cs.ut.ee/en).
 
 If you'd like to contribute to the development in any way, then please come talk to us in our Discord server (link here: https://lahendus.ut.ee/about).
 
