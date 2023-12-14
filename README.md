@@ -1,26 +1,26 @@
 
 ## About
 ### easy 
-Environment for learning and teaching programming, which provides automatic checking of programming task solutions.
-The environment is used for conducting programming courses, participating in them, and managing tasks.
-Tasks are stored and managed in a course-wide exercise repository developed at the [Institute of Computer Science](https://cs.ut.ee/et).
+easy is an educational software platform for managing programming exercises and automatically assessing solutions.
 
-### Lahendus
-[Lahendus](https://lahendus.ut.ee/) is a service using easy that is operated and developed by the 
-[Institute of Computer Science at the University of Tartu](https://cs.ut.ee/et). 
+[Lahendus](https://lahendus.ut.ee/) is a service built on easy that is operated by the
+[Institute of Computer Science at the University of Tartu](https://cs.ut.ee/en).
 
-The development of Lahendus and easy, and creating some of the exercises has been supported by: 
-[Haridus- ja Noorteamet](https://harno.ee/), [Majandus- ja Kommunikatsiooniministeerium](https://www.mkm.ee/), and [IT Akadeemia](https://harno.ee/it-akadeemia-programm).
-
-## Related
-- Lahendus supports [Thonny](https://thonny.org/), Python IDE for beginners, by providing `thonny-easy` [plugin](https://github.com/kspar/thonny-easy).
-- Thonny plugin requires [easy-py](https://github.com/kspar/easy-py), a Python SDK for easy.
-- Lahendus uses [Keycloak](https://www.keycloak.org/), and has implemented a custom theme found [here](https://github.com/kspar/easy-kc-theme).
+Easy consists of several applications - some web-based, some desktop, some IDE plugins. This repository contains the core web application.
 
 
-## Contribution and issue tracking
-- Come talk to us in Discord (link to Discord can be found in [Lahendus](https://lahendus.ut.ee/about))
-- Issue tracker: [YouTrack](https://easy.myjetbrains.com/)
+### Related
+- Lahendus allows submitting solutions directly from [Thonny](https://thonny.org/) (Python IDE for beginners) by providing the [`thonny-easy` plugin](https://github.com/kspar/thonny-easy).
+- Lahendus has a [command-line interface (CLI) desktop app](https://github.com/kspar/easy-cli) that can be used to automate some actions.
+- [easy-py](https://github.com/kspar/easy-py) is a Python SDK for easy, and is used by the Thonny plugin and the CLI.
+- Lahendus uses [Keycloak](https://www.keycloak.org/) as an identity provider with [a custom theme](https://github.com/kspar/easy-kc-theme).
+
+
+## Contributing
+
+If you'd like to contribute to the development in any way, then please come talk to us in our Discord server (link here: https://lahendus.ut.ee/about).
+
+Issue tracker: [YouTrack](https://easy.myjetbrains.com/youtrack)
 
 ## License
-- MIT License
+MIT License
