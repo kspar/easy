@@ -39,7 +39,7 @@ class DeleteExercise {
         val exId = exIdString.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            libraryExercise(exId, DirAccessLevel.PRAW)
+            libraryExercise(exId, DirAccessLevel.PRAWM)
         }
 
         assertExerciseIsNotOnAnyCourse(exId)
