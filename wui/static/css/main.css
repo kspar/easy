@@ -759,6 +759,10 @@ ez-exercise-badge ez-icon {
     max-height: none;
 }
 
+#global-exercise ez-exercise-edit-tab ez-icon-action:not(:hover) > ez-icon {
+    color: var(--ez-icon-col);
+}
+
 #DIR_PERMISSIONS .modal .modal-content {
     padding-bottom: 2rem;
 }
