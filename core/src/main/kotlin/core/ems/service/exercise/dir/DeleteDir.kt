@@ -34,7 +34,7 @@ class DeleteDir {
         val dirId = dirIdString.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            libraryDir(dirId, DirAccessLevel.PRAW)
+            libraryDir(dirId, DirAccessLevel.PRAWM)
         }
 
         assertDirExists(dirId, allowImplicit = false)
