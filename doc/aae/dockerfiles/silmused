@@ -1,0 +1,8 @@
+FROM python:3.10
+
+ENV PYTHONIOENCODING utf-8
+
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache-dir psycopg2==2.9.9
+
+RUN pip3 install --no-cache-dir silmused==0.0.18
