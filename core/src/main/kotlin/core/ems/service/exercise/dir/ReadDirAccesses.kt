@@ -3,16 +3,14 @@ package core.ems.service.exercise.dir
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.Dir
 import core.db.DirAccessLevel
-import core.db.Group
-import core.db.GroupDirAccess
-import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
+import core.ems.service.assertDirExists
+import core.ems.service.getAccountFromImplicitGroup
+import core.ems.service.getDirectGroupDirAccesses
+import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -66,14 +64,6 @@ class ReadDirAccesses {
         @JsonProperty("name") val name: String,
     )
 
-    private data class AccessDir(
-        val id: Long, val name: String, val parent: Long?,
-        val anyAccess: DirAccessLevel?, val groupAccesses: List<AccessGroup>
-    )
-
-    private data class AccessGroup(val id: Long, val name: String, val access: DirAccessLevel, val isImplicit: Boolean)
-
-
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/lib/dirs/{dirId}/access")
     fun controller(
@@ -105,7 +95,7 @@ class ReadDirAccesses {
         data class AccessAny(val access: DirAccessLevel, val inheritingDirId: Long, val inheritingDirName: String)
 
         // Return all direct accesses
-        val directDir = selectGroupDirAccesses(dirId)
+        val directDir = getDirectGroupDirAccesses(dirId)
 
         // Return only effective inherited accesses
         // Group ID -> access
@@ -114,7 +104,7 @@ class ReadDirAccesses {
 
         var parentDirId = directDir.parent
         while (parentDirId != null) {
-            val dir = selectGroupDirAccesses(parentDirId)
+            val dir = getDirectGroupDirAccesses(parentDirId)
 
             // Recompute best any access
             inheritedAny = when {
@@ -222,34 +212,6 @@ class ReadDirAccesses {
             directAnyAccess, directAccountAccesses, directGroupAccesses,
             inheritedAnyAccess, inheritedAccountAccesses, inheritedGroupAccesses
         )
-    }
-
-    private fun selectGroupDirAccesses(dirId: Long): AccessDir = transaction {
-        val accesses = (GroupDirAccess innerJoin Group)
-            .slice(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
-            .select {
-                GroupDirAccess.dir eq dirId
-            }.map {
-                // Can only have one access for this dir per group, so don't need to aggregate
-                AccessGroup(
-                    it[Group.id].value,
-                    it[Group.name],
-                    it[GroupDirAccess.level],
-                    it[Group.isImplicit],
-                )
-            }
-
-        Dir.select {
-            Dir.id eq dirId
-        }.map {
-            AccessDir(
-                it[Dir.id].value,
-                it[Dir.name],
-                it[Dir.parentDir]?.value,
-                it[Dir.anyAccess],
-                accesses
-            )
-        }.single()
     }
 }
 

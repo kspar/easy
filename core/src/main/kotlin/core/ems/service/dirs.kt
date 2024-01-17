@@ -303,6 +303,41 @@ fun updateAnyDirAccess(dirId: Long, level: DirAccessLevel?) = transaction {
     }
 }
 
+data class AccessDir(
+    val id: Long, val name: String, val parent: Long?,
+    val anyAccess: DirAccessLevel?, val groupAccesses: List<AccessGroup>
+)
+
+data class AccessGroup(val id: Long, val name: String, val access: DirAccessLevel, val isImplicit: Boolean)
+
+fun getDirectGroupDirAccesses(dirId: Long): AccessDir = transaction {
+    val accesses = (GroupDirAccess innerJoin Group)
+        .slice(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
+        .select {
+            GroupDirAccess.dir eq dirId
+        }.map {
+            // Can only have one access for this dir per group, so don't need to aggregate
+            AccessGroup(
+                it[Group.id].value,
+                it[Group.name],
+                it[GroupDirAccess.level],
+                it[Group.isImplicit],
+            )
+        }
+
+    Dir.select {
+        Dir.id eq dirId
+    }.map {
+        AccessDir(
+            it[Dir.id].value,
+            it[Dir.name],
+            it[Dir.parentDir]?.value,
+            it[Dir.anyAccess],
+            accesses
+        )
+    }.single()
+}
+
 
 @Deprecated("For debugging only")
 fun debugPrintDir(dirId: Long? = null) {
