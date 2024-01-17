@@ -204,6 +204,17 @@ fun dirExists(dirId: Long, allowImplicit: Boolean = false): Boolean {
     }
 }
 
+fun assertDirIsEmpty(dirId: Long) = transaction {
+    val childCount = Dir.select {
+        Dir.parentDir eq dirId
+    }.count()
+    if (childCount > 0)
+        throw InvalidRequestException(
+            "Dir $dirId is not empty",
+            ReqError.DIR_NOT_EMPTY, "id" to dirId.toString()
+        )
+}
+
 fun hasAccountDirAccess(user: EasyUser, dirId: Long, level: DirAccessLevel): Boolean {
     return when {
         user.isAdmin() -> true
