@@ -4,6 +4,7 @@ import EzDate
 import EzDateSerializer
 import Icons
 import blankToNull
+import components.ToastThing
 import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
 import kotlinx.coroutines.await
@@ -12,6 +13,7 @@ import pages.exercise_library.DirAccess
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import translation.Str
 import kotlin.js.Promise
 
 object ExerciseDAO {
@@ -213,4 +215,20 @@ object ExerciseDAO {
                 successChecker = { http200 }
             ).await().parseTo(Similarity.serializer()).await()
         }
+
+
+    fun deleteExercise(exerciseId: String) = doInPromise {
+        debug { "Deleting exercise $exerciseId" }
+        fetchEms(
+            "/exercises/${exerciseId.encodeURIComponent()}",
+            ReqMethod.DELETE, successChecker = { http200 },
+            errorHandler = {
+                it.handleByCode(RespError.EXERCISE_USED_ON_COURSE) {
+                    ToastThing(Str.cannotDeleteExerciseUsedOnCourse, icon = ToastThing.ERROR)
+                }
+            }
+        ).await()
+
+        Unit
+    }
 }

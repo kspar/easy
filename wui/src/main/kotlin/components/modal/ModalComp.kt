@@ -17,7 +17,6 @@ open class ModalComp<T>(
     private val isWide: Boolean = false,
     bodyCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
     footerCompsProvider: ((ModalComp<T>) -> List<Component>)? = null,
-    private val onOpen: (() -> Unit)? = null,
     private val onOpened: (() -> Unit)? = null,
     private val htmlClasses: String = "",
     parent: Component?,
@@ -120,7 +119,6 @@ open class ModalComp<T>(
             )
             modal.open()
             mModal = modal
-            onOpen?.invoke()
         }
         return p
     }

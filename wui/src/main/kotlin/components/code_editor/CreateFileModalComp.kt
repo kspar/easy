@@ -31,7 +31,7 @@ class CreateFileModalComp(
         "Uus fail", Str.doSave, Str.cancel,
         defaultReturnValue = null,
         primaryAction = { filenameField.getValue() }, primaryPostAction = ::reinitialise,
-        onOpen = { filenameField.focus() }, parent = this
+        onOpened = { filenameField.focus() }, parent = this
     )
 
     private val filenameField = StringFieldComp(

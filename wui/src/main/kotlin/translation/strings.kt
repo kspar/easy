@@ -40,6 +40,7 @@ sealed class TranslatableStrings {
     abstract val removing: String
     abstract val removed: String
     abstract val doDelete: String
+    abstract val deleting: String
     abstract val deleted: String
     abstract val doRestore: String
     abstract val doEdit: String
@@ -201,6 +202,11 @@ sealed class TranslatableStrings {
     // Exercise library page
     abstract val newExercise: String
     abstract val newDirectory: String
+    abstract val dirSettings: String
+    abstract val deleteDir: String
+    abstract val cannotDeleteNonemptyDir: String
+    abstract val deleteExercise: String
+    abstract val cannotDeleteExerciseUsedOnCourse: String
     abstract val share: String
     abstract val permissionsChanged: String
     abstract val shared: String
@@ -377,10 +383,11 @@ object EstStrings : TranslatableStrings() {
     override val removing = "Eemaldan..."
     override val removed = "Eemaldatud"
     override val doDelete = "Kustuta"
+    override val deleting = "Kustutan..."
     override val deleted = "Kustutatud"
     override val doRestore = "Taasta"
     override val doEdit = "Muuda"
-    override val doDuplicate = "Tee koopia"
+    override val doDuplicate = "Loo koopia"
     override val doExpand = "Laienda"
     override val assessmentAddedMsg = "Hinnang lisatud"
     override val oldSubmissionNote = "See on vana esitus."
@@ -413,6 +420,12 @@ object EstStrings : TranslatableStrings() {
     override val logOut = "Logi välja"
     override val newExercise = "Uus ülesanne"
     override val newDirectory = "Uus kaust"
+    override val dirSettings = "Muuda nime"
+    override val deleteDir = "Kustuta kaust"
+    override val cannotDeleteNonemptyDir = "Kausta ei saa kustutada, sest see pole tühi"
+    override val deleteExercise = "Kustuta ülesanne"
+    override val cannotDeleteExerciseUsedOnCourse =
+        "Ülesannet ei saa kustutada, sest see on vähemalt ühel kursusel kasutusel"
     override val share = "Jagamine"
     override val permissionsChanged = "Õigused muudetud"
     override val shared = "Jagatud"
@@ -687,6 +700,7 @@ object EngStrings : TranslatableStrings() {
     override val removing = "Removing..."
     override val removed = "Removed"
     override val doDelete = "Delete"
+    override val deleting = "Deleting..."
     override val deleted = "Deleted"
     override val doRestore = "Restore"
     override val doEdit = "Edit"
@@ -707,6 +721,12 @@ object EngStrings : TranslatableStrings() {
 
     override val newExercise = "New exercise"
     override val newDirectory = "New directory"
+    override val dirSettings = "Change name"
+    override val deleteDir = "Delete directory"
+    override val cannotDeleteNonemptyDir = "The directory is not empty and cannot be deleted"
+    override val deleteExercise = "Delete exercise"
+    override val cannotDeleteExerciseUsedOnCourse =
+        "This exercise is still used on at least one course and cannot be deleted"
     override val share = "Share"
     override val permissionsChanged = "Permissions changed"
     override val shared = "Shared"

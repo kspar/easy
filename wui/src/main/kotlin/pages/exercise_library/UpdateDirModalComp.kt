@@ -9,32 +9,37 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import translation.Str
 
-class CreateDirModalComp(
-    private val parentDirId: String?,
+class UpdateDirModalComp(
     parent: Component,
 ) : Component(parent) {
 
+    lateinit var dirId: String
+    var dirCurrentName: String = ""
 
     private val modalComp: BinaryModalComp<String?> = BinaryModalComp(
-        Str.newDirectory, Str.doSave, Str.cancel, Str.saving,
+        Str.dirSettings, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
-        primaryAction = { createDir(nameField.getValue()) }, primaryPostAction = ::reinitialise,
-        onOpened = { nameField.focus() }, parent = this
+        primaryAction = { updateDir(nameField.getValue()) }, primaryPostAction = ::reinitialise,
+        onOpened = { nameField.focus() },
+        parent = this
     )
 
-    private val nameField = StringFieldComp(
-        Str.directoryName,
-        true, paintRequiredOnInput = false,
-        constraints = listOf(StringConstraints.Length(max = 100)),
-        onValidChange = ::updateSubmitBtn,
-        onENTER = { modalComp.primaryButton.click() },
-        parent = modalComp
-    )
+    private lateinit var nameField: StringFieldComp
 
     override val children: List<Component>
         get() = listOf(modalComp)
 
     override fun create() = doInPromise {
+        nameField = StringFieldComp(
+            Str.directoryName,
+            true, initialValue = dirCurrentName,
+            paintRequiredOnInput = false,
+            constraints = listOf(StringConstraints.Length(max = 100)),
+            onValidChange = ::updateSubmitBtn,
+            onENTER = { modalComp.primaryButton.click() },
+            parent = modalComp
+        )
+
         modalComp.setContentComps { listOf(nameField) }
     }
 
@@ -53,7 +58,8 @@ class CreateDirModalComp(
         modalComp.primaryButton.setEnabled(isValid)
     }
 
-    private suspend fun createDir(name: String): String {
-        return LibraryDirDAO.createDir(name, parentDirId).await()
+    private suspend fun updateDir(name: String): String {
+        LibraryDirDAO.updateDir(name, dirId).await()
+        return name
     }
 }

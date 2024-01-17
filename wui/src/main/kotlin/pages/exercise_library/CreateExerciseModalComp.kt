@@ -29,7 +29,7 @@ class CreateExerciseModalComp(
         Str.newExercise, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createExercise(titleField.getValue()) }, primaryPostAction = ::reinitialise,
-        onOpen = { titleField.focus() }, parent = this
+        onOpened = { titleField.focus() }, parent = this
     )
 
     private val titleField = StringFieldComp(

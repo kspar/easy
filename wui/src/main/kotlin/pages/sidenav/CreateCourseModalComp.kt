@@ -24,7 +24,7 @@ class CreateCourseModalComp(
         "Uus kursus", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = null,
         primaryAction = { createCourse(courseTitleFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
-        onOpen = { courseTitleFieldComp.focus() },
+        onOpened = { courseTitleFieldComp.focus() },
         parent = this
     )
 

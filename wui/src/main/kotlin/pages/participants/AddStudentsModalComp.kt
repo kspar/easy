@@ -25,11 +25,9 @@ class AddStudentsModalComp(
             defaultReturnValue = false,
             fixFooter = true,
             isWide = true,
-            onOpen = {
-                linkTab.createAndBuild()
-            },
             onOpened = {
                 tabsComp.refreshIndicator()
+                linkTab.createAndBuild()
             },
             bodyCompsProvider = {
                 tabsComp = createTabsComp(it)
