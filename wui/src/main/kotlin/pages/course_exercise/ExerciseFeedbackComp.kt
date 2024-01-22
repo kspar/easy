@@ -225,7 +225,7 @@ class ExerciseFeedbackComp(
             )
         },
         "producerIcon" to Icons.lahendus,
-        "producer" to "TSL / $producer",
+        "producer" to producer,
     )
 
     private fun V3Status.mapToIcon() = when (this) {
@@ -233,42 +233,4 @@ class ExerciseFeedbackComp(
         V3Status.FAIL -> Icons.close
         V3Status.SKIP -> Icons.dotsHorizontal
     }
-
-    private fun OkV3.renderV3Text() = this.tests.joinToString("\n\n") {
-        val testTitle = "${mapStatus(it.status)} ${it.title}"
-        val testContent = it.exception_message ?: run {
-
-            val checks = it.checks.joinToString("\n") {
-                "  ${mapStatus(it.status)} ${it.feedback}"
-            }
-
-            val files = if (it.created_files.isNotEmpty())
-                "  Enne programmi jooksutamist lõin need failid:\n" +
-                        it.created_files.joinToString("\n") {
-                            val content = it.content.split("\n").joinToString("\n") { "    $it" }
-                            "    --- ${it.name} ---\n$content"
-                        }
-            else null
-
-            val inputs = if (it.user_inputs.isNotEmpty())
-                "  Andsin programmile need sisendid:\n" +
-                        it.user_inputs.joinToString("\n") { "    $it" }
-            else null
-
-            val output = if (it.actual_output != null)
-                "  Programmi täielik väljund oli:\n" + it.actual_output.split("\n").joinToString("\n") { "    $it" }
-            else null
-
-            listOfNotNull(checks, files, inputs, output).joinToString("\n\n")
-        }
-
-        "$testTitle\n$testContent"
-    }
-
-    private fun mapStatus(status: V3Status): String =
-        when (status) {
-            V3Status.PASS -> "[✓]"
-            V3Status.FAIL -> "[x]"
-            V3Status.SKIP -> "[-]"
-        }
 }
