@@ -176,7 +176,11 @@ class ExerciseRootComp(
             ExerciseDAO.Autoeval(
                 remote.container_image!!,
                 remote.grading_script!!,
-                remote.assets!!.associate { it.file_name to it.file_content },
+                remote.assets!!.associate { it.file_name to it.file_content }.let {
+                    if (remote.container_image == AutoEvalTypes.TSL_CONTAINER)
+                        it.filterKeys { it == AutoassessEditorComp.TSL_SPEC_FILENAME_JSON }
+                    else it
+                },
                 remote.max_time_sec!!,
                 remote.max_mem_mb!!
             )
@@ -186,7 +190,11 @@ class ExerciseRootComp(
             ExerciseDAO.Autoeval(
                 initial.container_image!!,
                 initial.grading_script!!,
-                initial.assets!!.associate { it.file_name to it.file_content },
+                initial.assets!!.associate { it.file_name to it.file_content }.let {
+                    if (initial.container_image == AutoEvalTypes.TSL_CONTAINER)
+                        it.filterKeys { it == AutoassessEditorComp.TSL_SPEC_FILENAME_JSON }
+                    else it
+                },
                 initial.max_time_sec!!,
                 initial.max_mem_mb!!
             )
