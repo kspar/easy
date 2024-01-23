@@ -1004,7 +1004,7 @@ ez-code-edit-tabs {
 
 .CodeMirror-scroll {
     min-height: 20vh;
-    max-height: 85vh;
+    max-height: 80vh;
 }
 
 .editor-read-only .CodeMirror-cursors {

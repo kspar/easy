@@ -105,7 +105,7 @@ class ExerciseRootComp(
                 <ez-block-container>
                     <!-- width such that it's side-by-side on some tablets as well -->
                     <ez-block id='${exercisePane.dstId}' style='width: 46.5rem; max-width: 100rem; overflow: auto;'></ez-block>
-                    <ez-block id='${tabsPane.dstId}' style='width: 46.5rem; max-width: 140rem; padding-bottom: 5rem; overflow: auto;'></ez-block>
+                    <ez-block id='${tabsPane.dstId}' style='width: 46.5rem; max-width: 140rem; overflow: auto;'></ez-block>
                 </ez-block-container>
                 <ez-dst id="${addToCourseModal.dstId}"></ez-dst>
                 <ez-dst id="${permissionsModal.dstId}"></ez-dst>
