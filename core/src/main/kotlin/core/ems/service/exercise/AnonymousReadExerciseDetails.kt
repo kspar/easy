@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
+import core.ems.service.access_control.assertExerciseHasTextEditorSubmission
 import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
@@ -35,6 +36,7 @@ class AnonymousReadExerciseDetails {
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)
+        assertExerciseHasTextEditorSubmission(exerciseId)
 
         return selectAnonymousExerciseDetails(exerciseId)
     }

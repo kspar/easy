@@ -14,7 +14,6 @@ enum class AutoGradeStatus {
     FAILED
 }
 
-// Length in Table object is 10
 // Stronger permissions must be defined after weaker ones - definition order specifies natural comparison order
 enum class DirAccessLevel {
     // Pass-through, non-inheriting Read
@@ -33,4 +32,9 @@ enum class DirAccessLevel {
 enum class PriorityLevel {
     AUTHENTICATED,
     ANONYMOUS
+}
+
+enum class SolutionFileType {
+    TEXT_EDITOR,
+    TEXT_UPLOAD,
 }

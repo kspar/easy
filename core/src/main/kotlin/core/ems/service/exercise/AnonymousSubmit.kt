@@ -6,6 +6,7 @@ import core.db.AnonymousSubmission
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.PriorityLevel
+import core.ems.service.access_control.assertExerciseHasTextEditorSubmission
 import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
 import core.ems.service.idToLongOrInvalidReq
@@ -51,6 +52,7 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         assertUnauthAccessToExercise(exerciseId)
+        assertExerciseHasTextEditorSubmission(exerciseId)
         assertExerciseIsAutoGradable(exerciseId)
 
         val grade = autoGradeSolution(exerciseId, solutionBody.solution, autoGradeScheduler)

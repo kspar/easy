@@ -43,6 +43,8 @@ class TeacherReadExDetailsCont {
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
         @JsonProperty("grader_type") val grader: GraderType,
+        @JsonProperty("solution_file_name") val solutionFileName: String,
+        @JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
         @JsonProperty("threshold") val threshold: Int,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("last_modified") val lastModified: DateTime,
@@ -103,7 +105,9 @@ class TeacherReadExDetailsCont {
                 ExerciseVer.textAdoc,
                 ExerciseVer.graderType,
                 ExerciseVer.validFrom,
-                ExerciseVer.autoExerciseId
+                ExerciseVer.autoExerciseId,
+                ExerciseVer.solutionFileName,
+                ExerciseVer.solutionFileType,
             )
             .select {
                 CourseExercise.course eq courseId and
@@ -135,6 +139,8 @@ class TeacherReadExDetailsCont {
                     it[CourseExercise.softDeadline],
                     it[CourseExercise.hardDeadline],
                     it[ExerciseVer.graderType],
+                    it[ExerciseVer.solutionFileName],
+                    it[ExerciseVer.solutionFileType],
                     it[CourseExercise.gradeThreshold],
                     it[ExerciseVer.validFrom],
                     it[CourseExercise.studentVisibleFrom].notNullAndInPast(),

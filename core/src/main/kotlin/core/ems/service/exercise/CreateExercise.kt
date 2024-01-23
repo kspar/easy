@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.AdocService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
+import core.ems.service.getImplicitGroupFromAccount
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.upsertGroupDirAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
@@ -38,6 +41,8 @@ class CreateExercise(private val adocService: AdocService) {
         @JsonProperty("public", required = true) val public: Boolean,
         @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @JsonProperty("grader_type", required = true) val graderType: GraderType,
+        @JsonProperty("solution_file_name", required = true) val solutionFileName: String,
+        @JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
         @JsonProperty("grading_script", required = false) val gradingScript: String?,
         @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
         @JsonProperty("max_time_sec", required = false) val maxTime: Int?,

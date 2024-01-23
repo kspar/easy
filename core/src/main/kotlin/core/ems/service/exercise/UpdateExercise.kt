@@ -37,6 +37,8 @@ class UpdateExercise(private val adocService: AdocService) {
         @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @JsonProperty("anonymous_autoassess_template", required = false) val anonymousAutoassessTemplate: String?,
         @JsonProperty("grader_type", required = true) val graderType: GraderType,
+        @JsonProperty("solution_file_name", required = true) val solutionFileName: String,
+        @JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
         @JsonProperty("grading_script", required = false) val gradingScript: String?,
         @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
         @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
@@ -123,6 +125,8 @@ class UpdateExercise(private val adocService: AdocService) {
                 it[validFrom] = now
                 it[previous] = EntityID(lastVersionId, ExerciseVer)
                 it[graderType] = req.graderType
+                it[solutionFileName] = req.solutionFileName
+                it[solutionFileType] = req.solutionFileType
                 it[title] = req.title
                 it[textHtml] = html
                 it[textAdoc] = req.textAdoc
