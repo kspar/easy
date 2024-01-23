@@ -121,6 +121,8 @@ class CreateExercise(private val adocService: AdocService) {
                 it[author] = teacherId
                 it[validFrom] = now
                 it[graderType] = req.graderType
+                it[solutionFileName] = req.solutionFileName
+                it[solutionFileType] = req.solutionFileType
                 it[title] = req.title
                 it[textHtml] = html
                 it[textAdoc] = req.textAdoc
