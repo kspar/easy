@@ -20,6 +20,8 @@ class CourseExerciseStudentSubmitTabComp(
     private val courseExId: String,
     private val graderType: ExerciseDAO.GraderType,
     private val isOpenForSubmissions: Boolean,
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     private val onNewSubmission: () -> Unit,
     parent: Component
 ) : Component(parent) {
@@ -88,7 +90,7 @@ class CourseExerciseStudentSubmitTabComp(
 
         editor = CodeEditorComp(
             CodeEditorComp.File(
-                "${Str.solutionCodeTabName}.py", content?.content,
+                solutionFileName, content?.content,
                 editability = if (isOpenForSubmissions) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
             ),
             placeholder = Str.solutionEditorPlaceholder, parent = this

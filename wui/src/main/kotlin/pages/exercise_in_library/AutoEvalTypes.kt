@@ -18,9 +18,11 @@ object AutoEvalTypes {
         CODE_EDITOR
     }
 
+    const val TSL_CONTAINER = "tiivad:tsl-compose"
+
     val templates = listOf(
         TypeTemplate(
-            "TSL", "tiivad:tsl-compose",
+            "TSL", TSL_CONTAINER,
             7, 30, TypeEditor.TSL_COMPOSE,
             "",
             """

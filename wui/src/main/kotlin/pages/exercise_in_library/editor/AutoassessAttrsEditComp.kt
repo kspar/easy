@@ -2,6 +2,9 @@ package pages.exercise_in_library.editor
 
 import components.form.IntFieldComp
 import components.form.SelectComp
+import components.form.StringFieldComp
+import components.form.validation.StringConstraints
+import dao.ExerciseDAO
 import pages.exercise_in_library.AutoEvalTypes
 import rip.kspar.ezspa.Component
 import template
@@ -9,6 +12,8 @@ import translation.Str
 
 
 class AutoassessAttrsEditComp(
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     private val containerImage: String?,
     private val maxTime: Int?,
     private val maxMem: Int?,
@@ -16,6 +21,12 @@ class AutoassessAttrsEditComp(
     private val onValidChanged: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
+
+    private val fileNameField = StringFieldComp(
+        Str.solutionFilename, true, initialValue = solutionFileName,
+        constraints = listOf(StringConstraints.Length(1, 100)),
+        onValidChange = ::onElementValidChange, parent = this
+    )
 
     private val typeSelect = SelectComp(
         Str.autoassessType, AutoEvalTypes.templates.map {
@@ -45,11 +56,12 @@ class AutoassessAttrsEditComp(
 
 
     override val children: List<Component>
-        get() = listOfNotNull(typeSelect, timeField, memField)
+        get() = listOfNotNull(fileNameField, typeSelect, timeField, memField)
 
     override fun render() = template(
         """
             <ez-exercise-autoeval>
+                $fileNameField
                 <ez-block-container>
                     <ez-block style="padding-right: 5rem;">
                         <div id="${typeSelect.dstId}"></div>
@@ -73,13 +85,18 @@ class AutoassessAttrsEditComp(
         onValidChanged(nowValid)
     }
 
+    fun getFileName() = fileNameField.getValue()
+    fun getFileType() = solutionFileType
     fun getContainerImage() = typeSelect.getValue()
     fun getTime() = timeField?.getIntValue()
     fun getMem() = memField?.getIntValue()
 
-    fun isValid() = (timeField?.isValid ?: true) && (memField?.isValid ?: true)
+    fun isValid() = fileNameField.isValid
+            && (timeField?.isValid ?: true)
+            && (memField?.isValid ?: true)
 
     fun validateInitial() {
+        fileNameField.validateInitial()
         timeField?.validateInitial()
         memField?.validateInitial()
         // If there's no fields, then there's also no automatic callbacks from the fields

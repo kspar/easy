@@ -139,6 +139,8 @@ object CourseExercisesTeacherDAO {
         @Serializable(with = DateSerializer::class)
         val soft_deadline: Date?,
         val grader_type: ExerciseDAO.GraderType,
+        val solution_file_name: String,
+        val solution_file_type: ExerciseDAO.SolutionFileType,
         val threshold: Int,
         @Serializable(with = DateSerializer::class)
         val last_modified: Date,

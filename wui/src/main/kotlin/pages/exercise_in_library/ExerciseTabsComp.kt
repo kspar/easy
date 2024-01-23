@@ -63,7 +63,7 @@ class ExerciseTabsComp(
 
                 add(
                     PageTabsComp.Tab(
-                        Str.tabAutoassess,
+                        Str.tabSubmission,
                         id = TAB_ID_AUTOASSESS,
                         onActivate = { autoassessTab.refreshTSLTabs() }) {
                         val aaProps = if (initialExercise.grading_script != null) {
@@ -76,7 +76,13 @@ class ExerciseTabsComp(
                             )
                         } else null
 
-                        AutoAssessmentTabComp(aaProps, ::validChanged, it)
+                        AutoAssessmentTabComp(
+                            aaProps,
+                            initialExercise.solution_file_name,
+                            initialExercise.solution_file_type,
+                            ::validChanged,
+                            it
+                        )
                             .also { autoassessTab = it }
                     }
                 )
@@ -84,7 +90,12 @@ class ExerciseTabsComp(
                 if (initialExercise.grader_type == ExerciseDAO.GraderType.AUTO) {
                     add(
                         PageTabsComp.Tab(Str.tabTesting, id = TAB_ID_TESTING) {
-                            TestingTabComp(exerciseId, it)
+                            TestingTabComp(
+                                exerciseId,
+                                initialExercise.solution_file_name,
+                                initialExercise.solution_file_type,
+                                it
+                            )
                                 .also { testingTab = it }
                         }
                     )
@@ -107,7 +118,7 @@ class ExerciseTabsComp(
 
     data class EditedExercise(
         val title: String, val textAdoc: String, val textHtml: String,
-        val embedConfig: ExerciseDAO.EmbedConfig?, val editedAutoassess: AutoAssessmentTabComp.EditedAutoassess?
+        val embedConfig: ExerciseDAO.EmbedConfig?, val editedSubmission: AutoAssessmentTabComp.EditedSubmission
     )
 
     fun getEditedProps() = EditedExercise(

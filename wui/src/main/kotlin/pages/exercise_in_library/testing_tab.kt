@@ -23,6 +23,8 @@ import kotlin.js.Promise
 
 class TestingTabComp(
     private val exerciseId: String,
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     parent: Component?
 ) : Component(parent) {
 
@@ -48,7 +50,6 @@ class TestingTabComp(
         val timestamp: EzDate = EzDate.now(),
     )
 
-    private val editorTabName = "${Str.solutionCodeTabName}.py"
 
     private lateinit var warning: WarningComp
     private lateinit var attrs: AttrsComp
@@ -84,7 +85,7 @@ class TestingTabComp(
         )
 
         editor = CodeEditorComp(
-            CodeEditorComp.File(editorTabName, latestSubmission?.solution.orEmpty()),
+            CodeEditorComp.File(solutionFileName, latestSubmission?.solution.orEmpty()),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
@@ -115,13 +116,13 @@ class TestingTabComp(
 
     private suspend fun submit() {
         try {
-            editor.setFileEditable(editorTabName, false)
+            editor.setFileEditable(solutionFileName, false)
 
             feedback.clearAll()
             autogradeLoader.isActive = true
             autogradeLoader.rebuild()
 
-            val a = submitCheck(editor.getFileValue(editorTabName))
+            val a = submitCheck(editor.getFileValue(solutionFileName))
 
             autogradeLoader.isActive = false
             autogradeLoader.rebuild()
@@ -130,7 +131,7 @@ class TestingTabComp(
             feedback.rebuild()
             attrs.attrs = mapOf(Str.lastTestingAttempt to a.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
-            editor.setFileEditable(editorTabName, true)
+            editor.setFileEditable(solutionFileName, true)
         }
     }
 

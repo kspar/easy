@@ -27,7 +27,6 @@ sealed class TranslatableStrings {
     abstract val added: String
     abstract val goToIt: String
     abstract val cancel: String
-    abstract val solutionCodeTabName: String
     abstract val solutionEditorPlaceholder: String
     abstract val exerciseSingular: String
     abstract val exercisePlural: String
@@ -53,7 +52,6 @@ sealed class TranslatableStrings {
     abstract val doDownload: String
     abstract val downloading: String
     abstract val feedback: String
-    abstract val type: String
     abstract val value: String
     abstract val loading: String
 
@@ -235,7 +233,7 @@ sealed class TranslatableStrings {
 
     // Exercise page
     abstract val tabExercise: String
-    abstract val tabAutoassess: String
+    abstract val tabSubmission: String
     abstract val tabTesting: String
     abstract val addToCourseModalTitle: String
     abstract val addToCourseModalText1: String
@@ -259,6 +257,7 @@ sealed class TranslatableStrings {
     abstract val secAbbrev: String
     abstract val allowedExecMem: String
     abstract val allowedExecMemField: String
+    abstract val solutionFilename: String
 
 
     // TSL UI
@@ -362,7 +361,6 @@ object EstStrings : TranslatableStrings() {
     override val gradedByTeacher = "Õpetaja poolt hinnatud"
     override val notGradedYet = "Hindamata"
 
-    override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
@@ -477,7 +475,6 @@ object EstStrings : TranslatableStrings() {
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
     override val feedback = "Tagasiside"
-    override val type = "Tüüp"
     override val value = "Väärtus"
     override val loading = "Laen..."
     override val ezcollEmpty = "Siin pole veel midagi näidata"
@@ -552,12 +549,13 @@ ole hea ja proovi hiljem uuesti.
     override val testingEditedWarnMsg =
         "Kui oled automaatkontrollis muudatusi teinud, siis pead enne nende jõustumist ülesande salvestama."
 
-    override val autoassessType = "Automaatkontrolli tüüp"
+    override val autoassessType = "Automaatkontroll"
     override val allowedExecTime = "Lubatud käivitusaeg"
     override val allowedExecTimeField = "Käivitusaeg (s)"
     override val secAbbrev = "s"
     override val allowedExecMem = "Lubatud mälukasutus"
     override val allowedExecMemField = "Mälukasutus (MB)"
+    override val solutionFilename = "Faili nimi"
     override val tslPlaceholderTest = "-" to "Uus test"
     override val tslProgExecTest = "Programmi käivitus" to "Programmi käivituse test"
     override val tslFuncCallTest = "Funktsiooni väljakutse" to "Funktsiooni väljakutse test"
@@ -580,7 +578,7 @@ ole hea ja proovi hiljem uuesti.
     override val sortByModified = "Muutmisaja järgi"
     override val sortByPopularity = "Populaarsuse järgi"
     override val tabExercise = "Ülesanne"
-    override val tabAutoassess = "Automaatkontroll"
+    override val tabSubmission = "Esitamine"
     override val tabTesting = "Katsetamine"
     override val addToCourseModalTitle = "Lisa ülesanne kursusele"
     override val addToCourseModalText1 = "Lisa "
@@ -687,7 +685,6 @@ object EngStrings : TranslatableStrings() {
     override val added = "Added"
     override val goToIt = "Go"
     override val cancel = "Cancel"
-    override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Write, paste or drag your solution here..."
     override val exerciseSingular = "exercise"
     override val exercisePlural = "exercises"
@@ -800,7 +797,6 @@ object EngStrings : TranslatableStrings() {
     override val doDownload = "Download"
     override val downloading = "Downloading..."
     override val feedback = "Feedback"
-    override val type = "Type"
     override val value = "Value"
     override val loading = "Loading..."
     override val ezcollEmpty = "Nothing to see here yet"
@@ -881,12 +877,13 @@ of the issue, please try again later.
     override val lastTestingAttempt = "Last attempt"
     override val testingEditedWarnMsg =
         "If you've made changes in the automated tests, then you have to save the exercise for the changes to take effect."
-    override val autoassessType = "Autoassessment type"
+    override val autoassessType = "Autoassessment"
     override val allowedExecTime = "Allowed execution time"
     override val allowedExecTimeField = "Allowed time (sec)"
     override val secAbbrev = "sec"
     override val allowedExecMem = "Allowed memory usage"
     override val allowedExecMemField = "Allowed memory (MB)"
+    override val solutionFilename = "File name"
     override val tslPlaceholderTest = "-" to "New test"
     override val tslProgExecTest = "Program execution" to "Program execution test"
     override val tslFuncCallTest = "Function call" to "Function call test"
@@ -908,7 +905,7 @@ of the issue, please try again later.
     override val sortByModified = "By last modification"
     override val sortByPopularity = "By popularity"
     override val tabExercise = "Exercise"
-    override val tabAutoassess = "Automated tests"
+    override val tabSubmission = "Submission"
     override val tabTesting = "Testing"
     override val addToCourseModalTitle = "Add exercise to course"
     override val addToCourseModalText1 = "Add "

@@ -57,6 +57,8 @@ object CourseExercisesStudentDAO {
         val threshold: Int,
         val instructions_html: String?,
         val is_open: Boolean,
+        val solution_file_name: String,
+        val solution_file_type: ExerciseDAO.SolutionFileType,
     )
 
     fun getCourseExerciseDetails(courseId: String, courseExId: String): Promise<ExerciseDetails> = doInPromise {

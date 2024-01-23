@@ -9,6 +9,7 @@ import debug
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import pages.Title
+import pages.exercise_in_library.editor.AutoassessEditorComp
 import pages.exercise_library.DirAccess
 import pages.exercise_library.createDirChainCrumbs
 import pages.exercise_library.createPathChainSuffix
@@ -136,7 +137,9 @@ class ExerciseRootComp(
             exerciseProps.title,
             exerciseProps.textAdoc,
             exerciseProps.textHtml,
-            exerciseProps.editedAutoassess?.let {
+            exerciseProps.editedSubmission.solutionFileName,
+            exerciseProps.editedSubmission.solutionFileType,
+            exerciseProps.editedSubmission.editedAutoassess?.let {
                 ExerciseDAO.Autoeval(
                     it.containerImage,
                     it.evalScript,
@@ -204,12 +207,18 @@ class ExerciseRootComp(
         val title = mergeValue(local.title, remote.title, initial.title)
         val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
         val textHtml = mergeValue(local.textHtml, remote.text_html, initial.text_html)
+        val solutionFileName = mergeValue(local.solutionFileName, remote.solution_file_name, initial.solution_file_name)
+        val solutionFileType = mergeValue(local.solutionFileType, remote.solution_file_type, initial.solution_file_type)
         val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
         val embed = mergeValue(local.embedConfig, remoteEmbed, initialEmbed)
 
         return MergeResult(
-            listOf(title, textAdoc, textHtml, autoeval, embed).any { it.second },
-            ExerciseDAO.UpdatedExercise(title.first, textAdoc.first, textHtml.first, autoeval.first, embed.first)
+            listOf(title, textAdoc, textHtml, solutionFileName, solutionFileType, autoeval, embed).any { it.second },
+            ExerciseDAO.UpdatedExercise(
+                title.first, textAdoc.first, textHtml.first,
+                solutionFileName.first, solutionFileType.first,
+                autoeval.first, embed.first
+            )
         )
     }
 

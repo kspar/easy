@@ -22,6 +22,8 @@ object ExerciseDAO {
     data class Exercise(
         var is_public: Boolean,
         var grader_type: GraderType,
+        var solution_file_name: String,
+        var solution_file_type: SolutionFileType,
         var title: String,
         var text_adoc: String? = null,
         var grading_script: String? = null,
@@ -105,6 +107,8 @@ object ExerciseDAO {
         val title: String,
         val textAdoc: String?,
         val textHtml: String?,
+        val solutionFileName: String,
+        val solutionFileType: SolutionFileType,
         val autoeval: Autoeval?,
         val embedConfig: EmbedConfig?,
     )
@@ -133,6 +137,8 @@ object ExerciseDAO {
                 // TODO: remove
                 "public" to false,
                 "grader_type" to if (it.autoeval != null) GraderType.AUTO.name else GraderType.TEACHER.name,
+                "solution_file_name" to it.solutionFileName,
+                "solution_file_type" to it.solutionFileType.name,
                 "container_image" to it.autoeval?.containerImage,
                 "grading_script" to it.autoeval?.evalScript,
                 "max_time_sec" to it.autoeval?.maxTime,
@@ -230,5 +236,10 @@ object ExerciseDAO {
         ).await()
 
         Unit
+    }
+
+    enum class SolutionFileType {
+        TEXT_EDITOR,
+        TEXT_UPLOAD,
     }
 }

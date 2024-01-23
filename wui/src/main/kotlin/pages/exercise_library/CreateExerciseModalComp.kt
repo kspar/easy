@@ -85,6 +85,8 @@ class CreateExerciseModalComp(
                 "public" to true,
                 "grader_type" to "TEACHER",
                 "anonymous_autoassess_enabled" to false,
+                "solution_file_name" to "lahendus.py",
+                "solution_file_type" to ExerciseDAO.SolutionFileType.TEXT_EDITOR.name,
             ),
             successChecker = { http200 }).await()
             .parseTo(NewExerciseDTO.serializer()).await().id
