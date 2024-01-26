@@ -146,6 +146,7 @@ class ExerciseFeedbackComp(
                     <div class="collapsible-header">
                         <ez-feedback-test-header class='icon-med {{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}' 
                             style='display: flex; align-items: center;'>{{{status}}} {{title}}</ez-feedback-test-header>
+                        <ez-icon-action class='collapsible-dropdown-icon'>{{{expandIcon}}}</ez-icon-action>
                     </div>
                     <div class="collapsible-body">
                         {{#exception}}
@@ -224,6 +225,7 @@ class ExerciseFeedbackComp(
                 ) else null,
             )
         },
+        "expandIcon" to Icons.expandCaret,
         "producerIcon" to Icons.lahendus,
         "producer" to producer,
     )

@@ -2785,6 +2785,14 @@ ez-block-container ez-block {
     background-color: var(--ez-secondary-action-hover-bg)
 }
 
+.ez-collapsible .collapsible-dropdown-icon {
+    transition: transform .2s ease-in-out
+}
+
+.ez-collapsible li.active .collapsible-dropdown-icon {
+    transform: rotate(180deg);
+}
+
 .ez-collapsible .collapsible-body {
     padding: 2rem 1rem;
 }
