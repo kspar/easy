@@ -40,6 +40,7 @@ import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.EasyPage
 import pages.Title
+import pages.course_exercise.student.StudentCourseExerciseComp
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp

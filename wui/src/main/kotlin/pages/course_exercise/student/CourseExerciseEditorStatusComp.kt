@@ -1,4 +1,4 @@
-package pages.course_exercise
+package pages.course_exercise.student
 
 import Icons
 import rip.kspar.ezspa.Component

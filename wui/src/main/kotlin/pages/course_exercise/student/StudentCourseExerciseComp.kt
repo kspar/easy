@@ -1,4 +1,4 @@
-package pages.course_exercise
+package pages.course_exercise.student
 
 import CONTENT_CONTAINER_ID
 import cache.BasicCourseInfo
@@ -6,6 +6,8 @@ import components.PageTabsComp
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import pages.Title
+import pages.course_exercise.CourseExerciseTextComp
+import pages.course_exercise.ExerciseSummaryPage
 import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component

@@ -1,9 +1,10 @@
-package pages.course_exercise
+package pages.course_exercise.student
 
 import components.code_editor.CodeEditorComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
+import pages.course_exercise.ExerciseFeedbackComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 

@@ -1,4 +1,4 @@
-package pages.course_exercise
+package pages.course_exercise.student
 
 import Icons
 import components.ToastThing
@@ -10,6 +10,8 @@ import dao.ExerciseDAO
 import hide
 import kotlinx.coroutines.await
 import observeValueChange
+import pages.course_exercise.AutogradeLoaderComp
+import pages.course_exercise.ExerciseFeedbackComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
