@@ -12,6 +12,19 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="230124-1" author="kspar">
+        <addColumn tableName="exercise_version">
+            <column name="solution_file_name" type="text" defaultValue="lahendus.py">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution_file_type" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="exercise_version" columnName="solution_file_name"/>
+        <dropDefaultValue tableName="exercise_version" columnName="solution_file_type"/>
+    </changeSet>
+
     <changeSet id="271123-1" author="priit">
         <addColumn tableName="submission">
             <column name="seen" type="boolean" defaultValue="false">
@@ -104,6 +117,8 @@
         <dropTable tableName="teacher"/>
 
     </changeSet>
+
+
 
 
 </databaseChangeLog>

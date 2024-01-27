@@ -1,8 +1,11 @@
 package pages.exercise_in_library
 
+import Icons
 import components.code_editor.CodeEditorComp
+import components.form.IconButtonComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
+import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import observeValueChange
@@ -39,10 +42,16 @@ class ExerciseTextEditTabComp(
     )
 
     private lateinit var titleField: StringFieldComp
+    private val helpIcon = IconButtonComp(
+        Icons.helpUnf,
+        "AsciiDoc Quick Reference",
+        onClick = { window.open("https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/", "_blank") },
+        parent = this
+    )
     private lateinit var editor: CodeEditorComp
 
     override val children: List<Component>
-        get() = listOf(titleField, editor)
+        get() = listOf(titleField, helpIcon, editor)
 
     override fun create(): Promise<*> = doInPromise {
         titleField = StringFieldComp(
@@ -71,8 +80,13 @@ class ExerciseTextEditTabComp(
     override fun render() = template(
         """
             <ez-exercise-edit-tab>
-                <ez-dst id='${titleField.dstId}'></ez-dst>
-                <ez-dst id='${editor.dstId}'></ez-dst>            
+                $titleField
+                <div style='position: relative'>
+                    <div style="position: absolute; right: 1rem; top: .2rem;" class='icon-med'>
+                        $helpIcon
+                    </div>
+                    $editor
+                </div>
             </ez-exercise-edit-tab>
         """.trimIndent(),
     )

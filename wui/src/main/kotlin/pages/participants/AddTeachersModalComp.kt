@@ -28,7 +28,7 @@ class AddTeachersModalComp(
         fixFooter = true,
         isWide = true,
         primaryAction = { addTeachers(groupSelectComp?.getValue(), teachersFieldComp.getValue()) },
-        primaryPostAction = ::reinitialise, onOpen = { teachersFieldComp.focus() },
+        primaryPostAction = ::reinitialise, onOpened = { teachersFieldComp.focus() },
         htmlClasses = "add-participants-modal",
         parent = this
     )

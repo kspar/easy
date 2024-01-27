@@ -3,10 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.CourseExercise
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.GraderType
+import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
@@ -39,6 +36,8 @@ class StudentReadExerciseDetailsController {
         @JsonProperty("threshold") val threshold: Int,
         @JsonProperty("instructions_html") val instructionsHtml: String?,
         @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
+        @JsonProperty("solution_file_name") val solutionFileName: String,
+        @JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
     )
 
     @Secured("ROLE_STUDENT")
@@ -62,8 +61,8 @@ class StudentReadExerciseDetailsController {
     private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long): Resp = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(
-                ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType,
-                CourseExercise.softDeadline, CourseExercise.hardDeadline,
+                ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.solutionFileName,
+                ExerciseVer.solutionFileType, CourseExercise.softDeadline, CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
                 CourseExercise.titleAlias
             )
@@ -82,6 +81,8 @@ class StudentReadExerciseDetailsController {
                     it[CourseExercise.gradeThreshold],
                     it[CourseExercise.instructionsHtml],
                     hardDeadline == null || hardDeadline.isAfterNow,
+                    it[ExerciseVer.solutionFileName],
+                    it[ExerciseVer.solutionFileType],
                 )
             }
             .singleOrInvalidRequest()

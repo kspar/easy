@@ -27,7 +27,6 @@ sealed class TranslatableStrings {
     abstract val added: String
     abstract val goToIt: String
     abstract val cancel: String
-    abstract val solutionCodeTabName: String
     abstract val solutionEditorPlaceholder: String
     abstract val exerciseSingular: String
     abstract val exercisePlural: String
@@ -40,6 +39,7 @@ sealed class TranslatableStrings {
     abstract val removing: String
     abstract val removed: String
     abstract val doDelete: String
+    abstract val deleting: String
     abstract val deleted: String
     abstract val doRestore: String
     abstract val doEdit: String
@@ -52,7 +52,6 @@ sealed class TranslatableStrings {
     abstract val doDownload: String
     abstract val downloading: String
     abstract val feedback: String
-    abstract val type: String
     abstract val value: String
     abstract val loading: String
 
@@ -201,6 +200,11 @@ sealed class TranslatableStrings {
     // Exercise library page
     abstract val newExercise: String
     abstract val newDirectory: String
+    abstract val dirSettings: String
+    abstract val deleteDir: String
+    abstract val cannotDeleteNonemptyDir: String
+    abstract val deleteExercise: String
+    abstract val cannotDeleteExerciseUsedOnCourse: String
     abstract val share: String
     abstract val permissionsChanged: String
     abstract val shared: String
@@ -229,7 +233,7 @@ sealed class TranslatableStrings {
 
     // Exercise page
     abstract val tabExercise: String
-    abstract val tabAutoassess: String
+    abstract val tabSubmission: String
     abstract val tabTesting: String
     abstract val addToCourseModalTitle: String
     abstract val addToCourseModalText1: String
@@ -253,6 +257,7 @@ sealed class TranslatableStrings {
     abstract val secAbbrev: String
     abstract val allowedExecMem: String
     abstract val allowedExecMemField: String
+    abstract val solutionFilename: String
 
 
     // TSL UI
@@ -356,7 +361,6 @@ object EstStrings : TranslatableStrings() {
     override val gradedByTeacher = "Õpetaja poolt hinnatud"
     override val notGradedYet = "Hindamata"
 
-    override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
@@ -377,10 +381,11 @@ object EstStrings : TranslatableStrings() {
     override val removing = "Eemaldan..."
     override val removed = "Eemaldatud"
     override val doDelete = "Kustuta"
+    override val deleting = "Kustutan..."
     override val deleted = "Kustutatud"
     override val doRestore = "Taasta"
     override val doEdit = "Muuda"
-    override val doDuplicate = "Tee koopia"
+    override val doDuplicate = "Loo koopia"
     override val doExpand = "Laienda"
     override val assessmentAddedMsg = "Hinnang lisatud"
     override val oldSubmissionNote = "See on vana esitus."
@@ -413,6 +418,12 @@ object EstStrings : TranslatableStrings() {
     override val logOut = "Logi välja"
     override val newExercise = "Uus ülesanne"
     override val newDirectory = "Uus kaust"
+    override val dirSettings = "Muuda nime"
+    override val deleteDir = "Kustuta kaust"
+    override val cannotDeleteNonemptyDir = "Kausta ei saa kustutada, sest see pole tühi"
+    override val deleteExercise = "Kustuta ülesanne"
+    override val cannotDeleteExerciseUsedOnCourse =
+        "Ülesannet ei saa kustutada, sest see on vähemalt ühel kursusel kasutusel"
     override val share = "Jagamine"
     override val permissionsChanged = "Õigused muudetud"
     override val shared = "Jagatud"
@@ -464,7 +475,6 @@ object EstStrings : TranslatableStrings() {
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
     override val feedback = "Tagasiside"
-    override val type = "Tüüp"
     override val value = "Väärtus"
     override val loading = "Laen..."
     override val ezcollEmpty = "Siin pole veel midagi näidata"
@@ -525,7 +535,7 @@ ole hea ja proovi hiljem uuesti.
     override val autogradeCreatedFiles = "Enne programmi käivitamist lõin failid:"
     override val autogradeStdIn = "Andsin programmile sisendid:"
     override val autogradeStdOut = "Programmi täielik väljund oli:"
-    override val autogradeNoChecksInTest = "Siin pole midagi kontrollida. See vist tähendab, et kõik on OK?"
+    override val autogradeNoChecksInTest = "Selles testis pole ühtegi kontrolli ¯\\_(ツ)_/¯"
     override val msgExerciseCreated = "Ülesanne loodud"
     override val modifiedAt = "Viimane muudatus"
     override val exerciseCreatedAtPhrase = "loodud"
@@ -539,12 +549,13 @@ ole hea ja proovi hiljem uuesti.
     override val testingEditedWarnMsg =
         "Kui oled automaatkontrollis muudatusi teinud, siis pead enne nende jõustumist ülesande salvestama."
 
-    override val autoassessType = "Automaatkontrolli tüüp"
+    override val autoassessType = "Automaatkontroll"
     override val allowedExecTime = "Lubatud käivitusaeg"
     override val allowedExecTimeField = "Käivitusaeg (s)"
     override val secAbbrev = "s"
     override val allowedExecMem = "Lubatud mälukasutus"
     override val allowedExecMemField = "Mälukasutus (MB)"
+    override val solutionFilename = "Faili nimi"
     override val tslPlaceholderTest = "-" to "Uus test"
     override val tslProgExecTest = "Programmi käivitus" to "Programmi käivituse test"
     override val tslFuncCallTest = "Funktsiooni väljakutse" to "Funktsiooni väljakutse test"
@@ -567,7 +578,7 @@ ole hea ja proovi hiljem uuesti.
     override val sortByModified = "Muutmisaja järgi"
     override val sortByPopularity = "Populaarsuse järgi"
     override val tabExercise = "Ülesanne"
-    override val tabAutoassess = "Automaatkontroll"
+    override val tabSubmission = "Esitamine"
     override val tabTesting = "Katsetamine"
     override val addToCourseModalTitle = "Lisa ülesanne kursusele"
     override val addToCourseModalText1 = "Lisa "
@@ -674,7 +685,6 @@ object EngStrings : TranslatableStrings() {
     override val added = "Added"
     override val goToIt = "Go"
     override val cancel = "Cancel"
-    override val solutionCodeTabName = "lahendus"
     override val solutionEditorPlaceholder = "Write, paste or drag your solution here..."
     override val exerciseSingular = "exercise"
     override val exercisePlural = "exercises"
@@ -687,6 +697,7 @@ object EngStrings : TranslatableStrings() {
     override val removing = "Removing..."
     override val removed = "Removed"
     override val doDelete = "Delete"
+    override val deleting = "Deleting..."
     override val deleted = "Deleted"
     override val doRestore = "Restore"
     override val doEdit = "Edit"
@@ -707,6 +718,12 @@ object EngStrings : TranslatableStrings() {
 
     override val newExercise = "New exercise"
     override val newDirectory = "New directory"
+    override val dirSettings = "Change name"
+    override val deleteDir = "Delete directory"
+    override val cannotDeleteNonemptyDir = "The directory is not empty and cannot be deleted"
+    override val deleteExercise = "Delete exercise"
+    override val cannotDeleteExerciseUsedOnCourse =
+        "This exercise is still used on at least one course and cannot be deleted"
     override val share = "Share"
     override val permissionsChanged = "Permissions changed"
     override val shared = "Shared"
@@ -780,7 +797,6 @@ object EngStrings : TranslatableStrings() {
     override val doDownload = "Download"
     override val downloading = "Downloading..."
     override val feedback = "Feedback"
-    override val type = "Type"
     override val value = "Value"
     override val loading = "Loading..."
     override val ezcollEmpty = "Nothing to see here yet"
@@ -847,7 +863,7 @@ of the issue, please try again later.
     override val autogradeCreatedFiles = "Before running the program, the following files were created:"
     override val autogradeStdIn = "Inputs provided to the program:"
     override val autogradeStdOut = "The program's full output:"
-    override val autogradeNoChecksInTest = "There weren't any checks to run. I guess that means we're fine?"
+    override val autogradeNoChecksInTest = "This test doesn't contain any checks ¯\\_(ツ)_/¯"
     override val msgExerciseCreated = "Exercise created"
     override val modifiedAt = "Last modified"
     override val exerciseCreatedAtPhrase = "created"
@@ -861,12 +877,13 @@ of the issue, please try again later.
     override val lastTestingAttempt = "Last attempt"
     override val testingEditedWarnMsg =
         "If you've made changes in the automated tests, then you have to save the exercise for the changes to take effect."
-    override val autoassessType = "Autoassessment type"
+    override val autoassessType = "Autoassessment"
     override val allowedExecTime = "Allowed execution time"
     override val allowedExecTimeField = "Allowed time (sec)"
     override val secAbbrev = "sec"
     override val allowedExecMem = "Allowed memory usage"
     override val allowedExecMemField = "Allowed memory (MB)"
+    override val solutionFilename = "File name"
     override val tslPlaceholderTest = "-" to "New test"
     override val tslProgExecTest = "Program execution" to "Program execution test"
     override val tslFuncCallTest = "Function call" to "Function call test"
@@ -888,7 +905,7 @@ of the issue, please try again later.
     override val sortByModified = "By last modification"
     override val sortByPopularity = "By popularity"
     override val tabExercise = "Exercise"
-    override val tabAutoassess = "Automated tests"
+    override val tabSubmission = "Submission"
     override val tabTesting = "Testing"
     override val addToCourseModalTitle = "Add exercise to course"
     override val addToCourseModalText1 = "Add "

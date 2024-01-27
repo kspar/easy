@@ -4,6 +4,7 @@ import EzDate
 import EzDateSerializer
 import Icons
 import blankToNull
+import components.ToastThing
 import dao.CoursesTeacherDAO.getEffectiveCourseTitle
 import debug
 import kotlinx.coroutines.await
@@ -12,6 +13,7 @@ import pages.exercise_library.DirAccess
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import translation.Str
 import kotlin.js.Promise
 
 object ExerciseDAO {
@@ -20,6 +22,8 @@ object ExerciseDAO {
     data class Exercise(
         var is_public: Boolean,
         var grader_type: GraderType,
+        var solution_file_name: String,
+        var solution_file_type: SolutionFileType,
         var title: String,
         var text_adoc: String? = null,
         var grading_script: String? = null,
@@ -103,6 +107,8 @@ object ExerciseDAO {
         val title: String,
         val textAdoc: String?,
         val textHtml: String?,
+        val solutionFileName: String,
+        val solutionFileType: SolutionFileType,
         val autoeval: Autoeval?,
         val embedConfig: EmbedConfig?,
     )
@@ -131,6 +137,8 @@ object ExerciseDAO {
                 // TODO: remove
                 "public" to false,
                 "grader_type" to if (it.autoeval != null) GraderType.AUTO.name else GraderType.TEACHER.name,
+                "solution_file_name" to it.solutionFileName,
+                "solution_file_type" to it.solutionFileType.name,
                 "container_image" to it.autoeval?.containerImage,
                 "grading_script" to it.autoeval?.evalScript,
                 "max_time_sec" to it.autoeval?.maxTime,
@@ -213,4 +221,41 @@ object ExerciseDAO {
                 successChecker = { http200 }
             ).await().parseTo(Similarity.serializer()).await()
         }
+
+
+    fun deleteExercise(exerciseId: String) = doInPromise {
+        debug { "Deleting exercise $exerciseId" }
+        fetchEms(
+            "/exercises/${exerciseId.encodeURIComponent()}",
+            ReqMethod.DELETE, successChecker = { http200 },
+            errorHandler = {
+                it.handleByCode(RespError.EXERCISE_USED_ON_COURSE) {
+                    ToastThing(Str.cannotDeleteExerciseUsedOnCourse, icon = ToastThing.ERROR)
+                }
+            }
+        ).await()
+
+        Unit
+    }
+
+    enum class SolutionFileType {
+        TEXT_EDITOR,
+        TEXT_UPLOAD,
+    }
+
+
+    @Serializable
+    data class AutoAssessment(
+        val grade: Int,
+        val feedback: String?,
+        @Serializable(with = EzDateSerializer::class)
+        val timestamp: EzDate = EzDate.now(),
+    )
+
+    fun autoassess(exerciseId: String, solution: String) = doInPromise {
+        debug { "Autoassessing solution to exercise $exerciseId" }
+        fetchEms("/exercises/${exerciseId.encodeURIComponent()}/testing/autoassess",
+            ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }
+        ).await().parseTo(AutoAssessment.serializer()).await()
+    }
 }

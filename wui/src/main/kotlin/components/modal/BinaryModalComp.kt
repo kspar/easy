@@ -21,12 +21,12 @@ open class BinaryModalComp<T>(
     open var secondaryAction: (suspend () -> Unit)? = null,
     open var primaryPostAction: (suspend () -> Unit)? = null,
     open var secondaryPostAction: (suspend () -> Unit)? = primaryPostAction,
-    onOpen: (() -> Unit)? = null,
+    onOpened: (() -> Unit)? = null,
     htmlClasses: String = "",
     parent: Component?,
 ) : ModalComp<T>(
     title, defaultReturnValue,
-    fixFooter = fixFooter, isWide = isWide, onOpen = onOpen, htmlClasses = htmlClasses,
+    fixFooter = fixFooter, isWide = isWide, onOpened = onOpened, htmlClasses = htmlClasses,
     parent = parent
 ) {
 

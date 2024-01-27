@@ -1,5 +1,7 @@
 package pages.course_exercise
 
+import EzDate
+import EzDateSerializer
 import Icons
 import dao.CourseExercisesStudentDAO
 import debug
@@ -26,7 +28,8 @@ class ExerciseFeedbackComp(
     data class OkV3(
         val result_type: String,
         val producer: String,
-        // TODO: add finished_at: EzDate
+        @Serializable(with = EzDateSerializer::class)
+        val finished_at: EzDate,
         val points: Double, // TODO: Int
         val pre_evaluate_error: String? = null,
         val tests: List<V3Test>,
@@ -37,16 +40,12 @@ class ExerciseFeedbackComp(
         val title: String,
         val status: V3Status,
         val exception_message: String? = null,
-        val user_inputs: List<String>,
-        val created_files: List<V3File>,
+        val user_inputs: List<String>? = null,
+        val created_files: List<V3File>? = null,
         val actual_output: String? = null,
         val converted_submission: String? = null,
         val checks: List<V3Check>,
     )
-
-    enum class V3Status {
-        PASS, FAIL, SKIP
-    }
 
     @Serializable
     data class V3File(
@@ -56,10 +55,15 @@ class ExerciseFeedbackComp(
 
     @Serializable
     data class V3Check(
-        val title: String,
-        val feedback: String,
+        val title: String? = null,
+        val feedback: String? = null,
         val status: V3Status,
     )
+
+    enum class V3Status {
+        PASS, FAIL, SKIP
+    }
+
 
     override fun render(): String {
         val parsedV3 = parseAutofeedback()
@@ -146,6 +150,7 @@ class ExerciseFeedbackComp(
                     <div class="collapsible-header">
                         <ez-feedback-test-header class='icon-med {{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}' 
                             style='display: flex; align-items: center;'>{{{status}}} {{title}}</ez-feedback-test-header>
+                        <ez-icon-action class='collapsible-dropdown-icon'>{{{expandIcon}}}</ez-icon-action>
                     </div>
                     <div class="collapsible-body">
                         {{#exception}}
@@ -154,7 +159,10 @@ class ExerciseFeedbackComp(
                         {{/exception}}
                         {{#checks}}
                             <ez-feedback-check class='{{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}'>
-                                {{{status}}} {{feedback}}
+                                {{{status}}}
+                                {{title}}{{#title}}<br>{{/title}}
+                                {{feedback}}
+                                {{^title}}{{^feedback}}¯\_(ツ)_/¯{{/feedback}}{{/title}}
                             </ez-feedback-check>
                         {{/checks}}
                         <ez-feedback-data>
@@ -193,7 +201,7 @@ class ExerciseFeedbackComp(
                     mapOf(
                         "pass" to true,
                         "status" to V3Status.PASS.mapToIcon(),
-                        "feedback" to Str.autogradeNoChecksInTest,
+                        "title" to Str.autogradeNoChecksInTest,
                     )
                 else
                     it.checks.map {
@@ -201,11 +209,12 @@ class ExerciseFeedbackComp(
                             "pass" to (it.status == V3Status.PASS),
                             "fail" to (it.status == V3Status.FAIL),
                             "status" to it.status.mapToIcon(),
+                            "title" to it.title,
                             "feedback" to it.feedback,
                         )
                     },
 
-                "files" to if (it.created_files.isNotEmpty()) mapOf(
+                "files" to if (!it.created_files.isNullOrEmpty()) mapOf(
                     "msg" to Str.autogradeCreatedFiles,
                     "value" to it.created_files.joinToString("\n") {
                         val content = it.content.split("\n").joinToString("\n") { "  $it" }
@@ -213,7 +222,7 @@ class ExerciseFeedbackComp(
                     },
                 ) else null,
 
-                "inputs" to if (it.user_inputs.isNotEmpty()) mapOf(
+                "inputs" to if (!it.user_inputs.isNullOrEmpty()) mapOf(
                     "msg" to Str.autogradeStdIn,
                     "value" to it.user_inputs.joinToString("\n") { "  $it" },
                 ) else null,
@@ -224,8 +233,9 @@ class ExerciseFeedbackComp(
                 ) else null,
             )
         },
+        "expandIcon" to Icons.expandCaret,
         "producerIcon" to Icons.lahendus,
-        "producer" to "TSL / $producer",
+        "producer" to producer,
     )
 
     private fun V3Status.mapToIcon() = when (this) {
@@ -233,42 +243,4 @@ class ExerciseFeedbackComp(
         V3Status.FAIL -> Icons.close
         V3Status.SKIP -> Icons.dotsHorizontal
     }
-
-    private fun OkV3.renderV3Text() = this.tests.joinToString("\n\n") {
-        val testTitle = "${mapStatus(it.status)} ${it.title}"
-        val testContent = it.exception_message ?: run {
-
-            val checks = it.checks.joinToString("\n") {
-                "  ${mapStatus(it.status)} ${it.feedback}"
-            }
-
-            val files = if (it.created_files.isNotEmpty())
-                "  Enne programmi jooksutamist lõin need failid:\n" +
-                        it.created_files.joinToString("\n") {
-                            val content = it.content.split("\n").joinToString("\n") { "    $it" }
-                            "    --- ${it.name} ---\n$content"
-                        }
-            else null
-
-            val inputs = if (it.user_inputs.isNotEmpty())
-                "  Andsin programmile need sisendid:\n" +
-                        it.user_inputs.joinToString("\n") { "    $it" }
-            else null
-
-            val output = if (it.actual_output != null)
-                "  Programmi täielik väljund oli:\n" + it.actual_output.split("\n").joinToString("\n") { "    $it" }
-            else null
-
-            listOfNotNull(checks, files, inputs, output).joinToString("\n\n")
-        }
-
-        "$testTitle\n$testContent"
-    }
-
-    private fun mapStatus(status: V3Status): String =
-        when (status) {
-            V3Status.PASS -> "[✓]"
-            V3Status.FAIL -> "[x]"
-            V3Status.SKIP -> "[-]"
-        }
 }

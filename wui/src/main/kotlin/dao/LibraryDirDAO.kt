@@ -1,15 +1,14 @@
 package dao
 
+import components.ToastThing
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.exercise_library.DirAccess
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
+import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import translation.Str
 import kotlin.js.Promise
 
 object LibraryDirDAO {
@@ -107,8 +106,10 @@ object LibraryDirDAO {
             when (subject) {
                 is Group ->
                     put("group_id", subject.id)
+
                 is NewAccount ->
                     put("email", subject.email)
+
                 is Any ->
                     put("any_access", true)
             }
@@ -117,6 +118,34 @@ object LibraryDirDAO {
 
         fetchEms(
             "/lib/dirs/${dirId.encodeURIComponent()}/access", ReqMethod.PUT, body, successChecker = { http200 }
+        ).await()
+
+        Unit
+    }
+
+    fun updateDir(name: String, dirId: String) = doInPromise {
+        debug { "Update dir name to $name for dir $dirId" }
+        val body = buildMap {
+            put("name", name)
+        }
+        fetchEms(
+            "/lib/dirs/${dirId.encodeURIComponent()}",
+            ReqMethod.PATCH, body, successChecker = { http200 }
+        ).await()
+
+        Unit
+    }
+
+    fun deleteDir(dirId: String) = doInPromise {
+        debug { "Delete dir $dirId" }
+        fetchEms(
+            "/lib/dirs/${dirId.encodeURIComponent()}",
+            ReqMethod.DELETE, successChecker = { http200 },
+            errorHandler = {
+                it.handleByCode(RespError.DIR_NOT_EMPTY) {
+                    ToastThing(Str.cannotDeleteNonemptyDir, icon = ToastThing.ERROR)
+                }
+            }
         ).await()
 
         Unit

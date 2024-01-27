@@ -9,6 +9,7 @@ import debug
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import pages.Title
+import pages.exercise_in_library.editor.AutoassessEditorComp
 import pages.exercise_library.DirAccess
 import pages.exercise_library.createDirChainCrumbs
 import pages.exercise_library.createPathChainSuffix
@@ -104,7 +105,7 @@ class ExerciseRootComp(
                 <ez-block-container>
                     <!-- width such that it's side-by-side on some tablets as well -->
                     <ez-block id='${exercisePane.dstId}' style='width: 46.5rem; max-width: 100rem; overflow: auto;'></ez-block>
-                    <ez-block id='${tabsPane.dstId}' style='width: 46.5rem; max-width: 140rem; padding-bottom: 5rem; overflow: auto;'></ez-block>
+                    <ez-block id='${tabsPane.dstId}' style='width: 46.5rem; max-width: 140rem; overflow: auto;'></ez-block>
                 </ez-block-container>
                 <ez-dst id="${addToCourseModal.dstId}"></ez-dst>
                 <ez-dst id="${permissionsModal.dstId}"></ez-dst>
@@ -136,7 +137,9 @@ class ExerciseRootComp(
             exerciseProps.title,
             exerciseProps.textAdoc,
             exerciseProps.textHtml,
-            exerciseProps.editedAutoassess?.let {
+            exerciseProps.editedSubmission.solutionFileName,
+            exerciseProps.editedSubmission.solutionFileType,
+            exerciseProps.editedSubmission.editedAutoassess?.let {
                 ExerciseDAO.Autoeval(
                     it.containerImage,
                     it.evalScript,
@@ -173,7 +176,11 @@ class ExerciseRootComp(
             ExerciseDAO.Autoeval(
                 remote.container_image!!,
                 remote.grading_script!!,
-                remote.assets!!.associate { it.file_name to it.file_content },
+                remote.assets!!.associate { it.file_name to it.file_content }.let {
+                    if (remote.container_image == AutoEvalTypes.TSL_CONTAINER)
+                        it.filterKeys { it == AutoassessEditorComp.TSL_SPEC_FILENAME_JSON }
+                    else it
+                },
                 remote.max_time_sec!!,
                 remote.max_mem_mb!!
             )
@@ -183,7 +190,11 @@ class ExerciseRootComp(
             ExerciseDAO.Autoeval(
                 initial.container_image!!,
                 initial.grading_script!!,
-                initial.assets!!.associate { it.file_name to it.file_content },
+                initial.assets!!.associate { it.file_name to it.file_content }.let {
+                    if (initial.container_image == AutoEvalTypes.TSL_CONTAINER)
+                        it.filterKeys { it == AutoassessEditorComp.TSL_SPEC_FILENAME_JSON }
+                    else it
+                },
                 initial.max_time_sec!!,
                 initial.max_mem_mb!!
             )
@@ -204,12 +215,18 @@ class ExerciseRootComp(
         val title = mergeValue(local.title, remote.title, initial.title)
         val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
         val textHtml = mergeValue(local.textHtml, remote.text_html, initial.text_html)
+        val solutionFileName = mergeValue(local.solutionFileName, remote.solution_file_name, initial.solution_file_name)
+        val solutionFileType = mergeValue(local.solutionFileType, remote.solution_file_type, initial.solution_file_type)
         val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
         val embed = mergeValue(local.embedConfig, remoteEmbed, initialEmbed)
 
         return MergeResult(
-            listOf(title, textAdoc, textHtml, autoeval, embed).any { it.second },
-            ExerciseDAO.UpdatedExercise(title.first, textAdoc.first, textHtml.first, autoeval.first, embed.first)
+            listOf(title, textAdoc, textHtml, solutionFileName, solutionFileType, autoeval, embed).any { it.second },
+            ExerciseDAO.UpdatedExercise(
+                title.first, textAdoc.first, textHtml.first,
+                solutionFileName.first, solutionFileType.first,
+                autoeval.first, embed.first
+            )
         )
     }
 

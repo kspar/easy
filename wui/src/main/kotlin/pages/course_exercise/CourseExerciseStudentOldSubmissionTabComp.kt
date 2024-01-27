@@ -2,14 +2,16 @@ package pages.course_exercise
 
 import components.code_editor.CodeEditorComp
 import dao.CourseExercisesStudentDAO
+import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import translation.Str
 
 
 class CourseExerciseStudentOldSubmissionTabComp(
-    private var submission: CourseExercisesStudentDAO.StudentSubmission? = null,
+    private var submission: CourseExercisesStudentDAO.StudentSubmission?,
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     parent: Component
 ) : Component(parent) {
 
@@ -23,7 +25,7 @@ class CourseExerciseStudentOldSubmissionTabComp(
     override fun create() = doInPromise {
 
         editor = CodeEditorComp(
-            CodeEditorComp.File("${Str.solutionCodeTabName}.py", submission?.solution, CodeEditorComp.Edit.READONLY),
+            CodeEditorComp.File(solutionFileName, submission?.solution, CodeEditorComp.Edit.READONLY),
             parent = this
         )
 

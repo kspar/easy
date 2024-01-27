@@ -36,7 +36,7 @@ class CreateGroupModalComp(
         "Loo uus rühm", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryAction = { createGroup(groupNameFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
-        onOpen = { groupNameFieldComp.focus() },
+        onOpened = { groupNameFieldComp.focus() },
         parent = this
     )
 

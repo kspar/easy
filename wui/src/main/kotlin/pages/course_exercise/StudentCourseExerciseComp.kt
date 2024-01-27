@@ -55,6 +55,8 @@ class StudentCourseExerciseComp(
                             courseExId,
                             courseEx.grader_type,
                             courseEx.is_open,
+                            courseEx.solution_file_name,
+                            courseEx.solution_file_type,
                             ::updateSubmissions,
                             it
                         )
@@ -73,7 +75,12 @@ class StudentCourseExerciseComp(
                     "",
                     id = oldSubmissionTabId, hidden = true,
                     compProvider = {
-                        CourseExerciseStudentOldSubmissionTabComp(parent = it)
+                        CourseExerciseStudentOldSubmissionTabComp(
+                            null,
+                            courseEx.solution_file_name,
+                            courseEx.solution_file_type,
+                            it
+                        )
                             .also { oldSubmissionTab = it }
                     },
                 ),

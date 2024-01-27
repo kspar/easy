@@ -38,6 +38,8 @@ class CreateExercise(private val adocService: AdocService) {
         @JsonProperty("public", required = true) val public: Boolean,
         @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @JsonProperty("grader_type", required = true) val graderType: GraderType,
+        @JsonProperty("solution_file_name", required = true) val solutionFileName: String,
+        @JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
         @JsonProperty("grading_script", required = false) val gradingScript: String?,
         @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
         @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
@@ -114,6 +116,8 @@ class CreateExercise(private val adocService: AdocService) {
             it[author] = teacherId
             it[validFrom] = now
             it[graderType] = req.graderType
+            it[solutionFileName] = req.solutionFileName
+            it[solutionFileType] = req.solutionFileType
             it[title] = req.title
             it[textHtml] = html
             it[textAdoc] = req.textAdoc

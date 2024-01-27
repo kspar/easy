@@ -1,5 +1,6 @@
 package pages.exercise_in_library
 
+import dao.ExerciseDAO
 import debug
 import kotlinx.coroutines.await
 import pages.exercise_in_library.editor.*
@@ -12,6 +13,8 @@ import kotlin.js.Promise
 
 class AutoAssessmentTabComp(
     private val savedProps: AutoAssessProps?,
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     private val onValidChanged: (Boolean) -> Unit,
     parent: Component?
 ) : Component(parent) {
@@ -23,6 +26,12 @@ class AutoAssessmentTabComp(
         // null when invalid value entered
         val maxTime: Int?,
         val maxMem: Int?,
+    )
+
+    data class EditedSubmission(
+        val solutionFileName: String,
+        val solutionFileType: ExerciseDAO.SolutionFileType,
+        val editedAutoassess: EditedAutoassess?,
     )
 
     data class EditedAutoassess(
@@ -53,6 +62,7 @@ class AutoAssessmentTabComp(
             val typeName = type?.name ?: props.containerImage
 
             attrs = AutoassessAttrsComp(
+                solutionFileName, solutionFileType,
                 typeName, props.containerImage, props.maxTime, props.maxMem, isEditable,
                 ::changeType, onValidChanged, this
             )
@@ -87,6 +97,7 @@ class AutoAssessmentTabComp(
             // Has no autoassess
 
             attrs = AutoassessAttrsComp(
+                solutionFileName, solutionFileType,
                 "–", null, null, null, isEditable, ::changeType, onValidChanged, this
             )
             editor = null
@@ -126,17 +137,21 @@ class AutoAssessmentTabComp(
         }
     }
 
-    fun getEditedProps(): EditedAutoassess? {
+    fun getEditedProps(): EditedSubmission {
         val container = attrs.getEditedContainerImage()
-        return if (container != null) {
-            EditedAutoassess(
-                editor!!.getEvalScript(),
-                editor!!.getAssets(),
-                container,
-                attrs.getEditedTime()!!,
-                attrs.getEditedMem()!!,
-            )
-        } else null
+        return EditedSubmission(
+            attrs.getEditedFileName()!!,
+            attrs.getEditedFileType()!!,
+            if (container != null) {
+                EditedAutoassess(
+                    editor!!.getEvalScript(),
+                    editor!!.getAssets(),
+                    container,
+                    attrs.getEditedTime()!!,
+                    attrs.getEditedMem()!!,
+                )
+            } else null
+        )
     }
 
     fun isValid() = attrs.isValid() && (editor?.isValid() ?: true)

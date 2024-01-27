@@ -22,7 +22,7 @@ class TSLEditTitleModalComp(
         Str.doEditTitle, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = Unit,
         primaryAction = { onTitleChanged(nameField.getValue()) }, //primaryPostAction = ::reinitialise,
-        onOpen = { nameField.focus() }, parent = this
+        onOpened = { nameField.focus() }, parent = this
     )
 
     private val nameField = StringFieldComp(

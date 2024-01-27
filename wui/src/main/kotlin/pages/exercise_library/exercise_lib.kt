@@ -7,6 +7,9 @@ import components.BreadcrumbsComp
 import components.Crumb
 import components.EzCollComp
 import components.ToastThing
+import components.form.ButtonComp
+import components.modal.ConfirmationTextModalComp
+import components.text.StringComp
 import dao.ExerciseDAO
 import dao.LibraryDAO
 import dao.LibraryDirDAO
@@ -16,6 +19,7 @@ import pages.exercise_in_library.AddToCourseModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.permissions_modal.PermissionsModalComp
 import pages.sidenav.Sidenav
+import queries.HandledResponseError
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
@@ -31,7 +35,7 @@ class ExerciseLibComp(
 
     abstract class Props(
         open val dirId: String,
-        open val title: String,
+        open var title: String,
         open val access: DirAccess,
         open val isShared: Boolean,
         val type: Int,
@@ -40,7 +44,7 @@ class ExerciseLibComp(
     data class ExerciseProps(
         val exerciseId: String,
         override val dirId: String,
-        override val title: String,
+        override var title: String,
         override val access: DirAccess,
         override val isShared: Boolean,
         val graderType: ExerciseDAO.GraderType,
@@ -51,7 +55,7 @@ class ExerciseLibComp(
 
     data class DirProps(
         override val dirId: String,
-        override val title: String,
+        override var title: String,
         override val access: DirAccess,
         override val isShared: Boolean,
     ) : Props(dirId, title, access, isShared, 0)
@@ -59,6 +63,13 @@ class ExerciseLibComp(
     private lateinit var breadcrumbs: BreadcrumbsComp
     private lateinit var ezcoll: EzCollComp<Props>
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
+    private val updateDirModal = UpdateDirModalComp(this)
+    private val confirmDeleteDirModal = ConfirmationTextModalComp(
+        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = ButtonComp.Type.DANGER, parent = this
+    )
+    private val confirmDeleteExerciseModal = ConfirmationTextModalComp(
+        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = ButtonComp.Type.DANGER, parent = this
+    )
     private lateinit var currentDirPermissionsModal: PermissionsModalComp
     private val itemPermissionsModal = PermissionsModalComp(currentDirId = dirId, parent = this)
     private val newExerciseModal = CreateExerciseModalComp(dirId, null, this)
@@ -66,7 +77,8 @@ class ExerciseLibComp(
 
     override val children: List<Component>
         get() = listOf(
-            breadcrumbs, ezcoll, addToCourseModal, currentDirPermissionsModal, itemPermissionsModal,
+            breadcrumbs, ezcoll, addToCourseModal, updateDirModal, confirmDeleteDirModal, confirmDeleteExerciseModal,
+            currentDirPermissionsModal, itemPermissionsModal,
             newExerciseModal, newDirModal
         )
 
@@ -157,20 +169,19 @@ class ExerciseLibComp(
                     longValue = "${p.modifiedAt.toHumanString(EzDate.Format.FULL)} · ${p.modifiedBy}"
                 ),
                 bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr(Str.libUsedOnCourses1, "${p.coursesCount} ${Str.libUsedOnCourses2}", Icons.courses),
-//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
-//                    EzCollComp.SimpleAttr(
-//                        "Mul on lubatud",
-//                        p.access.toString(),
-//                        Icons.exercisePermissions,
-//                        translateDirAccess(p.access)
-//                    ),
+                    EzCollComp.SimpleAttr(
+                        Str.libUsedOnCourses1,
+                        "${p.coursesCount} ${Str.libUsedOnCourses2}",
+                        Icons.courses
+                    ),
                 ),
                 isSelectable = true,
                 actions = buildList {
                     add(EzCollComp.Action(Icons.add, Str.addToCourse, onActivate = ::addToCourse))
-                    if (p.access == DirAccess.PRAWM)
+                    if (p.access == DirAccess.PRAWM) {
                         add(EzCollComp.Action(Icons.addPerson, Str.share, onActivate = ::permissions))
+                        add(EzCollComp.Action(Icons.delete, Str.doDelete, onActivate = ::deleteExercise))
+                    }
                 },
             )
         } + dirProps.map { p ->
@@ -179,20 +190,14 @@ class ExerciseLibComp(
                 EzCollComp.ItemTypeIcon(if (p.isShared) Icons.sharedFolder else Icons.library),
                 p.title,
                 titleInteraction = EzCollComp.TitleLink(ExerciseLibraryPage.linkToDir(p.dirId)),
-//                bottomAttrs = listOf(
-//                    EzCollComp.SimpleAttr("ID", p.id, Icons.id),
-//                    EzCollComp.SimpleAttr(
-//                        "Mul on lubatud",
-//                        p.access.toString(),
-//                        Icons.exercisePermissions,
-//                        translateDirAccess(p.access)
-//                    ),
-//                ),
                 isSelectable = false,
                 actions = buildList {
-                    if (p.access == DirAccess.PRAWM)
+                    if (p.access >= DirAccess.PRAW)
+                        add(EzCollComp.Action(Icons.edit, Str.dirSettings, onActivate = ::dirSettings))
+                    if (p.access == DirAccess.PRAWM) {
                         add(EzCollComp.Action(Icons.addPerson, Str.share, onActivate = ::permissions))
-//                    EzCollComp.Action(Icons.delete, "Kustuta", onActivate = {}),
+                        add(EzCollComp.Action(Icons.delete, Str.doDelete, onActivate = ::deleteDir))
+                    }
                 },
             )
         }
@@ -274,6 +279,19 @@ class ExerciseLibComp(
         return EzCollComp.ResultUnmodified
     }
 
+    private suspend fun dirSettings(item: EzCollComp.Item<Props>): EzCollComp.Result {
+        updateDirModal.dirId = item.props.dirId
+        updateDirModal.dirCurrentName = item.props.title
+        updateDirModal.createAndBuild().await()
+        val newTitle = updateDirModal.openWithClosePromise().await()
+        return if (newTitle != null) {
+            item.props.title = newTitle
+            item.title = newTitle
+            EzCollComp.ResultModified(listOf(item))
+        } else
+            EzCollComp.ResultUnmodified
+    }
+
     private suspend fun permissions(item: EzCollComp.Item<Props>): EzCollComp.Result {
         itemPermissionsModal.dirId = item.props.dirId
         itemPermissionsModal.isDir = item.props is DirProps
@@ -283,5 +301,42 @@ class ExerciseLibComp(
         if (permissionsChanged)
             createAndBuild().await()
         return EzCollComp.ResultUnmodified
+    }
+
+    private suspend fun deleteDir(item: EzCollComp.Item<Props>): EzCollComp.Result {
+        confirmDeleteDirModal.setText(StringComp.boldTriple(Str.deleteDir + " ", item.props.title, "?"))
+        confirmDeleteDirModal.primaryAction = {
+            try {
+                LibraryDirDAO.deleteDir(item.props.dirId).await()
+                true
+            } catch (e: HandledResponseError) {
+                false
+            }
+        }
+        return if (confirmDeleteDirModal.openWithClosePromise().await()) {
+            successMessage { Str.deleted }
+            EzCollComp.ResultModified<Props>(emptyList())
+        } else {
+            EzCollComp.ResultUnmodified
+        }
+    }
+
+    private suspend fun deleteExercise(item: EzCollComp.Item<Props>): EzCollComp.Result {
+        confirmDeleteExerciseModal.setText(StringComp.boldTriple(Str.deleteExercise + " ", item.props.title, "?"))
+        confirmDeleteExerciseModal.primaryAction = {
+            try {
+                item.props as ExerciseProps
+                ExerciseDAO.deleteExercise(item.props.exerciseId).await()
+                true
+            } catch (e: HandledResponseError) {
+                false
+            }
+        }
+        return if (confirmDeleteExerciseModal.openWithClosePromise().await()) {
+            successMessage { Str.deleted }
+            EzCollComp.ResultModified<Props>(emptyList())
+        } else {
+            EzCollComp.ResultUnmodified
+        }
     }
 }

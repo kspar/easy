@@ -3,10 +3,14 @@ package core.ems.service.access_control
 import core.conf.security.EasyUser
 import core.db.DirAccessLevel
 import core.db.Exercise
+import core.db.ExerciseVer
+import core.db.SolutionFileType
 import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.hasAccountDirAccess
 import core.exception.ForbiddenException
+import core.exception.InvalidRequestException
 import core.exception.ReqError
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -36,5 +40,22 @@ fun assertUnauthAccessToExercise(exerciseId: Long) {
 
     if (!unauthEnabled) {
         throw ForbiddenException("No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    }
+}
+
+fun assertExerciseHasTextEditorSubmission(exerciseId: Long) {
+    val solutionType = transaction {
+        (Exercise innerJoin ExerciseVer)
+            .select { Exercise.id.eq(exerciseId) and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.solutionFileType] }
+            .singleOrNull() ?: throw ForbiddenException(
+                "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
+            )
+    }
+
+    if (solutionType != SolutionFileType.TEXT_EDITOR) {
+        throw InvalidRequestException(
+            "Exercise $exerciseId has a solution type other than TEXT_EDITOR", ReqError.EXERCISE_WRONG_SOLUTION_TYPE
+        )
     }
 }

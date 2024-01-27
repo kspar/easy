@@ -26,7 +26,7 @@ class UpdateCourseModalComp(
         "Kursuse sätted", Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryButtonEnabledInitial = false,
-        primaryAction = { updateCourse() }, onOpen = { alias.focus() },
+        primaryAction = { updateCourse() }, onOpened = { alias.focus() },
         parent = this
     )
 

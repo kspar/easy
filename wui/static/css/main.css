@@ -759,6 +759,10 @@ ez-exercise-badge ez-icon {
     max-height: none;
 }
 
+#global-exercise ez-exercise-edit-tab ez-icon-action:not(:hover) > ez-icon {
+    color: var(--ez-icon-col);
+}
+
 #DIR_PERMISSIONS .modal .modal-content {
     padding-bottom: 2rem;
 }
@@ -1000,7 +1004,7 @@ ez-code-edit-tabs {
 
 .CodeMirror-scroll {
     min-height: 20vh;
-    max-height: 85vh;
+    max-height: 80vh;
 }
 
 .editor-read-only .CodeMirror-cursors {
@@ -2781,6 +2785,14 @@ ez-block-container ez-block {
     background-color: var(--ez-secondary-action-hover-bg)
 }
 
+.ez-collapsible .collapsible-dropdown-icon {
+    transition: transform .2s ease-in-out
+}
+
+.ez-collapsible li.active .collapsible-dropdown-icon {
+    transform: rotate(180deg);
+}
+
 .ez-collapsible .collapsible-body {
     padding: 2rem 1rem;
 }
@@ -3208,11 +3220,14 @@ ez-feedback-icon {
 
 ez-feedback-check {
     display: flex;
+    align-items: start;
+    margin-bottom: .4rem;
 }
 
 ez-feedback-check ez-icon {
     display: inline-flex;
     margin-right: 1rem;
+    padding-top: .2rem;
 }
 
 ez-feedback-check.pass {

@@ -1,6 +1,7 @@
 package pages.exercise_in_library.editor
 
 import components.text.AttrsComp
+import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -10,6 +11,8 @@ import kotlin.js.Promise
 
 
 class AutoassessAttrsComp(
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     private val visualTypeName: String,
     private val containerImage: String?,
     private val maxTime: Int?,
@@ -29,11 +32,15 @@ class AutoassessAttrsComp(
 
     override fun create(): Promise<*> = doInPromise {
         attrs = if (isEditable)
-            AutoassessAttrsEditComp(containerImage, maxTime, maxMem, onTypeChanged, onValidChanged, this)
+            AutoassessAttrsEditComp(
+                solutionFileName, solutionFileType,
+                containerImage, maxTime, maxMem, onTypeChanged, onValidChanged, this
+            )
         else
             AttrsComp(
                 buildMap {
-                    set(Str.type, visualTypeName)
+                    set(Str.solutionFilename, solutionFileName)
+                    set(Str.autoassessType, visualTypeName)
                     if (maxTime != null)
                         set(Str.allowedExecTime, "$maxTime ${Str.secAbbrev}")
                     if (maxMem != null)
@@ -51,6 +58,12 @@ class AutoassessAttrsComp(
     }
 
     fun isValid() = attrs.let { if (it is AutoassessAttrsEditComp) it.isValid() else true }
+
+    fun getEditedFileName() =
+        (attrs as? AutoassessAttrsEditComp)?.getFileName()
+
+    fun getEditedFileType() =
+        (attrs as? AutoassessAttrsEditComp)?.getFileType()
 
     fun getEditedContainerImage() =
         (attrs as? AutoassessAttrsEditComp)?.getContainerImage()

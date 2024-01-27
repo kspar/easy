@@ -104,6 +104,17 @@ fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: 
     query.count() > 0
 }
 
+fun assertExerciseIsNotOnAnyCourse(exerciseId: Long) = transaction {
+    val coursesCount = CourseExercise.select {
+        CourseExercise.exercise eq exerciseId
+    }.count()
+    if (coursesCount > 0)
+        throw InvalidRequestException(
+            "Exercise $exerciseId is used on $coursesCount courses",
+            ReqError.EXERCISE_USED_ON_COURSE, "id" to exerciseId.toString()
+        )
+}
+
 fun canTeacherAccessCourse(teacherId: String, courseId: Long): Boolean = transaction {
     TeacherCourseAccess.select {
         TeacherCourseAccess.teacher eq teacherId and (TeacherCourseAccess.course eq courseId)

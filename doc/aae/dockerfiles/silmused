@@ -1,0 +1,22 @@
+FROM python:3.10
+
+ENV PYTHONIOENCODING utf-8
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y postgresql
+
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache-dir psycopg2==2.9.9
+
+RUN pip3 install --no-cache-dir silmused==0.0.30
+
+RUN sed -i 's/port = 5432/port = 5433/' /etc/postgresql/15/main/postgresql.conf
+
+USER postgres
+
+RUN /etc/init.d/postgresql start && \
+    psql --command "CREATE USER silmus WITH SUPERUSER PASSWORD 'silmus';"
+
+USER root
+

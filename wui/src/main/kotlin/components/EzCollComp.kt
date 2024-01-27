@@ -32,7 +32,7 @@ class EzCollComp<P>(
     data class Item<P>(
         val props: P,
         val type: ItemType,
-        val title: String,
+        var title: String,
         val titleIcon: TitleIcon? = null,
         val titleStatus: TitleStatus = TitleStatus.NORMAL,
         val titleInteraction: TitleInteraction? = null,

@@ -42,7 +42,7 @@ class StudentSubmitCont(
 ) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("solution", required = true) @field:Size(max = 300000) val solution: String)
+    data class Req(@JsonProperty("solution", required = true) @field:Size(max = 500000) val solution: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")

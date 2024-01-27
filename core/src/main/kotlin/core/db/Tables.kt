@@ -49,6 +49,8 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val title = text("title")
     val textHtml = text("text_html").nullable()
     val textAdoc = text("text_adoc").nullable()
+    val solutionFileName = text("solution_file_name")
+    val solutionFileType = enumeration("solution_file_type", SolutionFileType::class)
 }
 
 object Course : LongIdTable("course") {

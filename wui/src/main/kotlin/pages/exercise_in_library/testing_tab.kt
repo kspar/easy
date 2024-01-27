@@ -23,6 +23,8 @@ import kotlin.js.Promise
 
 class TestingTabComp(
     private val exerciseId: String,
+    private val solutionFileName: String,
+    private val solutionFileType: ExerciseDAO.SolutionFileType,
     parent: Component?
 ) : Component(parent) {
 
@@ -40,15 +42,6 @@ class TestingTabComp(
         val created_at: EzDate,
     )
 
-    @Serializable
-    data class AutoAssessmentDTO(
-        val grade: Int,
-        val feedback: String?,
-        @Serializable(with = EzDateSerializer::class)
-        val timestamp: EzDate = EzDate.now(),
-    )
-
-    private val editorTabName = "${Str.solutionCodeTabName}.py"
 
     private lateinit var warning: WarningComp
     private lateinit var attrs: AttrsComp
@@ -84,7 +77,7 @@ class TestingTabComp(
         )
 
         editor = CodeEditorComp(
-            CodeEditorComp.File(editorTabName, latestSubmission?.solution.orEmpty()),
+            CodeEditorComp.File(solutionFileName, latestSubmission?.solution.orEmpty()),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
@@ -115,28 +108,24 @@ class TestingTabComp(
 
     private suspend fun submit() {
         try {
-            editor.setFileEditable(editorTabName, false)
-
+            editor.setFileEditable(solutionFileName, false)
             feedback.clearAll()
-            autogradeLoader.isActive = true
-            autogradeLoader.rebuild()
 
-            val a = submitCheck(editor.getFileValue(editorTabName))
+            var autoassessFinished = false
+            val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getFileValue(solutionFileName)).then {
+                autoassessFinished = true
+                it
+            }
+            autogradeLoader.runUntil(true) { !autoassessFinished }
 
-            autogradeLoader.isActive = false
-            autogradeLoader.rebuild()
-            feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(a.grade, ExerciseDAO.GraderType.AUTO)
-            feedback.autoFeedback = a.feedback
+            val assssment = assessmentP.await()
+
+            feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(assssment.grade, ExerciseDAO.GraderType.AUTO)
+            feedback.autoFeedback = assssment.feedback
             feedback.rebuild()
-            attrs.attrs = mapOf(Str.lastTestingAttempt to a.timestamp.toHumanString(EzDate.Format.FULL))
+            attrs.attrs = mapOf(Str.lastTestingAttempt to assssment.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
-            editor.setFileEditable(editorTabName, true)
+            editor.setFileEditable(solutionFileName, true)
         }
-    }
-
-    private suspend fun submitCheck(solution: String): AutoAssessmentDTO {
-        return fetchEms("/exercises/$exerciseId/testing/autoassess", ReqMethod.POST, mapOf("solution" to solution),
-            successChecker = { http200 }).await()
-            .parseTo(AutoAssessmentDTO.serializer()).await()
     }
 }

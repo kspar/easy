@@ -1,5 +1,6 @@
 package components
 
+import Icons
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import libheaders.Materialize
@@ -135,11 +136,7 @@ class EzCollItemComp<P>(
                 {{#isExpandable}}
                     <ezc-trailer {{#onlyForTopAttr}}ez-show-max="{{topAttrTrailerWidth}}"{{/onlyForTopAttr}}>
                         <ezc-expand-trailer>
-                            <ez-icon-action ez-expand-item title="{{expandItemTitle}}" tabindex="0">
-                                <ez-icon>
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
-                                </ez-icon>
-                            </ez-icon-action>
+                            <ez-icon-action ez-expand-item title="{{expandItemTitle}}" tabindex="0">{{{expandCaret}}}</ez-icon-action>
                         </ezc-expand-trailer>
                     </ezc-trailer>
                 {{/isExpandable}}
@@ -232,6 +229,7 @@ class EzCollItemComp<P>(
                 "minCollWidth" to it.shortcutMinCollWidth.valuePx,
             )
         },
+        "expandCaret" to Icons.expandCaret,
         "actionMenuTitle" to Str.doEdit + "...",
         "expandItemTitle" to Str.doExpand,
     )
