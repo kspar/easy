@@ -1,7 +1,9 @@
 package pages.course_exercise
 
+import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.sleep
 import template
 
 class AutogradeLoaderComp(
@@ -73,4 +75,30 @@ class AutogradeLoaderComp(
             </div>
         """.trimIndent()
     ) else ""
+
+    suspend fun runUntil(isQuick: Boolean = false, predicate: () -> Boolean) {
+        val animationTimeMs = 5000
+
+        isActive = true
+        var elapsedAnimation = 0
+        while (isActive) {
+            rebuild()
+
+            if (isQuick) {
+                elapsedAnimation = 0
+                while (elapsedAnimation < animationTimeMs) {
+                    if (!predicate())
+                        break
+                    sleep(animationTimeMs / 10).await()
+                    elapsedAnimation += animationTimeMs / 10
+                }
+
+            } else {
+                sleep(animationTimeMs).await()
+            }
+
+            isActive = predicate()
+        }
+        rebuild()
+    }
 }

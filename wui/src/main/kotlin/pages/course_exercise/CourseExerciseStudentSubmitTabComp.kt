@@ -10,7 +10,10 @@ import dao.ExerciseDAO
 import hide
 import kotlinx.coroutines.await
 import observeValueChange
-import rip.kspar.ezspa.*
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemByIdOrNull
 import template
 import translation.Str
 
@@ -213,17 +216,17 @@ class CourseExerciseStudentSubmitTabComp(
     }
 
     private suspend fun awaitAutograde() {
-        autogradeLoader.isActive = true
-        autogradeLoader.rebuild()
+        // Make students wait for a multiple of 5 seconds for animation to finish :D
+        // Repeat animation and poll whether the promise has resolved every 5 seconds
+        var autoassessFinished = false
+        val submissionP = CourseExercisesStudentDAO.awaitAutograde(courseId, courseExId).then {
+            autoassessFinished = true
+            it
+        }
 
-        // Make people wait at least 5 seconds for animation to finish :D
-        val submissionP = CourseExercisesStudentDAO.awaitAutograde(courseId, courseExId)
-        val sleepP = doInPromise { sleep(5000).await() }
-        listOf(submissionP, sleepP).unionPromise().await()
+        autogradeLoader.runUntil { !autoassessFinished }
+
         val submission = submissionP.await()
-
-        autogradeLoader.isActive = false
-        autogradeLoader.rebuild()
 
         feedback.validGrade = submission.validGrade
         feedback.autoFeedback = submission.feedback_auto

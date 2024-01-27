@@ -242,4 +242,20 @@ object ExerciseDAO {
         TEXT_EDITOR,
         TEXT_UPLOAD,
     }
+
+
+    @Serializable
+    data class AutoAssessment(
+        val grade: Int,
+        val feedback: String?,
+        @Serializable(with = EzDateSerializer::class)
+        val timestamp: EzDate = EzDate.now(),
+    )
+
+    fun autoassess(exerciseId: String, solution: String) = doInPromise {
+        debug { "Autoassessing solution to exercise $exerciseId" }
+        fetchEms("/exercises/${exerciseId.encodeURIComponent()}/testing/autoassess",
+            ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }
+        ).await().parseTo(AutoAssessment.serializer()).await()
+    }
 }
