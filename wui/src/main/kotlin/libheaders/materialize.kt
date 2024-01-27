@@ -14,7 +14,6 @@ external object Materialize {
     val Sidenav: MSidenav
     val Tooltip: MTooltip
     val Tabs: MTabs
-    val Materialbox: MMaterialbox
     val FormSelect: MFormSelect
     val Modal: MModal
     val Collapsible: MCollapsible
@@ -70,11 +69,6 @@ external class MTabsInstance {
 
 external class MToastInstance {
     fun dismiss()
-}
-
-
-external class MMaterialbox {
-    fun init(elements: dynamic, options: dynamic = definedExternally)
 }
 
 

@@ -4,7 +4,6 @@ import EzDate
 import MathJax
 import dao.CourseExercisesStudentDAO
 import highlightCode
-import lightboxExerciseImages
 import rip.kspar.ezspa.Component
 import template
 import translation.Str
@@ -28,7 +27,6 @@ class CourseExerciseTextComp(
     )
 
     override fun postRender() {
-        lightboxExerciseImages()
         highlightCode()
         MathJax.formatPageIfNeeded(courseExercise.text_html.orEmpty())
     }

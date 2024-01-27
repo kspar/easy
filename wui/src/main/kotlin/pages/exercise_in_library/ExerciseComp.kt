@@ -5,7 +5,6 @@ import MathJax
 import components.UnorderedListComp
 import dao.ExerciseDAO
 import highlightCode
-import lightboxExerciseImages
 import org.w3c.dom.HTMLDetailsElement
 import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
@@ -118,7 +117,6 @@ class ExerciseTextComp(
     override fun postRender() {
         highlightCode()
         MathJax.formatPageIfNeeded(textHtml)
-        lightboxExerciseImages()
 
         // Reopen <details>
         val details = getDetailsElements()

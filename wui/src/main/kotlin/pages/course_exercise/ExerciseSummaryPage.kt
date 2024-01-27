@@ -35,7 +35,6 @@ import libheaders.CodeMirror
 import libheaders.Materialize
 import libheaders.focus
 import libheaders.tabHandler
-import lightboxExerciseImages
 import onSingleClickWithDisabled
 import org.w3c.dom.*
 import pages.EasyPage
@@ -329,7 +328,6 @@ object ExerciseSummaryPage : EasyPage() {
         )
 
 
-        lightboxExerciseImages()
         highlightCode()
 
         if (aaFiles != null) {
