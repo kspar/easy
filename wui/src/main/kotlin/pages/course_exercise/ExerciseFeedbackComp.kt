@@ -40,8 +40,8 @@ class ExerciseFeedbackComp(
         val title: String,
         val status: V3Status,
         val exception_message: String? = null,
-        val user_inputs: List<String>,
-        val created_files: List<V3File>,
+        val user_inputs: List<String>? = null,
+        val created_files: List<V3File>? = null,
         val actual_output: String? = null,
         val converted_submission: String? = null,
         val checks: List<V3Check>,
@@ -214,7 +214,7 @@ class ExerciseFeedbackComp(
                         )
                     },
 
-                "files" to if (it.created_files.isNotEmpty()) mapOf(
+                "files" to if (!it.created_files.isNullOrEmpty()) mapOf(
                     "msg" to Str.autogradeCreatedFiles,
                     "value" to it.created_files.joinToString("\n") {
                         val content = it.content.split("\n").joinToString("\n") { "  $it" }
@@ -222,7 +222,7 @@ class ExerciseFeedbackComp(
                     },
                 ) else null,
 
-                "inputs" to if (it.user_inputs.isNotEmpty()) mapOf(
+                "inputs" to if (!it.user_inputs.isNullOrEmpty()) mapOf(
                     "msg" to Str.autogradeStdIn,
                     "value" to it.user_inputs.joinToString("\n") { "  $it" },
                 ) else null,
