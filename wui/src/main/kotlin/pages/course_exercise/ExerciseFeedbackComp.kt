@@ -1,5 +1,7 @@
 package pages.course_exercise
 
+import EzDate
+import EzDateSerializer
 import Icons
 import dao.CourseExercisesStudentDAO
 import debug
@@ -26,7 +28,8 @@ class ExerciseFeedbackComp(
     data class OkV3(
         val result_type: String,
         val producer: String,
-        // TODO: add finished_at: EzDate
+        @Serializable(with = EzDateSerializer::class)
+        val finished_at: EzDate,
         val points: Double, // TODO: Int
         val pre_evaluate_error: String? = null,
         val tests: List<V3Test>,
@@ -44,10 +47,6 @@ class ExerciseFeedbackComp(
         val checks: List<V3Check>,
     )
 
-    enum class V3Status {
-        PASS, FAIL, SKIP
-    }
-
     @Serializable
     data class V3File(
         val name: String,
@@ -56,10 +55,15 @@ class ExerciseFeedbackComp(
 
     @Serializable
     data class V3Check(
-        val title: String,
-        val feedback: String,
+        val title: String? = null,
+        val feedback: String? = null,
         val status: V3Status,
     )
+
+    enum class V3Status {
+        PASS, FAIL, SKIP
+    }
+
 
     override fun render(): String {
         val parsedV3 = parseAutofeedback()
@@ -155,7 +159,10 @@ class ExerciseFeedbackComp(
                         {{/exception}}
                         {{#checks}}
                             <ez-feedback-check class='{{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}'>
-                                {{{status}}} {{feedback}}
+                                {{{status}}}
+                                {{title}}{{#title}}<br>{{/title}}
+                                {{feedback}}
+                                {{^title}}{{^feedback}}¯\_(ツ)_/¯{{/feedback}}{{/title}}
                             </ez-feedback-check>
                         {{/checks}}
                         <ez-feedback-data>
@@ -194,7 +201,7 @@ class ExerciseFeedbackComp(
                     mapOf(
                         "pass" to true,
                         "status" to V3Status.PASS.mapToIcon(),
-                        "feedback" to Str.autogradeNoChecksInTest,
+                        "title" to Str.autogradeNoChecksInTest,
                     )
                 else
                     it.checks.map {
@@ -202,6 +209,7 @@ class ExerciseFeedbackComp(
                             "pass" to (it.status == V3Status.PASS),
                             "fail" to (it.status == V3Status.FAIL),
                             "status" to it.status.mapToIcon(),
+                            "title" to it.title,
                             "feedback" to it.feedback,
                         )
                     },

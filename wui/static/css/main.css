@@ -3220,11 +3220,14 @@ ez-feedback-icon {
 
 ez-feedback-check {
     display: flex;
+    align-items: start;
+    margin-bottom: .4rem;
 }
 
 ez-feedback-check ez-icon {
     display: inline-flex;
     margin-right: 1rem;
+    padding-top: .2rem;
 }
 
 ez-feedback-check.pass {
