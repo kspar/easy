@@ -33,6 +33,38 @@ object AutoEvalTypes {
         ),
 
         TypeTemplate(
+            "Silmused PostgreSQL", "silmused",
+            30, 50, TypeEditor.CODE_EDITOR,
+            "",
+            """
+                cd student-submission
+                mv lahendus.py lahendus.sql
+                
+                service postgresql start >/dev/null 2>&1
+                silmused lahendus.sql tests.py postgres localhost 5433 postgres
+            """.trimIndent(),
+            mapOf(
+                "tests.py" to """
+                from silmused.TitleLayer import TitleLayer
+                from silmused.ChecksLayer import ChecksLayer
+                from silmused.ExecuteLayer import ExecuteLayer
+                from silmused.tests.DataTest import DataTest
+                from silmused.tests.StructureTest import StructureTest
+                from silmused.tests.ConstraintTest import ConstraintTest
+                from silmused.tests.FunctionTest import FunctionTest
+                from silmused.tests.IndexTest import IndexTest
+                from silmused.tests.ProcedureTest import ProcedureTest
+                from silmused.tests.TriggerTest import TriggerTest
+                from silmused.tests.ViewTest import ViewTest
+
+                tests = [
+                    
+                ]
+            """.trimIndent()
+            )
+        ),
+
+        TypeTemplate(
             "TSL YAML", "tiivad:tsl-spec",
             7, 30, TypeEditor.TSL_YAML,
             "TODO TSL YAML",
