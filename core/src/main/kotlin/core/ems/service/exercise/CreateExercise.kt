@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.*
+import core.ems.service.AdocService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
+import core.ems.service.getImplicitGroupFromAccount
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.upsertGroupDirAccess
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
