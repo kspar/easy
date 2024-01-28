@@ -47,7 +47,7 @@ class AutoassessAttrsEditComp(
 
     private val memField = if (containerImage != null)
         IntFieldComp(
-            Str.allowedExecMemField, true, 10, 50, initialValue = maxMem,
+            Str.allowedExecMemField, true, 10, 100, initialValue = maxMem,
             fieldNameForMessage = Str.value,
             paintRequiredOnCreate = true,
             onValidChange = ::onElementValidChange,
