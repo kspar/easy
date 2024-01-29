@@ -11,8 +11,7 @@ import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -45,30 +44,23 @@ class TeacherRetryAutoassessCont(
 
         log.info { "${caller.id} is retrying autoassessment for submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
-        val (callerId, courseExId, submissionId) = assertAssessmentControllerChecks(
+        val (_, courseExId, submissionId) = assertAssessmentControllerChecks(
             caller,
             submissionIdString,
             courseExerciseIdString,
             courseIdString,
         )
-
-        retryAutograde(submissionId, courseExId)
+        runBlocking {
+            retryAutograde(submissionId, courseExId)
+        }
     }
 
-    private fun retryAutograde(submissionId: Long, courseExId: Long) {
+    private suspend fun retryAutograde(submissionId: Long, courseExId: Long) {
         if (selectGraderType(courseExId) != GraderType.AUTO) {
             throw InvalidRequestException(
-                "Course exercise $courseExId not autoassessable.",
-                ReqError.EXERCISE_NOT_AUTOASSESSABLE
+                "Course exercise $courseExId not autoassessable.", ReqError.EXERCISE_NOT_AUTOASSESSABLE
             )
         }
-
-        GlobalScope.launch {
-            autoAssessAsync(courseExId, submissionId)
-        }
-    }
-
-    suspend fun autoAssessAsync(courseExId: Long, submissionId: Long) {
         val (solution, studentId) = transaction {
             Submission.slice(Submission.solution, Submission.student)
                 .select { (Submission.id eq submissionId) }
@@ -87,11 +79,12 @@ class TeacherRetryAutoassessCont(
             val autoAss = autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
             insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
+
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
             insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
             val notification = """
-                Autoassessment failed
+                Autoassessment retry by teacher failed
                 
                 Course exercise id: $courseExId
                 Submission id: $submissionId
