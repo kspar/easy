@@ -21,6 +21,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -142,12 +144,23 @@ class StudentSubmitCont(
         cachingService: CachingService
     ): Long {
         val id = transaction {
+            val currentSubmissionNumber = 1 + (
+                    Submission
+                        .slice(Submission.number)
+                        .select {
+                            (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
+                        }
+                        .orderBy(Submission.number, SortOrder.DESC)
+                        .map { it[Submission.number] }.firstOrNull() ?: 0
+                    )
+
             Submission.insertAndGetId {
                 it[courseExercise] = courseExId
                 it[student] = studentId
                 it[createdAt] = DateTime.now()
                 it[solution] = submission
                 it[autoGradeStatus] = autoAss
+                it[number] = currentSubmissionNumber
             }.value
         }
 
