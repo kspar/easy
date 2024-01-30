@@ -46,7 +46,7 @@ class StudentCourseExerciseComp(
 
         setPathSuffix(createPathChainSuffix(listOf(courseEx.effective_title)))
 
-        exerciseTextComp = CourseExerciseTextComp(courseEx, this)
+        exerciseTextComp = CourseExerciseTextComp(courseEx.effective_title, courseEx.text_html, courseEx.deadline, this)
         tabs = PageTabsComp(
             type = PageTabsComp.Type.SUBPAGE,
             tabs = listOf(

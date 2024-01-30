@@ -2,7 +2,6 @@ package pages.course_exercise
 
 import EzDate
 import MathJax
-import dao.CourseExercisesStudentDAO
 import highlightCode
 import rip.kspar.ezspa.Component
 import template
@@ -10,7 +9,9 @@ import translation.Str
 
 
 class CourseExerciseTextComp(
-    val courseExercise: CourseExercisesStudentDAO.ExerciseDetails,
+    val title: String,
+    val textHtml: String?,
+    val deadline: EzDate?,
     parent: Component
 ) : Component(parent) {
 
@@ -20,14 +21,14 @@ class CourseExerciseTextComp(
             <h2>{{title}}</h2>
             <div id="exercise-text">{{{text}}}</div>
         """.trimIndent(),
-        "title" to courseExercise.effective_title,
-        "text" to courseExercise.text_html,
-        "deadline" to courseExercise.deadline?.toHumanString(EzDate.Format.FULL),
+        "title" to title,
+        "text" to textHtml,
+        "deadline" to deadline?.toHumanString(EzDate.Format.FULL),
         "deadlineLabel" to Str.softDeadlineLabel,
     )
 
     override fun postRender() {
         highlightCode()
-        MathJax.formatPageIfNeeded(courseExercise.text_html.orEmpty())
+        MathJax.formatPageIfNeeded(textHtml.orEmpty())
     }
 }
