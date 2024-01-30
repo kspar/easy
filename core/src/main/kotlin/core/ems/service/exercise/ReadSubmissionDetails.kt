@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Submission
-import core.ems.service.*
-import core.exception.InvalidRequestException
-import core.exception.ReqError
+import core.ems.service.GradeResp
+import core.ems.service.assertAssessmentControllerChecks
+import core.ems.service.singleOrInvalidRequest
+import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -57,29 +58,24 @@ class ReadSubmissionDetails {
     }
 
     private fun selectTeacherAllSubmissions(submissionId: Long, courseExId: Long): Resp = transaction {
-        val submissionIdNumbers = getSubmissionNumbers(selectStudentBySubmissionId(submissionId).value, courseExId)
-
         Submission.slice(
             Submission.id,
             Submission.grade,
             Submission.isAutoGrade,
             Submission.solution,
             Submission.createdAt,
-            Submission.seen
+            Submission.seen,
+            Submission.number
         )
             .select { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
                 Resp(
-                    submissionIdNumbers[submissionId] ?: throw InvalidRequestException(
-                        "Submission ID number $submissionId not mappable to order number (mapping to order not found)",
-                        ReqError.ENTITY_WITH_ID_NOT_FOUND
-                    ),
+                    it[Submission.number],
                     it[Submission.solution],
                     it[Submission.seen],
                     it[Submission.createdAt],
                     toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
                 )
-
             }.singleOrInvalidRequest()
     }
 }

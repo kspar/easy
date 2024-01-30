@@ -118,7 +118,24 @@
 
     </changeSet>
 
+    <changeSet id="290124-1" author="priit">
+        <addColumn tableName="submission">
+            <column name="number" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
 
-
+        <sql>
+        <![CDATA[
+            UPDATE submission s
+            SET number = (SELECT MAX(sub_number)
+                          FROM (SELECT ROW_NUMBER() OVER (PARTITION BY course_exercise_id, student_id ORDER BY created_at ASC) as sub_number
+                                FROM submission sub
+                                WHERE sub.course_exercise_id = s.course_exercise_id
+                                  AND sub.student_id = s.student_id
+                                  AND sub.id <= s.id) AS subquery);
+            ]]>
+    </sql>
+    </changeSet>
 
 </databaseChangeLog>

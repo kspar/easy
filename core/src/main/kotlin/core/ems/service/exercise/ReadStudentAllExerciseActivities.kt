@@ -4,15 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.AutomaticAssessment
+import core.db.Submission
 import core.db.TeacherAssessment
 import core.ems.service.TeacherResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
-import core.ems.service.getSubmissionNumbers
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectTeacher
-import core.exception.InvalidRequestException
-import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -75,9 +73,7 @@ class ReadStudentAllExerciseActivities {
     }
 
     private fun selectTeacherAllSubmissions(courseExId: Long, studentId: String): Resp = transaction {
-        val submissionIdNumbers: Map<Long, Int> = getSubmissionNumbers(studentId, courseExId)
-
-        val teacherActivities = TeacherAssessment
+        val teacherActivities = (Submission innerJoin TeacherAssessment)
             .slice(
                 TeacherAssessment.submission,
                 TeacherAssessment.feedbackHtml,
@@ -86,8 +82,9 @@ class ReadStudentAllExerciseActivities {
                 TeacherAssessment.grade,
                 TeacherAssessment.editedAt,
                 TeacherAssessment.teacher,
+                Submission.number
             ).select {
-                TeacherAssessment.student eq studentId and (TeacherAssessment.courseExercise eq courseExId)
+                TeacherAssessment.student eq studentId and (TeacherAssessment.courseExercise eq courseExId) and (Submission.id eq TeacherAssessment.submission)
             }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.ASC)
             .map {
                 val submissionId = it[TeacherAssessment.submission].value
@@ -96,10 +93,7 @@ class ReadStudentAllExerciseActivities {
 
                 TeacherActivityResp(
                     submissionId,
-                    submissionIdNumbers[submissionId] ?: throw InvalidRequestException(
-                        "Submission ID number $submissionId not mappable to order number (mapping to order not found)",
-                        ReqError.ENTITY_WITH_ID_NOT_FOUND
-                    ),
+                    it[Submission.number],
                     it[TeacherAssessment.mergeWindowStart],
                     it[TeacherAssessment.grade],
                     it[TeacherAssessment.editedAt],
