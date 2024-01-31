@@ -16,7 +16,7 @@ RUN sed -i 's/port = 5432/port = 5433/' /etc/postgresql/15/main/postgresql.conf
 USER postgres
 
 RUN /etc/init.d/postgresql start && \
-    psql --command "CREATE USER silmus WITH SUPERUSER PASSWORD 'silmus';"
+    psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
 
