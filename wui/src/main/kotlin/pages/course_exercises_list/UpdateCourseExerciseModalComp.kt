@@ -117,6 +117,7 @@ class UpdateCourseExerciseModalComp(
             initialValue = exercise.softDeadline,
             helpText = "Nähtav tähtaeg, esitamist lubatakse ka pärast tähtaega",
             htmlClasses = "update-course-exercise-deadline",
+            onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
@@ -125,6 +126,7 @@ class UpdateCourseExerciseModalComp(
             initialValue = exercise.hardDeadline,
             helpText = "Pärast seda aega esitamist enam ei lubata, õpilaste eest peidetud",
             htmlClasses = "update-course-exercise-closing",
+            onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
