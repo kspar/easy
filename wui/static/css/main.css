@@ -2309,6 +2309,9 @@ ezc-item-container {
     display: flex;
     min-width: 0;
     padding: 1.1rem .8rem 1.1rem .2rem;
+}
+
+ezc-item:not(.has-bar) ezc-item-container {
     border-bottom: 1px solid #e2e0e0;
 }
 
