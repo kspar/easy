@@ -8,6 +8,11 @@
     --ez-blue: #688ffd;
     --ez-grey: #d5d5d5;
 
+    --ez-dim-green: #82c087;
+    --ez-dim-yellow: #ffe192;
+    --ez-dim-blue: #aabdf3;
+    --ez-dim-grey: #e5e4e4;
+
     --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
@@ -2549,7 +2554,7 @@ ezc-progress-bar {
 
 ezc-progress-bar-part {
     display: inline-flex;
-    height: .4rem;
+    height: .3rem;
 }
 
 ez-progress-label {

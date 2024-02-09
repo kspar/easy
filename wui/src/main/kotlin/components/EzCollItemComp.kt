@@ -126,10 +126,10 @@ class EzCollItemComp<P>(
                     </ezc-item-container>
                     {{#progressBar}}
                         <ezc-progress-bar {{#showAttr}}title="{{labelValue}}"{{/showAttr}}>
-                            <ezc-progress-bar-part style="background-color: var(--ez-green); flex-grow: {{green}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ez-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ez-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
-                            <ezc-progress-bar-part style="background-color: var(--ez-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-dim-green); flex-grow: {{green}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-dim-yellow); flex-grow: {{yellow}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-dim-blue); flex-grow: {{blue}};"></ezc-progress-bar-part>
+                            <ezc-progress-bar-part style="background-color: var(--ez-dim-grey); flex-grow: {{grey}};"></ezc-progress-bar-part>
                         </ezc-progress-bar>
                     {{/progressBar}}
                 </ezc-bar-container>
