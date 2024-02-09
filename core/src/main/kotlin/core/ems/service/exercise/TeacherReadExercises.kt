@@ -40,6 +40,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
         @JsonProperty("grader_type") val graderType: GraderType,
+        @JsonProperty("threshold") val threshold: Int,
         @JsonProperty("ordering_idx") val orderingIndex: Int,
         @JsonProperty("unstarted_count") val unstartedCount: Int,
         @JsonProperty("ungraded_count") val ungradedCount: Int,
@@ -121,6 +122,7 @@ class TeacherReadCourseExercisesController(val courseService: CourseService) {
                     ex[CourseExercise.softDeadline],
                     ex[CourseExercise.hardDeadline],
                     ex[ExerciseVer.graderType],
+                    gradeThreshold,
                     i,
                     unstartedCount,
                     ungradedCount,
