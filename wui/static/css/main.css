@@ -2309,7 +2309,7 @@ ezc-item-container {
     display: flex;
     min-width: 0;
     padding: 1.1rem .8rem 1.1rem .2rem;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #e2e0e0;
 }
 
 ezc-item.has-bar ezc-item-container {
