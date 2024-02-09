@@ -2514,6 +2514,7 @@ ezc-attr-text.actionable {
 ezc-attr-text.actionable:hover {
     cursor: pointer;
     font-weight: 500;
+    text-decoration: underline;
 }
 
 /* If attrs should take up all space */
