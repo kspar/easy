@@ -37,7 +37,6 @@
 
     --ezc-attr-immutable-col: var(--ez-text-inactive);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
-    --ezc-link-hover-col: #429748;
 
     --ez-tabs-subpage-active: #666;
 }
@@ -2427,7 +2426,8 @@ ezc-item.two-rows ezc-title > a {
 }
 
 ezc-title > a:hover[href] {
-    color: var(--ezc-link-hover-col);
+    color: var(--ez-green-hover);
+    text-decoration: underline;
 }
 
 ezc-second {
