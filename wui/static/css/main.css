@@ -2398,7 +2398,8 @@ ezc-right {
     display: flex;
     align-items: start;
     justify-content: center;
-    padding-left: .8rem;
+    padding-left: 1rem;
+    padding-top: .2rem;
 }
 
 ezc-item.two-rows ezc-right {
