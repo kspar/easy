@@ -59,7 +59,7 @@ class StudentCoursesComp(
             courses.map {
                 EzCollComp.Item(
                     CourseProps(it.id, it.effectiveTitle),
-                    EzCollComp.ItemTypeIcon(Icons.articles),
+                    EzCollComp.ItemTypeIcon(Icons.course),
                     it.effectiveTitle,
                     titleInteraction = EzCollComp.TitleLink(CourseExercisesPage.link(it.id)),
 
