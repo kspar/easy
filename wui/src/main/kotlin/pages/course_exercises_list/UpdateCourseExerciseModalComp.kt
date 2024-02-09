@@ -115,7 +115,7 @@ class UpdateCourseExerciseModalComp(
         softDeadline = DateTimeFieldComp(
             "Tähtaeg", false,
             initialValue = exercise.softDeadline,
-            helpText = "Nähtav tähtaeg, esitamist lubatakse ka pärast tähtaega",
+            helpText = "Õpilastele näidatav tähtaeg, aga esitamist lubatakse ka pärast tähtaega",
             htmlClasses = "update-course-exercise-deadline",
             onENTER = { modalComp.primaryButton.click() },
             parent = this
@@ -124,7 +124,7 @@ class UpdateCourseExerciseModalComp(
         hardDeadline = DateTimeFieldComp(
             "Sulgemise aeg", false,
             initialValue = exercise.hardDeadline,
-            helpText = "Pärast seda aega esitamist enam ei lubata, õpilaste eest peidetud",
+            helpText = "Pärast seda aega esitamist enam ei lubata",
             htmlClasses = "update-course-exercise-closing",
             onENTER = { modalComp.primaryButton.click() },
             parent = this
