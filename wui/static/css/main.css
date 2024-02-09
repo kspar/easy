@@ -678,6 +678,11 @@ ez-student-course-exercise > ez-block-container {
     padding-top: 1rem;
 }
 
+.update-course-ex-title-modal .update-course-exercise-threshold {
+    display: block;
+    padding-top: 1rem;
+}
+
 ez-deadline-close,
 ez-deadline-close ez-icon {
     color: var(--ez-yellow-text);
