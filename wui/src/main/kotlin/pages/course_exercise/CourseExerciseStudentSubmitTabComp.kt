@@ -144,7 +144,7 @@ class CourseExerciseStudentSubmitTabComp(
 
     override fun render() = template(
         """
-            <div style="position: relative">
+            <div class='student-submit-editor' style="position: relative">
                 $syncIcon
                 $editor
             </div>

@@ -500,6 +500,10 @@ ez-student-course-exercise > ez-block-container {
     }
 }
 
+.student-submit-editor .editor-top {
+    min-height: 4.4rem;
+}
+
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
 }
@@ -926,7 +930,6 @@ ez-code-editor-field-help {
     overflow-x: auto;
     padding: .5rem 1rem;
     color: #999;
-    min-height: 4.4rem;
 }
 
 .editor-top .top-item {
