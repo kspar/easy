@@ -23,7 +23,7 @@ class DropdownIconMenuComp(
 
     override fun render() = template(
         """
-            <ez-flex>
+            <ez-flex style='position: relative'>
                 <md-icon-button id="{{id}}">
                     <md-icon>{{{icon}}}</md-icon>
                 </md-icon-button>

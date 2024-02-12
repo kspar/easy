@@ -30,7 +30,7 @@ class CourseExerciseEditorStatusComp(
 
     override fun render() = template(
         """
-            <div style="position: absolute; right: .2rem; top: .2rem; display: flex; align-items: center" class='icon-med'>
+            <div style="position: absolute; right: .4rem; top: .2rem; display: flex; align-items: center" class='icon-med'>
                 <span style='padding-right: 1rem; color: var(--ez-icon-col); cursor: default;'>{{msg}}</span>
                 <ez-flex style='min-width: 2.4rem; justify-content: center;'>{{{icon}}}</ez-flex>
                 <ez-flex style='margin-left: .5rem'>
