@@ -104,6 +104,7 @@ class CourseExerciseStudentSubmitTabComp(
 
         syncIcon = CourseExerciseEditorStatusComp(
             "", CourseExerciseEditorStatusComp.Status.IN_SYNC,
+            canUpload = isOpenForSubmissions,
             onUpload = ::uploadSolution,
             onDownload = ::downloadSolution,
             parent = this

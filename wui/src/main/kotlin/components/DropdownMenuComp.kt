@@ -29,7 +29,7 @@ class DropdownMenuComp(
         """
             <md-menu id="{{id}}" anchor="{{anchorId}}">
                 {{#items}}
-                    <md-menu-item id='{{id}}'>
+                    <md-menu-item id='{{id}}' {{#disabled}}disabled='true'{{/disabled}}>
                         {{#icon}}
                             <md-icon slot="start">{{{icon}}}</md-icon>
                         {{/icon}}
@@ -45,6 +45,7 @@ class DropdownMenuComp(
                 "id" to it.id,
                 "label" to it.label,
                 "icon" to it.icon,
+                "disabled" to it.isDisabled,
             )
         }
     )

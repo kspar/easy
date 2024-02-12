@@ -10,6 +10,7 @@ import translation.Str
 class CourseExerciseEditorStatusComp(
     var msg: String,
     var status: Status,
+    canUpload: Boolean,
     onUpload: () -> Unit,
     onDownload: () -> Unit,
     parent: Component
@@ -19,7 +20,7 @@ class CourseExerciseEditorStatusComp(
 
     private val menu = DropdownIconMenuComp(
         Icons.dotsVertical, listOf(
-            DropdownMenuComp.Item(Str.uploadSubmission, Icons.upload, onSelected = onUpload),
+            DropdownMenuComp.Item(Str.uploadSubmission, Icons.upload, isDisabled = !canUpload, onSelected = onUpload),
             DropdownMenuComp.Item(Str.downloadSubmission, Icons.download, onSelected = onDownload),
         ), this
     )
