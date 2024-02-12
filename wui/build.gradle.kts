@@ -29,7 +29,7 @@ dependencies {
     implementation(npm("overlayscrollbars", "2.4.4"))
     implementation(npm("container-query-polyfill", "0.1.2"))
     implementation(npm("mustache", "4.2.0"))
-//    implementation(npm("@material/web", "1.0.0"))
+    implementation(npm("@material/web", "1.2.0"))
 }
 
 kotlin {

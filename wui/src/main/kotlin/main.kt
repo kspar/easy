@@ -4,6 +4,7 @@ import kotlinx.dom.clear
 import libheaders.CodeMirror
 import libheaders.ContainerQueryPolyfill
 import libheaders.OverlayScrollbars
+import libheaders.mentionMaterialComponents
 import org.w3c.dom.Element
 import pages.EasyPage
 import pages.Navbar
@@ -136,7 +137,7 @@ private fun initApplication() {
     CodeMirror.modeURL = AppProperties.CM_MODE_URL_TEMPLATE
 
     loadContainerQueries()
-//    mentionMaterialComponents()
+    mentionMaterialComponents()
 }
 
 private fun handlePageNotFound(@Suppress("UNUSED_PARAMETER") path: String) {

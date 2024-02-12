@@ -54,6 +54,10 @@ sealed class TranslatableStrings {
     abstract val feedback: String
     abstract val value: String
     abstract val loading: String
+    abstract val uploadSubmission: String
+    abstract val downloadSubmission: String
+    abstract val uploadErrorFileTooLarge: String
+    abstract val uploadErrorFileNotText: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -477,6 +481,10 @@ object EstStrings : TranslatableStrings() {
     override val feedback = "Tagasiside"
     override val value = "Väärtus"
     override val loading = "Laen..."
+    override val uploadSubmission = "Vali fail arvutist"
+    override val downloadSubmission = "Salvesta failina"
+    override val uploadErrorFileTooLarge = "Valitud fail on liiga suur"
+    override val uploadErrorFileNotText = "Valitud fail pole tekstifail"
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -799,6 +807,10 @@ object EngStrings : TranslatableStrings() {
     override val feedback = "Feedback"
     override val value = "Value"
     override val loading = "Loading..."
+    override val uploadSubmission = "Upload file"
+    override val downloadSubmission = "Save as file"
+    override val uploadErrorFileTooLarge = "The chosen file is too large"
+    override val uploadErrorFileNotText = "The chosen file is not a text file"
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."

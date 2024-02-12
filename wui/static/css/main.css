@@ -857,8 +857,17 @@ ez-code-edit.readonly .CodeMirror-cursors {
     cursor: text;
 }
 
+.CodeMirror-gutters {
+    border: 0;
+    background-color: rgba(0, 0, 0, .04);
+}
+
 .CodeMirror-gutter {
     cursor: auto;
+}
+
+.CodeMirror-linenumber {
+    color: rgba(0, 0, 0, .1);
 }
 
 ez-code-editor-field-help {
@@ -903,7 +912,7 @@ ez-code-editor-field-help {
     margin-top: 2rem;
     margin-bottom: 2rem;
     padding: .1rem;
-    background-color: #eee;
+    background-color: rgba(0, 0, 0, .04);
 }
 
 .editor-wrapper.no-gutter {
@@ -917,6 +926,7 @@ ez-code-editor-field-help {
     overflow-x: auto;
     padding: .5rem 1rem;
     color: #999;
+    min-height: 4.4rem;
 }
 
 .editor-top .top-item {
@@ -2087,7 +2097,7 @@ ez-spinner.preloader-wrapper {
 }
 
 ez-spinner .spinner-layer {
-    border-color: var(--ez-checkbox-fill-col);
+    border-color: rgba(0, 0, 0, .3);
 }
 
 ez-spinner .circle-clipper .circle {

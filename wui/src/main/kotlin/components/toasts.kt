@@ -21,6 +21,7 @@ object ToastIds {
     val loginToContinue = IdGenerator.nextId()
     val exerciseAddedToCourse = IdGenerator.nextId()
     val authFail = IdGenerator.nextId()
+    val uploadedFileError = IdGenerator.nextId()
 }
 
 class ToastThing(
