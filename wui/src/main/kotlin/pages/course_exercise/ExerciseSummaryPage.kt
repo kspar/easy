@@ -40,6 +40,7 @@ import org.w3c.dom.*
 import pages.EasyPage
 import pages.Title
 import pages.course_exercise.student.StudentCourseExerciseComp
+import pages.course_exercise.teacher.TeacherCourseExerciseComp
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp
@@ -143,26 +144,26 @@ object ExerciseSummaryPage : EasyPage() {
         super.build(pageStateStr)
         val scrollPosition = pageStateStr.getScrollPosFromState()
 
-        when (Auth.activeRole) {
-            Role.STUDENT -> doInPromise {
-                getHtml().addClass("wui3", "full-width")
-                Sidenav.refresh(sidenavSpec, true)
+        doInPromise {
+            getHtml().addClass("wui3", "full-width")
 
-                val r = StudentCourseExerciseComp(courseId, courseExerciseId, ::setWildcardPath)
-                rootComp = r
-                r.createAndBuild().await()
-                scrollPosition?.restore()
+            rootComp = when (Auth.activeRole) {
+                Role.STUDENT -> {
+                    Sidenav.refresh(sidenavSpec, true)
+                    StudentCourseExerciseComp(courseId, courseExerciseId, ::setWildcardPath)
 
-                Navigation.catchNavigation {
-                    r.hasUnsavedChanges()
+                }
+
+                Role.TEACHER, Role.ADMIN -> {
+                    TeacherCourseExerciseComp(courseId, courseExerciseId, ::setWildcardPath)
                 }
             }
 
-            Role.TEACHER, Role.ADMIN -> buildTeacherExercise(
-                pathParams.courseId,
-                pathParams.courseExerciseId,
-                Auth.activeRole == Role.ADMIN
-            )
+            rootComp!!.createAndBuild().await()
+            scrollPosition?.restore()
+            Navigation.catchNavigation {
+                rootComp!!.hasUnsavedChanges()
+            }
         }
     }
 

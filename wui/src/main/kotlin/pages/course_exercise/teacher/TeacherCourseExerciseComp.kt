@@ -7,8 +7,7 @@ import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
 import pages.Title
 import pages.course_exercise.CourseExerciseTextComp
-import pages.course_exercise.student.CourseExerciseStudentSubmissionsTabComp
-import pages.course_exercise.student.CourseExerciseStudentSubmitTabComp
+import pages.exercise_in_library.AutoAssessmentTabComp
 import pages.exercise_library.createPathChainSuffix
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -43,33 +42,44 @@ class TeacherCourseExerciseComp(
             type = PageTabsComp.Type.SUBPAGE,
             tabs = listOf(
                 PageTabsComp.Tab(
-                    Str.tabSubmit, preselected = true,
+                    Str.tabSubmission,
                     compProvider = {
-                        CourseExerciseStudentSubmitTabComp(
-                            courseId,
-                            courseExId,
-                            courseEx.grader_type,
-                            true,
+
+                        val aaProps = if (courseEx.grading_script != null) {
+                            AutoAssessmentTabComp.AutoAssessProps(
+                                courseEx.grading_script,
+                                courseEx.assets!!.associate { it.file_name to it.file_content },
+                                courseEx.container_image!!,
+                                courseEx.max_time_sec!!,
+                                courseEx.max_mem_mb!!
+                            )
+                        } else null
+
+                        AutoAssessmentTabComp(
+                            aaProps,
                             courseEx.solution_file_name,
                             courseEx.solution_file_type,
                             {},
                             it
                         )
+//                            .also { autoassessTab = it }
                     }),
-                PageTabsComp.Tab(
-                    Str.tabMySubmissions,
-                    compProvider = {
-                        CourseExerciseStudentSubmissionsTabComp(
-                            courseId,
-                            courseExId,
-                            courseEx.threshold,
-                            {  },
-                            it
-                        )
-                    }),
+//                PageTabsComp.Tab(
+//                    Str.tabMySubmissions,
+//                    compProvider = {
+//                        CourseExerciseStudentSubmissionsTabComp(
+//                            courseId,
+//                            courseExId,
+//                            courseEx.threshold,
+//                            {  },
+//                            it
+//                        )
+//                    }),
             ),
             parent = this
         )
+
+        // TODO: sidenav
     }
 
     override fun render() = template(
