@@ -11,6 +11,8 @@ import hide
 import kotlinx.coroutines.await
 import observeValueChange
 import org.w3c.files.Blob
+import pages.course_exercise.AutogradeLoaderComp
+import pages.course_exercise.ExerciseFeedbackComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
