@@ -1,5 +1,7 @@
 package libheaders
 
+import org.w3c.dom.Element
+
 //import org.w3c.dom.Element
 //
 //@JsModule("@material/web/checkbox/checkbox.js")
@@ -19,9 +21,33 @@ package libheaders
 //}
 //
 //fun Element.MaterialFilledButton() = unsafeCast<MaterialFilledButton>()
-//
-//fun mentionMaterialComponents() {
+
+@JsModule("@material/web/menu/menu.js")
+@JsNonModule
+external class MdMenu {
+    companion object
+
+    var open: Boolean
+}
+
+fun Element.MdMenu() = unsafeCast<MdMenu>()
+
+@JsModule("@material/web/menu/menu-item.js")
+@JsNonModule
+external class MdMenuItem {
+    companion object
+}
+
+@JsModule("@material/web/iconbutton/icon-button.js")
+@JsNonModule
+external class MdIconBtn {
+    companion object
+}
+
+fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
-//    MaterialCheckbox
-//    MaterialFilledButton
-//}
+    MdMenu
+    MdMenuItem
+    MdIconBtn
+}
+

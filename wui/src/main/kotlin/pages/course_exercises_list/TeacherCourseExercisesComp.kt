@@ -37,6 +37,7 @@ class TeacherCourseExercisesComp(
         val libTitle: String,
         val titleAlias: String?,
         val isAutoeval: Boolean,
+        val threshold: Int,
         val deadline: EzDate?,
         val closingTime: EzDate?,
         val isVisible: Boolean,
@@ -72,7 +73,8 @@ class TeacherCourseExercisesComp(
         val props = exercises.map {
             ExProps(
                 it.id, it.ordering_idx, it.library_title, it.title_alias,
-                it.grader_type == ExerciseDAO.GraderType.AUTO, it.soft_deadline, it.hard_deadline,
+                it.grader_type == ExerciseDAO.GraderType.AUTO, it.threshold,
+                it.soft_deadline, it.hard_deadline,
                 it.isVisibleNow, it.student_visible_from,
                 it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count
             )
@@ -213,6 +215,7 @@ class TeacherCourseExercisesComp(
                 item.props.id,
                 item.props.libTitle,
                 item.props.titleAlias,
+                item.props.threshold,
                 item.props.isVisible,
                 item.props.visibleFrom,
                 item.props.deadline,

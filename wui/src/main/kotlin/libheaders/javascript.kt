@@ -1,5 +1,6 @@
 package libheaders
 
+import org.khronos.webgl.ArrayBuffer
 import org.w3c.dom.Element
 
 
@@ -22,3 +23,7 @@ external class ResizeBorderBoxEntry {
 }
 
 external class TypeError : Throwable
+
+external class TextDecoder(encoding: String, options: dynamic) {
+    fun decode(buffer: ArrayBuffer): String
+}

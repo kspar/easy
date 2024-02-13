@@ -2,6 +2,7 @@ package pages.course_exercises_list
 
 import EzDate
 import components.form.DateTimeFieldComp
+import components.form.IntFieldComp
 import components.form.RadioButtonsComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
@@ -27,7 +28,8 @@ class UpdateCourseExerciseModalComp(
 ) : Component(parent, dstId) {
 
     data class CourseExercise(
-        val id: String, val title: String, val alias: String?, val isVisible: Boolean, val visibleFrom: EzDate?,
+        val id: String, val title: String, val alias: String?, val threshold: Int,
+        val isVisible: Boolean, val visibleFrom: EzDate?,
         val softDeadline: EzDate?, val hardDeadline: EzDate?,
     )
 
@@ -43,6 +45,8 @@ class UpdateCourseExerciseModalComp(
 
     private lateinit var softDeadline: DateTimeFieldComp
     private lateinit var hardDeadline: DateTimeFieldComp
+
+    private lateinit var threshold: IntFieldComp
 
     private val modalComp: BinaryModalComp<Boolean?> = BinaryModalComp(
         "Ülesande sätted", Str.doSave, Str.cancel, Str.saving, fixFooter = true,
@@ -111,20 +115,34 @@ class UpdateCourseExerciseModalComp(
         softDeadline = DateTimeFieldComp(
             "Tähtaeg", false,
             initialValue = exercise.softDeadline,
-            helpText = "Nähtav tähtaeg, esitamist lubatakse ka pärast tähtaega",
+            helpText = "Õpilastele näidatav tähtaeg, aga esitamist lubatakse ka pärast tähtaega",
             htmlClasses = "update-course-exercise-deadline",
+            onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
         hardDeadline = DateTimeFieldComp(
             "Sulgemise aeg", false,
             initialValue = exercise.hardDeadline,
-            helpText = "Pärast seda aega esitamist enam ei lubata, õpilaste eest peidetud",
+            helpText = "Pärast seda aega esitamist enam ei lubata",
             htmlClasses = "update-course-exercise-closing",
+            onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
-        modalComp.setContentComps { listOf(title, aliasComp, visibleRadio, openingTime, softDeadline, hardDeadline) }
+        threshold = IntFieldComp(
+            "Lävend", true, minValue = 0, maxValue = 100,
+            initialValue = exercise.threshold,
+            helpText = "Minimaalne punktisumma, mille korral loetakse ülesanne sooritatuks, 0–100",
+            htmlClasses = "update-course-exercise-threshold",
+            onValidChange = { validate() },
+            onENTER = { modalComp.primaryButton.click() },
+            parent = this
+        )
+
+        modalComp.setContentComps {
+            listOf(title, aliasComp, visibleRadio, openingTime, softDeadline, hardDeadline, threshold)
+        }
     }
 
     override fun render() = ""
@@ -133,6 +151,7 @@ class UpdateCourseExerciseModalComp(
         aliasComp.validateInitial()
         visibleRadio.validateInitial()
         openingTime.validateInitial()
+        threshold.validateInitial()
 
         openingTime.show(isOpensLaterSelected())
     }
@@ -146,6 +165,7 @@ class UpdateCourseExerciseModalComp(
     private fun validate() {
         val isValid = aliasComp.isValid
                 && visibleRadio.isValid
+                && threshold.isValid
                 && if (isOpensLaterSelected()) openingTime.isValid else true
 
         modalComp.primaryButton.setEnabled(isValid)
@@ -162,6 +182,7 @@ class UpdateCourseExerciseModalComp(
         debug { "Visible from: ${exercise.visibleFrom} -> ${openingTime.getValue()}" }
         debug { "Deadline: ${softDeadline.getValue()}" }
         debug { "Closing time: ${hardDeadline.getValue()}" }
+        debug { "Threshold: ${threshold.getIntValue()}" }
 
         val update = CourseExercisesTeacherDAO.CourseExerciseUpdate(
             replace = CourseExercisesTeacherDAO.CourseExerciseReplace(
@@ -179,6 +200,7 @@ class UpdateCourseExerciseModalComp(
                 },
                 softDeadline = softDeadline.getValue(),
                 hardDeadline = hardDeadline.getValue(),
+                threshold = threshold.getIntValue(),
             ),
             delete = buildSet {
                 if (alias.isBlank() || alias == exercise.title)

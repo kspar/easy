@@ -305,6 +305,7 @@ object ExerciseSummaryPage : EasyPage() {
                                     courseExerciseId,
                                     exercise.title,
                                     exercise.title_alias,
+                                    exercise.threshold,
                                     exercise.student_visible,
                                     exercise.student_visible_from?.let { EzDate(it) },
                                     exercise.soft_deadline?.let { EzDate(it) },

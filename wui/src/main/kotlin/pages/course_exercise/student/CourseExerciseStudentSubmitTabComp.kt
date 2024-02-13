@@ -10,14 +10,15 @@ import dao.ExerciseDAO
 import hide
 import kotlinx.coroutines.await
 import observeValueChange
-import pages.course_exercise.AutogradeLoaderComp
-import pages.course_exercise.ExerciseFeedbackComp
+import org.w3c.files.Blob
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
+import saveAsFile
 import template
 import translation.Str
+import uploadFile
 
 
 class CourseExerciseStudentSubmitTabComp(
@@ -101,7 +102,13 @@ class CourseExerciseStudentSubmitTabComp(
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
-        syncIcon = CourseExerciseEditorStatusComp("", CourseExerciseEditorStatusComp.Status.IN_SYNC, this)
+        syncIcon = CourseExerciseEditorStatusComp(
+            "", CourseExerciseEditorStatusComp.Status.IN_SYNC,
+            canUpload = isOpenForSubmissions,
+            onUpload = ::uploadSolution,
+            onDownload = ::downloadSolution,
+            parent = this
+        )
 
         submitBtn = ButtonComp(
             ButtonComp.Type.PRIMARY,
@@ -138,7 +145,7 @@ class CourseExerciseStudentSubmitTabComp(
 
     override fun render() = template(
         """
-            <div style="position: relative">
+            <div class='student-submit-editor' style="position: relative">
                 $syncIcon
                 $editor
             </div>
@@ -151,7 +158,7 @@ class CourseExerciseStudentSubmitTabComp(
 
     override fun postRender() {
         doInPromise {
-            observeValueChange(2000, 200,
+            observeValueChange(1000, 500,
                 valueProvider = { editor.getActiveTabContent()!! },
                 action = ::saveDraft,
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
@@ -238,6 +245,16 @@ class CourseExerciseStudentSubmitTabComp(
 
         // Repeating this status to mitigate the edit-submit race condition
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
+    }
+
+    private fun uploadSolution() {
+        uploadFile {
+            editor.setFileValue(editor.getActiveTabFilename()!!, it.content)
+        }
+    }
+
+    private fun downloadSolution() {
+        Blob(listOf(editor.getActiveTabContent()!!).toTypedArray()).saveAsFile(solutionFileName)
     }
 
     private fun setEditorEditable(editable: Boolean) {

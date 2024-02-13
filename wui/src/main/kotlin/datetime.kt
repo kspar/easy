@@ -7,7 +7,7 @@ data class EzDate(val date: Date) : Comparable<EzDate> {
     companion object {
         fun now() = EzDate(Date())
         fun epoch() = EzDate(Date(0))
-        fun future() = EzDate(Date(32529329048000))
+        fun future() = EzDate(Date(32529329048000))  // Y3K problem, here we come
         fun nowDelta(deltaMs: Long) = EzDate(Date(Date.now() + deltaMs))
         fun nowDeltaDays(deltaDays: Int) = nowDelta(deltaDays * 24 * 60 * 60 * 1000L)
     }

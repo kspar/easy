@@ -54,6 +54,10 @@ sealed class TranslatableStrings {
     abstract val feedback: String
     abstract val value: String
     abstract val loading: String
+    abstract val uploadSubmission: String
+    abstract val downloadSubmission: String
+    abstract val uploadErrorFileTooLarge: String
+    abstract val uploadErrorFileNotText: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -463,7 +467,7 @@ object EstStrings : TranslatableStrings() {
     override val ungradedLabel = "hindamata"
     override val unstartedLabel = "esitamata"
     override val tabExerciseLabel = "Ülesanne"
-    override val tabTestingLabel = "Katsetamine"
+    override val tabTestingLabel = "Katseta"
     override val tabSubmissionsLabel = "Esitused"
     override val autoAssessmentLabel = "Automaatsed testid"
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
@@ -477,6 +481,10 @@ object EstStrings : TranslatableStrings() {
     override val feedback = "Tagasiside"
     override val value = "Väärtus"
     override val loading = "Laen..."
+    override val uploadSubmission = "Vali fail arvutist"
+    override val downloadSubmission = "Salvesta failina"
+    override val uploadErrorFileTooLarge = "Valitud fail on liiga suur"
+    override val uploadErrorFileNotText = "Valitud fail pole tekstifail"
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -579,7 +587,7 @@ ole hea ja proovi hiljem uuesti.
     override val sortByPopularity = "Populaarsuse järgi"
     override val tabExercise = "Ülesanne"
     override val tabSubmission = "Esitamine"
-    override val tabTesting = "Katsetamine"
+    override val tabTesting = "Katseta"
     override val addToCourseModalTitle = "Lisa ülesanne kursusele"
     override val addToCourseModalText1 = "Lisa "
     override val addToCourseModalText2 = " kursusele:"
@@ -772,7 +780,7 @@ object EngStrings : TranslatableStrings() {
     override val unstartedLabel = "not submitted"
 
     override val tabExerciseLabel = "Exercise"
-    override val tabTestingLabel = "Testing"
+    override val tabTestingLabel = "Test"
     override val tabSubmissionsLabel = "Submissions"
     override val tabSubmit = "Submit"
     override val tabMySubmissions = "My submissions"
@@ -799,6 +807,10 @@ object EngStrings : TranslatableStrings() {
     override val feedback = "Feedback"
     override val value = "Value"
     override val loading = "Loading..."
+    override val uploadSubmission = "Upload file"
+    override val downloadSubmission = "Save as file"
+    override val uploadErrorFileTooLarge = "The chosen file is too large"
+    override val uploadErrorFileNotText = "The chosen file is not a text file"
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
@@ -905,8 +917,8 @@ of the issue, please try again later.
     override val sortByModified = "By last modification"
     override val sortByPopularity = "By popularity"
     override val tabExercise = "Exercise"
-    override val tabSubmission = "Submission"
-    override val tabTesting = "Testing"
+    override val tabSubmission = "Submitting"
+    override val tabTesting = "Test"
     override val addToCourseModalTitle = "Add exercise to course"
     override val addToCourseModalText1 = "Add "
     override val addToCourseModalText2 = " to course:"

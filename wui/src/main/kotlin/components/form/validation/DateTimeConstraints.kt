@@ -16,8 +16,7 @@ class DateTimeConstraints {
             value: EzDate?,
             fieldNameForMessage: String
         ): ConstraintViolation<EzDate?>? = when {
-            value == null -> null
-            value < EzDate.now() -> violation("Aeg ei tohi olla minevikus")
+            value != null && value < EzDate.now() -> violation("Aeg ei tohi olla minevikus")
             else -> null
         }
     }
@@ -27,8 +26,16 @@ class DateTimeConstraints {
             value: EzDate?,
             fieldNameForMessage: String
         ): ConstraintViolation<EzDate?>? = when {
-            value == null -> null
-            value > EzDate.now() -> violation("Aeg ei tohi olla tulevikus")
+            value != null && value > EzDate.now() -> violation("Aeg ei tohi olla tulevikus")
+            else -> null
+        }
+    }
+
+    object InThisMillennium : FieldConstraint<EzDate?>() {
+        override fun validate(
+            value: EzDate?, fieldNameForMessage: String
+        ): ConstraintViolation<EzDate?>? = when {
+            value != null && value > EzDate.future() -> violation("Aeg peab olema selles millenniumis")
             else -> null
         }
     }

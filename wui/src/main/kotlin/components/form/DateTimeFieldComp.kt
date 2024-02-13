@@ -27,11 +27,13 @@ class DateTimeFieldComp(
     constraints: List<FieldConstraint<EzDate?>> = emptyList(),
     private val onValidChange: ((Boolean) -> Unit)? = null,
     private val onValueChange: ((EzDate?) -> Unit)? = null,
+    private val onENTER: (suspend (EzDate?) -> Unit)? = null,
     parent: Component
 ) : ValidatableFieldComp<EzDate?>(
     fieldNameForMessage,
     if (isRequired) DateTimeConstraints.NonNullAndValid(showRequiredMsg) else null,
     buildList {
+        add(DateTimeConstraints.InThisMillennium)
         if (notInPast) add(DateTimeConstraints.NotInPast)
         if (notInFuture) add(DateTimeConstraints.NotInFuture)
     } + constraints,
@@ -60,7 +62,7 @@ class DateTimeFieldComp(
         "class" to htmlClasses,
         "id" to inputId,
         "min" to if (notInPast) EzDate.now().toDatetimeFieldString() else null,
-        "max" to if (notInFuture) EzDate.now().toDatetimeFieldString() else null,
+        "max" to if (notInFuture) EzDate.now().toDatetimeFieldString() else EzDate.future().toDatetimeFieldString(),
         "value" to initialValue?.toDatetimeFieldString(),
         "label" to label,
         "helpText" to helpText,
@@ -76,6 +78,12 @@ class DateTimeFieldComp(
 
         getElement().onBlur {
             validateAndPaint(paintRequiredOnInput)
+        }
+
+        if (onENTER != null) {
+            getElement().onENTER {
+                onENTER.invoke(getValue())
+            }
         }
     }
 

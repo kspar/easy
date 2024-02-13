@@ -8,6 +8,11 @@
     --ez-blue: #688ffd;
     --ez-grey: #d5d5d5;
 
+    --ez-dim-green: #82c087;
+    --ez-dim-yellow: #ffe192;
+    --ez-dim-blue: #aabdf3;
+    --ez-dim-grey: #e5e4e4;
+
     --ez-green-hover: #2D8C34;
     --ez-attr-key: #4DAB54;
     --ez-border: #ccc;
@@ -37,7 +42,6 @@
 
     --ezc-attr-immutable-col: var(--ez-text-inactive);
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
-    --ezc-link-hover-col: #429748;
 
     --ez-tabs-subpage-active: #666;
 }
@@ -496,6 +500,10 @@ ez-student-course-exercise > ez-block-container {
     }
 }
 
+.student-submit-editor .editor-top {
+    min-height: 4.4rem;
+}
+
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
 }
@@ -678,6 +686,11 @@ ez-student-course-exercise > ez-block-container {
     padding-top: 1rem;
 }
 
+.update-course-ex-title-modal .update-course-exercise-threshold {
+    display: block;
+    padding-top: 1rem;
+}
+
 ez-deadline-close,
 ez-deadline-close ez-icon {
     color: var(--ez-yellow-text);
@@ -848,8 +861,17 @@ ez-code-edit.readonly .CodeMirror-cursors {
     cursor: text;
 }
 
+.CodeMirror-gutters {
+    border: 0;
+    background-color: rgba(0, 0, 0, .04);
+}
+
 .CodeMirror-gutter {
     cursor: auto;
+}
+
+.CodeMirror-linenumber {
+    color: rgba(0, 0, 0, .1);
 }
 
 ez-code-editor-field-help {
@@ -894,7 +916,7 @@ ez-code-editor-field-help {
     margin-top: 2rem;
     margin-bottom: 2rem;
     padding: .1rem;
-    background-color: #eee;
+    background-color: rgba(0, 0, 0, .04);
 }
 
 .editor-wrapper.no-gutter {
@@ -2078,7 +2100,7 @@ ez-spinner.preloader-wrapper {
 }
 
 ez-spinner .spinner-layer {
-    border-color: var(--ez-checkbox-fill-col);
+    border-color: rgba(0, 0, 0, .3);
 }
 
 ez-spinner .circle-clipper .circle {
@@ -2300,7 +2322,10 @@ ezc-item-container {
     display: flex;
     min-width: 0;
     padding: 1.1rem .8rem 1.1rem .2rem;
-    border-bottom: 1px solid #ccc;
+}
+
+ezc-item:not(.has-bar) ezc-item-container {
+    border-bottom: 1px solid #e2e0e0;
 }
 
 ezc-item.has-bar ezc-item-container {
@@ -2389,7 +2414,8 @@ ezc-right {
     display: flex;
     align-items: start;
     justify-content: center;
-    padding-left: .8rem;
+    padding-left: 1rem;
+    padding-top: .2rem;
 }
 
 ezc-item.two-rows ezc-right {
@@ -2422,7 +2448,8 @@ ezc-item.two-rows ezc-title > a {
 }
 
 ezc-title > a:hover[href] {
-    color: var(--ezc-link-hover-col);
+    color: var(--ez-green-hover);
+    text-decoration: underline;
 }
 
 ezc-second {
@@ -2503,6 +2530,7 @@ ezc-attr-text.actionable {
 ezc-attr-text.actionable:hover {
     cursor: pointer;
     font-weight: 500;
+    text-decoration: underline;
 }
 
 /* If attrs should take up all space */
@@ -2544,7 +2572,7 @@ ezc-progress-bar {
 
 ezc-progress-bar-part {
     display: inline-flex;
-    height: .4rem;
+    height: .3rem;
 }
 
 ez-progress-label {

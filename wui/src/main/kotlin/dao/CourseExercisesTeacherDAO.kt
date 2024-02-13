@@ -30,6 +30,7 @@ object CourseExercisesTeacherDAO {
         @Serializable(with = EzDateSerializer::class)
         val hard_deadline: EzDate?,
         val grader_type: ExerciseDAO.GraderType,
+        val threshold: Int,
         val ordering_idx: Int,
         val unstarted_count: Int,
         val ungraded_count: Int,
