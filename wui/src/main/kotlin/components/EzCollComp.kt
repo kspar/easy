@@ -391,6 +391,11 @@ class EzCollComp<P>(
     // FIXME: temporary optimisation
     override fun createAndBuild() = createAndBuild3() ?: Promise.Companion.resolve(Unit)
 
+    fun getOrderedVisibleItems(): List<Item<P>> =
+        calcVisibleItems().sortedBy { it.orderingIndex }
+            .map { it.spec }
+
+
     private fun initSelection() {
         // Init mass actions
         Materialize.Dropdown.init(

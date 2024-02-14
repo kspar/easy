@@ -2,7 +2,7 @@ package pages.exercise_in_library
 
 import Icons
 import components.code_editor.CodeEditorComp
-import components.form.IconButtonComp
+import components.form.OldIconButtonComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
 import kotlinx.browser.window
@@ -42,7 +42,7 @@ class ExerciseTextEditTabComp(
     )
 
     private lateinit var titleField: StringFieldComp
-    private val helpIcon = IconButtonComp(
+    private val helpIcon = OldIconButtonComp(
         Icons.helpUnf,
         "AsciiDoc Quick Reference",
         onClick = { window.open("https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/", "_blank") },

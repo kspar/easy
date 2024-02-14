@@ -6,7 +6,7 @@ import org.w3c.dom.HTMLElement
 import rip.kspar.ezspa.*
 import template
 
-class IconButtonComp(
+class OldIconButtonComp(
     private val iconHtml: String,
     private val label: String?,
     private val onClick: suspend (() -> Unit),

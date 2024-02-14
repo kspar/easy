@@ -42,7 +42,10 @@ external class MdMenuItem {
 @JsNonModule
 external class MdIconBtn {
     companion object
+    var disabled: Boolean
 }
+
+fun Element.MdIconBtn() = unsafeCast<MdIconBtn>()
 
 @JsModule("@material/web/tabs/tabs.js")
 @JsNonModule

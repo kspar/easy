@@ -1,42 +1,47 @@
-
 :root, :host {
-    --md-sys-color-background: #fcf9f7;
-    --md-sys-color-on-background: #1b1c1b;
-    /*--md-sys-color-surface: #fcf9f7;*/
-    --md-sys-color-surface-dim: #dcd9d7;
-    --md-sys-color-surface-bright: #fcf9f7;
+    --md-sys-color-background: #f8fbf0;
+    --md-sys-color-on-background: #191d16;
+    /*--md-sys-color-surface: #f8fbf0;*/
+    --md-sys-color-surface-dim: #d8dbd1;
+    --md-sys-color-surface-bright: #f8fbf0;
     --md-sys-color-surface-container-lowest: #ffffff;
-    --md-sys-color-surface-container-low: #f6f3f1;
-    --md-sys-color-surface-container: #f0edeb;
-    --md-sys-color-surface-container-high: #eae8e6;
-    --md-sys-color-surface-container-highest: #e4e2e0;
-    --md-sys-color-on-surface: #1b1c1b;
-    --md-sys-color-surface-variant: #e0e3dc;
-    --md-sys-color-on-surface-variant: #444843;
-    --md-sys-color-inverse-surface: #30302f;
-    --md-sys-color-inverse-on-surface: #f3f0ee;
-    --md-sys-color-outline: #747872;
-    --md-sys-color-outline-variant: #c4c8c0;
+    --md-sys-color-surface-container-low: #f2f5ea;
+    --md-sys-color-surface-container: #ecefe4;
+    --md-sys-color-surface-container-high: #e7e9df;
+    --md-sys-color-surface-container-highest: #e1e4d9;
+    --md-sys-color-on-surface: #191d16;
+    --md-sys-color-surface-variant: #dde5d4;
+    --md-sys-color-on-surface-variant: #42493c;
+    --md-sys-color-inverse-surface: #2e322a;
+    --md-sys-color-inverse-on-surface: #eff2e7;
+    --md-sys-color-outline: #727a6b;
+    --md-sys-color-outline-variant: #c1c9b8;
     --md-sys-color-shadow: #000000;
     --md-sys-color-scrim: #000000;
-    --md-sys-color-surface-tint: #576156;
-    --md-sys-color-primary: #576156;
+    --md-sys-color-surface-tint: #346b1d;
+    --md-sys-color-primary: #23590b;
     --md-sys-color-on-primary: #ffffff;
-    --md-sys-color-primary-container: #b3bdb0;
-    --md-sys-color-on-primary-container: #273026;
-    --md-sys-color-inverse-primary: #bfc9bc;
-    --md-sys-color-secondary: #5c5f5a;
+    --md-sys-color-primary-container: #477f2f;
+    --md-sys-color-on-primary-container: #ffffff;
+    --md-sys-color-inverse-primary: #99d77b;
+    --md-sys-color-secondary: #4d6541;
     --md-sys-color-on-secondary: #ffffff;
-    --md-sys-color-secondary-container: #e2e5de;
-    --md-sys-color-on-secondary-container: #464a45;
-    --md-sys-color-tertiary: #566066;
+    --md-sys-color-secondary-container: #d3efc1;
+    --md-sys-color-on-secondary-container: #3a502f;
+    --md-sys-color-tertiary: #00565b;
     --md-sys-color-on-tertiary: #ffffff;
-    --md-sys-color-tertiary-container: #b2bcc3;
-    --md-sys-color-on-tertiary-container: #252f34;
+    --md-sys-color-tertiary-container: #007e85;
+    --md-sys-color-on-tertiary-container: #ffffff;
     --md-sys-color-error: #ba1a1a;
     --md-sys-color-on-error: #ffffff;
     --md-sys-color-error-container: #ffdad6;
     --md-sys-color-on-error-container: #410002;
+
+    /* make secondary tab icon colours lighter */
+    /* default: --md-sys-color-on-surface-variant */
+    --md-secondary-tab-icon-color: #65705d;
+    /* default: --md-sys-color-on-surface */
+    --md-secondary-tab-active-icon-color: #343b2e;
 
     /* temporary adjustments */
     /* all colours should be changed together, keep old ones for now */

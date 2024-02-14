@@ -19,7 +19,7 @@ class CourseExerciseEditorStatusComp(
     enum class Status { IN_SYNC, WAITING, SYNCING, SYNC_FAILED }
 
     private val menu = DropdownIconMenuComp(
-        Icons.dotsVertical, listOf(
+        Icons.dotsVertical, Str.editorMenuLabel, listOf(
             DropdownMenuComp.Item(Str.uploadSubmission, Icons.upload, isDisabled = !canUpload, onSelected = onUpload),
             DropdownMenuComp.Item(Str.downloadSubmission, Icons.download, onSelected = onDownload),
         ), this

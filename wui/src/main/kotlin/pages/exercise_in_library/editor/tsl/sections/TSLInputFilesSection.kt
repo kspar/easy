@@ -2,7 +2,7 @@ package pages.exercise_in_library.editor.tsl.sections
 
 import Icons
 import components.form.ButtonComp
-import components.form.IconButtonComp
+import components.form.OldIconButtonComp
 import components.form.StringFieldComp
 import components.form.TextFieldComp
 import kotlinx.coroutines.await
@@ -21,7 +21,7 @@ class TSLInputFilesSection(
 ) : Component(parent) {
 
     data class FileSection(
-        val nameField: StringFieldComp, val deleteBtn: IconButtonComp, val valueField: TextFieldComp
+        val nameField: StringFieldComp, val deleteBtn: OldIconButtonComp, val valueField: TextFieldComp
     )
 
     private val addBtn =
@@ -48,7 +48,7 @@ class TSLInputFilesSection(
             )
             FileSection(
                 filenameField,
-                IconButtonComp(
+                OldIconButtonComp(
                     Icons.deleteUnf, Str.doDelete, onClick = {
                         updateAndGetFiles()
                         files.remove(filenameField.getValue())

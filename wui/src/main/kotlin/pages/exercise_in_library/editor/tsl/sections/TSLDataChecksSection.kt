@@ -26,7 +26,7 @@ class TSLDataChecksSection(
 //        val nothingElse: CheckboxComp,
         val ordered: CheckboxComp,
         val passMsg: StringFieldComp, val failMsg: StringFieldComp,
-        val upBtn: IconButtonComp, val downBtn: IconButtonComp, val deleteBtn: IconButtonComp,
+        val upBtn: OldIconButtonComp, val downBtn: OldIconButtonComp, val deleteBtn: OldIconButtonComp,
     )
 
     private lateinit var sections: List<CheckSection>
@@ -125,7 +125,7 @@ class TSLDataChecksSection(
                     onValueChange = { onUpdate() },
                     parent = this
                 ),
-                IconButtonComp(
+                OldIconButtonComp(
                     Icons.arrowUp, Str.moveUp, {
                         updateAndGetChecks()
                         val currentModel = checks.first { it.id == check.id }
@@ -138,7 +138,7 @@ class TSLDataChecksSection(
                     isEnabledInitial = i != 0,
                     parent = this
                 ),
-                IconButtonComp(
+                OldIconButtonComp(
                     Icons.arrowDown, Str.moveDown, {
                         updateAndGetChecks()
                         val currentModel = checks.first { it.id == check.id }
@@ -151,7 +151,7 @@ class TSLDataChecksSection(
                     isEnabledInitial = i != checks.size - 1,
                     parent = this
                 ),
-                IconButtonComp(Icons.delete, Str.doDelete, {
+                OldIconButtonComp(Icons.delete, Str.doDelete, {
                     updateAndGetChecks()
                     checks.removeAll { it.id == check.id }
                     createAndBuild().await()
