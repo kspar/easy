@@ -488,20 +488,18 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Course exercise page **/
 
-ez-student-course-exercise > ez-block-container {
+ez-course-exercise > ez-block-container {
     justify-content: center;
     gap: 2rem 5rem;
     padding: 2rem 0 0 0;
 }
 
-@media only screen and (min-width: 500px) {
-    ez-student-course-exercise > ez-block-container {
-        padding-left: 1rem;
-    }
-}
-
 .student-submit-editor .editor-top {
     min-height: 4.4rem;
+}
+
+ez-course-exercise > ez-block-container > ez-block > ez-tabs-content.mdtabs {
+    margin-top: 2rem;
 }
 
 #exercise-card .aa-files-wrap {
@@ -3091,6 +3089,15 @@ div.title-wrap > .title-button > i.material-icons {
         padding: 2.4rem;
     }
 }
+
+
+/** New MdTabs **/
+
+/* TODO: class only for migration, remove after all old tabs have been removed */
+ez-tabs-content.mdtabs > ez-tab-content:not([active]) {
+    display: none;
+}
+
 
 
 /** Tabs **/

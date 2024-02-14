@@ -6,6 +6,7 @@ import Icons
 import cache.BasicCourseInfo
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
+import dao.CourseExercisesStudentDAO.translateStatusToProgress
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import pages.Title
@@ -103,13 +104,4 @@ class StudentCourseExercisesListComp(
         "title" to courseTitle,
         "collDst" to coll.dstId,
     )
-
-
-    private fun translateStatusToProgress(status: CourseExercisesStudentDAO.SubmissionStatus) =
-        when (status) {
-            CourseExercisesStudentDAO.SubmissionStatus.COMPLETED -> EzCollComp.Progress(1, 0, 0, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.STARTED -> EzCollComp.Progress(0, 1, 0, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.UNGRADED -> EzCollComp.Progress(0, 0, 1, 0)
-            CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED -> EzCollComp.Progress(0, 0, 0, 1)
-        }
 }

@@ -44,10 +44,38 @@ external class MdIconBtn {
     companion object
 }
 
+@JsModule("@material/web/tabs/tabs.js")
+@JsNonModule
+external class MdTabs {
+    companion object
+
+    var activeTabIndex: Int
+}
+
+fun Element.MdTabs() = unsafeCast<MdTabs>()
+
+external interface MdTab
+
+@JsModule("@material/web/tabs/primary-tab.js")
+@JsNonModule
+external class MdPrimaryTab : MdTab {
+    companion object
+}
+
+@JsModule("@material/web/tabs/secondary-tab.js")
+@JsNonModule
+external class MdSecondaryTab : MdTab {
+    companion object
+}
+
+
 fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
     MdMenu
     MdMenuItem
     MdIconBtn
+    MdTabs
+    MdPrimaryTab
+    MdSecondaryTab
 }
 

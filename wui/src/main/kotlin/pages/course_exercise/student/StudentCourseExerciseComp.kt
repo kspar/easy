@@ -93,12 +93,12 @@ class StudentCourseExerciseComp(
 
     override fun render() = template(
         """
-            <ez-student-course-exercise>
+            <ez-course-exercise>
                 <ez-block-container>
                     <ez-block id='${exerciseTextComp.dstId}' style='width: 45rem; max-width: 80rem; overflow: auto;'></ez-block>
-                    <ez-block id='${tabs.dstId}' style='width: 45rem; max-width: 80rem; padding-top: 1rem; padding-bottom: 5rem; overflow: auto;'></ez-block>
+                    <ez-block id='${tabs.dstId}' style='width: 45rem; max-width: 80rem; padding-top: 1rem; padding-bottom: 2rem; overflow: auto;'></ez-block>
                 </ez-block-container>
-            </ez-student-course-exercise>
+            </ez-course-exercise>
         """.trimIndent(),
 
         )

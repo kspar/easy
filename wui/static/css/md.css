@@ -2,7 +2,7 @@
 :root, :host {
     --md-sys-color-background: #fcf9f7;
     --md-sys-color-on-background: #1b1c1b;
-    --md-sys-color-surface: #fcf9f7;
+    /*--md-sys-color-surface: #fcf9f7;*/
     --md-sys-color-surface-dim: #dcd9d7;
     --md-sys-color-surface-bright: #fcf9f7;
     --md-sys-color-surface-container-lowest: #ffffff;
@@ -38,5 +38,11 @@
     --md-sys-color-error-container: #ffdad6;
     --md-sys-color-on-error-container: #410002;
 
+    /* temporary adjustments */
+    /* all colours should be changed together, keep old ones for now */
+    --md-sys-color-surface: #fff;
+
+    /* adjust font sizes to our weird rem size - revert once we make our 1rem = 16px or similar */
     --md-sys-typescale-body-large-size: 16px;
+    --md-sys-typescale-title-small-size: 14px;
 }

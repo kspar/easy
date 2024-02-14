@@ -3,6 +3,7 @@ package dao
 import EzDate
 import EzDateSerializer
 import Icons
+import components.EzCollComp
 import components.ToastThing
 import debug
 import kotlinx.coroutines.await
@@ -19,6 +20,14 @@ object CourseExercisesStudentDAO {
     private data class Exercises(val exercises: List<Exercise>)
 
     enum class SubmissionStatus { UNSTARTED, STARTED, COMPLETED, UNGRADED }
+
+    fun translateStatusToProgress(status: SubmissionStatus) =
+        when (status) {
+            SubmissionStatus.COMPLETED -> EzCollComp.Progress(1, 0, 0, 0)
+            SubmissionStatus.STARTED -> EzCollComp.Progress(0, 1, 0, 0)
+            SubmissionStatus.UNGRADED -> EzCollComp.Progress(0, 0, 1, 0)
+            SubmissionStatus.UNSTARTED -> EzCollComp.Progress(0, 0, 0, 1)
+        }
 
     @Serializable
     data class Exercise(
