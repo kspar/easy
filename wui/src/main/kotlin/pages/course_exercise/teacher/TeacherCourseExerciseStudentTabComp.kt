@@ -13,6 +13,7 @@ class TeacherCourseExerciseStudentTabComp(
     private val courseId: String,
     private val courseExId: String,
     private val exerciseId: String,
+    private val deadline: EzDate?,
     var studentId: String,
     // TODO: arg should be DAO student object
     private val onStudentLoad: suspend () -> Unit,
@@ -22,6 +23,7 @@ class TeacherCourseExerciseStudentTabComp(
 ) : Component(parent) {
 
     private lateinit var studentName: String
+    private lateinit var subTime: EzDate
 
     private lateinit var prevStudentBtn: IconButtonComp
     private lateinit var nextStudentBtn: IconButtonComp
@@ -32,6 +34,7 @@ class TeacherCourseExerciseStudentTabComp(
 
     override fun create() = doInPromise {
         studentName = "Murelin Säde"
+        subTime = EzDate.now()
 
         onStudentLoad()
 
@@ -54,24 +57,33 @@ class TeacherCourseExerciseStudentTabComp(
 
     override fun render() = template(
         """
-            <ez-submission style='display: flex; justify-content: space-between; flex-wrap: wrap;'>
+            <ez-sub-header style='display: flex; justify-content: space-between; flex-wrap: wrap;'>
                 <ez-sub-title style='display: flex; align-items: center;'>
                     <ez-sub-student-name style='font-size: 1.2em; margin-right: 1rem;'>{{name}}</ez-sub-student-name>
                     $prevStudentBtn
                     $nextStudentBtn
                 </ez-sub-title>
                 <ez-sub-title-secondary style='display: flex; align-items: center;'>
-                    <span style='margin: 0 1rem;'>{{subTime}}</span> 
+                    {{#overDeadline}}
+                        <ez-deadline-close style='display: flex; font-weight: 500;'>
+                            {{{deadlineIcon}}}
+                    {{/overDeadline}}
+                            <span style='margin: 0 1rem;'>{{subTime}}</span>
+                    {{#overDeadline}}
+                        </ez-deadline-close>                    
+                    {{/overDeadline}}
                     · 
                     $allSubsBtn
                 </ez-sub-title-secondary>
-            </ez-submission>
+            </ez-sub-header>
             
             
         """.trimIndent(),
         "name" to studentName,
         "timeIcon" to Icons.pending,
-        "subTime" to EzDate.now().toHumanString(EzDate.Format.FULL),
+        "overDeadline" to (deadline != null && deadline < subTime),
+        "deadlineIcon" to Icons.alarmClock,
+        "subTime" to subTime.toHumanString(EzDate.Format.FULL),
     )
 
     suspend fun setStudent(id: String, name: String) {

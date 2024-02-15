@@ -1,6 +1,5 @@
 package dao
 
-import DateSerializer
 import EzDate
 import EzDateSerializer
 import debug
@@ -9,7 +8,6 @@ import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
-import kotlin.js.Date
 import kotlin.js.Promise
 
 object CourseExercisesTeacherDAO {
@@ -133,18 +131,18 @@ object CourseExercisesTeacherDAO {
         val text_html: String?,
         val text_adoc: String?,
         val student_visible: Boolean,
-        @Serializable(with = DateSerializer::class)
-        val student_visible_from: Date?,
-        @Serializable(with = DateSerializer::class)
-        val hard_deadline: Date?,
-        @Serializable(with = DateSerializer::class)
-        val soft_deadline: Date?,
+        @Serializable(with = EzDateSerializer::class)
+        val student_visible_from: EzDate?,
+        @Serializable(with = EzDateSerializer::class)
+        val hard_deadline: EzDate?,
+        @Serializable(with = EzDateSerializer::class)
+        val soft_deadline: EzDate?,
         val grader_type: ExerciseDAO.GraderType,
         val solution_file_name: String,
         val solution_file_type: ExerciseDAO.SolutionFileType,
         val threshold: Int,
-        @Serializable(with = DateSerializer::class)
-        val last_modified: Date,
+        @Serializable(with = EzDateSerializer::class)
+        val last_modified: EzDate,
         val assessments_student_visible: Boolean,
         val grading_script: String?,
         val container_image: String?,

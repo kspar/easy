@@ -221,7 +221,7 @@ object ExerciseSummaryPage : EasyPage() {
                 courseExerciseId,
                 exerciseDetails.exercise_id,
                 exerciseDetails.threshold,
-                exerciseDetails.soft_deadline
+                exerciseDetails.soft_deadline?.date
             )
 
             initTooltips()
@@ -269,10 +269,10 @@ object ExerciseSummaryPage : EasyPage() {
             "softDeadlineLabel" to Str.softDeadlineLabel,
             "hardDeadlineLabel" to Str.hardDeadlineLabel,
             "studentVisibleFromTimeLabel" to Str.studentVisibleFromTimeLabel,
-            "softDeadline" to exercise.soft_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
-            "hardDeadline" to exercise.hard_deadline?.let { EzDate(it).toHumanString(EzDate.Format.FULL) },
+            "softDeadline" to exercise.soft_deadline?.let { it.toHumanString(EzDate.Format.FULL) },
+            "hardDeadline" to exercise.hard_deadline?.let { it.toHumanString(EzDate.Format.FULL) },
             "studentVisibleFromTime" to if (!exercise.student_visible) exercise.student_visible_from?.let {
-                EzDate(it).toHumanString(EzDate.Format.FULL)
+                it.toHumanString(EzDate.Format.FULL)
             } else null,
             "exerciseTitle" to effectiveTitle,
             "exerciseText" to exercise.text_html,
@@ -312,9 +312,9 @@ object ExerciseSummaryPage : EasyPage() {
                                     exercise.title_alias,
                                     exercise.threshold,
                                     exercise.student_visible,
-                                    exercise.student_visible_from?.let { EzDate(it) },
-                                    exercise.soft_deadline?.let { EzDate(it) },
-                                    exercise.hard_deadline?.let { EzDate(it) },
+                                    exercise.student_visible_from?.let { it },
+                                    exercise.soft_deadline?.let { it },
+                                    exercise.hard_deadline?.let { it },
                                 ),
                                 null,
                                 dstId = updateModalDst

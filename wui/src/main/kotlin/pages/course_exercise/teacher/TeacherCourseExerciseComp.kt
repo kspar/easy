@@ -110,7 +110,7 @@ class TeacherCourseExerciseComp(
                     active = selectedStudentId != null,
                 ) {
                     TeacherCourseExerciseStudentTabComp(
-                        courseId, courseExId, courseEx.exercise_id,
+                        courseId, courseExId, courseEx.exercise_id, courseEx.soft_deadline,
                         selectedStudentId.orEmpty(),
                         // TODO: update title
 //                        { tabs.setTabTitle(submissionTabId, it.givenName + " " + it.familyName[0])},
