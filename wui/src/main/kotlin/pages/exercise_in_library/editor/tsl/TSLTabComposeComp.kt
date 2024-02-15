@@ -1,7 +1,7 @@
 package pages.exercise_in_library.editor.tsl
 
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
 import rip.kspar.ezspa.Component
@@ -23,7 +23,7 @@ class TSLTabComposeComp(
 ) : Component(parent, dstId) {
 
     private lateinit var testsList: TSLTestsListComp
-    private lateinit var addTestBtn: ButtonComp
+    private lateinit var addTestBtn: OldButtonComp
 
     private var isEditable: Boolean = false
 
@@ -32,7 +32,7 @@ class TSLTabComposeComp(
 
     override fun create() = doInPromise {
         testsList = TSLTestsListComp(tests, onUpdate, onValidChanged, this)
-        addTestBtn = ButtonComp(ButtonComp.Type.PRIMARY, Str.tslAddTest, Icons.add, ::addTest, parent = this)
+        addTestBtn = OldButtonComp(OldButtonComp.Type.PRIMARY, Str.tslAddTest, Icons.add, ::addTest, parent = this)
     }
 
     override fun render() = template(

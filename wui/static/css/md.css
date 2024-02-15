@@ -50,4 +50,5 @@
     /* adjust font sizes to our weird rem size - revert once we make our 1rem = 16px or similar */
     --md-sys-typescale-body-large-size: 16px;
     --md-sys-typescale-title-small-size: 14px;
+    --md-sys-typescale-label-large-size: 14px;
 }

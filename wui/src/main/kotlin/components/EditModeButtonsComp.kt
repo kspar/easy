@@ -1,7 +1,7 @@
 package components
 
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import debug
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.plainDstStr
@@ -22,20 +22,20 @@ class EditModeButtonsComp(
     private var state: State = if (startAsEditing) State.EDITING else State.NOT_EDITING
 
     private val startEditBtn =
-        ButtonComp(
-            ButtonComp.Type.FLAT, Str.doEdit, Icons.edit, clickedLabel = Str.loading,
+        OldButtonComp(
+            OldButtonComp.Type.FLAT, Str.doEdit, Icons.edit, clickedLabel = Str.loading,
             onClick = { changeEditMode(true) }, parent = this
         )
     private val cancelBtn =
-        ButtonComp(
-            ButtonComp.Type.FLAT, Str.cancel, Icons.close, {
+        OldButtonComp(
+            OldButtonComp.Type.FLAT, Str.cancel, Icons.close, {
                 if (canCancel())
                     changeEditMode(false)
             }, parent = this
         )
     private val saveBtn =
-        ButtonComp(
-            ButtonComp.Type.PRIMARY, Str.doSave, Icons.check, clickedLabel = Str.saving,
+        OldButtonComp(
+            OldButtonComp.Type.PRIMARY, Str.doSave, Icons.check, clickedLabel = Str.saving,
             onClick = { onSave() }, parent = this
         )
 

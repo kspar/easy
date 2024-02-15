@@ -3,7 +3,7 @@ package pages.participants
 import HumanStringComparator
 import Icons
 import components.EzCollComp
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -164,7 +164,7 @@ class ParticipantsStudentsListComp(
 
         removeFromCourseModal = ConfirmationTextModalComp(
             null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
         )
 
         addToGroupModal = AddToGroupModalComp(courseId, groups, AddToGroupModalComp.For.STUDENT, parent = this)

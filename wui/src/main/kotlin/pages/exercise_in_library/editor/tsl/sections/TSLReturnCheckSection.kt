@@ -1,7 +1,7 @@
 package pages.exercise_in_library.editor.tsl.sections
 
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.form.CodeFieldComp
 import components.form.StringFieldComp
 import kotlinx.coroutines.await
@@ -21,7 +21,7 @@ class TSLReturnCheckSection(
 
     private var showField: Boolean = check != null
 
-    private var showBtn: ButtonComp? = null
+    private var showBtn: OldButtonComp? = null
     private var returnField: CodeFieldComp? = null
     private var passMsg: StringFieldComp? = null
     private var failMsg: StringFieldComp? = null
@@ -64,8 +64,8 @@ class TSLReturnCheckSection(
             returnField = null
             passMsg = null
             failMsg = null
-            showBtn = ButtonComp(
-                ButtonComp.Type.FLAT, Str.tslReturnCheck, Icons.add, ::showSection, parent = this
+            showBtn = OldButtonComp(
+                OldButtonComp.Type.FLAT, Str.tslReturnCheck, Icons.add, ::showSection, parent = this
             )
         }
     }

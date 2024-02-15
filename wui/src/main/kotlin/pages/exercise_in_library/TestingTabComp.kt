@@ -4,7 +4,7 @@ import EzDate
 import EzDateSerializer
 import Icons
 import components.code_editor.CodeEditorComp
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
@@ -47,8 +47,8 @@ class TestingTabComp(
     private lateinit var attrs: AttrsComp
     private lateinit var editor: CodeEditorComp
 
-    private val submitBtn = ButtonComp(
-        ButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
+    private val submitBtn = OldButtonComp(
+        OldButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
         clickedLabel = Str.autoAssessing, parent = this
     )
 

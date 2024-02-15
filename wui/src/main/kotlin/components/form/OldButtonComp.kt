@@ -8,7 +8,7 @@ import rip.kspar.ezspa.*
 import show
 import template
 
-class ButtonComp(
+class OldButtonComp(
     private val type: Type,
     private val label: String?,
     private val iconHtml: String? = null,

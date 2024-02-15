@@ -3,7 +3,7 @@ package pages.participants
 import AppProperties
 import EzDate
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.form.DateTimeFieldComp
 import components.form.IntFieldComp
 import components.form.ToggleComp
@@ -30,7 +30,7 @@ class AddStudentsByLinkTabComp(
     private var usedCount: AddStudentsByLinkUsedCountComp? = null
     private var maxUses: IntFieldComp? = null
     private var warning: WarningComp? = null
-    private var save: ButtonComp? = null
+    private var save: OldButtonComp? = null
 
     private var currentLink: CoursesTeacherDAO.ExistingLink? = null
 
@@ -67,8 +67,8 @@ class AddStudentsByLinkTabComp(
 
             warning = WarningComp(parent = this)
 
-            save = ButtonComp(
-                ButtonComp.Type.PRIMARY, "Salvesta",
+            save = OldButtonComp(
+                OldButtonComp.Type.PRIMARY, "Salvesta",
                 onClick = { updateJoinLink() }, parent = this
             )
         } else {

@@ -2,8 +2,8 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
+import components.ButtonComp
 import components.IconButtonComp
-import components.form.ButtonComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -48,7 +48,8 @@ class TeacherCourseExerciseStudentTabComp(
 //                enabled = (nextStudent != null),
                 parent = this
             )
-        allSubsBtn = ButtonComp(ButtonComp.Type.FLAT, "esitus # 3", Icons.history, ::openAllSubsModal, parent = this)
+        allSubsBtn =
+            ButtonComp(ButtonComp.Type.TEXT, "esitus # 3", Icons.history, onClick = ::openAllSubsModal, parent = this)
     }
 
     override fun render() = template(

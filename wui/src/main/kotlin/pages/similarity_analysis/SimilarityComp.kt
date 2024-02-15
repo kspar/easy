@@ -6,7 +6,7 @@ import Icons
 import Key
 import LocalStore
 import cache.BasicCourseInfo
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.form.SelectComp
 import dao.CourseExercisesTeacherDAO
 import dao.CoursesTeacherDAO
@@ -26,7 +26,7 @@ class SimilarityComp(
 
     private lateinit var selectExercise: SelectComp
     private var selectGroup: SelectComp? = null
-    private lateinit var btn: ButtonComp
+    private lateinit var btn: OldButtonComp
     private lateinit var results: SimilarityResultsComp
 
     override val children: List<Component>
@@ -71,8 +71,8 @@ class SimilarityComp(
             )
         }
 
-        btn = ButtonComp(
-            ButtonComp.Type.PRIMARY, Str.findSimilarities, Icons.compareSimilarity, clickedLabel = Str.searching,
+        btn = OldButtonComp(
+            OldButtonComp.Type.PRIMARY, Str.findSimilarities, Icons.compareSimilarity, clickedLabel = Str.searching,
             onClick = {
                 // TODO: submission number, grade, (feedback?) - either map from this service
                 //  or make similarity return and show those

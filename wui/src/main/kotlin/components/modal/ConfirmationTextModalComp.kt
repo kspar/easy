@@ -1,6 +1,6 @@
 package components.modal
 
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.text.StringComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
@@ -14,7 +14,7 @@ class ConfirmationTextModalComp(
     primaryBtnLoadingText: String? = null,
     secondaryBtnLoadingText: String? = null,
     fixFooter: Boolean = false,
-    primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
+    primaryBtnType: OldButtonComp.Type = OldButtonComp.Type.PRIMARY,
     override var primaryAction: (suspend () -> Boolean)? = null,
     override var secondaryAction: (suspend () -> Unit)? = null,
     override var primaryPostAction: (suspend () -> Unit)? = null,

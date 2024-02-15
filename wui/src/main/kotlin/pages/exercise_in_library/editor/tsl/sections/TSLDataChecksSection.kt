@@ -32,7 +32,7 @@ class TSLDataChecksSection(
     private lateinit var sections: List<CheckSection>
 
     private val addCheckBtn =
-        ButtonComp(ButtonComp.Type.FLAT, Str.tslStdoutCheck, Icons.add, ::addCheck, parent = this)
+        OldButtonComp(OldButtonComp.Type.FLAT, Str.tslStdoutCheck, Icons.add, ::addCheck, parent = this)
 
     override val children: List<Component>
         get() = listOf(addCheckBtn) + sections.flatMap {

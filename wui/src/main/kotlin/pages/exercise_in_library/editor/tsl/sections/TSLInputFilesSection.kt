@@ -1,7 +1,7 @@
 package pages.exercise_in_library.editor.tsl.sections
 
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.form.OldIconButtonComp
 import components.form.StringFieldComp
 import components.form.TextFieldComp
@@ -25,7 +25,7 @@ class TSLInputFilesSection(
     )
 
     private val addBtn =
-        ButtonComp(ButtonComp.Type.FLAT, Str.tslInputFile, Icons.add, ::addFile, parent = this)
+        OldButtonComp(OldButtonComp.Type.FLAT, Str.tslInputFile, Icons.add, ::addFile, parent = this)
 
     private lateinit var sections: List<FileSection>
 

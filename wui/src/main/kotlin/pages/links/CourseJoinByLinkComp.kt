@@ -3,7 +3,7 @@ package pages.links
 import CONTENT_CONTAINER_ID
 import Icons
 import components.ToastThing
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import dao.CoursesStudentDAO
 import kotlinx.coroutines.await
 import pages.Title
@@ -17,8 +17,8 @@ class CourseJoinByLinkComp(
     private val inviteId: String,
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
-    private val joinBtn = ButtonComp(
-        ButtonComp.Type.PRIMARY, "Liitu", Icons.check,
+    private val joinBtn = OldButtonComp(
+        OldButtonComp.Type.PRIMARY, "Liitu", Icons.check,
         onClick = ::joinCourse,
         parent = this
     )

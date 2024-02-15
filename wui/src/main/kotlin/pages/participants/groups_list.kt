@@ -3,7 +3,7 @@ package pages.participants
 import HumanStringComparator
 import Icons
 import components.EzCollComp
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import errorMessage
@@ -73,7 +73,7 @@ class ParticipantsGroupsListComp(
 
         deleteGroupModal = ConfirmationTextModalComp(
             null, "Kustuta", "Tühista", "Kustutan...",
-            primaryBtnType = ButtonComp.Type.DANGER, parent = this
+            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
         )
     }
 

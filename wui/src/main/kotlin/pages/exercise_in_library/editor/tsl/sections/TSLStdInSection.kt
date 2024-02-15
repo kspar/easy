@@ -1,7 +1,7 @@
 package pages.exercise_in_library.editor.tsl.sections
 
 import Icons
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.form.TextFieldComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
@@ -19,7 +19,7 @@ class TSLStdInSection(
 
     private var showField: Boolean = inputs.isNotEmpty()
 
-    private var showBtn: ButtonComp? = null
+    private var showBtn: OldButtonComp? = null
     private var textField: TextFieldComp? = null
 
     override val children: List<Component>
@@ -40,7 +40,7 @@ class TSLStdInSection(
             showBtn = null
         } else {
             textField = null
-            showBtn = ButtonComp(ButtonComp.Type.FLAT, Str.tslStdin, Icons.add, ::showSection, parent = this)
+            showBtn = OldButtonComp(OldButtonComp.Type.FLAT, Str.tslStdin, Icons.add, ::showSection, parent = this)
         }
     }
 

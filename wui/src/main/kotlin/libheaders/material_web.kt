@@ -12,15 +12,43 @@ import org.w3c.dom.Element
 //}
 //
 //fun Element.MaterialCheckbox() = unsafeCast<MaterialCheckbox>()
-//
-//@JsModule("@material/web/button/filled-button.js")
-//@JsNonModule
-//external class MaterialFilledButton {
-//    companion object
-//    var disabled: Boolean
-//}
-//
-//fun Element.MaterialFilledButton() = unsafeCast<MaterialFilledButton>()
+
+open external class MdButton {
+    var disabled: Boolean
+}
+
+fun Element.MdButton() = unsafeCast<MdButton>()
+
+@JsModule("@material/web/button/filled-button.js")
+@JsNonModule
+external class MdFilledButton : MdButton {
+    companion object
+}
+
+@JsModule("@material/web/button/outlined-button.js")
+@JsNonModule
+external class MdOutlinedButton : MdButton {
+    companion object
+}
+
+@JsModule("@material/web/button/elevated-button.js")
+@JsNonModule
+external class MdElevatedButton : MdButton {
+    companion object
+}
+
+@JsModule("@material/web/button/filled-tonal-button.js")
+@JsNonModule
+external class MdTonalButton : MdButton {
+    companion object
+}
+
+@JsModule("@material/web/button/text-button.js")
+@JsNonModule
+external class MdTextButton : MdButton {
+    companion object
+}
+
 
 @JsModule("@material/web/menu/menu.js")
 @JsNonModule
@@ -42,6 +70,7 @@ external class MdMenuItem {
 @JsNonModule
 external class MdIconBtn {
     companion object
+
     var disabled: Boolean
 }
 
@@ -74,6 +103,12 @@ external class MdSecondaryTab : MdTab {
 
 fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
+    MdFilledButton
+    MdOutlinedButton
+    MdElevatedButton
+    MdTonalButton
+    MdTextButton
+
     MdMenu
     MdMenuItem
     MdIconBtn

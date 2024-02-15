@@ -3,7 +3,7 @@ package pages.course_exercise.student
 import Icons
 import components.ToastThing
 import components.code_editor.CodeEditorComp
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
@@ -38,7 +38,7 @@ class CourseExerciseStudentSubmitTabComp(
 
     private lateinit var editor: CodeEditorComp
     private lateinit var syncIcon: CourseExerciseEditorStatusComp
-    private lateinit var submitBtn: ButtonComp
+    private lateinit var submitBtn: OldButtonComp
     private val warning = WarningComp(parent = this)
     private lateinit var feedback: ExerciseFeedbackComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
@@ -112,8 +112,8 @@ class CourseExerciseStudentSubmitTabComp(
             parent = this
         )
 
-        submitBtn = ButtonComp(
-            ButtonComp.Type.PRIMARY,
+        submitBtn = OldButtonComp(
+            OldButtonComp.Type.PRIMARY,
             if (graderType == ExerciseDAO.GraderType.AUTO) Str.doSubmitAndCheck else Str.doSubmit,
             if (graderType == ExerciseDAO.GraderType.AUTO) Icons.robot else null,
             isEnabledInitial = isOpenForSubmissions,

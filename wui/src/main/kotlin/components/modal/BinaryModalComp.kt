@@ -1,6 +1,6 @@
 package components.modal
 
-import components.form.ButtonComp
+import components.form.OldButtonComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -13,7 +13,7 @@ open class BinaryModalComp<T>(
     primaryBtnLoadingText: String? = null,
     secondaryBtnLoadingText: String? = null,
     defaultReturnValue: T,
-    primaryBtnType: ButtonComp.Type = ButtonComp.Type.PRIMARY,
+    primaryBtnType: OldButtonComp.Type = OldButtonComp.Type.PRIMARY,
     val primaryButtonEnabledInitial: Boolean = true,
     fixFooter: Boolean = false,
     isWide: Boolean = false,
@@ -30,12 +30,12 @@ open class BinaryModalComp<T>(
     parent = parent
 ) {
 
-    val primaryButton = ButtonComp(primaryBtnType, primaryBtnText, null, {
+    val primaryButton = OldButtonComp(primaryBtnType, primaryBtnText, null, {
         val actionResult = primaryAction?.invoke() ?: defaultReturnValue
         super.closeAndReturnWith(actionResult)
     }, primaryButtonEnabledInitial, primaryBtnLoadingText, true, { primaryPostAction?.invoke() }, this)
 
-    val secondaryButton = ButtonComp(ButtonComp.Type.FLAT, secondaryBtnText, null, {
+    val secondaryButton = OldButtonComp(OldButtonComp.Type.FLAT, secondaryBtnText, null, {
         secondaryAction?.invoke()
         super.closeAndReturnWith(defaultReturnValue)
     }, true, secondaryBtnLoadingText, true, { secondaryPostAction?.invoke() }, this)
