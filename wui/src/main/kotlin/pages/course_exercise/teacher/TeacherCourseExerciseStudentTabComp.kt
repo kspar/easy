@@ -73,6 +73,15 @@ class TeacherCourseExerciseStudentTabComp(
         createAndBuild().await()
     }
 
+    fun setPrevNextBtns(prevStudentName: String?, nextStudentName: String?) {
+        prevStudentBtn.label = prevStudentName
+        prevStudentBtn.enabled = prevStudentName != null
+        prevStudentBtn.rebuild()
+        nextStudentBtn.label = nextStudentName
+        nextStudentBtn.enabled = nextStudentName != null
+        nextStudentBtn.rebuild()
+    }
+
     private suspend fun openAllSubsModal() {
 
     }

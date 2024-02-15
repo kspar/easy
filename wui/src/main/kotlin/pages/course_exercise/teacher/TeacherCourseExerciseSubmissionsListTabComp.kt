@@ -16,6 +16,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
     private val courseExId: String,
     private val threshold: Int,
     private val onOpenStudent: suspend (StudentProps) -> Unit,
+    private val onStudentListChange: () -> Unit,
     parent: Component
 ) : Component(parent) {
 
@@ -85,8 +86,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
 //                                            if (it.submission.gradedBy == ExerciseDAO.GraderType.AUTO) Icons.robot else Icons.teacherFace
 //                                        ) else null,
 //
-                            // TODO: paint and icon if time > deadline
-                            topAttr =
+                    // TODO: paint and icon if time > deadline
+                    topAttr =
                     if (it.submission != null) {
                         EzCollComp.SimpleAttr(
                             "Esitamise aeg",
@@ -126,27 +127,86 @@ class TeacherCourseExerciseSubmissionsListTabComp(
 
         coll = EzCollComp(
             submissions,
-            EzCollComp.Strings(Str.studentsSingular, Str.studentsPlural),
+            strings = EzCollComp.Strings(Str.studentsSingular, Str.studentsPlural),
+            filterGroups = listOf(
+                EzCollComp.FilterGroup(
+                    "Hinnatud", listOf(
+                        EzCollComp.Filter("Automaatselt hinnatud") { it.props.submission?.gradedBy == ExerciseDAO.GraderType.AUTO },
+                        EzCollComp.Filter("Õpetaja hinnatud") { it.props.submission?.gradedBy == ExerciseDAO.GraderType.TEACHER },
+                    )
+                ),
+                EzCollComp.FilterGroup(
+                    "Esitus", listOf(
+                        EzCollComp.Filter("Lahendus esitatud") { it.props.submission != null },
+                        EzCollComp.Filter("Esitamata") { it.props.submission == null },
+                    )
+                ),
+            ),
+            sorters = buildList {
+//                if (hasGroups)
+//                    add(
+//                        EzCollComp.Sorter("Rühma ja nime järgi",
+//                            compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) { it.props.groups.getOrNull(0)?.name }
+//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(1)?.name }
+//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(2)?.name }
+//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
+//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(4)?.name }
+//                                .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
+//                                .thenBy { it.props.firstName?.lowercase() })
+//                    )
+                add(EzCollComp.Sorter("Nime järgi",
+                    compareBy<EzCollComp.Item<StudentProps>> {
+                        it.props.familyName.lowercase()
+                    }.thenBy { it.props.givenName.lowercase() }
+                ))
+                add(EzCollComp.Sorter("Punktide järgi",
+                    compareBy<EzCollComp.Item<StudentProps>> {
+                        // nulls last
+                        if (it.props.submission?.grade == null) 1 else 0
+                    }.thenByDescending<EzCollComp.Item<StudentProps>> {
+                        it.props.submission?.grade
+                    }
+                ))
+                add(EzCollComp.Sorter("Esitamisaja järgi",
+                    compareBy<EzCollComp.Item<StudentProps>> {
+                        // nulls last
+                        if (it.props.submission?.time == null) 1 else 0
+                    }.thenBy<EzCollComp.Item<StudentProps>> {
+                        it.props.submission?.time
+                    }
+                ))
+            },
+            compact = true,
+            onFilterChange = { onStudentListChange() },
+            onSorterChange = { onStudentListChange() },
             parent = this
         )
     }
 
     fun getNextStudent(currentId: String): StudentProps? {
         val students = coll.getOrderedVisibleItems().map { it.props }
-        val nextIdx = students.indexOfFirst { it.id == currentId } + 1
-        return if (nextIdx == 0 || nextIdx >= students.size)
-            null
-        else
-            students[nextIdx]
+        val currIdx = students.indexOfFirst { it.id == currentId }
+        val nextIdx = when {
+            students.isEmpty() -> null
+            currIdx == -1 -> 0
+            currIdx == students.size - 1 -> null
+            else -> currIdx + 1
+        }
+
+        return nextIdx?.let { students[it] }
     }
 
     fun getPrevStudent(currentId: String): StudentProps? {
         val students = coll.getOrderedVisibleItems().map { it.props }
-        val nextIdx = students.indexOfFirst { it.id == currentId } - 1
-        return if (nextIdx < 0 || nextIdx >= students.size)
-            null
-        else
-            students[nextIdx]
+        val currIdx = students.indexOfFirst { it.id == currentId }
+        val nextIdx = when {
+            students.isEmpty() -> null
+            currIdx == -1 -> 0
+            currIdx == 0 -> null
+            else -> currIdx - 1
+        }
+
+        return nextIdx?.let { students[it] }
     }
 
 }

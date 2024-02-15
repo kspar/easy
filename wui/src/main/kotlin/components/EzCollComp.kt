@@ -25,6 +25,8 @@ class EzCollComp<P>(
     private val sorters: List<Sorter<P>> = emptyList(),
     private val useFirstSorterAsDefault: Boolean = true,
     private val compact: Boolean = false,
+    private val onFilterChange: ((List<List<Filter<P>>>) -> Unit)? = null,
+    private val onSorterChange: ((Sorter<P>) -> Unit)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -504,8 +506,8 @@ class EzCollComp<P>(
         updateVisibleItems(visibleItems)
         updateShownCount(visibleItems.size, isFilterActive)
         updateFilterIcon(isFilterActive)
-
         updateCheckedItemsBasedOnVisible(visibleItems)
+        onFilterChange?.invoke(activatedFilters)
     }
 
     private fun updateVisibleItems(visibleItems: List<EzCollItemComp<P>>) {
@@ -697,6 +699,8 @@ class EzCollComp<P>(
                 item.orderingIndex = i
                 item.updateOrderingIndex()
             }
+
+            onSorterChange?.invoke(currentSorter)
         }
     }
 }

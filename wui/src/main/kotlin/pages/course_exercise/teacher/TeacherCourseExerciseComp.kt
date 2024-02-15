@@ -85,6 +85,7 @@ class TeacherCourseExerciseComp(
                         TeacherCourseExerciseSubmissionsListTabComp(
                             courseId, courseExId, courseEx.threshold,
                             { openStudent(it) },
+                            ::updatePrevNextBtns,
                             it
                         ).also { studentsTabComp = it }
                     })
@@ -122,6 +123,7 @@ class TeacherCourseExerciseComp(
         tabs.activateTab(submissionTabId)
 
         submissionTabComp.setStudent(student.id, "${student.givenName} ${student.familyName}")
+        updatePrevNextBtns()
     }
 
     private suspend fun openPrevStudent(currentId: String) {
@@ -134,6 +136,14 @@ class TeacherCourseExerciseComp(
         val nextStudent = studentsTabComp.getNextStudent(currentId)
         if (nextStudent != null)
             openStudent(nextStudent)
+    }
+
+    private fun updatePrevNextBtns() {
+        val currentStudentId = submissionTabComp.studentId
+        submissionTabComp.setPrevNextBtns(
+            studentsTabComp.getPrevStudent(currentStudentId)?.let { "${it.givenName} ${it.familyName}" },
+            studentsTabComp.getNextStudent(currentStudentId)?.let { "${it.givenName} ${it.familyName}" },
+        )
     }
 
 }

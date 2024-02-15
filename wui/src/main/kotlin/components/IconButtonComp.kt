@@ -8,9 +8,9 @@ import rip.kspar.ezspa.onVanillaClick
 import template
 
 class IconButtonComp(
-    private val icon: String,
-    private val label: String?,
-    private var enabled: Boolean = true,
+    var icon: String,
+    var label: String?,
+    var enabled: Boolean = true,
     private val onClick: suspend (() -> Unit),
     private val disableOnClick: Boolean = false,
     private val btnId: String = IdGenerator.nextId(),
