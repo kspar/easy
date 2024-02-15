@@ -67,7 +67,7 @@ easy:
 
     activity:
       merge-window:
-        s: "5"
+        s: "300"
 
   wui:
     base-url: "https://easy.example"
