@@ -65,5 +65,9 @@ easy:
     exercise-index-normalisation:
       cron: "0 5 3 * * *"
 
+    activity:
+      merge-window:
+        s: "5"
+
   wui:
     base-url: "https://easy.example"
