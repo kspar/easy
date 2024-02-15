@@ -39,16 +39,14 @@ class TeacherCourseExerciseStudentTabComp(
         onStudentLoad()
 
         prevStudentBtn = IconButtonComp(
-            Icons.previous, "Eelmine õpilane",
+            Icons.previous, null,
             onClick = { onPrevStudent(studentId) },
-//            enabled = (prevStudent != null),
             parent = this
         )
         nextStudentBtn =
             IconButtonComp(
-                Icons.next, "Järgmine õpilane",
+                Icons.next, null,
                 onClick = { onNextStudent(studentId) },
-//                enabled = (nextStudent != null),
                 parent = this
             )
         allSubsBtn =
