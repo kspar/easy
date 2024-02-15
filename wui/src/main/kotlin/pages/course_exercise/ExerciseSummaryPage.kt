@@ -155,7 +155,12 @@ object ExerciseSummaryPage : EasyPage() {
                 }
 
                 Role.TEACHER, Role.ADMIN -> {
-                    TeacherCourseExerciseComp(courseId, courseExerciseId, ::setWildcardPath)
+                    TeacherCourseExerciseComp(
+                        courseId,
+                        courseExerciseId,
+                        getCurrentQueryParamValue("tab"),
+                        ::setWildcardPath
+                    )
                 }
             }
 
@@ -180,7 +185,7 @@ object ExerciseSummaryPage : EasyPage() {
     }
 
     private fun setWildcardPath(wildcardPathSuffix: String) {
-        updateUrl(link(courseId, courseExerciseId) + wildcardPathSuffix)
+        updateUrl(link(courseId, courseExerciseId) + wildcardPathSuffix + window.location.search)
     }
 
     // Bit of a hack until we migrate this page

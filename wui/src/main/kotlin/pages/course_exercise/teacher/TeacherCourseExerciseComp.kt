@@ -19,6 +19,7 @@ import template
 class TeacherCourseExerciseComp(
     private val courseId: String,
     private val courseExId: String,
+    private val tabId: String?,
     private val setPathSuffix: (String) -> Unit
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
@@ -54,7 +55,10 @@ class TeacherCourseExerciseComp(
             TabsComp.Type.SECONDARY,
             tabs = buildList {
                 add(
-                    TabsComp.Tab("Kontroll", Icons.knobs) {
+                    TabsComp.Tab(
+                        "Kontroll", Icons.knobs,
+                        active = (tabId == "1")
+                    ) {
                         val aaProps = if (courseEx.grading_script != null) {
                             AutoAssessmentTabComp.AutoAssessProps(
                                 courseEx.grading_script,
@@ -71,7 +75,10 @@ class TeacherCourseExerciseComp(
 
                 if (courseEx.grading_script != null)
                     add(
-                        TabsComp.Tab("Katseta", Icons.robot) {
+                        TabsComp.Tab(
+                            "Katseta", Icons.robot,
+                            active = (tabId == "2")
+                        ) {
                             TestingTabComp(
                                 courseEx.exercise_id,
                                 courseEx.solution_file_name,
@@ -81,7 +88,10 @@ class TeacherCourseExerciseComp(
                         }
                     )
                 add(
-                    TabsComp.Tab("Esitused", Icons.courseParticipants) {
+                    TabsComp.Tab(
+                        "Esitused", Icons.courseParticipants,
+                        active = (tabId == "3")
+                    ) {
                         TeacherCourseExerciseSubmissionsListTabComp(
                             courseId, courseExId, courseEx.threshold,
                             { openStudent(it) },
@@ -90,11 +100,23 @@ class TeacherCourseExerciseComp(
                         ).also { studentsTabComp = it }
                     })
 
-                add(TabsComp.Tab("", Icons.user, visible = false) {
+                val selectedStudentId = if (tabId != null && tabId.startsWith("4-"))
+                    tabId.substring(2)
+                else null
+
+                add(TabsComp.Tab(
+                    "", Icons.user,
+                    visible = selectedStudentId != null,
+                    active = selectedStudentId != null,
+                ) {
                     TeacherCourseExerciseStudentTabComp(
-                        "", "", "",
-                        "", "",
-                        { openNextStudent(it) }, { openPrevStudent(it) }, it
+                        courseId, courseExId, courseEx.exercise_id,
+                        selectedStudentId.orEmpty(),
+                        // TODO: update title
+//                        { tabs.setTabTitle(submissionTabId, it.givenName + " " + it.familyName[0])},
+                        { },
+                        { openNextStudent(it) }, { openPrevStudent(it) },
+                        it
                     )
                         .also { submissionTabComp = it }
                 }.also { submissionTabId = it.id })

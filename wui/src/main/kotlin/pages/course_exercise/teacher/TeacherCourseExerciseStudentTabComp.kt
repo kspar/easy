@@ -14,12 +14,14 @@ class TeacherCourseExerciseStudentTabComp(
     private val courseExId: String,
     private val exerciseId: String,
     var studentId: String,
-    private var studentName: String,
+    // TODO: arg should be DAO student object
+    private val onStudentLoad: suspend () -> Unit,
     private val onNextStudent: suspend (currentStudentId: String) -> Unit,
     private val onPrevStudent: suspend (currentStudentId: String) -> Unit,
     parent: Component
 ) : Component(parent) {
 
+    private lateinit var studentName: String
 
     private lateinit var prevStudentBtn: IconButtonComp
     private lateinit var nextStudentBtn: IconButtonComp
@@ -29,6 +31,10 @@ class TeacherCourseExerciseStudentTabComp(
         get() = listOf(prevStudentBtn, nextStudentBtn, allSubsBtn)
 
     override fun create() = doInPromise {
+        studentName = "Murelin Säde"
+
+        onStudentLoad()
+
         prevStudentBtn = IconButtonComp(
             Icons.previous, "Eelmine õpilane",
             onClick = { onPrevStudent(studentId) },
