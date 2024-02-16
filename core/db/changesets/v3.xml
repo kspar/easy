@@ -138,4 +138,22 @@
     </sql>
     </changeSet>
 
+    <changeSet id="160224-1" author="priit">
+        <update tableName="submission">
+            <column name="grade" valueComputed="(SELECT COALESCE(
+                                                    (SELECT ta.grade FROM teacher_assessment ta
+                                                     WHERE ta.submission_id = submission.id
+                                                       AND ta.grade IS NOT NULL
+                                                     ORDER BY ta.edited_at DESC LIMIT 1),
+                                                    (SELECT aa.grade FROM automatic_assessment aa
+                                                     WHERE aa.submission_id = submission.id
+                                                       AND aa.grade IS NOT NULL
+                                                     ORDER BY aa.created_at DESC LIMIT 1)
+                                                 ))"/>
+            <column name="is_auto_grade" valueComputed="(SELECT COUNT(ta.grade) FROM teacher_assessment ta
+                                                        WHERE ta.submission_id = submission.id
+                                                          AND ta.grade IS NOT NULL) = 0"/>
+        </update>
+    </changeSet>
+
 </databaseChangeLog>
