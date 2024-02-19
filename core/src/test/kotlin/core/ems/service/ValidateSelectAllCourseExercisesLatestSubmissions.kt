@@ -161,6 +161,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.parse("2023-04-28T12:00:00Z")
                 it[lastSeen] = DateTime.parse("2023-04-28T12:00:00Z")
                 it[idMigrationDone] = true
+                it[isStudent] = true
             }
 
             Account.insert {
@@ -171,6 +172,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.parse("2023-04-27T12:00:00Z")
                 it[lastSeen] = DateTime.parse("2023-04-27T12:00:00Z")
                 it[idMigrationDone] = true
+                it[isStudent] = true
             }
 
             Account.insert {
@@ -181,21 +183,9 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.parse("2023-04-26T12:00:00Z")
                 it[lastSeen] = DateTime.parse("2023-04-26T12:00:00Z")
                 it[idMigrationDone] = true
+                it[isTeacher] = true
             }
 
-            Student.insert {
-                it[id] = student1Id
-                it[createdAt] = DateTime.parse("2023-04-28T12:00:00Z")
-            }
-            Student.insert {
-                it[id] = student2Id
-                it[createdAt] = DateTime.parse("2023-04-27T12:00:00Z")
-            }
-
-            Teacher.insert {
-                it[id] = teacher1Id
-                it[createdAt] = DateTime.parse("2023-04-26T12:00:00Z")
-            }
 
             Dir.insert {
                 it[id] = 1L
@@ -238,6 +228,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[title] = "Exercise 1"
                 it[textHtml] = "<p>Exercise 1 description</p>"
                 it[textAdoc] = "Exercise 1 description"
+                it[solutionFileName] = "solution_file_name 2"
+                it[solutionFileType] = SolutionFileType.TEXT_EDITOR
             }
 
             ExerciseVer.insert {
@@ -248,6 +240,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[title] = "Exercise 2"
                 it[textHtml] = "<p>Exercise 2 description</p>"
                 it[textAdoc] = "Exercise 2 description"
+                it[solutionFileName] = "solution_file_name 2"
+                it[solutionFileType] = SolutionFileType.TEXT_EDITOR
             }
 
             Course.insert {

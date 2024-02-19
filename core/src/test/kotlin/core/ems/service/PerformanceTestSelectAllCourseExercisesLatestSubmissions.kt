@@ -51,8 +51,6 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 Submission.selectAll().count().toInt()
             )
             Assertions.assertEquals(numberOfStudents, Account.selectAll().count().toInt())
-            Assertions.assertEquals(numberOfStudents, Student.selectAll().count().toInt())
-            Assertions.assertEquals(1, Teacher.selectAll().count().toInt())
             Assertions.assertEquals(numberOfExercises, Exercise.selectAll().count().toInt())
         }
     }
@@ -94,23 +92,16 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 this[Account.createdAt] = time
                 this[Account.lastSeen] = time
                 this[Account.idMigrationDone] = true
+                this[Account.isStudent] = true
+                this[Account.isTeacher] = true
+                this[Account.isAdmin] = false
             }
 
-            Student.batchInsert(ids) {
-                this[Student.id] = it
-                this[Student.createdAt] = time
-            }
 
             StudentCourseAccess.batchInsert(ids) {
                 this[StudentCourseAccess.student] = it
                 this[StudentCourseAccess.course] = courseId
                 this[StudentCourseAccess.createdAt] = time
-            }
-
-
-            Teacher.insert {
-                it[id] = ids.first()
-                it[createdAt] = time
             }
 
             TeacherCourseAccess.insert {
@@ -148,6 +139,8 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 this[ExerciseVer.title] = "Exercise $it"
                 this[ExerciseVer.textHtml] = "<p>Exercise $it description</p>"
                 this[ExerciseVer.textAdoc] = "Exercise $it description"
+                this[ExerciseVer.solutionFileName] = "solution_file_name $it"
+                this[ExerciseVer.solutionFileType] = SolutionFileType.TEXT_EDITOR
             }
 
 
@@ -183,6 +176,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                         this[Submission.grade] = 71
                         this[Submission.isAutoGrade] = false
                         this[Submission.seen] = false
+                        this[Submission.number] = 0
                     }
                 }
             }
