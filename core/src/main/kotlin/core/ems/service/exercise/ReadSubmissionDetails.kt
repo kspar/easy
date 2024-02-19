@@ -65,7 +65,8 @@ class ReadSubmissionDetails {
             Submission.solution,
             Submission.createdAt,
             Submission.seen,
-            Submission.number
+            Submission.number,
+            Submission.isGradedDirectly
         )
             .select { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
@@ -74,7 +75,7 @@ class ReadSubmissionDetails {
                     it[Submission.solution],
                     it[Submission.seen],
                     it[Submission.createdAt],
-                    toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
+                    toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
                 )
             }.singleOrInvalidRequest()
     }

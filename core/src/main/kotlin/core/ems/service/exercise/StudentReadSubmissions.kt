@@ -80,7 +80,8 @@ class StudentReadSubmissionsController {
                 Submission.autoGradeStatus,
                 Submission.isAutoGrade,
                 Submission.grade,
-                Submission.seen
+                Submission.seen,
+                Submission.isGradedDirectly
             )
             .select {
                 CourseExercise.course eq courseId and
@@ -103,7 +104,7 @@ class StudentReadSubmissionsController {
                     it[Submission.createdAt],
                     it[Submission.seen],
                     it[Submission.autoGradeStatus],
-                    toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
+                    toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
                 )
             }
 

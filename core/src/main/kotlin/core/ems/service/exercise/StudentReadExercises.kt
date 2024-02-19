@@ -105,14 +105,14 @@ class StudentReadExercisesController {
 
         val submissions: Map<Long, SubmissionPartial> =
             Submission
-                .slice(Submission.courseExercise, Submission.grade, Submission.isAutoGrade, Submission.createdAt)
+                .slice(Submission.courseExercise, Submission.grade, Submission.isAutoGrade, Submission.createdAt, Submission.isGradedDirectly)
                 .select {
                     Submission.courseExercise inList (exercisePartials.map { it.courseExId }) and (Submission.student eq studentId)
                 }
                 .map {
                     SubmissionPartial(
                         it[Submission.courseExercise].value,
-                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade]),
+                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly]),
                         it[Submission.createdAt]
                     )
                 }

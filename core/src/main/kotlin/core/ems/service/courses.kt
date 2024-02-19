@@ -111,8 +111,8 @@ fun assertExerciseIsAutoGradable(exerciseId: Long) {
     )
 }
 
-fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?) = if (grade != null && isAuto != null) {
-    (GradeResp(grade, isAuto))
+fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) = if (grade != null && isAuto != null) {
+    (GradeResp(grade, isAuto, isGradedDirectly))
 } else null
 
 
@@ -195,7 +195,8 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
                 Submission.id,
                 Submission.createdAt,
                 Submission.grade,
-                Submission.isAutoGrade
+                Submission.isAutoGrade,
+                Submission.isGradedDirectly
             )
             .select {
                 CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
@@ -210,7 +211,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
                     val studentId = it[Submission.student].value
                     val student = courseStudents[studentId] ?: throw IllegalStateException()
 
-                    val grade = toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
+                    val grade = toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
                     val latest = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
 
                     (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(latest, studentId, student.givenName, student.familyName, student.groups)

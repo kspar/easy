@@ -1,14 +1,20 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import core.db.Course
-import core.db.CourseExercise
-import core.db.Submission
+import core.aas.AutoGradeScheduler
+import core.db.*
+import core.ems.service.cache.CachingService
+import core.ems.service.cache.countSubmissionsCache
+import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
+import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import core.util.SendMailService
+import mu.KotlinLogging
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+
+private val log = KotlinLogging.logger {}
 
 fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean = transaction {
     (Course innerJoin CourseExercise innerJoin Submission).select {
@@ -34,7 +40,11 @@ fun selectStudentBySubmissionId(submissionId: Long) =
     }
 
 
-data class GradeResp(@JsonProperty("grade") val grade: Int, @JsonProperty("is_autograde") val isAutograde: Boolean)
+data class GradeResp(
+    @JsonProperty("grade") val grade: Int,
+    @JsonProperty("is_autograde") val isAutograde: Boolean,
+    @JsonProperty("is_graded_directly") val isGradedDirectly: Boolean?
+)
 
 
 /**
@@ -70,3 +80,99 @@ fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> {
 
     return latestSubmissions.values.map { it.id }
 }
+
+suspend fun autoAssessAsync(
+    courseExId: Long,
+    solution: String,
+    submissionId: Long,
+    studentId: String,
+    caching: CachingService,
+    autoGradeScheduler: AutoGradeScheduler,
+    mailService: SendMailService,
+    moodleGradesSyncService: MoodleGradesSyncService
+) {
+    try {
+        val autoExerciseId = selectAutoExId(courseExId)
+        if (autoExerciseId == null) {
+            insertAutoAssFailed(submissionId, caching, studentId, courseExId)
+            throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+        }
+
+        log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
+        val autoAss = try {
+            autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
+        } catch (e: Exception) {
+            // EZ-1214, retry autoassessment automatically once if it fails
+            log.error("Autoassessment failed, retrying once more...", e)
+            autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
+        }
+
+        log.debug { "Finished autoassessment" }
+        insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
+    } catch (e: Exception) {
+        log.error("Autoassessment failed", e)
+        insertAutoAssFailed(submissionId, caching, studentId, courseExId)
+        val notification = """
+                Autoassessment failed
+                
+                Course exercise id: $courseExId
+                Submission id: $submissionId
+                Solution:
+                
+                $solution
+            """.trimIndent()
+        mailService.sendSystemNotification(notification)
+    }
+    moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
+}
+
+
+fun insertSubmission(
+    courseExId: Long,
+    submission: String,
+    studentId: String,
+    autoAss: AutoGradeStatus,
+    caching: CachingService
+): Long {
+    data class Grade(val grade: Int, val isAutograde: Boolean)
+
+    fun ResultRow.extractGradeOrNull(): Grade? {
+        val grade = this[Submission.grade]
+        val isAuto = this[Submission.isAutoGrade]
+        return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
+    }
+
+    val id = transaction {
+        val (previousGrade, lastNumber) = (
+                Submission.slice(
+                    Submission.number,
+                    Submission.isAutoGrade,
+                    Submission.grade
+                ).select {
+                    (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
+                }.orderBy(Submission.number, SortOrder.DESC)
+                    .map {
+                        it.extractGradeOrNull() to it[Submission.number]
+                    }.firstOrNull() ?: (null to 0)
+                )
+
+        Submission.insertAndGetId {
+            it[courseExercise] = courseExId
+            it[student] = studentId
+            it[createdAt] = DateTime.now()
+            it[solution] = submission
+            it[autoGradeStatus] = autoAss
+            it[number] = lastNumber + 1
+            if (previousGrade != null && !previousGrade.isAutograde) {
+                it[grade] = previousGrade.grade
+                it[isAutoGrade] = false
+                it[isGradedDirectly] = false
+            }
+        }.value
+    }
+
+    caching.invalidate(countSubmissionsInAutoAssessmentCache)
+    caching.invalidate(countSubmissionsCache)
+    return id
+}
+

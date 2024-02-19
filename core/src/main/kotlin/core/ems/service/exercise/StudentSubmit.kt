@@ -5,15 +5,18 @@ import core.aas.AutoAssessStatusObserver
 import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
-import core.db.*
-import core.ems.service.*
+import core.db.AutoGradeStatus
+import core.db.CourseExercise
+import core.db.GraderType
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
+import core.ems.service.autoAssessAsync
 import core.ems.service.cache.CachingService
-import core.ems.service.cache.countSubmissionsCache
-import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
+import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.insertSubmission
 import core.ems.service.moodle.MoodleGradesSyncService
+import core.ems.service.selectGraderType
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
@@ -21,9 +24,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -78,7 +80,16 @@ class StudentSubmitCont(
 
                 val deferred: Job =
                     GlobalScope.launch {
-                        autoAssessAsync(courseExId, solution, submissionId, studentId)
+                        autoAssessAsync(
+                            courseExId,
+                            solution,
+                            submissionId,
+                            studentId,
+                            cachingService,
+                            autoGradeScheduler,
+                            mailService,
+                            moodleGradesSyncService
+                        )
                     }
                 // add deferred to autoAssessStatusObserver
                 autoAssessStatusObserver.put(submissionId, ObserverCallerType.STUDENT, deferred)
@@ -86,41 +97,6 @@ class StudentSubmitCont(
         }
     }
 
-    suspend fun autoAssessAsync(courseExId: Long, solution: String, submissionId: Long, studentId: String) {
-        try {
-            val autoExerciseId = selectAutoExId(courseExId)
-            if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
-                throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-            }
-
-            log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
-            val autoAss = try {
-                autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
-            } catch (e: Exception) {
-                // EZ-1214, retry autoassessment automatically once if it fails
-                log.error("Autoassessment failed, retrying once more...", e)
-                autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
-            }
-
-            log.debug { "Finished autoassessment" }
-            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
-        } catch (e: Exception) {
-            log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
-            val notification = """
-                Autoassessment failed
-                
-                Course exercise id: $courseExId
-                Submission id: $submissionId
-                Solution:
-                
-                $solution
-            """.trimIndent()
-            mailService.sendSystemNotification(notification)
-        }
-        moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
-    }
 
     private fun isCourseExerciseOpenForSubmit(courseExId: Long) =
         transaction {
@@ -131,54 +107,6 @@ class StudentSubmitCont(
         }.let {
             it == null || it.isAfterNow
         }
-
-
-    private fun insertSubmission(
-        courseExId: Long,
-        submission: String,
-        studentId: String,
-        autoAss: AutoGradeStatus,
-        cachingService: CachingService
-    ): Long {
-        val id = transaction {
-            val (previousGrade, lastNumber) = (
-                    Submission.slice(
-                        Submission.number,
-                        Submission.isAutoGrade,
-                        Submission.grade
-                    ).select {
-                        (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
-                    }.orderBy(Submission.number, SortOrder.DESC)
-                        .map {
-                            it.extractGradeOrNull() to it[Submission.number]
-                        }.firstOrNull() ?: (null to 0)
-                    )
-
-            Submission.insertAndGetId {
-                it[courseExercise] = courseExId
-                it[student] = studentId
-                it[createdAt] = DateTime.now()
-                it[solution] = submission
-                it[autoGradeStatus] = autoAss
-                it[number] = lastNumber + 1
-                if (previousGrade != null && !previousGrade.isAutograde) {
-                    it[grade] = previousGrade.grade
-                    it[isAutoGrade] = false
-                }
-            }.value
-        }
-
-        cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
-        cachingService.invalidate(countSubmissionsCache)
-        return id
-    }
-
-    private data class Grade(val grade: Int, val isAutograde: Boolean)
-
-    private fun ResultRow.extractGradeOrNull(): Grade? {
-        val grade = this[Submission.grade]
-        val isAuto = this[Submission.isAutoGrade]
-        return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
-    }
 }
+
 

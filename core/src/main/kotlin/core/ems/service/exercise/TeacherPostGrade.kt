@@ -76,6 +76,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
             Submission.update({ Submission.id eq submissionId }) {
                 it[grade] = grade
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
         }
 

@@ -156,4 +156,17 @@
         </update>
     </changeSet>
 
+    <changeSet id="190224-1" author="priit">
+        <addColumn tableName="submission">
+            <column name="is_graded_directly" type="boolean">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <update tableName="submission">
+            <column name="is_graded_directly"
+                    valueComputed="(CASE WHEN submission.grade IS NOT NULL THEN TRUE ELSE NULL END)"/>
+        </update>
+    </changeSet>
+
 </databaseChangeLog>

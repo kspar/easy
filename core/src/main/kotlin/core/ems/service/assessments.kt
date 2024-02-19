@@ -87,6 +87,7 @@ fun insertAutoAssessment(
             if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
                 it[grade] = newGrade
                 it[isAutoGrade] = true
+                it[isGradedDirectly] = true
             }
         }
 

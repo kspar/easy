@@ -59,14 +59,15 @@ class ReadAllSubmissionsByStudent {
                     Submission.id,
                     Submission.createdAt,
                     Submission.grade,
-                    Submission.isAutoGrade
+                    Submission.isAutoGrade,
+                    Submission.isGradedDirectly
                 ).select {
                     CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) and (Submission.student eq studentId)
                 }.orderBy(Submission.createdAt, SortOrder.DESC).map {
                     SubmissionResp(
                         it[Submission.id].value.toString(),
                         it[Submission.createdAt],
-                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade])
+                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
                     )
                 })
     }
