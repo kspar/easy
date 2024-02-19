@@ -21,10 +21,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -144,14 +141,17 @@ class StudentSubmitCont(
         cachingService: CachingService
     ): Long {
         val id = transaction {
-            val currentSubmissionNumber = 1 + (
-                    Submission
-                        .slice(Submission.number)
-                        .select {
-                            (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
-                        }
-                        .orderBy(Submission.number, SortOrder.DESC)
-                        .map { it[Submission.number] }.firstOrNull() ?: 0
+            val (previousGrade, lastNumber) = (
+                    Submission.slice(
+                        Submission.number,
+                        Submission.isAutoGrade,
+                        Submission.grade
+                    ).select {
+                        (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
+                    }.orderBy(Submission.number, SortOrder.DESC)
+                        .map {
+                            it.extractGradeOrNull() to it[Submission.number]
+                        }.firstOrNull() ?: (null to 0)
                     )
 
             Submission.insertAndGetId {
@@ -160,13 +160,25 @@ class StudentSubmitCont(
                 it[createdAt] = DateTime.now()
                 it[solution] = submission
                 it[autoGradeStatus] = autoAss
-                it[number] = currentSubmissionNumber
+                it[number] = lastNumber + 1
+                if (previousGrade != null && !previousGrade.isAutograde) {
+                    it[grade] = previousGrade.grade
+                    it[isAutoGrade] = false
+                }
             }.value
         }
 
         cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
         cachingService.invalidate(countSubmissionsCache)
         return id
+    }
+
+    private data class Grade(val grade: Int, val isAutograde: Boolean)
+
+    private fun ResultRow.extractGradeOrNull(): Grade? {
+        val grade = this[Submission.grade]
+        val isAuto = this[Submission.isAutoGrade]
+        return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
     }
 }
 
