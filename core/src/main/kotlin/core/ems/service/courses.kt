@@ -140,9 +140,9 @@ data class ExercisesResp(
 /**
  * All students with or without submission on a single course for all exercises.
  */
-fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesResp> =
+fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? = null): List<ExercisesResp> =
     transaction {
-        val courseStudents: Map<String, StudentsResp> = selectStudentsOnCourse(courseId).associateBy { it.id }
+        val courseStudents: Map<String, StudentsResp> = selectStudentsOnCourse(courseId, groupId).associateBy { it.id }
         data class ExercisesDTO(
             val exerciseId: String,
             val libraryTitle: String,
@@ -199,7 +199,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
                 Submission.isGradedDirectly
             )
             .select {
-                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
+                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(courseStudents.keys)
             }.orderBy(
                 CourseExercise.id to SortOrder.DESC,
                 Submission.student to SortOrder.DESC,
@@ -260,7 +260,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long): List<ExercisesRes
         }
     }
 
-fun selectStudentsOnCourse(courseId: Long): List<StudentsResp> = transaction {
+fun selectStudentsOnCourse(courseId: Long, groupId: String? = null): List<StudentsResp> = transaction {
     (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
         .slice(
             Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
@@ -295,4 +295,6 @@ fun selectStudentsOnCourse(courseId: Long): List<StudentsResp> = transaction {
                 student.moodleUsername
             )
         }
+        // TODO: probably can integrate into QUERY.
+        .filter { if(groupId == null) true else it.groups.map { g -> g.id }.contains(groupId) }
 }

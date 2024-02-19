@@ -9,10 +9,7 @@ import core.ems.service.selectAllCourseExercisesLatestSubmissions
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 
 @RestController
@@ -23,6 +20,7 @@ class TeacherReadSubmissionSummariesController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
     fun controller(
+        @RequestParam("groupId", required = false) groupId: String?,
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
         caller: EasyUser
@@ -38,7 +36,7 @@ class TeacherReadSubmissionSummariesController {
             teacherOnCourse(courseId, true)
         }
 
-        return selectAllCourseExercisesLatestSubmissions(courseId)
+        return selectAllCourseExercisesLatestSubmissions(courseId, groupId)
             .filter { it.exerciseId.toLong() == courseExId }
             .singleOrInvalidRequest()
     }
