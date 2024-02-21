@@ -3100,14 +3100,6 @@ div.title-wrap > .title-button > i.material-icons {
 }
 
 
-/** New MdTabs **/
-
-/* TODO: class only for migration, remove after all old tabs have been removed */
-ez-tabs-content.mdtabs > ez-tab-content:not([active]) {
-    display: none;
-}
-
-
 
 /** Tabs **/
 

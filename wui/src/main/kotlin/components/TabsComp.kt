@@ -112,9 +112,9 @@ class TabsComp(
     private fun refreshContentVisibility(selectedTabIdx: Int) {
         getElemsBySelector("#$dstId > ez-tabs-content > ez-tab-content").forEachIndexed { i, el ->
             if (selectedTabIdx == i)
-                el.setAttribute("active", "")
+                el.show(true)
             else
-                el.removeAttribute("active")
+                el.show(false)
         }
     }
 }
