@@ -451,6 +451,7 @@ class EzCollComp<P>(
             debug { "Applied filter groups: ${appliedFilterGroups.map { it.map { it.label } }}" }
 
             updateFiltering()
+            onFilterChange?.invoke(activatedFilters)
         }
 
         // Init remove all filters
@@ -466,6 +467,7 @@ class EzCollComp<P>(
             // Remove filters and update
             activatedFilters = emptyList()
             updateFiltering()
+            onFilterChange?.invoke(activatedFilters)
 
             // Destroy select
             select.closePromise().await()
@@ -507,7 +509,6 @@ class EzCollComp<P>(
         updateShownCount(visibleItems.size, isFilterActive)
         updateFilterIcon(isFilterActive)
         updateCheckedItemsBasedOnVisible(visibleItems)
-        onFilterChange?.invoke(activatedFilters)
     }
 
     private fun updateVisibleItems(visibleItems: List<EzCollItemComp<P>>) {
