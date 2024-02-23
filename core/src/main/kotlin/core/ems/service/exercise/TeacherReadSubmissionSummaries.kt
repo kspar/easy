@@ -20,7 +20,7 @@ class TeacherReadSubmissionSummariesController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
     fun controller(
-        @RequestParam("group", required = false) groupId: String?,
+        @RequestParam("group", required = false) groupIdString: String?,
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
         caller: EasyUser
@@ -31,6 +31,7 @@ class TeacherReadSubmissionSummariesController {
         }
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
+        val groupId = groupIdString?.idToLongOrInvalidReq()
 
         caller.assertAccess {
             teacherOnCourse(courseId, true)

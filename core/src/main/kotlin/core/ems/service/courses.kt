@@ -10,7 +10,10 @@ import core.util.DateTimeSerializer
 import core.util.notNullAndInPast
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import java.io.Serializable
@@ -111,9 +114,10 @@ fun assertExerciseIsAutoGradable(exerciseId: Long) {
     )
 }
 
-fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) = if (grade != null && isAuto != null && isGradedDirectly != null) {
-    (GradeResp(grade, isAuto, isGradedDirectly))
-} else null
+fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) =
+    if (grade != null && isAuto != null && isGradedDirectly != null) {
+        (GradeResp(grade, isAuto, isGradedDirectly))
+    } else null
 
 
 data class ExercisesResp(
@@ -140,9 +144,10 @@ data class ExercisesResp(
 /**
  * All students with or without submission on a single course for all exercises.
  */
-fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? = null): List<ExercisesResp> =
+fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = null): List<ExercisesResp> =
     transaction {
         val courseStudents: Map<String, StudentsResp> = selectStudentsOnCourse(courseId, groupId).associateBy { it.id }
+
         data class ExercisesDTO(
             val exerciseId: String,
             val libraryTitle: String,
@@ -199,7 +204,9 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? =
                 Submission.isGradedDirectly
             )
             .select {
-                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(courseStudents.keys)
+                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(
+                    courseStudents.keys
+                )
             }.orderBy(
                 CourseExercise.id to SortOrder.DESC,
                 Submission.student to SortOrder.DESC,
@@ -211,10 +218,20 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? =
                     val studentId = it[Submission.student].value
                     val student = courseStudents[studentId] ?: throw IllegalStateException()
 
-                    val grade = toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
+                    val grade = toGradeRespOrNull(
+                        it[Submission.grade],
+                        it[Submission.isAutoGrade],
+                        it[Submission.isGradedDirectly]
+                    )
                     val latest = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
 
-                    (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(latest, studentId, student.givenName, student.familyName, student.groups)
+                    (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(
+                        latest,
+                        studentId,
+                        student.givenName,
+                        student.familyName,
+                        student.groups
+                    )
                 }
             }.toMap()
 
@@ -223,10 +240,17 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? =
 
             val studentSubmissionRows = ex.students.map { id ->
                 val student = courseStudents[id] ?: throw IllegalStateException()
-                studentsWithSubmissions[id to ex.exerciseId] ?: SubmissionRow(null, id, student.givenName, student.familyName, student.groups)
+                studentsWithSubmissions[id to ex.exerciseId] ?: SubmissionRow(
+                    null,
+                    id,
+                    student.givenName,
+                    student.familyName,
+                    student.groups
+                )
             }
 
-            val latestSubmissionValidGrades = studentSubmissionRows.mapNotNull { it.latestSubmission }.map { it.grade?.grade }
+            val latestSubmissionValidGrades =
+                studentSubmissionRows.mapNotNull { it.latestSubmission }.map { it.grade?.grade }
             val unstartedCount = studentSubmissionRows.size - latestSubmissionValidGrades.size
             val ungradedCount = latestSubmissionValidGrades.count { it == null }
             val startedCount = latestSubmissionValidGrades.count { it != null && it < ex.gradeThreshold }
@@ -260,14 +284,20 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: String? =
         }
     }
 
-fun selectStudentsOnCourse(courseId: Long, groupId: String? = null): List<StudentsResp> = transaction {
-    (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
+fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<StudentsResp> = transaction {
+    val query = (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
         .slice(
             Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
             StudentCourseAccess.createdAt, CourseGroup.id, CourseGroup.name
         ).select {
             StudentCourseAccess.course eq courseId
         }
+
+    if (groupId != null) {
+        query.andWhere { StudentCourseGroup.courseGroup eq groupId }
+    }
+
+    query
         .groupBy({
             StudentOnCourseDTO(
                 it[Account.id].value,
@@ -295,6 +325,4 @@ fun selectStudentsOnCourse(courseId: Long, groupId: String? = null): List<Studen
                 student.moodleUsername
             )
         }
-        // TODO: probably can integrate into QUERY.
-        .filter { if(groupId == null) true else it.groups.map { g -> g.id }.contains(groupId) }
 }
