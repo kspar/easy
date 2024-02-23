@@ -111,7 +111,7 @@ fun assertExerciseIsAutoGradable(exerciseId: Long) {
     )
 }
 
-fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) = if (grade != null && isAuto != null) {
+fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) = if (grade != null && isAuto != null && isGradedDirectly != null) {
     (GradeResp(grade, isAuto, isGradedDirectly))
 } else null
 

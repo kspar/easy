@@ -20,7 +20,7 @@ class TeacherReadSubmissionSummariesController {
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students")
     fun controller(
-        @RequestParam("groupId", required = false) groupId: String?,
+        @RequestParam("group", required = false) groupId: String?,
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
         caller: EasyUser

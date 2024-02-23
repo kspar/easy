@@ -43,7 +43,7 @@ fun selectStudentBySubmissionId(submissionId: Long) =
 data class GradeResp(
     @JsonProperty("grade") val grade: Int,
     @JsonProperty("is_autograde") val isAutograde: Boolean,
-    @JsonProperty("is_graded_directly") val isGradedDirectly: Boolean?
+    @JsonProperty("is_graded_directly") val isGradedDirectly: Boolean
 )
 
 
