@@ -46,7 +46,7 @@ class TeacherSubmitBehalfStudent(
         @JsonProperty("student_id", required = true) @field:Size(max = 100) val studentId: String
     )
 
-    @Secured("ROLE_TEACHER")
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions")
     fun controller(
         @PathVariable("courseId") courseIdStr: String,
@@ -61,11 +61,8 @@ class TeacherSubmitBehalfStudent(
         caller.assertAccess { teacherOnCourse(courseId, true) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
-        if (!canStudentAccessCourse(
-                req.studentId,
-                courseId
-            )
-        ) throw InvalidRequestException("Student ${req.studentId} not on course.", ReqError.NO_COURSE_ACCESS)
+        if (!canStudentAccessCourse(req.studentId, courseId))
+            throw InvalidRequestException("Student ${req.studentId} not on course.", ReqError.STUDENT_NOT_ON_COURSE)
 
         submitOnBehalfOf(courseExId, req.solution, req.studentId, caller.id)
     }
