@@ -1,6 +1,5 @@
 package core.ems.service
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.db.*
@@ -121,6 +120,7 @@ fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?)
 
 
 data class ExercisesResp(
+    @JsonProperty("course_exercise_id") val courseExerciseId: String,
     @JsonProperty("exercise_id") val exerciseId: String,
     @JsonProperty("library_title") val libraryTitle: String,
     @JsonProperty("title_alias") val titleAlias: String?,
@@ -131,13 +131,15 @@ data class ExercisesResp(
     @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
     @JsonSerialize(using = DateTimeSerializer::class)
     @JsonProperty("soft_deadline") val softDeadline: DateTime?,
+    @JsonSerialize(using = DateTimeSerializer::class)
+    @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
     @JsonProperty("grader_type") val graderType: GraderType,
     @JsonProperty("ordering_idx") val orderingIndex: Int,
     @JsonProperty("unstarted_count") val unstartedCount: Int,
     @JsonProperty("ungraded_count") val ungradedCount: Int,
     @JsonProperty("started_count") val startedCount: Int,
     @JsonProperty("completed_count") val completedCount: Int,
-    @JsonProperty("latest_submissions") @JsonInclude(JsonInclude.Include.NON_NULL) val latestSubmissions: List<SubmissionRow>,
+    @JsonProperty("latest_submissions") val latestSubmissions: List<SubmissionRow>,
 )
 
 
@@ -149,6 +151,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
         val courseStudents: Map<String, StudentsResp> = selectStudentsOnCourse(courseId, groupId).associateBy { it.id }
 
         data class ExercisesDTO(
+            val courseExerciseId: String,
             val exerciseId: String,
             val libraryTitle: String,
             val titleAlias: String?,
@@ -157,6 +160,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
             val studentVisible: Boolean,
             val studentVisibleFrom: DateTime?,
             val softDeadline: DateTime?,
+            val hardDeadline: DateTime?,
             val graderType: GraderType,
             val orderingIndex: Int,
             val students: Set<String>
@@ -165,6 +169,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
         val exercises = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(
                 CourseExercise.id,
+                CourseExercise.exercise,
                 CourseExercise.gradeThreshold,
                 CourseExercise.studentVisibleFrom,
                 CourseExercise.orderIdx,
@@ -172,6 +177,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 ExerciseVer.title,
                 ExerciseVer.validTo,
                 CourseExercise.softDeadline,
+                CourseExercise.hardDeadline,
                 ExerciseVer.graderType,
             )
             .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
@@ -179,6 +185,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
             .mapIndexed { i, it ->
                 ExercisesDTO(
                     it[CourseExercise.id].value.toString(),
+                    it[CourseExercise.exercise].value.toString(),
                     it[ExerciseVer.title],
                     it[CourseExercise.titleAlias],
                     it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
@@ -186,6 +193,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                     it[CourseExercise.studentVisibleFrom].notNullAndInPast(),
                     it[CourseExercise.studentVisibleFrom],
                     it[CourseExercise.softDeadline],
+                    it[CourseExercise.hardDeadline],
                     it[ExerciseVer.graderType],
                     i,
                     courseStudents.keys
@@ -265,6 +273,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
 
 
             ExercisesResp(
+                ex.courseExerciseId,
                 ex.exerciseId,
                 ex.libraryTitle,
                 ex.titleAlias,
@@ -273,6 +282,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 ex.studentVisible,
                 ex.studentVisibleFrom,
                 ex.softDeadline,
+                ex.hardDeadline,
                 ex.graderType,
                 ex.orderingIndex,
                 unstartedCount,
