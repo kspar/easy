@@ -2,9 +2,10 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.StatsSubmission
+import core.db.Submission
+import core.db.TeacherAssessment
 import core.ems.service.assertAssessmentControllerChecks
-import core.ems.service.cache.CachingService
 import core.ems.service.hasSecondsPassed
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.ems.service.selectStudentBySubmissionId
@@ -74,9 +75,13 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
             }
 
             Submission.update({ Submission.id eq submissionId }) {
-                it[grade] = grade
+                it[grade] = assessment.grade
                 it[isAutoGrade] = false
                 it[isGradedDirectly] = true
+            }
+
+            StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
+                it[points] = assessment.grade
             }
         }
 

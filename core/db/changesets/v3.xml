@@ -173,4 +173,54 @@
         <dropTable tableName="teacher_course_group_access"/>
     </changeSet>
 
+
+    <changeSet id="010324-2" author="priit">
+        <createTable tableName="stats_anonymous_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigserial">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="points" type="integer">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="statistic_anonymous_submission_id_seq" startValue="1" incrementBy="1"/>
+        <addDefaultValue tableName="stats_anonymous_submission" columnName="id"
+                         defaultValueSequenceNext="statistic_anonymous_submission_id_seq"/>
+
+        <createTable tableName="stats_submission">
+            <column name="submission_id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="course_exercise_id" type="bigserial">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigserial">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="points" type="integer">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <sql>
+            INSERT INTO stats_submission (submission_id, course_exercise_id, exercise_id, created_at, points)
+            SELECT s.id, s.course_exercise_id, ce.exercise_id, s.created_at, s.grade
+            FROM submission s
+            JOIN course_exercise ce ON s.course_exercise_id = ce.id;
+        </sql>
+
+        <dropColumn tableName="exercise" columnName="removed_submissions_count"/>
+        <dropColumn tableName="exercise" columnName="successful_anonymous_submission_count"/>
+        <dropColumn tableName="exercise" columnName="unsuccessful_anonymous_submission_count"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -133,16 +133,16 @@ fun insertSubmission(
     studentId: String,
     autoAss: AutoGradeStatus,
     caching: CachingService
-): Long {
-    data class Grade(val grade: Int, val isAutograde: Boolean)
+): Long =
+    transaction {
+        data class Grade(val grade: Int, val isAutograde: Boolean)
 
-    fun ResultRow.extractGradeOrNull(): Grade? {
-        val grade = this[Submission.grade]
-        val isAuto = this[Submission.isAutoGrade]
-        return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
-    }
+        fun ResultRow.extractGradeOrNull(): Grade? {
+            val grade = this[Submission.grade]
+            val isAuto = this[Submission.isAutoGrade]
+            return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
+        }
 
-    val id = transaction {
         val (previousGrade, lastNumber) = (
                 Submission.slice(
                     Submission.number,
@@ -156,23 +156,39 @@ fun insertSubmission(
                     }.firstOrNull() ?: (null to 0)
                 )
 
-        Submission.insertAndGetId {
+        val time = DateTime.now()
+        val setGrade = previousGrade != null && !previousGrade.isAutograde
+
+        val submissionId = Submission.insertAndGetId {
             it[courseExercise] = courseExId
             it[student] = studentId
-            it[createdAt] = DateTime.now()
+            it[createdAt] = time
             it[solution] = submission
             it[autoGradeStatus] = autoAss
             it[number] = lastNumber + 1
-            if (previousGrade != null && !previousGrade.isAutograde) {
-                it[grade] = previousGrade.grade
+            if (setGrade) {
+                it[grade] = previousGrade?.grade
                 it[isAutoGrade] = false
                 it[isGradedDirectly] = false
             }
         }.value
-    }
 
-    caching.invalidate(countSubmissionsInAutoAssessmentCache)
-    caching.invalidate(countSubmissionsCache)
-    return id
-}
+        val exerciseId = CourseExercise
+            .slice(CourseExercise.exercise)
+            .select { CourseExercise.id eq courseExId }
+            .map { it[CourseExercise.exercise] }
+            .single()
+            .value
+
+        StatsSubmission.insert {
+            it[StatsSubmission.submissionId] = submissionId
+            it[StatsSubmission.courseExerciseId] = courseExId
+            it[StatsSubmission.exerciseId] = exerciseId
+            it[StatsSubmission.createdAt] = time
+            if (setGrade) it[StatsSubmission.points] = previousGrade?.grade
+        }
+        caching.invalidate(countSubmissionsInAutoAssessmentCache)
+        caching.invalidate(countSubmissionsCache)
+        submissionId
+    }
 

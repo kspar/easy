@@ -55,9 +55,7 @@ class ReadExercise {
         @JsonProperty("assets") val assets: List<RespAsset>?,
         @JsonProperty("executors") val executors: List<RespExecutor>?,
         @JsonProperty("on_courses") val courses: List<RespCourse>,
-        @JsonProperty("on_courses_no_access") val coursesNoAccessCount: Int,
-        @JsonProperty("successful_anonymous_submission_count") val successfulAnonymousSubmissionCount: Int,
-        @JsonProperty("unsuccessful_anonymous_submission_count") val unsuccessfulAnonymousSubmissionCount: Int,
+        @JsonProperty("on_courses_no_access") val coursesNoAccessCount: Int
     )
 
     data class RespAsset(
@@ -90,103 +88,94 @@ class ReadExercise {
         return selectExerciseDetails(exerciseId, caller)
     }
 
-    private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp {
+    private fun selectExerciseDetails(exerciseId: Long, caller: EasyUser): Resp = transaction {
         data class UsedOnCourse(
             val id: String, val title: String, val courseAlias: String?,
             val courseExId: String, val exAlias: String?,
             val callerHasAccess: Boolean,
         )
 
-        return transaction {
-
-            val usedOnCourses =
-                (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
-                    onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
-                    additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).slice(
-                    Course.id, Course.title, Course.alias, CourseExercise.id, CourseExercise.titleAlias,
-                    TeacherCourseAccess.teacher
-                ).select {
-                    CourseExercise.exercise eq exerciseId
-                }.map {
-                    @Suppress("SENSELESS_COMPARISON") // leftJoin
-                    UsedOnCourse(
-                        it[Course.id].value.toString(),
-                        it[Course.title],
-                        it[Course.alias],
-                        it[CourseExercise.id].value.toString(),
-                        it[CourseExercise.titleAlias],
-                        it[TeacherCourseAccess.teacher] != null,
-                    )
-                }
-
-            val (onCoursesAccess, onCoursesNoAccess) =
-                usedOnCourses.partition { it.callerHasAccess || caller.isAdmin() }
-
-            val dirId = getImplicitDirFromExercise(exerciseId)
-            val access = getAccountDirAccessLevel(caller, dirId)
-                ?: throw IllegalStateException("No access for ${caller.id} to dir $dirId")
-
-            (Exercise innerJoin ExerciseVer)
-                .slice(
-                    Exercise.createdAt,
-                    Exercise.public,
-                    Exercise.owner,
-                    ExerciseVer.validFrom,
-                    ExerciseVer.author,
-                    ExerciseVer.graderType,
-                    ExerciseVer.solutionFileName,
-                    ExerciseVer.solutionFileType,
-                    ExerciseVer.title,
-                    ExerciseVer.textHtml,
-                    ExerciseVer.textAdoc,
-                    ExerciseVer.autoExerciseId,
-                    Exercise.anonymousAutoassessEnabled,
-                    Exercise.anonymousAutoassessTemplate,
-                    Exercise.successfulAnonymousSubmissionCount,
-                    Exercise.unsuccessfulAnonymousSubmissionCount,
+        val usedOnCourses =
+            (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
+                onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
+                additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).slice(
+                Course.id, Course.title, Course.alias, CourseExercise.id, CourseExercise.titleAlias,
+                TeacherCourseAccess.teacher
+            ).select {
+                CourseExercise.exercise eq exerciseId
+            }.map {
+                @Suppress("SENSELESS_COMPARISON") // leftJoin
+                UsedOnCourse(
+                    it[Course.id].value.toString(),
+                    it[Course.title],
+                    it[Course.alias],
+                    it[CourseExercise.id].value.toString(),
+                    it[CourseExercise.titleAlias],
+                    it[TeacherCourseAccess.teacher] != null,
                 )
-                .select {
-                    Exercise.id eq exerciseId and
-                            ExerciseVer.validTo.isNull()
-                }.map {
-                    val graderType = it[ExerciseVer.graderType]
-                    val autoExercise =
-                        if (graderType == GraderType.AUTO) {
-                            val autoExerciseId = it[ExerciseVer.autoExerciseId]
-                                ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
-                            selectAutoExercise(autoExerciseId)
-                        } else null
+            }
 
-                    Resp(
-                        dirId.toString(),
-                        access,
-                        it[Exercise.createdAt],
-                        it[Exercise.public],
-                        it[Exercise.anonymousAutoassessEnabled],
-                        it[Exercise.owner].value,
-                        it[ExerciseVer.validFrom],
-                        it[ExerciseVer.author].value,
-                        it[ExerciseVer.graderType],
-                        it[ExerciseVer.solutionFileName],
-                        it[ExerciseVer.solutionFileType],
-                        it[ExerciseVer.title],
-                        it[ExerciseVer.textHtml],
-                        it[ExerciseVer.textAdoc],
-                        it[Exercise.anonymousAutoassessTemplate],
-                        autoExercise?.gradingScript,
-                        autoExercise?.containerImage,
-                        autoExercise?.maxTime,
-                        autoExercise?.maxMem,
-                        autoExercise?.assets?.map { RespAsset(it.first, it.second) },
-                        autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
-                        onCoursesAccess.map { RespCourse(it.id, it.title, it.courseAlias, it.courseExId, it.exAlias) },
-                        onCoursesNoAccess.count(),
-                        it[Exercise.successfulAnonymousSubmissionCount],
-                        it[Exercise.unsuccessfulAnonymousSubmissionCount],
-                    )
-                }.singleOrInvalidRequest()
-        }
+        val (onCoursesAccess, onCoursesNoAccess) =
+            usedOnCourses.partition { it.callerHasAccess || caller.isAdmin() }
+
+        val dirId = getImplicitDirFromExercise(exerciseId)
+        val access = getAccountDirAccessLevel(caller, dirId)
+            ?: throw IllegalStateException("No access for ${caller.id} to dir $dirId")
+
+        (Exercise innerJoin ExerciseVer)
+            .slice(
+                Exercise.createdAt,
+                Exercise.public,
+                Exercise.owner,
+                ExerciseVer.validFrom,
+                ExerciseVer.author,
+                ExerciseVer.graderType,
+                ExerciseVer.solutionFileName,
+                ExerciseVer.solutionFileType,
+                ExerciseVer.title,
+                ExerciseVer.textHtml,
+                ExerciseVer.textAdoc,
+                ExerciseVer.autoExerciseId,
+                Exercise.anonymousAutoassessEnabled,
+                Exercise.anonymousAutoassessTemplate
+            )
+            .select {
+                Exercise.id eq exerciseId and
+                        ExerciseVer.validTo.isNull()
+            }.map {
+                val graderType = it[ExerciseVer.graderType]
+                val autoExercise =
+                    if (graderType == GraderType.AUTO) {
+                        val autoExerciseId = it[ExerciseVer.autoExerciseId]
+                            ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
+                        selectAutoExercise(autoExerciseId)
+                    } else null
+
+                Resp(
+                    dirId.toString(),
+                    access,
+                    it[Exercise.createdAt],
+                    it[Exercise.public],
+                    it[Exercise.anonymousAutoassessEnabled],
+                    it[Exercise.owner].value,
+                    it[ExerciseVer.validFrom],
+                    it[ExerciseVer.author].value,
+                    it[ExerciseVer.graderType],
+                    it[ExerciseVer.solutionFileName],
+                    it[ExerciseVer.solutionFileType],
+                    it[ExerciseVer.title],
+                    it[ExerciseVer.textHtml],
+                    it[ExerciseVer.textAdoc],
+                    it[Exercise.anonymousAutoassessTemplate],
+                    autoExercise?.gradingScript,
+                    autoExercise?.containerImage,
+                    autoExercise?.maxTime,
+                    autoExercise?.maxMem,
+                    autoExercise?.assets?.map { RespAsset(it.first, it.second) },
+                    autoExercise?.executors?.map { RespExecutor(it.id.toString(), it.name) },
+                    onCoursesAccess.map { RespCourse(it.id, it.title, it.courseAlias, it.courseExId, it.exAlias) },
+                    onCoursesNoAccess.count()
+                )
+            }.singleOrInvalidRequest()
     }
 }
-
-

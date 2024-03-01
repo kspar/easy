@@ -32,9 +32,6 @@ object Exercise : LongIdTable("exercise") {
     val public = bool("public")
     val anonymousAutoassessEnabled = bool("anonymous_autoassess_enabled")
     val anonymousAutoassessTemplate = text("anonymous_autoassess_template").nullable()
-    val successfulAnonymousSubmissionCount = integer("successful_anonymous_submission_count")
-    val unsuccessfulAnonymousSubmissionCount = integer("unsuccessful_anonymous_submission_count")
-    val removedSubmissionsCount = integer("removed_submissions_count")
 }
 
 object ExerciseVer : LongIdTable("exercise_version") {
@@ -74,8 +71,8 @@ object CourseInviteLink : Table("course_invite_link") {
     val createdAt = datetime("created_at")
     val expiresAt = datetime("expires_at")
     val course = reference("course_id", Course)
-    val allowedUses  = integer("allowed_uses")
-    val usedCount  = integer("used_count")
+    val allowedUses = integer("allowed_uses")
+    val usedCount = integer("used_count")
     override val primaryKey = PrimaryKey(course)
 }
 
@@ -161,6 +158,15 @@ object Submission : LongIdTable("submission") {
     val isGradedDirectly = bool("is_graded_directly").nullable()
 }
 
+object StatsSubmission : Table("stats_submission") {
+    val submissionId = long("submission_id")
+    val courseExerciseId = long("course_exercise_id")
+    val exerciseId = long("exercise_id")
+    val createdAt = datetime("created_at")
+    val points = integer("points").nullable()
+    override val primaryKey = PrimaryKey(submissionId)
+}
+
 object TeacherAssessment : LongIdTable("teacher_assessment") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)
@@ -188,6 +194,12 @@ object AnonymousSubmission : LongIdTable("anonymous_submission") {
     val solution = text("solution")
     val grade = integer("grade")
     val feedback = text("feedback").nullable()
+}
+
+object StatsAnonymousSubmission : LongIdTable("stats_anonymous_submission") {
+    val exercise = long("exercise_id")
+    val createdAt = datetime("created_at")
+    val points = integer("points").nullable()
 }
 
 object ManagementNotification : LongIdTable("management_notification") {

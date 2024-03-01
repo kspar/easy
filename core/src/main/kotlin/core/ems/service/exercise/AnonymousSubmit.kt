@@ -2,10 +2,7 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.AutoGradeScheduler
-import core.db.AnonymousSubmission
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.PriorityLevel
+import core.db.*
 import core.ems.service.access_control.assertExerciseHasTextEditorSubmission
 import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
@@ -70,21 +67,20 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     private fun insertAnonymousSubmission(exerciseId: Long, solution: String, grade: Int, feedback: String) {
         CoroutineScope(EmptyCoroutineContext).launch {
             transaction {
-
-                Exercise.update({ Exercise.id eq exerciseId }) {
-                    if (grade == 100) {
-                        it.update(successfulAnonymousSubmissionCount, successfulAnonymousSubmissionCount + 1)
-                    } else {
-                        it.update(unsuccessfulAnonymousSubmissionCount, unsuccessfulAnonymousSubmissionCount + 1)
-                    }
-                }
+                val time = DateTime.now()
 
                 AnonymousSubmission.insert {
                     it[AnonymousSubmission.exercise] = exerciseId
-                    it[AnonymousSubmission.createdAt] = DateTime.now()
+                    it[AnonymousSubmission.createdAt] = time
                     it[AnonymousSubmission.solution] = solution
                     it[AnonymousSubmission.grade] = grade
                     it[AnonymousSubmission.feedback] = feedback
+                }
+
+                StatsAnonymousSubmission.insert {
+                    it[StatsAnonymousSubmission.exercise] = exerciseId
+                    it[StatsAnonymousSubmission.createdAt] = time
+                    it[StatsAnonymousSubmission.points] = grade
                 }
 
                 val deleteAfter = AnonymousSubmission.select {

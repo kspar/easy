@@ -81,13 +81,20 @@ fun insertAutoAssessment(
             it[grade] = newGrade
             it[feedback] = newFeedback
         }
+        val updateGrade = !anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)
 
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
-            if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
+            if (updateGrade) {
                 it[grade] = newGrade
                 it[isAutoGrade] = true
                 it[isGradedDirectly] = true
+            }
+        }
+
+        if (updateGrade) {
+            StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
+                it[points] = newGrade
             }
         }
 
