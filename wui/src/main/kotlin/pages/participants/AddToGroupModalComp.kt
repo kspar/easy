@@ -3,6 +3,7 @@ package pages.participants
 import components.form.SelectComp
 import components.modal.BinaryModalComp
 import components.text.StringComp
+import dao.ParticipantsDAO
 import debug
 import kotlinx.coroutines.await
 import queries.ReqMethod
@@ -16,7 +17,7 @@ import translation.Str
 
 class AddToGroupModalComp(
     private val courseId: String,
-    private val availableGroups: List<ParticipantsRootComp.Group>,
+    private val availableGroups: List<ParticipantsDAO.CourseGroup>,
     private val isFor: For,
     var participants: List<Participant> = emptyList(),
     parent: Component,

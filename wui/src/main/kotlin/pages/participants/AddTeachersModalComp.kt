@@ -5,6 +5,7 @@ import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import components.text.ParagraphsComp
+import dao.ParticipantsDAO
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -18,7 +19,7 @@ import translation.Str
 
 class AddTeachersModalComp(
     private val courseId: String,
-    private val availableGroups: List<ParticipantsRootComp.Group>,
+    private val availableGroups: List<ParticipantsDAO.CourseGroup>,
     parent: Component,
 ) : Component(parent) {
 

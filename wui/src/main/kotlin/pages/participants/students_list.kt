@@ -19,10 +19,10 @@ import translation.Str
 
 class ParticipantsStudentsListComp(
     private val courseId: String,
-    private val students: List<ParticipantsRootComp.Student>,
-    private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
-    private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
-    private val groups: List<ParticipantsRootComp.Group>,
+    private val students: List<ParticipantsDAO.Student>,
+    private val studentsPending: List<ParticipantsDAO.PendingStudent>,
+    private val studentsMoodlePending: List<ParticipantsDAO.PendingMoodleStudent>,
+    private val groups: List<ParticipantsDAO.CourseGroup>,
     private val isEditable: Boolean,
     private val onGroupsChanged: suspend () -> Unit,
     parent: Component?
@@ -36,13 +36,13 @@ class ParticipantsStudentsListComp(
 
     data class GroupProp(val id: String, val name: String)
 
-    private lateinit var studentsColl: EzCollComp<StudentProps>
+    private lateinit var coll: EzCollComp<StudentProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
     private lateinit var addToGroupModal: AddToGroupModalComp
     private lateinit var removeFromGroupModal: RemoveFromGroupModalComp
 
     override val children: List<Component>
-        get() = listOf(studentsColl, removeFromCourseModal, addToGroupModal, removeFromGroupModal)
+        get() = listOf(coll, removeFromCourseModal, addToGroupModal, removeFromGroupModal)
 
     override fun create() = doInPromise {
 
@@ -114,7 +114,7 @@ class ParticipantsStudentsListComp(
             add(EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse))
         } else emptyList()
 
-        studentsColl = EzCollComp(
+        coll = EzCollComp(
             items,
             EzCollComp.Strings("õpilane", "õpilast"),
             massActions = massActions,
@@ -142,7 +142,9 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.Sorter("Rühma ja nime järgi",
-                            compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) { it.props.groups.getOrNull(0)?.name }
+                            compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) {
+                                it.props.groups.getOrNull(0)?.name
+                            }
                                 .thenBy(HumanStringComparator) { it.props.groups.getOrNull(1)?.name }
                                 .thenBy(HumanStringComparator) { it.props.groups.getOrNull(2)?.name }
                                 .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
@@ -174,7 +176,7 @@ class ParticipantsStudentsListComp(
     }
 
     override fun render() = plainDstStr(
-        studentsColl.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId, removeFromGroupModal.dstId
+        coll.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId, removeFromGroupModal.dstId
     )
 
     private suspend fun addToGroup(item: EzCollComp.Item<StudentProps>) =
@@ -223,12 +225,12 @@ class ParticipantsStudentsListComp(
             active.map {
                 RemoveFromGroupModalComp.Participant(
                     studentId = it.props.username,
-                    groups = it.props.groups.map { ParticipantsRootComp.Group(it.id, it.name) }
+                    groups = it.props.groups.map { ParticipantsDAO.CourseGroup(it.id, it.name) }
                 )
             } + pending.map {
                 RemoveFromGroupModalComp.Participant(
                     pendingStudentEmail = it.props.email,
-                    groups = it.props.groups.map { ParticipantsRootComp.Group(it.id, it.name) }
+                    groups = it.props.groups.map { ParticipantsDAO.CourseGroup(it.id, it.name) }
                 )
             }
         )

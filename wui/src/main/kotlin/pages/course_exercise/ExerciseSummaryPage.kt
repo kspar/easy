@@ -71,7 +71,6 @@ object ExerciseSummaryPage : EasyPage() {
     @Serializable
     data class Groups(
         val groups: List<Group>,
-        val self_is_restricted: Boolean,
     )
 
     @Serializable

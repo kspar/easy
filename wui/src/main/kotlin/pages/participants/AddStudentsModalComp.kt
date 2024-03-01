@@ -2,12 +2,13 @@ package pages.participants
 
 import components.PageTabsComp
 import components.modal.ModalComp
+import dao.ParticipantsDAO
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
 class AddStudentsModalComp(
     private val courseId: String,
-    private val availableGroups: List<ParticipantsRootComp.Group>,
+    private val availableGroups: List<ParticipantsDAO.CourseGroup>,
     parent: Component,
 ) : Component(parent) {
 

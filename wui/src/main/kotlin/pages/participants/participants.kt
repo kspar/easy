@@ -1,15 +1,12 @@
 package pages.participants
 
-import EzDate
-import EzDateSerializer
 import Icons
 import cache.BasicCourseInfo
 import components.PageTabsComp
+import dao.ParticipantsDAO
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import pages.Title
 import pages.sidenav.Sidenav
-import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
@@ -21,78 +18,6 @@ class ParticipantsRootComp(
     private val isAdmin: Boolean,
     dstId: String,
 ) : Component(null, dstId) {
-
-    @Serializable
-    data class Participants(
-        val students: List<Student> = emptyList(),
-        val teachers: List<Teacher> = emptyList(),
-        val students_pending: List<PendingStudent> = emptyList(),
-        val students_moodle_pending: List<PendingMoodleStudent> = emptyList()
-    )
-
-    @Serializable
-    data class Teacher(
-        val id: String,
-        val email: String,
-        val given_name: String,
-        val family_name: String,
-        val groups: List<Group>,
-        @Serializable(with = EzDateSerializer::class)
-        val created_at: EzDate?
-    )
-
-    @Serializable
-    data class Student(
-        val id: String,
-        val email: String,
-        val given_name: String,
-        val family_name: String,
-        val groups: List<Group>,
-        val moodle_username: String? = null,
-        @Serializable(with = EzDateSerializer::class)
-        val created_at: EzDate?
-    )
-
-    @Serializable
-    data class PendingStudent(
-        val email: String,
-        @Serializable(with = EzDateSerializer::class)
-        val valid_from: EzDate,
-        val groups: List<Group>
-    )
-
-    @Serializable
-    data class PendingMoodleStudent(
-        val moodle_username: String,
-        val email: String,
-        val groups: List<Group>
-    )
-
-    @Serializable
-    data class Group(
-        val id: String,
-        val name: String
-    )
-
-    @Serializable
-    data class Groups(
-        val groups: List<Group>,
-        val self_is_restricted: Boolean,
-    )
-
-    @Serializable
-    data class MoodleStatus(
-        val moodle_props: MoodleProps?
-    )
-
-    @Serializable
-    data class MoodleProps(
-        val moodle_short_name: String,
-        val students_synced: Boolean,
-        val grades_synced: Boolean,
-        val sync_students_in_progress: Boolean,
-        val sync_grades_in_progress: Boolean,
-    )
 
     private val tabStudentsId = IdGenerator.nextId()
     private val tabTeachersId = IdGenerator.nextId()
@@ -111,18 +36,9 @@ class ParticipantsRootComp(
 
     override fun create() = doInPromise {
         val courseTitlePromise = BasicCourseInfo.get(courseId)
-        val participantsPromise = fetchEms(
-            "/courses/$courseId/participants", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
-        )
-        val groupsPromise = fetchEms(
-            "/courses/$courseId/groups", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
-        )
-        val moodleStatusPromise = fetchEms(
-            "/courses/$courseId/moodle", ReqMethod.GET,
-            successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
-        )
+        val participantsPromise = ParticipantsDAO.getCourseParticipants(courseId)
+        val groupsPromise = ParticipantsDAO.getCourseGroups(courseId)
+        val moodleStatusPromise = ParticipantsDAO.getCourseMoodleSettings(courseId)
 
         courseTitle = courseTitlePromise.await().effectiveTitle
 
@@ -131,15 +47,13 @@ class ParticipantsRootComp(
             it.parentPageTitle = courseTitle
         }
 
-        val participants = participantsPromise.await().parseTo(Participants.serializer()).await()
-        val groupsResp = groupsPromise.await().parseTo(Groups.serializer()).await()
-        val moodleStatus = moodleStatusPromise.await().parseTo(MoodleStatus.serializer()).await()
+        val participants = participantsPromise.await()
+        val groupsResp = groupsPromise.await()
+        val moodleStatus = moodleStatusPromise.await()
 
         val groups = groupsResp.groups.sortedBy { it.name }
-        val hasRestrictedGroups = groupsResp.self_is_restricted
         val isMoodleLinked = moodleStatus.moodle_props != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
-        val gradesSynced = moodleStatus.moodle_props?.grades_synced ?: false
 
         addStudentsModal = AddStudentsModalComp(courseId, groups, this)
         addTeachersModal = AddTeachersModalComp(courseId, groups, this)
@@ -174,8 +88,6 @@ class ParticipantsRootComp(
                         ParticipantsTeachersListComp(
                             courseId,
                             participants.teachers,
-                            groups,
-                            !hasRestrictedGroups,
                             {
                                 val t = tabsComp.getSelectedTab()
                                 createAndBuild().await()
@@ -194,8 +106,7 @@ class ParticipantsRootComp(
                             participants.students,
                             participants.students_pending,
                             participants.students_moodle_pending,
-                            participants.teachers,
-                            !hasRestrictedGroups && !studentsSynced,
+                            !studentsSynced,
                             {
                                 val t = tabsComp.getSelectedTab()
                                 createAndBuild().await()
@@ -236,7 +147,7 @@ class ParticipantsRootComp(
                     }
                 }
             )
-            if (!hasRestrictedGroups) add(
+            add(
                 Sidenav.Action(Icons.addPerson, "Lisa õpetajaid") {
                     if (addTeachersModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
@@ -245,7 +156,7 @@ class ParticipantsRootComp(
                     }
                 }
             )
-            if (!hasRestrictedGroups && !studentsSynced) add(
+            if (!studentsSynced) add(
                 Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
                     if (createGroupModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()

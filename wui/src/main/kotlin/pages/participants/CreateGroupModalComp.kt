@@ -5,6 +5,7 @@ import components.form.validation.ConstraintViolation
 import components.form.validation.FieldConstraint
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
+import dao.ParticipantsDAO
 import debug
 import kotlinx.coroutines.await
 import queries.ReqMethod
@@ -18,7 +19,7 @@ import translation.Str
 
 class CreateGroupModalComp(
     val courseId: String,
-    val existingGroups: List<ParticipantsRootComp.Group>,
+    val existingGroups: List<ParticipantsDAO.CourseGroup>,
     parent: Component,
 ) : Component(parent) {
 

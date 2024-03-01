@@ -6,6 +6,7 @@ import components.EzCollComp
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
+import dao.ParticipantsDAO
 import errorMessage
 import kotlinx.coroutines.await
 import queries.*
@@ -16,17 +17,16 @@ import successMessage
 
 class ParticipantsGroupsListComp(
     private val courseId: String,
-    private val groups: List<ParticipantsRootComp.Group>,
-    private val students: List<ParticipantsRootComp.Student>,
-    private val studentsPending: List<ParticipantsRootComp.PendingStudent>,
-    private val studentsMoodlePending: List<ParticipantsRootComp.PendingMoodleStudent>,
-    private val teachers: List<ParticipantsRootComp.Teacher>,
+    private val groups: List<ParticipantsDAO.CourseGroup>,
+    private val students: List<ParticipantsDAO.Student>,
+    private val studentsPending: List<ParticipantsDAO.PendingStudent>,
+    private val studentsMoodlePending: List<ParticipantsDAO.PendingMoodleStudent>,
     private val isEditable: Boolean,
     private val onGroupDeleted: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
-    data class GroupProp(val id: String, val name: String, val studentsCount: Int, val teachersCount: Int)
+    data class GroupProp(val id: String, val name: String, val studentsCount: Int)
 
     private lateinit var groupsColl: EzCollComp<GroupProp>
     private lateinit var deleteGroupModal: ConfirmationTextModalComp
@@ -39,9 +39,8 @@ class ParticipantsGroupsListComp(
             val studentsCount = students.count { it.groups.contains(g) } +
                     studentsPending.count { it.groups.contains(g) } +
                     studentsMoodlePending.count { it.groups.contains(g) }
-            val teachersCount = teachers.count { it.groups.contains(g) }
 
-            GroupProp(g.id, g.name, studentsCount, teachersCount)
+            GroupProp(g.id, g.name, studentsCount)
         }
 
         val items = props.map { p ->
@@ -49,7 +48,6 @@ class ParticipantsGroupsListComp(
                 p, EzCollComp.ItemTypeIcon(Icons.groups), p.name,
                 bottomAttrs = listOf(
                     EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.userUnf),
-                    EzCollComp.SimpleAttr("Õpetajaid", p.teachersCount, Icons.teacherUnf),
                 ),
                 actions = buildList {
                     if (isEditable) add(
@@ -80,9 +78,9 @@ class ParticipantsGroupsListComp(
     override fun render() = plainDstStr(groupsColl.dstId, deleteGroupModal.dstId)
 
     private suspend fun deleteGroup(group: EzCollComp.Item<GroupProp>): EzCollComp.Result {
-        val notEmptyMsg = "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased ja õpetajad."
+        val notEmptyMsg = "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased."
 
-        if (group.props.studentsCount > 0 || group.props.teachersCount > 0) {
+        if (group.props.studentsCount > 0) {
             errorMessage { notEmptyMsg }
             return EzCollComp.ResultUnmodified
         }

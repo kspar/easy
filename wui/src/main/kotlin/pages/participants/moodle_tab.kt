@@ -2,6 +2,7 @@ package pages.participants
 
 import Icons
 import components.form.OldButtonComp
+import dao.ParticipantsDAO
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -18,7 +19,7 @@ import translation.Str
 
 class ParticipantsMoodleTabComp(
     private val courseId: String,
-    private val moodleStatus: ParticipantsRootComp.MoodleProps,
+    private val moodleStatus: ParticipantsDAO.MoodleSettings,
     private val onStudentsSynced: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
@@ -74,7 +75,7 @@ class ParticipantsMoodleTabComp(
         val moodleProps = fetchEms(
             "/courses/$courseId/moodle", ReqMethod.GET,
             successChecker = { http200 }).await()
-            .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
+            .parseTo(ParticipantsDAO.MoodleStatus.serializer()).await().moodle_props
 
         // Hack to show button clicked effects, start polling and restore active button after poll
         if (moodleProps?.sync_students_in_progress == true) {
@@ -125,7 +126,7 @@ class ParticipantsMoodleTabComp(
                 val moodleProps = fetchEms(
                     "/courses/$courseId/moodle", ReqMethod.GET,
                     successChecker = { http200 }).await()
-                    .parseTo(ParticipantsRootComp.MoodleStatus.serializer()).await().moodle_props
+                    .parseTo(ParticipantsDAO.MoodleStatus.serializer()).await().moodle_props
 
                 val status = when (type) {
                     SyncType.STUDENTS -> moodleProps?.sync_students_in_progress
