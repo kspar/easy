@@ -46,7 +46,7 @@ fun AccessChecksBuilder.studentOnCourse(courseId: Long) = add { caller: EasyUser
 }
 
 /**
- * Can access this course (restricted groups allowed) and this exercise is on that course (can be hidden).
+ * Can access this course and this exercise is on that course (can be hidden).
  */
 fun AccessChecksBuilder.exerciseViaCourse(exerciseId: Long, courseId: Long) = add { caller: EasyUser ->
     when {
