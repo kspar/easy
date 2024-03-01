@@ -25,7 +25,7 @@ val HumanStringComparator = Comparator<String?> { a, b ->
                 chunk1.toDouble().compareTo(chunk2.toDouble())
             }
             // Otherwise, compare them lexically as strings
-            else -> chunk1.compareTo(chunk2)
+            else -> chunk1.compareTo(chunk2, true)
         }
 
         // If the comparison yields a non-zero result, return it, otherwise look at the next chunks
