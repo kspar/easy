@@ -72,8 +72,8 @@ class TeacherCourseExercisesComp(
 
         val props = exercises.map {
             ExProps(
-                it.id, it.ordering_idx, it.library_title, it.title_alias,
-                it.grader_type == ExerciseDAO.GraderType.AUTO, it.threshold,
+                it.course_exercise_id, it.ordering_idx, it.library_title, it.title_alias,
+                it.grader_type == ExerciseDAO.GraderType.AUTO, it.grade_threshold,
                 it.soft_deadline, it.hard_deadline,
                 it.isVisibleNow, it.student_visible_from,
                 it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count
@@ -197,7 +197,7 @@ class TeacherCourseExercisesComp(
         reorderModal.movableExercise =
             ReorderCourseExerciseModalComp.CourseExercise(item.props.id, item.props.effectiveTitle, item.props.idx)
         reorderModal.allExercises = CourseExercisesTeacherDAO.getCourseExercises(courseId).await().map {
-            ReorderCourseExerciseModalComp.CourseExercise(it.id, it.effectiveTitle, it.ordering_idx)
+            ReorderCourseExerciseModalComp.CourseExercise(it.course_exercise_id, it.effectiveTitle, it.ordering_idx)
         }
         reorderModal.setText(StringComp.boldTriple(Str.doMove + " ", item.props.effectiveTitle, "..."))
         reorderModal.createAndBuild().await()

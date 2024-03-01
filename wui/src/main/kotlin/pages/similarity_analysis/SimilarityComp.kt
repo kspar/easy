@@ -79,9 +79,9 @@ class SimilarityComp(
                 val exId = selectExercise.getValue()
                 val groupId = selectGroup?.getValue()
                 if (exId != null) {
-                    val ceId = exercises.first { it.exercise_id == exId }.id
+                    val ceId = exercises.first { it.exercise_id == exId }.course_exercise_id
                     val submissionIds = CourseExercisesTeacherDAO.getLatestSubmissions(courseId, ceId, groupId).await()
-                        .students.map { it.submission_id }.filterNotNull()
+                        .latest_submissions.map { it.latest_submission?.id }.filterNotNull()
                     val result = ExerciseDAO.checkSimilarity(exId, listOf(courseId), submissionIds).await()
                     results.setData(result)
                 }
