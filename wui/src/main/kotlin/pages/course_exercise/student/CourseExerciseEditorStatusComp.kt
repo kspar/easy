@@ -20,8 +20,12 @@ class CourseExerciseEditorStatusComp(
 
     private val menu = DropdownIconMenuComp(
         Icons.dotsVertical, Str.editorMenuLabel, listOf(
-            DropdownMenuComp.Item(Str.uploadSubmission, Icons.upload, isDisabled = !canUpload, onSelected = onUpload),
-            DropdownMenuComp.Item(Str.downloadSubmission, Icons.download, onSelected = onDownload),
+            DropdownMenuComp.Item(
+                Str.uploadSubmission, Icons.upload, isDisabled = !canUpload, onSelected = { onUpload() }
+            ),
+            DropdownMenuComp.Item(
+                Str.downloadSubmission, Icons.download, onSelected = { onDownload() }
+            ),
         ), this
     )
 

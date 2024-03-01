@@ -42,3 +42,8 @@ fun Element.show(doShow: Boolean = true, retainSpace: Boolean = false) {
 }
 
 fun Element.hide(retainSpace: Boolean = false) = show(false, retainSpace)
+
+var Element.style: String
+    get() = getAttribute("style") ?: ""
+    set(value) = setAttribute("style", value)
+

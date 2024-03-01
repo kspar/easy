@@ -2,16 +2,6 @@ package libheaders
 
 import org.w3c.dom.Element
 
-//import org.w3c.dom.Element
-//
-//@JsModule("@material/web/checkbox/checkbox.js")
-//@JsNonModule
-//external class MaterialCheckbox {
-//    companion object
-//    var checked: Boolean
-//}
-//
-//fun Element.MaterialCheckbox() = unsafeCast<MaterialCheckbox>()
 
 open external class MdButton {
     var disabled: Boolean
@@ -72,6 +62,7 @@ external class MdIconBtn {
     companion object
 
     var disabled: Boolean
+    var selected: Boolean
 }
 
 fun Element.MdIconBtn() = unsafeCast<MdIconBtn>()
@@ -100,6 +91,31 @@ external class MdSecondaryTab : MdTab {
     companion object
 }
 
+@JsModule("@material/web/chips/chip-set.js")
+@JsNonModule
+external class MdChipSet {
+    companion object
+}
+
+@JsModule("@material/web/chips/filter-chip.js")
+@JsNonModule
+external class MdFilterChip {
+    companion object
+}
+
+
+@JsModule("@material/web/checkbox/checkbox.js")
+@JsNonModule
+external class MdCheckbox {
+    companion object
+
+    var checked: Boolean
+    var indeterminate: Boolean
+    var disabled: Boolean
+}
+
+fun Element.MdCheckbox() = unsafeCast<MdCheckbox>()
+
 
 fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
@@ -109,11 +125,18 @@ fun mentionMaterialComponents() {
     MdTonalButton
     MdTextButton
 
+    MdIconBtn
+
     MdMenu
     MdMenuItem
-    MdIconBtn
+
     MdTabs
     MdPrimaryTab
     MdSecondaryTab
+
+    MdChipSet
+    MdFilterChip
+
+    MdCheckbox
 }
 

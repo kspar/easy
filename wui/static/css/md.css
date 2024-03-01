@@ -43,12 +43,47 @@
     /* default: --md-sys-color-on-surface */
     --md-secondary-tab-active-icon-color: #343b2e;
 
+    /* colour text btns like icon buttons - less intensity */
+    --md-text-button-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-text-button-disabled-icon-color: var(--md-sys-color-on-surface);
+    --md-text-button-focus-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-text-button-hover-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-text-button-pressed-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-text-button-hover-state-layer-color: var(--md-sys-color-on-surface-variant);
+    --md-text-button-pressed-state-layer-color: var(--md-sys-color-on-surface-variant);
+    /* these vars have no direct analogue, but we just reuse the icon colours */
+    --md-text-button-label-text-color: var(--md-text-button-icon-color);
+    --md-text-button-focus-label-text-color: var(--md-text-button-focus-icon-color);
+    --md-text-button-hover-label-text-color: var(--md-text-button-hover-icon-color);
+    --md-text-button-pressed-label-text-color: var(--md-text-button-pressed-icon-color);
+
+
+    --md-menu-container-color: #f3f4f2;
+    --md-menu-item-container-color: var(--md-menu-container-color);
+
     /* temporary adjustments */
     /* all colours should be changed together, keep old ones for now */
     --md-sys-color-surface: #fff;
 
     /* adjust font sizes to our weird rem size - revert once we make our 1rem = 16px or similar */
-    --md-sys-typescale-body-large-size: 16px;
+    /* originally 16px (1rem), changed because of dropdown menu items */
+    --md-sys-typescale-body-large-size: 14px;
+    --md-sys-typescale-body-large-line-height: 24px;
     --md-sys-typescale-title-small-size: 14px;
     --md-sys-typescale-label-large-size: 14px;
+    --md-sys-typescale-label-large-line-height: 20px;
+}
+
+md-icon-button.small {
+    --md-icon-button-icon-size: 18px;
+}
+
+/* keep menu items from wrapping */
+[slot="headline"] {
+    white-space: nowrap;
+}
+
+md-menu-item > md-icon {
+    width: 18px;
+    height: 18px;
 }

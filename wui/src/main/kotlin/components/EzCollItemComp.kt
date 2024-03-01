@@ -1,13 +1,12 @@
 package components
 
 import Icons
+import hide
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
-import libheaders.Materialize
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.events.Event
 import rip.kspar.ezspa.*
+import show
+import style
 import template
 import translation.Str
 
@@ -21,9 +20,6 @@ class EzCollItemComp<P>(
     parent: Component
 ) : Component(parent) {
 
-    private val itemEl: Element
-        get() = getElemById(spec.id)
-
     enum class Expandable { ALWAYS, WHEN_TOP_ATTR_HIDDEN, NEVER }
 
     private val expandable
@@ -34,10 +30,58 @@ class EzCollItemComp<P>(
             else -> Expandable.NEVER
         }
 
+    private val hasActions = spec.actions.isNotEmpty()
 
     private var isSelected: Boolean = false
-
     private var isExpanded: Boolean = false
+
+    private var checkbox: CheckboxComp? = null
+    private var actionMenu: DropdownIconMenuComp? = null
+
+    override val children: List<Component>
+        get() = listOfNotNull(checkbox, actionMenu)
+
+    override fun create() = doInPromise {
+        if (spec.isSelectable) {
+            checkbox = CheckboxComp(
+                onChange = {
+                    isSelected = it == CheckboxComp.Value.CHECKED
+                    updateSelectionState()
+                    onCheckboxClicked(this, isSelected)
+                },
+                parent = this
+            )
+        }
+        if (hasActions) {
+            actionMenu = DropdownIconMenuComp(
+                Icons.dotsVertical,
+                Str.doEdit + "...",
+                spec.actions.map { action ->
+                    DropdownMenuComp.Item(
+                        action.text, action.iconHtml,
+                        onSelected = {
+                            val result = action.onActivate.invoke(spec)
+                            if (result is EzCollComp.ResultUnmodified) {
+                                return@Item
+                            }
+                            val returnedItems = result.unsafeCast<EzCollComp.ResultModified<P>>().items
+                            // Doesn't currently support adding items
+                            val returnedItem = returnedItems.getOrNull(0)
+                            if (returnedItem == null) {
+                                onDelete(this)
+                            } else {
+                                this.spec = returnedItem
+                                rebuild()
+                            }
+                            action.onResultModified?.invoke()
+                        },
+                        id = action.id
+                    )
+                },
+                parent = this
+            )
+        }
+    }
 
     override fun render() = template(
         """
@@ -49,9 +93,9 @@ class EzCollItemComp<P>(
                                 {{#isTypeIcon}}{{{typeHtml}}}{{/isTypeIcon}}
                                 {{^isTypeIcon}}<ezc-item-type-text>{{{typeHtml}}}</ezc-item-type-text>{{/isTypeIcon}}
                             </ezc-item-type>
-                            <label class="ezc-item-checkbox">
-                                <input id="ezc-item-checkbox-{{itemId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
-                            </label>
+                            {{#isSelectable}}
+                                <ezc-item-checkbox>$checkbox</ezc-item-checkbox>
+                            {{/isSelectable}}
                         </ezc-left>
                         <ezc-main>
                             <ezc-center>
@@ -104,23 +148,12 @@ class EzCollItemComp<P>(
                                             </ezc-fold-attr>
                                         {{/showAttr}}{{/progressBar}}
                                     </ezc-fold>
-                                    {{#hasActions}}
-                                        <ezc-bottom-space>
-                                            {{#actions}}{{#showShortcut}}
-                                                <ez-icon-action ez-action="{{id}}" ez-show-min="{{minCollWidth}}" title="{{text}}" tabindex="0">{{{iconHtml}}}</ez-icon-action>
-                                            {{/showShortcut}}{{/actions}}
-                                        </ezc-bottom-space>
-                                    {{/hasActions}}
                                 </ezc-second>
                             </ezc-center>
                         </ezc-main>
                         {{#hasActions}}
                             <ezc-right>
-                                <ez-icon-action id="ezc-item-action-menu-{{itemId}}" title="{{actionMenuTitle}}" class="dropdown-trigger icon-med" tabindex="0" data-target="ezc-item-action-dropdown-{{itemId}}">
-                                    <ez-icon>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="18px" height="18px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                                    </ez-icon>
-                                </ez-icon-action>
+                                $actionMenu
                             </ezc-right>
                         {{/hasActions}}
                     </ezc-item-container>
@@ -164,7 +197,7 @@ class EzCollItemComp<P>(
         "attrWidthS" to spec.attrWidthS.valuePx,
         "attrWidthM" to spec.attrWidthM.valuePx,
         "hasGrowingAttrs" to if (spec.bottomAttrs.size == 1) true else spec.hasGrowingAttrs,
-        "hasActions" to spec.actions.isNotEmpty(),
+        "hasActions" to hasActions,
         "isTypeIcon" to spec.type.isIcon,
         "typeHtml" to spec.type.html,
         "title" to spec.title,
@@ -172,7 +205,7 @@ class EzCollItemComp<P>(
         "titleIconLabel" to spec.titleIcon?.label,
         "titleInteraction" to spec.titleInteraction?.let {
             mapOf(
-                "href" to when(it) {
+                "href" to when (it) {
                     is EzCollComp.TitleAction<*> -> "#!"
                     is EzCollComp.TitleLink -> it.href
                 }
@@ -220,17 +253,7 @@ class EzCollItemComp<P>(
                 )
             else null
         },
-        "actions" to spec.actions.map {
-            mapOf(
-                "id" to it.id,
-                "text" to it.text,
-                "iconHtml" to it.iconHtml,
-                "showShortcut" to it.showShortcutIcon,
-                "minCollWidth" to it.shortcutMinCollWidth.valuePx,
-            )
-        },
         "expandCaret" to Icons.expandCaret,
-        "actionMenuTitle" to Str.doEdit + "...",
         "expandItemTitle" to Str.doExpand,
     )
 
@@ -247,38 +270,21 @@ class EzCollItemComp<P>(
             updateExpanded()
         }
 
-        initActions()
         initActionableAttrs()
-
-        if (spec.isSelectable) {
-            initSelection()
-            updateSelectionState()
-        }
     }
 
-
-    fun setVisible(isVisible: Boolean) {
-        if (isVisible)
-            itemEl.removeClass("display-none")
-        else
-            itemEl.addClass("display-none")
-    }
 
     fun setSelected(selected: Boolean) {
-        if (isSelected == selected)
-            return
-
         isSelected = selected
         updateSelectionState()
     }
 
     fun updateOrderingIndex() {
-        // TODO: element.style missing from kotlin?
-        itemEl.parentElement!!.setAttribute("style", "order: $orderingIndex")
+        rootElement.style = "order: $orderingIndex"
     }
 
     private fun initExpanding() {
-        val expand = itemEl.getElemBySelector("ez-icon-action[ez-expand-item]")
+        val expand = rootElement.getElemBySelector("ez-icon-action[ez-expand-item]")
         expand.onVanillaClick(false) {
             isExpanded = !isExpanded
             updateExpanded()
@@ -286,52 +292,22 @@ class EzCollItemComp<P>(
     }
 
     private fun updateExpanded() {
-        val fold = itemEl.getElemBySelector("ezc-fold")
-        val trailer = itemEl.getElemBySelector("ezc-expand-trailer")
-        val attrs = itemEl.getElemBySelector("ezc-bottom-attrs")
+        val fold = rootElement.getElemBySelector("ezc-fold")
+        val trailer = rootElement.getElemBySelector("ezc-expand-trailer")
+        val attrs = rootElement.getElemBySelector("ezc-bottom-attrs")
         if (isExpanded) {
             trailer.addClass("open")
-            attrs.addClass("display-none")
-            fold.removeClass("display-none")
+            attrs.hide()
+            fold.show()
         } else {
             trailer.removeClass("open")
-            fold.addClass("display-none")
-            attrs.removeClass("display-none")
-        }
-    }
-
-    private fun initActions() {
-        // Init shortcut icon actions and item menu actions
-        spec.actions.forEach { action ->
-            itemEl.getElemsBySelector("[ez-action='${action.id}']").onVanillaClick(true) {
-                val result = action.onActivate.invoke(spec)
-                if (result is EzCollComp.ResultUnmodified) {
-                    return@onVanillaClick
-                }
-                val returnedItems = result.unsafeCast<EzCollComp.ResultModified<P>>().items
-                // TODO: allow adding
-                val returnedItem = returnedItems.getOrNull(0)
-                if (returnedItem == null) {
-                    onDelete(this)
-                } else {
-                    this.spec = returnedItem
-                    rebuild()
-                }
-                action.onResultModified?.invoke()
-            }
-        }
-
-        // Init item menu
-        if (spec.actions.isNotEmpty()) {
-            Materialize.Dropdown.init(
-                getElemById("ezc-item-action-menu-${spec.id}"),
-                objOf("constrainWidth" to false, "coverTrigger" to false, "container" to getBody())
-            )
+            fold.hide()
+            attrs.show()
         }
     }
 
     private fun initActionableAttrs() {
-        val actionableAttrs = itemEl.getElemsBySelector("ezc-attr-text[class='actionable']")
+        val actionableAttrs = rootElement.getElemsBySelector("ezc-attr-text[class='actionable']")
         actionableAttrs.forEach { attrEl ->
             attrEl.onVanillaClick(false) {
                 val attrId = attrEl.getAttribute("ez-attr-id") ?: return@onVanillaClick
@@ -345,7 +321,7 @@ class EzCollItemComp<P>(
                 }
 
                 val returnedItem = result.unsafeCast<EzCollComp.ResultModified<P>>().items.getOrNull(0)
-                // TODO: allow adding
+                // Doesn't currently support adding items
                 if (returnedItem == null) {
                     onDelete(this)
                 } else {
@@ -356,26 +332,13 @@ class EzCollItemComp<P>(
         }
     }
 
-    private fun initSelection() {
-        val checkbox = getElemByIdAs<HTMLInputElement>("ezc-item-checkbox-${spec.id}")
-        checkbox.onVanillaClick(false) {
-            isSelected = checkbox.checked
-            updateSelectionState()
-            onCheckboxClicked(this, isSelected)
-        }
-    }
-
     private fun updateSelectionState() {
-        val checkbox = getElemByIdAs<HTMLInputElement>("ezc-item-checkbox-${spec.id}")
-        if (checkbox.checked != isSelected) {
-            checkbox.checked = isSelected
-            checkbox.dispatchEvent(Event("change"))
-        }
+        checkbox?.value = if (isSelected) CheckboxComp.Value.CHECKED else CheckboxComp.Value.UNCHECKED
 
         if (isSelected) {
-            itemEl.setAttribute("selected", "")
+            rootElement.getElemBySelector("ezc-item").setAttribute("selected", "")
         } else {
-            itemEl.removeAttribute("selected")
+            rootElement.getElemBySelector("ezc-item").removeAttribute("selected")
         }
     }
 }

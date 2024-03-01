@@ -5,7 +5,7 @@ import Icons
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
-import dao.ExerciseDAO
+import dao.ParticipantsDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -20,14 +20,15 @@ class TeacherCourseExerciseSubmissionsListTabComp(
     parent: Component
 ) : Component(parent) {
 
-    data class StudentSubmission(
-        val id: String, val time: EzDate, val grade: Int?, val gradedBy: ExerciseDAO.GraderType?,
+    data class StudentProps(
+        val id: String,
+        val givenName: String,
+        val familyName: String,
+        val groups: List<ParticipantsDAO.CourseGroup>,
+        val submission: CourseExercisesTeacherDAO.StudentSubmission?,
+        val status: CourseExercisesStudentDAO.SubmissionStatus,
     )
 
-    data class StudentProps(
-        val id: String, val givenName: String, val familyName: String, val groups: String?,
-        val submission: StudentSubmission?, val status: CourseExercisesStudentDAO.SubmissionStatus,
-    )
 
     private lateinit var studentProps: List<StudentProps>
 
@@ -37,21 +38,15 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         get() = listOf(coll)
 
     override fun create() = doInPromise {
-        studentProps =
-            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId).await().students.map {
+        studentProps = CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId).await()
+            .latest_submissions.map {
                 StudentProps(
                     it.student_id, it.given_name, it.family_name, it.groups,
-                    if (it.submission_id != null && it.submission_time != null)
-                        StudentSubmission(
-                            it.submission_id,
-                            it.submission_time,
-                            it.grade,
-                            it.graded_by
-                        ) else null,
+                    it.latest_submission,
                     when {
-                        it.submission_id == null -> CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED
-                        it.grade == null -> CourseExercisesStudentDAO.SubmissionStatus.UNGRADED
-                        it.grade >= threshold -> CourseExercisesStudentDAO.SubmissionStatus.COMPLETED
+                        it.latest_submission == null -> CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED
+                        it.latest_submission.grade == null -> CourseExercisesStudentDAO.SubmissionStatus.UNGRADED
+                        it.latest_submission.grade.grade >= threshold -> CourseExercisesStudentDAO.SubmissionStatus.COMPLETED
                         else -> CourseExercisesStudentDAO.SubmissionStatus.STARTED
                     }
                 )
@@ -63,10 +58,10 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                     it,
 //                                    EzCollComp.ItemTypeText("#" + Random.nextInt(1, 20).toString()),
                     EzCollComp.ItemTypeIcon(
-                        when (it.submission?.gradedBy) {
-                            ExerciseDAO.GraderType.AUTO -> Icons.robot
-                            ExerciseDAO.GraderType.TEACHER -> Icons.teacherFace
-                            null -> Icons.dotsHorizontal
+                        when {
+                            it.submission?.grade == null -> Icons.dotsHorizontal
+                            it.submission.grade.is_autograde -> Icons.robot
+                            else -> Icons.teacherFace
                         }
                     ),
 //                                    if (Random.nextBoolean())
@@ -131,10 +126,12 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             filterGroups = listOf(
                 EzCollComp.FilterGroup(
                     "Hinnatud", listOf(
-                        EzCollComp.Filter("Automaatselt hinnatud") { it.props.submission?.gradedBy == ExerciseDAO.GraderType.AUTO },
-                        EzCollComp.Filter("Õpetaja hinnatud") { it.props.submission?.gradedBy == ExerciseDAO.GraderType.TEACHER },
+                        // TODO: hindamata?
+                        EzCollComp.Filter("Automaatselt hinnatud") { it.props.submission?.grade?.is_autograde == true },
+                        EzCollComp.Filter("Õpetaja hinnatud") { it.props.submission?.grade?.is_autograde == false },
                     )
                 ),
+                // TODO: maybe not useful
                 EzCollComp.FilterGroup(
                     "Esitus", listOf(
                         EzCollComp.Filter("Lahendus esitatud") { it.props.submission != null },
@@ -164,7 +161,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                         // nulls last
                         if (it.props.submission?.grade == null) 1 else 0
                     }.thenByDescending<EzCollComp.Item<StudentProps>> {
-                        it.props.submission?.grade
+                        it.props.submission?.grade?.grade
                     }
                 ))
                 add(EzCollComp.Sorter("Esitamisaja järgi",
@@ -177,8 +174,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                 ))
             },
             compact = true,
-            onFilterChange = { onStudentListChange() },
-            onSorterChange = { onStudentListChange() },
+            onConfChange = { onStudentListChange() },
             parent = this
         )
     }

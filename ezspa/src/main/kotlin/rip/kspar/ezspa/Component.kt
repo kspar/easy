@@ -107,37 +107,6 @@ abstract class Component(
 
     open fun hasUnsavedChanges(): Boolean = if (isCreated) children.any { it.hasUnsavedChanges() } else false
 
-    open fun createAndBuild3(): Promise<*>? {
-        paintLoading()
-        val p = create()
-        if (p != null) {
-            return p.then {
-                buildThis()
-                b()
-            }.then {
-                postChildrenBuilt()
-            }
-        }
-
-        buildThis()
-        val c = b()
-        if (c != null) {
-            return c.then {
-                postChildrenBuilt()
-            }
-        }
-
-        postChildrenBuilt()
-        return null
-    }
-
-    fun b(): Promise<*>? {
-        val cp = children.mapNotNull { it.createAndBuild3() }
-        if (cp.isNotEmpty())
-            return cp.unionPromise()
-        return null
-    }
-
     /**
      * Rebuild this component and recreate its children.
      */
@@ -152,7 +121,7 @@ abstract class Component(
      * and then [createAndBuild] the child.
      */
     fun appendChild(child: Component): Promise<*> = doInPromise {
-        getElemById(dstId).appendHTML(plainDstStr(child.dstId))
+        rootElement.appendHTML(plainDstStr(child.dstId))
         child.createAndBuild().await()
         postChildrenBuilt()
     }
@@ -167,17 +136,19 @@ abstract class Component(
         postChildrenBuilt()
     }
 
+    val rootElement
+        get() = getElemById(dstId)
+
     override fun toString() = plainDstStr(dstId)
 
-    // FIXME: temporarily public to optimise ezcoll
-    fun buildThis() {
+    protected fun buildThis() {
         paint()
         postRender()
     }
 
     protected fun paintLoading() {
         renderLoading()?.let {
-            getElemById(dstId).innerHTML = it
+            rootElement.innerHTML = it
         }
     }
 
@@ -185,7 +156,7 @@ abstract class Component(
 
     private fun paint() {
         try {
-            getElemById(dstId).innerHTML = render()
+            rootElement.innerHTML = render()
         } catch (e: ElementNotFoundException) {
             val ancestorDstStr = getAncestorsRec().joinToString(" > ") { it.dstId }
             EzSpa.Logger.warn { "Couldn't find destination ID $dstId when painting component \n  Trace: $ancestorDstStr" }

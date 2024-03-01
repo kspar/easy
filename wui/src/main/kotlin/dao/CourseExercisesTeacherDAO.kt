@@ -178,30 +178,82 @@ object CourseExercisesTeacherDAO {
 
 
     @Serializable
-    data class LatestSubmissions(
-        val student_count: Long,
-        val students: List<LatestSubmission>
+    data class CourseExerciseSubmissions(
+        val exercise_id: String,
+        val library_title: String,
+        val title_alias: String?,
+        val effective_title: String,
+        val grade_threshold: Int,
+        val student_visible: Boolean,
+        @Serializable(with = EzDateSerializer::class)
+        val student_visible_from: EzDate?,
+        @Serializable(with = EzDateSerializer::class)
+        val soft_deadline: EzDate?,
+        val grader_type: ExerciseDAO.GraderType,
+        val ordering_idx: Int,
+        val unstarted_count: Int,
+        val ungraded_count: Int,
+        val started_count: Int,
+        val completed_count: Int,
+        val latest_submissions: List<LatestStudentSubmission>,
     )
 
     @Serializable
-    data class LatestSubmission(
+    data class LatestStudentSubmission(
+        val latest_submission: StudentSubmission?,
         val student_id: String,
         val given_name: String,
         val family_name: String,
-        val submission_id: String?,
+        val groups: List<ParticipantsDAO.CourseGroup>,
+    )
+
+    @Serializable
+    data class StudentSubmission(
+        val id: String,
         @Serializable(with = EzDateSerializer::class)
-        val submission_time: EzDate?,
-        val grade: Int?,
-        val graded_by: ExerciseDAO.GraderType?,
-        val groups: String?
+        val time: EzDate,
+        val grade: GradeResp?,
+    )
+
+    @Serializable
+    data class GradeResp(
+        val grade: Int,
+        val is_autograde: Boolean,
     )
 
     fun getLatestSubmissions(courseId: String, courseExerciseId: String, groupId: String? = null) = doInPromise {
         debug { "Get latest submissions for course $courseId exercise $courseExerciseId" }
         val q = if (groupId != null) createQueryString("group" to groupId) else ""
-        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/latest/students$q",
-            ReqMethod.GET,
-            successChecker = { http200 }).await()
-            .parseTo(LatestSubmissions.serializer()).await()
+
+        val submissions =
+            fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/latest/students$q",
+                ReqMethod.GET,
+                successChecker = { http200 }).await()
+                .parseTo(CourseExerciseSubmissions.serializer()).await()
+
+        // TODO: workaround: the service doesn't support group id at the moment but it should (EZ-1637)
+        if (groupId != null)
+            submissions.copy(
+                latest_submissions = submissions.latest_submissions.filter {
+                    it.groups.any { it.id == groupId }
+                }
+            )
+        else submissions
+    }
+
+    @Serializable
+    data class StudentSubmissionDetails(
+        val submission_number: Int,
+        val solution: String,
+        val seen: Boolean,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        val grade: GradeResp?,
+    )
+
+    fun getSubmissionDetails(courseId: String, courseExerciseId: String, submissionId: String) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/${submissionId.encodeURIComponent()}",
+            ReqMethod.GET, successChecker = { http200 }).await()
+            .parseTo(StudentSubmissionDetails.serializer()).await()
     }
 }

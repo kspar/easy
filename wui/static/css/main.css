@@ -1046,6 +1046,25 @@ ez-code-edit-tabs {
 
 /** Participants page **/
 
+ez-participants-list {
+    display: block;
+    margin-top: 1rem;
+}
+
+ez-participants-list ez-tabs-content {
+    margin-top: 1rem;
+}
+
+ez-participants-list ez-block {
+    width: 50rem;
+    padding-right: 3rem;
+    margin: 2rem 0;
+}
+
+ez-participants-list .card .card-content p {
+    margin-bottom: 1rem;
+}
+
 .add-participants-modal textarea {
     min-height: 6rem;
 }
@@ -1081,78 +1100,6 @@ ez-course-join-link ez-link-wrap ez-icon {
     ez-course-join-link ez-link-wrap {
         font-size: .9em;
     }
-}
-
-#participants-container .subsection-wrap {
-    display: flex;
-    justify-content: space-between;
-}
-
-#participants-container ez-pagination {
-    padding: 0 1rem;
-}
-
-#participants-container h4.subsection {
-    font-size: 2rem;
-    margin-top: 4rem;
-    margin-bottom: 2rem;
-}
-
-#participants-container h5.subsection {
-    margin-top: 3rem;
-}
-
-#participants-container #add-students-wrap {
-    border: 1px solid #ddd;
-    background-color: #eee;
-}
-
-#participants-container div#add-students-help {
-    margin-bottom: 2rem;
-}
-
-#participants-container div#new-students-form-wrap {
-    margin-bottom: 0;
-}
-
-#participants-container #new-students-field {
-    min-height: 6rem;
-}
-
-#participants-container .card {
-    margin: .5rem 0;
-}
-
-#participants-container .card .card-content {
-    padding: 5px 10px 0 10px;
-}
-
-#participants-container table th {
-    font-weight: 500;
-}
-
-#participants-container .pending-icon {
-    margin-left: 5px;
-    font-size: 1.3em;
-    cursor: default;
-}
-
-
-/** Participants page v3 **/
-
-ez-participants-list {
-    display: block;
-    margin-top: 1rem;
-}
-
-ez-participants-list ez-block {
-    width: 50rem;
-    padding-right: 3rem;
-    margin: 2rem 0;
-}
-
-ez-participants-list .card .card-content p {
-    margin-bottom: 1rem;
 }
 
 ez-join-course {
@@ -1338,10 +1285,12 @@ ez-about-sponsors {
 
 ez-flex {
     display: flex;
+    align-items: center;
 }
 
 ez-inline-flex {
     display: inline-flex;
+    align-items: center;
 }
 
 
@@ -1899,6 +1848,12 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
     border-color: var(--ez-checkbox-disabled-border-col);
 }
 
+/* fix overflowing due to weird default browser fieldset styling */
+/* https://stackoverflow.com/questions/7434756/overflow-and-text-overflow-within-fieldsets */
+fieldset {
+    min-width: 0;
+}
+
 fieldset > legend {
     display: flex;
     align-items: center;
@@ -2037,8 +1992,9 @@ md-icon > ez-icon {
 }
 
 md-icon > ez-icon > svg {
-    width: 100%;
-    height: 100%;
+    /* 100% would cause issues with md-menu-item wrapping */
+    width: inherit;
+    height: inherit;
 }
 
 ez-icon > svg {
@@ -2134,110 +2090,19 @@ ez-coll-wrap {
 ezc-ctrl {
     display: flex;
     justify-content: space-between;
-    padding: 2rem 0 1rem 1.3rem;
+    padding: 1rem 0 1rem 0;
+    flex-wrap: wrap;
 }
 
-ez-coll-wrap:not([has-selection]) ezc-ctrl {
+/* reduce whitespace if there's nothing on the left control side */
+ez-coll-wrap:not([has-selection]):not([has-filtering]) ezc-ctrl {
     padding-bottom: 0;
+    padding-top: 0;
 }
 
 ezc-ctrl-left {
     display: flex;
     align-items: center;
-}
-
-ezc-ctrl-left label {
-    width: 2rem;
-    height: 2rem;
-    margin-right: 1.8rem;
-}
-
-ezc-ctrl-left a.dropdown-trigger {
-    border: 1px solid var(--ez-flat-btn-border-col);
-    display: flex;
-    align-items: center;
-    padding: 0 .8rem;
-    margin-left: .4rem;
-    text-transform: none;
-}
-
-ezc-mass-action-btn-label {
-    display: none;
-}
-ezc-mass-action-btn-icon {
-    display: flex;
-}
-
-ezc-ctrl-left a.dropdown-trigger.disabled {
-    border-color: var(--ez-flat-btn-disabled-border-col);
-}
-
-ezc-ctrl-left a.dropdown-trigger:hover {
-    background-color: var(--ez-icon-action-active-bg-col);
-}
-
-ezc-ctrl-left a.dropdown-trigger ezc-mass-action-btn-label ez-icon {
-    margin-left: .8rem;
-}
-
-ezc-ctrl-left a.dropdown-trigger ez-icon > svg,
-ezc-ctrl-filter ez-icon > svg,
-ezc-ctrl-order ez-icon > svg {
-    width: 2.4rem;
-    height: 2.4rem;
-}
-
-ezc-ctrl-left a.dropdown-trigger.disabled ez-icon {
-    color: var(--ez-flat-btn-disabled-border-col);
-}
-
-ezc-ctrl-filter[filter="on"] ez-icon-action {
-    background-color: var(--ez-green);
-}
-
-ezc-ctrl-filter[filter="on"] ez-icon > svg {
-    color: var(--ez-btn-active-text);
-}
-
-ezc-ctrl-filter .select-wrapper input.select-dropdown {
-    padding: 0;
-}
-
-ezc-ctrl-filter .dropdown-content li.optgroup:not(:first-child) {
-    min-height: 0;
-    border-top-color: #ddd;
-}
-
-ezc-ctrl-filter .dropdown-content li.optgroup:not(:first-child) > span {
-    display: none;
-}
-
-ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child {
-    cursor: pointer;
-}
-
-ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child:hover {
-    background-color: rgba(0,0,0,0.08);
-}
-
-ezc-ctrl-filter[filter="on"] .dropdown-content li.optgroup:first-child span {
-    color: #333;
-}
-
-ezc-ctrl-filter[filter="off"] .dropdown-content li.optgroup:first-child {
-    pointer-events: none;
-}
-
-/* Hide select field */
-ezc-ctrl-filter .select-wrap,
-ezc-ctrl-filter .select-wrap input.select-dropdown {
-    width: 0;
-    height: 0;
-    margin: 0;
-}
-ezc-ctrl-filter .select-wrap svg.caret,
-ezc-ctrl-filter .select-wrap > label {
-    display: none;
 }
 
 ezc-ctrl-selected {
@@ -2249,19 +2114,13 @@ ezc-ctrl-selected {
 ezc-ctrl-right {
     display: flex;
     align-items: center;
-    min-width: 5rem;
 }
 
 ezc-ctrl-shown {
     display: flex;
-    margin-right: .8rem;
+    margin-right: .5rem;
     color: var(--ezc-attr-immutable-col);
     font-size: .86em;
-}
-
-ezc-ctrl-shown-icon {
-    margin-right: .3rem;
-    font-weight: 500;
 }
 
 ezc-ctrl-shown-count {
@@ -2269,30 +2128,8 @@ ezc-ctrl-shown-count {
 }
 
 ezc-ctrl-shown-name {
-    display: none;
-    margin-left: .4rem;
-}
-
-ezc-ctrl-filter {
-    margin-right: 1rem;
-}
-
-ezc-ctrl-order .dropdown-content li label {
     display: flex;
-    padding: 14px 16px;
-    cursor: pointer;
-}
-
-ezc-ctrl-order .dropdown-content li label span {
-    font-size: 1.4rem;
-}
-
-ezc-ctrl-order[custom-order="on"] ez-icon-action {
-    background-color: var(--ez-green);
-}
-
-ezc-ctrl-order[custom-order="on"] ez-icon > svg {
-    color: var(--ez-btn-active-text);
+    margin-left: .4rem;
 }
 
 ez-coll {
@@ -2300,22 +2137,16 @@ ez-coll {
     flex-direction: column;
 }
 
-ez-coll > ezc-empty-placeholder,
-ez-coll > ezc-no-match-placeholder {
-    display: none;
-}
-
-ez-coll[empty] > ezc-empty-placeholder {
-    display: block;
-}
-
-ez-coll[no-matched-items] > ezc-no-match-placeholder {
-    display: block;
-}
-
 ezc-item {
     display: flex;
     min-height: 5rem;
+    --var-ezc-item-background-color: #fff;
+}
+
+ezc-item[selected] ezc-item-container {
+    background-color: var(--md-sys-color-surface-bright);
+    border-radius: 5px;
+    --var-ezc-item-background-color: var(--md-sys-color-surface-bright);
 }
 
 ezc-bar-container {
@@ -2328,7 +2159,8 @@ ezc-item-container {
     flex: 1 1 auto;
     display: flex;
     min-width: 0;
-    padding: 1.1rem .8rem 1.1rem .2rem;
+    padding: 1.1rem .8rem 1.1rem 0;
+    transition: background-color 200ms ease;
 }
 
 ezc-item:not(.has-bar) ezc-item-container {
@@ -2348,16 +2180,16 @@ ezc-item.has-bar.compact ezc-item-container {
 
 ezc-left {
     display: flex;
-    align-items: start;
+    align-items: center;
     justify-content: center;
-    padding: .6rem 1rem .1rem .6rem;
+    /* width of checkbox */
+    width: 4.8rem;
+    margin-right: 1rem;
 }
 
 ezc-item-type {
     display: flex;
     justify-content: center;
-    width: 3rem;
-    padding-bottom: .6rem;
 }
 
 ezc-item-type-text {
@@ -2365,13 +2197,14 @@ ezc-item-type-text {
     font-size: 1.1em;
 }
 
+ezc-left ezc-item-checkbox,
 ezc-item[selectable] ezc-left:hover ezc-item-type,
 ezc-item[selected] ezc-item-type {
     display: none;
 }
 
-ezc-item[selectable] ezc-left:hover .ezc-item-checkbox,
-ezc-item[selected] .ezc-item-checkbox {
+ezc-item[selectable] ezc-left:hover ezc-item-checkbox,
+ezc-item[selected] ezc-item-checkbox {
     display: block;
 }
 
@@ -2382,23 +2215,6 @@ ezc-item.inactive ezc-left ez-icon {
 ezc-left ez-icon > svg {
     width: 2.4rem;
     height: 2.4rem;
-}
-
-ezc-item.two-rows ezc-left {
-    padding-top: 1.5rem;
-}
-
-ezc-left .ezc-item-checkbox {
-    display: none;
-    width: 3rem;
-    padding: .1rem 0 0 .5rem;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-ezc-left .ezc-item-checkbox span.dummy,
-ezc-ctrl-left .ezc-all-checkbox span.dummy {
-    padding-left: 0;
 }
 
 ezc-main {
@@ -2419,14 +2235,9 @@ ezc-center {
 
 ezc-right {
     display: flex;
-    align-items: start;
+    align-items: center;
     justify-content: center;
     padding-left: 1rem;
-    padding-top: .2rem;
-}
-
-ezc-item.two-rows ezc-right {
-    padding-top: 1.1rem;
 }
 
 ezc-first {
@@ -2512,7 +2323,7 @@ ezc-attr.bottom:not(:first-child) {
     border-left: 1px solid rgba(0, 0, 0, .15);
 }
 
-/* Fade out long attr values - do we want this? */
+/* Fade out long attr values */
 ezc-attr.bottom:after {
     content: "";
     position: absolute;
@@ -2520,7 +2331,7 @@ ezc-attr.bottom:after {
     right: 0;
     height: 100%;
     width: 1.3rem;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff);
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--var-ezc-item-background-color));
     pointer-events: none;
 }
 
@@ -2543,11 +2354,6 @@ ezc-attr-text.actionable:hover {
 /* If attrs should take up all space */
 ezc-bottom-attrs[ez-growing-attrs] > ezc-attr {
     flex-grow: 1;
-}
-
-ezc-bottom-space {
-    align-self: flex-start;
-    display: flex;
 }
 
 ezc-fold {
@@ -2636,43 +2442,15 @@ ezc-expand-trailer.open > ez-icon-action > ez-icon {
 }
 
 /* Container is ez-coll-wrap */
-@container (width >= 400px) {
-    /* This could depend on the width of ezc-ctrl-right (assuming it grows) to be more accurate */
-    ezc-ctrl-shown-icon {
+@container (width < 700px) {
+    ezc-ctrl-shown {
         display: none;
-    }
-    ezc-ctrl-shown-name {
-        display: flex;
-    }
-    ezc-ctrl {
-        padding-left: 1.9rem;
-    }
-    ezc-left {
-        padding-left: 1.2rem;
-        padding-right: 1.4rem;
     }
 }
 
-@container (width >= 600px) {
+@container (width >= 900px) {
     ezc-ctrl {
-        padding-left: 2.2rem;
         padding-right: 2.2rem;
-    }
-    ezc-ctrl-left a.dropdown-trigger {
-        padding-left: 1.6rem;
-    }
-    ezc-mass-action-btn-label {
-        display: flex;
-    }
-    ezc-mass-action-btn-icon {
-        display: none;
-    }
-    ezc-ctrl-selected {
-        margin-left: 3rem;
-    }
-    ezc-left {
-        padding-left: 1.5rem;
-        padding-right: 1.7rem;
     }
 }
 

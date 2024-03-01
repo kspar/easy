@@ -1,5 +1,6 @@
 package rip.kspar.ezspa
 
+import kotlinx.browser.document
 import kotlinx.coroutines.await
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -122,3 +123,9 @@ fun Element.appendHTML(html: String) = this.insertAdjacentHTML("beforeend", html
 fun plainDstStr(vararg dstIds: String?): String = plainDstStr(dstIds.toList())
 fun plainDstStr(dstIds: List<String?>): String =
     dstIds.filterNotNull().joinToString("\n") { """<ez-dst id="$it"></ez-dst>""" }
+
+fun sanitiseHTML(text: String): String {
+    val tmpElement = document.createElement("div")
+    tmpElement.textContent = text;
+    return tmpElement.innerHTML;
+}

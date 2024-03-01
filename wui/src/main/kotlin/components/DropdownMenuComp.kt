@@ -17,8 +17,8 @@ class DropdownMenuComp(
 
     data class Item(
         val label: String,
-        val icon: String = "",
-        val onSelected: (suspend () -> Unit),
+        val icon: String? = null,
+        val onSelected: (suspend (Item) -> Unit),
         val isDisabled: Boolean = false,
         val id: String = IdGenerator.nextId()
     )
@@ -61,13 +61,26 @@ class DropdownMenuComp(
 
                 debug { "Item '${item.label}' selected" }
                 doInPromise {
-                    item.onSelected()
+                    item.onSelected(item)
                 }
             })
         }
     }
 
     fun toggleOpen() {
-        getElemById(elementId).MdMenu().let { it.open = !it.open }
+        setOpen(!getElemById(elementId).MdMenu().open)
+    }
+
+    fun setOpen(nowOpen: Boolean) {
+        getElemById(elementId).MdMenu().open = nowOpen
+    }
+
+    fun setSelected(itemId: String?) {
+        items.forEach {
+            if (it.id == itemId)
+                getElemById(it.id).setAttribute("selected", "")
+            else
+                getElemById(it.id).removeAttribute("selected")
+        }
     }
 }

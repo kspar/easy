@@ -2,20 +2,14 @@ package components
 
 import Icons
 import debug
-import kotlinx.coroutines.await
-import kotlinx.dom.addClass
-import kotlinx.dom.clear
-import kotlinx.dom.removeClass
-import libheaders.Materialize
-import libheaders.closePromise
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.HTMLOptionElement
-import org.w3c.dom.events.Event
-import rip.kspar.ezspa.*
+import hide
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemBySelector
+import show
 import template
-import tmRender
 import translation.Str
-import kotlin.js.Promise
 
 class EzCollComp<P>(
     items: List<Item<P>>,
@@ -23,10 +17,9 @@ class EzCollComp<P>(
     private val massActions: List<MassAction<P>> = emptyList(),
     private val filterGroups: List<FilterGroup<P>> = emptyList(),
     private val sorters: List<Sorter<P>> = emptyList(),
-    private val useFirstSorterAsDefault: Boolean = true,
     private val compact: Boolean = false,
-    private val onFilterChange: ((List<List<Filter<P>>>) -> Unit)? = null,
-    private val onSorterChange: ((Sorter<P>) -> Unit)? = null,
+    userConf: EzCollConf.UserConf? = null,
+    private val onConfChange: ((EzCollConf.UserConf) -> Unit)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -73,8 +66,6 @@ class EzCollComp<P>(
     data class Action<P>(
         val iconHtml: String,
         val text: String,
-        val showShortcutIcon: Boolean = false,
-        val shortcutMinCollWidth: CollMinWidth = CollMinWidth.W600,
         val id: String = IdGenerator.nextId(),
         val onResultModified: (suspend () -> Unit)? = null,
         val onActivate: suspend (Item<P>) -> Result,
@@ -97,12 +88,19 @@ class EzCollComp<P>(
 
     data class Filter<P>(
         val label: String,
-        val startActive: Boolean = false,
+        val confType: EzCollConf.EzCollFilterType? = null,
         val id: String = IdGenerator.nextId(),
         val predicate: (Item<P>) -> Boolean
     )
 
-    data class Sorter<P>(val label: String, val comparator: Comparator<Item<P>>, val id: String = IdGenerator.nextId())
+    data class Sorter<P>(
+        val label: String,
+        val comparator: Comparator<Item<P>>,
+        // if not provided, then the primary comparator's order is simply reversed
+        val reverseComparator: Comparator<Item<P>>? = null,
+        val confType: EzCollConf.EzCollSortType? = null,
+        val id: String = IdGenerator.nextId()
+    )
 
     abstract class Attr<P> {
         abstract val key: String
@@ -199,33 +197,47 @@ class EzCollComp<P>(
     // Currently checked items
     private var checkedItems: MutableList<EzCollItemComp<P>> = mutableListOf()
 
-    // Currently applied filters - list of filter groups where each group is a list of applied filters
-    private var activatedFilters: List<List<Filter<P>>> = emptyList()
-
-    // Default sorter, used to detect when a non-default sorter is active
-    private val defaultSorter: Sorter<P>? = if (useFirstSorterAsDefault) sorters.firstOrNull() else null
+    // Currently applied filters in all filter groups
+    var activeFilters: List<Filter<P>>
+        private set
 
     // Currently applied sorter, if null then items are displayed in the created order
-    private var activeSorter: Sorter<P>? = defaultSorter
+    var activeSorter: Sorter<P>?
+        private set
+    var sortOrderReversed: Boolean
+        private set
+
+
+    private lateinit var filterChips: FilterChipSetComp
+    private var sortFieldBtn: DropdownButtonMenuSelectComp? = null
+    private var sortOrderBtn: IconButtonComp? = null
+
+    private var allCheckbox: CheckboxComp? = null
+    private var massActionMenu: DropdownIconMenuComp? = null
+    private var clearSelectionBtn: IconButtonComp? = null
+
+    private lateinit var missingContentPlaceholder: MissingContentPlaceholderComp
 
     // Getters because items can change
     private val hasSelection: Boolean
         get() = items.any { it.spec.isSelectable }
 
-    private val hasFiltering: Boolean
-        get() = filterGroups.isNotEmpty() && items.isNotEmpty()
-
     private val hasChangeableSorting: Boolean
         get() = sorters.size > 1 && items.isNotEmpty()
 
-    private val collId = IdGenerator.nextId()
-
     init {
-        activatedFilters = filterGroups.map {
-            it.filters.filter { it.startActive }
-        }.filter { it.isNotEmpty() }
+        val conf = userConf ?: EzCollConf.UserConf()
 
-        val specs = if (sorters.isNotEmpty() && useFirstSorterAsDefault) {
+        activeFilters = filterGroups.mapNotNull {
+            it.filters.firstOrNull { it.confType != null && conf.filters.contains(it.confType) }
+        }
+
+        activeSorter =
+            sorters.firstOrNull { it.confType != null && conf.sorter == it.confType } ?: sorters.firstOrNull()
+
+        sortOrderReversed = conf.sortOrderReversed
+
+        val specs = if (sorters.isNotEmpty()) {
             items.sortedWith(sorters.first().comparator)
         } else
             items
@@ -238,255 +250,183 @@ class EzCollComp<P>(
 
 
     override val children: List<Component>
-        get() = items
-
-    override fun render(): String {
-        val activatedFilterIds = activatedFilters.flatMap { it.map { it.id } }
-
-        return template(
-            """
-                <ez-coll-wrap id="{{collId}}" {{#hasSelection}}has-selection{{/hasSelection}}>
-                    <ezc-ctrl>
-                        <ezc-ctrl-left>
-                            {{#hasSelection}}
-                            <label class="ezc-all-checkbox">
-                                <input id="ezc-select-all-{{collId}}" type="checkbox" class="filled-in" /><span class="dummy"></span>
-                            </label>
-                            <a class="btn-flat dropdown-trigger waves-effect disabled" data-target='ezc-select-action-dropdown-{{collId}}'>
-                                <ezc-mass-action-btn-label>{{applyLabel}}{{{applyExpandIcon}}}</ezc-mass-action-btn-label>
-                                <ezc-mass-action-btn-icon>{{{applyShortIcon}}}</ezc-mass-action-btn-icon>
-                            </a>
-                            <ezc-ctrl-selected></ezc-ctrl-selected>
-                            {{/hasSelection}}
-                        </ezc-ctrl-left>
-                        <ezc-ctrl-right>
-                            <ezc-ctrl-shown>
-                                <ezc-ctrl-shown-icon></ezc-ctrl-shown-icon>
-                                <ezc-ctrl-shown-count>
-                                    <ez-spinner class="preloader-wrapper active">
-                                        <div class="spinner-layer">
-                                            <div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div>
-                                        </div>
-                                        </div>
-                                    </ez-spinner>
-                                </ezc-ctrl-shown-count>
-                                <ezc-ctrl-shown-name></ezc-ctrl-shown-name>
-                            </ezc-ctrl-shown>
-                            {{#hasFiltering}}
-                            <ezc-ctrl-filter filter="off">
-                                <ez-icon-action title="{{filterLabel}}" tabindex="0">
-                                    <ez-icon class="filter-disabled-icon"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><path d="M0,0h24 M24,24H0" fill="none"/><path d="M7,6h10l-5.01,6.3L7,6z M4.25,5.61C6.27,8.2,10,13,10,13v6c0,0.55,0.45,1,1,1h2c0.55,0,1-0.45,1-1v-6 c0,0,3.72-4.8,5.74-7.39C20.25,4.95,19.78,4,18.95,4H5.04C4.21,4,3.74,4.95,4.25,5.61z"/><path d="M0,0h24v24H0V0z" fill="none"/></g></svg></ez-icon>
-                                </ez-icon-action>
-                                <div class="input-field select-wrap">
-                                    <select multiple>
-                                        <optgroup label="{{removeFiltersLabel}}"></optgroup>
-                                        {{#filterGroups}}
-                                            <optgroup label="{{groupLabel}}">
-                                                {{#filterOptions}}
-                                                    <option value="{{value}}" {{#isSelected}}selected{{/isSelected}}>{{optionLabel}}</option>
-                                                {{/filterOptions}}
-                                            </optgroup>
-                                        {{/filterGroups}}
-                                    </select>
-                                    <label></label>
-                                </div>
-                            </ezc-ctrl-filter>
-                            {{/hasFiltering}}
-                            {{#hasOrdering}}
-                            <ezc-ctrl-order>
-                                <ez-icon-action title="{{orderLabel}}" class="dropdown-trigger" data-target="ezc-sorting-dropdown-{{collId}}" tabindex="0">
-                                    <ez-icon><svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></ez-icon>
-                                </ez-icon-action>
-                            </ezc-ctrl-order>
-                            {{/hasOrdering}}
-                        </ezc-ctrl-right>
-                        <!-- Mass action menu structure -->
-                        <ul id="ezc-select-action-dropdown-{{collId}}" class="dropdown-content">
-                            {{#selectActions}}
-                                <li><span ez-mass-action="{{id}}">{{{actionHtml}}}</span></li>
-                            {{/selectActions}}
-                        </ul>
-                        <!-- Sorting menu structure -->
-                        <ul id="ezc-sorting-dropdown-{{collId}}" class="dropdown-content">
-                            {{#sorters}}
-                                <li>
-                                    <label>
-                                        <input ez-sorter="{{id}}" name="sorter-{{collId}}" type="radio" {{#isSelected}}checked{{/isSelected}}/>
-                                        <span>{{label}}</span>
-                                    </label>
-                                </li>
-                            {{/sorters}}
-                        </ul>
-                    </ezc-ctrl>
-                    <ez-coll {{#isEmpty}}empty{{/isEmpty}}>
-                        {{#items}}
-                            <ez-dst id="{{dstId}}" style="order: {{idx}}"></ez-dst>
-                        {{/items}}
-                        <ezc-empty-placeholder>{{{emptyPlaceholder}}}</ezc-empty-placeholder>
-                        <ezc-no-match-placeholder>{{{noMatchingItemsPlaceholder}}}</ezc-no-match-placeholder>
-                    </ez-coll>
-                </ez-coll-wrap>
-            """.trimIndent(),
-            "collId" to collId,
-            "hasSelection" to hasSelection,
-            "hasFiltering" to hasFiltering,
-            "hasOrdering" to hasChangeableSorting,
-            "selectActions" to massActions.map { mapOf("actionHtml" to "${it.iconHtml} ${it.text}", "id" to it.id) },
-            "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
-            "isEmpty" to items.isEmpty(),
-            "applyLabel" to Str.ezcollApply,
-            "applyExpandIcon" to Icons.dropdownBtnExpand,
-            "applyShortIcon" to Icons.dotsHorizontal,
-            "filterLabel" to Str.ezcollDoFilter,
-            "orderLabel" to Str.ezcollDoSort,
-            "removeFiltersLabel" to Str.ezcollRemoveFilters,
-            "filterGroups" to filterGroups.map {
-                mapOf(
-                    "groupLabel" to it.groupLabel,
-                    "filterOptions" to it.filters.map {
-                        mapOf(
-                            "value" to it.id,
-                            "optionLabel" to it.label,
-                            "isSelected" to (activatedFilterIds.contains(it.id))
-                        )
-                    })
-            },
-            "sorters" to sorters.map {
-                mapOf(
-                    "id" to it.id,
-                    "label" to it.label,
-                    "isSelected" to (it == activeSorter)
-                )
-            },
-            "emptyPlaceholder" to tmRender(
-                "t-s-missing-content-wandering-eyes",
-                "text" to Str.ezcollEmpty,
-            ),
-            "noMatchingItemsPlaceholder" to tmRender(
-                "t-s-missing-content-wandering-eyes",
-                "text" to Str.ezcollNoMatchingItems
-            ),
+        get() = items + listOfNotNull(
+            filterChips, sortFieldBtn, sortOrderBtn,
+            allCheckbox, massActionMenu, clearSelectionBtn,
+            missingContentPlaceholder
         )
+
+    override fun create() = doInPromise {
+        filterChips = FilterChipSetComp(
+            { chipParent ->
+                filterGroups.map {
+                    FilterDropdownChipComp(
+                        it.groupLabel,
+                        it.filters.map {
+                            FilterDropdownChipComp.Filter(
+                                it.label, icon = null,
+                                selected = activeFilters.contains(it),
+                                id = it.id
+                            )
+                        },
+                        onChange = {
+                            setActiveFilters()
+                            onConfChange?.invoke(createActiveUserConf())
+                        },
+                        parent = chipParent
+                    )
+                }
+            },
+            parent = this
+        )
+
+        if (hasChangeableSorting) {
+            sortFieldBtn = DropdownButtonMenuSelectComp(
+                ButtonComp.Type.TEXT,
+                items = sorters.map {
+                    DropdownButtonMenuSelectComp.Item(
+                        it.label,
+                        selected = activeSorter == it,
+                        id = it.id
+                    )
+                },
+                onItemSelected = {
+                    setActiveSorter(it.id)
+                    onConfChange?.invoke(createActiveUserConf())
+                },
+                parent = this
+            )
+
+            sortOrderBtn = IconButtonComp(
+                Icons.arrowUp, null,
+                toggle = IconButtonComp.Toggle(
+                    Icons.arrowDown,
+                    startToggled = sortOrderReversed
+                ),
+                size = IconButtonComp.Size.SMALL,
+                onClick = {
+                    sortOrderReversed = sortOrderBtn!!.toggled
+                    updateSorting()
+                    onConfChange?.invoke(createActiveUserConf())
+                },
+                parent = this
+            )
+        }
+
+        if (hasSelection) {
+            allCheckbox = CheckboxComp(
+                onChange = {
+                    val isChecked = it == CheckboxComp.Value.CHECKED
+                    val visibleSelectableItems = calcSelectableItems(true)
+
+                    checkedItems = if (isChecked) visibleSelectableItems.toMutableList() else mutableListOf()
+                    visibleSelectableItems.forEach { it.setSelected(isChecked) }
+                    updateSelection()
+                },
+                parent = this
+            )
+
+            massActionMenu = DropdownIconMenuComp(
+                Icons.dotsVertical, Str.ezcollApply,
+                massActions.map {
+                    DropdownMenuComp.Item(
+                        it.text, it.iconHtml,
+                        onSelected = { item ->
+                            val action = massActions.single { it.id == item.id }
+                            invokeMassAction(action)
+                        },
+                        id = it.id
+                    )
+                },
+                parent = this
+            )
+
+            clearSelectionBtn = IconButtonComp(
+                Icons.close, Str.ezcollClearSelection,
+                size = IconButtonComp.Size.SMALL,
+                onClick = { clearSelection() },
+                parent = this
+            )
+        }
+
+        missingContentPlaceholder = MissingContentPlaceholderComp(parent = this)
     }
 
-    override fun postRender() {
-        if (hasSelection)
-            initSelection()
-        if (hasFiltering)
-            initFiltering()
-        if (hasChangeableSorting)
-            initSorting()
-    }
+    override fun render() = template(
+        """
+            <ez-coll-wrap {{#hasFiltering}}has-filtering{{/hasFiltering}} {{#hasSelection}}has-selection{{/hasSelection}}>
+                <ezc-ctrl>
+                    <ezc-ctrl-left>
+                        {{#hasSelection}}
+                            $allCheckbox
+                        {{/hasSelection}}
+                        <ezc-filters style='margin-left: .6rem;'>
+                            $filterChips
+                        </ezc-filters>
+                        {{#hasSelection}}
+                            $massActionMenu
+                            <ezc-ctrl-selected></ezc-ctrl-selected>
+                            $clearSelectionBtn
+                        {{/hasSelection}}
+                    </ezc-ctrl-left>
+                    <ezc-ctrl-right>
+                        {{#hasOrdering}}
+                            $sortOrderBtn
+                            $sortFieldBtn
+                        {{/hasOrdering}}
+                        <ezc-ctrl-shown style='margin-left: 2rem;'>
+                            <ezc-ctrl-shown-count>{{{spinnerIcon}}}</ezc-ctrl-shown-count>
+                            <ezc-ctrl-shown-name></ezc-ctrl-shown-name>
+                        </ezc-ctrl-shown>
+                    </ezc-ctrl-right>
+                </ezc-ctrl>
+                
+                <ez-coll>
+                    {{#items}}
+                        <ez-dst id="{{dstId}}" style="order: {{idx}}"></ez-dst>
+                    {{/items}}
+                    
+                    $missingContentPlaceholder
+                </ez-coll>
+            </ez-coll-wrap>
+            """.trimIndent(),
+        "hasFiltering" to filterGroups.isNotEmpty(),
+        "hasSelection" to hasSelection,
+        "hasOrdering" to hasChangeableSorting,
+        "items" to items.map { mapOf("dstId" to it.dstId, "idx" to it.orderingIndex) },
+        "sorters" to sorters.map {
+            mapOf(
+                "id" to it.id,
+                "label" to it.label,
+                "isSelected" to (it == activeSorter)
+            )
+        },
+        "spinnerIcon" to Icons.spinner,
+    )
 
     override fun postChildrenBuilt() {
-        if (hasSelection)
+        if (hasSelection) {
+            updateSelection()
             selectItemsBasedOnChecked()
-        if (hasFiltering)
-            updateFiltering()
-        else
-        // Still show total count if no filtering
-            updateShownCount(items.size, false)
+        }
 
+        updateFiltering()
         // No need to update sorting, order styles are rendered into HTML
-    }
 
-    // FIXME: temporary optimisation
-    override fun createAndBuild() = createAndBuild3() ?: Promise.Companion.resolve(Unit)
+        if (items.isEmpty()) {
+            missingContentPlaceholder.text = Str.ezcollEmpty
+            missingContentPlaceholder.show()
+        }
+    }
 
     fun getOrderedVisibleItems(): List<Item<P>> =
         calcVisibleItems().sortedBy { it.orderingIndex }
             .map { it.spec }
 
 
-    private fun initSelection() {
-        // Init mass actions
-        Materialize.Dropdown.init(
-            getElemById(collId).getElemBySelector("ezc-ctrl-left .dropdown-trigger"),
-            objOf("coverTrigger" to false, "constrainWidth" to false, "closeOnClick" to true)
-        )
-        massActions.forEach { action ->
-            getElemById(collId).getElemBySelector("[ez-mass-action='${action.id}']").onVanillaClick(false) {
-                invokeMassAction(action)
-            }
-        }
-
-        // Init clicking 'select all' checkbox
-        val allCheckboxEl = getElemByIdAs<HTMLInputElement>("ezc-select-all-$collId")
-        allCheckboxEl.onVanillaClick(false) {
-
-            val isChecked = allCheckboxEl.checked
-
-            val visibleSelectableItems = calcSelectableItems(true)
-
-            checkedItems = if (isChecked) visibleSelectableItems.toMutableList() else mutableListOf()
-
-            visibleSelectableItems.forEach { it.setSelected(isChecked) }
-            updateSelection()
-        }
-    }
-
-    private fun initFiltering() {
-        // Init filter dropdown
-        val select = Materialize.FormSelect.init(
-            getElemById(collId).getElemBySelector("ezc-ctrl-filter select"),
-            objOf("dropdownOptions" to objOf("constrainWidth" to false))
-        )
-
-        val openFilterSelectListener =
-            getElemById(collId).getElemBySelector("ezc-ctrl-filter ez-icon-action").onVanillaClick(false) {
-                select.dropdown.open()
-            }
-
-        // Init filter change
-        val filterChangeListener = select.el.onChange {
-            val selectedValues = select.getSelectedValues()
-            debug { "Selected filter IDs: ${selectedValues.joinToString(", ", "[", "]")}" }
-
-            val appliedFilterGroups = filterGroups.mapNotNull {
-                val selectedFilters = it.filters.filter { selectedValues.contains(it.id) }
-                selectedFilters.ifEmpty { null }
-            }
-
-            activatedFilters = appliedFilterGroups
-            debug { "Applied filter groups: ${appliedFilterGroups.map { it.map { it.label } }}" }
-
-            updateFiltering()
-            onFilterChange?.invoke(activatedFilters)
-        }
-
-        // Init remove all filters
-        getElemById(collId).getElemBySelector("ezc-ctrl-filter li.optgroup:first-child").onVanillaClick(false) {
-            debug { "Removing all filters" }
-
-            // Unselect all options
-            getElemById(collId).getElemsBySelector("ezc-ctrl-filter select option").forEach {
-                it as HTMLOptionElement
-                it.selected = false
-            }
-
-            // Remove filters and update
-            activatedFilters = emptyList()
-            updateFiltering()
-            onFilterChange?.invoke(activatedFilters)
-
-            // Destroy select
-            select.closePromise().await()
-            select.destroy()
-
-            // Remove event listeners to prevent duplicates
-            openFilterSelectListener.remove()
-            filterChangeListener.remove()
-
-            // Recreate filtering
-            initFiltering()
-        }
-    }
-
-    private fun calcVisibleItems(): List<EzCollItemComp<P>> {
-        return items.filter { item ->
-            activatedFilters.all { filterGroup ->
-                filterGroup.any { filter -> filter.predicate(item.spec) }
-            }
+    private fun calcVisibleItems(): List<EzCollItemComp<P>> = items.filter { item ->
+        activeFilters.all {
+            it.predicate(item.spec)
         }
     }
 
@@ -498,28 +438,35 @@ class EzCollComp<P>(
             selectable
     }
 
-    private fun updateFiltering() {
-        if (!hasFiltering)
-            return
+    private fun setActiveFilters() {
+        val selectedFilterIds = filterChips.getActiveFilters().mapNotNull { it.value?.id }
 
-        val isFilterActive = activatedFilters.isNotEmpty()
+        activeFilters = filterGroups.flatMap {
+            it.filters
+        }.filter {
+            selectedFilterIds.contains(it.id)
+        }
+
+        updateFiltering()
+    }
+
+    private fun updateFiltering() {
+        val isFilterActive = activeFilters.isNotEmpty()
         val visibleItems = calcVisibleItems()
 
         updateVisibleItems(visibleItems)
         updateShownCount(visibleItems.size, isFilterActive)
-        updateFilterIcon(isFilterActive)
         updateCheckedItemsBasedOnVisible(visibleItems)
     }
 
     private fun updateVisibleItems(visibleItems: List<EzCollItemComp<P>>) {
-        items.forEach { it.setVisible(visibleItems.contains(it)) }
+        items.forEach { it.show(visibleItems.contains(it)) }
 
         if (visibleItems.isEmpty()) {
-            getElemById(collId).getElemBySelector("ez-coll")
-                .setAttribute("no-matched-items", "")
+            missingContentPlaceholder.text = Str.ezcollNoMatchingItems
+            missingContentPlaceholder.show()
         } else {
-            getElemById(collId).getElemBySelector("ez-coll")
-                .removeAttribute("no-matched-items")
+            missingContentPlaceholder.hide()
         }
     }
 
@@ -530,24 +477,18 @@ class EzCollComp<P>(
         updateSelection()
     }
 
-    private fun updateFilterIcon(isFilterActive: Boolean) {
-        getElemById(collId).getElemBySelector("ezc-ctrl-filter")
-            .setAttribute("filter", if (isFilterActive) "on" else "off")
-    }
-
     private fun updateShownCount(visibleItemsCount: Int, isFilterActive: Boolean) {
         val totalItemsCount = items.size
 
-        if (isFilterActive) {
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").clear()
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent =
-                "$visibleItemsCount / $totalItemsCount"
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent = Str.ezcollShown
-        } else {
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-icon").innerHTML = "N ="
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
-            getElemById(collId).getElemBySelector("ezc-ctrl-shown-name").textContent =
-                if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
+        rootElement.let {
+            if (isFilterActive) {
+                it.getElemBySelector("ezc-ctrl-shown-count").textContent = "$visibleItemsCount / $totalItemsCount"
+                it.getElemBySelector("ezc-ctrl-shown-name").textContent = Str.ezcollShown
+            } else {
+                it.getElemBySelector("ezc-ctrl-shown-count").textContent = totalItemsCount.toString()
+                it.getElemBySelector("ezc-ctrl-shown-name").textContent =
+                    if (totalItemsCount == 1) strings.totalItemsSingular else strings.totalItemsPlural
+            }
         }
     }
 
@@ -610,6 +551,12 @@ class EzCollComp<P>(
         updateSelection()
     }
 
+    private fun clearSelection() {
+        checkedItems.forEach { it.setSelected(false) }
+        checkedItems.clear()
+        updateSelection()
+    }
+
     private fun removeItem(item: EzCollItemComp<P>) {
         debug { "item ${item.spec.title} removed" }
         items = items - item
@@ -627,83 +574,78 @@ class EzCollComp<P>(
         if (!hasSelection)
             return
 
-        updateCheckedCount()
+        updateMassActionVisibility()
         updateAllCheckbox()
-        updateMassActionMenu()
     }
 
-    private fun updateMassActionMenu() {
-        val actionMenuEl = getElemById(collId).getElemBySelector("ezc-ctrl-left .dropdown-trigger")
-        if (checkedItems.isEmpty())
-            actionMenuEl.addClass("disabled")
-        else
-            actionMenuEl.removeClass("disabled")
-    }
-
-    private fun updateCheckedCount() {
-        val selectedCountEl = getElemById(collId).getElemBySelector("ezc-ctrl-selected")
+    private fun updateMassActionVisibility() {
+        // update checked count
+        val selectedCountEl = rootElement.getElemBySelector("ezc-ctrl-selected")
         if (checkedItems.isEmpty())
             selectedCountEl.textContent = ""
         else
             selectedCountEl.textContent = "${checkedItems.size} ${Str.ezcollSelected}"
+
+        // update mass action and filter visibility
+        if (checkedItems.isEmpty()) {
+            massActionMenu!!.hide()
+            clearSelectionBtn!!.hide()
+            filterChips.show()
+        } else {
+            massActionMenu!!.show()
+            clearSelectionBtn!!.show()
+            filterChips.hide()
+        }
     }
+
 
     private fun updateAllCheckbox() {
-        val allCheckboxEl = getElemById(collId).getElemBySelector(".ezc-all-checkbox input") as HTMLInputElement
-
-        val currentStatus = allCheckboxEl.checked to allCheckboxEl.indeterminate
-
-        val newStatus = when {
+        allCheckbox?.value = when {
             // nothing
-            checkedItems.isEmpty() -> false to false
+            checkedItems.isEmpty() -> CheckboxComp.Value.UNCHECKED
             // everything that can be selected
-            checkedItems.size == calcSelectableItems(true).size -> true to false
+            checkedItems.size == calcSelectableItems(true).size -> CheckboxComp.Value.CHECKED
             // something in between
-            else -> false to true
-        }
-
-        if (currentStatus != newStatus) {
-            debug { "All checkbox status changed: $currentStatus -> $newStatus" }
-            allCheckboxEl.checked = newStatus.first
-            allCheckboxEl.indeterminate = newStatus.second
-            allCheckboxEl.dispatchEvent(Event("change"))
+            else -> CheckboxComp.Value.INDETERMINATE
         }
     }
 
-    private fun initSorting() {
-        Materialize.Dropdown.init(
-            getElemById(collId).getElemBySelector("ezc-ctrl-order .dropdown-trigger"),
-            objOf("closeOnClick" to false, "coverTrigger" to false, "constrainWidth" to false)
-        )
-        sorters.forEach { s ->
-            getElemById(collId).getElemBySelector("[ez-sorter='${s.id}']").onVanillaClick(false) {
-                debug { "Sorter: ${s.label}" }
-                activeSorter = s
-                updateSorting()
-            }
-        }
+    private fun setActiveSorter(sorterId: String) {
+        val selectedSorter = sorters.single { it.id == sorterId }
+        activeSorter = selectedSorter
+
+        // revert order back to normal
+        sortOrderReversed = false
+        sortOrderBtn!!.toggled = false
+
+        updateSorting()
     }
 
     private fun updateSorting() {
         val currentSorter = activeSorter
 
-        // Update icon
-        getElemById(collId).getElemBySelector("ezc-ctrl-order")
-            .setAttribute("custom-order", if (currentSorter != defaultSorter) "on" else "off")
-
         if (currentSorter != null) {
-            // Order items
-            val compCompare = Comparator<EzCollItemComp<P>> { a, b -> currentSorter.comparator.compare(a.spec, b.spec) }
+            val comparator =
+                if (sortOrderReversed)
+                    currentSorter.reverseComparator ?: currentSorter.comparator.reversed()
+                else
+                    currentSorter.comparator
 
-            items = items.sortedWith(compCompare)
+            val compComparator = Comparator<EzCollItemComp<P>> { a, b -> comparator.compare(a.spec, b.spec) }
+
+            items = items.sortedWith(compComparator)
             items.forEachIndexed { i, item ->
                 item.orderingIndex = i
                 item.updateOrderingIndex()
             }
-
-            onSorterChange?.invoke(currentSorter)
         }
     }
+
+    private fun createActiveUserConf() = EzCollConf.UserConf(
+        filters = activeFilters.mapNotNull { it.confType },
+        sorter = activeSorter?.confType,
+        sortOrderReversed = sortOrderReversed,
+    )
 }
 
 

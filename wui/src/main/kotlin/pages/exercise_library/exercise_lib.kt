@@ -3,10 +3,9 @@ package pages.exercise_library
 import EzDate
 import HumanStringComparator
 import Icons
-import components.BreadcrumbsComp
-import components.Crumb
-import components.EzCollComp
-import components.ToastThing
+import Key
+import LocalStore
+import components.*
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
@@ -79,7 +78,7 @@ class ExerciseLibComp(
         get() = listOf(
             breadcrumbs, ezcoll, addToCourseModal, updateDirModal, confirmDeleteDirModal, confirmDeleteExerciseModal,
             currentDirPermissionsModal, itemPermissionsModal,
-            newExerciseModal, newDirModal
+            newExerciseModal, newDirModal,
         )
 
     override fun create() = doInPromise {
@@ -209,45 +208,79 @@ class ExerciseLibComp(
             ),
             filterGroups = listOf(
                 EzCollComp.FilterGroup<Props>(
-                    Str.share, listOf(
-                        EzCollComp.Filter(Str.shared) { it.props.isShared },
-                        EzCollComp.Filter(Str.private) { !it.props.isShared },
+                    Str.visibility, listOf(
+                        EzCollComp.Filter(
+                            Str.shared,
+                            confType = EzCollConf.ExerciseLibFilter.ITEM_SHARED
+                        ) { it.props.isShared },
+                        EzCollComp.Filter(
+                            Str.private,
+                            confType = EzCollConf.ExerciseLibFilter.ITEM_PRIVATE
+                        ) { !it.props.isShared },
                     )
                 ),
                 EzCollComp.FilterGroup<Props>(
                     Str.grading, listOf(
-                        EzCollComp.Filter(Str.gradingAuto) {
-                            it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.AUTO
+                        EzCollComp.Filter(
+                            Str.gradingAuto,
+                            confType = EzCollConf.ExerciseLibFilter.GRADER_AUTO
+                        ) {
+                            it.props is DirProps ||
+                                    it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.AUTO
                         },
-                        EzCollComp.Filter(Str.gradingTeacher) {
-                            it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.TEACHER
+                        EzCollComp.Filter(
+                            Str.gradingTeacher,
+                            confType = EzCollConf.ExerciseLibFilter.GRADER_TEACHER
+                        ) {
+                            it.props is DirProps ||
+                                    it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.TEACHER
                         },
                     )
                 ),
             ),
             sorters = listOf(
                 EzCollComp.Sorter<Props>(Str.sortByName,
-                    compareBy<EzCollComp.Item<Props>> {
+                    confType = EzCollConf.ExerciseLibSorter.NAME,
+                    comparator = compareBy<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) 1 else 0
                     }.thenBy(HumanStringComparator) {
+                        it.props.title
+                    },
+                    reverseComparator = compareBy<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) 1 else 0
+                    }.thenByDescending(HumanStringComparator) {
                         it.props.title
                     }
                 ),
                 EzCollComp.Sorter(Str.sortByModified,
-                    compareByDescending<EzCollComp.Item<Props>> {
+                    confType = EzCollConf.ExerciseLibSorter.LAST_MODIFIED,
+                    comparator = compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.future()
+                    }.thenBy(HumanStringComparator) {
+                        it.props.title
+                    },
+                    reverseComparator = compareBy<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) it.props.modifiedAt else EzDate.epoch()
                     }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
                 EzCollComp.Sorter<Props>(Str.sortByPopularity,
-                    compareByDescending<EzCollComp.Item<Props>> {
+                    confType = EzCollConf.ExerciseLibSorter.POPULARITY,
+                    comparator = compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
+                    }.thenBy(HumanStringComparator) {
+                        it.props.title
+                    },
+                    reverseComparator = compareBy<EzCollComp.Item<Props>> {
+                        if (it.props is ExerciseProps) it.props.coursesCount else Int.MIN_VALUE
                     }.thenBy(HumanStringComparator) {
                         it.props.title
                     }
                 ),
             ),
+            userConf = EzCollConf.UserConf.decodeFromStringOrNull(LocalStore.get(Key.LIBRARY_USER_CONF)),
+            onConfChange = { LocalStore.set(Key.LIBRARY_USER_CONF, it.encodeToString()) },
             parent = this
         )
     }

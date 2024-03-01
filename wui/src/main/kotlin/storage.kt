@@ -7,6 +7,7 @@ enum class Key {
     LANGUAGE,
     ACTIVE_ROLE,
     TEACHER_SELECTED_GROUP,
+    LIBRARY_USER_CONF,
 }
 
 object LocalStore {

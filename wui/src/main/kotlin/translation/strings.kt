@@ -64,11 +64,9 @@ sealed class TranslatableStrings {
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
     abstract val ezcollApply: String
-    abstract val ezcollDoFilter: String
-    abstract val ezcollDoSort: String
-    abstract val ezcollRemoveFilters: String
     abstract val ezcollShown: String
     abstract val ezcollSelected: String
+    abstract val ezcollClearSelection: String
 
     abstract val unorderedListExpand: String
 
@@ -213,6 +211,7 @@ sealed class TranslatableStrings {
     abstract val cannotDeleteExerciseUsedOnCourse: String
     abstract val share: String
     abstract val permissionsChanged: String
+    abstract val visibility: String
     abstract val shared: String
     abstract val private: String
     abstract val directoryName: String
@@ -432,6 +431,7 @@ object EstStrings : TranslatableStrings() {
         "Ülesannet ei saa kustutada, sest see on vähemalt ühel kursusel kasutusel"
     override val share = "Jagamine"
     override val permissionsChanged = "Õigused muudetud"
+    override val visibility = "Nähtavus"
     override val shared = "Jagatud"
     override val private = "Privaatsed"
     override val directoryName = "Kausta nimi"
@@ -491,11 +491,9 @@ object EstStrings : TranslatableStrings() {
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
-    override val ezcollDoFilter = "Filtreeri..."
-    override val ezcollDoSort = "Järjesta..."
-    override val ezcollRemoveFilters = "Eemalda filtrid"
     override val ezcollShown = "kuvatud"
     override val ezcollSelected = "valitud"
+    override val ezcollClearSelection = "Tühista märgistused"
     override val unorderedListExpand = "Näita kõiki..."
     override val logIn = "Logi sisse"
     override val authFailed = "Autentimine ebaõnnestus"
@@ -582,12 +580,12 @@ ole hea ja proovi hiljem uuesti.
     override val addToCourse = "Lisa kursusele"
     override val itemSingular = "asi"
     override val itemPlural = "asja"
-    override val grading = "Hindamine"
-    override val gradingAuto = "Automaatkontrolliga"
-    override val gradingTeacher = "Ilma automaatkontrollita"
-    override val sortByName = "Nime järgi"
-    override val sortByModified = "Muutmisaja järgi"
-    override val sortByPopularity = "Populaarsuse järgi"
+    override val grading = "Kontrollimine"
+    override val gradingAuto = "Automaatsete testidega"
+    override val gradingTeacher = "Ilma testideta"
+    override val sortByName = "Nimi"
+    override val sortByModified = "Viimati muudetud"
+    override val sortByPopularity = "Populaarsus"
     override val tabExercise = "Ülesanne"
     override val tabSubmission = "Esitamine"
     override val tabTesting = "Katseta"
@@ -737,6 +735,7 @@ object EngStrings : TranslatableStrings() {
         "This exercise is still used on at least one course and cannot be deleted"
     override val share = "Share"
     override val permissionsChanged = "Permissions changed"
+    override val visibility = "Visibility"
     override val shared = "Shared"
     override val private = "Private"
     override val directoryName = "Directory name"
@@ -818,11 +817,9 @@ object EngStrings : TranslatableStrings() {
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
-    override val ezcollDoFilter = "Filter..."
-    override val ezcollDoSort = "Sort..."
-    override val ezcollRemoveFilters = "Remove filters"
     override val ezcollShown = "shown"
     override val ezcollSelected = "selected"
+    override val ezcollClearSelection = "Clear selection"
     override val unorderedListExpand = "Show all..."
     override val logIn = "Log in"
     override val authFailed = "Authentication failed"
@@ -914,12 +911,12 @@ of the issue, please try again later.
     override val addToCourse = "Add to course"
     override val itemSingular = "item"
     override val itemPlural = "items"
-    override val grading = "Grading"
+    override val grading = "Tests"
     override val gradingAuto = "With automatic tests"
-    override val gradingTeacher = "Without automatic tests"
-    override val sortByName = "By name"
-    override val sortByModified = "By last modification"
-    override val sortByPopularity = "By popularity"
+    override val gradingTeacher = "Without tests"
+    override val sortByName = "Name"
+    override val sortByModified = "Last modified"
+    override val sortByPopularity = "Popular"
     override val tabExercise = "Exercise"
     override val tabSubmission = "Submitting"
     override val tabTesting = "Test"
