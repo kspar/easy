@@ -248,7 +248,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
 
             val studentSubmissionRows = ex.students.map { id ->
                 val student = courseStudents[id] ?: throw IllegalStateException()
-                studentsWithSubmissions[id to ex.exerciseId] ?: SubmissionRow(
+                studentsWithSubmissions[id to ex.courseExerciseId] ?: SubmissionRow(
                     null,
                     id,
                     student.givenName,

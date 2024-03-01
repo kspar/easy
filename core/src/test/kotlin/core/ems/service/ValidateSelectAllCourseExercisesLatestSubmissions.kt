@@ -68,8 +68,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     fun `selectAllCourseExercises student 1 should return 2 submissions with grades 81 and 99`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
-        val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce2Id }
+        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
 
         val stud1Ex1Sub = ex1Submissions.latestSubmissions.single { it.accountId == student1Id }
         assertEquals(81, stud1Ex1Sub.latestSubmission!!.grade!!.grade)
@@ -92,8 +92,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     fun `selectAllCourseExercises student 2 should return 1 submission with grade 51 and 1 null submission`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
-        val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce2Id }
+        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
 
         val stud1Ex1Sub = ex1Submissions.latestSubmissions.single { it.accountId == student2Id }
         assertNull(stud1Ex1Sub.latestSubmission)
@@ -119,10 +119,10 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
 
         // Expect 2 exercises
-        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.exerciseId.toLong() }.toSet())
+        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.courseExerciseId.toLong() }.toSet())
 
-        val ex1Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.exerciseId.toLong() == ce2Id }
+        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
 
         assertEquals(0, ex1Submissions.completedCount)
         assertEquals(1, ex1Submissions.startedCount)
