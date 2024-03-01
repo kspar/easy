@@ -28,7 +28,7 @@ class DeleteCourseInvite {
         log.info { "Deleting course invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, false)
+            teacherOnCourse(courseId)
         }
 
         deleteInvite(courseId)

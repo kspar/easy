@@ -70,7 +70,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         val exerciseId = body.exerciseId.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
             libraryExercise(exerciseId, DirAccessLevel.PR)
         }
 

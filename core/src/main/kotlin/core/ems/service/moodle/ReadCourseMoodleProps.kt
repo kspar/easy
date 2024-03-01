@@ -39,7 +39,7 @@ class ReadCourseMoodlePropsController {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
 
         return Resp(selectMoodleProps(courseId))
     }

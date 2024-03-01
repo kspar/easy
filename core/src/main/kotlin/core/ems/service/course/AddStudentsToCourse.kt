@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
@@ -63,8 +62,7 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
         }.distinctBy { it.email }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
-            students.flatMap { it.groups }.toSet().forEach { courseGroupAccessible(courseId, it) }
+            teacherOnCourse(courseId)
         }
 
         return insertStudentCourseAccesses(courseId, students)

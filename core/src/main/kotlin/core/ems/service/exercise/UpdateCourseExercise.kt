@@ -80,7 +80,7 @@ class UpdateCourseExercise(private val adocService: AdocService) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         updateCourseExercise(courseExId, req)

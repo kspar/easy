@@ -43,7 +43,7 @@ class GenerateCourseInvite {
         log.info { "Creating invite on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, false)
+            teacherOnCourse(courseId)
         }
 
         return Resp(createInvite(courseId, req))

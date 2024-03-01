@@ -4,32 +4,24 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.StudentCourseAccess
 import core.db.TeacherCourseAccess
-import core.db.TeacherCourseGroup
 import core.ems.service.assertCourseExists
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
-private val log = KotlinLogging.logger {}
 
 /**
  *  Has teacher-access to this course.
  */
-fun AccessChecksBuilder.teacherOnCourse(courseId: Long, allowRestrictedGroups: Boolean) = add { caller: EasyUser ->
+fun AccessChecksBuilder.teacherOnCourse(courseId: Long) = add { caller: EasyUser ->
     when {
-        caller.isAdmin() -> {}
-
-        caller.isTeacher() -> {
-            assertTeacherCanAccessCourse(caller.id, courseId)
-            if (!allowRestrictedGroups) assertTeacherHasNoRestrictedGroups(caller.id, courseId)
-        }
-
+        caller.isAdmin() -> assertCourseExists(courseId)
+        caller.isTeacher() -> assertTeacherCanAccessCourse(caller.id, courseId)
         else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
     }
 }
@@ -43,20 +35,6 @@ fun AccessChecksBuilder.userOnCourse(courseId: Long) = add { caller: EasyUser ->
         else -> throw ForbiddenException(
             "User ${caller.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS
         )
-    }
-}
-
-/**
- *  Assert that teacher has access to course group.
- */
-fun AccessChecksBuilder.courseGroupAccessible(courseId: Long, groupId: Long) = add { caller: EasyUser ->
-
-    when {
-        caller.isAdmin() -> {}
-
-        caller.isTeacher() -> assertTeacherHasAccessToCourseGroup(caller.id, courseId, groupId)
-
-        else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
     }
 }
 
@@ -104,6 +82,19 @@ fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: 
     query.count() > 0
 }
 
+private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean =
+    transaction {
+        val query = CourseExercise.select {
+            CourseExercise.course eq courseId and (CourseExercise.id eq courseExId)
+        }
+        if (requireStudentVisible) {
+            query.andWhere {
+                CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
+            }
+        }
+        query.count() > 0
+    }
+
 fun assertExerciseIsNotOnAnyCourse(exerciseId: Long) = transaction {
     val coursesCount = CourseExercise.select {
         CourseExercise.exercise eq exerciseId
@@ -128,52 +119,6 @@ fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean = transac
 }
 
 
-fun canTeacherOrAdminAccessCourseGroup(user: EasyUser, courseId: Long, groupId: Long): Boolean =
-    when {
-        user.isAdmin() -> true
-        user.isTeacher() -> canTeacherAccessCourseGroup(user.id, courseId, groupId)
-        else -> {
-            log.warn { "User ${user.id} is not admin or teacher" }
-            false
-        }
-    }
-
-
-private fun canTeacherAccessCourseGroup(userId: String, courseId: Long, groupId: Long): Boolean = transaction {
-    val restrictedGroups = getTeacherRestrictedCourseGroups(userId, courseId)
-    restrictedGroups.isEmpty() || restrictedGroups.contains(groupId)
-}
-
-private fun getTeacherRestrictedCourseGroups(teacherId: String, courseId: Long): List<Long> = transaction {
-    TeacherCourseGroup.select {
-        TeacherCourseGroup.course eq courseId and (TeacherCourseGroup.teacher eq teacherId)
-    }.map {
-        it[TeacherCourseGroup.courseGroup].value
-    }
-}
-
-private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean =
-    transaction {
-        val query = CourseExercise.select {
-            CourseExercise.course eq courseId and (CourseExercise.id eq courseExId)
-        }
-        if (requireStudentVisible) {
-            query.andWhere {
-                CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
-            }
-        }
-        query.count() > 0
-    }
-
-private fun assertTeacherHasAccessToCourseGroup(userId: String, courseId: Long, groupId: Long) {
-    if (!canTeacherAccessCourseGroup(userId, courseId, groupId)) {
-        throw ForbiddenException(
-            "Teacher or admin $userId does not have access to group $groupId on course $courseId",
-            ReqError.NO_GROUP_ACCESS
-        )
-    }
-}
-
 private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
     if (!canTeacherAccessCourse(teacherId, courseId)) {
         throw ForbiddenException(
@@ -182,13 +127,6 @@ private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
     }
 }
 
-private fun assertTeacherHasNoRestrictedGroups(teacherId: String, courseId: Long) {
-    if (getTeacherRestrictedCourseGroups(teacherId, courseId).isNotEmpty()) {
-        throw ForbiddenException(
-            "Teacher $teacherId has restricted groups on course $courseId", ReqError.HAS_RESTRICTED_GROUPS
-        )
-    }
-}
 
 private fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean) {
     if (!isExerciseOnCourse(exerciseId, courseId, requireStudentVisible)) {

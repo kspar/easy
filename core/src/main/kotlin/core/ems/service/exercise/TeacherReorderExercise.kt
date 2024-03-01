@@ -44,7 +44,7 @@ class TeacherReorderExerciseController {
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
         val newIdx = dto.newIndex
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
 
         setNewCourseExIndex(courseId, courseExId, newIdx)
     }

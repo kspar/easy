@@ -45,7 +45,7 @@ class CreateCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, false)
+            teacherOnCourse(courseId)
         }
 
         val groupId = createGroup(courseId, dto.name)

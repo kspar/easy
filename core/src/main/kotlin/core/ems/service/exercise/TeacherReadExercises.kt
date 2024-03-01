@@ -30,7 +30,7 @@ class TeacherReadCourseExercisesController {
         log.info { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
         return Resp(selectAllCourseExercisesLatestSubmissions(courseId))
     }
 

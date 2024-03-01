@@ -46,7 +46,7 @@ class RemoveTeachersFromCourseController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, false)
+            teacherOnCourse(courseId)
         }
 
         deleteTeachersFromCourse(teachers, courseId)

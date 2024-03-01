@@ -34,7 +34,7 @@ class TeacherReadSubmissionSummariesController {
         val groupId = groupIdString?.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
         }
 
         return selectAllCourseExercisesLatestSubmissions(courseId, groupId)

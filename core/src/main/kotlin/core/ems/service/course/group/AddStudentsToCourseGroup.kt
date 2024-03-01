@@ -5,7 +5,6 @@ import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.canStudentAccessCourse
-import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -67,13 +66,10 @@ class AddStudentsToCourseGroupController {
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
-        /*
-        A teacher can add students only to their own restricted groups, or any group if they don't have any restricted.
-         */
+
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
             assertGroupExistsOnCourse(groupId, courseId)
-            courseGroupAccessible(courseId, groupId)
         }
 
         /*

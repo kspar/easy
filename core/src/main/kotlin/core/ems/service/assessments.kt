@@ -43,7 +43,7 @@ fun assertAssessmentControllerChecks(
     val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
     val submissionId = submissionIdString.idToLongOrInvalidReq()
 
-    caller.assertAccess { teacherOnCourse(courseId, true) }
+    caller.assertAccess { teacherOnCourse(courseId) }
 
     assertSubmissionExists(submissionId, courseExId, courseId)
     return Triple(callerId, courseExId, submissionId)

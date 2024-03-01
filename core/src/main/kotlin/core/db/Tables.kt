@@ -106,13 +106,6 @@ object TeacherCourseAccess : Table("teacher_course_access") {
     override val primaryKey = PrimaryKey(teacher, course)
 }
 
-object TeacherCourseGroup : Table("teacher_course_group_access") {
-    val teacher = reference("teacher_id", TeacherCourseAccess.teacher)
-    val course = reference("course_id", TeacherCourseAccess.course)
-    val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(teacher, course, courseGroup)
-}
-
 object StudentCourseAccess : Table("student_course_access") {
     val student = reference("student_id", Account)
     val course = reference("course_id", Course)

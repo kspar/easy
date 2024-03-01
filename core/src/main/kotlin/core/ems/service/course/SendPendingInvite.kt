@@ -42,7 +42,7 @@ class SendPendingInvite(val sendMailService: SendMailService) {
         log.info { "Sending email invites to students $emails on course $courseId by ${caller.id}" }
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
         }
 
         sendEmails(courseId, emails)

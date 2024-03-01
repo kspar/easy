@@ -58,7 +58,7 @@ class TeacherSubmitBehalfStudent(
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         if (!canStudentAccessCourse(req.studentId, courseId))

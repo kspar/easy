@@ -67,7 +67,7 @@ class ReadStudentAllExerciseActivities {
         val courseId = courseIdString.idToLongOrInvalidReq()
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
 
         return selectTeacherAllSubmissions(courseExId, studentId)
     }

@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
-import core.ems.service.getTeacherRestrictedCourseGroups
 import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
 import core.util.writeZipFile
@@ -52,15 +50,8 @@ class TeacherDownloadSubmissionsController {
             )
         }
 
-        caller.assertAccess {
-            courses.forEach { course ->
-                teacherOnCourse(course.id, true)
-                course.groups?.forEach { group ->
-                    courseGroupAccessible(course.id, group)
-                }
-            }
-        }
-        // Check access to courses and groups
+        // Check access to courses
+        caller.assertAccess { courses.forEach { course -> teacherOnCourse(course.id) } }
 
         response.contentType = "application/zip"
         response.setHeader("Content-disposition", "attachment; filename=submissions.zip")
@@ -69,13 +60,13 @@ class TeacherDownloadSubmissionsController {
             courses.map {
                 it.id to it.groups.orEmpty()
             }.flatMap { (courseId, groupIds) ->
-                selectSubmission(exerciseId, courseId, groupIds, caller)
+                selectSubmission(exerciseId, courseId, groupIds)
             },
             response.outputStream
         )
     }
 
-    private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Long>, caller: EasyUser): List<Zip> =
+    private fun selectSubmission(exerciseId: Long, courseId: Long, groupIds: List<Long>): List<Zip> =
         transaction {
 
             val join1 = Submission innerJoin CourseExercise innerJoin Account
@@ -96,16 +87,8 @@ class TeacherDownloadSubmissionsController {
                 }
                 .orderBy(Submission.createdAt, SortOrder.DESC)
 
-            when {
-                groupIds.isNotEmpty() -> query.andWhere { StudentCourseGroup.courseGroup inList groupIds }
-                else -> {
-                    val restrictedGroups = getTeacherRestrictedCourseGroups(courseId, caller)
-                    if (restrictedGroups.isNotEmpty()) {
-                        query.andWhere {
-                            StudentCourseGroup.courseGroup inList restrictedGroups or (StudentCourseGroup.courseGroup.isNull())
-                        }
-                    }
-                }
+            if (groupIds.isNotEmpty()) {
+                query.andWhere { StudentCourseGroup.courseGroup inList groupIds }
             }
 
             query.distinctBy { it[Submission.student] }

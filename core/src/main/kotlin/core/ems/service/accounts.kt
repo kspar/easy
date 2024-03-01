@@ -4,6 +4,7 @@ import core.db.Account
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 
 fun getUsernameByEmail(email: String): String? = transaction {
@@ -26,4 +27,13 @@ fun accountExists(username: String): Boolean = transaction {
         Account.id eq username
     }.count() > 0
 }
+
+fun insertTeacher(teacherId: String) {
+    transaction {
+        Account.update({ Account.id eq teacherId }) {
+            it[Account.isTeacher] = true
+        }
+    }
+}
+
 

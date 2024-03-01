@@ -6,7 +6,6 @@ import core.db.StudentCourseGroup
 import core.db.StudentMoodlePendingCourseGroup
 import core.db.StudentPendingCourseGroup
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.courseGroupAccessible
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -72,9 +71,8 @@ class RemoveStudentsFromCourseGroupController {
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
             assertGroupExistsOnCourse(groupId, courseId)
-            courseGroupAccessible(courseId, groupId)
         }
 
         val deletedCount = removeStudentsFromGroup(

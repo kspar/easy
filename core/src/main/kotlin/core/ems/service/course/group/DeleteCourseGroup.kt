@@ -39,7 +39,7 @@ class DeleteCourseGroupController {
         val groupId = groupIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess {
-            teacherOnCourse(courseId, false)
+            teacherOnCourse(courseId)
         }
         assertGroupExistsOnCourse(groupId, courseId)
 
@@ -48,9 +48,6 @@ class DeleteCourseGroupController {
 
     private fun deleteGroup(courseId: Long, groupId: Long) {
         transaction {
-            val teachers = TeacherCourseGroup.select {
-                TeacherCourseGroup.courseGroup eq groupId
-            }.count()
             val students = StudentCourseGroup.select {
                 StudentCourseGroup.courseGroup eq groupId
             }.count()
@@ -61,9 +58,9 @@ class DeleteCourseGroupController {
                 StudentMoodlePendingCourseGroup.courseGroup eq groupId
             }.count()
 
-            if (teachers + students + pendingStudents + moodlePendingStudents > 0) {
+            if (students + pendingStudents + moodlePendingStudents > 0) {
                 throw InvalidRequestException(
-                    "Cannot delete group $groupId since there are still $teachers teachers, $students students, " +
+                    "Cannot delete group $groupId since there are still $students students, " +
                             "$pendingStudents pending students and $moodlePendingStudents Moodle pending students in this group.",
                     ReqError.GROUP_NOT_EMPTY
                 )

@@ -95,7 +95,7 @@ class TeacherCheckSimilarityController {
         val courses = body.courses.map { it.id.idToLongOrInvalidReq() }
 
         caller.assertAccess {
-            courses.forEach { teacherOnCourse(it, true) }
+            courses.forEach { teacherOnCourse(it) }
         }
 
         val submissions = body.submissions?.map { it.id.idToLongOrInvalidReq() }

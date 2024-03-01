@@ -3,22 +3,16 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StudentCourseAccess
-import core.db.StudentCourseGroup
 import core.db.StudentPendingAccess
-import core.db.StudentPendingCourseGroup
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.canTeacherOrAdminAccessCourseGroup
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
-import core.exception.ForbiddenException
-import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -70,70 +64,18 @@ class RemoveStudentsFromCourseController(val cachingService: CachingService) {
         val courseId = courseIdStr.idToLongOrInvalidReq()
 
         /*
-        Users can only remove students whom they can access i.e. the student must
-        - be on a course which the user can access,
-        - not be in a group or if they are in any groups, at least one of the groups must be accessible to the user.
+        Users can only remove students whom they can access i.e. the student must be on a course which the user can access
          */
 
-        caller.assertAccess { teacherOnCourse(courseId, true) }
+        caller.assertAccess { teacherOnCourse(courseId) }
 
         val studentIds = body.activeStudents.map { it.id }
         val pendingStudentEmails = body.pendingStudents.map { it.email }
-        assertCallerCanAccessStudents(caller, courseId, studentIds, pendingStudentEmails)
 
         val (deleted, pendingDeleted) = deleteStudentsFromCourse(courseId, studentIds, pendingStudentEmails)
         log.info { "Removed $deleted active students and $pendingDeleted pending students" }
 
         return Resp(deleted, pendingDeleted)
-    }
-
-    private fun assertCallerCanAccessStudents(
-        caller: EasyUser, courseId: Long,
-        studentIds: List<String>, pendingStudentEmails: List<String>,
-    ) {
-        transaction {
-            // Active students
-            // studentId -> [groupIds]
-            val studentGroups: Map<String, List<Long>> =
-                StudentCourseGroup.select {
-                    StudentCourseGroup.course eq courseId and
-                            StudentCourseGroup.student.inList(studentIds)
-                }.map {
-                    it[StudentCourseGroup.student].value to it[StudentCourseGroup.courseGroup].value
-                }.groupBy({ it.first }) { it.second }
-
-            // Pending students
-            // email -> [groupIds]
-            val pendingStudentGroups = StudentPendingCourseGroup.select {
-                StudentPendingCourseGroup.course eq courseId and
-                        StudentPendingCourseGroup.email.inList(pendingStudentEmails)
-            }.map {
-                it[StudentPendingCourseGroup.email] to it[StudentPendingCourseGroup.courseGroup].value
-            }.groupBy({ it.first }) { it.second }
-
-
-            // studentIdentifier -> [groupIds]
-            val allStudentsGroups = studentGroups + pendingStudentGroups
-
-            // Optimisation: build a map of all seen groups: {groupId -> callerCanAccess}
-            val groupAccessMap = allStudentsGroups.flatMap { it.value }.toSet().associateWith {
-                canTeacherOrAdminAccessCourseGroup(caller, courseId, it)
-            }
-
-            // Check whether the caller can access at least one group for each student (who is in a group)
-            allStudentsGroups.forEach { (studentId, groupIds) ->
-                val canAccessStudentsGroup = groupIds.any {
-                    groupAccessMap[it]
-                        ?: false.also { log.warn { "Cannot find group $it in access map $groupAccessMap" } }
-                }
-                if (!canAccessStudentsGroup) {
-                    throw ForbiddenException(
-                        "Not allowed to remove student $studentId from course $courseId due to group restrictions",
-                        ReqError.NO_GROUP_ACCESS, "studentIdentifier" to studentId
-                    )
-                }
-            }
-        }
     }
 
     private fun deleteStudentsFromCourse(

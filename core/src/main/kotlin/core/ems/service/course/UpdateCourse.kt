@@ -33,7 +33,7 @@ class UpdateCourse {
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         caller.assertAccess {
-            teacherOnCourse(courseId, true)
+            teacherOnCourse(courseId)
         }
 
         // Update title only if admin

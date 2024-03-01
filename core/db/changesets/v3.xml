@@ -169,4 +169,8 @@
         </update>
     </changeSet>
 
+    <changeSet id="010324-1" author="priit">
+        <dropTable tableName="teacher_course_group_access"/>
+    </changeSet>
+
 </databaseChangeLog>
