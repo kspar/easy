@@ -3,10 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.CourseExercise
-import core.db.Exercise
-import core.db.ExerciseVer
-import core.db.Submission
+import core.db.*
 import core.ems.service.GradeResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-enum class StudentExerciseStatus { UNSTARTED, UNGRADED, STARTED, COMPLETED }
 
 @RestController
 @RequestMapping("/v2")
@@ -105,14 +101,24 @@ class StudentReadExercisesController {
 
         val submissions: Map<Long, SubmissionPartial> =
             Submission
-                .slice(Submission.courseExercise, Submission.grade, Submission.isAutoGrade, Submission.createdAt, Submission.isGradedDirectly)
+                .slice(
+                    Submission.courseExercise,
+                    Submission.grade,
+                    Submission.isAutoGrade,
+                    Submission.createdAt,
+                    Submission.isGradedDirectly
+                )
                 .select {
                     Submission.courseExercise inList (exercisePartials.map { it.courseExId }) and (Submission.student eq studentId)
                 }
                 .map {
                     SubmissionPartial(
                         it[Submission.courseExercise].value,
-                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly]),
+                        toGradeRespOrNull(
+                            it[Submission.grade],
+                            it[Submission.isAutoGrade],
+                            it[Submission.isGradedDirectly]
+                        ),
                         it[Submission.createdAt]
                     )
                 }

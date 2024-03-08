@@ -14,16 +14,27 @@ enum class AutoGradeStatus {
     FAILED
 }
 
+enum class StudentExerciseStatus {
+    UNSTARTED,
+    UNGRADED,
+    STARTED,
+    COMPLETED
+}
+
 // Stronger permissions must be defined after weaker ones - definition order specifies natural comparison order
 enum class DirAccessLevel {
     // Pass-through, non-inheriting Read
     P,
+
     // Read everything in this dir
     PR,
+
     // Add to this dir, only for explicit dirs
     PRA,
+
     // Modify everything in this dir
     PRAW,
+
     // Manage permissions of everything in this dir
     PRAWM
 }

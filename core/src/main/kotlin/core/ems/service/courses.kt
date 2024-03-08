@@ -20,7 +20,8 @@ import java.io.Serializable
 private val log = KotlinLogging.logger {}
 
 data class SubmissionRow(
-    @JsonProperty("latest_submission") val latestSubmission: LatestSubmissionResp?,
+    @JsonProperty("submission") val latestSubmission: LatestSubmissionResp?,
+    @JsonProperty("status") val status: StudentExerciseStatus,
     @JsonProperty("student_id") val accountId: String,
     @JsonProperty("given_name") val accountGivenName: String,
     @JsonProperty("family_name") val accountFamilyName: String,
@@ -204,14 +205,14 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
             .slice(
                 DistinctOn<Any>(listOf(CourseExercise.id, Submission.student)),
                 CourseExercise.id,
+                CourseExercise.gradeThreshold,
                 Submission.student,
                 Submission.id,
                 Submission.createdAt,
                 Submission.grade,
                 Submission.isAutoGrade,
                 Submission.isGradedDirectly
-            )
-            .select {
+            ).select {
                 CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(
                     courseStudents.keys
                 )
@@ -231,10 +232,17 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                         it[Submission.isAutoGrade],
                         it[Submission.isGradedDirectly]
                     )
-                    val latest = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
+                    val submission = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
+
+                    val submissionStatus = when {
+                        grade == null -> StudentExerciseStatus.UNGRADED
+                        grade.grade >= it[CourseExercise.gradeThreshold] -> StudentExerciseStatus.COMPLETED
+                        else -> StudentExerciseStatus.STARTED
+                    }
 
                     (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(
-                        latest,
+                        submission,
+                        submissionStatus,
                         studentId,
                         student.givenName,
                         student.familyName,
@@ -250,6 +258,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 val student = courseStudents[id] ?: throw IllegalStateException()
                 studentsWithSubmissions[id to ex.courseExerciseId] ?: SubmissionRow(
                     null,
+                    StudentExerciseStatus.UNSTARTED,
                     id,
                     student.givenName,
                     student.familyName,
