@@ -9,10 +9,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectAllCourseExercisesLatestSubmissions
 import mu.KotlinLogging
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 
 @RestController
@@ -25,13 +22,18 @@ class TeacherReadCourseExercisesController {
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises")
-    fun controller(@PathVariable("courseId") courseIdString: String, caller: EasyUser): Resp {
+    fun controller(
+        @PathVariable("courseId") courseIdString: String,
+        @RequestParam("group", required = false) groupIdString: String?,
+        caller: EasyUser
+    ): Resp {
 
         log.info { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
         val courseId = courseIdString.idToLongOrInvalidReq()
+        val groupId = groupIdString?.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId) }
-        return Resp(selectAllCourseExercisesLatestSubmissions(courseId))
+        return Resp(selectAllCourseExercisesLatestSubmissions(courseId, groupId))
     }
 
 }
