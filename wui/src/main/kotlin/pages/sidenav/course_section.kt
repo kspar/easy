@@ -90,8 +90,8 @@ class SidenavCourseSectionComp(
             mapOf(
                 "id" to (studentExerciseIdPrefix + it.id),
                 "link" to ExerciseSummaryPage.link(courseId, it.id),
-                "icon" to when (it.status) {
-                    CourseExercisesStudentDAO.SubmissionStatus.COMPLETED -> Icons.awardWithCheck
+                "icon" to when (it.grade?.grade) {
+                    100 -> Icons.awardWithCheck
                     else -> Icons.circle
                 },
                 "green" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED),

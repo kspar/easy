@@ -647,7 +647,7 @@ ole hea ja proovi hiljem uuesti.
 
     override val coursesSingular = "kursus"
     override val coursesPlural = "kursust"
-    override val completedBadgeLabel = "Tehtud!"
+    override val completedBadgeLabel = "\uD83D\uDCAF"
 
     override val aboutS1 = "Lahenduse keskkonda haldab ja arendab"
     override val aboutS2 = "Tartu Ülikooli arvutiteaduse instituut"
@@ -765,7 +765,7 @@ object EngStrings : TranslatableStrings() {
     override val enrolledOnCourseAttrKey = "Enrolled"
     override val coursesSingular = "course"
     override val coursesPlural = "courses"
-    override val completedBadgeLabel = "Completed!"
+    override val completedBadgeLabel = "\uD83D\uDCAF"
 
     override val deadlineLabel = "Deadline"
     override val hidden = "Hidden"

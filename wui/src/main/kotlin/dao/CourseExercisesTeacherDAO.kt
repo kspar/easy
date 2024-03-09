@@ -55,11 +55,11 @@ object CourseExercisesTeacherDAO {
         val id: String,
         @Serializable(with = EzDateSerializer::class)
         val time: EzDate,
-        val grade: GradeResp?,
+        val grade: Grade?,
     )
 
     @Serializable
-    data class GradeResp(
+    data class Grade(
         val grade: Int,
         val is_autograde: Boolean,
     )
@@ -223,7 +223,7 @@ object CourseExercisesTeacherDAO {
         val seen: Boolean,
         @Serializable(with = EzDateSerializer::class)
         val created_at: EzDate,
-        val grade: GradeResp?,
+        val grade: Grade?,
     )
 
     fun getSubmissionDetails(courseId: String, courseExerciseId: String, submissionId: String) = doInPromise {

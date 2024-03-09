@@ -38,8 +38,7 @@ object CourseExercisesStudentDAO {
         val deadline: EzDate?,
         val is_open: Boolean,
         val status: SubmissionStatus,
-        val grade: Int?,
-        val graded_by: ExerciseDAO.GraderType?,
+        val grade: CourseExercisesTeacherDAO.Grade?,
         val ordering_idx: Int,
     ) {
         val icon = if (grader_type == ExerciseDAO.GraderType.AUTO) Icons.robot else Icons.teacherFace

@@ -29,7 +29,6 @@ class StudentCourseExercisesListComp(
         val isOpen: Boolean,
         val status: CourseExercisesStudentDAO.SubmissionStatus,
         val grade: Int?,
-        val gradedBy: ExerciseDAO.GraderType?,
         val idx: Int,
     )
 
@@ -49,7 +48,7 @@ class StudentCourseExercisesListComp(
         val props = exercises.map {
             ExProps(
                 it.id, it.icon, it.effective_title, it.grader_type, it.deadline, it.is_open, it.status,
-                it.grade, it.graded_by, it.ordering_idx
+                it.grade?.grade, it.ordering_idx
             )
         }
 
@@ -58,8 +57,7 @@ class StudentCourseExercisesListComp(
                 it,
                 EzCollComp.ItemTypeIcon(it.icon),
                 it.title,
-                // TODO: badge only if 100 regardless of threshold
-                titleIcon = if (it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED)
+                titleIcon = if (it.grade == 100)
                     EzCollComp.TitleIcon(
                         """<ez-exercise-badge>${Icons.awardWithCheck}</ez-exercise-badge>""", Str.completedBadgeLabel
                     ) else null,
