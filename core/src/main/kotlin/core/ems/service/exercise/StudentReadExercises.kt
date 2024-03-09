@@ -133,14 +133,7 @@ class StudentReadExercisesController {
             exercisePartials.mapIndexed { i, ex ->
                 val lastSub: SubmissionPartial? = submissions[ex.courseExId]
                 val grade = lastSub?.gradeResp?.grade
-
-                val status: StudentExerciseStatus =
-                    when {
-                        lastSub == null -> StudentExerciseStatus.UNSTARTED
-                        grade == null -> StudentExerciseStatus.UNGRADED
-                        grade >= ex.threshold -> StudentExerciseStatus.COMPLETED
-                        else -> StudentExerciseStatus.STARTED
-                    }
+                val status = getStudentExerciseStatus(lastSub != null, grade, ex.threshold)
 
                 ExerciseResp(
                     ex.courseExId.toString(),
@@ -155,5 +148,12 @@ class StudentReadExercisesController {
             }
         )
     }
+}
+
+fun getStudentExerciseStatus(hasSubmission: Boolean, grade: Int?, threshold: Int) = when {
+    !hasSubmission -> StudentExerciseStatus.UNSTARTED
+    grade == null -> StudentExerciseStatus.UNGRADED
+    grade >= threshold -> StudentExerciseStatus.COMPLETED
+    else -> StudentExerciseStatus.STARTED
 }
 

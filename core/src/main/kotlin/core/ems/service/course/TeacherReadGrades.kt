@@ -16,6 +16,7 @@ class TeacherReadGradesController {
     private val log = KotlinLogging.logger {}
 
 
+    // TODO: this is identical to TeacherReadExercises.kt and (probably) not used anymore - remove at some point
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/courses/teacher/{courseId}/grades")
     fun controller(

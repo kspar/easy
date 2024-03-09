@@ -3,6 +3,7 @@ package core.ems.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.db.*
+import core.ems.service.exercise.getStudentExerciseStatus
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
@@ -234,11 +235,8 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                     )
                     val submission = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
 
-                    val submissionStatus = when {
-                        grade == null -> StudentExerciseStatus.UNGRADED
-                        grade.grade >= it[CourseExercise.gradeThreshold] -> StudentExerciseStatus.COMPLETED
-                        else -> StudentExerciseStatus.STARTED
-                    }
+                    val submissionStatus =
+                        getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold])
 
                     (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(
                         submission,
