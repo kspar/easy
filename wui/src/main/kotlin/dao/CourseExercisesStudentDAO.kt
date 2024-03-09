@@ -19,7 +19,7 @@ object CourseExercisesStudentDAO {
     @Serializable
     private data class Exercises(val exercises: List<Exercise>)
 
-    enum class SubmissionStatus { UNSTARTED, STARTED, COMPLETED, UNGRADED }
+    enum class SubmissionStatus { UNSTARTED, UNGRADED, STARTED, COMPLETED }
 
     fun translateStatusToProgress(status: SubmissionStatus) =
         when (status) {

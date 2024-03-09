@@ -1051,6 +1051,9 @@ object ExerciseSummaryPage : EasyPage() {
         Materialize.Tooltip.init(getNodelistBySelector(".tooltipped"))
     }
 
-    fun link(courseId: String, courseExerciseId: String) =
-        constructPathLink(mapOf("courseId" to courseId, "courseExerciseId" to courseExerciseId))
+    fun link(courseId: String, courseExerciseId: String, openSubmissionStudentId: String? = null) =
+        constructPathLink(mapOf("courseId" to courseId, "courseExerciseId" to courseExerciseId)) +
+                if (openSubmissionStudentId != null)
+                    createQueryString("tab" to "student:$openSubmissionStudentId")
+                else ""
 }

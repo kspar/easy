@@ -42,13 +42,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             .latest_submissions.map {
                 StudentProps(
                     it.student_id, it.given_name, it.family_name, it.groups,
-                    it.latest_submission,
-                    when {
-                        it.latest_submission == null -> CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED
-                        it.latest_submission.grade == null -> CourseExercisesStudentDAO.SubmissionStatus.UNGRADED
-                        it.latest_submission.grade.grade >= threshold -> CourseExercisesStudentDAO.SubmissionStatus.COMPLETED
-                        else -> CourseExercisesStudentDAO.SubmissionStatus.STARTED
-                    }
+                    it.submission,
+                    it.status
                 )
             }
 

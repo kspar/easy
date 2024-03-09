@@ -42,7 +42,8 @@ object CourseExercisesTeacherDAO {
 
     @Serializable
     data class LatestStudentSubmission(
-        val latest_submission: StudentSubmission?,
+        val submission: StudentSubmission?,
+        val status: CourseExercisesStudentDAO.SubmissionStatus,
         val student_id: String,
         val given_name: String,
         val family_name: String,
@@ -66,10 +67,11 @@ object CourseExercisesTeacherDAO {
     @Serializable
     private data class CourseExercisesWithSubmissions(val exercises: List<CourseExerciseWithSubmissions>)
 
-    fun getCourseExercises(courseId: String): Promise<List<CourseExerciseWithSubmissions>> = doInPromise {
+    fun getCourseExercises(courseId: String, groupId: String? = null): Promise<List<CourseExerciseWithSubmissions>> = doInPromise {
         debug { "Get exercises for teacher course $courseId" }
+        val q = if (groupId != null) createQueryString("group" to groupId) else ""
         fetchEms(
-            "/teacher/courses/${courseId.encodeURIComponent()}/exercises", ReqMethod.GET,
+            "/teacher/courses/${courseId.encodeURIComponent()}/exercises$q", ReqMethod.GET,
             successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg)
         ).await()
             .parseTo(CourseExercisesWithSubmissions.serializer()).await().exercises

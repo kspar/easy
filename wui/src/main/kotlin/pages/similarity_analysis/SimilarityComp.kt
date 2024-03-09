@@ -81,7 +81,7 @@ class SimilarityComp(
                 if (exId != null) {
                     val ceId = exercises.first { it.exercise_id == exId }.course_exercise_id
                     val submissionIds = CourseExercisesTeacherDAO.getLatestSubmissions(courseId, ceId, groupId).await()
-                        .latest_submissions.map { it.latest_submission?.id }.filterNotNull()
+                        .latest_submissions.map { it.submission?.id }.filterNotNull()
                     val result = ExerciseDAO.checkSimilarity(exId, listOf(courseId), submissionIds).await()
                     results.setData(result)
                 }

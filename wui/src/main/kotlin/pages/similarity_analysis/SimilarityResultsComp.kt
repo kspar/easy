@@ -42,11 +42,11 @@ class SimilarityResultsComp(
                         <div class="collapsible-body">
                             {{{attrs}}}    
                             <span style='display: flex;'>
-                                <ez-inline-flex style='flex-grow: 117; margin-left: 3rem; margin-bottom: 1rem; flex-direction: column;'>
+                                <ez-inline-flex style='flex-grow: 117; margin-left: 3rem; margin-bottom: 1rem; flex-direction: column; align-items: start;'>
                                     <span style='font-weight: 500;'>{{name1}}</span>
                                     {{time1}}
                                 </ez-inline-flex>
-                                <ez-inline-flex style='flex-grow: 100; margin-left: 3rem; margin-bottom: 1rem; flex-direction: column;'>
+                                <ez-inline-flex style='flex-grow: 100; margin-left: 3rem; margin-bottom: 1rem; flex-direction: column; align-items: start;'>
                                     <span style='font-weight: 500;'>{{name2}}</span>
                                     {{time2}}
                                 </ez-inline-flex>

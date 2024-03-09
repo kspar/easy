@@ -45,8 +45,6 @@ object ExerciseDAO {
         val on_courses_no_access: Int,
         val is_anonymous_autoassess_enabled: Boolean,
         val anonymous_autoassess_template: String?,
-        val successful_anonymous_submission_count: Int,
-        val unsuccessful_anonymous_submission_count: Int,
     )
 
     @Serializable
