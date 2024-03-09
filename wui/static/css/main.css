@@ -1244,6 +1244,16 @@ ez-similarity-select-exercise .input-field {
     border-right: 1px solid #ddd;
 }
 
+.grade-table-wrap td a {
+    color: inherit;
+    padding: .5rem 1rem;
+}
+
+.grade-table-wrap td a:hover,
+.grade-table-wrap table > thead > tr > th > a:hover {
+    text-decoration: underline;
+}
+
 
 /** About page **/
 
