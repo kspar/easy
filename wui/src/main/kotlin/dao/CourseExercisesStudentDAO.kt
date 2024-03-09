@@ -19,15 +19,17 @@ object CourseExercisesStudentDAO {
     @Serializable
     private data class Exercises(val exercises: List<Exercise>)
 
-    enum class SubmissionStatus { UNSTARTED, UNGRADED, STARTED, COMPLETED }
+    enum class SubmissionStatus {
+        UNSTARTED, UNGRADED, STARTED, COMPLETED;
 
-    fun translateStatusToProgress(status: SubmissionStatus) =
-        when (status) {
-            SubmissionStatus.COMPLETED -> EzCollComp.Progress(1, 0, 0, 0)
-            SubmissionStatus.STARTED -> EzCollComp.Progress(0, 1, 0, 0)
-            SubmissionStatus.UNGRADED -> EzCollComp.Progress(0, 0, 1, 0)
-            SubmissionStatus.UNSTARTED -> EzCollComp.Progress(0, 0, 0, 1)
-        }
+        fun translateToProgress() =
+            when (this) {
+                COMPLETED -> EzCollComp.Progress(green = 1)
+                STARTED -> EzCollComp.Progress(yellow = 1)
+                UNGRADED -> EzCollComp.Progress(blue = 1)
+                UNSTARTED -> EzCollComp.Progress(grey = 1)
+            }
+    }
 
     @Serializable
     data class Exercise(
@@ -83,7 +85,6 @@ object CourseExercisesStudentDAO {
     @Serializable
     data class StudentSubmissions(
         val submissions: List<StudentSubmission>,
-        val count: Int
     )
 
     data class ValidGrade(val grade: Int, val grader_type: ExerciseDAO.GraderType)
@@ -95,21 +96,11 @@ object CourseExercisesStudentDAO {
         val solution: String,
         @Serializable(with = EzDateSerializer::class)
         val submission_time: EzDate,
+        val seen: Boolean,
         val autograde_status: AutogradeStatus,
-        // TODO: add submission_status to service so we don't have to calculate that
-//        val submission_status: CourseExercisesStudentDAO.SubmissionStatus,
-        val grade_auto: Int?,
-        val feedback_auto: String?,
-        val grade_teacher: Int?,
-        val feedback_teacher: String?
-    ) {
-        val validGrade: ValidGrade?
-            get() = when {
-                grade_teacher != null -> ValidGrade(grade_teacher, ExerciseDAO.GraderType.TEACHER)
-                grade_auto != null -> ValidGrade(grade_auto, ExerciseDAO.GraderType.AUTO)
-                else -> null
-            }
-    }
+        val grade: CourseExercisesTeacherDAO.Grade?,
+        val submission_status: SubmissionStatus,
+    )
 
     enum class AutogradeStatus { NONE, IN_PROGRESS, COMPLETED, FAILED }
 

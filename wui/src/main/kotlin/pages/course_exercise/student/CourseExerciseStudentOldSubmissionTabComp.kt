@@ -30,13 +30,15 @@ class CourseExerciseStudentOldSubmissionTabComp(
             parent = this
         )
 
-        feedback = ExerciseFeedbackComp(
-            submission?.validGrade,
-            submission?.feedback_auto,
-            submission?.feedback_teacher,
-            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
-            this
-        )
+        // TODO
+        feedback = ExerciseFeedbackComp(null, null, null, false, this)
+//        feedback = ExerciseFeedbackComp(
+//            submission?.validGrade,
+//            submission?.feedback_auto,
+//            submission?.feedback_teacher,
+//            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
+//            this
+//        )
     }
 
     suspend fun setSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {

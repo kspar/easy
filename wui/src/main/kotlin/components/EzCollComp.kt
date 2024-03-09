@@ -165,7 +165,7 @@ class EzCollComp<P>(
 
     data class ListAttrItem<ItemType : Any>(val shortValue: ItemType, val longValue: ItemType = shortValue)
 
-    data class Progress(val green: Int, val yellow: Int, val blue: Int, val grey: Int)
+    data class Progress(val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0)
     data class ProgressBar(
         val green: Int = 0, val yellow: Int = 0, val blue: Int = 0, val grey: Int = 0,
         val showAttr: Boolean = false

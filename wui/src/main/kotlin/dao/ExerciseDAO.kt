@@ -74,9 +74,14 @@ object ExerciseDAO {
     enum class GraderType {
         AUTO, TEACHER;
 
+        companion object {
+            const val ICON_AUTO = Icons.robot
+            const val ICON_TEACHER = Icons.teacherFace
+        }
+
         fun icon() = when (this) {
-            AUTO -> Icons.robot
-            TEACHER -> Icons.teacherFace
+            AUTO -> ICON_AUTO
+            TEACHER -> ICON_TEACHER
         }
     }
 

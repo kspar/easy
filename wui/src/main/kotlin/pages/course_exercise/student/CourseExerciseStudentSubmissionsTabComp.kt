@@ -3,6 +3,8 @@ package pages.course_exercise.student
 import EzDate
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
+import dao.CourseExercisesTeacherDAO
+import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -23,36 +25,35 @@ class CourseExerciseStudentSubmissionsTabComp(
         val solution: String,
         val submissionTime: EzDate,
         val autogradeStatus: CourseExercisesStudentDAO.AutogradeStatus,
-        val validGrade: CourseExercisesStudentDAO.ValidGrade?,
+        val grade: CourseExercisesTeacherDAO.Grade?,
     )
 
-    private lateinit var list: EzCollComp<Props>
+    private lateinit var list: EzCollComp<CourseExercisesStudentDAO.StudentSubmission>
 
     override val children: List<Component>
         get() = listOf(list)
 
     override fun create() = doInPromise {
         val submissions = CourseExercisesStudentDAO.getSubmissions(courseId, courseExId).await()
-            .map { sub ->
-                Props(sub, sub.number, sub.solution, sub.submission_time, sub.autograde_status, sub.validGrade)
-            }
 
         list = EzCollComp(
             submissions.map {
                 EzCollComp.Item(
                     it,
                     EzCollComp.ItemTypeText("#${it.number}"),
-                    it.submissionTime.toHumanString(EzDate.Format.FULL),
-                    titleInteraction = EzCollComp.TitleAction<Props> { onOpenSubmission(it.submission) },
-                    topAttr = it.validGrade?.let {
+                    it.submission_time.toHumanString(EzDate.Format.FULL),
+                    titleInteraction = EzCollComp.TitleAction<CourseExercisesStudentDAO.StudentSubmission> {
+                        onOpenSubmission(it)
+                    },
+                    topAttr = it.grade?.let {
                         EzCollComp.SimpleAttr(
                             Str.gradeLabel,
                             "${it.grade}/100",
-                            it.grader_type.icon(),
+                            if (it.is_autograde) ExerciseDAO.GraderType.ICON_AUTO else ExerciseDAO.GraderType.ICON_TEACHER,
                             topAttrMinWidth = EzCollComp.CollMinWidth.W400
                         )
                     },
-                    progressBar = EzCollComp.ProgressBar(calculateSubmissionStatus(it.validGrade, threshold)),
+                    progressBar = EzCollComp.ProgressBar(it.submission_status.translateToProgress()),
                 )
             },
             EzCollComp.Strings(Str.submissionSingular, Str.submissionPlural),
@@ -60,13 +61,4 @@ class CourseExerciseStudentSubmissionsTabComp(
             parent = this
         )
     }
-
-    private fun calculateSubmissionStatus(validGrade: CourseExercisesStudentDAO.ValidGrade?, threshold: Int) =
-        when {
-            validGrade == null -> EzCollComp.Progress(0, 0, 1, 0)
-            validGrade.grade >= threshold -> EzCollComp.Progress(1, 0, 0, 0)
-            else -> EzCollComp.Progress(0, 1, 0, 0)
-        }
 }
-
-

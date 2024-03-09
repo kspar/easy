@@ -6,7 +6,6 @@ import Icons
 import cache.BasicCourseInfo
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
-import dao.CourseExercisesStudentDAO.translateStatusToProgress
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import pages.Title
@@ -82,7 +81,7 @@ class StudentCourseExercisesListComp(
                         )
                     }
                 } else null,
-                progressBar = EzCollComp.ProgressBar(translateStatusToProgress(it.status)),
+                progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
             )
         }
 

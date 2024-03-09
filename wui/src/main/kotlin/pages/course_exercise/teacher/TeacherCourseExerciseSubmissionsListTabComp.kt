@@ -110,8 +110,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
 //                                        }
 
                     },
-                    // TODO: need status or can also calculate from threshold
-                    progressBar = EzCollComp.ProgressBar(CourseExercisesStudentDAO.translateStatusToProgress(it.status)),
+                    progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
                 )
             }
 
