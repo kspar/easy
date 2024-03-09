@@ -31,6 +31,7 @@ class StudentReadExercisesController {
     data class ExerciseResp(
         @JsonProperty("id") val courseExId: String,
         @JsonProperty("effective_title") val title: String,
+        @JsonProperty("grader_type") val graderType: GraderType,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("deadline") val softDeadline: DateTime?,
         @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
@@ -57,6 +58,7 @@ class StudentReadExercisesController {
         data class ExercisePartial(
             val courseExId: Long,
             val title: String,
+            val graderType: GraderType,
             val deadline: DateTime?,
             val isOpen: Boolean,
             val threshold: Int,
@@ -66,6 +68,7 @@ class StudentReadExercisesController {
         val exercisePartials = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .slice(
                 ExerciseVer.title,
+                ExerciseVer.graderType,
                 CourseExercise.id,
                 CourseExercise.softDeadline,
                 CourseExercise.hardDeadline,
@@ -86,6 +89,7 @@ class StudentReadExercisesController {
                 ExercisePartial(
                     it[CourseExercise.id].value,
                     it[ExerciseVer.title],
+                    it[ExerciseVer.graderType],
                     it[CourseExercise.softDeadline],
                     hardDeadline == null || hardDeadline.isAfterNow,
                     it[CourseExercise.gradeThreshold],
@@ -141,6 +145,7 @@ class StudentReadExercisesController {
                 ExerciseResp(
                     ex.courseExId.toString(),
                     ex.titleAlias ?: ex.title,
+                    ex.graderType,
                     ex.deadline,
                     ex.isOpen,
                     status,
