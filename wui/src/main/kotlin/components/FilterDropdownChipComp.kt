@@ -3,6 +3,7 @@ package components
 import Icons
 import rip.kspar.ezspa.*
 import template
+import truncate
 
 typealias FilterChipId = String
 
@@ -89,7 +90,7 @@ class FilterDropdownChipComp(
     }
 
     private fun changeLabel(newLabel: String) {
-        getElemById(elementId).setAttribute("label", newLabel)
+        getElemById(elementId).setAttribute("label", newLabel.truncate(20))
     }
 
     private fun setActive(active: Boolean) {
