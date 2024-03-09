@@ -2159,7 +2159,7 @@ ezc-item-container {
     flex: 1 1 auto;
     display: flex;
     min-width: 0;
-    padding: 1.1rem .8rem 1.1rem 0;
+    padding: .9rem .8rem .9rem 0;
     transition: background-color 200ms ease;
 }
 
@@ -2168,7 +2168,7 @@ ezc-item:not(.has-bar) ezc-item-container {
 }
 
 ezc-item.has-bar ezc-item-container {
-    padding-top: 2rem;
+    padding-top: 1.2rem;
     padding-bottom: .6rem;
     border: none;
 }
@@ -2182,8 +2182,9 @@ ezc-left {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* width of checkbox */
+    /* dimensions of checkbox */
     width: 4.8rem;
+    min-height: 4.8rem;
     margin-right: 1rem;
 }
 
