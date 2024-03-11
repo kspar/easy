@@ -4,7 +4,6 @@ import EzDate
 import HumanStringComparator
 import Icons
 import Key
-import LocalStore
 import components.*
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
@@ -201,37 +200,29 @@ class ExerciseLibComp(
             )
         }
 
-        ezcoll = EzCollComp<Props>(
+        ezcoll = EzCollComp(
             items, EzCollComp.Strings(Str.itemSingular, Str.itemPlural),
             massActions = listOf(
-                EzCollComp.MassAction<Props>(Icons.add, Str.addToCourse, ::addToCourse)
+                EzCollComp.MassAction(Icons.add, Str.addToCourse, ::addToCourse)
             ),
             filterGroups = listOf(
-                EzCollComp.FilterGroup<Props>(
+                EzCollComp.FilterGroup(
                     Str.visibility, listOf(
-                        EzCollComp.Filter(
-                            Str.shared,
-                            confType = EzCollConf.ExerciseLibFilter.ITEM_SHARED
-                        ) { it.props.isShared },
-                        EzCollComp.Filter(
-                            Str.private,
-                            confType = EzCollConf.ExerciseLibFilter.ITEM_PRIVATE
-                        ) { !it.props.isShared },
+                        EzCollComp.Filter(Str.shared, confType = EzCollConf.ExerciseLibFilter.ITEM_SHARED) {
+                            it.props.isShared
+                        },
+                        EzCollComp.Filter(Str.private, confType = EzCollConf.ExerciseLibFilter.ITEM_PRIVATE) {
+                            !it.props.isShared
+                        },
                     )
                 ),
-                EzCollComp.FilterGroup<Props>(
+                EzCollComp.FilterGroup(
                     Str.grading, listOf(
-                        EzCollComp.Filter(
-                            Str.gradingAuto,
-                            confType = EzCollConf.ExerciseLibFilter.GRADER_AUTO
-                        ) {
+                        EzCollComp.Filter(Str.gradingAuto, confType = EzCollConf.ExerciseLibFilter.GRADER_AUTO) {
                             it.props is DirProps ||
                                     it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.AUTO
                         },
-                        EzCollComp.Filter(
-                            Str.gradingTeacher,
-                            confType = EzCollConf.ExerciseLibFilter.GRADER_TEACHER
-                        ) {
+                        EzCollComp.Filter(Str.gradingTeacher, confType = EzCollConf.ExerciseLibFilter.GRADER_TEACHER) {
                             it.props is DirProps ||
                                     it.props is ExerciseProps && it.props.graderType == ExerciseDAO.GraderType.TEACHER
                         },
@@ -239,7 +230,7 @@ class ExerciseLibComp(
                 ),
             ),
             sorters = listOf(
-                EzCollComp.Sorter<Props>(Str.sortByName,
+                EzCollComp.Sorter(Str.sortByName,
                     confType = EzCollConf.ExerciseLibSorter.NAME,
                     comparator = compareBy<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) 1 else 0
@@ -265,7 +256,7 @@ class ExerciseLibComp(
                         it.props.title
                     }
                 ),
-                EzCollComp.Sorter<Props>(Str.sortByPopularity,
+                EzCollComp.Sorter(Str.sortByPopularity,
                     confType = EzCollConf.ExerciseLibSorter.POPULARITY,
                     comparator = compareByDescending<EzCollComp.Item<Props>> {
                         if (it.props is ExerciseProps) it.props.coursesCount else Int.MAX_VALUE
@@ -279,8 +270,8 @@ class ExerciseLibComp(
                     }
                 ),
             ),
-            userConf = EzCollConf.UserConf.decodeFromStringOrNull(LocalStore.get(Key.LIBRARY_USER_CONF)),
-            onConfChange = { LocalStore.set(Key.LIBRARY_USER_CONF, it.encodeToString()) },
+            userConf = EzCollConf.UserConf.retrieve(Key.LIBRARY_USER_CONF),
+            onConfChange = { it.store(Key.LIBRARY_USER_CONF) },
             parent = this
         )
     }

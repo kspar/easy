@@ -72,6 +72,10 @@
     --md-sys-typescale-title-small-size: 14px;
     --md-sys-typescale-label-large-size: 14px;
     --md-sys-typescale-label-large-line-height: 20px;
+
+    /* tab icons smaller (24 -> 18) */
+    --md-secondary-tab-icon-size: 18px;
+
 }
 
 md-icon-button.small {

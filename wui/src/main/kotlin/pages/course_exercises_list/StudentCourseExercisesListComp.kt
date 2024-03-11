@@ -3,10 +3,11 @@ package pages.course_exercises_list
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
+import Key
 import cache.BasicCourseInfo
 import components.EzCollComp
+import components.EzCollConf
 import dao.CourseExercisesStudentDAO
-import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import pages.Title
 import pages.course_exercise.ExerciseSummaryPage
@@ -19,20 +20,8 @@ class StudentCourseExercisesListComp(
     private val courseId: String,
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
-    data class ExProps(
-        val id: String,
-        val icon: String,
-        val title: String,
-        val graderType: ExerciseDAO.GraderType,
-        val deadline: EzDate?,
-        val isOpen: Boolean,
-        val status: CourseExercisesStudentDAO.SubmissionStatus,
-        val grade: Int?,
-        val idx: Int,
-    )
-
     private lateinit var courseTitle: String
-    private lateinit var coll: EzCollComp<ExProps>
+    private lateinit var coll: EzCollComp<CourseExercisesStudentDAO.Exercise>
 
     override val children: List<Component>
         get() = listOf(coll)
@@ -42,36 +31,29 @@ class StudentCourseExercisesListComp(
         courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         Title.update { it.parentPageTitle = courseTitle }
 
-        val exercises = exercisesPromise.await()
-
-        val props = exercises.map {
-            ExProps(
-                it.id, it.icon, it.effective_title, it.grader_type, it.deadline, it.is_open, it.status,
-                it.grade?.grade, it.ordering_idx
-            )
-        }
-
-        val items = props.map {
+        val items = exercisesPromise.await().map {
             EzCollComp.Item(
                 it,
                 EzCollComp.ItemTypeIcon(it.icon),
-                it.title,
-                titleIcon = if (it.grade == 100)
+                it.effective_title,
+                titleIcon = if (it.grade?.grade == 100)
                     EzCollComp.TitleIcon(
                         """<ez-exercise-badge>${Icons.awardWithCheck}</ez-exercise-badge>""", Str.completedBadgeLabel
                     ) else null,
                 titleInteraction = EzCollComp.TitleLink(ExerciseSummaryPage.link(courseId, it.id)),
                 topAttr = if (it.deadline != null) {
                     if (it.deadline.isSoonerThanHours(24) &&
-                        it.isOpen &&
+                        it.is_open &&
                         (it.status == CourseExercisesStudentDAO.SubmissionStatus.STARTED ||
                                 it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED)
                     ) {
                         EzCollComp.RenderedAttr(
-                            Str.deadlineLabel, it.deadline, {
+                            Str.deadlineLabel, it.deadline,
+                            renderShortValue = {
                                 """<ez-deadline-close>${it.toHumanString(EzDate.Format.FULL)}</ez-deadline-close>"""
-                            }, """<ez-deadline-close>${Icons.alarmClock}</ez-deadline-close>""",
-                            { it.toHumanString(EzDate.Format.FULL) }
+                            },
+                            shortValuePrefix = """<ez-deadline-close>${Icons.alarmClock}</ez-deadline-close>""",
+                            renderLongValue = { it.toHumanString(EzDate.Format.FULL) }
                         )
                     } else {
                         EzCollComp.SimpleAttr(
@@ -87,6 +69,30 @@ class StudentCourseExercisesListComp(
 
         coll = EzCollComp(
             items, EzCollComp.Strings(Str.exerciseSingular, Str.exercisePlural),
+            filterGroups = listOf(
+                EzCollComp.FilterGroup(
+                    Str.studentMySubmissionFilter, listOf(
+                        EzCollComp.Filter(
+                            Str.studentMySubmissionNotDone,
+                            confType = EzCollConf.StudentCourseExercisesFilter.STATE_NOT_DONE
+                        ) {
+                            (it.props.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED ||
+                                    it.props.status == CourseExercisesStudentDAO.SubmissionStatus.STARTED) &&
+                                    it.props.is_open
+                        },
+                        EzCollComp.Filter(
+                            Str.studentMySubmissionDone,
+                            confType = EzCollConf.StudentCourseExercisesFilter.STATE_DONE
+                        ) {
+                            it.props.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED ||
+                                    it.props.status == CourseExercisesStudentDAO.SubmissionStatus.UNGRADED ||
+                                    !it.props.is_open
+                        },
+                    )
+                )
+            ),
+            userConf = EzCollConf.UserConf.retrieve(Key.STUDENT_COURSE_EXERCISES_USER_CONF),
+            onConfChange = { it.store(Key.STUDENT_COURSE_EXERCISES_USER_CONF) },
             parent = this
         )
     }
@@ -96,9 +102,8 @@ class StudentCourseExercisesListComp(
             <div class="title-wrap no-crumb">
                 <h2 class="title">{{title}}</h2>
             </div>
-            <ez-dst id="{{collDst}}"></ez-dst>
+            $coll
         """.trimIndent(),
         "title" to courseTitle,
-        "collDst" to coll.dstId,
     )
 }

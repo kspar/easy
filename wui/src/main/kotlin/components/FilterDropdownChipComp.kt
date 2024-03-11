@@ -90,7 +90,8 @@ class FilterDropdownChipComp(
     }
 
     private fun changeLabel(newLabel: String) {
-        getElemById(elementId).setAttribute("label", newLabel.truncate(20))
+        // Max char hardcoded filter: "Automaatsete testidega" (22 chars)
+        getElemById(elementId).setAttribute("label", newLabel.truncate(22))
     }
 
     private fun setActive(active: Boolean) {

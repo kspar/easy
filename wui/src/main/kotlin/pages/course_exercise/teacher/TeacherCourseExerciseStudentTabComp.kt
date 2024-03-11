@@ -4,6 +4,7 @@ import EzDate
 import Icons
 import components.ButtonComp
 import components.IconButtonComp
+import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -15,42 +16,52 @@ class TeacherCourseExerciseStudentTabComp(
     private val exerciseId: String,
     private val deadline: EzDate?,
     var studentId: String,
-    // TODO: arg should be DAO student object
-    private val onStudentLoad: suspend () -> Unit,
+    var submissionId: String?,
+    private val onStudentLoad: suspend (CourseExercisesTeacherDAO.StudentSubmissionDetails?) -> Unit,
     private val onNextStudent: suspend (currentStudentId: String) -> Unit,
     private val onPrevStudent: suspend (currentStudentId: String) -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    private lateinit var studentName: String
-    private lateinit var subTime: EzDate
+    //    private lateinit var studentName: String
+//    private lateinit var subTime: EzDate
+    private var submission: CourseExercisesTeacherDAO.StudentSubmissionDetails? = null
 
     private lateinit var prevStudentBtn: IconButtonComp
     private lateinit var nextStudentBtn: IconButtonComp
-    private lateinit var allSubsBtn: ButtonComp
+    private var allSubsBtn: ButtonComp? = null
 
     override val children: List<Component>
-        get() = listOf(prevStudentBtn, nextStudentBtn, allSubsBtn)
+        get() = listOfNotNull(prevStudentBtn, nextStudentBtn, allSubsBtn)
 
     override fun create() = doInPromise {
-        studentName = "Murelin Säde"
-        subTime = EzDate.now()
+        // TODO: need to get student name from somewhere
 
-        onStudentLoad()
+        submission = submissionId?.let {
+            CourseExercisesTeacherDAO.getSubmissionDetails(courseId, courseExId, it).await()
+        }
+
+        onStudentLoad(submission)
 
         prevStudentBtn = IconButtonComp(
             Icons.previous, null,
             onClick = { onPrevStudent(studentId) },
             parent = this
         )
-        nextStudentBtn =
-            IconButtonComp(
-                Icons.next, null,
-                onClick = { onNextStudent(studentId) },
-                parent = this
+        nextStudentBtn = IconButtonComp(
+            Icons.next, null,
+            onClick = { onNextStudent(studentId) },
+            parent = this
+        )
+        allSubsBtn = submission?.let {
+            ButtonComp(
+                ButtonComp.Type.TEXT,
+                "esitus # " + it.submission_number,
+                Icons.history,
+                onClick = ::openAllSubsModal, parent = this
             )
-        allSubsBtn =
-            ButtonComp(ButtonComp.Type.TEXT, "esitus # 3", Icons.history, onClick = ::openAllSubsModal, parent = this)
+        }
+
     }
 
     override fun render() = template(
@@ -61,32 +72,36 @@ class TeacherCourseExerciseStudentTabComp(
                     $prevStudentBtn
                     $nextStudentBtn
                 </ez-sub-title>
-                <ez-sub-title-secondary style='display: flex; align-items: center;'>
-                    {{#overDeadline}}
-                        <ez-deadline-close style='display: flex; font-weight: 500;'>
-                            {{{deadlineIcon}}}
-                    {{/overDeadline}}
-                            <span style='margin: 0 1rem;'>{{subTime}}</span>
-                    {{#overDeadline}}
-                        </ez-deadline-close>                    
-                    {{/overDeadline}}
-                    · 
-                    $allSubsBtn
-                </ez-sub-title-secondary>
+                {{#hasSubmission}}
+                    <ez-sub-title-secondary style='display: flex; align-items: center;'>
+                        {{#overDeadline}}
+                            <ez-deadline-close style='display: flex; font-weight: 500;'>
+                                {{{deadlineIcon}}}
+                        {{/overDeadline}}
+                                <span style='margin: 0 1rem;'>{{subTime}}</span>
+                        {{#overDeadline}}
+                            </ez-deadline-close>                    
+                        {{/overDeadline}}
+                        · 
+                        $allSubsBtn
+                    </ez-sub-title-secondary>
+                {{/hasSubmission}}
             </ez-sub-header>
             
             
         """.trimIndent(),
-        "name" to studentName,
+        "name" to "Murelin Säde",
+        "hasSubmission" to (submission != null),
         "timeIcon" to Icons.pending,
-        "overDeadline" to (deadline != null && deadline < subTime),
+        "overDeadline" to submission?.let { deadline != null && deadline < it.created_at },
         "deadlineIcon" to Icons.alarmClock,
-        "subTime" to subTime.toHumanString(EzDate.Format.FULL),
+        "subTime" to submission?.created_at?.toHumanString(EzDate.Format.FULL),
     )
 
-    suspend fun setStudent(id: String, name: String) {
+    suspend fun setStudent(id: String, submissionIdd: String?) {
         studentId = id
-        studentName = name
+//        studentName = name
+        submissionId = submissionIdd
         createAndBuild().await()
     }
 

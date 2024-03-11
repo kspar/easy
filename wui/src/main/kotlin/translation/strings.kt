@@ -49,6 +49,7 @@ sealed class TranslatableStrings {
     abstract val autoAssessing: String
     abstract val tryAgain: String
     abstract val accountGroup: String
+    abstract val withoutAccountGroups: String
     abstract val doDownload: String
     abstract val downloading: String
     abstract val feedback: String
@@ -149,6 +150,9 @@ sealed class TranslatableStrings {
     abstract val startedLabel: String
     abstract val ungradedLabel: String
     abstract val unstartedLabel: String
+    abstract val studentMySubmissionFilter: String
+    abstract val studentMySubmissionNotDone: String
+    abstract val studentMySubmissionDone: String
 
 
     // Course exercise page
@@ -468,6 +472,9 @@ object EstStrings : TranslatableStrings() {
     override val startedLabel = "nässu läinud"
     override val ungradedLabel = "hindamata"
     override val unstartedLabel = "esitamata"
+    override val studentMySubmissionFilter = "Minu esitus"
+    override val studentMySubmissionNotDone = "Tegemata"
+    override val studentMySubmissionDone = "Lõpetatud"
     override val tabExerciseLabel = "Ülesanne"
     override val tabTestingLabel = "Katseta"
     override val tabSubmissionsLabel = "Esitused"
@@ -478,6 +485,7 @@ object EstStrings : TranslatableStrings() {
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
     override val accountGroup = "Rühm"
+    override val withoutAccountGroups = "Ilma rühmata"
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
     override val feedback = "Tagasiside"
@@ -780,6 +788,9 @@ object EngStrings : TranslatableStrings() {
     override val startedLabel = "unsuccessful"
     override val ungradedLabel = "ungraded"
     override val unstartedLabel = "not submitted"
+    override val studentMySubmissionFilter = "My submission"
+    override val studentMySubmissionNotDone = "To do"
+    override val studentMySubmissionDone = "Finished"
 
     override val tabExerciseLabel = "Exercise"
     override val tabTestingLabel = "Test"
@@ -804,6 +815,7 @@ object EngStrings : TranslatableStrings() {
     override val autoAssessing = "Checking..."
     override val tryAgain = "Try again"
     override val accountGroup = "Group"
+    override val withoutAccountGroups = "Ungrouped"
     override val doDownload = "Download"
     override val downloading = "Downloading..."
     override val feedback = "Feedback"

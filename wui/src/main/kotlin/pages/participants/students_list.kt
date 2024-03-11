@@ -2,7 +2,10 @@ package pages.participants
 
 import HumanStringComparator
 import Icons
+import Key
+import addNotNull
 import components.EzCollComp
+import components.EzCollConf
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
@@ -31,10 +34,8 @@ class ParticipantsStudentsListComp(
     data class StudentProps(
         val firstName: String?, val lastName: String?,
         val email: String, val username: String?, val utUsername: String?,
-        val isActive: Boolean, val groups: List<GroupProp>
-    )
-
-    data class GroupProp(val id: String, val name: String)
+        val isActive: Boolean, override val groups: List<ParticipantsDAO.CourseGroup>
+    ) : EzCollComp.WithGroups
 
     private lateinit var coll: EzCollComp<StudentProps>
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
@@ -47,25 +48,13 @@ class ParticipantsStudentsListComp(
     override fun create() = doInPromise {
 
         val activeStudentProps = students.map {
-            StudentProps(
-                it.given_name,
-                it.family_name,
-                it.email,
-                it.id,
-                it.moodle_username,
-                true,
-                it.groups.map { GroupProp(it.id, it.name) },
-            )
+            StudentProps(it.given_name, it.family_name, it.email, it.id, it.moodle_username, true, it.groups)
         }
         val pendingStudentProps = studentsPending.map {
-            StudentProps(
-                null, null, it.email, null, null, false,
-                it.groups.map { GroupProp(it.id, it.name) })
+            StudentProps(null, null, it.email, null, null, false, it.groups)
         }
         val moodlePendingStudentProps = studentsMoodlePending.map {
-            StudentProps(
-                null, null, it.email, null, it.moodle_username, false,
-                it.groups.map { GroupProp(it.id, it.name) })
+            StudentProps(null, null, it.email, null, it.moodle_username, false, it.groups)
         }
 
         val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
@@ -116,32 +105,28 @@ class ParticipantsStudentsListComp(
 
         coll = EzCollComp(
             items,
-            EzCollComp.Strings("õpilane", "õpilast"),
+            EzCollComp.Strings(Str.studentsSingular, Str.studentsPlural),
             massActions = massActions,
             filterGroups = buildList {
+                addNotNull(EzCollComp.createGroupFilter(groups))
                 add(
-                    EzCollComp.FilterGroup<StudentProps>(
-                        "Staatus", listOf(
-                            EzCollComp.Filter("Aktiivne") { it.props.isActive },
-                            EzCollComp.Filter("Ootel") { !it.props.isActive },
+                    EzCollComp.FilterGroup(
+                        "Olek", listOf(
+                            EzCollComp.Filter("Aktiivne", confType = EzCollConf.ParticipantsFilter.STATE_ACTIVE) {
+                                it.props.isActive
+                            },
+                            EzCollComp.Filter("Ootel", confType = EzCollConf.ParticipantsFilter.STATE_PENDING) {
+                                !it.props.isActive
+                            },
                         )
                     )
                 )
-                if (hasGroups)
-                    add(
-                        EzCollComp.FilterGroup(
-                            Str.accountGroup,
-                            listOf(EzCollComp.Filter<StudentProps>("Ilma rühmata") { it.props.groups.isEmpty() }) +
-                                    groups.map { g ->
-                                        EzCollComp.Filter(g.name) { it.props.groups.any { it.id == g.id } }
-                                    }
-                        )
-                    )
             },
             sorters = buildList {
                 if (hasGroups)
                     add(
-                        EzCollComp.Sorter("Rühma ja nime järgi",
+                        EzCollComp.Sorter(
+                            "Rühm / nimi",
                             compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) {
                                 it.props.groups.getOrNull(0)?.name
                             }
@@ -150,17 +135,23 @@ class ParticipantsStudentsListComp(
                                 .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
                                 .thenBy(HumanStringComparator) { it.props.groups.getOrNull(4)?.name }
                                 .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
-                                .thenBy { it.props.firstName?.lowercase() })
+                                .thenBy { it.props.firstName?.lowercase() },
+                            confType = EzCollConf.ParticipantsSorter.GROUP_NAME,
+                        )
                     )
                 add(
-                    EzCollComp.Sorter("Nime järgi",
+                    EzCollComp.Sorter(
+                        "Nimi",
                         compareBy<EzCollComp.Item<StudentProps>> {
                             it.props.lastName?.lowercase() ?: it.props.email.lowercase()
                         }
-                            .thenBy { it.props.firstName?.lowercase() }
+                            .thenBy { it.props.firstName?.lowercase() },
+                        confType = EzCollConf.ParticipantsSorter.NAME,
                     )
                 )
             },
+            userConf = EzCollConf.UserConf.retrieve(Key.COURSE_PARTICIPANTS_USER_CONF),
+            onConfChange = { it.store(Key.COURSE_PARTICIPANTS_USER_CONF, hasCourseGroupFilter = true) },
             parent = this
         )
 

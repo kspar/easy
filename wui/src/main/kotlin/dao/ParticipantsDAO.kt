@@ -2,6 +2,7 @@ package dao
 
 import EzDate
 import EzDateSerializer
+import HumanStringComparator
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -94,7 +95,7 @@ object ParticipantsDAO {
         fetchEms(
             "/courses/$courseId/groups", ReqMethod.GET,
             successChecker = { http200 }, errorHandler = ErrorHandlers.noCourseAccessMsg
-        ).await().parseTo(Groups.serializer()).await()
+        ).await().parseTo(Groups.serializer()).await().groups.sortedWith(compareBy(HumanStringComparator) { it.name })
     }
 
     fun getCourseMoodleSettings(courseId: String) = doInPromise {

@@ -3,14 +3,18 @@ package pages.course_exercises_list
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
+import Key
+import LocalStore
 import cache.BasicCourseInfo
 import components.EzCollComp
+import components.EzCollConf
 import components.ToastThing
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
+import dao.ParticipantsDAO
 import debug
 import getWindowScrollPosition
 import kotlinx.coroutines.await
@@ -46,8 +50,11 @@ class TeacherCourseExercisesComp(
         val started: Int,
         val ungraded: Int,
         val unstarted: Int,
+        override val groups: List<ParticipantsDAO.CourseGroup>,
         val effectiveTitle: String = titleAlias ?: libTitle,
-    )
+    ) : EzCollComp.WithGroups
+
+    private var groupId: String? = null
 
     private lateinit var courseTitle: String
     private lateinit var coll: EzCollComp<ExProps>
@@ -64,7 +71,12 @@ class TeacherCourseExercisesComp(
         get() = listOfNotNull(coll, reorderModal, updateModal, removeModal, newExerciseModal)
 
     override fun create() = doInPromise {
-        val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId)
+        groupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)?.let {
+            if (it == LocalStore.TEACHER_SELECTED_GROUP_NONE_ID) null else it
+        }
+
+        val exercisesPromise = CourseExercisesTeacherDAO.getCourseExercises(courseId, groupId)
+        val groups = ParticipantsDAO.getCourseGroups(courseId).await()
         courseTitle = BasicCourseInfo.get(courseId).await().effectiveTitle
         Title.update { it.parentPageTitle = courseTitle }
 
@@ -74,9 +86,10 @@ class TeacherCourseExercisesComp(
             ExProps(
                 it.course_exercise_id, it.ordering_idx, it.library_title, it.title_alias,
                 it.grader_type == ExerciseDAO.GraderType.AUTO, it.grade_threshold,
-                it.soft_deadline, it.hard_deadline,
-                it.isVisibleNow, it.student_visible_from,
-                it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count
+                it.soft_deadline, it.hard_deadline, it.isVisibleNow, it.student_visible_from,
+                it.completed_count, it.started_count, it.ungraded_count, it.unstarted_count,
+                // all exercises are currently visible to all groups
+                groups
             )
         }
 
@@ -88,7 +101,7 @@ class TeacherCourseExercisesComp(
                 titleIcon = if (!it.isVisible) EzCollComp.TitleIcon(Icons.hiddenUnf, Str.hidden) else null,
                 titleStatus = if (!it.isVisible) EzCollComp.TitleStatus.INACTIVE else EzCollComp.TitleStatus.NORMAL,
                 titleInteraction = EzCollComp.TitleLink(ExerciseSummaryPage.link(courseId, it.id)),
-                // TODO: editable?
+                // TODO: editable, open exercise settings
                 topAttr = if (it.deadline != null) {
                     EzCollComp.SimpleAttr(
                         Str.deadlineLabel,
@@ -116,7 +129,39 @@ class TeacherCourseExercisesComp(
                 EzCollComp.MassAction(Icons.visible, Str.doReveal, onActivate = { setVisibility(it, true) }),
                 EzCollComp.MassAction(Icons.hidden, Str.doHide, onActivate = { setVisibility(it, false) }),
                 EzCollComp.MassAction(Icons.delete, Str.doRemoveFromCourse, onActivate = ::removeFromCourse),
-            ), filterGroups = listOf(), parent = this
+            ),
+            filterGroups = listOfNotNull(
+                EzCollComp.createGroupFilter(groups, noGroupOption = false),
+                EzCollComp.FilterGroup(
+                    "Olek", listOf(
+                        EzCollComp.Filter(
+                            "Hindamata esitused",
+                            confType = EzCollConf.TeacherCourseExercisesFilter.STATE_HAS_UNGRADED
+                        ) { it.props.ungraded > 0 },
+                        EzCollComp.Filter(
+                            "Nähtavad ülesanded",
+                            confType = EzCollConf.TeacherCourseExercisesFilter.STATE_VISIBLE
+                        ) { it.props.isVisible },
+                        EzCollComp.Filter(
+                            "Tähtaeg tulevikus",
+                            confType = EzCollConf.TeacherCourseExercisesFilter.STATE_DEADLINE_FUTURE
+                        ) { it.props.deadline != null && it.props.deadline > EzDate.now() },
+                        EzCollComp.Filter(
+                            "Tähtaeg möödas",
+                            confType = EzCollConf.TeacherCourseExercisesFilter.STATE_DEADLINE_PAST
+                        ) { it.props.deadline != null && it.props.deadline < EzDate.now() },
+                    )
+                ),
+            ),
+            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISES_USER_CONF),
+            onConfChange = {
+                it.store(Key.TEACHER_COURSE_EXERCISES_USER_CONF, hasCourseGroupFilter = true)
+                if (it.globalGroupFilter?.id != groupId) {
+                    // group changed
+                    createAndBuild().await()
+                }
+            },
+            parent = this
         )
 
         reorderModal = ReorderCourseExerciseModalComp(courseId, this)

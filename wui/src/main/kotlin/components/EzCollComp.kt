@@ -1,6 +1,8 @@
 package components
 
 import Icons
+import LocalStore
+import dao.ParticipantsDAO
 import debug
 import hide
 import rip.kspar.ezspa.Component
@@ -19,10 +21,41 @@ class EzCollComp<P>(
     private val sorters: List<Sorter<P>> = emptyList(),
     private val compact: Boolean = false,
     userConf: EzCollConf.UserConf? = null,
-    private val onConfChange: ((EzCollConf.UserConf) -> Unit)? = null,
+    private val onConfChange: (suspend (EzCollConf.UserConf) -> Unit)? = null,
     parent: Component?,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
+
+    interface WithGroups {
+        val groups: List<ParticipantsDAO.CourseGroup>
+    }
+
+    companion object {
+        fun <T : WithGroups> createGroupFilter(
+            groups: List<ParticipantsDAO.CourseGroup>,
+            noGroupOption: Boolean = true
+        ): FilterGroup<T>? =
+            if (groups.isEmpty())
+                null
+            else
+                FilterGroup(
+                    Str.accountGroup,
+                    buildList {
+                        groups.map { g ->
+                            add(Filter<T>(g.name, EzCollConf.TeacherSelectedGroupFilter(g.id)) {
+                                it.props.groups.any { it.id == g.id }
+                            })
+                        }
+                        if (noGroupOption)
+                            add(Filter<T>(
+                                Str.withoutAccountGroups,
+                                EzCollConf.TeacherSelectedGroupFilter(LocalStore.TEACHER_SELECTED_GROUP_NONE_ID)
+                            ) {
+                                it.props.groups.isEmpty()
+                            })
+                    }
+                )
+    }
 
     data class Item<P>(
         val props: P,
@@ -229,7 +262,13 @@ class EzCollComp<P>(
         val conf = userConf ?: EzCollConf.UserConf()
 
         activeFilters = filterGroups.mapNotNull {
-            it.filters.firstOrNull { it.confType != null && conf.filters.contains(it.confType) }
+            it.filters.firstOrNull {
+                it.confType != null &&
+                        // this filter in active normal filters?
+                        (conf.filters.contains(it.confType) ||
+                                // this filter is an active group filter?
+                                conf.globalGroupFilter == it.confType)
+            }
         }
 
         activeSorter =
@@ -641,11 +680,17 @@ class EzCollComp<P>(
         }
     }
 
-    private fun createActiveUserConf() = EzCollConf.UserConf(
-        filters = activeFilters.mapNotNull { it.confType },
-        sorter = activeSorter?.confType,
-        sortOrderReversed = sortOrderReversed,
-    )
+    private fun createActiveUserConf(): EzCollConf.UserConf {
+        val (groupFilters, filters) = activeFilters.mapNotNull { it.confType }
+            .partition { it is EzCollConf.TeacherSelectedGroupFilter }
+        val groupFilter = groupFilters.singleOrNull() as? EzCollConf.TeacherSelectedGroupFilter
+        return EzCollConf.UserConf(
+            filters = filters,
+            globalGroupFilter = groupFilter,
+            sorter = activeSorter?.confType,
+            sortOrderReversed = sortOrderReversed,
+        )
+    }
 }
 
 

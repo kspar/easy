@@ -48,10 +48,9 @@ class ParticipantsRootComp(
         }
 
         val participants = participantsPromise.await()
-        val groupsResp = groupsPromise.await()
+        val groups = groupsPromise.await()
         val moodleStatus = moodleStatusPromise.await()
 
-        val groups = groupsResp.groups.sortedBy { it.name }
         val isMoodleLinked = moodleStatus.moodle_props != null
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
 

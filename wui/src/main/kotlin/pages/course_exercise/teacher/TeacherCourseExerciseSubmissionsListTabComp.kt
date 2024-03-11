@@ -1,9 +1,11 @@
 package pages.course_exercise.teacher
 
 import EzDate
+import HumanStringComparator
 import Icons
+import Key
 import components.EzCollComp
-import dao.CourseExercisesStudentDAO
+import components.EzCollConf
 import dao.CourseExercisesTeacherDAO
 import dao.ParticipantsDAO
 import kotlinx.coroutines.await
@@ -14,44 +16,24 @@ import translation.Str
 class TeacherCourseExerciseSubmissionsListTabComp(
     private val courseId: String,
     private val courseExId: String,
-    private val threshold: Int,
-    private val onOpenStudent: suspend (StudentProps) -> Unit,
+    private val onOpenStudent: suspend (CourseExercisesTeacherDAO.LatestStudentSubmission) -> Unit,
     private val onStudentListChange: () -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    data class StudentProps(
-        val id: String,
-        val givenName: String,
-        val familyName: String,
-        val groups: List<ParticipantsDAO.CourseGroup>,
-        val submission: CourseExercisesTeacherDAO.StudentSubmission?,
-        val status: CourseExercisesStudentDAO.SubmissionStatus,
-    )
 
-
-    private lateinit var studentProps: List<StudentProps>
-
-    private lateinit var coll: EzCollComp<StudentProps>
+    private lateinit var coll: EzCollComp<CourseExercisesTeacherDAO.LatestStudentSubmission>
 
     override val children: List<Component>
         get() = listOf(coll)
 
     override fun create() = doInPromise {
-        studentProps = CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId).await()
-            .latest_submissions.map {
-                StudentProps(
-                    it.student_id, it.given_name, it.family_name, it.groups,
-                    it.submission,
-                    it.status
-                )
-            }
+        val groups = ParticipantsDAO.getCourseGroups(courseId).await()
 
         val submissions =
-            studentProps.map {
+            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId).await().latest_submissions.map {
                 EzCollComp.Item(
                     it,
-//                                    EzCollComp.ItemTypeText("#" + Random.nextInt(1, 20).toString()),
                     EzCollComp.ItemTypeIcon(
                         when {
                             it.submission?.grade == null -> Icons.dotsHorizontal
@@ -59,57 +41,21 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                             else -> Icons.teacherFace
                         }
                     ),
-//                                    if (Random.nextBoolean())
-//                                        EzCollComp.ItemTypeIcon(Icons.robot)
-//                                    else EzCollComp.ItemTypeIcon(Icons.teacherFace),
-//                                    EzCollComp.ItemTypeIcon(Icons.user),
-                    it.givenName + " " + it.familyName,
+                    it.given_name + " " + it.family_name,
+                    // TODO: show seen as badge or active titleStatus?
 //                    titleStatus = if (it.submission != null) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
-//                    titleInteraction = if (it.submission != null) EzCollComp.TitleAction<StudentProps> {
-//                        onOpenStudent(it)
-//                    } else null,
-                    titleInteraction = EzCollComp.TitleAction<StudentProps> { onOpenStudent(it) },
-
-//                                    topAttr = if (it.submission?.grade != null && it.submission.gradedBy != null)
-//                                        EzCollComp.SimpleAttr(
-//                                            "Punktid", "${it.submission.grade} / 100",
-//                                            if (it.submission.gradedBy == ExerciseDAO.GraderType.AUTO) Icons.robot else Icons.teacherFace
-//                                        ) else null,
-//
+                    titleInteraction = EzCollComp.TitleAction<CourseExercisesTeacherDAO.LatestStudentSubmission> {
+                        onOpenStudent(it)
+                    },
                     // TODO: paint and icon if time > deadline
                     topAttr =
                     if (it.submission != null) {
                         EzCollComp.SimpleAttr(
                             "Esitamise aeg",
-                            it.submission.time.toHumanString(EzDate.Format.DATE),
+                            shortValue = it.submission.time.toHumanString(EzDate.Format.DATE),
+                            longValue = it.submission.time.toHumanString(EzDate.Format.FULL),
                         )
                     } else null,
-//
-//                                    topAttr = if (it.groups != null) EzCollComp.SimpleAttr(
-//                                        "Rühmad",
-//                                        it.groups,
-//                                        Icons.groupsUnf
-//                                    ) else null,
-                    bottomAttrs = buildList {
-//                                        if (it.submission?.grade != null && it.submission.gradedBy != null)
-//                                            add(
-//                                                EzCollComp.SimpleAttr(
-//                                                    "Punktid", "${it.submission.grade}/100",
-//                                                    if (it.submission.gradedBy == ExerciseDAO.GraderType.AUTO) Icons.robot else Icons.teacherFace
-//                                                )
-//                                            )
-//                                        if (it.submission != null) {
-//                                            add(EzCollComp.SimpleAttr("Esitus", "# 4"))
-//                                            add(
-//                                                EzCollComp.SimpleAttr(
-//                                                    "Esitamise aeg",
-//                                                    it.submission.time.toHumanString(EzDate.Format.DATE),
-//                                                    Icons.pending
-//                                                )
-//                                            )
-//                                        }
-
-                    },
                     progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
                 )
             }
@@ -117,65 +63,85 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         coll = EzCollComp(
             submissions,
             strings = EzCollComp.Strings(Str.studentsSingular, Str.studentsPlural),
-            filterGroups = listOf(
+            filterGroups = listOfNotNull(
+                EzCollComp.createGroupFilter(groups),
                 EzCollComp.FilterGroup(
-                    "Hinnatud", listOf(
-                        // TODO: hindamata?
-                        EzCollComp.Filter("Automaatselt hinnatud") { it.props.submission?.grade?.is_autograde == true },
-                        EzCollComp.Filter("Õpetaja hinnatud") { it.props.submission?.grade?.is_autograde == false },
+                    "Olek", listOf(
+                        EzCollComp.Filter(
+                            "Automaatselt hinnatud",
+                            confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_GRADED_AUTO
+                        ) { it.props.submission?.grade?.is_autograde == true },
+                        EzCollComp.Filter(
+                            "Õpetaja hinnatud",
+                            confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_GRADED_TEACHER
+                        ) { it.props.submission?.grade?.is_autograde == false },
+                        EzCollComp.Filter(
+                            "Hindamata",
+                            confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_UNGRADED
+                        ) { it.props.submission?.grade == null },
+                        EzCollComp.Filter(
+                            "Esitamata",
+                            confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_UNSUBMITTED
+                        ) { it.props.submission == null },
                     )
-                ),
-                // TODO: maybe not useful
-                EzCollComp.FilterGroup(
-                    "Esitus", listOf(
-                        EzCollComp.Filter("Lahendus esitatud") { it.props.submission != null },
-                        EzCollComp.Filter("Esitamata") { it.props.submission == null },
-                    )
-                ),
+                )
             ),
             sorters = buildList {
-//                if (hasGroups)
-//                    add(
-//                        EzCollComp.Sorter("Rühma ja nime järgi",
-//                            compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) { it.props.groups.getOrNull(0)?.name }
-//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(1)?.name }
-//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(2)?.name }
-//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(3)?.name }
-//                                .thenBy(HumanStringComparator) { it.props.groups.getOrNull(4)?.name }
-//                                .thenBy { it.props.lastName?.lowercase() ?: it.props.email.lowercase() }
-//                                .thenBy { it.props.firstName?.lowercase() })
-//                    )
-                add(EzCollComp.Sorter("Nime järgi",
-                    compareBy<EzCollComp.Item<StudentProps>> {
-                        it.props.familyName.lowercase()
-                    }.thenBy { it.props.givenName.lowercase() }
-                ))
-                add(EzCollComp.Sorter("Punktide järgi",
-                    compareBy<EzCollComp.Item<StudentProps>> {
+                add(EzCollComp.Sorter("Nimi",
+                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>, String?>(
+                        HumanStringComparator
+                    ) {
+                        it.props.family_name
+                    }.thenBy(HumanStringComparator) { it.props.given_name },
+                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.NAME
+                )
+                )
+                add(EzCollComp.Sorter("Punktid",
+                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                         // nulls last
                         if (it.props.submission?.grade == null) 1 else 0
-                    }.thenByDescending<EzCollComp.Item<StudentProps>> {
-                        it.props.submission?.grade?.grade
-                    }
-                ))
-                add(EzCollComp.Sorter("Esitamisaja järgi",
-                    compareBy<EzCollComp.Item<StudentProps>> {
+                    }.thenByDescending { it.props.submission?.grade?.grade }
+                        .thenBy(HumanStringComparator) { it.props.family_name }
+                        .thenBy(HumanStringComparator) { it.props.given_name },
+                    reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                        // nulls last
+                        if (it.props.submission?.grade == null) 1 else 0
+                    }.thenBy { it.props.submission?.grade?.grade }
+                        .thenBy(HumanStringComparator) { it.props.family_name }
+                        .thenBy(HumanStringComparator) { it.props.given_name },
+                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.POINTS
+                )
+                )
+                add(EzCollComp.Sorter("Esitamisaeg",
+                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                         // nulls last
                         if (it.props.submission?.time == null) 1 else 0
-                    }.thenBy<EzCollComp.Item<StudentProps>> {
-                        it.props.submission?.time
-                    }
-                ))
+                    }.thenBy { it.props.submission?.time }
+                        .thenBy(HumanStringComparator) { it.props.family_name }
+                        .thenBy(HumanStringComparator) { it.props.given_name },
+                    reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                        // nulls last
+                        if (it.props.submission?.time == null) 1 else 0
+                    }.thenByDescending { it.props.submission?.time }
+                        .thenBy(HumanStringComparator) { it.props.family_name }
+                        .thenBy(HumanStringComparator) { it.props.given_name },
+                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.TIME
+                )
+                )
             },
             compact = true,
-            onConfChange = { onStudentListChange() },
+            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF),
+            onConfChange = {
+                it.store(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, hasCourseGroupFilter = true)
+                onStudentListChange()
+            },
             parent = this
         )
     }
 
-    fun getNextStudent(currentId: String): StudentProps? {
+    fun getNextStudent(currentId: String): CourseExercisesTeacherDAO.LatestStudentSubmission? {
         val students = coll.getOrderedVisibleItems().map { it.props }
-        val currIdx = students.indexOfFirst { it.id == currentId }
+        val currIdx = students.indexOfFirst { it.student_id == currentId }
         val nextIdx = when {
             students.isEmpty() -> null
             currIdx == -1 -> 0
@@ -186,9 +152,9 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         return nextIdx?.let { students[it] }
     }
 
-    fun getPrevStudent(currentId: String): StudentProps? {
+    fun getPrevStudent(currentId: String): CourseExercisesTeacherDAO.LatestStudentSubmission? {
         val students = coll.getOrderedVisibleItems().map { it.props }
-        val currIdx = students.indexOfFirst { it.id == currentId }
+        val currIdx = students.indexOfFirst { it.student_id == currentId }
         val nextIdx = when {
             students.isEmpty() -> null
             currIdx == -1 -> 0
@@ -198,5 +164,4 @@ class TeacherCourseExerciseSubmissionsListTabComp(
 
         return nextIdx?.let { students[it] }
     }
-
 }

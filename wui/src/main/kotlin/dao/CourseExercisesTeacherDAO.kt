@@ -2,6 +2,7 @@ package dao
 
 import EzDate
 import EzDateSerializer
+import components.EzCollComp
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -47,8 +48,8 @@ object CourseExercisesTeacherDAO {
         val student_id: String,
         val given_name: String,
         val family_name: String,
-        val groups: List<ParticipantsDAO.CourseGroup>,
-    )
+        override val groups: List<ParticipantsDAO.CourseGroup>,
+    ) : EzCollComp.WithGroups
 
     @Serializable
     data class StudentSubmission(
@@ -67,16 +68,17 @@ object CourseExercisesTeacherDAO {
     @Serializable
     private data class CourseExercisesWithSubmissions(val exercises: List<CourseExerciseWithSubmissions>)
 
-    fun getCourseExercises(courseId: String, groupId: String? = null): Promise<List<CourseExerciseWithSubmissions>> = doInPromise {
-        debug { "Get exercises for teacher course $courseId" }
-        val q = if (groupId != null) createQueryString("group" to groupId) else ""
-        fetchEms(
-            "/teacher/courses/${courseId.encodeURIComponent()}/exercises$q", ReqMethod.GET,
-            successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg)
-        ).await()
-            .parseTo(CourseExercisesWithSubmissions.serializer()).await().exercises
-            .sortedBy { it.ordering_idx }
-    }
+    fun getCourseExercises(courseId: String, groupId: String? = null): Promise<List<CourseExerciseWithSubmissions>> =
+        doInPromise {
+            debug { "Get exercises for teacher course $courseId" }
+            val q = if (groupId != null) createQueryString("group" to groupId) else ""
+            fetchEms(
+                "/teacher/courses/${courseId.encodeURIComponent()}/exercises$q", ReqMethod.GET,
+                successChecker = { http200 }, errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg)
+            ).await()
+                .parseTo(CourseExercisesWithSubmissions.serializer()).await().exercises
+                .sortedBy { it.ordering_idx }
+        }
 
     fun removeExerciseFromCourse(courseId: String, courseExerciseId: String) = doInPromise {
         debug { "Remove course $courseId exercise $courseExerciseId" }

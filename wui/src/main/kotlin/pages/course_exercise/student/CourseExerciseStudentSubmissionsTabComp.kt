@@ -3,7 +3,6 @@ package pages.course_exercise.student
 import EzDate
 import components.EzCollComp
 import dao.CourseExercisesStudentDAO
-import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
@@ -14,19 +13,9 @@ import translation.Str
 class CourseExerciseStudentSubmissionsTabComp(
     private val courseId: String,
     private val courseExId: String,
-    private val threshold: Int,
     private val onOpenSubmission: suspend (CourseExercisesStudentDAO.StudentSubmission) -> Unit,
     parent: Component
 ) : Component(parent) {
-
-    data class Props(
-        val submission: CourseExercisesStudentDAO.StudentSubmission,
-        val number: Int,
-        val solution: String,
-        val submissionTime: EzDate,
-        val autogradeStatus: CourseExercisesStudentDAO.AutogradeStatus,
-        val grade: CourseExercisesTeacherDAO.Grade?,
-    )
 
     private lateinit var list: EzCollComp<CourseExercisesStudentDAO.StudentSubmission>
 

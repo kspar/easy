@@ -57,6 +57,7 @@ class TeacherCourseExerciseComp(
                 add(
                     TabsComp.Tab(
                         "Kontroll", Icons.knobs,
+                        // FIXME: for testing
                         active = (tabId == "1")
                     ) {
                         val aaProps = if (courseEx.grading_script != null) {
@@ -77,6 +78,7 @@ class TeacherCourseExerciseComp(
                     add(
                         TabsComp.Tab(
                             "Katseta", Icons.robot,
+                            // FIXME: for testing
                             active = (tabId == "2")
                         ) {
                             TestingTabComp(
@@ -90,18 +92,22 @@ class TeacherCourseExerciseComp(
                 add(
                     TabsComp.Tab(
                         "Esitused", Icons.courseParticipants,
+                        // FIXME: for testing
                         active = (tabId == "3")
                     ) {
                         TeacherCourseExerciseSubmissionsListTabComp(
-                            courseId, courseExId, courseEx.threshold,
+                            courseId, courseExId,
                             { openStudent(it) },
                             ::updatePrevNextBtns,
                             it
                         ).also { studentsTabComp = it }
                     })
 
-                val selectedStudentId = if (tabId != null && tabId.startsWith("4-"))
-                    tabId.substring(2)
+                // TODO: might want to make the query param 'student' and remove this prefix once testing tab ids are not needed anymore,
+                //  also rm this query param when selecting other tabs and add it when selecting this tab or opening a new student
+                val tabIdPrefix = "student:"
+                val selectedStudentId = if (tabId != null && tabId.startsWith(tabIdPrefix))
+                    tabId.substring(tabIdPrefix.length - 1)
                 else null
 
                 add(TabsComp.Tab(
@@ -112,6 +118,8 @@ class TeacherCourseExerciseComp(
                     TeacherCourseExerciseStudentTabComp(
                         courseId, courseExId, courseEx.exercise_id, courseEx.soft_deadline,
                         selectedStudentId.orEmpty(),
+//                        "20816",
+                        null,
                         // TODO: update title
 //                        { tabs.setTabTitle(submissionTabId, it.givenName + " " + it.familyName[0])},
                         { },
@@ -124,7 +132,7 @@ class TeacherCourseExerciseComp(
             parent = this
         )
 
-        // TODO: sidenav
+        // TODO: sidenav + download functionality from legacy button
     }
 
     override fun render() = template(
@@ -132,19 +140,19 @@ class TeacherCourseExerciseComp(
             <ez-course-exercise>
                 <ez-block-container>
                     <ez-block id='${exerciseTextComp.dstId}' style='width: 45rem; max-width: 80rem; overflow: auto;'></ez-block>
-                    <ez-block id='${tabs.dstId}' style='width: 45rem; max-width: 80rem; padding-top: 1rem; padding-bottom: 2rem; overflow: auto;'></ez-block>
+                    <!-- overflow on the following block would cause menus to clip on the edge of the block -->
+                    <ez-block id='${tabs.dstId}' style='width: 45rem; max-width: 80rem; padding-top: 1rem; padding-bottom: 2rem;'></ez-block>
                 </ez-block-container>
             </ez-course-exercise>
         """.trimIndent(),
+    )
 
-        )
-
-    private suspend fun openStudent(student: TeacherCourseExerciseSubmissionsListTabComp.StudentProps) {
-        tabs.setTabTitle(submissionTabId, student.givenName + " " + student.familyName[0])
+    private suspend fun openStudent(student: CourseExercisesTeacherDAO.LatestStudentSubmission) {
+        tabs.setTabTitle(submissionTabId, student.given_name + " " + student.family_name[0])
         tabs.setTabVisible(submissionTabId, true)
         tabs.activateTab(submissionTabId)
 
-        submissionTabComp.setStudent(student.id, "${student.givenName} ${student.familyName}")
+        submissionTabComp.setStudent(student.student_id, student.submission?.id)
         updatePrevNextBtns()
     }
 
@@ -163,8 +171,8 @@ class TeacherCourseExerciseComp(
     private fun updatePrevNextBtns() {
         val currentStudentId = submissionTabComp.studentId
         submissionTabComp.setPrevNextBtns(
-            studentsTabComp.getPrevStudent(currentStudentId)?.let { "${it.givenName} ${it.familyName}" },
-            studentsTabComp.getNextStudent(currentStudentId)?.let { "${it.givenName} ${it.familyName}" },
+            studentsTabComp.getPrevStudent(currentStudentId)?.let { "${it.given_name} ${it.family_name}" },
+            studentsTabComp.getNextStudent(currentStudentId)?.let { "${it.given_name} ${it.family_name}" },
         )
     }
 

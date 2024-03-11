@@ -68,7 +68,6 @@ class StudentCourseExerciseComp(
                         CourseExerciseStudentSubmissionsTabComp(
                             courseId,
                             courseExId,
-                            courseEx.threshold,
                             { openSubmission(it) },
                             it
                         ).also { submissionsTab = it }

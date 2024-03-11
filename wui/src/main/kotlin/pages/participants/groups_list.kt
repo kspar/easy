@@ -14,6 +14,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.plainDstStr
 import successMessage
+import translation.Str
 
 class ParticipantsGroupsListComp(
     private val courseId: String,
@@ -46,14 +47,14 @@ class ParticipantsGroupsListComp(
         val items = props.map { p ->
             EzCollComp.Item(
                 p, EzCollComp.ItemTypeIcon(Icons.groups), p.name,
-                bottomAttrs = listOf(
-                    EzCollComp.SimpleAttr("Õpilasi", p.studentsCount, Icons.userUnf),
+                topAttr = EzCollComp.SimpleAttr(
+                    "Rühmas on",
+                    "${p.studentsCount} ${if (p.studentsCount == 1) Str.studentsSingular else Str.studentsPlural}",
+                    Icons.userUnf
                 ),
                 actions = buildList {
                     if (isEditable) add(
-                        EzCollComp.Action(
-                            Icons.delete,
-                            "Kustuta",
+                        EzCollComp.Action(Icons.delete, "Kustuta",
                             onActivate = ::deleteGroup,
                             onResultModified = { onGroupDeleted() })
                     )
@@ -64,7 +65,7 @@ class ParticipantsGroupsListComp(
         groupsColl = EzCollComp(
             items, EzCollComp.Strings("rühm", "rühma"),
             sorters = listOf(
-                EzCollComp.Sorter("Nime järgi", compareBy(HumanStringComparator) { it.props.name })
+                EzCollComp.Sorter("Nimi", compareBy(HumanStringComparator) { it.props.name })
             ),
             parent = this
         )
