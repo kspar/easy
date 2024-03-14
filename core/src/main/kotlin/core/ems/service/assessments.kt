@@ -15,24 +15,6 @@ import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 
 
-data class TeacherResp(
-    @JsonProperty("id")
-    val id: String,
-    @JsonProperty("given_name")
-    val givenName: String,
-    @JsonProperty("family_name")
-    val familyName: String
-)
-
-
-fun selectTeacher(teacherId: String) = transaction {
-    Account
-        .slice(Account.id, Account.givenName, Account.familyName)
-        .select { Account.id eq teacherId }
-        .map { TeacherResp(it[Account.id].value, it[Account.givenName], it[Account.familyName]) }
-        .singleOrInvalidRequest()
-}
-
 
 fun assertAssessmentControllerChecks(
     caller: EasyUser, submissionIdString: String, courseExerciseIdString: String, courseIdString: String,
@@ -54,7 +36,7 @@ fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, stud
     transaction {
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.FAILED
-            if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
+            if (!anyPreviousTeacherActivityContainsGrade(studentId, courseExId)) {
                 it[grade] = null
                 it[isAutoGrade] = true
             }
@@ -64,7 +46,7 @@ fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, stud
     cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
 }
 
-fun insertAutoAssessment(
+fun insertAutogradeActivity(
     newGrade: Int,
     newFeedback: String?,
     submissionId: Long,
@@ -74,7 +56,7 @@ fun insertAutoAssessment(
 ) {
     transaction {
         val time = DateTime.now()
-        AutomaticAssessment.insert {
+        AutogradeActivity.insert {
             it[student] = studentId
             it[courseExercise] = courseExId
             it[submission] = submissionId
@@ -85,7 +67,7 @@ fun insertAutoAssessment(
 
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
-            if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
+            if (!anyPreviousTeacherActivityContainsGrade(studentId, courseExId)) {
                 it[grade] = newGrade
                 it[isAutoGrade] = true
                 it[isGradedDirectly] = true
@@ -118,10 +100,10 @@ fun selectAutoExId(courseExId: Long): Long? = transaction {
         .single()?.value
 }
 
-private fun anyPreviousTeacherAssessmentContainsGrade(studentId: String, courseExercise: Long): Boolean =
+private fun anyPreviousTeacherActivityContainsGrade(studentId: String, courseExercise: Long): Boolean =
     transaction {
-        TeacherAssessment
+        TeacherActivity
             .select {
-                (TeacherAssessment.student eq studentId) and (TeacherAssessment.courseExercise eq courseExercise) and TeacherAssessment.grade.isNotNull()
+                (TeacherActivity.student eq studentId) and (TeacherActivity.courseExercise eq courseExercise) and TeacherActivity.grade.isNotNull()
             }.count() > 0
     }

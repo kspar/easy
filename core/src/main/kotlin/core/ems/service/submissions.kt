@@ -108,7 +108,7 @@ suspend fun autoAssessAsync(
         }
 
         log.debug { "Finished autoassessment" }
-        insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
+        insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
     } catch (e: Exception) {
         log.error("Autoassessment failed", e)
         insertAutoAssFailed(submissionId, caching, studentId, courseExId)

@@ -3,9 +3,9 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.AutomaticAssessment
+import core.db.AutogradeActivity
 import core.db.Submission
-import core.db.TeacherAssessment
+import core.db.TeacherActivity
 import core.ems.service.TeacherResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
@@ -73,47 +73,47 @@ class ReadStudentAllExerciseActivities {
     }
 
     private fun selectTeacherAllSubmissions(courseExId: Long, studentId: String): Resp = transaction {
-        val teacherActivities = (Submission innerJoin TeacherAssessment)
+        val teacherActivities = (Submission innerJoin TeacherActivity)
             .slice(
-                TeacherAssessment.submission,
-                TeacherAssessment.feedbackHtml,
-                TeacherAssessment.feedbackAdoc,
-                TeacherAssessment.mergeWindowStart,
-                TeacherAssessment.grade,
-                TeacherAssessment.editedAt,
-                TeacherAssessment.teacher,
+                TeacherActivity.submission,
+                TeacherActivity.feedbackHtml,
+                TeacherActivity.feedbackAdoc,
+                TeacherActivity.mergeWindowStart,
+                TeacherActivity.grade,
+                TeacherActivity.editedAt,
+                TeacherActivity.teacher,
                 Submission.number
             ).select {
-                TeacherAssessment.student eq studentId and (TeacherAssessment.courseExercise eq courseExId) and (Submission.id eq TeacherAssessment.submission)
-            }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.ASC)
+                TeacherActivity.student eq studentId and (TeacherActivity.courseExercise eq courseExId) and (Submission.id eq TeacherActivity.submission)
+            }.orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
             .map {
-                val submissionId = it[TeacherAssessment.submission].value
-                val html = it[TeacherAssessment.feedbackHtml]
-                val adoc = it[TeacherAssessment.feedbackAdoc]
+                val submissionId = it[TeacherActivity.submission].value
+                val html = it[TeacherActivity.feedbackHtml]
+                val adoc = it[TeacherActivity.feedbackAdoc]
 
                 TeacherActivityResp(
                     submissionId,
                     it[Submission.number],
-                    it[TeacherAssessment.mergeWindowStart],
-                    it[TeacherAssessment.grade],
-                    it[TeacherAssessment.editedAt],
+                    it[TeacherActivity.mergeWindowStart],
+                    it[TeacherActivity.grade],
+                    it[TeacherActivity.editedAt],
                     if (html != null && adoc != null) FeedbackResp(html, adoc) else null,
-                    selectTeacher(it[TeacherAssessment.teacher].value)
+                    selectTeacher(it[TeacherActivity.teacher].value)
                 )
             }
 
-        val autoAssessments = AutomaticAssessment
+        val autoAssessments = AutogradeActivity
             .slice(
-                AutomaticAssessment.submission,
-                AutomaticAssessment.grade,
-                AutomaticAssessment.feedback
-            ).select { AutomaticAssessment.student eq studentId and (AutomaticAssessment.courseExercise eq courseExId) }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.ASC)
+                AutogradeActivity.submission,
+                AutogradeActivity.grade,
+                AutogradeActivity.feedback
+            ).select { AutogradeActivity.student eq studentId and (AutogradeActivity.courseExercise eq courseExId) }
+            .orderBy(AutogradeActivity.createdAt to SortOrder.ASC)
             .map {
                 AutomaticAssessmentResp(
-                    it[AutomaticAssessment.submission].value,
-                    it[AutomaticAssessment.grade],
-                    it[AutomaticAssessment.feedback]
+                    it[AutogradeActivity.submission].value,
+                    it[AutogradeActivity.grade],
+                    it[AutogradeActivity.feedback]
                 )
             }
 

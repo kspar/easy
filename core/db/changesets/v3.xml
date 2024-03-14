@@ -342,5 +342,13 @@
         </sql>
     </changeSet>
 
+    <changeSet id="140324-2" author="priit">
+        <renameTable newTableName="autograde_activity"
+                     oldTableName="automatic_assessment"/>
+
+        <renameTable newTableName="teacher_activity"
+                     oldTableName="teacher_assessment"/>
+    </changeSet>
+
 
 </databaseChangeLog>

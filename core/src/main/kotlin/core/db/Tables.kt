@@ -175,7 +175,7 @@ object StatsSubmission : Table("stats_submission") {
     override val primaryKey = PrimaryKey(submissionId)
 }
 
-object TeacherAssessment : LongIdTable("teacher_assessment") {
+object TeacherActivity : LongIdTable("teacher_activity") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)
@@ -187,7 +187,7 @@ object TeacherAssessment : LongIdTable("teacher_assessment") {
     val feedbackAdoc = text("feedback_adoc").nullable()
 }
 
-object AutomaticAssessment : LongIdTable("automatic_assessment") {
+object AutogradeActivity : LongIdTable("autograde_activity") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)

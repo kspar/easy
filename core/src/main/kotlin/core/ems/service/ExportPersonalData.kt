@@ -128,8 +128,8 @@ class ExportPersonalData {
                 (Submission.student eq studentId)
             }.orderBy(Submission.createdAt, SortOrder.DESC).map {
                 val id = it[Submission.id].value
-                val autoAssessment = lastAutoAssessment(id)
-                val teacherAssessment = lastTeacherAssessment(id)
+                val autoAssessment = lastAutogradeActivity(id)
+                val teacherAssessment = lastTeacherActivity(id)
                 SubmissionDataJSON(
                     id.toString(),
                     it[Submission.solution],
@@ -168,15 +168,15 @@ class ExportPersonalData {
     }
 
 
-    private fun lastAutoAssessment(submissionId: Long): Pair<Int, String?>? =
-        AutomaticAssessment.select { AutomaticAssessment.submission eq submissionId }
-            .orderBy(AutomaticAssessment.createdAt to SortOrder.DESC).limit(1)
-            .map { it[AutomaticAssessment.grade] to it[AutomaticAssessment.feedback] }.firstOrNull()
+    private fun lastAutogradeActivity(submissionId: Long): Pair<Int, String?>? =
+        AutogradeActivity.select { AutogradeActivity.submission eq submissionId }
+            .orderBy(AutogradeActivity.createdAt to SortOrder.DESC).limit(1)
+            .map { it[AutogradeActivity.grade] to it[AutogradeActivity.feedback] }.firstOrNull()
 
-    private fun lastTeacherAssessment(submissionId: Long): Pair<Int?, String?>? =
-        TeacherAssessment.select { TeacherAssessment.submission eq submissionId }
-            .orderBy(TeacherAssessment.mergeWindowStart to SortOrder.DESC).limit(1)
-            .map { it[TeacherAssessment.grade] to it[TeacherAssessment.feedbackHtml] }.firstOrNull()
+    private fun lastTeacherActivity(submissionId: Long): Pair<Int?, String?>? =
+        TeacherActivity.select { TeacherActivity.submission eq submissionId }
+            .orderBy(TeacherActivity.mergeWindowStart to SortOrder.DESC).limit(1)
+            .map { it[TeacherActivity.grade] to it[TeacherActivity.feedbackHtml] }.firstOrNull()
 
     private data class JsonFile(val filename: String, val content: String)
 

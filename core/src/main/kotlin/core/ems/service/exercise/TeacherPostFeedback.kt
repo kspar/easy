@@ -59,13 +59,13 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
             val time =  DateTime.now()
 
             if (previousId != null) {
-                TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
+                TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[mergeWindowStart] = time
                     it[feedbackAdoc] = assessment.feedbackAdoc
                     it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
                 }
             } else {
-                TeacherAssessment.insert {
+                TeacherActivity.insert {
                     it[student] = selectStudentBySubmissionId(submissionId)
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
@@ -85,14 +85,14 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherAssessment.slice(TeacherAssessment.id, TeacherAssessment.mergeWindowStart)
+            TeacherActivity.slice(TeacherActivity.id, TeacherActivity.mergeWindowStart)
                 .select {
-                    TeacherAssessment.submission eq submissionId and (TeacherAssessment.teacher eq teacherId)
-                }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.DESC)
+                    TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId)
+                }.orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
-                    val timeIsInWindow = !it[TeacherAssessment.mergeWindowStart].hasSecondsPassed(mergeWindow)
-                    val noFeedback = it[TeacherAssessment.feedbackAdoc] == null
-                    if (timeIsInWindow && noFeedback) it[TeacherAssessment.id].value else null
+                    val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
+                    val noFeedback = it[TeacherActivity.feedbackAdoc] == null
+                    if (timeIsInWindow && noFeedback) it[TeacherActivity.id].value else null
                 }
         }
 

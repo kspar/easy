@@ -78,7 +78,7 @@ class TeacherRetryAutoassessCont(
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
             val autoAss = autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
-            insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
+            insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
 
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)

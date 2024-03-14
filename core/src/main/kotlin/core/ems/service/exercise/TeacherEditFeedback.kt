@@ -2,7 +2,7 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.TeacherAssessment
+import core.db.TeacherActivity
 import core.db.isNull
 import core.ems.service.AdocService
 import core.ems.service.assertAssessmentControllerChecks
@@ -58,7 +58,7 @@ class TeacherEditFeedbackController(val adocService: AdocService) {
         val activityId = req.teacherActivityId.idToLongOrInvalidReq()
 
         val updated =
-            TeacherAssessment.update({ (TeacherAssessment.id eq activityId) and (TeacherAssessment.teacher eq teacherId) }) {
+            TeacherActivity.update({ (TeacherActivity.id eq activityId) and (TeacherActivity.teacher eq teacherId) }) {
                 it[editedAt] = DateTime.now()
                 it[feedbackAdoc] = req.feedbackAdoc
                 it[feedbackHtml] = req.feedbackAdoc?.let { adoc -> adocService.adocToHtml(adoc) }
@@ -69,7 +69,7 @@ class TeacherEditFeedbackController(val adocService: AdocService) {
         }
 
         // Do not leave empty assessments in the db
-        TeacherAssessment.deleteWhere {
+        TeacherActivity.deleteWhere {
             (teacher eq teacherId) and (submission eq submissionId) and grade.isNull() and feedbackAdoc.isNull()
         }
     }

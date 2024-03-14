@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StatsSubmission
 import core.db.Submission
-import core.db.TeacherAssessment
+import core.db.TeacherActivity
 import core.ems.service.assertAssessmentControllerChecks
 import core.ems.service.hasSecondsPassed
 import core.ems.service.moodle.MoodleGradesSyncService
@@ -60,12 +60,12 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
             val time = DateTime.now()
             if (previousId != null) {
-                TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
+                TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[grade] = assessment.grade
                     it[mergeWindowStart] = time
                 }
             } else {
-                TeacherAssessment.insert {
+                TeacherActivity.insert {
                     it[student] = selectStudentBySubmissionId(submissionId)
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
@@ -90,13 +90,13 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherAssessment.slice(TeacherAssessment.id, TeacherAssessment.mergeWindowStart)
+            TeacherActivity.slice(TeacherActivity.id, TeacherActivity.mergeWindowStart)
                 .select {
-                    TeacherAssessment.submission eq submissionId and (TeacherAssessment.teacher eq teacherId)
+                    TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId)
 
-                }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.DESC)
+                }.orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
-                    if (!it[TeacherAssessment.mergeWindowStart].hasSecondsPassed(mergeWindow)) it[TeacherAssessment.id].value else null
+                    if (!it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)) it[TeacherActivity.id].value else null
                 }
         }
 
