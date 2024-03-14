@@ -68,6 +68,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     @Test
     fun `selectAllCourseExercises student 1 should return 2 submissions with grades 81 and 99`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
+        println(latestSubmissions)
 
         val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
         val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
@@ -313,6 +314,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 71
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -323,6 +325,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 81
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -333,6 +336,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 91
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -343,6 +347,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 99
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             // Stud 2: EX1: no submission, no grade, EX2: submission, grade
@@ -354,6 +359,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 51
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
         }
     }
