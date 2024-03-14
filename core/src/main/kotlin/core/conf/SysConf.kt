@@ -2,16 +2,14 @@ package core.conf
 
 import core.db.SystemConfiguration
 import core.db.insertOrUpdate
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object SysConf {
 
     // TODO: make it cacheable and evict cache after certain amount of time
     fun getProp(key: String): String? = transaction {
-        SystemConfiguration.select {
-            SystemConfiguration.id eq key
-        }.map {
+        SystemConfiguration.selectAll().where { SystemConfiguration.id eq key }.map {
             it[SystemConfiguration.value]
         }.firstOrNull()
     }

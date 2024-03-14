@@ -8,7 +8,7 @@ import core.db.*
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.core.io.ByteArrayResource
@@ -57,23 +57,24 @@ class ExportPersonalData {
         )
 
         return transaction {
-            jacksonObjectMapper().writeValueAsString(Account.slice(
-                Account.id,
-                Account.createdAt,
-                Account.moodleUsername,
-                Account.email,
-                Account.givenName,
-                Account.familyName
-            ).select { Account.id eq userId }.map {
-                AccountDataJSON(
-                    it[Account.id].value,
-                    it[Account.createdAt],
-                    it[Account.moodleUsername],
-                    it[Account.email],
-                    it[Account.givenName],
-                    it[Account.familyName]
-                )
-            }.single()
+            jacksonObjectMapper().writeValueAsString(
+                Account.select(
+                    Account.id,
+                    Account.createdAt,
+                    Account.moodleUsername,
+                    Account.email,
+                    Account.givenName,
+                    Account.familyName
+                ).where { Account.id eq userId }.map {
+                    AccountDataJSON(
+                        it[Account.id].value,
+                        it[Account.createdAt],
+                        it[Account.moodleUsername],
+                        it[Account.email],
+                        it[Account.givenName],
+                        it[Account.familyName]
+                    )
+                }.single()
             )
         }
     }
@@ -89,21 +90,22 @@ class ExportPersonalData {
         )
 
         return transaction {
-            jacksonObjectMapper().writeValueAsString(LogReport.slice(
-                LogReport.id,
-                LogReport.logTime,
-                LogReport.logLevel,
-                LogReport.logMessage,
-                LogReport.clientId
-            ).select { LogReport.userId eq userId }.map {
-                LogReportDataJSON(
-                    it[LogReport.id].value,
-                    it[LogReport.logTime],
-                    it[LogReport.logLevel],
-                    it[LogReport.logMessage],
-                    it[LogReport.clientId],
-                )
-            })
+            jacksonObjectMapper().writeValueAsString(
+                LogReport.select(
+                    LogReport.id,
+                    LogReport.logTime,
+                    LogReport.logLevel,
+                    LogReport.logMessage,
+                    LogReport.clientId
+                ).where { LogReport.userId eq userId }.map {
+                    LogReportDataJSON(
+                        it[LogReport.id].value,
+                        it[LogReport.logTime],
+                        it[LogReport.logLevel],
+                        it[LogReport.logMessage],
+                        it[LogReport.clientId],
+                    )
+                })
         }
     }
 
@@ -120,26 +122,27 @@ class ExportPersonalData {
         )
 
         return transaction {
-            jacksonObjectMapper().writeValueAsString(Submission.slice(
-                Submission.createdAt,
-                Submission.id,
-                Submission.solution
-            ).select {
-                (Submission.student eq studentId)
-            }.orderBy(Submission.createdAt, SortOrder.DESC).map {
-                val id = it[Submission.id].value
-                val autoAssessment = lastAutogradeActivity(id)
-                val teacherAssessment = lastTeacherActivity(id)
-                SubmissionDataJSON(
-                    id.toString(),
-                    it[Submission.solution],
-                    it[Submission.createdAt],
-                    autoAssessment?.first,
-                    autoAssessment?.second,
-                    teacherAssessment?.first,
-                    teacherAssessment?.second
-                )
-            })
+            jacksonObjectMapper().writeValueAsString(
+                Submission.select(
+                    Submission.createdAt,
+                    Submission.id,
+                    Submission.solution
+                ).where {
+                    (Submission.student eq studentId)
+                }.orderBy(Submission.createdAt, SortOrder.DESC).map {
+                    val id = it[Submission.id].value
+                    val autoAssessment = lastAutogradeActivity(id)
+                    val teacherAssessment = lastTeacherActivity(id)
+                    SubmissionDataJSON(
+                        id.toString(),
+                        it[Submission.solution],
+                        it[Submission.createdAt],
+                        autoAssessment?.first,
+                        autoAssessment?.second,
+                        teacherAssessment?.first,
+                        teacherAssessment?.second
+                    )
+                })
         }
     }
 
@@ -151,30 +154,31 @@ class ExportPersonalData {
         )
 
         return transaction {
-            jacksonObjectMapper().writeValueAsString(SubmissionDraft.slice(
-                SubmissionDraft.courseExercise,
-                SubmissionDraft.createdAt,
-                SubmissionDraft.solution
-            ).select {
-                (SubmissionDraft.student eq studentId)
-            }.orderBy(SubmissionDraft.createdAt, SortOrder.DESC).map {
-                SubmissionDraftJSON(
-                    it[SubmissionDraft.courseExercise].value,
-                    it[SubmissionDraft.createdAt],
-                    it[SubmissionDraft.solution]
-                )
-            })
+            jacksonObjectMapper().writeValueAsString(
+                SubmissionDraft.select(
+                    SubmissionDraft.courseExercise,
+                    SubmissionDraft.createdAt,
+                    SubmissionDraft.solution
+                ).where {
+                    (SubmissionDraft.student eq studentId)
+                }.orderBy(SubmissionDraft.createdAt, SortOrder.DESC).map {
+                    SubmissionDraftJSON(
+                        it[SubmissionDraft.courseExercise].value,
+                        it[SubmissionDraft.createdAt],
+                        it[SubmissionDraft.solution]
+                    )
+                })
         }
     }
 
 
     private fun lastAutogradeActivity(submissionId: Long): Pair<Int, String?>? =
-        AutogradeActivity.select { AutogradeActivity.submission eq submissionId }
+        AutogradeActivity.selectAll().where { AutogradeActivity.submission eq submissionId }
             .orderBy(AutogradeActivity.createdAt to SortOrder.DESC).limit(1)
             .map { it[AutogradeActivity.grade] to it[AutogradeActivity.feedback] }.firstOrNull()
 
     private fun lastTeacherActivity(submissionId: Long): Pair<Int?, String?>? =
-        TeacherActivity.select { TeacherActivity.submission eq submissionId }
+        TeacherActivity.selectAll().where { TeacherActivity.submission eq submissionId }
             .orderBy(TeacherActivity.mergeWindowStart to SortOrder.DESC).limit(1)
             .map { it[TeacherActivity.grade] to it[TeacherActivity.feedbackHtml] }.firstOrNull()
 

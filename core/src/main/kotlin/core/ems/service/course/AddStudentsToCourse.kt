@@ -77,8 +77,8 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
 
         students.forEach {
             val studentId = Account
-                .slice(Account.id)
-                .select { Account.email.lowerCase() eq it.email and Account.isStudent }
+                .select(Account.id)
+                .where { Account.email.lowerCase() eq it.email and Account.isStudent }
                 .map { it[Account.id].value }
                 .singleOrNull()
 
@@ -90,9 +90,9 @@ class AddStudentsToCourseController(val cachingService: CachingService) {
         }
 
         val newStudentsWithAccount = studentsWithAccount.filter {
-            StudentCourseAccess.select {
-                StudentCourseAccess.student eq it.id and (StudentCourseAccess.course eq courseId)
-            }.count() == 0L
+            StudentCourseAccess.selectAll()
+                .where { StudentCourseAccess.student eq it.id and (StudentCourseAccess.course eq courseId) }
+                .count() == 0L
         }
 
         log.info { "Granting access to students (the rest already have access): $newStudentsWithAccount" }

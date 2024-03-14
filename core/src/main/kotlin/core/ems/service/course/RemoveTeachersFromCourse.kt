@@ -12,7 +12,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -61,9 +61,9 @@ class RemoveTeachersFromCourseController {
             }
 
             val teachersWithAccess = teachers.teachers.filter {
-                TeacherCourseAccess.select {
-                    TeacherCourseAccess.teacher eq it.id and (TeacherCourseAccess.course eq courseId)
-                }.count() > 0
+                TeacherCourseAccess.selectAll()
+                    .where { TeacherCourseAccess.teacher eq it.id and (TeacherCourseAccess.course eq courseId) }
+                    .count() > 0
             }
 
 

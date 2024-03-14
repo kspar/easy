@@ -13,7 +13,6 @@ import core.exception.ReqError
 import core.util.SendMailService
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
@@ -62,8 +61,8 @@ class TeacherRetryAutoassessCont(
             )
         }
         val (solution, studentId) = transaction {
-            Submission.slice(Submission.solution, Submission.student)
-                .select { (Submission.id eq submissionId) }
+            Submission.select(Submission.solution, Submission.student)
+                .where { (Submission.id eq submissionId) }
                 .map { it[Submission.solution] to it[Submission.student].value }
                 .singleOrInvalidRequest()
         }
@@ -78,7 +77,14 @@ class TeacherRetryAutoassessCont(
             log.debug { "Starting autoassessment with auto exercise id $autoExerciseId" }
             val autoAss = autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
             log.debug { "Finished autoassessment" }
-            insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, cachingService, courseExId, studentId)
+            insertAutogradeActivity(
+                autoAss.grade,
+                autoAss.feedback,
+                submissionId,
+                cachingService,
+                courseExId,
+                studentId
+            )
 
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)

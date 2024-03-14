@@ -9,7 +9,10 @@ import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
 import core.util.writeZipFile
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Join
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -73,14 +76,14 @@ class TeacherDownloadSubmissionsController {
             val join2 = StudentCourseAccess leftJoin (StudentCourseGroup innerJoin CourseGroup)
 
             val query = Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
-                .slice(
+                .select(
                     Submission.solution,
                     Submission.student,
                     Account.givenName,
                     Account.familyName,
                     CourseGroup.name
                 )
-                .select {
+                .where {
                     CourseExercise.exercise eq exerciseId and
                             (CourseExercise.course eq courseId) and
                             (StudentCourseAccess.course eq courseId)

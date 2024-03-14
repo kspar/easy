@@ -14,7 +14,6 @@ import core.util.maxOfOrNull
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.leftJoin
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -156,11 +155,11 @@ class ReadDirController {
             val exerciseIds = implicitDirs.map { it.name.toLong() }
 
             val childExercises = (Exercise innerJoin ExerciseVer leftJoin CourseExercise)
-                .slice(
+                .select(
                     Exercise.id, Exercise.createdAt, ExerciseVer.title, ExerciseVer.graderType,
                     ExerciseVer.validFrom, CourseExercise.id, Exercise.owner, ExerciseVer.author
                 )
-                .select {
+                .where {
                     Exercise.id inList exerciseIds and
                             ExerciseVer.validTo.isNull()
                 }.map {
@@ -209,11 +208,11 @@ class ReadDirController {
             onColumn = { Dir.id },
             otherColumn = { GroupDirAccess.dir },
             additionalConstraint = { AccountGroup.account.eq(caller.id) }
-        ).slice(
+        ).select(
             Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt,
             GroupDirAccess.level
         )
-            .select {
+            .where { //and (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
                 Dir.parentDir eq dirId //and (AccountGroup.account eq caller.id or AccountGroup.account.isNull())
             }.map {
                 PotentialDirAccess(
@@ -249,8 +248,8 @@ class ReadDirController {
         // leftJoin because there might be 0 accesses on it
         val directAccesses = Dir.leftJoin((GroupDirAccess innerJoin Group), { Dir.id }, { GroupDirAccess.dir },
             { GroupDirAccess.level.greaterEq(DirAccessLevel.PR) })
-            .slice(Dir.anyAccess, Group.isImplicit)
-            .select { Dir.id.eq(dirId) }
+            .select(Dir.anyAccess, Group.isImplicit)
+            .where { Dir.id.eq(dirId) }
             .map {
                 DirectAccess(
                     it[Group.isImplicit], // could be null due to leftJoin
@@ -276,10 +275,8 @@ class ReadDirController {
 
     private fun selectThisDir(dirId: Long?, currentDirAccess: DirAccessLevel?): DirResp? {
         return if (dirId != null) {
-            Dir.slice(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
-                .select {
-                    Dir.id eq dirId
-                }.map {
+            Dir.select(Dir.id, Dir.name, Dir.createdAt, Dir.modifiedAt)
+                .where { Dir.id eq dirId }.map {
                     DirResp(
                         it[Dir.id].value.toString(),
                         it[Dir.name],
@@ -293,9 +290,9 @@ class ReadDirController {
     }
 
     private fun selectAllDirsForAdmin(dirId: Long?): List<DirAccess> {
-        return Dir.slice(
+        return Dir.select(
             Dir.id, Dir.name, Dir.isImplicit, Dir.anyAccess, Dir.createdAt, Dir.modifiedAt
-        ).select {
+        ).where {
             Dir.parentDir eq dirId
         }.map {
             DirAccess(

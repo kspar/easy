@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import java.util.*
 import javax.sql.DataSource
 import kotlin.random.Random
 
@@ -162,6 +163,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-28T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isStudent] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
+
             }
 
             Account.insert {
@@ -173,6 +176,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-27T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isStudent] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
             }
 
             Account.insert {
@@ -184,6 +188,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-26T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isTeacher] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
             }
 
 
@@ -201,9 +206,6 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.now()
                 it[public] = true
                 it[anonymousAutoassessEnabled] = false
-                it[successfulAnonymousSubmissionCount] = 0
-                it[unsuccessfulAnonymousSubmissionCount] = 0
-                it[removedSubmissionsCount] = 0
                 it[dir] = EntityID(1L, Dir)
             }
 
@@ -213,9 +215,6 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.now()
                 it[public] = true
                 it[anonymousAutoassessEnabled] = false
-                it[successfulAnonymousSubmissionCount] = 0
-                it[unsuccessfulAnonymousSubmissionCount] = 0
-                it[removedSubmissionsCount] = 0
                 it[dir] = EntityID(1L, Dir)
             }
 

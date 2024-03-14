@@ -15,7 +15,6 @@ import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -74,7 +73,7 @@ class ReadStudentAllExerciseActivities {
 
     private fun selectTeacherAllSubmissions(courseExId: Long, studentId: String): Resp = transaction {
         val teacherActivities = (Submission innerJoin TeacherActivity)
-            .slice(
+            .select(
                 TeacherActivity.submission,
                 TeacherActivity.feedbackHtml,
                 TeacherActivity.feedbackAdoc,
@@ -83,9 +82,10 @@ class ReadStudentAllExerciseActivities {
                 TeacherActivity.editedAt,
                 TeacherActivity.teacher,
                 Submission.number
-            ).select {
+            ).where {
                 TeacherActivity.student eq studentId and (TeacherActivity.courseExercise eq courseExId) and (Submission.id eq TeacherActivity.submission)
-            }.orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
+            }
+            .orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
             .map {
                 val submissionId = it[TeacherActivity.submission].value
                 val html = it[TeacherActivity.feedbackHtml]
@@ -103,11 +103,11 @@ class ReadStudentAllExerciseActivities {
             }
 
         val autoAssessments = AutogradeActivity
-            .slice(
+            .select(
                 AutogradeActivity.submission,
                 AutogradeActivity.grade,
                 AutogradeActivity.feedback
-            ).select { AutogradeActivity.student eq studentId and (AutogradeActivity.courseExercise eq courseExId) }
+            ).where { AutogradeActivity.student eq studentId and (AutogradeActivity.courseExercise eq courseExId) }
             .orderBy(AutogradeActivity.createdAt to SortOrder.ASC)
             .map {
                 AutomaticAssessmentResp(

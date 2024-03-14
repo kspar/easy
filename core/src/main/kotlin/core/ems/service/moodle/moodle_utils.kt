@@ -3,7 +3,6 @@ package core.ems.service.moodle
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Course
 import core.exception.InvalidRequestException
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 
@@ -33,10 +32,8 @@ fun selectCourseShortName(
     requireStudentsSynced: Boolean = false,
     requireGradesSynced: Boolean = false
 ): String? = transaction {
-    Course.slice(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
-        .select {
-            Course.id eq courseId
-        }.map {
+    Course.select(Course.moodleShortName, Course.moodleSyncStudents, Course.moodleSyncGrades)
+        .where { Course.id eq courseId }.map {
             if (requireStudentsSynced && !it[Course.moodleSyncStudents]) {
                 return@transaction null
             }

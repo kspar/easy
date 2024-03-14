@@ -2,11 +2,15 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.StatsSubmission
+import core.db.TeacherActivity
 import core.ems.service.*
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
@@ -56,7 +60,7 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
     private fun insertOrUpdateFeedback(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
-            val time =  DateTime.now()
+            val time = DateTime.now()
 
             if (previousId != null) {
                 TeacherActivity.update({ TeacherActivity.id eq previousId }) {
@@ -76,7 +80,7 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
                 }
             }
 
-            StatsSubmission.update ({ StatsSubmission.submissionId eq submissionId }){
+            StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
                 it[hasEverReceivedTeacherComment] = true
                 it[latestTeacherActivityUpdate] = time
                 it[latestTeacherPseudonym] = selectPseudonym(teacherId)
@@ -85,10 +89,9 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherActivity.slice(TeacherActivity.id, TeacherActivity.mergeWindowStart)
-                .select {
-                    TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId)
-                }.orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
+            TeacherActivity.select(TeacherActivity.id, TeacherActivity.mergeWindowStart)
+                .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
+                .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
                     val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
                     val noFeedback = it[TeacherActivity.feedbackAdoc] == null

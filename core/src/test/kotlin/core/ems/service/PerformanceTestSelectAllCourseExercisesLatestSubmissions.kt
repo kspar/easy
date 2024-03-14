@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
 import java.time.Duration
+import java.util.*
 import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
 
@@ -95,6 +96,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 this[Account.isStudent] = true
                 this[Account.isTeacher] = true
                 this[Account.isAdmin] = false
+                this[Account.pseudonym] = UUID.randomUUID().toString().replace("-", "")
             }
 
 
@@ -124,9 +126,6 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 this[Exercise.createdAt] = DateTime.now()
                 this[Exercise.public] = true
                 this[Exercise.anonymousAutoassessEnabled] = false
-                this[Exercise.successfulAnonymousSubmissionCount] = 0
-                this[Exercise.unsuccessfulAnonymousSubmissionCount] = 0
-                this[Exercise.removedSubmissionsCount] = 0
                 this[Exercise.dir] = EntityID(ids.first().toLong(), Dir)
             }
 

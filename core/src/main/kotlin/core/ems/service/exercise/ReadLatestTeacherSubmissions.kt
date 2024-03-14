@@ -9,7 +9,7 @@ import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -53,7 +53,7 @@ class ReadLatestTeacherSubmissions {
     private fun selectLatestTeacherSubmissions(exerciseId: Long, teacherId: String, offset: Long?, limit: Int?): Resp =
         transaction {
             val selectQuery = TeacherSubmission
-                .select {
+                .selectAll().where {
                     (TeacherSubmission.exercise eq exerciseId) and
                             (TeacherSubmission.teacher eq teacherId)
                 }

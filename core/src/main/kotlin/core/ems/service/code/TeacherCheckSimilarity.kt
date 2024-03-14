@@ -3,7 +3,10 @@ package core.ems.service.code
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.Account
+import core.db.Course
+import core.db.CourseExercise
+import core.db.Submission
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
@@ -15,7 +18,6 @@ import me.xdrop.fuzzywuzzy.FuzzySearch
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -118,7 +120,7 @@ class TeacherCheckSimilarityController {
     ): List<RespSubmission> = transaction {
 
         val query = (Course innerJoin CourseExercise innerJoin (Submission innerJoin Account))
-            .slice(
+            .select(
                 Course.title,
                 Submission.id,
                 Submission.createdAt,
@@ -126,7 +128,7 @@ class TeacherCheckSimilarityController {
                 Account.givenName,
                 Account.familyName
             )
-            .select {
+            .where {
                 CourseExercise.exercise eq exerciseId and
                         (CourseExercise.course inList courses)
             }

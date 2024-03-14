@@ -18,7 +18,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
@@ -93,9 +93,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
     }
 
     private fun isCoursePresent(courseId: Long): Boolean = transaction {
-        Course.select {
-            Course.id eq courseId
-        }.count() > 0
+        Course.selectAll().where { Course.id eq courseId }.count() > 0
     }
 
     private fun insertCourseExercise(courseId: Long, body: Req, html: String?): Long =
@@ -105,10 +103,8 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
             val orderIdxMaxColumn = CourseExercise.orderIdx.max()
 
             val currentMaxOrderIdx = CourseExercise
-                .slice(orderIdxMaxColumn)
-                .select {
-                    CourseExercise.course eq courseId
-                }
+                .select(orderIdxMaxColumn)
+                .where { CourseExercise.course eq courseId }
                 .groupBy(CourseExercise.course)
                 .map { it[orderIdxMaxColumn] }
                 .singleOrNull()
@@ -134,8 +130,8 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
             }
 
             if (html != null) {
-                val inUse = StoredFile.slice(StoredFile.id)
-                    .select { StoredFile.usageConfirmed eq false }
+                val inUse = StoredFile.select(StoredFile.id)
+                    .where { StoredFile.usageConfirmed eq false }
                     .map { it[StoredFile.id].value }
                     .filter { html.contains(it) }
 

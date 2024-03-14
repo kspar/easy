@@ -11,7 +11,6 @@ import core.ems.service.normaliseCourseExIndices
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
@@ -54,8 +53,8 @@ class TeacherReorderExerciseController {
 
         val orderedExercises = transaction {
             CourseExercise
-                .slice(CourseExercise.id, CourseExercise.orderIdx)
-                .select { CourseExercise.course eq courseId }
+                .select(CourseExercise.id, CourseExercise.orderIdx)
+                .where { CourseExercise.course eq courseId }
                 .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
                 .map {
                     OrderedEx(

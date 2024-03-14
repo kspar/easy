@@ -6,10 +6,8 @@ import core.db.Course
 import core.db.CourseInviteLink
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.upperCase
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -38,12 +36,11 @@ class GetCourseInfoByInvite {
 
     private fun selectCourseInfoByInvite(inviteId: String): Resp = transaction {
         (CourseInviteLink innerJoin Course)
-            .slice(Course.id, Course.title, Course.alias)
-            .select {
+            .select(Course.id, Course.title, Course.alias)
+            .where {
                 (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)
-
             }.map {
                 Resp(
                     it[Course.id].value.toString(),

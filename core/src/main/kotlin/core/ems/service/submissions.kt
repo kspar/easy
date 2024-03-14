@@ -17,9 +17,9 @@ import org.joda.time.DateTime
 private val log = KotlinLogging.logger {}
 
 fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean = transaction {
-    (Course innerJoin CourseExercise innerJoin Submission).select {
-        Course.id eq courseId and (CourseExercise.id eq courseExId) and (Submission.id eq submissionId)
-    }.count() == 1L
+    (Course innerJoin CourseExercise innerJoin Submission).selectAll()
+        .where { Course.id eq courseId and (CourseExercise.id eq courseExId) and (Submission.id eq submissionId) }
+        .count() == 1L
 }
 
 fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isAfterNow
@@ -33,8 +33,8 @@ fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long)
 fun selectStudentBySubmissionId(submissionId: Long) =
     transaction {
         Submission
-            .slice(Submission.student)
-            .select { Submission.id eq submissionId }
+            .select(Submission.student)
+            .where { Submission.id eq submissionId }
             .map { it[Submission.student] }
             .single()
     }
@@ -57,13 +57,13 @@ fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> {
     val latestSubmissions = HashMap<String, SubmissionPartial>()
 
     Submission
-        .slice(
+        .select(
             Submission.id,
             Submission.student,
             Submission.createdAt,
             Submission.courseExercise
         )
-        .select { Submission.courseExercise eq courseExerciseId }
+        .where { Submission.courseExercise eq courseExerciseId }
         .map {
             SubmissionPartial(
                 it[Submission.id].value,
@@ -144,11 +144,11 @@ fun insertSubmission(
         }
 
         val (previousGrade, lastNumber) = (
-                Submission.slice(
+                Submission.select(
                     Submission.number,
                     Submission.isAutoGrade,
                     Submission.grade
-                ).select {
+                ).where {
                     (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
                 }.orderBy(Submission.number, SortOrder.DESC)
                     .map {
@@ -172,8 +172,8 @@ fun insertSubmission(
         }.value
 
         val exerciseId = CourseExercise
-            .slice(CourseExercise.exercise)
-            .select { CourseExercise.id eq courseExId }
+            .select(CourseExercise.exercise)
+            .where { CourseExercise.id eq courseExId }
             .map { it[CourseExercise.exercise] }
             .single()
             .value

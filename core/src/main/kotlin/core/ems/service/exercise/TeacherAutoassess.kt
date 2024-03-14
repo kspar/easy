@@ -16,7 +16,6 @@ import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -82,8 +81,8 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
 
     private fun getAutoExerciseId(exerciseId: Long): Long? = transaction {
         (Exercise innerJoin ExerciseVer)
-            .slice(ExerciseVer.autoExerciseId)
-            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .select(ExerciseVer.autoExerciseId)
+            .where { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.autoExerciseId] }
             .single()?.value
     }

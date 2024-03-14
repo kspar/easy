@@ -24,7 +24,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -100,8 +99,8 @@ class StudentSubmitCont(
 
     private fun isCourseExerciseOpenForSubmit(courseExId: Long) =
         transaction {
-            CourseExercise.slice(CourseExercise.hardDeadline)
-                .select { CourseExercise.id eq courseExId }
+            CourseExercise.select(CourseExercise.hardDeadline)
+                .where { CourseExercise.id eq courseExId }
                 .map { it[CourseExercise.hardDeadline] }
                 .single()
         }.let {

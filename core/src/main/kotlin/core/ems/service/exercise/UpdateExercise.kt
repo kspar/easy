@@ -13,7 +13,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
@@ -108,7 +108,7 @@ class UpdateExercise(private val adocService: AdocService) {
         }
 
         val lastVersionId = ExerciseVer
-            .select { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
+            .selectAll().where { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.id].value }
             .first()
 
@@ -131,8 +131,8 @@ class UpdateExercise(private val adocService: AdocService) {
         }
 
         if (html != null) {
-            val inUse = StoredFile.slice(StoredFile.id)
-                .select { StoredFile.usageConfirmed eq false }
+            val inUse = StoredFile.select(StoredFile.id)
+                .where { StoredFile.usageConfirmed eq false }
                 .map { it[StoredFile.id].value }
                 .filter { html.contains(it) }
 

@@ -15,7 +15,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
@@ -60,7 +60,7 @@ class UpdateArticleController(private val adocService: AdocService, private val 
         }
 
         val lastVersionId = ArticleVersion
-            .select { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
+            .selectAll().where { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
             .map { it[ArticleVersion.id].value }
             .first()
 
@@ -79,8 +79,8 @@ class UpdateArticleController(private val adocService: AdocService, private val 
         }
 
         if (html != null) {
-            val inUse = StoredFile.slice(StoredFile.id)
-                .select { StoredFile.usageConfirmed eq false }
+            val inUse = StoredFile.select(StoredFile.id)
+                .where { StoredFile.usageConfirmed eq false }
                 .map { it[StoredFile.id].value }
                 .filter { html.contains(it) }
 

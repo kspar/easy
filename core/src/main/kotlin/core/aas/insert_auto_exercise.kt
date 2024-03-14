@@ -8,7 +8,7 @@ import core.exception.ReqError
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 
@@ -34,7 +34,7 @@ fun insertAutoExercise(
         throw InvalidRequestException("Parameters for autoassessable exercise are missing.")
     }
 
-    if (ContainerImage.select { ContainerImage.id eq containerImage }.count() == 0L) {
+    if (ContainerImage.selectAll().where { ContainerImage.id eq containerImage }.count() == 0L) {
         throw InvalidRequestException(
             "Container image '$containerImage' does not exist.",
             ReqError.ENTITY_WITH_ID_NOT_FOUND,

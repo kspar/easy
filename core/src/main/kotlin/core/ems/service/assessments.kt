@@ -8,7 +8,7 @@ import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
@@ -84,16 +84,16 @@ fun insertAutogradeActivity(
 
 fun selectGraderType(courseExId: Long): GraderType = transaction {
     (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-        .slice(ExerciseVer.graderType)
-        .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+        .select(ExerciseVer.graderType)
+        .where { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
         .map { it[ExerciseVer.graderType] }
         .single()
 }
 
 fun selectAutoExId(courseExId: Long): Long? = transaction {
     (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-        .slice(ExerciseVer.autoExerciseId)
-        .select { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
+        .select(ExerciseVer.autoExerciseId)
+        .where { CourseExercise.id eq courseExId and ExerciseVer.validTo.isNull() }
         .map { it[ExerciseVer.autoExerciseId] }
         .single()?.value
 }
@@ -101,7 +101,7 @@ fun selectAutoExId(courseExId: Long): Long? = transaction {
 private fun anyPreviousTeacherActivityContainsGrade(studentId: String, courseExercise: Long): Boolean =
     transaction {
         TeacherActivity
-            .select {
-                (TeacherActivity.student eq studentId) and (TeacherActivity.courseExercise eq courseExercise) and TeacherActivity.grade.isNotNull()
-            }.count() > 0
+            .selectAll()
+            .where { (TeacherActivity.student eq studentId) and (TeacherActivity.courseExercise eq courseExercise) and TeacherActivity.grade.isNotNull() }
+            .count() > 0
     }

@@ -11,7 +11,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.http.HttpStatus
@@ -61,7 +61,7 @@ class StudentReadLatestSubmissionDraftController {
 
     private fun selectLatestStudentSubmissionDraft(courseExId: Long, studentId: String): Resp? = transaction {
         SubmissionDraft
-            .select {
+            .selectAll().where {
                 (SubmissionDraft.courseExercise eq courseExId) and
                         (SubmissionDraft.student eq studentId)
             }

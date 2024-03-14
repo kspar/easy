@@ -7,7 +7,6 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.userOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,10 +39,8 @@ class ReadBasicCourseInfo {
     }
 
     private fun selectCourseInfo(courseId: Long): Resp = transaction {
-        Course.slice(Course.title, Course.alias)
-            .select {
-                Course.id eq courseId
-            }
+        Course.select(Course.title, Course.alias)
+            .where { Course.id eq courseId }
             .map {
                 Resp(
                     it[Course.title],
