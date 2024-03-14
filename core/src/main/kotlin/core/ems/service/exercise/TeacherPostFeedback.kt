@@ -18,7 +18,7 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherFeedbackController(val adocService: AdocService) {
+class TeacherPostFeedbackController(val adocService: AdocService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
@@ -56,10 +56,11 @@ class TeacherFeedbackController(val adocService: AdocService) {
     private fun insertOrUpdateFeedback(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
+            val time =  DateTime.now()
 
             if (previousId != null) {
                 TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                     it[feedbackAdoc] = assessment.feedbackAdoc
                     it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
                 }
@@ -69,10 +70,16 @@ class TeacherFeedbackController(val adocService: AdocService) {
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
                     it[teacher] = teacherId
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                     it[feedbackAdoc] = assessment.feedbackAdoc
                     it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
                 }
+            }
+
+            StatsSubmission.update ({ StatsSubmission.submissionId eq submissionId }){
+                it[hasEverReceivedTeacherComment] = true
+                it[latestTeacherActivityUpdate] = time
+                it[latestTeacherPseudonym] = selectPseudonym(teacherId)
             }
         }
 

@@ -223,4 +223,124 @@
         <dropColumn tableName="exercise" columnName="unsuccessful_anonymous_submission_count"/>
     </changeSet>
 
+    <changeSet id="140324-1" author="priit">
+        <dropTable tableName="stats_submission"/>
+        <dropTable tableName="stats_anonymous_submission"/>
+
+        <createTable tableName="stats_submission">
+            <column name="submission_id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="course_exercise_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="student_pseudonym" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_teacher_pseudonym" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution_length" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="teacher_points" type="integer">
+                <constraints nullable="true"/>
+            </column>
+            <column name="has_ever_received_teacher_comment" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_teacher_activity_update" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="auto_points" type="integer">
+                <constraints nullable="true"/>
+            </column>
+            <column name="auto_graded_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addColumn tableName="account">
+            <column name="pseudonym" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <createTable tableName="stats_anonymous_submission">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="exercise_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solution_length" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="points" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <sql>
+            <![CDATA[
+            UPDATE account
+            SET pseudonym = replace(gen_random_uuid()::text, '-', '')
+            WHERE pseudonym IS NULL;
+
+            ALTER TABLE account ALTER COLUMN pseudonym SET NOT NULL;
+
+            INSERT INTO stats_submission (submission_id,
+                                          course_exercise_id,
+                                          exercise_id,
+                                          created_at,
+                                          student_pseudonym,
+                                          solution_length,
+                                          has_ever_received_teacher_comment)
+            SELECT s.id,
+                   s.course_exercise_id,
+                   ce.exercise_id,
+                   s.created_at,
+                   a.pseudonym,
+                   CHAR_LENGTH(s.solution) AS solution_length,
+                   FALSE
+            FROM submission s
+                     JOIN account a ON a.username = s.student_id
+                     JOIN course_exercise ce ON s.course_exercise_id = ce.id;
+
+            UPDATE stats_submission
+            SET (auto_points, auto_graded_at) = (SELECT aa.grade, aa.created_at
+                                                 FROM automatic_assessment aa
+                                                 WHERE aa.submission_id = stats_submission.submission_id AND aa.grade IS NOT NULL
+                                                 ORDER BY aa.created_at DESC LIMIT 1);
+
+            UPDATE stats_submission
+            SET (teacher_points) = (SELECT ta.grade
+                                    FROM teacher_assessment ta
+                                    WHERE ta.submission_id = stats_submission.submission_id AND ta.grade IS NOT NULL
+                                    ORDER BY ta.merge_window_start DESC LIMIT 1);
+
+            UPDATE stats_submission
+            SET (has_ever_received_teacher_comment) = (SELECT COUNT(ta.feedback_adoc) > 0 FROM teacher_assessment ta
+                                                       WHERE ta.submission_id = stats_submission.submission_id and ta.feedback_adoc IS NOT NULL);
+
+            UPDATE stats_submission
+            SET (latest_teacher_activity_update, latest_teacher_pseudonym) = (SELECT ta.merge_window_start, a.pseudonym
+                                                                      FROM teacher_assessment ta
+                                                                          JOIN account a ON a.username = ta.teacher_id
+                                                                      WHERE ta.submission_id = stats_submission.submission_id
+                                                                      ORDER BY ta.merge_window_start DESC LIMIT 1);
+            ]]>
+        </sql>
+    </changeSet>
+
+
 </databaseChangeLog>

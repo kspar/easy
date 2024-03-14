@@ -14,7 +14,6 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
@@ -80,6 +79,7 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
                 StatsAnonymousSubmission.insert {
                     it[StatsAnonymousSubmission.exercise] = exerciseId
                     it[StatsAnonymousSubmission.createdAt] = time
+                    it[StatsAnonymousSubmission.solutionLength] = solution.length
                     it[StatsAnonymousSubmission.points] = grade
                 }
 

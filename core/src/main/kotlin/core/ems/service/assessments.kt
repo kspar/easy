@@ -73,29 +73,28 @@ fun insertAutoAssessment(
     studentId: String
 ) {
     transaction {
+        val time = DateTime.now()
         AutomaticAssessment.insert {
             it[student] = studentId
             it[courseExercise] = courseExId
             it[submission] = submissionId
-            it[createdAt] = DateTime.now()
+            it[createdAt] = time
             it[grade] = newGrade
             it[feedback] = newFeedback
         }
-        val updateGrade = !anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)
 
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
-            if (updateGrade) {
+            if (!anyPreviousTeacherAssessmentContainsGrade(studentId, courseExId)) {
                 it[grade] = newGrade
                 it[isAutoGrade] = true
                 it[isGradedDirectly] = true
             }
         }
 
-        if (updateGrade) {
-            StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
-                it[points] = newGrade
-            }
+        StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
+            it[autoPoints] = newGrade
+            it[autoGradedAt] = time
         }
 
         cachingService.invalidate(countSubmissionsInAutoAssessmentCache)

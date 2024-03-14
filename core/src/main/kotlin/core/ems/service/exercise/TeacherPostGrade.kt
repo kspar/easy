@@ -8,6 +8,7 @@ import core.db.TeacherAssessment
 import core.ems.service.assertAssessmentControllerChecks
 import core.ems.service.hasSecondsPassed
 import core.ems.service.moodle.MoodleGradesSyncService
+import core.ems.service.selectPseudonym
 import core.ems.service.selectStudentBySubmissionId
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
@@ -57,11 +58,11 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
     private fun insertOrUpdateGrade(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
-
+            val time = DateTime.now()
             if (previousId != null) {
                 TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
                     it[grade] = assessment.grade
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                 }
             } else {
                 TeacherAssessment.insert {
@@ -70,7 +71,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
                     it[submission] = submissionId
                     it[teacher] = teacherId
                     it[grade] = assessment.grade
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                 }
             }
 
@@ -81,7 +82,9 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
             }
 
             StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
-                it[points] = assessment.grade
+                it[latestTeacherPseudonym] = selectPseudonym(teacherId)
+                it[latestTeacherActivityUpdate] = time
+                it[teacherPoints] = assessment.grade
             }
         }
 

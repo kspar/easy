@@ -157,8 +157,6 @@ fun insertSubmission(
                 )
 
         val time = DateTime.now()
-        val setGrade = previousGrade != null && !previousGrade.isAutograde
-
         val submissionId = Submission.insertAndGetId {
             it[courseExercise] = courseExId
             it[student] = studentId
@@ -166,7 +164,7 @@ fun insertSubmission(
             it[solution] = submission
             it[autoGradeStatus] = autoAss
             it[number] = lastNumber + 1
-            if (setGrade) {
+            if (previousGrade != null && !previousGrade.isAutograde) {
                 it[grade] = previousGrade?.grade
                 it[isAutoGrade] = false
                 it[isGradedDirectly] = false
@@ -185,7 +183,9 @@ fun insertSubmission(
             it[StatsSubmission.courseExerciseId] = courseExId
             it[StatsSubmission.exerciseId] = exerciseId
             it[StatsSubmission.createdAt] = time
-            if (setGrade) it[StatsSubmission.points] = previousGrade?.grade
+            it[StatsSubmission.studentPseudonym] = selectPseudonym(studentId)
+            it[StatsSubmission.solutionLength] = submission.length
+            it[StatsSubmission.hasEverReceivedTeacherComment] = false
         }
         caching.invalidate(countSubmissionsInAutoAssessmentCache)
         caching.invalidate(countSubmissionsCache)

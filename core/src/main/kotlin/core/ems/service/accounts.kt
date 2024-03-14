@@ -28,6 +28,16 @@ fun accountExists(username: String): Boolean = transaction {
     }.count() > 0
 }
 
+fun selectPseudonym(username: String): String = transaction {
+    Account
+        .slice(Account.pseudonym)
+        .select {
+            Account.id eq username
+        }
+        .map { it[Account.pseudonym] }
+        .single()
+}
+
 fun insertTeacher(teacherId: String) {
     transaction {
         Account.update({ Account.id eq teacherId }) {

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.util.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
@@ -236,6 +237,7 @@ private fun insertAccount(accountData: AccountData) {
         it[familyName] = accountData.familyName
         it[createdAt] = now
         it[lastSeen] = now
+        it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
     }
 
     // Add implicit group for each account
