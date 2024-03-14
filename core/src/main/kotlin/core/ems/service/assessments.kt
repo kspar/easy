@@ -1,6 +1,5 @@
 package core.ems.service
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
@@ -13,7 +12,6 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
-
 
 
 fun assertAssessmentControllerChecks(
