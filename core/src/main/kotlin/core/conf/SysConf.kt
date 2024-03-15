@@ -14,12 +14,10 @@ object SysConf {
         }.firstOrNull()
     }
 
-    fun putProp(key: String, value: String) {
-        return transaction {
-            SystemConfiguration.insertOrUpdate(SystemConfiguration.id, listOf(SystemConfiguration.id)) {
-                it[SystemConfiguration.id] = org.jetbrains.exposed.dao.id.EntityID(key, SystemConfiguration)
-                it[SystemConfiguration.value] = value
-            }
+    fun putProp(key: String, value: String) = transaction {
+        SystemConfiguration.insertOrUpdate(SystemConfiguration.id, listOf(SystemConfiguration.id)) {
+            it[SystemConfiguration.id] = key
+            it[SystemConfiguration.value] = value
         }
     }
 }

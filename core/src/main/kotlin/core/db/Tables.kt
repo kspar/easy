@@ -263,7 +263,7 @@ object TeacherSubmission : LongIdTable("teacher_submission") {
 object SystemConfiguration : IdTable<String>("system_configuration") {
     override val id: Column<EntityID<String>> = text("key").entityId()
     override val primaryKey = PrimaryKey(id)
-    val value = text("value")
+    val value = text("value").nullable()
 }
 
 object LogReport : LongIdTable("log_report") {
