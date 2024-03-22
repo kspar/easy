@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Lahendus</title>
     <link rel="stylesheet" href="css/pace.css" />
+    <link rel="stylesheet" href="css/codemirror.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
@@ -42,6 +43,13 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"
+      integrity="sha512-I6CdJdruzGtvDyvdO4YsiAq+pkWf2efgd1ZUSK2FnM/u2VuRASPC7GowWQrWyjxCZn6CT89s3ddGI+be0Ak9Fg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <!-- Add here more languages from: https://cdnjs.com/libraries/codemirror -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/merge/merge.min.css"
@@ -79,6 +87,31 @@
       <div id="codemirrordiv"></div>
       <h3>Siin on näide kasutades merge view:</h3>
       <div id="mergeviewdiv"></div>
+    </div>
+    <h3>Tab example</h3>
+    <div class="tabs-container">
+      <ul class="tabs">
+        <li class="tab active" data-tab="0">One</li>
+        <li class="tab" data-tab="1">Two</li>
+      </ul>
+      <div class="tab-pane active" data-pane="0">
+        <textarea class="editor">
+// here is the first one
+var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+    mode: "javascript",
+    lineNumbers: true,
+});
+editor.save()</textarea
+        >
+      </div>
+      <div class="tab-pane active" data-pane="1">
+        <textarea class="editor">
+// here is the second one
+def function(x):
+  return x**2
+  </textarea
+        >
+      </div>
     </div>
 
     <header></header>

@@ -37,3 +37,33 @@ let view = new CodeMirror.MergeView(document.querySelector("#mergeviewdiv"), {
   // rtlMoveVisually: true,
   // theme: "cobalt",
 });
+
+// Tabs example
+
+var editors = document.getElementsByClassName("editor");
+for (var i = 0; i < editors.length; i++) {
+  var self = editors[i];
+  var editor = new CodeMirror.fromTextArea(self, {
+    mode: i ? "python" : "javascript",
+    lineNumbers: true,
+    autoRefresh: true,
+  });
+  editor.save();
+}
+
+var tabs = document.querySelectorAll(".tab");
+document
+  .querySelectorAll('.tab-pane[data-pane="1"]')[0]
+  .classList.remove("active");
+for (var i = 0; i < tabs.length; i++) {
+  var self = tabs[i];
+  self.addEventListener("click", function () {
+    var data = this.getAttribute("data-tab");
+    document.querySelectorAll(".tab-pane.active")[0].classList.remove("active");
+    document
+      .querySelectorAll('.tab-pane[data-pane="' + data + '"]')[0]
+      .classList.add("active");
+    document.querySelectorAll(".tab.active")[0].classList.remove("active");
+    this.classList.add("active");
+  });
+}
