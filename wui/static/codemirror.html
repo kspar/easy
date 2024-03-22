@@ -31,6 +31,12 @@
       referrerpolicy="no-referrer"
     ></script>
     <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/meta.min.js"
+      integrity="sha512-/2x+sfL5ERHfoViXm/UncFBzaD54f2bkjEui6w2IheEUafG2gcHJv3gQ4VDIqNr+LuApQwpnsjjrEMXI43nPzg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
       src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"
       integrity="sha512-2M0GdbU5OxkGYMhakED69bw0c1pW3Nb0PeF3+9d+SnwN1ryPx3wiDdNqK3gSM7KAU/pEV+2tFJFbMKjKAahOkQ=="
       crossorigin="anonymous"
@@ -49,6 +55,12 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/diff-match-patch/1.0.5/index.js"
+      integrity="sha512-Tlwo4f73Gi/8rJinnJUJHsGaGDjU+RAw90XsYzSBf7XIGNlBKQwbj44ew9f5m2Zybp345RbYyRcFRJvvsLMmdg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/cobalt.min.css"
@@ -62,8 +74,12 @@
   </head>
   <body class="leftbar-active rightbar-active">
     <h1>Code Mirror</h1>
-    <div id="codemirrordiv"></div>
-    <div id="mergeviewdiv"></div>
+    <div id="codemirror">
+      <h3>Siin on näide kasutades Cobalt theme:</h3>
+      <div id="codemirrordiv"></div>
+      <h3>Siin on näide kasutades merge view:</h3>
+      <div id="mergeviewdiv"></div>
+    </div>
 
     <header></header>
     <main></main>

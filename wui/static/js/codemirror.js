@@ -9,37 +9,31 @@ const codeMirrorInstance = new CodeMirror(
   }
 );
 
-console.log(CodeMirror.MergeView);
-
-let doc = `one
-two
-three
-four
-five`;
-console.log(CodeMirror.basicSetup);
-console.log(CodeMirror.EditorView);
-console.log(CodeMirror.EditorState);
-console.log(doc.replace(/t/g, "T") + "\nSix");
-// console.log(CodeMirror.basicSetup);
+let doc = `def function():
+  for i in range(10):
+    print("Hello, World")`;
+let doc_muudatud =
+  doc.replace(/10/g, "22") + "\nsome_variable = 5\nprint(some_variable)";
 
 let view = new CodeMirror.MergeView(document.querySelector("#mergeviewdiv"), {
-  //   edit: CodeMirror.DiffView,
-//   origLeft: doc,
-  // extensions: basicSetup,
-
-  value: doc.replace(/t/g, "T") + "\nSix",
-  revertButtons: true,
-  origRight: { doc: doc.replace(/t/g, "T") + "\nSix" },
-  // extensions: [
-  //   //   basicSetup,
-  //   EditorView.editable.of(false),
-  //   EditorState.readOnly.of(true),
-  // ],
-  showDifferences: false,
-  collapseIdentical: true,
-  connect: "align",
-  allowEditingOriginals: true,
-  ignoreWhitespace: true,
+  origLeft: doc,
+  value: doc_muudatud,
+  mode: "python",
+  // Kui tahta lisada 3. võrdlust, siis tuleb lisada origRight
+  // origRight: doc_muudatud,
+  // revertButtons: true,
+  // showDifferences: true,
+  // collapseIdentical: true,
+  // connect: "align",
+  // allowEditingOriginals: true,
+  // ignoreWhitespace: true,
+  // syntaxHighlightDeletions: true,
+  // gutter: true,
+  // lineNumbers: true,
+  // addModeClass: true,
+  // spellcheck: true,
+  // lineWrapping: true,
+  // indentWithTabs: true,
+  // rtlMoveVisually: true,
+  // theme: "cobalt",
 });
-
-console.log(view);
