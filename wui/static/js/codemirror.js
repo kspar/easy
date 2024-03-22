@@ -2,10 +2,11 @@ const codeMirrorInstance = new CodeMirror(
   document.querySelector("#codemirrordiv"),
   {
     lineNumbers: true,
-    tabSize: 2,
+    tabSize: 4,
     value: 'def function():\n\tprint("Hello, World")',
     mode: "python",
     theme: "cobalt",
+    allowDropFileTypes: ["text/plain", "text/x-python"],
   }
 );
 
@@ -37,6 +38,27 @@ let view = new CodeMirror.MergeView(document.querySelector("#mergeviewdiv"), {
   // rtlMoveVisually: true,
   // theme: "cobalt",
 });
+
+
+// Oneline editor:
+const oneLineInstance = new CodeMirror(document.querySelector("#onelinediv"), {
+  lineNumbers: false,
+  tabSize: 2,
+  value: "",
+  mode: "text",
+});
+
+oneLineInstance.setSize(400, oneLineInstance.defaultTextHeight() + 3 * 4);
+// 200 is the preferable width of text field in pixels,
+// 4 is default CM padding (which depends on the theme you're using)
+
+// now disallow adding newlines in the following simple way
+oneLineInstance.on("beforeChange", function (instance, change) {
+  var newtext = change.text.join("").replace(/\n/g, ""); // remove ALL \n !
+  change.update(change.from, change.to, [newtext]);
+  return true;
+});
+
 
 // Tabs example
 

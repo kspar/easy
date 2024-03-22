@@ -9,6 +9,9 @@
 - [What is a CDN?](https://www.cloudflare.com/learning/cdn/what-is-a-cdn/)
 - [Teemade valik](https://thememirror.net)
 
+## Lisatud keeled:
+Python, Javascript, SQL, HTML
+
 ## Kuidas kirjutada Python'i editorit
 Tuleb mängida `value` võtmega kui tahta midagi automaatselt sisestada:
 ```javascript
@@ -16,7 +19,7 @@ const codeMirrorInstance = new CodeMirror(
   document.querySelector("#codemirrordiv"),
   {
     lineNumbers: true,
-    tabSize: 2,
+    tabSize: 4,
     value: 'def function():\n\tprint("Hello, World")',
     mode: "python",
     theme: "cobalt",
@@ -42,3 +45,9 @@ let view = new CodeMirror.MergeView(document.querySelector("#mergeviewdiv"), {
 ```
 Ma ei leidnud hea dokumentatsiooni kõik omaduste kohta. 
 Ma arvan, et parema kontrollimiseks on vaja kirjutada Node.js ja valmistada [Bundle'it](https://codemirror.net/examples/bundle/)
+
+## OneLine editor
+See on pandud mode'iga ´'text'´ ja javascriptid piiratud kuna bundle'st tundub võimatu saada EditorState, mis dokumentatsioonis on kirjas. 
+
+## Tabs
+Need on ka javascriptis programmeeritud. Midagiganes tuleb on vaja seal lisada
