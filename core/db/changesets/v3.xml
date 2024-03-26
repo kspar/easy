@@ -350,5 +350,13 @@
                      oldTableName="teacher_assessment"/>
     </changeSet>
 
+    <changeSet id="260324-1" author="priit">
+        <addColumn tableName="course">
+            <column name="archived" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>
