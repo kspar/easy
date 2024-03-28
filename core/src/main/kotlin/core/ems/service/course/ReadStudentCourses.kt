@@ -25,6 +25,7 @@ class ReadStudentCourses {
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
+        @JsonProperty("archived") val archived: Boolean,
     )
 
     @Secured("ROLE_STUDENT")
@@ -38,7 +39,7 @@ class ReadStudentCourses {
     private fun selectCoursesForStudent(studentId: String): Resp = transaction {
         Resp(
             (StudentCourseAccess innerJoin Course).select(
-                Course.id, Course.title, Course.alias
+                Course.id, Course.title, Course.alias, Course.archived
             ).where {
                 StudentCourseAccess.student eq studentId
             }.map {
@@ -46,6 +47,7 @@ class ReadStudentCourses {
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.archived],
                 )
             }
         )

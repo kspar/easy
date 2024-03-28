@@ -7,7 +7,8 @@ import core.db.StudentCourseAccess
 import core.db.StudentCourseGroup
 import core.db.TeacherCourseAccess
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.alias
+import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -28,6 +29,7 @@ class ReadTeacherCourses {
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
+        @JsonProperty("archived") val archived: Boolean,
         @JsonProperty("student_count") val studentCount: Long
     )
 
@@ -50,13 +52,14 @@ class ReadTeacherCourses {
     private fun selectCoursesForAdmin(): List<CourseResp> = transaction {
         val studentCount = StudentCourseAccess.student.count().alias("student_count")
         (Course leftJoin StudentCourseAccess)
-            .select(Course.id, Course.title, Course.alias, studentCount)
-            .groupBy(Course.id, Course.title, Course.alias)
+            .select(Course.id, Course.title, Course.alias, Course.archived, studentCount)
+            .groupBy(Course.id, Course.title, Course.alias, Course.archived)
             .map {
                 CourseResp(
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.archived],
                     it[studentCount],
                 )
             }
@@ -65,7 +68,7 @@ class ReadTeacherCourses {
     private fun selectCoursesForTeacher(teacherId: String): List<CourseResp> = transaction {
         // get teacher course accesses with groups
         (Course innerJoin TeacherCourseAccess)
-            .select(Course.id, Course.title, Course.alias)
+            .select(Course.id, Course.title, Course.alias, Course.archived)
             .where { TeacherCourseAccess.teacher eq teacherId }
             .map {
                 // Get student count for each course
@@ -73,6 +76,7 @@ class ReadTeacherCourses {
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.archived],
                     selectStudentCountForCourse(it[Course.id].value)
                 )
             }
