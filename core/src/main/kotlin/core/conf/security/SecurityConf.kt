@@ -84,7 +84,12 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
     private fun getCorsConfiguration(): CorsConfigurationSource {
         val conf = CorsConfiguration()
         // TODO: from conf
-        conf.allowedOrigins = listOf("http://local.lahendus.ut.ee:8090", "http://localhost:63341", "https://lahendus.ut.ee", "https://dev.lahendus.ut.ee")
+        conf.allowedOrigins = listOf(
+            "http://local.lahendus.ut.ee:8090",
+            "http://localhost:63341",
+            "https://lahendus.ut.ee",
+            "https://dev.lahendus.ut.ee"
+        )
         conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT", "PATCH")
         conf.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
         val source = UrlBasedCorsConfigurationSource()

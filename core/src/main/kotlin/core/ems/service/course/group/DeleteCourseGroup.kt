@@ -13,7 +13,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -48,15 +48,11 @@ class DeleteCourseGroupController {
 
     private fun deleteGroup(courseId: Long, groupId: Long) {
         transaction {
-            val students = StudentCourseGroup.select {
-                StudentCourseGroup.courseGroup eq groupId
-            }.count()
-            val pendingStudents = StudentPendingCourseGroup.select {
-                StudentPendingCourseGroup.courseGroup eq groupId
-            }.count()
-            val moodlePendingStudents = StudentMoodlePendingCourseGroup.select {
-                StudentMoodlePendingCourseGroup.courseGroup eq groupId
-            }.count()
+            val students = StudentCourseGroup.selectAll().where { StudentCourseGroup.courseGroup eq groupId }.count()
+            val pendingStudents =
+                StudentPendingCourseGroup.selectAll().where { StudentPendingCourseGroup.courseGroup eq groupId }.count()
+            val moodlePendingStudents = StudentMoodlePendingCourseGroup.selectAll()
+                .where { StudentMoodlePendingCourseGroup.courseGroup eq groupId }.count()
 
             if (students + pendingStudents + moodlePendingStudents > 0) {
                 throw InvalidRequestException(

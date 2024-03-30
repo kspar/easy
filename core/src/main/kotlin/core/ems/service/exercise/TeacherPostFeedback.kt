@@ -2,11 +2,15 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.StatsSubmission
+import core.db.TeacherActivity
 import core.ems.service.*
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
@@ -18,7 +22,7 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherFeedbackController(val adocService: AdocService) {
+class TeacherPostFeedbackController(val adocService: AdocService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
@@ -56,36 +60,42 @@ class TeacherFeedbackController(val adocService: AdocService) {
     private fun insertOrUpdateFeedback(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
+            val time = DateTime.now()
 
             if (previousId != null) {
-                TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
-                    it[mergeWindowStart] = DateTime.now()
+                TeacherActivity.update({ TeacherActivity.id eq previousId }) {
+                    it[mergeWindowStart] = time
                     it[feedbackAdoc] = assessment.feedbackAdoc
                     it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
                 }
             } else {
-                TeacherAssessment.insert {
+                TeacherActivity.insert {
                     it[student] = selectStudentBySubmissionId(submissionId)
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
                     it[teacher] = teacherId
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                     it[feedbackAdoc] = assessment.feedbackAdoc
                     it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
                 }
+            }
+
+            StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
+                it[hasEverReceivedTeacherComment] = true
+                it[latestTeacherActivityUpdate] = time
+                it[latestTeacherPseudonym] = selectPseudonym(teacherId)
             }
         }
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherAssessment.slice(TeacherAssessment.id, TeacherAssessment.mergeWindowStart)
-                .select {
-                    TeacherAssessment.submission eq submissionId and (TeacherAssessment.teacher eq teacherId)
-                }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.DESC)
+            TeacherActivity.select(TeacherActivity.id, TeacherActivity.mergeWindowStart)
+                .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
+                .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
-                    val timeIsInWindow = !it[TeacherAssessment.mergeWindowStart].hasSecondsPassed(mergeWindow)
-                    val noFeedback = it[TeacherAssessment.feedbackAdoc] == null
-                    if (timeIsInWindow && noFeedback) it[TeacherAssessment.id].value else null
+                    val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
+                    val noFeedback = it[TeacherActivity.feedbackAdoc] == null
+                    if (timeIsInWindow && noFeedback) it[TeacherActivity.id].value else null
                 }
         }
 

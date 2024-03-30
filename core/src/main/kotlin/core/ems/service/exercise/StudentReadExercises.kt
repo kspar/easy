@@ -11,9 +11,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -66,7 +64,7 @@ class StudentReadExercisesController {
         )
 
         val exercisePartials = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
+            .select(
                 ExerciseVer.title,
                 ExerciseVer.graderType,
                 CourseExercise.id,
@@ -76,7 +74,7 @@ class StudentReadExercisesController {
                 CourseExercise.orderIdx,
                 CourseExercise.titleAlias
             )
-            .select {
+            .where {
                 CourseExercise.course eq courseId and
                         ExerciseVer.validTo.isNull() and
                         CourseExercise.studentVisibleFrom.isNotNull() and
@@ -105,16 +103,14 @@ class StudentReadExercisesController {
 
         val submissions: Map<Long, SubmissionPartial> =
             Submission
-                .slice(
+                .select(
                     Submission.courseExercise,
                     Submission.grade,
                     Submission.isAutoGrade,
                     Submission.createdAt,
                     Submission.isGradedDirectly
                 )
-                .select {
-                    Submission.courseExercise inList (exercisePartials.map { it.courseExId }) and (Submission.student eq studentId)
-                }
+                .where { Submission.courseExercise inList (exercisePartials.map { it.courseExId }) and (Submission.student eq studentId) }
                 .map {
                     SubmissionPartial(
                         it[Submission.courseExercise].value,

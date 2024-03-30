@@ -3,11 +3,8 @@ package core.ems.service
 import core.db.Course
 import core.db.CourseExercise
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 
 
 private val log = KotlinLogging.logger {}
@@ -18,10 +15,7 @@ const val IDX_STEP = 1048576  // 2^20
 fun normaliseAllCourseExIndices() {
     log.debug { "Normalising all course exercise indices" }
 
-    val courses = transaction {
-        Course.slice(Course.id).selectAll()
-                .map { it[Course.id].value }
-    }
+    val courses = transaction { Course.select(Course.id).map { it[Course.id].value } }
 
     courses.forEach {
         normaliseCourseExIndices(it)
@@ -36,13 +30,15 @@ fun normaliseCourseExIndices(courseId: Long) {
 
     val orderedExercises = transaction {
         CourseExercise
-                .slice(CourseExercise.id, CourseExercise.orderIdx)
-                .select { CourseExercise.course eq courseId }
-                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                .map {
-                    OrderedEx(it[CourseExercise.id].value,
-                            it[CourseExercise.orderIdx])
-                }
+            .select(CourseExercise.id, CourseExercise.orderIdx)
+            .where { CourseExercise.course eq courseId }
+            .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+            .map {
+                OrderedEx(
+                    it[CourseExercise.id].value,
+                    it[CourseExercise.orderIdx]
+                )
+            }
     }
 
     orderedExercises.forEachIndexed { i, ex ->

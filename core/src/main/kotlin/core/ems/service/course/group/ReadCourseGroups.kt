@@ -7,7 +7,7 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,9 +40,7 @@ class ReadCourseGroupsController {
     }
 
     private fun selectGroups(courseId: Long): List<GroupResp> = transaction {
-        CourseGroup.select {
-            CourseGroup.course eq courseId
-        }.map {
+        CourseGroup.selectAll().where { CourseGroup.course eq courseId }.map {
             GroupResp(it[CourseGroup.id].value.toString(), it[CourseGroup.name])
         }
     }

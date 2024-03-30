@@ -11,6 +11,7 @@ import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 private val log = KotlinLogging.logger {}
 
@@ -126,7 +126,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             val groupNamesToIds = moodleGroups.map { moodleGroupName ->
                 val groupId =
-                    CourseGroup.select { CourseGroup.course eq courseId and (CourseGroup.name eq moodleGroupName) }
+                    CourseGroup.selectAll()
+                        .where { CourseGroup.course eq courseId and (CourseGroup.name eq moodleGroupName) }
                         .map { it[CourseGroup.id] }
                         .singleOrNull()
                         ?: CourseGroup.insertAndGetId {
@@ -141,8 +142,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             val newAccesses =
                 moodleResponse.students.flatMap { moodleStudent ->
                     val moodleEmail = moodleStudent.email.lowercase()
-                    Account.slice(Account.id, Account.email)
-                        .select {
+                    Account.select(Account.id, Account.email)
+                        .where {
                             Account.moodleUsername eq moodleStudent.username or
                                     (Account.email eq moodleEmail)
                         }
@@ -180,11 +181,11 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
 
             // Diff accesses before and after to send notifications for only new accesses
-            val previousStudentEmails = (StudentCourseAccess innerJoin Account).select {
-                StudentCourseAccess.course.eq(courseId)
-            }.map {
-                it[Account.email]
-            }
+            val previousStudentEmails =
+                (StudentCourseAccess innerJoin Account).selectAll().where { StudentCourseAccess.course.eq(courseId) }
+                    .map {
+                        it[Account.email]
+                    }
 
             // Remove & insert all accesses because groups might have changed
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
@@ -215,11 +216,10 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             }
 
             // Diff accesses before and after to send invitations for only new accesses
-            val previousEmailsPending = StudentMoodlePendingAccess.select {
-                StudentMoodlePendingAccess.course.eq(courseId)
-            }.map {
-                it[StudentMoodlePendingAccess.email]
-            }
+            val previousEmailsPending =
+                StudentMoodlePendingAccess.selectAll().where { StudentMoodlePendingAccess.course.eq(courseId) }.map {
+                    it[StudentMoodlePendingAccess.email]
+                }
 
             // Remove & insert all pending accesses
             StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
@@ -258,11 +258,10 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
         log.info { "Cron checking for courses for Moodle student syncing" }
 
         transaction {
-            Course.select {
+            Course.selectAll().where {
                 Course.moodleShortName.isNotNull() and
                         Course.moodleShortName.neq("") and
                         Course.moodleSyncStudents
-
             }.forEach {
                 val courseId = it[Course.id].value
                 log.info { "Cron Moodle syncing students on course $courseId" }

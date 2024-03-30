@@ -7,7 +7,7 @@ import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -36,7 +36,7 @@ class AdminDeleteManagementNotification {
         transaction {
 
             val messageExists =
-                ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1L
+                ManagementNotification.selectAll().where { ManagementNotification.id eq notificationId }.count() == 1L
 
             if (!messageExists) {
                 throw InvalidRequestException("No message with ID $notificationId found.")

@@ -4,14 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StatsSubmission
 import core.db.Submission
-import core.db.TeacherAssessment
+import core.db.TeacherActivity
 import core.ems.service.assertAssessmentControllerChecks
 import core.ems.service.hasSecondsPassed
 import core.ems.service.moodle.MoodleGradesSyncService
+import core.ems.service.selectPseudonym
 import core.ems.service.selectStudentBySubmissionId
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
@@ -57,20 +61,20 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
     private fun insertOrUpdateGrade(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
-
+            val time = DateTime.now()
             if (previousId != null) {
-                TeacherAssessment.update({ TeacherAssessment.id eq previousId }) {
+                TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[grade] = assessment.grade
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                 }
             } else {
-                TeacherAssessment.insert {
+                TeacherActivity.insert {
                     it[student] = selectStudentBySubmissionId(submissionId)
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
                     it[teacher] = teacherId
                     it[grade] = assessment.grade
-                    it[mergeWindowStart] = DateTime.now()
+                    it[mergeWindowStart] = time
                 }
             }
 
@@ -81,19 +85,19 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
             }
 
             StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
-                it[points] = assessment.grade
+                it[latestTeacherPseudonym] = selectPseudonym(teacherId)
+                it[latestTeacherActivityUpdate] = time
+                it[teacherPoints] = assessment.grade
             }
         }
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherAssessment.slice(TeacherAssessment.id, TeacherAssessment.mergeWindowStart)
-                .select {
-                    TeacherAssessment.submission eq submissionId and (TeacherAssessment.teacher eq teacherId)
-
-                }.orderBy(TeacherAssessment.mergeWindowStart, SortOrder.DESC)
+            TeacherActivity.select(TeacherActivity.id, TeacherActivity.mergeWindowStart)
+                .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
+                .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
-                    if (!it[TeacherAssessment.mergeWindowStart].hasSecondsPassed(mergeWindow)) it[TeacherAssessment.id].value else null
+                    if (!it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)) it[TeacherActivity.id].value else null
                 }
         }
 

@@ -14,7 +14,6 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
@@ -80,16 +79,16 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
                 StatsAnonymousSubmission.insert {
                     it[StatsAnonymousSubmission.exercise] = exerciseId
                     it[StatsAnonymousSubmission.createdAt] = time
+                    it[StatsAnonymousSubmission.solutionLength] = solution.length
                     it[StatsAnonymousSubmission.points] = grade
                 }
 
-                val deleteAfter = AnonymousSubmission.select {
-                    AnonymousSubmission.exercise eq exerciseId
-                }.orderBy(
-                    AnonymousSubmission.createdAt, SortOrder.DESC
-                ).limit(submissionToKeep.toInt()).map {
-                    it[AnonymousSubmission.createdAt]
-                }.last()
+                val deleteAfter =
+                    AnonymousSubmission.selectAll().where { AnonymousSubmission.exercise eq exerciseId }.orderBy(
+                        AnonymousSubmission.createdAt, SortOrder.DESC
+                    ).limit(submissionToKeep.toInt()).map {
+                        it[AnonymousSubmission.createdAt]
+                    }.last()
 
                 AnonymousSubmission.deleteWhere {
                     AnonymousSubmission.exercise.eq(exerciseId) and AnonymousSubmission.createdAt.less(deleteAfter)
@@ -99,8 +98,8 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
     }
 
     private fun selectAutoExIdOrIllegalStateException(exerciseId: Long): Long = transaction {
-        (Exercise innerJoin ExerciseVer).slice(ExerciseVer.autoExerciseId)
-            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+        (Exercise innerJoin ExerciseVer).select(ExerciseVer.autoExerciseId)
+            .where { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.autoExerciseId] }
             .single()?.value ?: throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
     }

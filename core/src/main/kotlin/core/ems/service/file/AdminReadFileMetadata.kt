@@ -51,8 +51,7 @@ class ReadFileMetadataController {
 
     private fun selectMetadata(): Resp = transaction {
         Resp(
-            StoredFile.slice(StoredFile.id, article, exercise, filename, type, sizeBytes, createdAt, owner)
-                .selectAll()
+            StoredFile.select(StoredFile.id, article, exercise, filename, type, sizeBytes, createdAt, owner)
                 .map {
                     RespFile(
                         it[StoredFile.id].value,

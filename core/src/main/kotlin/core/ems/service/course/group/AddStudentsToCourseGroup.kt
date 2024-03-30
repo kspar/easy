@@ -13,7 +13,7 @@ import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -108,7 +108,7 @@ class AddStudentsToCourseGroupController {
     }
 
     private fun hasStudentPendingAccessToCourse(studentEmail: String, courseId: Long): Boolean = transaction {
-        StudentPendingAccess.select {
+        StudentPendingAccess.selectAll().where {
             StudentPendingAccess.email.eq(studentEmail) and
                     StudentPendingAccess.course.eq(courseId)
         }.count() > 0
@@ -116,7 +116,7 @@ class AddStudentsToCourseGroupController {
 
 
     private fun hasStudentMoodlePendingAccessToCourse(moodleUsername: String, courseId: Long): Boolean = transaction {
-        StudentMoodlePendingAccess.select {
+        StudentMoodlePendingAccess.selectAll().where {
             StudentMoodlePendingAccess.moodleUsername.eq(moodleUsername) and
                     StudentMoodlePendingAccess.course.eq(courseId)
         }.count() > 0

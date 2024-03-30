@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.SysConf
 import core.db.*
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -60,16 +59,14 @@ internal data class AutoAssessExerciseDetails(
 
 fun getExecutorMaxLoad(executorId: Long): Int {
     return transaction {
-        Executor.slice(Executor.maxLoad)
-            .select { Executor.id eq executorId }
+        Executor.select(Executor.maxLoad)
+            .where { Executor.id eq executorId }
             .map { it[Executor.maxLoad] }
             .first()
     }
 }
 
-fun getAvailableExecutorIds(): List<Long> {
-    return transaction { Executor.slice(Executor.id).selectAll().map { it[Executor.id].value } }
-}
+fun getAvailableExecutorIds(): List<Long> = transaction { Executor.select(Executor.id).map { it[Executor.id].value } }
 
 internal fun CapableExecutor.associateWithSchedulerOrNull(functionScheduler: FunctionScheduler<AutoAssessment>?): AssociatedExecutor? {
     return if (functionScheduler == null) null else AssociatedExecutor(this, functionScheduler)
@@ -88,7 +85,7 @@ internal fun AutoAssessExerciseDetails.mapToExecutorRequest(submission: String):
 internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails {
     return transaction {
         val assets = Asset
-            .select { Asset.autoExercise eq autoExerciseId }
+            .selectAll().where { Asset.autoExercise eq autoExerciseId }
             .map {
                 AutoAssessExerciseAsset(
                     it[Asset.fileName],
@@ -96,7 +93,7 @@ internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDet
                 )
             }
 
-        AutoExercise.select { AutoExercise.id eq autoExerciseId }
+        AutoExercise.selectAll().where { AutoExercise.id eq autoExerciseId }
             .map {
                 AutoAssessExerciseDetails(
                     it[AutoExercise.gradingScript],
@@ -113,7 +110,7 @@ internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDet
 internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
     return transaction {
         (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
-            .select { AutoExercise.id eq autoExerciseId }
+            .selectAll().where { AutoExercise.id eq autoExerciseId }
             .map {
                 CapableExecutor(
                     it[Executor.id].value,

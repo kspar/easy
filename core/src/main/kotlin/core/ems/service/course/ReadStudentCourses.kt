@@ -5,7 +5,6 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.StudentCourseAccess
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,6 +25,7 @@ class ReadStudentCourses {
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
+        @JsonProperty("archived") val archived: Boolean,
     )
 
     @Secured("ROLE_STUDENT")
@@ -38,15 +38,16 @@ class ReadStudentCourses {
 
     private fun selectCoursesForStudent(studentId: String): Resp = transaction {
         Resp(
-            (StudentCourseAccess innerJoin Course).slice(
-                Course.id, Course.title, Course.alias
-            ).select {
+            (StudentCourseAccess innerJoin Course).select(
+                Course.id, Course.title, Course.alias, Course.archived
+            ).where {
                 StudentCourseAccess.student eq studentId
             }.map {
                 CourseResp(
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.archived],
                 )
             }
         )

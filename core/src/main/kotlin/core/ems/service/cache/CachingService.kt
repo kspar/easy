@@ -6,7 +6,10 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectArticleAliases
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.alias
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.cache.CacheManager
@@ -47,8 +50,8 @@ class CachingService(val cacheManager: CacheManager) {
     fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp =
         transaction {
 
-            val articleId = ArticleAlias.slice(ArticleAlias.article)
-                .select { ArticleAlias.id eq articleIdOrAlias }
+            val articleId = ArticleAlias.select(ArticleAlias.article)
+                .where { ArticleAlias.id eq articleIdOrAlias }
                 .map { it[ArticleAlias.article].value }
                 .singleOrNull() ?: articleIdOrAlias.idToLongOrInvalidReq()
 
@@ -61,7 +64,7 @@ class CachingService(val cacheManager: CacheManager) {
                         .innerJoin(ownerAlias, { ownerAlias[Account.id] }, { ArticleVersion.author })
                         .innerJoin(authorAlias, { authorAlias[Account.id] }, { ownerAlias[Account.id] })
                 )
-                .slice(
+                .select(
                     Article.id,
                     ArticleVersion.title,
                     Article.createdAt,
@@ -78,9 +81,7 @@ class CachingService(val cacheManager: CacheManager) {
                     authorAlias[Account.givenName],
                     authorAlias[Account.familyName]
                 )
-                .select {
-                    Article.id eq articleId and ArticleVersion.validTo.isNull()
-                }
+                .where { Article.id eq articleId and ArticleVersion.validTo.isNull() }
                 .map {
                     ReadArticleDetailsController.Resp(
                         it[Article.id].value.toString(),
@@ -121,7 +122,7 @@ class CachingService(val cacheManager: CacheManager) {
     @Cacheable(value = [accountCache], unless = "#result == null")
     fun selectAccount(username: String): Acc? = transaction {
         log.debug { "$username not in 'account' cache. Executing select." }
-        Account.select { Account.id eq username }
+        Account.selectAll().where { Account.id eq username }
             .map {
                 Acc(
                     it[Account.id].value,
@@ -139,19 +140,19 @@ class CachingService(val cacheManager: CacheManager) {
     @Cacheable(value = [studentCache], unless = "#result == false")
     fun studentExists(studentUsername: String): Boolean = transaction {
         log.debug { "$studentUsername not in 'student' cache. Executing select." }
-        Account.select { Account.id eq studentUsername and Account.isStudent}.count() == 1L
+        Account.selectAll().where { Account.id eq studentUsername and Account.isStudent }.count() == 1L
     }
 
     @Cacheable(value = [teacherCache], unless = "#result == false")
     fun teacherExists(teacherUsername: String): Boolean = transaction {
         log.debug { "$teacherUsername not in 'teacher' cache. Executing select." }
-        Account.select { Account.id eq teacherUsername and Account.isTeacher}.count() == 1L
+        Account.selectAll().where { Account.id eq teacherUsername and Account.isTeacher }.count() == 1L
     }
 
     @Cacheable(value = [adminCache], unless = "#result == false")
     fun adminExists(adminUsername: String): Boolean = transaction {
         log.debug { "$adminUsername not in 'admin' cache. Executing select." }
-        Account.select { Account.id eq adminUsername and Account.isAdmin}.count() == 1L
+        Account.selectAll().where { Account.id eq adminUsername and Account.isAdmin }.count() == 1L
     }
 
     @Cacheable(countSubmissionsCache)
@@ -162,7 +163,7 @@ class CachingService(val cacheManager: CacheManager) {
 
     @Cacheable(countSubmissionsInAutoAssessmentCache)
     fun countSubmissionsInAutoAssessment() = transaction {
-        Submission.select { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
+        Submission.selectAll().where { Submission.autoGradeStatus eq AutoGradeStatus.IN_PROGRESS }.count()
     }
 }
 

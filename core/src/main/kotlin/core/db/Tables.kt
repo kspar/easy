@@ -22,6 +22,7 @@ object Account : IdTable<String>("account") {
     val isTeacher = bool("is_teacher")
     val isStudent = bool("is_student")
     val isAdmin = bool("is_admin")
+    val pseudonym = text("pseudonym")
 }
 
 
@@ -59,6 +60,7 @@ object Course : LongIdTable("course") {
     val moodleSyncStudentsInProgress = bool("moodle_sync_students_in_progress")
     val moodleSyncGrades = bool("moodle_sync_grades")
     val moodleSyncGradesInProgress = bool("moodle_sync_grades_in_progress")
+    val archived = bool("archived")
 }
 
 object CourseGroup : LongIdTable("course_group") {
@@ -162,12 +164,19 @@ object StatsSubmission : Table("stats_submission") {
     val submissionId = long("submission_id")
     val courseExerciseId = long("course_exercise_id")
     val exerciseId = long("exercise_id")
+    val studentPseudonym = text("student_pseudonym")
+    val latestTeacherPseudonym = text("latest_teacher_pseudonym").nullable()
     val createdAt = datetime("created_at")
-    val points = integer("points").nullable()
+    val solutionLength = integer("solution_length")
+    val teacherPoints = integer("teacher_points").nullable()
+    val hasEverReceivedTeacherComment = bool("has_ever_received_teacher_comment")
+    val latestTeacherActivityUpdate = datetime("latest_teacher_activity_update").nullable()
+    val autoPoints = integer("auto_points").nullable()
+    val autoGradedAt = datetime("auto_graded_at").nullable()
     override val primaryKey = PrimaryKey(submissionId)
 }
 
-object TeacherAssessment : LongIdTable("teacher_assessment") {
+object TeacherActivity : LongIdTable("teacher_activity") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)
@@ -179,7 +188,7 @@ object TeacherAssessment : LongIdTable("teacher_assessment") {
     val feedbackAdoc = text("feedback_adoc").nullable()
 }
 
-object AutomaticAssessment : LongIdTable("automatic_assessment") {
+object AutogradeActivity : LongIdTable("autograde_activity") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)
     val submission = reference("submission_id", Submission)
@@ -199,7 +208,8 @@ object AnonymousSubmission : LongIdTable("anonymous_submission") {
 object StatsAnonymousSubmission : LongIdTable("stats_anonymous_submission") {
     val exercise = long("exercise_id")
     val createdAt = datetime("created_at")
-    val points = integer("points").nullable()
+    val solutionLength = integer("solution_length")
+    val points = integer("points")
 }
 
 object ManagementNotification : LongIdTable("management_notification") {
@@ -254,7 +264,7 @@ object TeacherSubmission : LongIdTable("teacher_submission") {
 object SystemConfiguration : IdTable<String>("system_configuration") {
     override val id: Column<EntityID<String>> = text("key").entityId()
     override val primaryKey = PrimaryKey(id)
-    val value = text("value")
+    val value = text("value").nullable()
 }
 
 object LogReport : LongIdTable("log_report") {

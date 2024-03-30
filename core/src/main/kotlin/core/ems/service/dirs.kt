@@ -77,24 +77,20 @@ private fun removeRootchainPassthroughAny(dirId: Long) {
 }
 
 private fun getAccessLevel(dirId: Long, groupId: Long): DirAccessLevel? = transaction {
-    GroupDirAccess.select {
-        GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId)
-    }.map {
+    GroupDirAccess.selectAll().where { GroupDirAccess.dir.eq(dirId) and GroupDirAccess.group.eq(groupId) }.map {
         it[GroupDirAccess.level]
     }.singleOrNull()
 }
 
 private fun hasChildrenAccess(dirId: Long, groupId: Long): Boolean = transaction {
-    (Dir innerJoin GroupDirAccess).select {
+    (Dir innerJoin GroupDirAccess).selectAll().where {
         Dir.parentDir.eq(dirId) and
                 GroupDirAccess.group.eq(groupId)
     }.count() > 0
 }
 
 private fun hasChildrenAnyAccess(dirId: Long): Boolean = transaction {
-    Dir.select {
-        Dir.parentDir.eq(dirId) and Dir.anyAccess.isNotNull()
-    }.count() > 0
+    Dir.selectAll().where { Dir.parentDir.eq(dirId) and Dir.anyAccess.isNotNull() }.count() > 0
 }
 
 private fun removeAccess(dirId: Long, groupId: Long) = transaction {
@@ -142,10 +138,8 @@ fun libraryDirPutAccess(dirId: Long, groupId: Long?, level: DirAccessLevel) {
 
 fun getImplicitDirFromExercise(exerciseId: Long): Long = transaction {
     Dir
-        .slice(Dir.id)
-        .select {
-            Dir.name.eq(exerciseId.toString()) and Dir.isImplicit
-        }.map {
+        .select(Dir.id)
+        .where { Dir.name.eq(exerciseId.toString()) and Dir.isImplicit }.map {
             it[Dir.id]
         }
         .single().value
@@ -166,7 +160,7 @@ data class ExerciseDir(
 )
 
 fun getDir(dirId: Long): ExerciseDir? = transaction {
-    Dir.select { Dir.id eq dirId }
+    Dir.selectAll().where { Dir.id eq dirId }
         .map {
             ExerciseDir(
                 it[Dir.id].value,
@@ -193,9 +187,7 @@ fun assertDirExists(dirId: Long, allowImplicit: Boolean = false) {
 
 fun dirExists(dirId: Long, allowImplicit: Boolean = false): Boolean {
     return transaction {
-        val q = Dir.select {
-            Dir.id eq dirId
-        }
+        val q = Dir.selectAll().where { Dir.id eq dirId }
         if (!allowImplicit) {
             q.andWhere { Dir.isImplicit eq false }
         }
@@ -205,9 +197,7 @@ fun dirExists(dirId: Long, allowImplicit: Boolean = false): Boolean {
 }
 
 fun assertDirIsEmpty(dirId: Long) = transaction {
-    val childCount = Dir.select {
-        Dir.parentDir eq dirId
-    }.count()
+    val childCount = Dir.selectAll().where { Dir.parentDir eq dirId }.count()
     if (childCount > 0)
         throw InvalidRequestException(
             "Dir $dirId is not empty",
@@ -254,8 +244,8 @@ private tailrec fun getEffectiveDirAccessLevelRec(
 
     // Get parent dir id and current "any access" level
     val (parentDirId, currentAnyAccessLevel) = transaction {
-        Dir.slice(Dir.parentDir, Dir.anyAccess)
-            .select { Dir.id eq dirId }
+        Dir.select(Dir.parentDir, Dir.anyAccess)
+            .where { Dir.id eq dirId }
             .map {
                 it[Dir.parentDir] to it[Dir.anyAccess]
             }
@@ -285,8 +275,8 @@ private tailrec fun getEffectiveDirAccessLevelRec(
 
 fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel? = transaction {
     (AccountGroup innerJoin Group innerJoin GroupDirAccess)
-        .slice(GroupDirAccess.level)
-        .select {
+        .select(GroupDirAccess.level)
+        .where {
             AccountGroup.account eq userId and
                     (GroupDirAccess.dir eq dirId)
         }.maxOfOrNull {
@@ -323,10 +313,8 @@ data class AccessGroup(val id: Long, val name: String, val access: DirAccessLeve
 
 fun getDirectGroupDirAccesses(dirId: Long): AccessDir = transaction {
     val accesses = (GroupDirAccess innerJoin Group)
-        .slice(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
-        .select {
-            GroupDirAccess.dir eq dirId
-        }.map {
+        .select(Group.id, Group.name, GroupDirAccess.level, Group.isImplicit)
+        .where { GroupDirAccess.dir eq dirId }.map {
             // Can only have one access for this dir per group, so don't need to aggregate
             AccessGroup(
                 it[Group.id].value,
@@ -336,9 +324,7 @@ fun getDirectGroupDirAccesses(dirId: Long): AccessDir = transaction {
             )
         }
 
-    Dir.select {
-        Dir.id eq dirId
-    }.map {
+    Dir.selectAll().where { Dir.id eq dirId }.map {
         AccessDir(
             it[Dir.id].value,
             it[Dir.name],
@@ -358,9 +344,7 @@ fun debugPrintDir(dirId: Long? = null) {
 
 private fun printDir(dirId: Long? = null, level: Int = 0) {
     transaction {
-        Dir.select {
-            Dir.parentDir eq dirId
-        }.map {
+        Dir.selectAll().where { Dir.parentDir eq dirId }.map {
             val id = it[Dir.id].value
             val name = it[Dir.name]
             val anyAccess = if (it[Dir.anyAccess] != null) "(${it[Dir.anyAccess]})" else ""
@@ -369,9 +353,7 @@ private fun printDir(dirId: Long? = null, level: Int = 0) {
             data class GroupAccess(val groupId: Long, val groupName: String, val access: DirAccessLevel)
 
             val accesses = (GroupDirAccess innerJoin Group)
-                .select {
-                    GroupDirAccess.dir eq id
-                }.map {
+                .selectAll().where { GroupDirAccess.dir eq id }.map {
                     GroupAccess(
                         it[Group.id].value,
                         it[Group.name],

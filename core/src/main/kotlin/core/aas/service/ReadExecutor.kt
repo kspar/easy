@@ -5,7 +5,6 @@ import core.conf.security.EasyUser
 import core.db.Executor
 import core.db.ExecutorContainerImage
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
@@ -46,7 +45,7 @@ class ReadExecutorController {
                     it[Executor.drain],
 
                     ExecutorContainerImage
-                        .select { ExecutorContainerImage.executor eq it[Executor.id] }
+                        .selectAll().where { ExecutorContainerImage.executor eq it[Executor.id] }
                         .map { image -> image[ExecutorContainerImage.containerImage].value }
                 )
             }

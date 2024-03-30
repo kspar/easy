@@ -17,7 +17,6 @@ import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.web.bind.annotation.*
@@ -76,7 +75,7 @@ class StudentReadSubmissionsController {
         offset: Long?
     ): List<SubmissionResp> = transaction {
         (CourseExercise innerJoin Submission)
-            .slice(
+            .select(
                 CourseExercise.gradeThreshold,
                 Submission.id,
                 Submission.number,
@@ -88,7 +87,7 @@ class StudentReadSubmissionsController {
                 Submission.seen,
                 Submission.isGradedDirectly
             )
-            .select {
+            .where {
                 CourseExercise.course eq courseId and
                         (CourseExercise.id eq courseExId) and
                         (Submission.student eq studentId)

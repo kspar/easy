@@ -15,7 +15,6 @@ import core.util.DateTimeSerializer
 import core.util.notNullAndInPast
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -90,7 +89,7 @@ class TeacherReadExDetailsCont {
 
     private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long, caller: EasyUser): Resp = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
+            .select(
                 Exercise.id,
                 CourseExercise.softDeadline,
                 CourseExercise.hardDeadline,
@@ -107,9 +106,9 @@ class TeacherReadExDetailsCont {
                 ExerciseVer.validFrom,
                 ExerciseVer.autoExerciseId,
                 ExerciseVer.solutionFileName,
-                ExerciseVer.solutionFileType,
+                ExerciseVer.solutionFileType
             )
-            .select {
+            .where {
                 CourseExercise.course eq courseId and
                         (CourseExercise.id eq courseExId) and
                         ExerciseVer.validTo.isNull()

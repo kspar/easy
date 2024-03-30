@@ -11,7 +11,6 @@ import core.ems.service.cache.articleCache
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
@@ -69,8 +68,8 @@ class CreateArticleController(private val adocService: AdocService, private val 
         }
 
         if (html != null) {
-            val inUse = StoredFile.slice(StoredFile.id)
-                .select { StoredFile.usageConfirmed eq false }
+            val inUse = StoredFile.select(StoredFile.id)
+                .where { StoredFile.usageConfirmed eq false }
                 .map { it[StoredFile.id].value }
                 .filter { html.contains(it) }
 

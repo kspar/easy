@@ -14,11 +14,13 @@ import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 
 @RestController
@@ -55,19 +57,24 @@ class ReadAllSubmissionsByStudent {
     private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): Resp = transaction {
         Resp(
             (CourseExercise innerJoin Submission)
-                .slice(
+                .select(
                     Submission.id,
                     Submission.createdAt,
                     Submission.grade,
                     Submission.isAutoGrade,
                     Submission.isGradedDirectly
-                ).select {
+                ).where {
                     CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) and (Submission.student eq studentId)
-                }.orderBy(Submission.createdAt, SortOrder.DESC).map {
+                }
+                .orderBy(Submission.createdAt, SortOrder.DESC).map {
                     SubmissionResp(
                         it[Submission.id].value.toString(),
                         it[Submission.createdAt],
-                        toGradeRespOrNull(it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly])
+                        toGradeRespOrNull(
+                            it[Submission.grade],
+                            it[Submission.isAutoGrade],
+                            it[Submission.isGradedDirectly]
+                        )
                     )
                 })
     }

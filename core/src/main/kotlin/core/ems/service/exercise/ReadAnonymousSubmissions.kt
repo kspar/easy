@@ -3,18 +3,22 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.AnonymousSubmission
+import core.db.DirAccessLevel
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
@@ -47,9 +51,7 @@ class ReadAnonymousSubmissions {
 
     private fun selectAllAnonymousSubmissions(exerciseId: Long): Resp = transaction {
         Resp(
-            AnonymousSubmission.select {
-                AnonymousSubmission.exercise eq exerciseId
-            }.orderBy(
+            AnonymousSubmission.selectAll().where { AnonymousSubmission.exercise eq exerciseId }.orderBy(
                 AnonymousSubmission.createdAt, SortOrder.DESC
             ).map {
                 SubmissionResp(

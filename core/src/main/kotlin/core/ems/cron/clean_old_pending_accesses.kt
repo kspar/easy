@@ -19,7 +19,8 @@ class CleanPendingAccessesCron {
     @Scheduled(cron = "\${easy.core.pending-access.clean.cron}")
     fun deleteOldPendingAccesses() {
         val deleteOlderThan = DateTime.now().minusDays(
-                SysConf.getProp("delete_before_days")?.toInt() ?: 90)
+            SysConf.getProp("delete_before_days")?.toInt() ?: 90
+        )
         log.debug { "Deleting pending access created earlier than $deleteOlderThan" }
         transaction {
             StudentPendingAccess.deleteWhere { StudentPendingAccess.validFrom.less(deleteOlderThan) }

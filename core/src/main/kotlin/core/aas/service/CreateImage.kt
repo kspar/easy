@@ -7,7 +7,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
@@ -35,7 +35,7 @@ class CreateImageController {
 
     private fun createContainerImage(newContainer: Req): String = transaction {
 
-        if (ContainerImage.select { ContainerImage.id eq newContainer.id }.count() == 0L) {
+        if (ContainerImage.selectAll().where { ContainerImage.id eq newContainer.id }.count() == 0L) {
             ContainerImage.insertAndGetId { it[id] = newContainer.id }.value
 
         } else {

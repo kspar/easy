@@ -11,7 +11,6 @@ import core.util.DBBackedLock
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -25,7 +24,6 @@ import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
 
 
-
 @Service
 class MoodleGradesSyncService {
     private val log = KotlinLogging.logger {}
@@ -36,16 +34,22 @@ class MoodleGradesSyncService {
     val syncGradesLock = DBBackedLock(Course, Course.moodleSyncGradesInProgress)
 
 
-    data class MoodleReq(@JsonProperty("shortname") val shortname: String,
-                         @JsonProperty("exercises") val exercises: List<MoodleReqExercise>)
+    data class MoodleReq(
+        @JsonProperty("shortname") val shortname: String,
+        @JsonProperty("exercises") val exercises: List<MoodleReqExercise>
+    )
 
-    data class MoodleReqExercise(@JsonProperty("idnumber") val idnumber: String,
-                                 @JsonProperty("title") val title: String,
-                                 @JsonProperty("grades") val grades: List<MoodleReqGrade>)
+    data class MoodleReqExercise(
+        @JsonProperty("idnumber") val idnumber: String,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("grades") val grades: List<MoodleReqGrade>
+    )
 
 
-    data class MoodleReqGrade(@JsonProperty("username") val username: String,
-                              @JsonProperty("grade") val grade: Int)
+    data class MoodleReqGrade(
+        @JsonProperty("username") val username: String,
+        @JsonProperty("grade") val grade: Int
+    )
 
 
     /**
@@ -55,28 +59,29 @@ class MoodleGradesSyncService {
     fun syncSingleGradeToMoodle(submissionId: Long) {
         transaction {
             (Submission innerJoin CourseExercise innerJoin Course)
-                    .slice(Course.id, CourseExercise.id, Course.moodleShortName, Course.moodleSyncGrades)
-                    .select { Submission.id eq submissionId }
-                    .single()
-                    .apply {
-                        val shortname = this[Course.moodleShortName]
-                        val isGradesSynced = this[Course.moodleSyncGrades]
+                .select(Course.id, CourseExercise.id, Course.moodleShortName, Course.moodleSyncGrades)
+                .where { Submission.id eq submissionId }
+                .single()
+                .apply {
+                    val shortname = this[Course.moodleShortName]
+                    val isGradesSynced = this[Course.moodleSyncGrades]
 
-                        if (!shortname.isNullOrBlank() && isGradesSynced) {
-                            val singleExercise = selectSingleCourseExerciseSubmission(
-                                    this[Course.id].value,
-                                    this[CourseExercise.id].value,
-                                    submissionId)
+                    if (!shortname.isNullOrBlank() && isGradesSynced) {
+                        val singleExercise = selectSingleCourseExerciseSubmission(
+                            this[Course.id].value,
+                            this[CourseExercise.id].value,
+                            submissionId
+                        )
 
-                            if (singleExercise.grades.isNotEmpty()) {
-                                sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
-                                val grade = singleExercise.grades[0]
-                                log.info { "Moodle synced grade ${grade.grade} for ${grade.username} to exercise ${singleExercise.idnumber} on course $shortname" }
-                            } else {
-                                log.warn { "Skipping Moodle grade sync due to no existing grades to sync." }
-                            }
+                        if (singleExercise.grades.isNotEmpty()) {
+                            sendMoodleGradeRequest(MoodleReq(shortname, listOf(singleExercise)))
+                            val grade = singleExercise.grades[0]
+                            log.info { "Moodle synced grade ${grade.grade} for ${grade.username} to exercise ${singleExercise.idnumber} on course $shortname" }
+                        } else {
+                            log.warn { "Skipping Moodle grade sync due to no existing grades to sync." }
                         }
                     }
+                }
         }
     }
 
@@ -117,21 +122,26 @@ class MoodleGradesSyncService {
         map.add("data", jacksonObjectMapper().writeValueAsString(req))
         val request = HttpEntity(map, headers)
 
-        val responseEntity: ResponseEntity<String> = RestTemplate().postForEntity(moodleGradeUrl, request, String::class.java)
+        val responseEntity: ResponseEntity<String> =
+            RestTemplate().postForEntity(moodleGradeUrl, request, String::class.java)
 
         if (responseEntity.statusCode.value() != 200) {
             log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with data $req" }
-            throw InvalidRequestException("Grade syncing with Moodle failed due to error code in response.",
-                    ReqError.MOODLE_GRADE_SYNC_ERROR,
-                    notify = true)
+            throw InvalidRequestException(
+                "Grade syncing with Moodle failed due to error code in response.",
+                ReqError.MOODLE_GRADE_SYNC_ERROR,
+                notify = true
+            )
         }
 
         val body = responseEntity.body
         if (body == null || !body.contains("done")) {
             log.error { "Moodle grade syncing error. Grade syncing with Moodle failed due to response body from Moodle did not contain 'done': ${responseEntity.body}. Data: $req" }
-            throw InvalidRequestException("Grade syncing with Moodle failed due to response body from Moodle did not contain 'done'.",
-                    ReqError.MOODLE_GRADE_SYNC_ERROR,
-                    notify = true)
+            throw InvalidRequestException(
+                "Grade syncing with Moodle failed due to response body from Moodle did not contain 'done'.",
+                ReqError.MOODLE_GRADE_SYNC_ERROR,
+                notify = true
+            )
         }
     }
 
@@ -153,48 +163,54 @@ class MoodleGradesSyncService {
         }
 
 
-    private fun selectSingleCourseExerciseSubmission(courseId: Long, courseExId: Long, submissionId: Long): MoodleReqExercise =
+    private fun selectSingleCourseExerciseSubmission(
+        courseId: Long,
+        courseExId: Long,
+        submissionId: Long
+    ): MoodleReqExercise =
         transaction {
             (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                    .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId)
-                    .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and (CourseExercise.id eq courseExId) }
-                    .map { ex ->
-                        MoodleReqExercise(
-                                ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
-                                ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                                listOfNotNull(selectLatestGradeForSubmission(submissionId))
-                        )
-                    }.single()
+                .select(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId)
+                .where { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and (CourseExercise.id eq courseExId) }
+                .map { ex ->
+                    MoodleReqExercise(
+                        ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
+                        ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                        listOfNotNull(selectLatestGradeForSubmission(submissionId))
+                    )
+                }.single()
         }
 
 
     private fun selectExercisesOnCourse(courseId: Long): List<MoodleReqExercise> = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-                .slice(CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId,
-                        CourseExercise.orderIdx)
-                .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
-                .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-                .map { ex ->
+            .select(
+                CourseExercise.id, ExerciseVer.title, CourseExercise.titleAlias, CourseExercise.moodleExId,
+                CourseExercise.orderIdx
+            )
+            .where { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+            .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
+            .map { ex ->
 
-                    val grades =
-                            selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
-                                    .mapNotNull {
-                                        selectLatestGradeForSubmission(it)
-                                    }
+                val grades =
+                    selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
+                        .mapNotNull {
+                            selectLatestGradeForSubmission(it)
+                        }
 
-                    MoodleReqExercise(
-                            ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
-                            ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                            grades
-                    )
-                }
+                MoodleReqExercise(
+                    ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
+                    ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
+                    grades
+                )
+            }
     }
 
 
     private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? =
         (Submission innerJoin Account)
-            .slice(Account.moodleUsername, Account.id, Submission.grade)
-            .select { Submission.id eq submissionId }
+            .select(Account.moodleUsername, Account.id, Submission.grade)
+            .where { Submission.id eq submissionId }
             .map {
                 val moodleUsername = it[Account.moodleUsername]
                 val grade = it[Submission.grade]

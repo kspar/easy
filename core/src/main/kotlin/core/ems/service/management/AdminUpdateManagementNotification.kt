@@ -6,7 +6,7 @@ import core.db.ManagementNotification
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
@@ -44,7 +44,7 @@ class AdminUpdateManagementNotificationsController {
         transaction {
 
             val messageExists =
-                ManagementNotification.select { ManagementNotification.id eq notificationId }.count() == 1L
+                ManagementNotification.selectAll().where { ManagementNotification.id eq notificationId }.count() == 1L
 
             if (!messageExists) {
                 throw InvalidRequestException("No message with ID $notificationId found.")

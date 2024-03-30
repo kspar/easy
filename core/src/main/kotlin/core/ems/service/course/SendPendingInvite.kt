@@ -9,7 +9,7 @@ import core.ems.service.idToLongOrInvalidReq
 import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -52,27 +52,24 @@ class SendPendingInvite(val sendMailService: SendMailService) {
     private fun sendEmails(courseId: Long, emails: List<String>) {
 
         val courseTitle = transaction {
-            Course.select {
-                Course.id.eq(courseId)
-            }.map {
+            Course.selectAll().where { Course.id.eq(courseId) }.map {
                 it[Course.alias] ?: it[Course.title]
             }.single()
         }
 
         transaction {
             val pendingEmails = emails.filter {
-                val existsPending = StudentPendingAccess.select {
-                    StudentPendingAccess.email.eq(it) and StudentPendingAccess.course.eq(courseId)
-                }.count() == 1L
-                val existsMoodlePending = StudentMoodlePendingAccess.select {
-                    StudentMoodlePendingAccess.email.eq(it) and StudentMoodlePendingAccess.course.eq(courseId)
-                }.count() == 1L
+                val existsPending = StudentPendingAccess.selectAll()
+                    .where { StudentPendingAccess.email.eq(it) and StudentPendingAccess.course.eq(courseId) }
+                    .count() == 1L
+                val existsMoodlePending = StudentMoodlePendingAccess.selectAll()
+                    .where { StudentMoodlePendingAccess.email.eq(it) and StudentMoodlePendingAccess.course.eq(courseId) }
+                    .count() == 1L
                 existsPending || existsMoodlePending
             }
             val activeEmails = emails.filter {
-                (StudentCourseAccess innerJoin Account).select {
-                    Account.email.eq(it) and StudentCourseAccess.course.eq(courseId)
-                }.count() == 1L
+                (StudentCourseAccess innerJoin Account).selectAll()
+                    .where { Account.email.eq(it) and StudentCourseAccess.course.eq(courseId) }.count() == 1L
             }
 
             log.debug { "Sending email invites to pending students: $pendingEmails" }

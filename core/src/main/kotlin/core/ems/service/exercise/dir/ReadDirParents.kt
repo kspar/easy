@@ -6,17 +6,14 @@ import core.db.Dir
 import core.db.DirAccessLevel
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
-import core.ems.service.assertDirExists
 import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-
 
 
 @RestController
@@ -70,10 +67,8 @@ class ReadDirParentsController {
     private data class ParentDir(val id: Long, val name: String, val parentId: Long?)
 
     private fun selectDir(dirId: Long): ParentDir = transaction {
-        Dir.slice(Dir.name, Dir.parentDir)
-            .select {
-                Dir.id eq dirId
-            }.map {
+        Dir.select(Dir.name, Dir.parentDir)
+            .where { Dir.id eq dirId }.map {
                 ParentDir(
                     dirId,
                     it[Dir.name],

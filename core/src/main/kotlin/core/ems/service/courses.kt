@@ -13,7 +13,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import java.io.Serializable
@@ -75,9 +75,7 @@ private data class StudentOnCourseDTO(
 )
 
 fun getCourse(courseId: Long): CourseDTO? = transaction {
-    Course.select {
-        Course.id.eq(courseId)
-    }.map {
+    Course.selectAll().where { Course.id.eq(courseId) }.map {
         CourseDTO(
             it[Course.id].value,
             it[Course.title],
@@ -99,13 +97,14 @@ fun assertCourseExists(courseId: Long) {
     }
 }
 
-fun courseExists(courseId: Long): Boolean = transaction { Course.select { Course.id eq courseId }.count() > 0 }
+fun courseExists(courseId: Long): Boolean =
+    transaction { Course.selectAll().where { Course.id eq courseId }.count() > 0 }
 
 fun assertExerciseIsAutoGradable(exerciseId: Long) {
     val autoGradable = transaction {
         (Exercise innerJoin ExerciseVer)
-            .slice(ExerciseVer.graderType)
-            .select { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .select(ExerciseVer.graderType)
+            .where { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.graderType] }
             .single() == GraderType.AUTO
     }
@@ -169,7 +168,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
         )
 
         val exercises = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
+            .select(
                 CourseExercise.id,
                 CourseExercise.exercise,
                 CourseExercise.gradeThreshold,
@@ -180,9 +179,9 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 ExerciseVer.validTo,
                 CourseExercise.softDeadline,
                 CourseExercise.hardDeadline,
-                ExerciseVer.graderType,
+                ExerciseVer.graderType
             )
-            .select { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+            .where { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
             .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
             .mapIndexed { i, it ->
                 ExercisesDTO(
@@ -203,7 +202,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
             }
 
         val studentsWithSubmissions = (ExerciseVer innerJoin Exercise innerJoin CourseExercise leftJoin Submission)
-            .slice(
+            .select(
                 DistinctOn<Any>(listOf(CourseExercise.id, Submission.student)),
                 CourseExercise.id,
                 CourseExercise.gradeThreshold,
@@ -213,7 +212,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 Submission.grade,
                 Submission.isAutoGrade,
                 Submission.isGradedDirectly
-            ).select {
+            ).where {
                 CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(
                     courseStudents.keys
                 )
@@ -303,10 +302,10 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
 
 fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<StudentsResp> = transaction {
     val query = (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
-        .slice(
+        .select(
             Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
             StudentCourseAccess.createdAt, CourseGroup.id, CourseGroup.name
-        ).select {
+        ).where {
             StudentCourseAccess.course eq courseId
         }
 

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.util.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
@@ -236,6 +237,7 @@ private fun insertAccount(accountData: AccountData) {
         it[familyName] = accountData.familyName
         it[createdAt] = now
         it[lastSeen] = now
+        it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
     }
 
     // Add implicit group for each account
@@ -283,8 +285,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
 
     transaction {
         val courseIds = StudentPendingAccess
-            .slice(StudentPendingAccess.course)
-            .select { StudentPendingAccess.email eq accountData.email }
+            .select(StudentPendingAccess.course)
+            .where { StudentPendingAccess.email eq accountData.email }
             .map { it[StudentPendingAccess.course].value }
 
         StudentPendingAccess.deleteWhere {
@@ -302,8 +304,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
             }
 
             val groupIds = StudentPendingCourseGroup
-                .slice(StudentPendingCourseGroup.courseGroup)
-                .select {
+                .select(StudentPendingCourseGroup.courseGroup)
+                .where {
                     StudentPendingCourseGroup.email.eq(accountData.email) and
                             StudentPendingCourseGroup.course.eq(courseId)
                 }
@@ -319,7 +321,7 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
         data class MoodlePendingAccess(val courseId: Long, val moodleUsername: String)
 
         val moodlePendingQuery = StudentMoodlePendingAccess
-            .select { StudentMoodlePendingAccess.email eq accountData.email }
+            .selectAll().where { StudentMoodlePendingAccess.email eq accountData.email }
 
         if (accountData.moodleUsername != null) {
             moodlePendingQuery.orWhere {
@@ -351,8 +353,8 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
             }
 
             val groupIds = StudentMoodlePendingCourseGroup
-                .slice(StudentMoodlePendingCourseGroup.courseGroup)
-                .select {
+                .select(StudentMoodlePendingCourseGroup.courseGroup)
+                .where {
                     StudentMoodlePendingCourseGroup.moodleUsername.eq(pendingAccess.moodleUsername) and
                             StudentMoodlePendingCourseGroup.course.eq(pendingAccess.courseId)
                 }

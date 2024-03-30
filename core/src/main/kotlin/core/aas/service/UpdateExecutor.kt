@@ -12,7 +12,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.springframework.security.access.annotation.Secured
@@ -44,9 +44,7 @@ class UpdateExecutorController {
     }
 
     private fun updateExecutor(executorId: Long, body: Req) = transaction {
-        val executorExists =
-            Executor.select { Executor.id eq executorId }
-                .count() == 1L
+        val executorExists = Executor.selectAll().where { Executor.id eq executorId }.count() == 1L
 
         if (!executorExists) {
             throw InvalidRequestException("Executor with id $executorId not found")
@@ -54,7 +52,7 @@ class UpdateExecutorController {
             // Check that containers exists and if not, exception.
             body.containers.forEach {
 
-                if (ContainerImage.select { ContainerImage.id eq it }.count() != 1L) throw InvalidRequestException(
+                if (ContainerImage.selectAll().where { ContainerImage.id eq it }.count() != 1L) throw InvalidRequestException(
                     "Container image '$it' not found!",
                     ReqError.ENTITY_WITH_ID_NOT_FOUND,
                     "id" to it

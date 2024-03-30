@@ -2,7 +2,7 @@ package core.aas
 
 import core.db.*
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 
@@ -24,12 +24,12 @@ data class AutoExerciseExecutorBasic(
 fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails = transaction {
 
     val assets =
-        Asset.select { Asset.autoExercise eq autoExerciseId }
+        Asset.selectAll().where { Asset.autoExercise eq autoExerciseId }
             .map { it[Asset.fileName] to it[Asset.fileContent] }
 
     val executors =
         (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
-            .select { AutoExercise.id eq autoExerciseId }
+            .selectAll().where { AutoExercise.id eq autoExerciseId }
             .map {
                 AutoExerciseExecutorBasic(
                     it[Executor.id].value,
@@ -37,9 +37,7 @@ fun selectAutoExercise(autoExerciseId: EntityID<Long>): AutoExerciseDetails = tr
                 )
             }
 
-    AutoExercise.select {
-        AutoExercise.id eq autoExerciseId
-    }.map {
+    AutoExercise.selectAll().where { AutoExercise.id eq autoExerciseId }.map {
         AutoExerciseDetails(
             it[AutoExercise.gradingScript],
             it[AutoExercise.containerImage].value,

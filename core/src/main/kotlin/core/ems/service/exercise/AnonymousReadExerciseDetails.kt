@@ -10,7 +10,6 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -42,9 +41,9 @@ class AnonymousReadExerciseDetails {
     }
 
     private fun selectAnonymousExerciseDetails(exerciseId: Long): Resp = transaction {
-        (Exercise innerJoin ExerciseVer).slice(
+        (Exercise innerJoin ExerciseVer).select(
             ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, Exercise.anonymousAutoassessTemplate
-        ).select {
+        ).where {
             Exercise.id eq exerciseId and ExerciseVer.validTo.isNull()
         }.map {
             Resp(

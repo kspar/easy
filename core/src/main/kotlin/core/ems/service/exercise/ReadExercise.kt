@@ -15,7 +15,6 @@ import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.leftJoin
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -98,10 +97,10 @@ class ReadExercise {
         val usedOnCourses =
             (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
                 onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
-                additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).slice(
+                additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).select(
                 Course.id, Course.title, Course.alias, CourseExercise.id, CourseExercise.titleAlias,
                 TeacherCourseAccess.teacher
-            ).select {
+            ).where {
                 CourseExercise.exercise eq exerciseId
             }.map {
                 @Suppress("SENSELESS_COMPARISON") // leftJoin
@@ -123,7 +122,7 @@ class ReadExercise {
             ?: throw IllegalStateException("No access for ${caller.id} to dir $dirId")
 
         (Exercise innerJoin ExerciseVer)
-            .slice(
+            .select(
                 Exercise.createdAt,
                 Exercise.public,
                 Exercise.owner,
@@ -139,7 +138,7 @@ class ReadExercise {
                 Exercise.anonymousAutoassessEnabled,
                 Exercise.anonymousAutoassessTemplate
             )
-            .select {
+            .where {
                 Exercise.id eq exerciseId and
                         ExerciseVer.validTo.isNull()
             }.map {

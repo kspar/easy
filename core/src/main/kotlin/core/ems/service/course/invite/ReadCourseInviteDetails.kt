@@ -9,7 +9,6 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -50,14 +49,14 @@ class ReadCourseInviteDetails {
 
     private fun selectCourseInviteDetails(courseId: Long): Resp? = transaction {
         CourseInviteLink
-            .slice(
+            .select(
                 CourseInviteLink.inviteId,
                 CourseInviteLink.expiresAt,
                 CourseInviteLink.createdAt,
                 CourseInviteLink.allowedUses,
                 CourseInviteLink.usedCount
             )
-            .select { CourseInviteLink.course eq courseId }
+            .where { CourseInviteLink.course eq courseId }
             .map {
                 Resp(
                     it[CourseInviteLink.inviteId],

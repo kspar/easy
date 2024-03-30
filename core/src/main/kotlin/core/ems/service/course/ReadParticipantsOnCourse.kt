@@ -16,7 +16,6 @@ import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -126,12 +125,12 @@ class ReadParticipantsOnCourseController {
             data class PendingStudent(val email: String, val validFrom: DateTime)
 
             (StudentPendingAccess leftJoin StudentPendingCourseGroup leftJoin CourseGroup)
-                .slice(
+                .select(
                     StudentPendingAccess.email,
                     StudentPendingAccess.validFrom,
                     CourseGroup.id,
                     CourseGroup.name
-                ).select {
+                ).where {
                     StudentPendingAccess.course eq courseId
                 }.groupBy({
                     PendingStudent(
@@ -160,12 +159,12 @@ class ReadParticipantsOnCourseController {
         data class PendingStudent(val moodleUsername: String, val email: String)
 
         (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
-            .slice(
+            .select(
                 StudentMoodlePendingAccess.moodleUsername,
                 StudentMoodlePendingAccess.email,
                 CourseGroup.id,
                 CourseGroup.name
-            ).select {
+            ).where {
                 StudentMoodlePendingAccess.course eq courseId
             }.groupBy({
                 PendingStudent(
@@ -192,13 +191,13 @@ class ReadParticipantsOnCourseController {
 
     private fun selectTeachersOnCourse(courseId: Long): List<TeachersResp> = transaction {
         (Account innerJoin TeacherCourseAccess)
-            .slice(
+            .select(
                 Account.id,
                 Account.email,
                 Account.givenName,
                 Account.familyName,
                 TeacherCourseAccess.createdAt
-            ).select {
+            ).where {
                 TeacherCourseAccess.course eq courseId
             }
             .map {

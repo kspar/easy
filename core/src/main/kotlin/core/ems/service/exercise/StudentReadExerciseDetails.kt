@@ -12,7 +12,6 @@ import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -60,13 +59,13 @@ class StudentReadExerciseDetailsController {
 
     private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long): Resp = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
-            .slice(
+            .select(
                 ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.solutionFileName,
                 ExerciseVer.solutionFileType, CourseExercise.softDeadline, CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
                 CourseExercise.titleAlias
             )
-            .select {
+            .where {
                 CourseExercise.course eq courseId and
                         (CourseExercise.id eq courseExId) and
                         ExerciseVer.validTo.isNull()

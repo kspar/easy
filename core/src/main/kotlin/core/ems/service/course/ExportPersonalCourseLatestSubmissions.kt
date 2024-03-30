@@ -8,7 +8,6 @@ import core.ems.service.idToLongOrInvalidReq
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.core.io.ByteArrayResource
@@ -50,21 +49,19 @@ class ExportPersonalCourseLatestSubmissions {
 
     private fun selectStudentSubmissions(courseId: Long, studentId: String): CourseSolution = transaction {
         val courseName = Course
-            .slice(Course.alias, Course.title)
-            .select { Course.id eq courseId }
+            .select(Course.alias, Course.title)
+            .where { Course.id eq courseId }
             .map { it[Course.alias] ?: it[Course.title] }
             .single()
 
         CourseSolution(courseName, (CourseExercise innerJoin Exercise innerJoin ExerciseVer innerJoin Submission)
-            .slice(
+            .select(
                 CourseExercise.titleAlias,
                 ExerciseVer.title,
                 Submission.solution,
                 Submission.createdAt
             )
-            .select {
-                CourseExercise.course eq courseId and (Submission.student eq studentId) and (ExerciseVer.validTo.isNull())
-            }
+            .where { CourseExercise.course eq courseId and (Submission.student eq studentId) and (ExerciseVer.validTo.isNull()) }
             .orderBy(Submission.createdAt, SortOrder.DESC)
             .distinctBy { it[Submission.solution] }
             .map {

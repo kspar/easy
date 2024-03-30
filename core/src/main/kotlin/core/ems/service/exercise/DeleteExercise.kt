@@ -14,7 +14,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -70,9 +70,7 @@ class DeleteExercise {
 
     private fun deleteVersions(exId: Long) {
         // Delete auto exercises
-        val autoExIds = ExerciseVer.select {
-            ExerciseVer.exercise eq exId
-        }.mapNotNull {
+        val autoExIds = ExerciseVer.selectAll().where { ExerciseVer.exercise eq exId }.mapNotNull {
             it[ExerciseVer.autoExerciseId]?.value
         }
 

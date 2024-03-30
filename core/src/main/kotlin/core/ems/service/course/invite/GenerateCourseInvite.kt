@@ -10,7 +10,6 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -57,8 +56,8 @@ class GenerateCourseInvite {
 
         // If there is already an existing invite id, don't change it
         val d = CourseInviteLink
-            .slice(CourseInviteLink.inviteId, CourseInviteLink.createdAt, CourseInviteLink.usedCount)
-            .select { (CourseInviteLink.course eq courseId) }
+            .select(CourseInviteLink.inviteId, CourseInviteLink.createdAt, CourseInviteLink.usedCount)
+            .where { (CourseInviteLink.course eq courseId) }
             .map {
                 CourseInviteLinkDTO(
                     it[CourseInviteLink.inviteId],

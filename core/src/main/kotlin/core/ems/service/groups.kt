@@ -6,7 +6,7 @@ import core.db.AccountGroup
 import core.db.Group
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
@@ -20,9 +20,7 @@ fun hasUserGroupAccess(user: EasyUser, groupId: Long, requireManager: Boolean): 
 
 private fun hasAccountGroupAccess(accountId: String, groupId: Long, requireManager: Boolean): Boolean {
     return transaction {
-        val q = AccountGroup.select {
-            AccountGroup.account eq accountId and (AccountGroup.group eq groupId)
-        }
+        val q = AccountGroup.selectAll().where { AccountGroup.account eq accountId and (AccountGroup.group eq groupId) }
         if (requireManager) {
             q.andWhere { AccountGroup.isManager eq true }
         }
@@ -32,10 +30,8 @@ private fun hasAccountGroupAccess(accountId: String, groupId: Long, requireManag
 
 fun getImplicitGroupFromAccount(accountId: String): Long = transaction {
     Group
-        .slice(Group.id)
-        .select {
-            Group.name.eq(accountId) and Group.isImplicit
-        }
+        .select(Group.id)
+        .where { Group.name.eq(accountId) and Group.isImplicit }
         .map {
             it[Group.id]
         }
@@ -49,10 +45,10 @@ data class AccountFromImplicitGroup(
 
 fun getAccountFromImplicitGroup(implicitGroupId: Long): AccountFromImplicitGroup = transaction {
     (Group innerJoin AccountGroup innerJoin Account)
-        .slice(
+        .select(
             Account.id, Account.givenName, Account.familyName, Account.email,
             Account.moodleUsername, Account.createdAt, Account.lastSeen
-        ).select {
+        ).where {
             Group.id eq implicitGroupId and Group.isImplicit
         }.map {
             AccountFromImplicitGroup(

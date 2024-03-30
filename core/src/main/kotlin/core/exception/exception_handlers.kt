@@ -128,10 +128,12 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
                     cause.parameter.type.toString().replace("kotlin.", "")
                 }'"
             }
+
             is MismatchedInputException -> {
                 val cause = ex.cause as MismatchedInputException
                 cause.originalMessage
             }
+
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
             else -> ex.message ?: "Invalid request!"
         }

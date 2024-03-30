@@ -9,7 +9,6 @@ import core.db.ArticleAlias
 import core.db.ArticleVersion
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -53,8 +52,8 @@ class ReadArticleAliasesController {
     private fun selectAliases(): Resp = transaction {
         Resp(
             (Article innerJoin ArticleVersion)
-                .slice(Article.id, ArticleVersion.title)
-                .select { ArticleVersion.validTo.isNull() }
+                .select(Article.id, ArticleVersion.title)
+                .where { ArticleVersion.validTo.isNull() }
                 .map {
                     ArticleResp(
                         it[Article.id].value.toString(),
@@ -65,10 +64,8 @@ class ReadArticleAliasesController {
     }
 
     private fun selectArticleAliases(articleId: Long): List<RespAlias> = transaction {
-        ArticleAlias.slice(ArticleAlias.id, ArticleAlias.createdAt, ArticleAlias.owner)
-            .select {
-                ArticleAlias.article eq articleId
-            }.map {
+        ArticleAlias.select(ArticleAlias.id, ArticleAlias.createdAt, ArticleAlias.owner)
+            .where { ArticleAlias.article eq articleId }.map {
                 RespAlias(
                     it[ArticleAlias.id].value,
                     it[ArticleAlias.createdAt],

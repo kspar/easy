@@ -11,7 +11,7 @@ import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
@@ -30,8 +30,8 @@ fun AccessChecksBuilder.libraryExercise(exerciseId: Long, accessLevel: DirAccess
 
 fun assertUnauthAccessToExercise(exerciseId: Long) {
     val unauthEnabled = transaction {
-        Exercise.slice(Exercise.anonymousAutoassessEnabled)
-            .select { Exercise.id.eq(exerciseId) }
+        Exercise.select(Exercise.anonymousAutoassessEnabled)
+            .where { Exercise.id.eq(exerciseId) }
             .map { it[Exercise.anonymousAutoassessEnabled] }
             .singleOrNull() ?: throw ForbiddenException(
             "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
@@ -46,11 +46,11 @@ fun assertUnauthAccessToExercise(exerciseId: Long) {
 fun assertExerciseHasTextEditorSubmission(exerciseId: Long) {
     val solutionType = transaction {
         (Exercise innerJoin ExerciseVer)
-            .select { Exercise.id.eq(exerciseId) and ExerciseVer.validTo.isNull() }
+            .selectAll().where { Exercise.id.eq(exerciseId) and ExerciseVer.validTo.isNull() }
             .map { it[ExerciseVer.solutionFileType] }
             .singleOrNull() ?: throw ForbiddenException(
-                "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
-            )
+            "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
+        )
     }
 
     if (solutionType != SolutionFileType.TEXT_EDITOR) {

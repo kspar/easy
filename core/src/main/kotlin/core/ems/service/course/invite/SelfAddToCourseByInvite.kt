@@ -36,8 +36,8 @@ class SelfAddToCourseByInvite {
 
     private fun selfAddByInvite(inviteId: String, studentId: String): Resp = transaction {
         val courseId = (CourseInviteLink innerJoin Course)
-            .slice(Course.id)
-            .select {
+            .select(Course.id)
+            .where {
                 (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)

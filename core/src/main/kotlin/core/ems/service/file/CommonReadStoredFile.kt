@@ -6,7 +6,6 @@ import core.db.StoredFile.data
 import core.db.StoredFile.filename
 import core.db.StoredFile.type
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -41,8 +40,8 @@ class ReadStoredFileController {
     data class TempStoredFile(val type: String, val name: String, val blob: ByteArray)
 
     private fun selectFile(fileIdString: String): TempStoredFile? = transaction {
-        StoredFile.slice(type, data, filename)
-            .select { StoredFile.id eq fileIdString }
+        StoredFile.select(type, data, filename)
+            .where { StoredFile.id eq fileIdString }
             .map { TempStoredFile(it[type], it[filename], it[data]) }
             .firstOrNull()
     }

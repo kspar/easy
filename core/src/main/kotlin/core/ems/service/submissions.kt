@@ -17,9 +17,9 @@ import org.joda.time.DateTime
 private val log = KotlinLogging.logger {}
 
 fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Boolean = transaction {
-    (Course innerJoin CourseExercise innerJoin Submission).select {
-        Course.id eq courseId and (CourseExercise.id eq courseExId) and (Submission.id eq submissionId)
-    }.count() == 1L
+    (Course innerJoin CourseExercise innerJoin Submission).selectAll()
+        .where { Course.id eq courseId and (CourseExercise.id eq courseExId) and (Submission.id eq submissionId) }
+        .count() == 1L
 }
 
 fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isAfterNow
@@ -33,8 +33,8 @@ fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long)
 fun selectStudentBySubmissionId(submissionId: Long) =
     transaction {
         Submission
-            .slice(Submission.student)
-            .select { Submission.id eq submissionId }
+            .select(Submission.student)
+            .where { Submission.id eq submissionId }
             .map { it[Submission.student] }
             .single()
     }
@@ -57,13 +57,13 @@ fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> {
     val latestSubmissions = HashMap<String, SubmissionPartial>()
 
     Submission
-        .slice(
+        .select(
             Submission.id,
             Submission.student,
             Submission.createdAt,
             Submission.courseExercise
         )
-        .select { Submission.courseExercise eq courseExerciseId }
+        .where { Submission.courseExercise eq courseExerciseId }
         .map {
             SubmissionPartial(
                 it[Submission.id].value,
@@ -108,7 +108,7 @@ suspend fun autoAssessAsync(
         }
 
         log.debug { "Finished autoassessment" }
-        insertAutoAssessment(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
+        insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
     } catch (e: Exception) {
         log.error("Autoassessment failed", e)
         insertAutoAssFailed(submissionId, caching, studentId, courseExId)
@@ -144,11 +144,11 @@ fun insertSubmission(
         }
 
         val (previousGrade, lastNumber) = (
-                Submission.slice(
+                Submission.select(
                     Submission.number,
                     Submission.isAutoGrade,
                     Submission.grade
-                ).select {
+                ).where {
                     (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
                 }.orderBy(Submission.number, SortOrder.DESC)
                     .map {
@@ -157,8 +157,6 @@ fun insertSubmission(
                 )
 
         val time = DateTime.now()
-        val setGrade = previousGrade != null && !previousGrade.isAutograde
-
         val submissionId = Submission.insertAndGetId {
             it[courseExercise] = courseExId
             it[student] = studentId
@@ -166,7 +164,7 @@ fun insertSubmission(
             it[solution] = submission
             it[autoGradeStatus] = autoAss
             it[number] = lastNumber + 1
-            if (setGrade) {
+            if (previousGrade != null && !previousGrade.isAutograde) {
                 it[grade] = previousGrade?.grade
                 it[isAutoGrade] = false
                 it[isGradedDirectly] = false
@@ -174,8 +172,8 @@ fun insertSubmission(
         }.value
 
         val exerciseId = CourseExercise
-            .slice(CourseExercise.exercise)
-            .select { CourseExercise.id eq courseExId }
+            .select(CourseExercise.exercise)
+            .where { CourseExercise.id eq courseExId }
             .map { it[CourseExercise.exercise] }
             .single()
             .value
@@ -185,7 +183,9 @@ fun insertSubmission(
             it[StatsSubmission.courseExerciseId] = courseExId
             it[StatsSubmission.exerciseId] = exerciseId
             it[StatsSubmission.createdAt] = time
-            if (setGrade) it[StatsSubmission.points] = previousGrade?.grade
+            it[StatsSubmission.studentPseudonym] = selectPseudonym(studentId)
+            it[StatsSubmission.solutionLength] = submission.length
+            it[StatsSubmission.hasEverReceivedTeacherComment] = false
         }
         caching.invalidate(countSubmissionsInAutoAssessmentCache)
         caching.invalidate(countSubmissionsCache)

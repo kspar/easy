@@ -11,7 +11,6 @@ import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -58,7 +57,7 @@ class ReadSubmissionDetails {
     }
 
     private fun selectTeacherAllSubmissions(submissionId: Long, courseExId: Long): Resp = transaction {
-        Submission.slice(
+        Submission.select(
             Submission.id,
             Submission.grade,
             Submission.isAutoGrade,
@@ -68,7 +67,7 @@ class ReadSubmissionDetails {
             Submission.number,
             Submission.isGradedDirectly
         )
-            .select { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
+            .where { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
                 Resp(
                     it[Submission.number],

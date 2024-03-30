@@ -3,7 +3,7 @@ package core.util
 import core.exception.ResourceLockedException
 import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.util.*
@@ -60,9 +60,7 @@ class DBBackedLock<IdType : Comparable<IdType>>(
     private fun tryObtain(entityId: IdType): Boolean {
         return synchronized(monitor) {
             transaction {
-                val isInProgress = backingTable.select {
-                    backingTable.id eq entityId
-                }.map {
+                val isInProgress = backingTable.selectAll().where { backingTable.id eq entityId }.map {
                     it[backingLockColumn]
                 }.single()
 

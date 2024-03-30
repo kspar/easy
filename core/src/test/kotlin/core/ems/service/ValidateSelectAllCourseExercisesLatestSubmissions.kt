@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import java.util.*
 import javax.sql.DataSource
 import kotlin.random.Random
 
@@ -67,6 +68,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     @Test
     fun `selectAllCourseExercises student 1 should return 2 submissions with grades 81 and 99`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
+        println(latestSubmissions)
 
         val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
         val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
@@ -162,6 +164,8 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-28T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isStudent] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
+
             }
 
             Account.insert {
@@ -173,6 +177,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-27T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isStudent] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
             }
 
             Account.insert {
@@ -184,6 +189,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[lastSeen] = DateTime.parse("2023-04-26T12:00:00Z")
                 it[idMigrationDone] = true
                 it[isTeacher] = true
+                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
             }
 
 
@@ -201,9 +207,6 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.now()
                 it[public] = true
                 it[anonymousAutoassessEnabled] = false
-                it[successfulAnonymousSubmissionCount] = 0
-                it[unsuccessfulAnonymousSubmissionCount] = 0
-                it[removedSubmissionsCount] = 0
                 it[dir] = EntityID(1L, Dir)
             }
 
@@ -213,9 +216,6 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[createdAt] = DateTime.now()
                 it[public] = true
                 it[anonymousAutoassessEnabled] = false
-                it[successfulAnonymousSubmissionCount] = 0
-                it[unsuccessfulAnonymousSubmissionCount] = 0
-                it[removedSubmissionsCount] = 0
                 it[dir] = EntityID(1L, Dir)
             }
 
@@ -314,6 +314,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 71
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -324,6 +325,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 81
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -334,6 +336,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 91
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             Submission.insert {
@@ -344,6 +347,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 99
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
 
             // Stud 2: EX1: no submission, no grade, EX2: submission, grade
@@ -355,6 +359,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[autoGradeStatus] = AutoGradeStatus.NONE
                 it[grade] = 51
                 it[isAutoGrade] = false
+                it[isGradedDirectly] = true
             }
         }
     }

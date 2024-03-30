@@ -11,7 +11,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -50,7 +50,7 @@ class CreateArticleAliasController(private val cachingService: CachingService) {
 
     private fun insertAlias(createdBy: String, articleId: Long, alias: String) {
         transaction {
-            if (ArticleAlias.select { ArticleAlias.id eq alias }.count() > 0) {
+            if (ArticleAlias.selectAll().where { ArticleAlias.id eq alias }.count() > 0) {
                 throw InvalidRequestException(
                     "Article alias '$alias' is already in use.",
                     ReqError.ARTICLE_ALIAS_IN_USE

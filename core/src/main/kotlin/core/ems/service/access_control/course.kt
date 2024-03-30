@@ -10,7 +10,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
@@ -71,9 +71,8 @@ fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStud
 }
 
 fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean = transaction {
-    val query = CourseExercise.select {
-        CourseExercise.course eq courseId and (CourseExercise.exercise eq exerciseId)
-    }
+    val query = CourseExercise.selectAll()
+        .where { CourseExercise.course eq courseId and (CourseExercise.exercise eq exerciseId) }
     if (requireStudentVisible) {
         query.andWhere {
             CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
@@ -84,9 +83,8 @@ fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: 
 
 private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean =
     transaction {
-        val query = CourseExercise.select {
-            CourseExercise.course eq courseId and (CourseExercise.id eq courseExId)
-        }
+        val query =
+            CourseExercise.selectAll().where { CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) }
         if (requireStudentVisible) {
             query.andWhere {
                 CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
@@ -96,9 +94,7 @@ private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireSt
     }
 
 fun assertExerciseIsNotOnAnyCourse(exerciseId: Long) = transaction {
-    val coursesCount = CourseExercise.select {
-        CourseExercise.exercise eq exerciseId
-    }.count()
+    val coursesCount = CourseExercise.selectAll().where { CourseExercise.exercise eq exerciseId }.count()
     if (coursesCount > 0)
         throw InvalidRequestException(
             "Exercise $exerciseId is used on $coursesCount courses",
@@ -107,15 +103,13 @@ fun assertExerciseIsNotOnAnyCourse(exerciseId: Long) = transaction {
 }
 
 fun canTeacherAccessCourse(teacherId: String, courseId: Long): Boolean = transaction {
-    TeacherCourseAccess.select {
-        TeacherCourseAccess.teacher eq teacherId and (TeacherCourseAccess.course eq courseId)
-    }.count() > 0
+    TeacherCourseAccess.selectAll()
+        .where { TeacherCourseAccess.teacher eq teacherId and (TeacherCourseAccess.course eq courseId) }.count() > 0
 }
 
 fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean = transaction {
-    StudentCourseAccess.select {
-        StudentCourseAccess.student eq studentId and (StudentCourseAccess.course eq courseId)
-    }.count() > 0
+    StudentCourseAccess.selectAll()
+        .where { StudentCourseAccess.student eq studentId and (StudentCourseAccess.course eq courseId) }.count() > 0
 }
 
 
