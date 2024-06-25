@@ -39,15 +39,13 @@ fun getImplicitGroupFromAccount(accountId: String): Long = transaction {
 }
 
 data class AccountFromImplicitGroup(
-    val id: String, val givenName: String, val familyName: String, val email: String,
-    val moodleUsername: String?, val createdAt: DateTime, val lastSeen: DateTime,
+    val id: String, val givenName: String, val familyName: String, val email: String, val createdAt: DateTime, val lastSeen: DateTime,
 )
 
 fun getAccountFromImplicitGroup(implicitGroupId: Long): AccountFromImplicitGroup = transaction {
     (Group innerJoin AccountGroup innerJoin Account)
         .select(
-            Account.id, Account.givenName, Account.familyName, Account.email,
-            Account.moodleUsername, Account.createdAt, Account.lastSeen
+            Account.id, Account.givenName, Account.familyName, Account.email, Account.createdAt, Account.lastSeen
         ).where {
             Group.id eq implicitGroupId and Group.isImplicit
         }.map {
@@ -56,7 +54,6 @@ fun getAccountFromImplicitGroup(implicitGroupId: Long): AccountFromImplicitGroup
                 it[Account.givenName],
                 it[Account.familyName],
                 it[Account.email],
-                it[Account.moodleUsername],
                 it[Account.createdAt],
                 it[Account.lastSeen],
             )

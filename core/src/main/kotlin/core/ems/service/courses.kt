@@ -17,6 +17,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import java.io.Serializable
+import java.security.SecureRandom
 
 private val log = KotlinLogging.logger {}
 
@@ -73,6 +74,13 @@ private data class StudentOnCourseDTO(
     val createdAt: DateTime?,
     val moodleUsername: String?
 )
+
+fun generateInviteId(length: Int): String {
+    val secureRandom = SecureRandom()
+    val alphabet = ('A'..'Z')
+    return (1..length).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }.joinToString("")
+}
+
 
 fun getCourse(courseId: Long): CourseDTO? = transaction {
     Course.selectAll().where { Course.id.eq(courseId) }.map {
@@ -303,7 +311,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
 fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<StudentsResp> = transaction {
     val query = (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
         .select(
-            Account.id, Account.email, Account.givenName, Account.familyName, Account.moodleUsername,
+            Account.id, Account.email, Account.givenName, Account.familyName, StudentCourseAccess.moodleUsername,
             StudentCourseAccess.createdAt, CourseGroup.id, CourseGroup.name
         ).where {
             StudentCourseAccess.course eq courseId
@@ -321,7 +329,7 @@ fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<Students
                 it[Account.givenName],
                 it[Account.familyName],
                 it[StudentCourseAccess.createdAt],
-                it[Account.moodleUsername]
+                it[StudentCourseAccess.moodleUsername]
             )
         }) {
             val groupId: EntityID<Long>? = it[CourseGroup.id]

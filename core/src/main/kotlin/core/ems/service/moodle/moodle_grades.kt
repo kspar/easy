@@ -176,7 +176,7 @@ class MoodleGradesSyncService {
                     MoodleReqExercise(
                         ex[CourseExercise.moodleExId] ?: ex[CourseExercise.id].value.toString(),
                         ex[CourseExercise.titleAlias] ?: ex[ExerciseVer.title],
-                        listOfNotNull(selectLatestGradeForSubmission(submissionId))
+                        listOfNotNull(selectLatestGradeForSubmission(submissionId, courseId))
                     )
                 }.single()
         }
@@ -195,7 +195,7 @@ class MoodleGradesSyncService {
                 val grades =
                     selectLatestSubmissionsForExercise(ex[CourseExercise.id].value)
                         .mapNotNull {
-                            selectLatestGradeForSubmission(it)
+                            selectLatestGradeForSubmission(it, courseId)
                         }
 
                 MoodleReqExercise(
@@ -207,12 +207,12 @@ class MoodleGradesSyncService {
     }
 
 
-    private fun selectLatestGradeForSubmission(submissionId: Long): MoodleReqGrade? =
-        (Submission innerJoin Account)
-            .select(Account.moodleUsername, Account.id, Submission.grade)
-            .where { Submission.id eq submissionId }
+    private fun selectLatestGradeForSubmission(submissionId: Long, courseId: Long): MoodleReqGrade? =
+        (Submission innerJoin Account innerJoin StudentCourseAccess)
+            .select(StudentCourseAccess.moodleUsername, Account.id, Submission.grade)
+            .where { (Submission.id eq submissionId) and (StudentCourseAccess.course eq courseId)}
             .map {
-                val moodleUsername = it[Account.moodleUsername]
+                val moodleUsername = it[StudentCourseAccess.moodleUsername]
                 val grade = it[Submission.grade]
 
                 when {

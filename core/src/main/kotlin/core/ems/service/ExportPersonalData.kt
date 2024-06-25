@@ -50,7 +50,6 @@ class ExportPersonalData {
         data class AccountDataJSON(
             @JsonProperty("id") val username: String,
             @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
-            @JsonProperty("moodle_username") val moodleUsername: String?,
             @JsonProperty("email") val email: String,
             @JsonProperty("given_name") val givenName: String,
             @JsonProperty("family_name") val familyName: String
@@ -61,7 +60,6 @@ class ExportPersonalData {
                 Account.select(
                     Account.id,
                     Account.createdAt,
-                    Account.moodleUsername,
                     Account.email,
                     Account.givenName,
                     Account.familyName
@@ -69,7 +67,6 @@ class ExportPersonalData {
                     AccountDataJSON(
                         it[Account.id].value,
                         it[Account.createdAt],
-                        it[Account.moodleUsername],
                         it[Account.email],
                         it[Account.givenName],
                         it[Account.familyName]

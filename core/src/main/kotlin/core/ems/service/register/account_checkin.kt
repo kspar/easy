@@ -46,7 +46,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
 
         val account = AccountData(
             caller.id,
-            caller.moodleUsername,
             caller.email.lowercase(),
             correctNameCapitalisation(dto.firstName),
             correctNameCapitalisation(dto.lastName)
@@ -179,7 +178,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
 
 data class AccountData(
     val username: String,
-    val moodleUsername: String?,
     val email: String,
     val givenName: String,
     val familyName: String
@@ -206,15 +204,11 @@ private fun updateAccount(accountData: AccountData, cachingService: CachingServi
 
             val isChanged = oldAccount.email != accountData.email ||
                     oldAccount.givenName != accountData.givenName ||
-                    oldAccount.familyName != accountData.familyName ||
-                    accountData.moodleUsername != null && accountData.moodleUsername != oldAccount.moodleUsername
+                    oldAccount.familyName != accountData.familyName
 
             if (isChanged) {
                 Account.update({ Account.id eq accountData.username }) {
                     it[email] = accountData.email
-                    if (accountData.moodleUsername != null) {
-                        it[moodleUsername] = accountData.moodleUsername
-                    }
                     it[givenName] = accountData.givenName
                     it[familyName] = accountData.familyName
                 }
@@ -232,7 +226,6 @@ private fun insertAccount(accountData: AccountData) {
     Account.insert {
         it[id] = accountId
         it[email] = accountData.email
-        it[moodleUsername] = accountData.moodleUsername
         it[givenName] = accountData.givenName
         it[familyName] = accountData.familyName
         it[createdAt] = now
@@ -315,60 +308,6 @@ private fun updateStudentCourseAccesses(accountData: AccountData) {
                 this[StudentCourseGroup.student] = accountData.username
                 this[StudentCourseGroup.course] = courseId
                 this[StudentCourseGroup.courseGroup] = it
-            }
-        }
-
-        data class MoodlePendingAccess(val courseId: Long, val moodleUsername: String)
-
-        val moodlePendingQuery = StudentMoodlePendingAccess
-            .selectAll().where { StudentMoodlePendingAccess.email eq accountData.email }
-
-        if (accountData.moodleUsername != null) {
-            moodlePendingQuery.orWhere {
-                StudentMoodlePendingAccess.moodleUsername eq accountData.moodleUsername
-            }
-        }
-
-        val pendingAccesses = moodlePendingQuery
-            .map {
-                MoodlePendingAccess(
-                    it[StudentMoodlePendingAccess.course].value,
-                    it[StudentMoodlePendingAccess.moodleUsername]
-                )
-            }
-
-        pendingAccesses.forEach { pendingAccess ->
-            log.debug { "Granting access for ${accountData.username} to course ${pendingAccess.courseId} based on Moodle pending access $pendingAccess" }
-
-            // Update moodleUsername for every pending access - not ideal but unlikely to cause problems
-            Account.update({ Account.id eq accountData.username }) {
-                it[moodleUsername] = pendingAccess.moodleUsername
-            }
-
-            // TODO: maybe can batchInsert
-            StudentCourseAccess.insert {
-                it[student] = accountData.username
-                it[course] = pendingAccess.courseId
-                it[createdAt] = now
-            }
-
-            val groupIds = StudentMoodlePendingCourseGroup
-                .select(StudentMoodlePendingCourseGroup.courseGroup)
-                .where {
-                    StudentMoodlePendingCourseGroup.moodleUsername.eq(pendingAccess.moodleUsername) and
-                            StudentMoodlePendingCourseGroup.course.eq(pendingAccess.courseId)
-                }
-                .map { it[StudentMoodlePendingCourseGroup.courseGroup] }
-
-            StudentCourseGroup.batchInsert(groupIds) {
-                this[StudentCourseGroup.student] = accountData.username
-                this[StudentCourseGroup.course] = pendingAccess.courseId
-                this[StudentCourseGroup.courseGroup] = it
-            }
-
-            StudentMoodlePendingAccess.deleteWhere {
-                StudentMoodlePendingAccess.course.eq(pendingAccess.courseId) and
-                        StudentMoodlePendingAccess.moodleUsername.eq(pendingAccess.moodleUsername)
             }
         }
     }

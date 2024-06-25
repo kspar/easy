@@ -111,7 +111,6 @@ class CachingService(val cacheManager: CacheManager) {
     data class Acc(
         val id: String,
         val email: String,
-        val moodleUsername: String?,
         val givenName: String,
         val familyName: String,
         val createdAt: DateTime,
@@ -127,7 +126,6 @@ class CachingService(val cacheManager: CacheManager) {
                 Acc(
                     it[Account.id].value,
                     it[Account.email],
-                    it[Account.moodleUsername],
                     it[Account.givenName],
                     it[Account.familyName],
                     it[Account.createdAt],

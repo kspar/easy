@@ -7,6 +7,7 @@ import core.db.CourseInviteLink
 import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.generateInviteId
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
@@ -14,7 +15,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import java.security.SecureRandom
 import javax.validation.Valid
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
@@ -50,10 +50,8 @@ class GenerateCourseInvite {
 
     private data class CourseInviteLinkDTO(val inviteId: String, val createdAt: DateTime, val usedCount: Int)
 
-    private fun createInvite(courseId: Long, req: Req): String = transaction {
-        val secureRandom = SecureRandom()
-        val alphabet = ('A'..'Z')
 
+    private fun createInvite(courseId: Long, req: Req): String = transaction {
         // If there is already an existing invite id, don't change it
         val d = CourseInviteLink
             .select(CourseInviteLink.inviteId, CourseInviteLink.createdAt, CourseInviteLink.usedCount)
@@ -67,7 +65,7 @@ class GenerateCourseInvite {
             }
             .singleOrNull()
             ?: CourseInviteLinkDTO(
-                ((1..6).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }.joinToString("")),
+                generateInviteId(6),
                 DateTime.now(),
                 0
             )

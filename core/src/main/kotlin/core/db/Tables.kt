@@ -16,7 +16,6 @@ object Account : IdTable<String>("account") {
     val email = text("email")
     val givenName = text("given_name")
     val familyName = text("family_name")
-    val moodleUsername = text("moodle_username").nullable()
     val idMigrationDone = bool("id_migration_done")
     val preMigrationId = text("pre_migration_id").nullable()
     val isTeacher = bool("is_teacher")
@@ -109,6 +108,7 @@ object StudentCourseAccess : Table("student_course_access") {
     val student = reference("student_id", Account)
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
+    val moodleUsername = text("moodle_username").nullable()
     override val primaryKey = PrimaryKey(student, course)
 }
 
@@ -123,6 +123,8 @@ object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
     val course = reference("course_id", Course)
     val moodleUsername = text("moodle_username")
     val email = text("email")
+    val createdAt = datetime("created_at")
+    val inviteId = text("invite_id")
     override val primaryKey = PrimaryKey(course, moodleUsername)
 }
 

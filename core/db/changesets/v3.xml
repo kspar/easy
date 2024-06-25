@@ -358,5 +358,23 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="170624-1" author="priit">
+        <delete tableName="student_moodle_pending_access" />
+        <addColumn tableName="student_moodle_pending_access">
+            <column name="invite_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="student_course_access">
+            <column name="moodle_username" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>

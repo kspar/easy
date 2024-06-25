@@ -2,6 +2,7 @@ package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.ems.service.generateInviteId
 import core.ems.service.getCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -142,10 +143,11 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             val newAccesses =
                 moodleResponse.students.flatMap { moodleStudent ->
                     val moodleEmail = moodleStudent.email.lowercase()
-                    Account.select(Account.id, Account.email)
+
+                    (Account innerJoin StudentCourseAccess).select(Account.id, Account.email)
                         .where {
-                            Account.moodleUsername eq moodleStudent.username or
-                                    (Account.email eq moodleEmail)
+                            StudentCourseAccess.moodleUsername eq moodleStudent.username or
+                                    (Account.email eq moodleEmail) and (StudentCourseAccess.course eq courseId)
                         }
                         .withDistinct()
                         .map {
@@ -192,12 +194,10 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             val time = DateTime.now()
             newAccesses.forEach { newAccess ->
-                Account.update({ Account.id eq newAccess.username }) {
-                    it[moodleUsername] = newAccess.moodleUsername
-                }
                 // TODO: maybe can batchInsert
                 StudentCourseAccess.insert {
                     it[student] = newAccess.username
+                    it[moodleUsername] = newAccess.moodleUsername
                     it[course] = courseEntity
                     it[createdAt] = time
                 }
@@ -221,15 +221,18 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     it[StudentMoodlePendingAccess.email]
                 }
 
-            // Remove & insert all pending accesses
-            StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.course eq courseId }
+            // Remove & insert all pending group accesses
+            StudentMoodlePendingCourseGroup.deleteWhere { StudentMoodlePendingCourseGroup.course eq courseId }
 
             newPendingAccesses.forEach { newPendingAccess ->
                 // TODO: maybe can batchInsert
-                StudentMoodlePendingAccess.insert {
+                // InsertIgnore to generate new link only to new ones.
+                StudentMoodlePendingAccess.insertIgnore {
                     it[moodleUsername] = newPendingAccess.moodleUsername
                     it[course] = courseEntity
                     it[email] = newPendingAccess.email
+                    it[createdAt] = time
+                    it[inviteId] = generateInviteId(10)
                 }
                 StudentMoodlePendingCourseGroup.batchInsert(newPendingAccess.groups) {
                     this[StudentMoodlePendingCourseGroup.moodleUsername] = newPendingAccess.moodleUsername

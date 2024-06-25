@@ -182,4 +182,42 @@ class SendMailService(private val mailSender: JavaMailSender) {
 
         log.info("Sent notification $id")
     }
+
+    fun sendStudentInvitedToMoodleLinkedCourse(
+        courseTitle: String,
+        inviteId: String,
+        moodleUsername: String,
+        recipientEmail: String
+    ) {
+        val subject =
+            """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
+        val registerLink = "$wuiBaseUrl/courses/moodle/join/$inviteId"
+        val text = """
+            |Tere!
+            |
+            |Sind lisati Moodle kasutajanimega $moodleUsername kursusele "$courseTitle" Lahenduse keskkonnas.
+            |
+            |Kursusele ligi pääsemiseks klõpsa järgneval lingil:
+            |  $registerLink
+            |            
+            |
+            |Mõnusat progemist!
+            |Lahenduse meeskond
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |You were added to the course $courseTitle in Lahendus by your Moodle account $moodleUsername.
+            |
+            | To access the course, click on the following link:
+            |  $registerLink
+            |  
+            |Happy coding!
+            |The Lahendus Team
+            |
+        """.trimMargin()
+        sendUserEmail(recipientEmail, subject, text)
+    }
 }
