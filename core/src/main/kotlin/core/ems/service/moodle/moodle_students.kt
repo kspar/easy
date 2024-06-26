@@ -111,7 +111,12 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             val email: String, val username: String, val moodleUsername: String, val groups: List<MoodleGroup>
         )
 
-        data class NewPendingAccess(val email: String, val moodleUsername: String, val groups: List<MoodleGroup>)
+        data class NewPendingAccess(
+            val email: String,
+            val inviteId: String,
+            val moodleUsername: String,
+            val groups: List<MoodleGroup>
+        )
 
         val courseTitle = getCourse(courseId)!!.let { it.alias ?: it.title }
         val courseEntity = EntityID(courseId, Course)
@@ -175,6 +180,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 }.map {
                     NewPendingAccess(
                         it.email.lowercase(),
+                        generateInviteId(10),
                         it.username,
                         it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                     )
@@ -219,7 +225,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             val previousEmailsPending =
                 StudentMoodlePendingAccess.selectAll().where { StudentMoodlePendingAccess.course.eq(courseId) }.map {
                     it[StudentMoodlePendingAccess.email]
-                }
+                }.toSet()
 
             // Remove & insert all pending group accesses
             StudentMoodlePendingCourseGroup.deleteWhere { StudentMoodlePendingCourseGroup.course eq courseId }
@@ -232,7 +238,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     it[course] = courseEntity
                     it[email] = newPendingAccess.email
                     it[createdAt] = time
-                    it[inviteId] = generateInviteId(10)
+                    it[inviteId] = newPendingAccess.inviteId
                 }
                 StudentMoodlePendingCourseGroup.batchInsert(newPendingAccess.groups) {
                     this[StudentMoodlePendingCourseGroup.moodleUsername] = newPendingAccess.moodleUsername
@@ -242,11 +248,19 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             }
 
             // Send invitation for only new accesses
-            val newEmailsPending = newPendingAccesses.map { it.email } - previousEmailsPending.toSet()
+            val newEmailsPending = newPendingAccesses
+                .filter { !previousEmailsPending.contains(it.email) }
+                .map {
+                    mailService.sendStudentInvitedToMoodleLinkedCourse(
+                        courseTitle,
+                        it.inviteId,
+                        it.moodleUsername,
+                        it.email
+                    )
+
+                    it.email
+                }
             log.debug { "New pending emails: $newEmailsPending" }
-            newEmailsPending.forEach {
-                mailService.sendStudentAddedToCoursePending(courseTitle, it)
-            }
 
             val syncedStudentsCount = newAccesses.size
             val syncedPendingStudentsCount = newPendingAccesses.size
