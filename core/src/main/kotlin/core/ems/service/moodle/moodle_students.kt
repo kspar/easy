@@ -180,7 +180,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 }.map {
                     NewPendingAccess(
                         it.email.lowercase(),
-                        generateInviteId(10),
+                        generateInviteId(10), // generate inviteId for all, but later do not update for existing
                         it.username,
                         it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                     )
@@ -232,7 +232,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             newPendingAccesses.forEach { newPendingAccess ->
                 // TODO: maybe can batchInsert
-                // InsertIgnore to generate new link only to new ones.
+                // InsertIgnore to update inviteId only to new ones.
                 StudentMoodlePendingAccess.insertIgnore {
                     it[moodleUsername] = newPendingAccess.moodleUsername
                     it[course] = courseEntity
