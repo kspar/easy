@@ -185,7 +185,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                         it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
                     )
                 }
-            log.debug { "Giving pending access to students: $newPendingAccesses" }
+            log.debug { "Giving pending access to students: ${newPendingAccesses.map { it.email }}" }
 
 
             // Diff accesses before and after to send notifications for only new accesses
