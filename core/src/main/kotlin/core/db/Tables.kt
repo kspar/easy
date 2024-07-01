@@ -263,6 +263,13 @@ object TeacherSubmission : LongIdTable("teacher_submission") {
     val solution = text("solution")
 }
 
+object FeedbackSnippet : LongIdTable("feedback_snippet") {
+    val teacher = reference("teacher_id", Account)
+    val createdAt = datetime("created_at")
+    val snippetHtml = text("snippet_html")
+    val snippetAdoc = text("snippet_adoc")
+}
+
 object SystemConfiguration : IdTable<String>("system_configuration") {
     override val id: Column<EntityID<String>> = text("key").entityId()
     override val primaryKey = PrimaryKey(id)
