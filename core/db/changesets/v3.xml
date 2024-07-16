@@ -398,4 +398,30 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="160724-1" author="priit">
+        <dropTable tableName="feedback_snippet"/>
+
+        <createTable tableName="feedback_snippet">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="teacher_id" type="text">
+                <constraints references="account(username)"
+                             foreignKeyName="fk_feedback_snippet_teacher"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="snippet_adoc" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="snippet_html" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+
+
 </databaseChangeLog>
