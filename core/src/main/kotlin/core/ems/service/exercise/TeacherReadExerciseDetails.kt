@@ -5,12 +5,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
+import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
-import core.ems.service.getImplicitDirFromExercise
-import core.ems.service.hasAccountDirAccess
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
 import core.util.notNullAndInPast
 import mu.KotlinLogging
@@ -58,6 +55,8 @@ class TeacherReadExDetailsCont {
         @JsonProperty("assets") val assets: List<RespAsset>?,
         @JsonProperty("executors") val executors: List<RespExecutor>?,
         @JsonProperty("has_lib_access") val hasLibAccess: Boolean,
+        @JsonProperty("exception_students") val exceptionStudents: List<RespExceptionStudent>?,
+        @JsonProperty("exception_groups") val exceptionGroups: List<RespExceptionGroup>?,
     )
 
     data class RespAsset(
@@ -68,6 +67,22 @@ class TeacherReadExDetailsCont {
     data class RespExecutor(
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String
+    )
+
+    data class ExceptionValueResp(@JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("value") val value: DateTime?)
+
+    data class RespExceptionStudent(
+        @JsonProperty("student_id") val studentId: String,
+        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
+        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
+        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
+    )
+
+    data class RespExceptionGroup(
+        @JsonProperty("group_id") val groupId: Long,
+        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
+        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
+        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
     )
 
 
@@ -88,6 +103,26 @@ class TeacherReadExDetailsCont {
     }
 
     private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long, caller: EasyUser): Resp = transaction {
+        val exceptions = selectCourseExerciseExceptions(listOf(courseExId), emptyList())
+
+        val exceptionStudents = exceptions.studentExceptions[courseExId]?.map {
+            RespExceptionStudent(
+                it.studentId,
+                if (it.softDeadline != null) ExceptionValueResp(it.softDeadline.value) else null,
+                if (it.hardDeadline != null) ExceptionValueResp(it.hardDeadline.value) else null,
+                if (it.studentVisibleFrom != null) ExceptionValueResp(it.studentVisibleFrom.value) else null,
+            )
+        }
+
+        val exceptionGroups = exceptions.groupExceptions[courseExId]?.map {
+            RespExceptionGroup(
+                it.courseGroup,
+                if (it.softDeadline != null) ExceptionValueResp(it.softDeadline.value) else null,
+                if (it.hardDeadline != null) ExceptionValueResp(it.hardDeadline.value) else null,
+                if (it.studentVisibleFrom != null) ExceptionValueResp(it.studentVisibleFrom.value) else null,
+            )
+        }
+
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .select(
                 Exercise.id,
@@ -157,6 +192,8 @@ class TeacherReadExDetailsCont {
                         )
                     },
                     hasLibAccess,
+                    exceptionStudents,
+                    exceptionGroups
                 )
             }
             .singleOrInvalidRequest()

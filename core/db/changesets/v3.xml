@@ -422,6 +422,68 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="170724-1" author="priit">
+        <createTable tableName="course_exercise_exception_student">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_course_exercise_exception_student_course_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints primaryKey="true" references="account(username)"
+                             foreignKeyName="fk_course_exercise_exception_student_account"
+                             nullable="false"/>
+            </column>
+            <column name="is_exception_soft_deadline" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="soft_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_exception_hard_deadline" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hard_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_exception_student_visible_from" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="student_visible_from" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
 
+        <createTable tableName="course_exercise_exception_group">
+            <column name="course_exercise_id" type="bigint">
+                <constraints primaryKey="true" references="course_exercise(id)"
+                             foreignKeyName="fk_course_exercise_exception_group_course_exercise"
+                             nullable="false"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints primaryKey="true" references="course_group(id)"
+                             foreignKeyName="fk_course_exercise_exception_group_course_group"
+                             nullable="false"/>
+            </column>
+            <column name="is_exception_soft_deadline" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="soft_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_exception_hard_deadline" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hard_deadline" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_exception_student_visible_from" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="student_visible_from" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
 
 </databaseChangeLog>

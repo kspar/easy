@@ -6,17 +6,13 @@ import core.aas.AutoGradeScheduler
 import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
-import core.db.CourseExercise
 import core.db.GraderType
+import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.autoAssessAsync
 import core.ems.service.cache.CachingService
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.insertSubmission
 import core.ems.service.moodle.MoodleGradesSyncService
-import core.ems.service.selectGraderType
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
@@ -24,7 +20,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
@@ -63,7 +58,7 @@ class StudentSubmitCont(
     }
 
     private fun submitSolution(courseExId: Long, solution: String, studentId: String) {
-        if (!isCourseExerciseOpenForSubmit(courseExId))
+        if (!isCourseExerciseOpenForSubmit(courseExId, studentId))
             throw InvalidRequestException("Exercise is not open for submissions", ReqError.COURSE_EXERCISE_CLOSED)
 
         when (selectGraderType(courseExId)) {
@@ -95,17 +90,6 @@ class StudentSubmitCont(
             }
         }
     }
-
-
-    private fun isCourseExerciseOpenForSubmit(courseExId: Long) =
-        transaction {
-            CourseExercise.select(CourseExercise.hardDeadline)
-                .where { CourseExercise.id eq courseExId }
-                .map { it[CourseExercise.hardDeadline] }
-                .single()
-        }.let {
-            it == null || it.isAfterNow
-        }
 }
 
 

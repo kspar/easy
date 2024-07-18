@@ -350,3 +350,196 @@ fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<Students
             )
         }
 }
+
+
+data class StudentException(
+    val courseExId: Long,
+    val studentId: String,
+    val softDeadline: ExceptionValue?,
+    val hardDeadline: ExceptionValue?,
+    val studentVisibleFrom: ExceptionValue?
+)
+
+data class GroupException(
+    val courseExId: Long,
+    val courseGroup: Long,
+    val softDeadline: ExceptionValue?,
+    val hardDeadline: ExceptionValue?,
+    val studentVisibleFrom: ExceptionValue?
+)
+
+data class CourseExerciseException(
+    val studentExceptions: Map<Long, List<StudentException>>,
+    val groupExceptions: Map<Long, List<GroupException>>
+)
+
+data class ExceptionValue(val value: DateTime?)
+
+
+/**
+ * Selects and groups course exercise exceptions for students and their groups.
+ *
+ * This function retrieves exceptions for given course exercises and students. If no students are specified (empty list),
+ * it retrieves exceptions for all students within the specified course exercises.
+ *
+ * The function first fetches exceptions for individual students and then fetches exceptions for student groups
+ * to which the students belong (or all groups related to this course exercise if students are not passed).
+ * It returns a `CourseExerciseException` containing both sets of exceptions.
+ *
+ * @param courseExIds List of course exercise IDs for which exceptions need to be retrieved.
+ * @param studentIds List of student IDs for whom exceptions need to be retrieved. If empty, exceptions for all students
+ *        in the specified course exercises will be retrieved.
+ * @return A `CourseExerciseException` containing two maps: one for student-specific exceptions and one for group-specific exceptions.
+ */
+fun selectCourseExerciseExceptions(courseExIds: List<Long>, studentIds: List<String>): CourseExerciseException =
+    transaction {
+        val studentConstraints = CourseExerciseExceptionStudent
+            .selectAll()
+            .where { CourseExerciseExceptionStudent.courseExercise inList courseExIds }
+            .apply {
+                if (studentIds.isNotEmpty()) andWhere { CourseExerciseExceptionStudent.student inList studentIds }
+            }
+            .groupBy(
+                keySelector = { it[CourseExerciseExceptionStudent.courseExercise].value },
+                valueTransform = {
+                    val isExceptionSoftDeadline = it[CourseExerciseExceptionStudent.isExceptionSoftDeadline]
+                    val isExceptionHardDeadline = it[CourseExerciseExceptionStudent.isExceptionHardDeadline]
+                    val isExceptionStudentVisibleFrom = it[CourseExerciseExceptionStudent.isExceptionStudentVisibleFrom]
+                    StudentException(
+                        it[CourseExerciseExceptionStudent.courseExercise].value,
+                        it[CourseExerciseExceptionStudent.student].value,
+                        if (isExceptionSoftDeadline) ExceptionValue(it[CourseExerciseExceptionStudent.softDeadline]) else null,
+                        if (isExceptionHardDeadline) ExceptionValue(it[CourseExerciseExceptionStudent.hardDeadline]) else null,
+                        if (isExceptionStudentVisibleFrom) ExceptionValue(it[CourseExerciseExceptionStudent.studentVisibleFrom]) else null
+                    )
+                }
+            )
+
+        val studentGroups = (StudentCourseGroup innerJoin CourseGroup)
+            .select(StudentCourseGroup.courseGroup)
+            .where { StudentCourseGroup.student inList studentIds }
+            .map { it[StudentCourseGroup.courseGroup] }
+
+        val groupConstraints = CourseExerciseExceptionGroup
+            .selectAll()
+            .where { CourseExerciseExceptionGroup.courseExercise inList courseExIds }
+            .apply { if (studentGroups.isNotEmpty()) andWhere { CourseExerciseExceptionGroup.courseGroup inList studentGroups } }
+            .groupBy(
+                keySelector = { it[CourseExerciseExceptionGroup.courseExercise].value },
+                valueTransform = {
+                    val isExceptionSoftDeadline = it[CourseExerciseExceptionGroup.isExceptionSoftDeadline]
+                    val isExceptionHardDeadline = it[CourseExerciseExceptionGroup.isExceptionHardDeadline]
+                    val isExceptionStudentVisibleFrom = it[CourseExerciseExceptionGroup.isExceptionStudentVisibleFrom]
+
+                    GroupException(
+                        it[CourseExerciseExceptionGroup.courseExercise].value,
+                        it[CourseExerciseExceptionGroup.courseGroup].value,
+                        if (isExceptionSoftDeadline) ExceptionValue(it[CourseExerciseExceptionGroup.softDeadline]) else null,
+                        if (isExceptionHardDeadline) ExceptionValue(it[CourseExerciseExceptionGroup.hardDeadline]) else null,
+                        if (isExceptionStudentVisibleFrom) ExceptionValue(it[CourseExerciseExceptionGroup.studentVisibleFrom]) else null
+                    )
+                }
+            )
+
+        CourseExerciseException(studentConstraints, groupConstraints)
+    }
+
+
+private fun CourseExerciseException.extractStudentException(courseExId: Long, studentId: String): StudentException? {
+    return this.studentExceptions[courseExId]?.firstOrNull { it.studentId == studentId }
+}
+
+private fun CourseExerciseException.extractGroups(courseExId: Long): List<GroupException>? {
+    return this.groupExceptions[courseExId]
+}
+
+private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? = this?.sortedBy { it.value }?.last()?.value
+
+/**
+ * Determines the soft deadline for a specific course exercise, prioritizing student and group exceptions
+ * over a default deadline if no exceptions apply. Among multiple group exceptions, prefers the deadline
+ * that is farthest in the future.
+ *
+ * @param exceptions The `CourseExerciseException` object containing exceptions data.
+ * @param courseExId The ID of the course exercise for which to determine the soft deadline.
+ * @param studentId The ID of the student for whom to check exceptions.
+ * @param defaultSoftDeadline The default soft deadline to use if no student or group exceptions are found.
+ * @return The determined soft deadline for the course exercise, or null if none is set.
+ */
+fun determineSoftDeadline(
+    exceptions: CourseExerciseException,
+    courseExId: Long,
+    studentId: String,
+    defaultSoftDeadline: DateTime?
+): DateTime? {
+    val studentException: ExceptionValue? = exceptions.extractStudentException(courseExId, studentId)?.softDeadline
+    val groupException: List<ExceptionValue>? = exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }
+
+    log.debug { "determineSoftDeadline student:$studentException" }
+    log.debug { "determineSoftDeadline group: $groupException" }
+
+    return when {
+        studentException != null -> studentException.value
+        groupException != null -> groupException.farthestValueInFutureOrNull()
+        else -> defaultSoftDeadline
+    }
+}
+
+
+/**
+ * Determines the date from which a course exercise becomes visible for a specific student,
+ * prioritizing student and group exceptions over a default visible from date if no exceptions apply.
+ * Among multiple group exceptions, prefers the visible from date that is farthest in the future.
+ *
+ * @param exceptions The `CourseExerciseException` object containing exceptions data.
+ * @param courseExId The ID of the course exercise for which to determine the visible from date.
+ * @param studentId The ID of the student for whom to check exceptions.
+ * @param defaultVisibleFrom The default visible from date to use if no student or group exceptions are found.
+ * @return The determined visible from date for the course exercise, or null if none is set.
+ */
+fun determineCourseExerciseVisibleFrom(
+    exceptions: CourseExerciseException,
+    courseExId: Long,
+    studentId: String,
+    defaultVisibleFrom: DateTime?
+): DateTime? {
+    val studentException = exceptions.extractStudentException(courseExId, studentId)?.studentVisibleFrom
+    val groupException = exceptions.extractGroups(courseExId)?.mapNotNull { it.studentVisibleFrom }
+
+    return when {
+        studentException != null -> studentException.value
+        groupException != null -> groupException.farthestValueInFutureOrNull()
+        else -> defaultVisibleFrom
+    }
+}
+
+
+fun isCourseExerciseOpenForSubmit(
+    exceptions: CourseExerciseException,
+    courseExId: Long,
+    studentId: String,
+    defaultHardDeadline: DateTime?
+): Boolean {
+    val studentException = exceptions.extractStudentException(courseExId, studentId)?.hardDeadline
+    val groupExceptions = exceptions.extractGroups(courseExId)?.mapNotNull { it.hardDeadline }
+
+    return when {
+        studentException != null -> studentException.value?.isAfterNow ?: true
+        groupExceptions != null -> groupExceptions.farthestValueInFutureOrNull()?.isAfterNow ?: true
+        else -> defaultHardDeadline?.isAfterNow ?: true
+    }
+}
+
+
+fun isCourseExerciseOpenForSubmit(courseExId: Long, studentId: String): Boolean {
+    val exceptions = selectCourseExerciseExceptions(listOf(courseExId), listOf(studentId))
+
+    val hardDeadline = transaction {
+        CourseExercise
+            .select(CourseExercise.hardDeadline)
+            .where { CourseExercise.id eq courseExId }
+            .map { it[CourseExercise.hardDeadline] }
+            .singleOrNull()
+    }
+    return isCourseExerciseOpenForSubmit(exceptions, courseExId, studentId, hardDeadline)
+}

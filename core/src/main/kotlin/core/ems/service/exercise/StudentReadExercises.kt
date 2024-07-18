@@ -4,14 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.GradeResp
+import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -52,6 +51,11 @@ class StudentReadExercisesController {
     }
 
     private fun selectStudentExercises(courseId: Long, studentId: String): Resp = transaction {
+        val cexIds = CourseExercise.select(CourseExercise.id)
+            .where { CourseExercise.course eq courseId }
+            .map { it[CourseExercise.id].value }
+
+        val cexToExceptions = selectCourseExerciseExceptions(cexIds, listOf(studentId))
 
         data class ExercisePartial(
             val courseExId: Long,
@@ -72,27 +76,46 @@ class StudentReadExercisesController {
                 CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold,
                 CourseExercise.orderIdx,
-                CourseExercise.titleAlias
+                CourseExercise.titleAlias,
+                CourseExercise.studentVisibleFrom
             )
             .where {
-                CourseExercise.course eq courseId and
-                        ExerciseVer.validTo.isNull() and
-                        CourseExercise.studentVisibleFrom.isNotNull() and
-                        CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
+                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull()
             }
             .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
-            .map {
+            .mapNotNull {
+                val courseExId = it[CourseExercise.id].value
 
-                val hardDeadline = it[CourseExercise.hardDeadline]
-                ExercisePartial(
-                    it[CourseExercise.id].value,
-                    it[ExerciseVer.title],
-                    it[ExerciseVer.graderType],
-                    it[CourseExercise.softDeadline],
-                    hardDeadline == null || hardDeadline.isAfterNow,
-                    it[CourseExercise.gradeThreshold],
-                    it[CourseExercise.titleAlias]
+                val visibleFrom = determineCourseExerciseVisibleFrom(
+                    cexToExceptions,
+                    courseExId,
+                    studentId,
+                    it[CourseExercise.studentVisibleFrom]
                 )
+
+                if (visibleFrom == null || visibleFrom.isAfterNow) {
+                    null
+                } else {
+                    ExercisePartial(
+                        it[CourseExercise.id].value,
+                        it[ExerciseVer.title],
+                        it[ExerciseVer.graderType],
+                        determineSoftDeadline(
+                            cexToExceptions,
+                            courseExId,
+                            studentId,
+                            it[CourseExercise.softDeadline]
+                        ),
+                        isCourseExerciseOpenForSubmit(
+                            cexToExceptions,
+                            courseExId,
+                            studentId,
+                            it[CourseExercise.hardDeadline]
+                        ),
+                        it[CourseExercise.gradeThreshold],
+                        it[CourseExercise.titleAlias]
+                    )
+                }
             }
 
         data class SubmissionPartial(

@@ -97,6 +97,26 @@ object CourseExercise : LongIdTable("course_exercise") {
     val moodleExId = text("moodle_exercise_id").nullable()
 }
 
+abstract class CourseExerciseException(name: String) : Table(name) {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val isExceptionSoftDeadline = bool("is_exception_soft_deadline")
+    val softDeadline = datetime("soft_deadline").nullable()
+    val isExceptionHardDeadline = bool("is_exception_hard_deadline")
+    val hardDeadline = datetime("hard_deadline").nullable()
+    val isExceptionStudentVisibleFrom = bool("is_exception_student_visible_from")
+    val studentVisibleFrom = datetime("student_visible_from").nullable()
+    override val primaryKey = PrimaryKey(courseExercise)
+}
+
+object CourseExerciseExceptionStudent : CourseExerciseException("course_exercise_exception_student") {
+    val student = reference("student_id", Account)
+}
+
+object CourseExerciseExceptionGroup : CourseExerciseException("course_exercise_exception_group") {
+    val courseGroup = reference("group_id", CourseGroup)
+}
+
+
 object TeacherCourseAccess : Table("teacher_course_access") {
     val teacher = reference("teacher_id", Account)
     val course = reference("course_id", Course)
