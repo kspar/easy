@@ -54,6 +54,7 @@ class StudentReadExerciseDetailsController {
 
         caller.assertAccess { studentOnCourse(courseId) }
         // Student visibility check moved into selectStudentExerciseDetails to account for exceptions
+        //TODO: should assertCourseExerciseIsOnCourse still check visibility?
         assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
         return selectStudentExerciseDetails(courseId, courseExId, caller.id)
