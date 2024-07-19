@@ -25,7 +25,7 @@ import javax.validation.Valid
 
 @RestController
 @RequestMapping("/v2")
-class AddCourseExerciseExceptions {
+class PutCourseExerciseExceptions {
     private val log = KotlinLogging.logger {}
 
     data class ExceptionValueReq(@JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty("value") val value: DateTime?)
@@ -51,7 +51,7 @@ class AddCourseExerciseExceptions {
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/courses/{courseId}/exercises/{courseExerciseId}/exception")
+    @PutMapping("/courses/{courseId}/exercises/{courseExerciseId}/exception")
     fun controller(
         @PathVariable("courseId") courseIdStr: String,
         @PathVariable("courseExerciseId") courseExIdStr: String,
