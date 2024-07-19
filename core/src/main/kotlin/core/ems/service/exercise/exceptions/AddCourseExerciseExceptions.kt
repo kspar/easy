@@ -8,8 +8,12 @@ import core.db.CourseExerciseExceptionStudent
 import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
+import core.ems.service.access_control.canStudentAccessCourse
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -54,7 +58,7 @@ class AddCourseExerciseExceptions {
         @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
-        log.info { "Update course exercise $courseExIdStr on course $courseIdStr by ${caller.id}: $req" }
+        log.info { "Add and/or update course exercise $courseExIdStr exceptions  on course $courseIdStr by ${caller.id}: $req" }
 
         val courseId = courseIdStr.idToLongOrInvalidReq()
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
@@ -62,16 +66,24 @@ class AddCourseExerciseExceptions {
         caller.assertAccess { teacherOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
-        insertOrUpdateCourseExerciseExceptions(courseExId, req.exceptionStudents, req.exceptionGroups)
+        insertOrUpdateCourseExerciseExceptions(courseId, courseExId, req.exceptionStudents, req.exceptionGroups)
     }
 
     private fun insertOrUpdateCourseExerciseExceptions(
+        courseId: Long,
         courseExId: Long,
         exceptionStudents: List<ReqExceptionStudent>?,
         exceptionGroups: List<ReqExceptionGroup>?
     ) {
         transaction {
             exceptionStudents?.forEach { ex ->
+
+                if (!canStudentAccessCourse(ex.studentId, courseId))
+                    throw InvalidRequestException(
+                        "Student ${ex.studentId} not on course.",
+                        ReqError.STUDENT_NOT_ON_COURSE
+                    )
+
                 CourseExerciseExceptionStudent.insertOrUpdate(
                     listOf(CourseExerciseExceptionStudent.courseExercise, CourseExerciseExceptionStudent.student),
                     listOf(CourseExerciseExceptionStudent.courseExercise, CourseExerciseExceptionStudent.student),
@@ -88,6 +100,8 @@ class AddCourseExerciseExceptions {
             }
 
             exceptionGroups?.forEach { ex ->
+                assertGroupExistsOnCourse(ex.groupId, courseId)
+
                 CourseExerciseExceptionGroup.insertOrUpdate(
                     listOf(CourseExerciseExceptionGroup.courseExercise, CourseExerciseExceptionGroup.courseGroup),
                     listOf(CourseExerciseExceptionGroup.courseExercise, CourseExerciseExceptionGroup.courseGroup),

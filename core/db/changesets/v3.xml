@@ -422,17 +422,17 @@
         </createTable>
     </changeSet>
 
-    <changeSet id="170724-1" author="priit">
+    <changeSet id="190724-1" author="priit">
         <createTable tableName="course_exercise_exception_student">
             <column name="course_exercise_id" type="bigint">
                 <constraints primaryKey="true" references="course_exercise(id)"
                              foreignKeyName="fk_course_exercise_exception_student_course_exercise"
-                             nullable="false"/>
+                             nullable="false" deleteCascade="true"/>
             </column>
             <column name="student_id" type="text">
                 <constraints primaryKey="true" references="account(username)"
                              foreignKeyName="fk_course_exercise_exception_student_account"
-                             nullable="false"/>
+                             nullable="false" deleteCascade="true"/>
             </column>
             <column name="is_exception_soft_deadline" type="boolean">
                 <constraints nullable="false"/>
@@ -458,12 +458,14 @@
             <column name="course_exercise_id" type="bigint">
                 <constraints primaryKey="true" references="course_exercise(id)"
                              foreignKeyName="fk_course_exercise_exception_group_course_exercise"
-                             nullable="false"/>
+                             nullable="false"
+                             deleteCascade="true"/>
             </column>
             <column name="group_id" type="bigint">
                 <constraints primaryKey="true" references="course_group(id)"
                              foreignKeyName="fk_course_exercise_exception_group_course_group"
-                             nullable="false"/>
+                             nullable="false"
+                             deleteCascade="true"/>
             </column>
             <column name="is_exception_soft_deadline" type="boolean">
                 <constraints nullable="false"/>
