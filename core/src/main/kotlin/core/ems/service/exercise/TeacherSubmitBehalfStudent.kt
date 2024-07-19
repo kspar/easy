@@ -7,10 +7,7 @@ import core.aas.ObserverCallerType
 import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
 import core.db.GraderType
-import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.assertCourseExerciseIsOnCourse
-import core.ems.service.access_control.canStudentAccessCourse
-import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.access_control.*
 import core.ems.service.autoAssessAsync
 import core.ems.service.cache.CachingService
 import core.ems.service.idToLongOrInvalidReq
@@ -59,7 +56,7 @@ class TeacherSubmitBehalfStudent(
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(req.studentId))
 
         if (!canStudentAccessCourse(req.studentId, courseId))
             throw InvalidRequestException("Student ${req.studentId} not on course.", ReqError.STUDENT_NOT_ON_COURSE)

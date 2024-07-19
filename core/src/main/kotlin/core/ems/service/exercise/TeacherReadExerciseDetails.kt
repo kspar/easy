@@ -103,7 +103,7 @@ class TeacherReadExDetailsCont {
     }
 
     private fun selectCourseExerciseDetails(courseId: Long, courseExId: Long, caller: EasyUser): Resp = transaction {
-        val exceptions = selectCourseExerciseExceptions(listOf(courseExId), emptyList())
+        val exceptions = selectCourseExerciseExceptions(courseExId)
 
         val exceptionStudents = exceptions.studentExceptions[courseExId]?.map {
             RespExceptionStudent(

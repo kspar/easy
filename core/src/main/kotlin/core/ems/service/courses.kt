@@ -444,6 +444,34 @@ fun selectCourseExerciseExceptions(courseExIds: List<Long>, studentIds: List<Str
         CourseExerciseException(studentConstraints, groupConstraints)
     }
 
+/**
+ * Retrieves course exercise exceptions for a single course exercise without considering specific students.
+ *
+ * @param courseExId The ID of the course exercise for which to retrieve exceptions.
+ * @return The `CourseExerciseException` object containing exceptions data for the specified course exercise.
+ */
+fun selectCourseExerciseExceptions(courseExId: Long): CourseExerciseException =
+    selectCourseExerciseExceptions(listOf(courseExId), emptyList())
+
+/**
+ * Retrieves course exercise exceptions for a single course exercise and a specific student.
+ *
+ * @param courseExId The ID of the course exercise for which to retrieve exceptions.
+ * @param studentId The ID of the student for whom to retrieve exceptions.
+ * @return The `CourseExerciseException` object containing exceptions data for the specified course exercise and student.
+ */
+fun selectCourseExerciseExceptions(courseExId: Long, studentId: String): CourseExerciseException =
+    selectCourseExerciseExceptions(listOf(courseExId), listOf(studentId))
+
+/**
+ * Retrieves course exercise exceptions for multiple course exercises and a specific student.
+ *
+ * @param courseExIds The list of course exercise IDs for which to retrieve exceptions.
+ * @param studentId The ID of the student for whom to retrieve exceptions.
+ * @return The `CourseExerciseException` object containing exceptions data for the specified course exercises and student.
+ */
+fun selectCourseExerciseExceptions(courseExIds: List<Long>, studentId: String): CourseExerciseException =
+    selectCourseExerciseExceptions(courseExIds, listOf(studentId))
 
 private fun CourseExerciseException.extractStudentException(courseExId: Long, studentId: String): StudentException? {
     return this.studentExceptions[courseExId]?.firstOrNull { it.studentId == studentId }
@@ -532,7 +560,7 @@ fun isCourseExerciseOpenForSubmit(
 
 
 fun isCourseExerciseOpenForSubmit(courseExId: Long, studentId: String): Boolean {
-    val exceptions = selectCourseExerciseExceptions(listOf(courseExId), listOf(studentId))
+    val exceptions = selectCourseExerciseExceptions(courseExId, studentId)
 
     val hardDeadline = transaction {
         CourseExercise

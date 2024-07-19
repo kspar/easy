@@ -5,11 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.exception.InvalidRequestException
-import core.exception.ReqError
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.and
@@ -53,10 +52,8 @@ class StudentReadExerciseDetailsController {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { studentOnCourse(courseId) }
-        // Student visibility check moved into selectStudentExerciseDetails to account for exceptions
-        //TODO: should assertCourseExerciseIsOnCourse still check visibility?
-        assertCourseExerciseIsOnCourse(courseExId, courseId, false)
 
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(caller.id))
         return selectStudentExerciseDetails(courseId, courseExId, caller.id)
     }
 
@@ -74,20 +71,7 @@ class StudentReadExerciseDetailsController {
                         ExerciseVer.validTo.isNull()
             }
             .map {
-                val exceptions = selectCourseExerciseExceptions(listOf(courseExId), listOf(studentId))
-
-                val visibleFrom = determineCourseExerciseVisibleFrom(
-                    exceptions,
-                    courseExId,
-                    studentId,
-                    it[CourseExercise.studentVisibleFrom]
-                )
-                if (visibleFrom == null || visibleFrom.isAfterNow) {
-                    throw InvalidRequestException(
-                        "Course exercise $courseExId not found on course $courseId or it is hidden",
-                        ReqError.ENTITY_WITH_ID_NOT_FOUND
-                    )
-                }
+                val exceptions = selectCourseExerciseExceptions(courseExId, studentId)
 
                 Resp(
                     it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],

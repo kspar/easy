@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.SubmissionDraft
 import core.db.insertOrUpdate
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
@@ -39,7 +40,7 @@ class StudentSubmitDraftController {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { studentOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(caller.id))
 
         insertOrUpdateSubmissionDraft(courseExId, solutionBody.solution, caller.id)
     }

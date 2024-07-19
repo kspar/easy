@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.SubmissionDraft
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
@@ -47,7 +48,7 @@ class StudentReadLatestSubmissionDraftController {
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { studentOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(caller.id))
 
         val submission = selectLatestStudentSubmissionDraft(courseExId, caller.id)
 

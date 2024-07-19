@@ -2,6 +2,7 @@ package core.ems.service.exercise
 
 import core.conf.security.EasyUser
 import core.db.CourseExercise
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
@@ -33,7 +34,7 @@ class RemoveExerciseFromCourse {
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId, false)
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         deleteCourseExercise(courseExId)
     }

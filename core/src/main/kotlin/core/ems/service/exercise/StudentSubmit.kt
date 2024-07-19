@@ -8,6 +8,7 @@ import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
 import core.db.GraderType
 import core.ems.service.*
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
@@ -52,7 +53,7 @@ class StudentSubmitCont(
         val courseExId = courseExIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { studentOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(caller.id))
 
         submitSolution(courseExId, solutionBody.solution, caller.id)
     }

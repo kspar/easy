@@ -5,14 +5,14 @@ import core.db.CourseExercise
 import core.db.StudentCourseAccess
 import core.db.TeacherCourseAccess
 import core.ems.service.assertCourseExists
+import core.ems.service.determineCourseExerciseVisibleFrom
+import core.ems.service.selectCourseExerciseExceptions
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.joda.time.DateTime
 
 
 /**
@@ -54,43 +54,49 @@ fun AccessChecksBuilder.exerciseViaCourse(exerciseId: Long, courseId: Long) = ad
 
         caller.isTeacher() -> {
             assertTeacherCanAccessCourse(caller.id, courseId)
-            assertExerciseIsOnCourse(exerciseId, courseId, false)
+            assertExerciseIsOnCourse(exerciseId, courseId)
         }
 
         else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
     }
 }
 
-fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean = true) {
+fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: RequireStudentVisible? = null) {
     if (!isCourseExerciseOnCourse(courseExId, courseId, requireStudentVisible)) {
         throw InvalidRequestException(
-            "Course exercise $courseExId not found on course $courseId " + if (requireStudentVisible) "or it is hidden" else "",
+            "Course exercise $courseExId not found on course $courseId " + if (requireStudentVisible != null) "or it is hidden" else "",
             ReqError.ENTITY_WITH_ID_NOT_FOUND
         )
     }
 }
 
-fun isExerciseOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean = transaction {
-    val query = CourseExercise.selectAll()
+fun isExerciseOnCourse(exerciseId: Long, courseId: Long): Boolean = transaction {
+    CourseExercise.selectAll()
         .where { CourseExercise.course eq courseId and (CourseExercise.exercise eq exerciseId) }
-    if (requireStudentVisible) {
-        query.andWhere {
-            CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
-        }
-    }
-    query.count() > 0
+        .count() > 0
 }
 
-private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: Boolean): Boolean =
+data class RequireStudentVisible(val studentId: String)
+
+private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: RequireStudentVisible?): Boolean =
     transaction {
         val query =
-            CourseExercise.selectAll().where { CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) }
-        if (requireStudentVisible) {
-            query.andWhere {
-                CourseExercise.studentVisibleFrom.isNotNull() and CourseExercise.studentVisibleFrom.lessEq(DateTime.now())
-            }
+            CourseExercise.select(CourseExercise.id, CourseExercise.studentVisibleFrom)
+                .where { CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) }
+
+        val courseExerciseOnCourse = query.count() > 0
+
+        if (requireStudentVisible == null) {
+            courseExerciseOnCourse
+        } else {
+            val defaultVisible = query.map { it[CourseExercise.studentVisibleFrom] }.singleOrNull()
+
+            val exceptions = selectCourseExerciseExceptions(courseExId, requireStudentVisible.studentId)
+            val visibleFrom = determineCourseExerciseVisibleFrom(exceptions, courseExId, requireStudentVisible.studentId, defaultVisible)
+
+            val isHidden = visibleFrom == null || visibleFrom.isAfterNow
+            !isHidden && courseExerciseOnCourse
         }
-        query.count() > 0
     }
 
 fun assertExerciseIsNotOnAnyCourse(exerciseId: Long) = transaction {
@@ -122,10 +128,10 @@ private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
 }
 
 
-private fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long, requireStudentVisible: Boolean) {
-    if (!isExerciseOnCourse(exerciseId, courseId, requireStudentVisible)) {
+private fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long) {
+    if (!isExerciseOnCourse(exerciseId, courseId)) {
         throw ForbiddenException(
-            "Exercise $exerciseId not found on course $courseId " + if (requireStudentVisible) "or it is hidden" else "",
+            "Exercise $exerciseId not found on course $courseId",
             ReqError.ENTITY_WITH_ID_NOT_FOUND
         )
     }

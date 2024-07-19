@@ -55,7 +55,7 @@ class StudentReadExercisesController {
             .where { CourseExercise.course eq courseId }
             .map { it[CourseExercise.id].value }
 
-        val cexToExceptions = selectCourseExerciseExceptions(cexIds, listOf(studentId))
+        val cexToExceptions = selectCourseExerciseExceptions(cexIds, studentId)
 
         data class ExercisePartial(
             val courseExId: Long,

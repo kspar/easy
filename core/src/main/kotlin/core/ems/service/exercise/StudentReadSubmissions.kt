@@ -8,6 +8,7 @@ import core.db.CourseExercise
 import core.db.StudentExerciseStatus
 import core.db.Submission
 import core.ems.service.GradeResp
+import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
@@ -57,7 +58,7 @@ class StudentReadSubmissionsController {
         val courseExId = courseExerciseIdStr.idToLongOrInvalidReq()
 
         caller.assertAccess { studentOnCourse(courseId) }
-        assertCourseExerciseIsOnCourse(courseExId, courseId)
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(caller.id))
 
         return Resp(
             selectStudentSubmissions(
