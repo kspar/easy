@@ -3,7 +3,6 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
-import core.db.AutogradeActivity
 import core.db.Submission
 import core.db.TeacherActivity
 import core.ems.service.TeacherResp
@@ -42,15 +41,9 @@ class ReadStudentAllExerciseActivities {
         @JsonProperty("teacher") val teacher: TeacherResp
     )
 
-    data class AutomaticAssessmentResp(
-        @JsonProperty("submission_id") val submissionId: Long,
-        @JsonProperty("grade") val grade: Int,
-        @JsonProperty("feedback") val feedback: String?
-    )
 
     data class Resp(
         @JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
-        @JsonProperty("auto_assessments") val autoAssessments: List<AutomaticAssessmentResp>
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -68,10 +61,10 @@ class ReadStudentAllExerciseActivities {
 
         caller.assertAccess { teacherOnCourse(courseId) }
 
-        return selectTeacherAllSubmissions(courseExId, studentId)
+        return selectStudentAllExerciseActivities(courseExId, studentId)
     }
 
-    private fun selectTeacherAllSubmissions(courseExId: Long, studentId: String): Resp = transaction {
+    private fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Resp = transaction {
         val teacherActivities = (Submission innerJoin TeacherActivity)
             .select(
                 TeacherActivity.submission,
@@ -83,7 +76,7 @@ class ReadStudentAllExerciseActivities {
                 TeacherActivity.teacher,
                 Submission.number
             ).where {
-                TeacherActivity.student eq studentId and (TeacherActivity.courseExercise eq courseExId) and (Submission.id eq TeacherActivity.submission)
+                TeacherActivity.student eq studentId and (TeacherActivity.courseExercise eq courseExId)
             }
             .orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
             .map {
@@ -102,21 +95,6 @@ class ReadStudentAllExerciseActivities {
                 )
             }
 
-        val autoAssessments = AutogradeActivity
-            .select(
-                AutogradeActivity.submission,
-                AutogradeActivity.grade,
-                AutogradeActivity.feedback
-            ).where { AutogradeActivity.student eq studentId and (AutogradeActivity.courseExercise eq courseExId) }
-            .orderBy(AutogradeActivity.createdAt to SortOrder.ASC)
-            .map {
-                AutomaticAssessmentResp(
-                    it[AutogradeActivity.submission].value,
-                    it[AutogradeActivity.grade],
-                    it[AutogradeActivity.feedback]
-                )
-            }
-
-        Resp(teacherActivities, autoAssessments)
+        Resp(teacherActivities)
     }
 }
