@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.CourseExercise
+import core.db.StudentExerciseStatus
 import core.db.Submission
 import core.ems.service.GradeResp
 import core.ems.service.access_control.assertAccess
@@ -30,7 +31,9 @@ class ReadAllSubmissionsByStudent {
 
     data class SubmissionResp(
         @JsonProperty("id") val submissionId: String,
+        @JsonProperty("submission_number") val submissionNumber: Int,
         @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("created_at") val createdAt: DateTime,
+        @JsonProperty("status") val status: StudentExerciseStatus,
         @JsonProperty("grade") val grade: GradeResp?
     )
 
@@ -58,7 +61,9 @@ class ReadAllSubmissionsByStudent {
         Resp(
             (CourseExercise innerJoin Submission)
                 .select(
+                    CourseExercise.gradeThreshold,
                     Submission.id,
+                    Submission.number,
                     Submission.createdAt,
                     Submission.grade,
                     Submission.isAutoGrade,
@@ -69,7 +74,9 @@ class ReadAllSubmissionsByStudent {
                 .orderBy(Submission.createdAt, SortOrder.DESC).map {
                     SubmissionResp(
                         it[Submission.id].value.toString(),
+                        it[Submission.number],
                         it[Submission.createdAt],
+                        getStudentExerciseStatus(true, it[Submission.grade], it[CourseExercise.gradeThreshold]),
                         toGradeRespOrNull(
                             it[Submission.grade],
                             it[Submission.isAutoGrade],

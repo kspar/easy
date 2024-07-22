@@ -32,6 +32,7 @@ data class SubmissionRow(
 
 data class LatestSubmissionResp(
     @JsonProperty("id") val submissionId: String,
+    @JsonProperty("submission_number") val submissionNumber: Int,
     @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("time") val time: DateTime,
     @JsonProperty("grade") val grade: GradeResp?
 )
@@ -216,6 +217,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 CourseExercise.gradeThreshold,
                 Submission.student,
                 Submission.id,
+                Submission.number,
                 Submission.createdAt,
                 Submission.grade,
                 Submission.isAutoGrade,
@@ -240,7 +242,12 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                         it[Submission.isAutoGrade],
                         it[Submission.isGradedDirectly]
                     )
-                    val submission = LatestSubmissionResp(submissionId.toString(), it[Submission.createdAt], grade)
+                    val submission = LatestSubmissionResp(
+                        submissionId.toString(),
+                        it[Submission.number],
+                        it[Submission.createdAt],
+                        grade
+                    )
 
                     val submissionStatus =
                         getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold])
