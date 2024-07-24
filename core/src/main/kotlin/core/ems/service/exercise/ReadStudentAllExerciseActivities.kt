@@ -28,10 +28,12 @@ class ReadStudentAllExerciseActivities {
     private val log = KotlinLogging.logger {}
 
     data class FeedbackResp(
-        @JsonProperty("feedback_html") val feedbackHtml: String, @JsonProperty("feedback_adoc") val feedbackAdoc: String
+        @JsonProperty("feedback_html") val feedbackHtml: String,
+        @JsonProperty("feedback_adoc") val feedbackAdoc: String
     )
 
     data class TeacherActivityResp(
+        @JsonProperty("id") val id: Long,
         @JsonProperty("submission_id") val submissionId: Long,
         @JsonProperty("submission_number") val submissionNumber: Int,
         @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
@@ -67,6 +69,7 @@ class ReadStudentAllExerciseActivities {
     private fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Resp = transaction {
         val teacherActivities = (Submission innerJoin TeacherActivity)
             .select(
+                TeacherActivity.id,
                 TeacherActivity.submission,
                 TeacherActivity.feedbackHtml,
                 TeacherActivity.feedbackAdoc,
@@ -80,12 +83,12 @@ class ReadStudentAllExerciseActivities {
             }
             .orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
             .map {
-                val submissionId = it[TeacherActivity.submission].value
                 val html = it[TeacherActivity.feedbackHtml]
                 val adoc = it[TeacherActivity.feedbackAdoc]
 
                 TeacherActivityResp(
-                    submissionId,
+                    it[TeacherActivity.id].value,
+                    it[TeacherActivity.submission].value,
                     it[Submission.number],
                     it[TeacherActivity.mergeWindowStart],
                     it[TeacherActivity.grade],
