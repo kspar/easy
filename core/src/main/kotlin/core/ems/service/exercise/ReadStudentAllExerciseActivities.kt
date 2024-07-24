@@ -33,8 +33,8 @@ class ReadStudentAllExerciseActivities {
     )
 
     data class TeacherActivityResp(
-        @JsonProperty("id") val id: Long,
-        @JsonProperty("submission_id") val submissionId: Long,
+        @JsonProperty("id") val id: String,
+        @JsonProperty("submission_id") val submissionId: String,
         @JsonProperty("submission_number") val submissionNumber: Int,
         @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
         @JsonProperty("grade") val grade: Int?,
@@ -87,8 +87,8 @@ class ReadStudentAllExerciseActivities {
                 val adoc = it[TeacherActivity.feedbackAdoc]
 
                 TeacherActivityResp(
-                    it[TeacherActivity.id].value,
-                    it[TeacherActivity.submission].value,
+                    it[TeacherActivity.id].value.toString(),
+                    it[TeacherActivity.submission].value.toString(),
                     it[Submission.number],
                     it[TeacherActivity.mergeWindowStart],
                     it[TeacherActivity.grade],
