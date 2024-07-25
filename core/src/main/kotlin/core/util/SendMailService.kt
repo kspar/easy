@@ -114,30 +114,62 @@ class SendMailService(private val mailSender: JavaMailSender) {
     fun sendStudentGotNewTeacherFeedback(
         courseId: Long, courseExId: Long,
         exerciseTitle: String, courseTitle: String,
-        feedback: String, recipientEmail: String
+        recipientEmail: String
     ) {
-        val subject =
-            """Uus kommentaar ($exerciseTitle) / New feedback comment ($exerciseTitle)"""
+        val subject = """Uus kommentaar / New feedback comment ($exerciseTitle)"""
         val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
         val text = """
             |Tere!
             |
-            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" lisati tagasiside kommentaar:
+            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" lisati tagasiside kommentaar.
             |
-            |$feedback
+            |Vaata tagasisidet siit: $exerciseLink
             |
-            |Vaata oma esitust ja tagasisidet siin: $exerciseLink
+            |Lahenduse meeskond
             |
             |
             |--------------
             |
             |Hey!
             |
-            |Your submission for exercise $exerciseTitle on course $courseTitle received a new feedback comment:
+            |Your submission for exercise $exerciseTitle on course $courseTitle received a feedback comment.
             |
-            |$feedback
+            |See the feedback here: $exerciseLink
             |
-            |See your submission and the feedback here: $exerciseLink
+            |The Lahendus Team
+            |
+            """.trimMargin()
+        sendUserEmail(recipientEmail, subject, text)
+    }
+
+    @Async
+    fun sendStudentChangedGrade(
+        courseId: Long, courseExId: Long,
+        exerciseTitle: String, courseTitle: String,
+        recipientEmail: String
+    ) {
+        val subject =
+            """Uus hinne / New grade ($exerciseTitle)"""
+        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val text = """
+            |Tere!
+            |
+            |Sinu ülesande "$exerciseTitle" esitust kursusel "$courseTitle" hinnati.
+            |
+            |Vaata punkte siit: $exerciseLink
+            |
+            |Lahenduse meeskond
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |Your submission for exercise $exerciseTitle on course $courseTitle was graded.
+            |
+            |See your points here: $exerciseLink
+            |
+            |The Lahendus Team
             |
             """.trimMargin()
         sendUserEmail(recipientEmail, subject, text)
