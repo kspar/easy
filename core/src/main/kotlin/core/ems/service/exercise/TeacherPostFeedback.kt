@@ -89,7 +89,12 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
 
     private fun getIdIfShouldMerge(submissionId: Long, teacherId: String, mergeWindow: Int): Long? =
         transaction {
-            TeacherActivity.select(TeacherActivity.id, TeacherActivity.mergeWindowStart)
+            TeacherActivity
+                .select(
+                    TeacherActivity.id,
+                    TeacherActivity.mergeWindowStart,
+                    TeacherActivity.feedbackAdoc,
+                )
                 .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
                 .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
