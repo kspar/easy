@@ -28,7 +28,7 @@ class ReadSubmissionDetails {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("submission_id") val submissionId: Long,
+        @JsonProperty("id") val id: String,
         @JsonProperty("submission_number") val submissionNumber: Int,
         @JsonProperty("solution") val solution: String,
         @JsonProperty("seen") val seen: Boolean,
@@ -93,7 +93,7 @@ class ReadSubmissionDetails {
             .where { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
                 Resp(
-                    it[Submission.id].value,
+                    it[Submission.id].value.toString(),
                     it[Submission.number],
                     it[Submission.solution],
                     it[Submission.seen],
