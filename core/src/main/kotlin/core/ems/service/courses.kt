@@ -99,6 +99,25 @@ fun getCourse(courseId: Long): CourseDTO? = transaction {
     }.singleOrNull()
 }
 
+data class Titles(val exerciseTitle: String, val courseTitle: String)
+
+fun getCourseAndExerciseTitles(courseId: Long, courseExId: Long): Titles = transaction {
+    (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+        .select(Course.title, Course.alias, ExerciseVer.title, CourseExercise.titleAlias)
+        .where {
+            Course.id eq courseId and (CourseExercise.course eq courseId) and
+                    (CourseExercise.id eq courseExId) and
+                    ExerciseVer.validTo.isNull()
+        }
+        .map {
+            Titles(
+                it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
+                it[Course.alias] ?: it[Course.title]
+            )
+        }
+        .singleOrInvalidRequest()
+}
+
 // TODO: remove
 fun assertCourseExists(courseId: Long) {
     if (!courseExists(courseId)) {

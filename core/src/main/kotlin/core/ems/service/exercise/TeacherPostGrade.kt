@@ -5,11 +5,9 @@ import core.conf.security.EasyUser
 import core.db.StatsSubmission
 import core.db.Submission
 import core.db.TeacherActivity
-import core.ems.service.assertAssessmentControllerChecks
-import core.ems.service.hasSecondsPassed
+import core.ems.service.*
 import core.ems.service.moodle.MoodleGradesSyncService
-import core.ems.service.selectPseudonym
-import core.ems.service.selectStudentBySubmissionId
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
@@ -23,17 +21,21 @@ import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
+import javax.validation.constraints.NotNull
 
 
 @RestController
 @RequestMapping("/v2")
-class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncService) {
+class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
     private lateinit var mergeWindowInSeconds: String
 
-    data class Req(@JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int)
+    data class Req(
+        @JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
+        @JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
+    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/grade")
@@ -41,22 +43,30 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
         @PathVariable("submissionId") submissionIdString: String,
-        @Valid @RequestBody assessment: Req,
+        @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
 
         log.info { "Set grade by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
+        val courseId = courseIdString.idToLongOrInvalidReq()
         val (callerId, courseExId, submissionId) = assertAssessmentControllerChecks(
             caller,
             submissionIdString,
             courseExerciseIdString,
-            courseIdString,
+            courseId,
         )
 
-        insertOrUpdateGrade(callerId, submissionId, assessment, courseExId)
+        insertOrUpdateGrade(callerId, submissionId, req, courseExId)
         moodleGradesSyncService.syncSingleGradeToMoodle(submissionId)
+
+        if (req.notifyStudent) {
+            val titles = getCourseAndExerciseTitles(courseId, courseExId)
+            val email = selectStudentBySubmissionId(submissionId).value
+            mailService.sendStudentChangedGrade(courseId, courseExId, titles.exerciseTitle, titles.courseTitle, email)
+        }
     }
+
 
     private fun insertOrUpdateGrade(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {

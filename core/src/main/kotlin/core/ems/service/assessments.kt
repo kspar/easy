@@ -16,10 +16,18 @@ import org.joda.time.DateTime
 
 fun assertAssessmentControllerChecks(
     caller: EasyUser, submissionIdString: String, courseExerciseIdString: String, courseIdString: String,
+): Triple<String, Long, Long> = assertAssessmentControllerChecks(
+    caller,
+    submissionIdString,
+    courseExerciseIdString,
+    courseIdString.idToLongOrInvalidReq()
+)
+
+fun assertAssessmentControllerChecks(
+    caller: EasyUser, submissionIdString: String, courseExerciseIdString: String, courseId: Long,
 ): Triple<String, Long, Long> {
 
     val callerId = caller.id
-    val courseId = courseIdString.idToLongOrInvalidReq()
     val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
     val submissionId = submissionIdString.idToLongOrInvalidReq()
 

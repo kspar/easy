@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.StatsSubmission
 import core.db.TeacherActivity
 import core.ems.service.*
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
@@ -17,12 +18,13 @@ import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 import javax.validation.constraints.NotBlank
+import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
 
 @RestController
 @RequestMapping("/v2")
-class TeacherPostFeedbackController(val adocService: AdocService) {
+class TeacherPostFeedbackController(val adocService: AdocService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
@@ -32,7 +34,10 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
         @JsonProperty("feedback_adoc", required = true)
         @field:Size(max = 300000)
         @field:NotBlank
-        val feedbackAdoc: String
+        val feedbackAdoc: String,
+        @JsonProperty("notify_student", required = true)
+        @field:NotNull
+        val notifyStudent: Boolean
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -41,20 +46,33 @@ class TeacherPostFeedbackController(val adocService: AdocService) {
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
         @PathVariable("submissionId") submissionIdString: String,
-        @Valid @RequestBody assessment: Req,
+        @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
 
         log.info { "Set feedback by teacher ${caller.id} to submission $submissionIdString on course exercise $courseExerciseIdString on course $courseIdString" }
 
+        val courseId = courseIdString.idToLongOrInvalidReq()
         val (callerId, courseExId, submissionId) = assertAssessmentControllerChecks(
             caller,
             submissionIdString,
             courseExerciseIdString,
-            courseIdString,
+            courseId,
         )
 
-        insertOrUpdateFeedback(callerId, submissionId, assessment, courseExId)
+        insertOrUpdateFeedback(callerId, submissionId, req, courseExId)
+
+        if (req.notifyStudent) {
+            val titles = getCourseAndExerciseTitles(courseId, courseExId)
+            val email = selectStudentBySubmissionId(submissionId).value
+            mailService.sendStudentGotNewTeacherFeedback(
+                courseId,
+                courseExId,
+                titles.exerciseTitle,
+                titles.courseTitle,
+                email
+            )
+        }
     }
 
     private fun insertOrUpdateFeedback(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
