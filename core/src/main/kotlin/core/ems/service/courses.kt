@@ -34,7 +34,8 @@ data class LatestSubmissionResp(
     @JsonProperty("id") val submissionId: String,
     @JsonProperty("submission_number") val submissionNumber: Int,
     @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("time") val time: DateTime,
-    @JsonProperty("grade") val grade: GradeResp?
+    @JsonProperty("grade") val grade: GradeResp?,
+    @JsonProperty("seen") val seen: Boolean,
 )
 
 data class GroupResp(
@@ -219,6 +220,7 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 Submission.id,
                 Submission.number,
                 Submission.createdAt,
+                Submission.seen,
                 Submission.grade,
                 Submission.isAutoGrade,
                 Submission.isGradedDirectly
@@ -246,7 +248,8 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                         submissionId.toString(),
                         it[Submission.number],
                         it[Submission.createdAt],
-                        grade
+                        grade,
+                        it[Submission.seen],
                     )
 
                     val submissionStatus =

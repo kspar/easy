@@ -34,7 +34,6 @@ class StudentReadSubmissionsController {
         @JsonProperty("solution") val solution: String,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("submission_time") val submissionTime: DateTime,
-        @JsonProperty("seen") val seen: Boolean,
         @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
         @JsonProperty("grade") val grade: GradeResp?,
         @JsonProperty("submission_status") val status: StudentExerciseStatus,
@@ -85,7 +84,6 @@ class StudentReadSubmissionsController {
                 Submission.autoGradeStatus,
                 Submission.isAutoGrade,
                 Submission.grade,
-                Submission.seen,
                 Submission.isGradedDirectly
             )
             .where {
@@ -103,7 +101,6 @@ class StudentReadSubmissionsController {
                     it[Submission.number],
                     it[Submission.solution],
                     it[Submission.createdAt],
-                    it[Submission.seen],
                     it[Submission.autoGradeStatus],
                     toGradeRespOrNull(
                         it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly]
