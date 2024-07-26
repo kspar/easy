@@ -18,32 +18,39 @@ class SetSubmissionSeen {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("seen") val seen: Boolean,
+        @JsonProperty("submissions") val submissions: List<SubmissionReq>,
+        @JsonProperty("seen") val seen: Boolean
+    )
+
+    data class SubmissionReq(
+        @JsonProperty("id") val id: String
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
-    @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/seen")
+    @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/seen")
     fun controller(
         @PathVariable("courseId") courseIdString: String,
         @PathVariable("courseExerciseId") courseExerciseIdString: String,
-        @PathVariable("submissionId") submissionIdString: String,
         @Valid @RequestBody req: Req,
         caller: EasyUser
     ) {
-        log.info { "Setting submissions seen by ${caller.id} for submission $submissionIdString" }
+        log.info { "Setting submissions seen by ${caller.id} for submissions ${req.submissions}" }
 
-        val (_, _, submissionId) = assertAssessmentControllerChecks(
-            caller,
-            submissionIdString,
-            courseExerciseIdString,
-            courseIdString,
-        )
+        val submissions = req.submissions.map {
+            val (_, _, submissionId) = assertAssessmentControllerChecks(
+                caller,
+                it.id,
+                courseExerciseIdString,
+                courseIdString,
+            )
+            submissionId
+        }
 
-        setSubmissionSeen(submissionId, req.seen)
+        setSubmissionSeen(submissions, req.seen)
     }
 
-    private fun setSubmissionSeen(submissionId: Long, seen: Boolean) = transaction {
-        Submission.update({ Submission.id eq submissionId }) {
+    private fun setSubmissionSeen(submissionIds: List<Long>, seen: Boolean) = transaction {
+        Submission.update({ Submission.id inList submissionIds }) {
             it[Submission.seen] = seen
         }
     }
