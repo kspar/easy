@@ -121,7 +121,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         val text = """
             |Tere!
             |
-            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" lisati tagasiside kommentaar.
+            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" lisati uus tagasiside kommentaar.
             |
             |Vaata tagasisidet siit: $exerciseLink
             |
@@ -132,7 +132,39 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Hey!
             |
-            |Your submission for exercise $exerciseTitle on course $courseTitle received a feedback comment.
+            |Your submission for exercise $exerciseTitle on course $courseTitle received a new feedback comment.
+            |
+            |See the feedback here: $exerciseLink
+            |
+            |The Lahendus Team
+            |
+            """.trimMargin()
+        sendUserEmail(recipientEmail, subject, text)
+    }
+
+    @Async
+    fun sendStudentTeacherFeedbackEdited(
+        courseId: Long, courseExId: Long,
+        exerciseTitle: String, courseTitle: String,
+        recipientEmail: String
+    ) {
+        val subject = """Muudetud kommentaar / Edited feedback comment ($exerciseTitle)"""
+        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val text = """
+            |Tere!
+            |
+            |Sinu ülesande "$exerciseTitle" esitusele kursusel "$courseTitle" antud tagasiside kommentaari muudeti.
+            |
+            |Vaata tagasisidet siit: $exerciseLink
+            |
+            |Lahenduse meeskond
+            |
+            |
+            |--------------
+            |
+            |Hey!
+            |
+            |A feedback comment was changed on your submission for exercise $exerciseTitle on course $courseTitle.
             |
             |See the feedback here: $exerciseLink
             |
@@ -154,7 +186,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         val text = """
             |Tere!
             |
-            |Sinu ülesande "$exerciseTitle" esitust kursusel "$courseTitle" hinnati.
+            |Sinu esitusel ülesandele "$exerciseTitle" kursusel "$courseTitle" muudeti punkte.
             |
             |Vaata punkte siit: $exerciseLink
             |
