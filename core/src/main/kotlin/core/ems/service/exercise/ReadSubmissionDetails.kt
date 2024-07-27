@@ -3,6 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
+import core.db.AutoGradeStatus
 import core.db.AutogradeActivity
 import core.db.Submission
 import core.ems.service.GradeResp
@@ -34,6 +35,7 @@ class ReadSubmissionDetails {
         @JsonProperty("seen") val seen: Boolean,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("created_at") val createdAt: DateTime,
+        @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
         @JsonProperty("grade") val grade: GradeResp?,
         @JsonProperty("auto_assessment") val autoAssessments: AutomaticAssessmentResp?
     )
@@ -86,6 +88,7 @@ class ReadSubmissionDetails {
             Submission.isAutoGrade,
             Submission.solution,
             Submission.createdAt,
+            Submission.autoGradeStatus,
             Submission.seen,
             Submission.number,
             Submission.isGradedDirectly
@@ -98,6 +101,7 @@ class ReadSubmissionDetails {
                     it[Submission.solution],
                     it[Submission.seen],
                     it[Submission.createdAt],
+                    it[Submission.autoGradeStatus],
                     toGradeRespOrNull(
                         it[Submission.grade],
                         it[Submission.isAutoGrade],
