@@ -43,7 +43,7 @@ class TeacherDownloadCourseExerciseSubmissionsController {
 
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
-        val submissions: List<Zip> = selectSubmissions(courseExId, req.submissions.map {
+        val zippedSubmissions: List<Zip> = selectSubmissions(courseExId, req.submissions.map {
             val (_, _, submissionId) = assertAssessmentControllerChecks(
                 caller,
                 it.id,
@@ -53,9 +53,9 @@ class TeacherDownloadCourseExerciseSubmissionsController {
             submissionId
         })
 
-        when (submissions.size) {
+        when (zippedSubmissions.size) {
             1 -> {
-                val submission = submissions.singleOrInvalidRequest()
+                val submission = zippedSubmissions.singleOrInvalidRequest()
                 response.contentType = "application/octet-stream"
                 response.setHeader("Content-disposition", "attachment; filename=${submission.name}")
                 response.outputStream.use {
@@ -69,7 +69,7 @@ class TeacherDownloadCourseExerciseSubmissionsController {
                     "Content-disposition",
                     "attachment; filename=submissions_${courseIdString}_$courseExerciseIdString.zip"
                 )
-                writeZipFile(submissions, response.outputStream)
+                writeZipFile(zippedSubmissions, response.outputStream)
             }
         }
     }
