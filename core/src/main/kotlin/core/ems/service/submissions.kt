@@ -8,6 +8,7 @@ import core.ems.service.cache.countSubmissionsCache
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
@@ -26,7 +27,7 @@ fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isAfterN
 
 fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long) {
     if (!submissionExists(submissionId, courseExId, courseId)) {
-        throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId")
+        throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId", ReqError.ENTITY_WITH_ID_NOT_FOUND)
     }
 }
 
