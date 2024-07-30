@@ -488,7 +488,7 @@
         </createTable>
     </changeSet>
 
-    <changeSet id="300724-1" author="priit">
+    <changeSet id="300724-2" author="priit">
         <sql>
         <![CDATA[
             WITH latest_autograde AS (
@@ -539,7 +539,8 @@
                 FROM final_combined fc
             WHERE s.course_exercise_id = fc.course_exercise_id
               AND s.student_id = fc.student_id
-              AND fc.final_rn = 1;
+              AND fc.final_rn = 1
+              AND s.created_at = (SELECT MAX(created_at) FROM submission WHERE course_exercise_id = s.course_exercise_id AND student_id = s.student_id)
             ]]>
     </sql>
     </changeSet>
