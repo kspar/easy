@@ -488,4 +488,59 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="300724-1" author="priit">
+        <sql>
+        <![CDATA[
+            WITH latest_autograde AS (
+                SELECT
+                    aa.course_exercise_id,
+                    aa.student_id,
+                    aa.grade,
+                    true AS is_autograde,
+                    aa.created_at AS date,
+                ROW_NUMBER() OVER (PARTITION BY aa.course_exercise_id, aa.student_id ORDER BY aa.created_at DESC) AS rn
+            FROM autograde_activity aa
+                JOIN submission s ON aa.course_exercise_id = s.course_exercise_id
+                ),
+                latest_teacher_grade AS (
+            SELECT
+                ta.course_exercise_id,
+                ta.student_id,
+                ta.grade,
+                false AS is_autograde,
+                ta.merge_window_start AS date,
+                ROW_NUMBER() OVER (PARTITION BY ta.course_exercise_id, ta.student_id ORDER BY ta.merge_window_start DESC) AS rn
+            FROM teacher_activity ta
+                JOIN submission s ON ta.course_exercise_id = s.course_exercise_id
+            WHERE ta.grade IS NOT NULL
+                ),
+                combined_grades AS (
+            SELECT course_exercise_id, student_id, grade, is_autograde, date, rn
+            FROM latest_autograde
+            WHERE rn = 1
+            UNION ALL
+            SELECT course_exercise_id, student_id, grade, is_autograde, date, rn
+            FROM latest_teacher_grade
+            WHERE rn = 1
+                ),
+                final_combined AS (
+            SELECT
+                course_exercise_id,
+                student_id,
+                grade,
+                is_autograde,
+                ROW_NUMBER() OVER (PARTITION BY course_exercise_id, student_id ORDER BY date DESC) AS final_rn
+            FROM combined_grades
+                )
+            UPDATE submission s
+            SET grade = fc.grade,
+                is_auto_grade = fc.is_autograde,
+                is_graded_directly = NOT fc.is_autograde
+                FROM final_combined fc
+            WHERE s.course_exercise_id = fc.course_exercise_id
+              AND s.student_id = fc.student_id
+              AND fc.final_rn = 1;
+            ]]>
+    </sql>
+    </changeSet>
 </databaseChangeLog>
