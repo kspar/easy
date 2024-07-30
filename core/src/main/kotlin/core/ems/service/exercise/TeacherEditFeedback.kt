@@ -57,7 +57,7 @@ class TeacherEditFeedbackController(val adocService: AdocService, val mailServic
 
         if (req.notifyStudent) {
             val titles = getCourseAndExerciseTitles(courseId, courseExId)
-            val email = selectStudentBySubmissionId(submissionId).value
+            val email = selectStudentEmailBySubmissionId(submissionId)
             mailService.sendStudentTeacherFeedbackEdited(
                 courseId,
                 courseExId,

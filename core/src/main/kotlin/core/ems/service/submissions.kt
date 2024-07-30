@@ -34,14 +34,21 @@ fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long)
     }
 }
 
-fun selectStudentBySubmissionId(submissionId: Long) =
-    transaction {
-        Submission
-            .select(Submission.student)
-            .where { Submission.id eq submissionId }
-            .map { it[Submission.student] }
-            .single()
-    }
+fun selectStudentBySubmissionId(submissionId: Long) = transaction {
+    Submission
+        .select(Submission.student)
+        .where { Submission.id eq submissionId }
+        .map { it[Submission.student] }
+        .single()
+}
+
+fun selectStudentEmailBySubmissionId(submissionId: Long) = transaction {
+    (Submission innerJoin Account)
+        .select(Account.email)
+        .where { Submission.id eq submissionId }
+        .map { it[Account.email] }
+        .single()
+}
 
 
 data class GradeResp(

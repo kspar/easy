@@ -62,7 +62,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
 
         if (req.notifyStudent) {
             val titles = getCourseAndExerciseTitles(courseId, courseExId)
-            val email = selectStudentBySubmissionId(submissionId).value
+            val email = selectStudentEmailBySubmissionId(submissionId)
             mailService.sendStudentChangedGrade(courseId, courseExId, titles.exerciseTitle, titles.courseTitle, email)
         }
     }
