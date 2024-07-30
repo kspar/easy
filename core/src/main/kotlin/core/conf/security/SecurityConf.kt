@@ -92,6 +92,7 @@ class SecurityConf : WebSecurityConfigurerAdapter() {
         )
         conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT", "PATCH")
         conf.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
+        conf.exposedHeaders = listOf("Content-Disposition")
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", conf)
         return source

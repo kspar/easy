@@ -95,7 +95,7 @@ class TeacherDownloadCourseExerciseSubmissionsController {
     }
 
     private fun createFileName(givenName: String, familyName: String, submissionId: Long, solutionFileName: String): String =
-        "${givenName}_${familyName}_${submissionId}_${solutionFileName}".replace(" ", "_")
+        "${familyName}_${givenName}_${submissionId}_${solutionFileName}".replace(" ", "_")
 
     private fun selectSolutionFileName(courseExId: Long): String = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
