@@ -7,13 +7,11 @@ import core.db.AutoGradeStatus
 import core.db.CourseExercise
 import core.db.StudentExerciseStatus
 import core.db.Submission
-import core.ems.service.GradeResp
+import core.ems.service.*
 import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
-import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
@@ -37,6 +35,7 @@ class StudentReadSubmissionsController {
         @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
         @JsonProperty("grade") val grade: GradeResp?,
         @JsonProperty("submission_status") val status: StudentExerciseStatus,
+        @JsonProperty("auto_assessment") val autoAssessments: AutomaticAssessmentResp?
     )
 
     data class Resp(
@@ -91,13 +90,13 @@ class StudentReadSubmissionsController {
                         (CourseExercise.id eq courseExId) and
                         (Submission.student eq studentId)
             }
-            .orderBy(
-                Submission.createdAt to SortOrder.DESC
-            )
+            .orderBy(Submission.createdAt to SortOrder.DESC)
             .limit(limit ?: Int.MAX_VALUE, offset ?: 0)
             .mapIndexed { i, it ->
+                val submissionId = it[Submission.id].value
+
                 SubmissionResp(
-                    it[Submission.id].value.toString(),
+                    submissionId.toString(),
                     it[Submission.number],
                     it[Submission.solution],
                     it[Submission.createdAt],
@@ -105,7 +104,8 @@ class StudentReadSubmissionsController {
                     toGradeRespOrNull(
                         it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly]
                     ),
-                    getStudentExerciseStatus(true, it[Submission.grade], it[CourseExercise.gradeThreshold])
+                    getStudentExerciseStatus(true, it[Submission.grade], it[CourseExercise.gradeThreshold]),
+                    getLatestAutomaticAssessmentRespOrNull(submissionId)
                 )
             }
     }

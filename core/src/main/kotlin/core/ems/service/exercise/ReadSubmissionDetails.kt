@@ -4,15 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
-import core.db.AutogradeActivity
 import core.db.Submission
-import core.ems.service.GradeResp
-import core.ems.service.assertAssessmentControllerChecks
-import core.ems.service.singleOrInvalidRequest
-import core.ems.service.toGradeRespOrNull
+import core.ems.service.*
 import core.util.DateTimeSerializer
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -40,10 +35,6 @@ class ReadSubmissionDetails {
         @JsonProperty("auto_assessment") val autoAssessments: AutomaticAssessmentResp?
     )
 
-    data class AutomaticAssessmentResp(
-        @JsonProperty("grade") val grade: Int,
-        @JsonProperty("feedback") val feedback: String?
-    )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}")
@@ -68,20 +59,6 @@ class ReadSubmissionDetails {
     }
 
     private fun selectSubmissionDetails(submissionId: Long, courseExId: Long): Resp = transaction {
-
-        val autoAssessment = AutogradeActivity.select(AutogradeActivity.grade, AutogradeActivity.feedback)
-            .where { AutogradeActivity.submission eq submissionId }
-            .orderBy(AutogradeActivity.createdAt to SortOrder.DESC)
-            .limit(1)
-            .map {
-                AutomaticAssessmentResp(
-                    it[AutogradeActivity.grade],
-                    it[AutogradeActivity.feedback]
-                )
-            }
-            .firstOrNull()
-
-
         Submission.select(
             Submission.id,
             Submission.grade,
@@ -107,7 +84,7 @@ class ReadSubmissionDetails {
                         it[Submission.isAutoGrade],
                         it[Submission.isGradedDirectly]
                     ),
-                    autoAssessment
+                    getLatestAutomaticAssessmentRespOrNull(submissionId)
                 )
             }.singleOrInvalidRequest()
     }

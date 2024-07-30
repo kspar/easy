@@ -27,7 +27,10 @@ fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isAfterN
 
 fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long) {
     if (!submissionExists(submissionId, courseExId, courseId)) {
-        throw InvalidRequestException("No submission $submissionId found on course exercise $courseExId on course $courseId", ReqError.ENTITY_WITH_ID_NOT_FOUND)
+        throw InvalidRequestException(
+            "No submission $submissionId found on course exercise $courseExId on course $courseId",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND
+        )
     }
 }
 
@@ -193,3 +196,16 @@ fun insertSubmission(
         submissionId
     }
 
+data class AutomaticAssessmentResp(
+    @JsonProperty("grade") val grade: Int,
+    @JsonProperty("feedback") val feedback: String?
+)
+
+fun getLatestAutomaticAssessmentRespOrNull(submissionId: Long) = transaction {
+    AutogradeActivity.select(AutogradeActivity.grade, AutogradeActivity.feedback)
+        .where { AutogradeActivity.submission eq submissionId }
+        .orderBy(AutogradeActivity.createdAt to SortOrder.DESC)
+        .limit(1)
+        .map { AutomaticAssessmentResp(it[AutogradeActivity.grade], it[AutogradeActivity.feedback]) }
+        .firstOrNull()
+}
