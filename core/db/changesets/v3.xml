@@ -544,4 +544,14 @@
             ]]>
     </sql>
     </changeSet>
+
+    <changeSet id="300724-3" author="priit">
+        <sql>
+        <![CDATA[
+            UPDATE submission s
+            SET is_graded_directly = true
+            WHERE s.grade IS NOT NULL
+            ]]>
+    </sql>
+    </changeSet>
 </databaseChangeLog>
