@@ -70,7 +70,7 @@ class TeacherRetryAutoassessCont(
         try {
             val autoExerciseId = selectAutoExId(courseExId)
             if (autoExerciseId == null) {
-                insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
+                insertAutoAssFailed(submissionId, cachingService)
                 throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
             }
 
@@ -88,7 +88,7 @@ class TeacherRetryAutoassessCont(
 
         } catch (e: Exception) {
             log.error("Autoassessment failed", e)
-            insertAutoAssFailed(submissionId, cachingService, studentId, courseExId)
+            insertAutoAssFailed(submissionId, cachingService)
             val notification = """
                 Autoassessment retry by teacher failed
                 

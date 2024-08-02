@@ -38,17 +38,10 @@ fun assertAssessmentControllerChecks(
 }
 
 
-fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService, studentId: String, courseExId: Long) {
-    transaction {
-        Submission.update({ Submission.id eq submissionId }) {
-            it[autoGradeStatus] = AutoGradeStatus.FAILED
-            if (!anyPreviousTeacherActivityContainsGrade(studentId, courseExId)) {
-                it[grade] = null
-                it[isAutoGrade] = true
-            }
-        }
+fun insertAutoAssFailed(submissionId: Long, cachingService: CachingService) = transaction {
+    Submission.update({ Submission.id eq submissionId }) {
+        it[autoGradeStatus] = AutoGradeStatus.FAILED
     }
-
     cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
 }
 

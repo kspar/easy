@@ -105,7 +105,7 @@ suspend fun autoAssessAsync(
     try {
         val autoExerciseId = selectAutoExId(courseExId)
         if (autoExerciseId == null) {
-            insertAutoAssFailed(submissionId, caching, studentId, courseExId)
+            insertAutoAssFailed(submissionId, caching)
             throw IllegalStateException("Exercise grader type is AUTO but auto exercise id is null")
         }
 
@@ -122,7 +122,7 @@ suspend fun autoAssessAsync(
         insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
     } catch (e: Exception) {
         log.error("Autoassessment failed", e)
-        insertAutoAssFailed(submissionId, caching, studentId, courseExId)
+        insertAutoAssFailed(submissionId, caching)
         val notification = """
                 Autoassessment failed
                 
