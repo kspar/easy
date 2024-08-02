@@ -1,17 +1,73 @@
 package core.ems.service
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import core.util.DateTimeSerializer
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.joda.time.DateTime
+
+data class FeedbackResp(
+    @JsonProperty("feedback_html") val feedbackHtml: String,
+    @JsonProperty("feedback_adoc") val feedbackAdoc: String
+)
+
+data class TeacherActivityResp(
+    @JsonProperty("id") val id: String,
+    @JsonProperty("submission_id") val submissionId: String,
+    @JsonProperty("submission_number") val submissionNumber: Int,
+    @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+    @JsonProperty("grade") val grade: Int?,
+    @JsonProperty("edited_at") @JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
+    @JsonProperty("feedback") val feedback: FeedbackResp?,
+    @JsonProperty("teacher") val teacher: TeacherResp
+)
+
+
+data class ActivityResp(
+    @JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
+)
+
+fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): ActivityResp = transaction {
+    val teacherActivities = (Submission innerJoin TeacherActivity)
+        .select(
+            TeacherActivity.id,
+            TeacherActivity.submission,
+            TeacherActivity.feedbackHtml,
+            TeacherActivity.feedbackAdoc,
+            TeacherActivity.mergeWindowStart,
+            TeacherActivity.grade,
+            TeacherActivity.editedAt,
+            TeacherActivity.teacher,
+            Submission.number
+        ).where {
+            TeacherActivity.student eq studentId and (TeacherActivity.courseExercise eq courseExId)
+        }
+        .orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
+        .map {
+            val html = it[TeacherActivity.feedbackHtml]
+            val adoc = it[TeacherActivity.feedbackAdoc]
+
+            TeacherActivityResp(
+                it[TeacherActivity.id].value.toString(),
+                it[TeacherActivity.submission].value.toString(),
+                it[Submission.number],
+                it[TeacherActivity.mergeWindowStart],
+                it[TeacherActivity.grade],
+                it[TeacherActivity.editedAt],
+                if (html != null && adoc != null) FeedbackResp(html, adoc) else null,
+                selectTeacher(it[TeacherActivity.teacher].value)
+            )
+        }
+
+    ActivityResp(teacherActivities)
+}
 
 
 fun assertAssessmentControllerChecks(
