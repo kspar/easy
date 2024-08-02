@@ -532,9 +532,6 @@ fun determineSoftDeadline(
     val studentException: ExceptionValue? = exceptions.extractStudentException(courseExId, studentId)?.softDeadline
     val groupException: List<ExceptionValue>? = exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }
 
-    log.debug { "determineSoftDeadline student:$studentException" }
-    log.debug { "determineSoftDeadline group: $groupException" }
-
     return when {
         studentException != null -> studentException.value
         groupException != null -> groupException.farthestValueInFutureOrNull()
