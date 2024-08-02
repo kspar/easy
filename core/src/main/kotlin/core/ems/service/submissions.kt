@@ -154,18 +154,29 @@ fun insertSubmission(
             return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
         }
 
-        val (previousGrade, lastNumber) = (
-                Submission.select(
-                    Submission.number,
-                    Submission.isAutoGrade,
-                    Submission.grade
-                ).where {
-                    (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
-                }.orderBy(Submission.number, SortOrder.DESC)
-                    .map {
-                        it.extractGradeOrNull() to it[Submission.number]
-                    }.firstOrNull() ?: (null to 0)
-                )
+        val lastNumber = Submission
+            .select(Submission.number)
+            .where {
+                (Submission.courseExercise eq courseExId) and (Submission.student eq studentId)
+            }
+            .orderBy(Submission.number, SortOrder.DESC)
+            .map { it[Submission.number] }
+            .firstOrNull() ?: 0
+
+
+        val previousTeacherGrade = Submission
+            .select(Submission.isAutoGrade, Submission.grade)
+            .where {
+                (Submission.courseExercise eq courseExId) and
+                        (Submission.student eq studentId) and
+                        (Submission.isAutoGrade.eq(false)) and
+                        (Submission.grade.isNotNull())
+            }
+            .orderBy(Submission.number, SortOrder.DESC)
+            .limit(1)
+            .map { it.extractGradeOrNull() }
+            .firstOrNull()
+
 
         val time = DateTime.now()
         val submissionId = Submission.insertAndGetId {
@@ -175,8 +186,8 @@ fun insertSubmission(
             it[solution] = submission
             it[autoGradeStatus] = autoAss
             it[number] = lastNumber + 1
-            if (previousGrade != null && !previousGrade.isAutograde) {
-                it[grade] = previousGrade?.grade
+            if (previousTeacherGrade != null) {
+                it[grade] = previousTeacherGrade.grade
                 it[isAutoGrade] = false
                 it[isGradedDirectly] = false
             }
