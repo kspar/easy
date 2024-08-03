@@ -29,7 +29,7 @@ class CourseExerciseStudentSubmissionsTabComp(
             submissions.map {
                 EzCollComp.Item(
                     it,
-                    EzCollComp.ItemTypeText("#${it.number}"),
+                    EzCollComp.ItemTypeText("# ${it.number}"),
                     it.submission_time.toHumanString(EzDate.Format.FULL),
                     titleInteraction = EzCollComp.TitleAction<CourseExercisesStudentDAO.StudentSubmission> {
                         onOpenSubmission(it)
@@ -37,7 +37,7 @@ class CourseExerciseStudentSubmissionsTabComp(
                     topAttr = it.grade?.let {
                         EzCollComp.SimpleAttr(
                             Str.gradeLabel,
-                            "${it.grade}/100",
+                            "${it.grade} / 100",
                             if (it.is_autograde) ExerciseDAO.GraderType.ICON_AUTO else ExerciseDAO.GraderType.ICON_TEACHER,
                             topAttrMinWidth = EzCollComp.CollMinWidth.W400
                         )

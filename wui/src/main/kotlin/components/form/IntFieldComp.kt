@@ -22,6 +22,7 @@ class IntFieldComp(
     private val helpText: String = "",
     private val htmlClasses: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
+    private val selectAllOnFocus: Boolean = true,
     private val onValidChange: ((Boolean) -> Unit)? = null,
     private val onValueChange: ((Int?) -> Unit)? = null,
     private val onENTER: (suspend (Int?) -> Unit)? = null,
@@ -74,7 +75,19 @@ class IntFieldComp(
                 onENTER.invoke(getIntValue())
             }
         }
+
+        if (selectAllOnFocus) {
+            getElement().onFocus {
+                getElement().select()
+            }
+        }
     }
 
     override fun hasUnsavedChanges() = getIntValue() != initialValue
+
+    fun setValue(value: Int?) {
+        getElement().value = value?.toString() ?: ""
+        validateAndPaint(paintRequiredOnInput)
+        onValueChange?.invoke(value)
+    }
 }

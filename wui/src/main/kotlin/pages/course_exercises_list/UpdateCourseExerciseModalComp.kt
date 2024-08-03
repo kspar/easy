@@ -22,9 +22,8 @@ import warn
 class UpdateCourseExerciseModalComp(
     private val courseId: String,
     private val exercise: CourseExercise,
-    // TODO: remove nullable when exercise summary page is migrated
-    parent: Component?,
-    dstId: String,
+    parent: Component,
+    dstId: String = IdGenerator.nextId(),
 ) : Component(parent, dstId) {
 
     data class CourseExercise(
@@ -48,10 +47,10 @@ class UpdateCourseExerciseModalComp(
 
     private lateinit var threshold: IntFieldComp
 
-    private val modalComp: BinaryModalComp<Boolean?> = BinaryModalComp(
+    private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
         "Ülesande sätted", Str.doSave, Str.cancel, Str.saving, fixFooter = true,
         primaryAction = ::updateCourseExercise,
-        primaryButtonEnabledInitial = false, defaultReturnValue = null, htmlClasses = "update-course-ex-title-modal",
+        primaryButtonEnabledInitial = false, defaultReturnValue = false, htmlClasses = "update-course-ex-title-modal",
         parent = this
     )
 
@@ -216,4 +215,7 @@ class UpdateCourseExerciseModalComp(
         successMessage { "Muudetud" }
         return true
     }
+
+    // Not sure what modal child component is causing unsaved changes but probably due to some dynamic update here
+    override fun hasUnsavedChanges() = false
 }

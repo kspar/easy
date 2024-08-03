@@ -46,6 +46,9 @@ fun getElemsByClass(className: String): List<Element> =
 fun Element.getElemsByClass(className: String): List<Element> =
     getElementsByClassName(className).asList()
 
+fun existsElemById(id: String): Boolean =
+    getElemByIdOrNull(id) != null
+
 fun getElemByIdOrNull(id: String): Element? =
     document.getElementById(id)
 

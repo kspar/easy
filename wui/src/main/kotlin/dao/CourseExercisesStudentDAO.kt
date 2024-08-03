@@ -5,6 +5,8 @@ import EzDateSerializer
 import Icons
 import components.EzCollComp
 import components.ToastThing
+import dao.CourseExercisesTeacherDAO.Activities
+import dao.CourseExercisesTeacherDAO.AutomaticAssessment
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
@@ -96,13 +98,14 @@ object CourseExercisesStudentDAO {
         val solution: String,
         @Serializable(with = EzDateSerializer::class)
         val submission_time: EzDate,
-        val seen: Boolean,
         val autograde_status: AutogradeStatus,
         val grade: CourseExercisesTeacherDAO.Grade?,
         val submission_status: SubmissionStatus,
+        val auto_assessment: AutomaticAssessment?,
     )
 
     enum class AutogradeStatus { NONE, IN_PROGRESS, COMPLETED, FAILED }
+
 
     fun getLatestSubmission(courseId: String, courseExId: String): Promise<StudentSubmission?> = doInPromise {
         getSubmissions(courseId, courseExId, 1).await().firstOrNull()
@@ -169,33 +172,18 @@ object CourseExercisesStudentDAO {
         ).await()
     }
 
-    @Serializable
-    data class AwaitedSubmission(
-        val id: String,
-        val solution: String,
-        @Serializable(with = EzDateSerializer::class)
-        val submission_time: EzDate,
-        val autograde_status: AutogradeStatus,
-        val grade_auto: Int?,
-        val feedback_auto: String?,
-        val grade_teacher: Int?,
-        val feedback_teacher: String?
-    ) {
-        val validGrade: ValidGrade?
-            get() = when {
-                grade_teacher != null -> ValidGrade(grade_teacher, ExerciseDAO.GraderType.TEACHER)
-                grade_auto != null -> ValidGrade(grade_auto, ExerciseDAO.GraderType.AUTO)
-                else -> null
-            }
-    }
-
-    fun awaitAutograde(courseId: String, courseExId: String): Promise<AwaitedSubmission> = doInPromise {
+    fun awaitAutograde(courseId: String, courseExId: String) = doInPromise {
         fetchEms(
             "/student/courses/${courseId.encodeURIComponent()}/exercises/${courseExId.encodeURIComponent()}/submissions/latest/await",
             ReqMethod.GET,
             successChecker = { http200 },
             errorHandlers = listOf(ErrorHandlers.noCourseAccessMsg, ErrorHandlers.noVisibleExerciseMsg)
         ).await()
-            .parseTo(AwaitedSubmission.serializer()).await()
+    }
+
+    fun getActivity(courseId: String, courseExerciseId: String) = doInPromise {
+        fetchEms("/student/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/activities",
+            ReqMethod.GET, successChecker = { http200 }).await()
+            .parseTo(Activities.serializer()).await()
     }
 }

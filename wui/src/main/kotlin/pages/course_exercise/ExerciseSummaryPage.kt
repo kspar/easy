@@ -41,8 +41,6 @@ import pages.EasyPage
 import pages.Title
 import pages.course_exercise.student.StudentCourseExerciseComp
 import pages.course_exercise.teacher.TeacherCourseExerciseComp
-import pages.course_exercises_list.UpdateCourseExerciseModalComp
-import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp
 import pages.sidenav.ActivePage
 import pages.sidenav.Sidenav
@@ -157,11 +155,15 @@ object ExerciseSummaryPage : EasyPage() {
                     TeacherCourseExerciseComp(
                         courseId,
                         courseExerciseId,
+                        getCurrentQueryParamValue("student"),
                         getCurrentQueryParamValue("tab"),
                         ::setWildcardPath
                     )
                 }
             }
+
+            // FIXME: commented out for easier testing
+//            updateUrl(window.location.pathname)
 
             rootComp!!.createAndBuild().await()
             scrollPosition?.restore()
@@ -297,41 +299,6 @@ object ExerciseSummaryPage : EasyPage() {
         getElemById("exercise").innerHTML = tmRender("tm-teach-exercise-summary", exerciseMap)
 
 
-        Sidenav.replacePageSection(
-            Sidenav.PageSection(
-                effectiveTitle,
-                buildList {
-                    add(
-                        Sidenav.Action(Icons.settings, Str.exerciseSettings) {
-                            val m = UpdateCourseExerciseModalComp(
-                                courseId,
-                                UpdateCourseExerciseModalComp.CourseExercise(
-                                    courseExerciseId,
-                                    exercise.title,
-                                    exercise.title_alias,
-                                    exercise.threshold,
-                                    exercise.student_visible,
-                                    exercise.student_visible_from?.let { it },
-                                    exercise.soft_deadline?.let { it },
-                                    exercise.hard_deadline?.let { it },
-                                ),
-                                null,
-                                dstId = updateModalDst
-                            )
-
-                            m.createAndBuild().await()
-                            val modalReturn = m.openWithClosePromise().await()
-                            m.destroy()
-                            if (modalReturn != null) {
-                                build(null)
-                            }
-                        }
-                    )
-                    if (exercise.has_lib_access)
-                        add(Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(exercise.exercise_id)))
-                }
-            )
-        )
 
 
         highlightCode()
@@ -1042,8 +1009,8 @@ object ExerciseSummaryPage : EasyPage() {
         failed: Boolean,
         feedbackDst: String
     ) {
-        val view = ExerciseFeedbackComp(validGrade, autoFeedback, teacherFeedback, failed, null, feedbackDst)
-        view.rebuild()
+//        val view = ExerciseFeedbackComp(validGrade, autoFeedback, teacherFeedback, failed, null, feedbackDst)
+//        view.rebuild()
     }
 
 
@@ -1054,6 +1021,6 @@ object ExerciseSummaryPage : EasyPage() {
     fun link(courseId: String, courseExerciseId: String, openSubmissionStudentId: String? = null) =
         constructPathLink(mapOf("courseId" to courseId, "courseExerciseId" to courseExerciseId)) +
                 if (openSubmissionStudentId != null)
-                    createQueryString("tab" to "student:$openSubmissionStudentId")
+                    createQueryString("student" to openSubmissionStudentId)
                 else ""
 }

@@ -1,5 +1,6 @@
 package components
 
+import kotlinx.serialization.Serializable
 import libheaders.MdCheckbox
 import rip.kspar.ezspa.*
 import template
@@ -13,6 +14,7 @@ class CheckboxComp(
     parent: Component
 ) : Component(parent) {
 
+    @Serializable
     enum class Value { CHECKED, INDETERMINATE, UNCHECKED }
 
     private val element
@@ -58,8 +60,10 @@ class CheckboxComp(
 
     override fun render() = template(
         """
-            <md-checkbox touch-target="wrapper" id="{{id}}"></md-checkbox>
-            <label for='{{id}}'></label>
+            <ez-checkbox>
+                <md-checkbox touch-target="wrapper" id="{{id}}"></md-checkbox>
+                <label for='{{id}}'></label>
+            </ez-checkbox>
         """.trimIndent(),
         "id" to elementId,
     )

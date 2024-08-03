@@ -1,8 +1,10 @@
 package pages.course_exercise.student
 
 import CONTENT_CONTAINER_ID
+import Key
 import cache.BasicCourseInfo
 import components.PageTabsComp
+import components.TwoColDividerComp
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import pages.Title
@@ -27,13 +29,15 @@ class StudentCourseExerciseComp(
     private lateinit var exerciseTextComp: CourseExerciseTextComp
     private lateinit var tabs: PageTabsComp
 
+    private lateinit var colDividerComp: TwoColDividerComp
+
     private lateinit var submissionsTab: CourseExerciseStudentSubmissionsTabComp
     private lateinit var oldSubmissionTab: CourseExerciseStudentOldSubmissionTabComp
     private val oldSubmissionTabId = IdGenerator.nextId()
 
 
     override val children: List<Component>
-        get() = listOf(exerciseTextComp, tabs)
+        get() = listOf(exerciseTextComp, tabs, colDividerComp)
 
     override fun create() = doInPromise {
         val courseEx = CourseExercisesStudentDAO.getCourseExerciseDetails(courseId, courseExId).await()
@@ -88,19 +92,24 @@ class StudentCourseExerciseComp(
             ),
             parent = this
         )
+
+        colDividerComp = TwoColDividerComp(
+            Key.STUDENT_COURSE_EXERCISE_PANEL_EXPAND_STATE,
+            parent = this
+        )
     }
 
     override fun render() = template(
         """
             <ez-course-exercise>
                 <ez-block-container>
-                    <ez-block id='${exerciseTextComp.dstId}' style='width: 45rem; max-width: 80rem; overflow: auto;'></ez-block>
-                    <ez-block id='${tabs.dstId}' style='width: 45rem; max-width: 80rem; padding-top: 1rem; padding-bottom: 2rem; overflow: auto;'></ez-block>
+                    <ez-block id='${exerciseTextComp.dstId}' style='width: 45rem; max-width: 120rem; overflow: auto;'></ez-block>
+                    <ez-block id='${colDividerComp.dstId}'></ez-block>
+                    <ez-block id='${tabs.dstId}' style='width: 45rem; padding-top: 1rem; padding-bottom: 2rem; overflow: auto;'></ez-block>
                 </ez-block-container>
             </ez-course-exercise>
         """.trimIndent(),
-
-        )
+    )
 
     private fun updateSubmissions() {
         Sidenav.refresh(ExerciseSummaryPage.sidenavSpec, true)

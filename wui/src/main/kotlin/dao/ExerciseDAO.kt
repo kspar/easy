@@ -261,4 +261,16 @@ object ExerciseDAO {
             ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }
         ).await().parseTo(AutoAssessment.serializer()).await()
     }
+
+    @Serializable
+    data class HtmlPreview(
+        val content: String
+    )
+
+    fun previewAdocContent(adoc: String) = doInPromise {
+        debug { "Preview adoc content" }
+        fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc),
+            successChecker = { http200 }).await()
+            .parseTo(HtmlPreview.serializer()).await().content
+    }
 }

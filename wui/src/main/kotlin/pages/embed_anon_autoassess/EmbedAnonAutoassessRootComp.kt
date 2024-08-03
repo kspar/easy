@@ -6,14 +6,12 @@ import components.code_editor.CodeEditorComp
 import components.form.OldButtonComp
 import components.text.WarningComp
 import dao.AnonymousExerciseDAO
-import dao.CourseExercisesStudentDAO
-import dao.ExerciseDAO
 import debug
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import libheaders.ResizeObserver
-import pages.course_exercise.ExerciseFeedbackComp
+import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import pages.course_exercise.ExerciseSummaryPage
 import pages.exercise_in_library.ExercisePage
 import rip.kspar.ezspa.Component
@@ -42,7 +40,7 @@ class EmbedAnonAutoassessRootComp(
     private var editor: CodeEditorComp? = null
     private var submitBtn: OldButtonComp? = null
 
-    private lateinit var feedback: ExerciseFeedbackComp
+    private lateinit var feedback: ExerciseAutoFeedbackHolderComp
     private lateinit var warning: WarningComp
 
     private var showSubmit: Boolean = false
@@ -68,7 +66,7 @@ class EmbedAnonAutoassessRootComp(
         else
             WarningComp(parent = this)
 
-        feedback = ExerciseFeedbackComp(null, null, null, parent = this)
+        feedback = ExerciseAutoFeedbackHolderComp(null, false, false, parent = this)
     }
 
     override fun render() = template(
@@ -144,12 +142,10 @@ class EmbedAnonAutoassessRootComp(
     private suspend fun assess() {
         val solution = editor?.getActiveTabContent().orEmpty()
 
-        feedback.clearAll()
+        feedback.clear()
 
-        val f = AnonymousExerciseDAO.submit(exerciseId, solution).await()
+        val result = AnonymousExerciseDAO.submit(exerciseId, solution).await()
 
-        feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(f.grade, ExerciseDAO.GraderType.AUTO)
-        feedback.autoFeedback = f.feedback
-        feedback.rebuild()
+        feedback.setFeedback(result.feedback, false)
     }
 }

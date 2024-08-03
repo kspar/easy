@@ -7,12 +7,11 @@ import components.code_editor.CodeEditorComp
 import components.form.OldButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
-import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import pages.course_exercise.AutogradeLoaderComp
-import pages.course_exercise.ExerciseFeedbackComp
+import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -52,7 +51,7 @@ class TestingTabComp(
         clickedLabel = Str.autoAssessing, parent = this
     )
 
-    private lateinit var feedback: ExerciseFeedbackComp
+    private lateinit var feedback: ExerciseAutoFeedbackHolderComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
 
     override val children: List<Component>
@@ -81,19 +80,19 @@ class TestingTabComp(
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 
-        feedback = ExerciseFeedbackComp(null, null, null, false, this)
+        feedback = ExerciseAutoFeedbackHolderComp(null, false, false, parent = this)
         autogradeLoader = AutogradeLoaderComp(false, this)
     }
 
     override fun render() = template(
         """
             <ez-exercise-testing-tab>
-                <ez-dst id="${warning.dstId}"></ez-dst>
-                <ez-dst id="${attrs.dstId}"></ez-dst>
-                <ez-dst id="${editor.dstId}"></ez-dst>
+                $warning
+                $attrs
+                $editor
                 <div id='${submitBtn.dstId}' style="display: flex; justify-content: center; margin-top: 3rem;"></div>
-                <ez-dst id='${autogradeLoader.dstId}'></ez-dst>
-                <ez-dst id='${feedback.dstId}'></ez-dst>
+                $autogradeLoader
+                $feedback
             </ez-exercise-testing-tab>
         """.trimIndent(),
     )
@@ -109,7 +108,7 @@ class TestingTabComp(
     private suspend fun submit() {
         try {
             editor.setFileEditable(solutionFileName, false)
-            feedback.clearAll()
+            feedback.clear()
 
             var autoassessFinished = false
             val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getFileValue(solutionFileName)).then {
@@ -120,9 +119,7 @@ class TestingTabComp(
 
             val assssment = assessmentP.await()
 
-            feedback.validGrade = CourseExercisesStudentDAO.ValidGrade(assssment.grade, ExerciseDAO.GraderType.AUTO)
-            feedback.autoFeedback = assssment.feedback
-            feedback.rebuild()
+            feedback.setFeedback(assssment.feedback, false)
             attrs.attrs = mapOf(Str.lastTestingAttempt to assssment.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
             editor.setFileEditable(solutionFileName, true)

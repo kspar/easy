@@ -4,44 +4,72 @@ import EzDate
 import Icons
 import components.ButtonComp
 import components.IconButtonComp
+import components.MissingContentPlaceholderComp
+import components.code_editor.CodeEditorComp
+import components.text.WarningComp
+import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
+import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.dstIfNotNull
 import template
+import translation.Str
 
 class TeacherCourseExerciseStudentTabComp(
     private val courseId: String,
     private val courseExId: String,
     private val exerciseId: String,
     private val deadline: EzDate?,
+    private val solutionFileName: String,
     var studentId: String,
+    var studentName: String,
     var submissionId: String?,
-    private val onStudentLoad: suspend (CourseExercisesTeacherDAO.StudentSubmissionDetails?) -> Unit,
+    var latestSubmissionId: String?,
     private val onNextStudent: suspend (currentStudentId: String) -> Unit,
     private val onPrevStudent: suspend (currentStudentId: String) -> Unit,
+    private val onNewSubmissionOpened: suspend () -> Unit,
     parent: Component
 ) : Component(parent) {
 
-    //    private lateinit var studentName: String
-//    private lateinit var subTime: EzDate
     private var submission: CourseExercisesTeacherDAO.StudentSubmissionDetails? = null
+    private var isOldSubmission: Boolean = false  // set in create
 
     private lateinit var prevStudentBtn: IconButtonComp
     private lateinit var nextStudentBtn: IconButtonComp
     private var allSubsBtn: ButtonComp? = null
+    private var allSubsModal: AllSubmissionsModalComp? = null
+
+    private var oldSubmissionWarning: WarningComp? = null
+
+    private var solutionCodeEditor: CodeEditorComp? = null
+    private var missingSolutionPlaceholder: MissingContentPlaceholderComp? = null
+
+    private var gradeComp: SubmissionGradeComp? = null
+    private lateinit var autoFeedbackComp: ExerciseAutoFeedbackHolderComp
+    private var commentsSection: SubmissionCommentsListComp? = null
 
     override val children: List<Component>
-        get() = listOfNotNull(prevStudentBtn, nextStudentBtn, allSubsBtn)
+        get() = listOfNotNull(
+            prevStudentBtn,
+            nextStudentBtn,
+            allSubsBtn,
+            allSubsModal,
+            oldSubmissionWarning,
+            solutionCodeEditor,
+            missingSolutionPlaceholder,
+            gradeComp,
+            autoFeedbackComp,
+            commentsSection,
+        )
 
     override fun create() = doInPromise {
-        // TODO: need to get student name from somewhere
-
         submission = submissionId?.let {
             CourseExercisesTeacherDAO.getSubmissionDetails(courseId, courseExId, it).await()
         }
 
-        onStudentLoad(submission)
+        isOldSubmission = submissionId != latestSubmissionId
 
         prevStudentBtn = IconButtonComp(
             Icons.previous, null,
@@ -55,53 +83,111 @@ class TeacherCourseExerciseStudentTabComp(
         )
         allSubsBtn = submission?.let {
             ButtonComp(
-                ButtonComp.Type.TEXT,
-                "esitus # " + it.submission_number,
+                if (isOldSubmission) ButtonComp.Type.TONAL else ButtonComp.Type.TEXT,
+                Str.submission + " #" + it.submission_number,
                 Icons.history,
                 onClick = ::openAllSubsModal, parent = this
             )
         }
+        allSubsModal = submissionId?.let {
+            AllSubmissionsModalComp(courseId, courseExId, studentId, studentName, it, this)
+        }
 
+        // TODO: link to last submission if not too difficult
+        oldSubmissionWarning = if (isOldSubmission)
+            WarningComp(Str.oldSubmissionNote, parent = this)
+        else null
+
+        // TODO:
+        //  - code editor menu items:
+        //    - download as file
+        //    - edit and submit
+        //    - check similarity? (new tab with similarity page and filtered out results for only this student (new dropdown needed probably))
+        solutionCodeEditor = submission?.let {
+            CodeEditorComp(
+                CodeEditorComp.File(solutionFileName, it.solution, CodeEditorComp.Edit.READONLY),
+                parent = this
+            )
+        }
+
+        missingSolutionPlaceholder = if (submission == null)
+            MissingContentPlaceholderComp(Str.missingSolution, true, this)
+        else null
+
+        gradeComp = submission?.let {
+            SubmissionGradeComp(
+                it.grade,
+                if (!isOldSubmission)
+                    SubmissionGradeComp.GradeEdit(courseId, courseExId, it.id,
+                        onGradeSaved = {
+                            createAndBuild().await()
+                        }
+                    ) else null,
+                parent = this
+            )
+        }
+
+        val autoassessFeedback = submission?.auto_assessment?.feedback
+        val autoassessFailed = submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
+        autoFeedbackComp = ExerciseAutoFeedbackHolderComp(
+            autoassessFeedback, autoassessFailed, !isOldSubmission, parent = this
+        )
+
+        commentsSection = latestSubmissionId?.let {
+            SubmissionCommentsListComp(courseId, courseExId, studentId, it, !isOldSubmission, true, parent = this)
+        }
     }
 
     override fun render() = template(
         """
             <ez-sub-header style='display: flex; justify-content: space-between; flex-wrap: wrap;'>
                 <ez-sub-title style='display: flex; align-items: center;'>
-                    <ez-sub-student-name style='font-size: 1.2em; margin-right: 1rem;'>{{name}}</ez-sub-student-name>
                     $prevStudentBtn
                     $nextStudentBtn
+                    <ez-sub-student-name style='font-size: 1.2em; margin-left: 1rem; margin-right: 2rem;'>{{name}}</ez-sub-student-name>
                 </ez-sub-title>
                 {{#hasSubmission}}
                     <ez-sub-title-secondary style='display: flex; align-items: center;'>
-                        {{#overDeadline}}
-                            <ez-deadline-close style='display: flex; font-weight: 500;'>
-                                {{{deadlineIcon}}}
-                        {{/overDeadline}}
-                                <span style='margin: 0 1rem;'>{{subTime}}</span>
-                        {{#overDeadline}}
-                            </ez-deadline-close>                    
-                        {{/overDeadline}}
-                        · 
+                        <ez-sub-time class='{{#overDeadline}}over-deadline{{/overDeadline}}'>
+                            {{{deadlineIcon}}}
+                            <span style='padding: .2rem 1rem;'>{{subTime}}</span>
+                        </ez-sub-time>                    
                         $allSubsBtn
                     </ez-sub-title-secondary>
                 {{/hasSubmission}}
+                
             </ez-sub-header>
+            {{#isOld}}
+                <div style='margin-top: 2rem;'>
+                    $oldSubmissionWarning
+                </div>
+            {{/isOld}}
             
+            ${solutionCodeEditor.dstIfNotNull()}
+            ${missingSolutionPlaceholder.dstIfNotNull()}
+            
+            $autoFeedbackComp
+            
+            ${gradeComp.dstIfNotNull()}
+            ${commentsSection.dstIfNotNull()}
+            
+            ${allSubsModal.dstIfNotNull()}
             
         """.trimIndent(),
-        "name" to "Murelin Säde",
+        "name" to studentName,
         "hasSubmission" to (submission != null),
+        "isOld" to isOldSubmission,
         "timeIcon" to Icons.pending,
         "overDeadline" to submission?.let { deadline != null && deadline < it.created_at },
         "deadlineIcon" to Icons.alarmClock,
         "subTime" to submission?.created_at?.toHumanString(EzDate.Format.FULL),
     )
 
-    suspend fun setStudent(id: String, submissionIdd: String?) {
+    suspend fun setStudent(id: String, name: String, submissionIdd: String?, latestSubmissionIdd: String?) {
         studentId = id
-//        studentName = name
+        studentName = name
         submissionId = submissionIdd
+        latestSubmissionId = latestSubmissionIdd
         createAndBuild().await()
     }
 
@@ -115,6 +201,11 @@ class TeacherCourseExerciseStudentTabComp(
     }
 
     private suspend fun openAllSubsModal() {
-
+        val selectedSubmissionId = allSubsModal?.open()
+        if (selectedSubmissionId != null) {
+            submissionId = selectedSubmissionId
+            createAndBuild().await()
+            onNewSubmissionOpened()
+        }
     }
 }

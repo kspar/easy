@@ -52,9 +52,13 @@ sealed class TranslatableStrings {
     abstract val withoutAccountGroups: String
     abstract val doDownload: String
     abstract val downloading: String
+    abstract val doAddComment: String
+    abstract val deleteComment: String
+    abstract val doNotifyStudent: String
     abstract val feedback: String
     abstract val value: String
     abstract val loading: String
+    abstract val editedAt: String
     abstract val uploadSubmission: String
     abstract val downloadSubmission: String
     abstract val uploadErrorFileTooLarge: String
@@ -164,6 +168,16 @@ sealed class TranslatableStrings {
     abstract val solutionEditorStatusSubmission: String
     abstract val submissionSingular: String
     abstract val submissionPlural: String
+    abstract val submission: String
+    abstract val commentEditorPlaceholder: String
+    abstract val pointsFieldLabel: String
+    abstract val missingSolution: String
+    abstract val newSubmission: String
+    abstract val markAsNew: String
+    abstract val markAsSeen: String
+    abstract val runAutoTests: String
+    abstract val showTestDetails: String
+    abstract val hideTestDetails: String
 
     abstract val tabExerciseLabel: String
     abstract val tabTestingLabel: String
@@ -188,6 +202,7 @@ sealed class TranslatableStrings {
     abstract val submissionHeading: String
     abstract val latestSubmissionSuffix: String
     abstract val allSubmissionsLink: String
+    abstract val allSubmissions: String
     abstract val loadingAllSubmissions: String
     abstract val oldSubmissionNote: String
     abstract val toLatestSubmissionLink: String
@@ -371,6 +386,15 @@ object EstStrings : TranslatableStrings() {
     override val notGradedYet = "Hindamata"
 
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
+    override val commentEditorPlaceholder = "Kirjuta kommentaar siia..."
+    override val pointsFieldLabel = "Punktisumma"
+    override val missingSolution = "Lahendus puudub"
+    override val newSubmission = "Uus esitus"
+    override val markAsNew = "Märgi uueks"
+    override val markAsSeen = "Märgi vaadatuks"
+    override val runAutoTests = "Käivita automaattestid"
+    override val showTestDetails = "Näita teste"
+    override val hideTestDetails = "Peida testid"
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
     override val roleStudent = "Õpilane"
@@ -397,12 +421,13 @@ object EstStrings : TranslatableStrings() {
     override val doDuplicate = "Loo koopia"
     override val doExpand = "Laienda"
     override val assessmentAddedMsg = "Hinnang lisatud"
-    override val oldSubmissionNote = "See on vana esitus."
+    override val oldSubmissionNote = "See on vana esitus"
     override val toLatestSubmissionLink = "Vaata viimast esitust."
     override val loadingAllSubmissions = "Laen esitusi..."
     override val submissionHeading = "Esitus"
     override val latestSubmissionSuffix = "(viimane esitus)"
     override val allSubmissionsLink = "► Vaata kõiki esitusi"
+    override val allSubmissions = "Kõik esitused"
     override val tabSubmit = "Esita"
     override val tabMySubmissions = "Minu esitused"
     override val draftSaveFailedMsg = "Mustandi salvestamine ebaõnnestus"
@@ -411,6 +436,7 @@ object EstStrings : TranslatableStrings() {
     override val solutionEditorStatusSubmission = "Viimane esitus"
     override val submissionSingular = "esitus"
     override val submissionPlural = "esitust"
+    override val submission = "esitus"
     override val doSubmitAndCheck = "Esita ja kontrolli"
     override val doSubmit = "Esita"
     override val softDeadlineLabel = "Tähtaeg"
@@ -488,9 +514,13 @@ object EstStrings : TranslatableStrings() {
     override val withoutAccountGroups = "Ilma rühmata"
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
+    override val doAddComment = "Lisa kommentaar"
+    override val deleteComment = "Kustuta kommentaar"
+    override val doNotifyStudent = "Teavita õpilast"
     override val feedback = "Tagasiside"
     override val value = "Väärtus"
     override val loading = "Laen..."
+    override val editedAt = "muudetud"
     override val uploadSubmission = "Vali fail arvutist"
     override val downloadSubmission = "Salvesta failina"
     override val uploadErrorFileTooLarge = "Valitud fail on liiga suur"
@@ -791,6 +821,15 @@ object EngStrings : TranslatableStrings() {
     override val studentMySubmissionFilter = "State"
     override val studentMySubmissionNotDone = "To do"
     override val studentMySubmissionDone = "Finished"
+    override val commentEditorPlaceholder = "Write your comment here..."
+    override val pointsFieldLabel = "Points"
+    override val missingSolution = "No solution submitted"
+    override val newSubmission = "New submission"
+    override val markAsNew = "Mark as new"
+    override val markAsSeen = "Mark as seen"
+    override val runAutoTests = "Run tests"
+    override val showTestDetails = "Show tests"
+    override val hideTestDetails = "Hide tests"
 
     override val tabExerciseLabel = "Exercise"
     override val tabTestingLabel = "Test"
@@ -803,6 +842,7 @@ object EngStrings : TranslatableStrings() {
     override val solutionEditorStatusSubmission = "Latest submission"
     override val submissionSingular = "submission"
     override val submissionPlural = "submissions"
+    override val submission = "submission"
     override val softDeadlineLabel = "Deadline"
     override val hardDeadlineLabel = "Submissions allowed until"
     override val studentVisibleFromTimeLabel = "Visible from"
@@ -818,9 +858,13 @@ object EngStrings : TranslatableStrings() {
     override val withoutAccountGroups = "Ungrouped"
     override val doDownload = "Download"
     override val downloading = "Downloading..."
+    override val doAddComment = "Add comment"
+    override val deleteComment = "Delete comment"
+    override val doNotifyStudent = "Notify student"
     override val feedback = "Feedback"
     override val value = "Value"
     override val loading = "Loading..."
+    override val editedAt = "edited at"
     override val uploadSubmission = "Upload file"
     override val downloadSubmission = "Save as file"
     override val uploadErrorFileTooLarge = "The chosen file is too large"
@@ -867,6 +911,7 @@ object EngStrings : TranslatableStrings() {
     override val submissionHeading = "Submission"
     override val latestSubmissionSuffix = "(latest submission)"
     override val allSubmissionsLink = "► View all submissions"
+    override val allSubmissions = "All submissions"
     override val loadingAllSubmissions = "Loading submissions..."
     override val oldSubmissionNote = "This is an old submission."
     override val toLatestSubmissionLink = "View the latest submission."

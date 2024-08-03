@@ -21,6 +21,19 @@ fun <T> String.parseTo(deserializer: DeserializationStrategy<T>): T =
 fun <T> String.parseToOrNull(deserializer: DeserializationStrategy<T>): T? =
     if (this.isBlank()) null else parseTo(deserializer)
 
+fun <T> String.parseToOrCatch(deserializer: DeserializationStrategy<T>): T? =
+    try {
+        this.parseTo(deserializer)
+    } catch (e: Exception) {
+        debug {
+            """Exception while parsing:
+            $this
+            Deserializer:
+            $deserializer"""
+        }
+        null
+    }
+
 fun <T> KSerializer<T>.stringify(obj: T): String = JsonUtil.encodeToString(this, obj)
 
 

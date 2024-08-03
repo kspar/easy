@@ -167,3 +167,5 @@ abstract class Component(
     private fun getAncestorsRec(): List<Component> =
         (parent?.getAncestorsRec() ?: emptyList()) + listOf(this)
 }
+
+fun Component?.dstIfNotNull() = if (this != null) plainDstStr(this.dstId) else ""

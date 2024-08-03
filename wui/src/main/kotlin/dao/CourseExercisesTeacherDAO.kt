@@ -3,12 +3,14 @@ package dao
 import EzDate
 import EzDateSerializer
 import components.EzCollComp
+import dao.CourseExercisesStudentDAO.SubmissionStatus
 import debug
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import queries.*
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.encodeURIComponent
+import saveAsFile
 import kotlin.js.Promise
 
 object CourseExercisesTeacherDAO {
@@ -44,18 +46,23 @@ object CourseExercisesTeacherDAO {
     @Serializable
     data class LatestStudentSubmission(
         val submission: StudentSubmission?,
-        val status: CourseExercisesStudentDAO.SubmissionStatus,
+        val status: SubmissionStatus,
         val student_id: String,
         val given_name: String,
         val family_name: String,
         override val groups: List<ParticipantsDAO.CourseGroup>,
-    ) : EzCollComp.WithGroups
+    ) : EzCollComp.WithGroups {
+        val name: String
+            get() = "$given_name $family_name"
+    }
 
     @Serializable
     data class StudentSubmission(
         val id: String,
+        val submission_number: Int,
         @Serializable(with = EzDateSerializer::class)
         val time: EzDate,
+        val seen: Boolean,
         val grade: Grade?,
     )
 
@@ -117,7 +124,7 @@ object CourseExercisesTeacherDAO {
 
     enum class CourseExerciseDelete {
         TITLE_ALIAS,
-        INSTRUCTIONS_ADOC,
+         INSTRUCTIONS_ADOC,
         SOFT_DEADLINE,
         HARD_DEADLINE,
         MOODLE_EXERCISE_ID,
@@ -219,18 +226,173 @@ object CourseExercisesTeacherDAO {
     }
 
     @Serializable
+    data class StudentSubmissionOld(
+        val id: String,
+        val submission_number: Int,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        val status: SubmissionStatus,
+        val grade: Grade?,
+    )
+
+    @Serializable
+    data class AllSubmissions(val submissions: List<StudentSubmissionOld>)
+
+    fun getAllSubmissionsForStudent(courseId: String, courseExerciseId: String, studentId: String) = doInPromise {
+        debug { "Get all submissions for student $studentId on course $courseId exercise $courseExerciseId" }
+
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/all/students/${studentId.encodeURIComponent()}",
+            ReqMethod.GET,
+            successChecker = { http200 }).await()
+            .parseTo(AllSubmissions.serializer()).await()
+    }
+
+    @Serializable
     data class StudentSubmissionDetails(
+        val id: String,
         val submission_number: Int,
         val solution: String,
         val seen: Boolean,
         @Serializable(with = EzDateSerializer::class)
         val created_at: EzDate,
+        val autograde_status: CourseExercisesStudentDAO.AutogradeStatus,
         val grade: Grade?,
+        val auto_assessment: AutomaticAssessment?,
+    )
+
+    @Serializable
+    data class AutomaticAssessment(
+        val grade: Int,
+        val feedback: String?,
     )
 
     fun getSubmissionDetails(courseId: String, courseExerciseId: String, submissionId: String) = doInPromise {
         fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/${submissionId.encodeURIComponent()}",
             ReqMethod.GET, successChecker = { http200 }).await()
             .parseTo(StudentSubmissionDetails.serializer()).await()
+    }
+
+    @Serializable
+    data class Feedback(
+        val feedback_html: String,
+        val feedback_adoc: String
+    )
+
+    @Serializable
+    data class Teacher(
+        val id: String,
+        val given_name: String,
+        val family_name: String
+    )
+
+    @Serializable
+    data class TeacherActivity(
+        val id: String,
+        val submission_id: String,
+        val submission_number: Int,
+        @Serializable(with = EzDateSerializer::class)
+        val created_at: EzDate,
+        val grade: Int?,
+        @Serializable(with = EzDateSerializer::class)
+        val edited_at: EzDate?,
+        val feedback: Feedback?,
+        val teacher: Teacher
+    )
+
+    @Serializable
+    data class Activities(
+        val teacher_activities: List<TeacherActivity>,
+    )
+
+    fun getActivityForStudent(courseId: String, courseExerciseId: String, studentId: String) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/students/${studentId.encodeURIComponent()}/activities",
+            ReqMethod.GET, successChecker = { http200 }).await()
+            .parseTo(Activities.serializer()).await()
+    }
+
+    fun addComment(
+        courseId: String, courseExerciseId: String, submissionId: String, commentAdoc: String?, sendEmail: Boolean
+    ) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/${submissionId.encodeURIComponent()}/feedback",
+            ReqMethod.POST,
+            mapOf(
+                "feedback_adoc" to commentAdoc,
+                "notify_student" to sendEmail,
+            ),
+            successChecker = { http200 }).await()
+    }
+
+
+    fun editComment(
+        courseId: String, courseExerciseId: String, submissionId: String, activityId: String, commentAdoc: String?,
+        sendEmail: Boolean
+    ) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/${submissionId.encodeURIComponent()}/feedback",
+            ReqMethod.PUT,
+            mapOf(
+                "teacher_activity_id" to activityId,
+                "feedback_adoc" to commentAdoc,
+                "notify_student" to sendEmail,
+            ),
+            successChecker = { http200 }).await()
+    }
+
+    fun deleteComment(courseId: String, courseExerciseId: String, submissionId: String, activityId: String) =
+        editComment(courseId, courseExerciseId, submissionId, activityId, null, false)
+
+    fun setSubmissionSeenStatus(
+        courseId: String, courseExerciseId: String, seenStatus: Boolean, submissionIds: List<String>
+    ) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/seen",
+            ReqMethod.POST,
+            mapOf(
+                "submissions" to submissionIds.map {
+                    mapOf(
+                        "id" to it
+                    )
+                },
+                "seen" to seenStatus,
+            ),
+            successChecker = { http200 }).await()
+    }
+
+    fun changeGrade(
+        courseId: String, courseExerciseId: String, submissionId: String, points: Int, sendEmail: Boolean
+    ) = doInPromise {
+        fetchEms("/teacher/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions/${submissionId.encodeURIComponent()}/grade",
+            ReqMethod.POST,
+            mapOf(
+                "grade" to points,
+                "notify_student" to sendEmail,
+            ),
+            successChecker = { http200 }).await()
+    }
+
+    fun downloadSubmissions(
+        courseId: String, courseExerciseId: String, submissionIds: List<String>
+    ) = doInPromise {
+        val resp = fetchEms("/export/courses/${courseId.encodeURIComponent()}/exercises/${courseExerciseId.encodeURIComponent()}/submissions",
+            ReqMethod.POST,
+            mapOf(
+                "submissions" to submissionIds.map {
+                    mapOf(
+                        "id" to it
+                    )
+                },
+            ),
+            successChecker = { http200 }).await()
+
+        val contentDisposition = resp.headers.get("Content-disposition")
+        val extractedFilename = contentDisposition?.let {
+            Regex("filename=\"?(.+)\"?").find(it)?.groupValues?.getOrNull(1)
+        }
+
+        val filename = when {
+            extractedFilename != null -> extractedFilename
+            submissionIds.size > 1 -> "submissions.zip"
+            else -> "submission.py"
+        }
+
+        resp.blob().await().saveAsFile(filename)
     }
 }

@@ -5,14 +5,10 @@ import components.code_editor.CodeEditorComp
 import components.form.OldIconButtonComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
+import dao.ExerciseDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
-import kotlinx.serialization.Serializable
 import observeValueChange
-import queries.ReqMethod
-import queries.fetchEms
-import queries.http200
-import queries.parseTo
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
@@ -35,11 +31,6 @@ class ExerciseTextEditTabComp(
         private const val ADOC_FILENAME = "adoc"
         private const val HTML_FILENAME = "html"
     }
-
-    @Serializable
-    data class HtmlPreview(
-        val content: String
-    )
 
     private lateinit var titleField: StringFieldComp
     private val helpIcon = OldIconButtonComp(
@@ -100,7 +91,7 @@ class ExerciseTextEditTabComp(
                 valueProvider = { getCurrentAdoc() },
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 action = {
-                    val html = fetchAdocPreview(it)
+                    val html = ExerciseDAO.previewAdocContent(it).await()
                     exerciseTextChanged(html)
                     editor.setFileValue(HTML_FILENAME, html)
                 },
@@ -130,10 +121,4 @@ class ExerciseTextEditTabComp(
     fun isValid() = titleField.isValid
 
     override fun hasUnsavedChanges() = getCurrentTitle() != title || getCurrentAdoc() != textAdoc
-
-    private suspend fun fetchAdocPreview(adoc: String): String {
-        return fetchEms("/preview/adoc", ReqMethod.POST, mapOf("content" to adoc),
-            successChecker = { http200 }).await()
-            .parseTo(HtmlPreview.serializer()).await().content
-    }
 }

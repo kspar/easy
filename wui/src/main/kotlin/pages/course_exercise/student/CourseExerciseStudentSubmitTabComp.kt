@@ -1,5 +1,6 @@
 package pages.course_exercise.student
 
+import Auth
 import Icons
 import components.ToastThing
 import components.code_editor.CodeEditorComp
@@ -12,12 +13,12 @@ import kotlinx.coroutines.await
 import observeValueChange
 import org.w3c.files.Blob
 import pages.course_exercise.AutogradeLoaderComp
-import pages.course_exercise.ExerciseFeedbackComp
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getElemByIdOrNull
+import pages.course_exercise.ExerciseAutoFeedbackHolderComp
+import pages.course_exercise.teacher.SubmissionCommentsListComp
+import pages.course_exercise.teacher.SubmissionGradeComp
+import rip.kspar.ezspa.*
 import saveAsFile
+import show
 import template
 import translation.Str
 import uploadFile
@@ -40,8 +41,10 @@ class CourseExerciseStudentSubmitTabComp(
     private lateinit var syncIcon: CourseExerciseEditorStatusComp
     private lateinit var submitBtn: OldButtonComp
     private val warning = WarningComp(parent = this)
-    private lateinit var feedback: ExerciseFeedbackComp
+    private lateinit var grade: SubmissionGradeComp
+    private lateinit var testsFeedback: ExerciseAutoFeedbackHolderComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
+    private var commentsList: SubmissionCommentsListComp? = null
 
     private var isAutogradeInProgressInitial = false
 
@@ -54,7 +57,7 @@ class CourseExerciseStudentSubmitTabComp(
 
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, syncIcon, warning, submitBtn, feedback, autogradeLoader)
+        get() = listOfNotNull(editor, syncIcon, warning, submitBtn, grade, testsFeedback, autogradeLoader, commentsList)
 
     override fun create() = doInPromise {
         val submissionP = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId)
@@ -123,9 +126,12 @@ class CourseExerciseStudentSubmitTabComp(
                     if (!isAutogradeInProgressInitial)
                         submit(editor.getActiveTabContent()!!)
                     isAutogradeInProgressInitial = false
-                    feedback.clearAll()
-                    if (graderType == ExerciseDAO.GraderType.AUTO)
+                    testsFeedback.clear()
+                    if (graderType == ExerciseDAO.GraderType.AUTO) {
+                        grade.hide()
                         awaitAutograde()
+                        grade.show()
+                    }
                     onNewSubmission()
                 } finally {
                     setEditorEditable(true)
@@ -135,16 +141,19 @@ class CourseExerciseStudentSubmitTabComp(
             parent = this
         )
 
-        // TODO
-        feedback = ExerciseFeedbackComp(null, null, null, false, this)
-//        feedback = ExerciseFeedbackComp(
-//            submission?.validGrade,
-//            submission?.feedback_auto,
-//            submission?.feedback_teacher,
-//            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
-//            this
-//        )
+        grade = SubmissionGradeComp(submission?.grade, null, parent = this)
+
+        testsFeedback = ExerciseAutoFeedbackHolderComp(
+            submission?.auto_assessment?.feedback,
+            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
+            false,
+            this
+        )
         autogradeLoader = AutogradeLoaderComp(false, this)
+
+        commentsList = submission?.let {
+             SubmissionCommentsListComp(courseId, courseExId, Auth.username!!, it.id, false, false, this)
+        }
     }
 
     override fun render() = template(
@@ -156,7 +165,9 @@ class CourseExerciseStudentSubmitTabComp(
             <div id='${submitBtn.dstId}' style='display: flex; justify-content: center; margin-top: 3rem;'></div>
             $warning
             $autogradeLoader
-            $feedback
+            $grade
+            $testsFeedback
+            ${commentsList.dstIfNotNull()}
         """.trimIndent(),
     )
 
@@ -232,20 +243,19 @@ class CourseExerciseStudentSubmitTabComp(
         // Make students wait for a multiple of 5 seconds for animation to finish :D
         // Repeat animation and poll whether the promise has resolved every 5 seconds
         var autoassessFinished = false
-        val submissionP = CourseExercisesStudentDAO.awaitAutograde(courseId, courseExId).then {
+        CourseExercisesStudentDAO.awaitAutograde(courseId, courseExId).then {
             autoassessFinished = true
-            it
         }
 
         autogradeLoader.runUntil { !autoassessFinished }
 
-        val submission = submissionP.await()
+        val submission = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId).await()
 
-        feedback.validGrade = submission.validGrade
-        feedback.autoFeedback = submission.feedback_auto
-        feedback.teacherFeedback = submission.feedback_teacher
-        feedback.failed = submission.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
-        feedback.rebuild()
+        grade.setGrade(submission?.grade)
+        testsFeedback.setFeedback(
+            submission?.auto_assessment?.feedback,
+            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
+        )
 
         // Repeating this status to mitigate the edit-submit race condition
         updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)

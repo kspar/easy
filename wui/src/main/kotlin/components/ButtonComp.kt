@@ -1,10 +1,7 @@
 package components
 
 import libheaders.MdButton
-import rip.kspar.ezspa.Component
-import rip.kspar.ezspa.IdGenerator
-import rip.kspar.ezspa.getElemById
-import rip.kspar.ezspa.onVanillaClick
+import rip.kspar.ezspa.*
 import template
 
 class ButtonComp(
@@ -52,7 +49,7 @@ class ButtonComp(
 
             onClick()
 
-            if (disableOnClick)
+            if (disableOnClick && existsElemById(btnId))
                 setEnabled(true)
         }
     }

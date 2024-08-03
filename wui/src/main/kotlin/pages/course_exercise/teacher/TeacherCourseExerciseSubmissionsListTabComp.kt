@@ -41,21 +41,64 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                             else -> Icons.teacherFace
                         }
                     ),
-                    it.given_name + " " + it.family_name,
-                    // TODO: show seen as badge or active titleStatus?
-//                    titleStatus = if (it.submission != null) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
+                    it.name,
+                    titleIcon = if (it.submission?.seen == false)
+                        EzCollComp.TitleIcon(Icons.notificationDot, Str.newSubmission)
+                    else null,
                     titleInteraction = EzCollComp.TitleAction<CourseExercisesTeacherDAO.LatestStudentSubmission> {
                         onOpenStudent(it)
                     },
-                    // TODO: paint and icon if time > deadline
+                    // TODO: paint and icon if time > deadline ?
                     topAttr =
                     if (it.submission != null) {
                         EzCollComp.SimpleAttr(
-                            "Esitamise aeg",
+                            Str.submissionTimeLabel,
                             shortValue = it.submission.time.toHumanString(EzDate.Format.DATE),
                             longValue = it.submission.time.toHumanString(EzDate.Format.FULL),
                         )
                     } else null,
+                    // TODO: action and massaction to rerun automatic tests (how to wait on them and update?)
+                    actions = buildList {
+                        if (it.submission?.seen == true)
+                            add(
+                                EzCollComp.Action(
+                                    Icons.circle, Str.markAsNew,
+                                    onActivate = {
+                                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(
+                                            courseId, courseExId, false, listOf(it.props.submission!!.id)
+                                        ).await()
+                                        createAndBuild().await()
+                                        EzCollComp.ResultUnmodified
+                                    }
+                                ))
+                        if (it.submission?.seen == false)
+                            add(
+                                EzCollComp.Action(
+                                    Icons.circleUnf, Str.markAsSeen,
+                                    onActivate = {
+                                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(
+                                            courseId, courseExId, true, listOf(it.props.submission!!.id)
+                                        ).await()
+                                        createAndBuild().await()
+                                        EzCollComp.ResultUnmodified
+                                    }
+                                ))
+
+                        it.submission?.id?.let { submissionId ->
+                            add(
+                                EzCollComp.Action(
+                                    Icons.download, Str.downloadSubmission,
+                                    onActivate = {
+                                        CourseExercisesTeacherDAO.downloadSubmissions(
+                                            courseId, courseExId, listOf(submissionId)
+                                        ).await()
+                                        EzCollComp.ResultUnmodified
+                                    }
+                                )
+                            )
+                        }
+                    },
+                    isSelectable = it.submission != null,
                     progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
                 )
             }
@@ -112,7 +155,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                     confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.POINTS
                 )
                 )
-                add(EzCollComp.Sorter("Esitamisaeg",
+                add(EzCollComp.Sorter(Str.submissionTimeLabel,
                     compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                         // nulls last
                         if (it.props.submission?.time == null) 1 else 0
@@ -129,6 +172,35 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                 )
                 )
             },
+            massActions = listOf(
+                EzCollComp.MassAction(
+                    Icons.circle, Str.markAsNew,
+                    onActivate = {
+                        val subIds = it.mapNotNull { it.props.submission?.id }
+                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(courseId, courseExId, false, subIds).await()
+                        createAndBuild().await()
+                        EzCollComp.ResultUnmodified
+                    }
+                ),
+                EzCollComp.MassAction(
+                    Icons.circleUnf, Str.markAsSeen,
+                    onActivate = {
+                        val subIds = it.mapNotNull { it.props.submission?.id }
+                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(courseId, courseExId, true, subIds).await()
+                        createAndBuild().await()
+                        EzCollComp.ResultUnmodified
+                    }
+                ),
+                EzCollComp.MassAction(
+                    Icons.download, Str.downloadSubmission,
+                    onActivate = {
+                        CourseExercisesTeacherDAO.downloadSubmissions(
+                            courseId, courseExId, it.mapNotNull { it.props.submission?.id }
+                        ).await()
+                        EzCollComp.ResultUnmodified
+                    }
+                )
+            ),
             compact = true,
             userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF),
             onConfChange = {

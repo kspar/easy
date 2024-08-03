@@ -44,13 +44,14 @@
     --ezc-attr-mutable-col: rgba(0, 0, 0, .73);
 
     --ez-tabs-subpage-active: #666;
+
+    font-size: 62.5%;
 }
 
 /** Page, body, general **/
 
 html {
     font-family: 'Roboto', sans-serif;
-    font-size: 62.5%;
     height: 100%;
     color: #333;
     letter-spacing: 0.03rem;
@@ -488,9 +489,15 @@ nav.crumb-wrap .breadcrumb:before {
 
 /** Course exercise page **/
 
+ez-course-exercise {
+    display: block;
+    container-type: inline-size;
+    container-name: two-col-container;
+}
+
 ez-course-exercise > ez-block-container {
     justify-content: center;
-    gap: 2rem 5rem;
+    row-gap: 2rem;
     padding: 2rem 0 0 0;
 }
 
@@ -501,6 +508,26 @@ ez-course-exercise > ez-block-container {
 ez-course-exercise > ez-block-container > ez-block > ez-tabs-content.mdtabs {
     margin-top: 2rem;
 }
+
+ez-sub-time {
+    margin-right: 1rem;
+}
+
+ez-sub-time.over-deadline {
+    display: flex;
+    background-color: ivory;
+    border: 1px solid #ffe18f;
+    padding-left: 1rem;
+}
+
+ez-sub-time:not(.over-deadline) ez-icon {
+    display: none;
+}
+
+ez-sub-time.over-deadline ez-icon {
+    color: var(--ez-yellow-text);
+}
+
 
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
@@ -1462,6 +1489,17 @@ ez-link ez-icon {
 }
 
 
+/** Notification dot **/
+
+ez-notification-dot {
+    display: inline-flex;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--md-sys-color-error);
+}
+
+
 /** Warning **/
 
 ez-warning {
@@ -1700,9 +1738,19 @@ textarea.materialize-textarea {
 }
 
 
+/* fixme: old - remove */
 ez-checkbox input[type="checkbox"] + span:not(.lever) {
     margin-top: 1rem;
     margin-bottom: 1rem;
+}
+
+ez-checkbox {
+    display: inline-flex;
+    align-items: center;
+}
+
+ez-checkbox > label {
+    font-size: .8em;
 }
 
 [type="checkbox"] + span:not(.lever) {
@@ -2281,6 +2329,10 @@ ezc-title > a:hover[href] {
     text-decoration: underline;
 }
 
+ezc-title-icon {
+    display: flex;
+}
+
 ezc-second {
     display: flex;
     justify-content: space-between;
@@ -2582,6 +2634,80 @@ ez-block-container {
 
 ez-block-container ez-block {
     flex-grow: 1;
+}
+
+/* Ez block container split 2-column design with expand divider */
+
+ez-block-container ez-block ez-expand-divider {
+    display: flex;
+    justify-content: center;
+    width: 6rem;
+    /* offset from top should be around the same as other blocks/content */
+    margin-top: 1rem;
+    /* 58px (header) + 2rem (ez-block-container padding-top) + 1rem (this margin-top) + 3rem (content-container padding-bottom) = 118px */
+    min-height: calc(100vh - 118px);
+}
+
+ez-block-container ez-block:has(> ez-expand-divider) {
+    flex-grow: 0;
+    display: flex;
+}
+
+ez-block-container ez-expand-divider ez-expand-divider-line {
+    width: 1px;
+    height: 100%;
+    background-color: #eee;
+}
+
+ez-block-container ez-expand-divider ez-expand-divider-line ez-expand-buttons {
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    padding: 1rem 0;
+    margin-top: 12rem;
+    row-gap: 1rem;
+    display: none;
+}
+
+ez-block-container ez-block:has(> ez-expand-divider):hover ez-expand-divider-line ez-expand-buttons,
+ez-block-container ez-expand-divider.expanded-left ez-expand-divider-line ez-expand-buttons,
+ez-block-container ez-expand-divider.expanded-right ez-expand-divider-line ez-expand-buttons {
+    display: flex;
+}
+
+ez-block-container ez-expand-divider.expanded-left {
+    justify-content: right;
+}
+
+ez-block-container ez-expand-divider.expanded-right {
+    justify-content: left;
+}
+
+ez-block-container ez-block:has(> ez-expand-divider):hover ez-expand-divider-line {
+    background-color: #ddd;
+}
+
+/* min width when expand-divider should still be visible and block container has not wrapped:
+   45rem (min-width of left col) + 6rem (width of expand-divider) + 45rem (min-width of right col) = 960px */
+/* blocks have wrapped and expand divider is not available */
+@container two-col-container (width < 960px) {
+    ez-block-container ez-block ez-expand-divider {
+        display: none;
+    }
+
+    ez-block-container {
+        /* replace expand-divider with exactly same width gap - this prevents the overall width from changing when
+           expand-divider disappears and messing up the container query width condition */
+        column-gap: 6rem;
+    }
+}
+
+/* Only hide one of the columns if the screen is wide enough to have a divider and two columns */
+@container two-col-container (width >= 960px) {
+    ez-block-container ez-block:has(~ ez-block > ez-expand-divider.expanded-right),
+    ez-block-container ez-block:has(> ez-expand-divider.expanded-left) ~ ez-block {
+        display: none;
+    }
 }
 
 
@@ -2981,6 +3107,16 @@ ez-feedback {
     margin-top: 4rem;
 }
 
+ez-tests-heading {
+    display: flex;
+    align-items: center;
+}
+
+ez-feedback:not(:hover) ez-run-tests-btn {
+    display: none;
+}
+
+
 ez-assessment {
     display: flex;
     flex-direction: column;
@@ -2992,6 +3128,8 @@ ez-feedback pre {
     font-size: 1.4rem;
     overflow: auto;
 }
+
+
 
 /* TODO: add prefixes once we're fully migrated to wui3 */
 /*ez-assessment*/ pre.feedback {
@@ -3008,6 +3146,22 @@ ez-feedback pre {
 
 /*ez-assessment*/ .grade-number {
     font-weight: 500;
+}
+
+ez-test-part {
+    border-radius: 5px;
+}
+
+ez-test-part.pass {
+    background-color: var(--ez-dim-green);
+}
+
+ez-test-part.fail {
+    background-color: var(--ez-btn-danger-col);
+}
+
+ez-test-part.skip {
+    background-color: var(--ez-dim-grey);
 }
 
 ez-feedback ez-grade {

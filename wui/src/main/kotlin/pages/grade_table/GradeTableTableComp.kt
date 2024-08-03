@@ -70,7 +70,7 @@ class GradeTableTableComp(
         )?.map { student ->
             StudentRow(
                 student.student_id,
-                student.given_name + " " + student.family_name,
+                student.name,
                 exercisesData.map {
                     val submission = it.latest_submissions.single { it.student_id == student.student_id }
                     GradeCell(

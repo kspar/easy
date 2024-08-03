@@ -4,7 +4,8 @@ import components.code_editor.CodeEditorComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
-import pages.course_exercise.ExerciseFeedbackComp
+import pages.course_exercise.ExerciseAutoFeedbackHolderComp
+import pages.course_exercise.teacher.SubmissionGradeComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
@@ -17,11 +18,12 @@ class CourseExerciseStudentOldSubmissionTabComp(
 ) : Component(parent) {
 
     private lateinit var editor: CodeEditorComp
-    private lateinit var feedback: ExerciseFeedbackComp
+    private lateinit var gradeComp: SubmissionGradeComp
+    private lateinit var feedback: ExerciseAutoFeedbackHolderComp
 
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, feedback)
+        get() = listOfNotNull(editor, gradeComp, feedback)
 
     override fun create() = doInPromise {
 
@@ -30,15 +32,17 @@ class CourseExerciseStudentOldSubmissionTabComp(
             parent = this
         )
 
-        // TODO
-        feedback = ExerciseFeedbackComp(null, null, null, false, this)
-//        feedback = ExerciseFeedbackComp(
-//            submission?.validGrade,
-//            submission?.feedback_auto,
-//            submission?.feedback_teacher,
-//            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
-//            this
-//        )
+        gradeComp = SubmissionGradeComp(
+            submission?.grade, null,
+            parent = this
+        )
+
+        feedback = ExerciseAutoFeedbackHolderComp(
+            submission?.auto_assessment?.feedback,
+            submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
+            false,
+            this
+        )
     }
 
     suspend fun setSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {
