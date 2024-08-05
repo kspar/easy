@@ -58,7 +58,6 @@ class SendMoodleCourseInvites(val mailService: SendMailService) {
                 mailService.sendStudentInvitedToMoodleLinkedCourse(
                     course.alias ?: course.title,
                     it[StudentMoodlePendingAccess.inviteId],
-                    it[StudentMoodlePendingAccess.moodleUsername],
                     it[StudentMoodlePendingAccess.email]
                 )
             }
