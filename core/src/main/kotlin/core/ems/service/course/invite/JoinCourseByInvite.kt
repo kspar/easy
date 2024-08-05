@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
-class SelfAddToCourseByInvite {
+class JoinCourseByInvite {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
@@ -27,14 +27,14 @@ class SelfAddToCourseByInvite {
     )
 
     @Secured("ROLE_STUDENT")
-    @PostMapping("/courses/self-add/{invite-id}")
+    @PostMapping("/courses/join/{invite-id}")
     fun controller(@PathVariable("invite-id") inviteId: String, caller: EasyUser): Resp {
-        log.info { "Self adding to course by invite $inviteId by ${caller.id}" }
+        log.info { "Joining course by invite $inviteId by ${caller.id}" }
 
-        return selfAddByInvite(inviteId, caller.id)
+        return joinByInvite(inviteId, caller.id)
     }
 
-    private fun selfAddByInvite(inviteId: String, studentId: String): Resp = transaction {
+    private fun joinByInvite(inviteId: String, studentId: String): Resp = transaction {
         val courseId = (CourseInviteLink innerJoin Course)
             .select(Course.id)
             .where {
@@ -60,7 +60,7 @@ class SelfAddToCourseByInvite {
             }
         }
 
-        log.debug { "$studentId self-added to course $courseId by invite $inviteId" }
+        log.debug { "$studentId joined course $courseId by invite $inviteId" }
         Resp(courseId.toString())
     }
 }

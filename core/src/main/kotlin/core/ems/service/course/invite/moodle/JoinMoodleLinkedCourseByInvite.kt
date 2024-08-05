@@ -24,12 +24,14 @@ import org.springframework.web.bind.annotation.RestController
 class JoinMoodleLinkedCourseByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("course_id") val courseId: String)
+    data class Resp(
+        @JsonProperty("course_id") val courseId: String
+    )
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/courses/moodle/join/{inviteId}")
     fun controller(@PathVariable("inviteId") inviteId: String, caller: EasyUser): Resp {
-        log.info { "Joining course by invite $inviteId by ${caller.id}" }
+        log.info { "Joining Moodle course by invite $inviteId by ${caller.id}" }
 
         return join(inviteId, caller.id)
     }
@@ -63,7 +65,7 @@ class JoinMoodleLinkedCourseByInvite {
 
         StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.inviteId eq inviteId }
 
-        log.debug { "$studentId joined to Moodle linked course $courseId by invite $inviteId" }
+        log.debug { "$studentId joined Moodle linked course $courseId by invite $inviteId" }
         Resp(courseId.toString())
     }
 }

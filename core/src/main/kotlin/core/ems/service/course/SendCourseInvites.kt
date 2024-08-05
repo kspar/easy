@@ -20,7 +20,7 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class SendPendingInvite(val sendMailService: SendMailService) {
+class SendCourseInvites(val sendMailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(@JsonProperty("emails") @field:Valid val students: List<StudentEmailReq>)
