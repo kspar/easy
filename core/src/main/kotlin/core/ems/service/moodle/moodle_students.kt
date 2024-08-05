@@ -254,7 +254,6 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     mailService.sendStudentInvitedToMoodleLinkedCourse(
                         courseTitle,
                         it.inviteId,
-                        it.moodleUsername,
                         it.email
                     )
 
