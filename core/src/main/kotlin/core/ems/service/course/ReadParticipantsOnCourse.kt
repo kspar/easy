@@ -46,6 +46,7 @@ class ReadParticipantsOnCourseController {
     data class StudentMoodlePendingResp(
         @JsonProperty("moodle_username") val moodleUsername: String,
         @JsonProperty("email") val email: String,
+        @JsonProperty("invite_id") val inviteId: String,
         @JsonProperty("groups") val groups: List<GroupResp>
     )
 
@@ -156,12 +157,13 @@ class ReadParticipantsOnCourseController {
         }
 
     private fun selectMoodleStudentsPendingOnCourse(courseId: Long): List<StudentMoodlePendingResp> = transaction {
-        data class PendingStudent(val moodleUsername: String, val email: String)
+        data class PendingStudent(val moodleUsername: String, val email: String, val inviteId: String)
 
         (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
             .select(
                 StudentMoodlePendingAccess.moodleUsername,
                 StudentMoodlePendingAccess.email,
+                StudentMoodlePendingAccess.inviteId,
                 CourseGroup.id,
                 CourseGroup.name
             ).where {
@@ -169,7 +171,8 @@ class ReadParticipantsOnCourseController {
             }.groupBy({
                 PendingStudent(
                     it[StudentMoodlePendingAccess.moodleUsername],
-                    it[StudentMoodlePendingAccess.email]
+                    it[StudentMoodlePendingAccess.email],
+                    it[StudentMoodlePendingAccess.inviteId],
                 )
             }) {
                 val groupId: EntityID<Long>? = it[CourseGroup.id]
@@ -182,6 +185,7 @@ class ReadParticipantsOnCourseController {
                 StudentMoodlePendingResp(
                     student.moodleUsername,
                     student.email,
+                    student.inviteId,
                     groups.map {
                         GroupResp(it.id.toString(), it.name)
                     }
