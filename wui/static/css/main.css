@@ -1106,7 +1106,7 @@ ez-course-join-link {
     margin: 3rem 0;
 }
 
-ez-course-join-link ez-link-wrap {
+ez-link-wrap {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1115,7 +1115,7 @@ ez-course-join-link ez-link-wrap {
     font-size: 2rem;
 }
 
-ez-course-join-link ez-link-wrap ez-icon {
+ez-link-wrap ez-icon {
     margin-right: 1rem;
     background-color: var(--ez-green);
     border-radius: 50%;
@@ -1124,7 +1124,7 @@ ez-course-join-link ez-link-wrap ez-icon {
 }
 
 @media only screen and (max-width: 500px) {
-    ez-course-join-link ez-link-wrap {
+    ez-link-wrap {
         font-size: .9em;
     }
 }

@@ -129,6 +129,14 @@ sealed class TranslatableStrings {
     abstract val linkTOS: String
 
 
+    // Course join
+    abstract fun joinCoursePrompt(title: String): String
+    abstract val doJoin: String
+    abstract val invalidLink: String
+    abstract val invalidLinkMsg: String
+    abstract val welcomeToTheCourse: String
+
+
     // Courses page
     abstract val coursesTitle: String
     abstract val coursesTitleAdmin: String
@@ -483,6 +491,12 @@ object EstStrings : TranslatableStrings() {
     override val courseSettings = "Kursuse sätted"
     override val linkAbout = "Lahendusest"
     override val linkTOS = "Kasutustingimused"
+    override fun joinCoursePrompt(title: String) = """Kas soovid liituda kursusega "$title"?"""
+    override val doJoin = "Liitu"
+    override val invalidLink = "Kehtetu link"
+    override val invalidLinkMsg = "See link on vale või oma kehtivuse kaotanud. ¯\\_(ツ)_/¯"
+    override val welcomeToTheCourse = "Tere tulemast kursusele!"
+
     override val coursesTitle = "Minu kursused"
     override val deadlineLabel = "Tähtaeg"
     override val hidden = "Peidetud"
@@ -795,6 +809,11 @@ object EngStrings : TranslatableStrings() {
     override val courseSettings = "Course settings"
     override val linkAbout = "About Lahendus"
     override val linkTOS = "Terms"
+    override fun joinCoursePrompt(title: String) = """Would you like to join course $title?"""
+    override val doJoin = "Join"
+    override val invalidLink = "Link expired"
+    override val invalidLinkMsg = "This link is expired or invalid. ¯\\_(ツ)_/¯"
+    override val welcomeToTheCourse = "Welcome to the course!"
 
     override val coursesTitle = "My courses"
     override val coursesTitleAdmin = "All courses"

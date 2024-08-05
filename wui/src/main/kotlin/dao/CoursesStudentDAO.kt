@@ -38,9 +38,16 @@ object CoursesStudentDAO {
         val course_id: String
     )
 
-    fun joinByLink(inviteId: String) = doInPromise {
+    fun joinCourseByLink(inviteId: String) = doInPromise {
         debug { "Joining course by invite id $inviteId" }
-        fetchEms("/courses/self-add/${inviteId.encodeURIComponent()}", ReqMethod.POST,
+        fetchEms("/courses/join/${inviteId.encodeURIComponent()}", ReqMethod.POST,
+            successChecker = { http200 }).await()
+            .parseTo(JoinedCourse.serializer()).await()
+    }
+
+    fun joinMoodleCourseByLink(inviteId: String) = doInPromise {
+        debug { "Joining Moodle course by invite id $inviteId" }
+        fetchEms("/courses/moodle/join/${inviteId.encodeURIComponent()}", ReqMethod.POST,
             successChecker = { http200 }).await()
             .parseTo(JoinedCourse.serializer()).await()
     }
@@ -54,6 +61,18 @@ object CoursesStudentDAO {
     fun getCourseTitleByLink(inviteId: String) = doInPromise {
         val resp = try {
             fetchEms("/courses/invite/$inviteId", ReqMethod.GET,
+                successChecker = { http200 }, errorHandler = { it.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND, {}) }
+            ).await()
+        } catch (e: HandledResponseError) {
+            null
+        }
+
+        resp?.parseTo(CourseInfoByLink.serializer())?.await()
+    }
+
+    fun getMoodleCourseTitleByLink(inviteId: String) = doInPromise {
+        val resp = try {
+            fetchEms("/courses/moodle/invite/$inviteId", ReqMethod.GET,
                 successChecker = { http200 }, errorHandler = { it.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND, {}) }
             ).await()
         } catch (e: HandledResponseError) {

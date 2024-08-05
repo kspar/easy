@@ -54,6 +54,7 @@ object ParticipantsDAO {
     data class PendingMoodleStudent(
         val moodle_username: String,
         val email: String,
+        val invite_id: String,
         val groups: List<CourseGroup>
     )
 
@@ -111,6 +112,14 @@ object ParticipantsDAO {
         debug { "Sending course invites to students $emails" }
         fetchEms("/courses/${courseId.encodeURIComponent()}/students/invite", ReqMethod.POST,
             mapOf("emails" to emails.map { mapOf("email" to it) }),
+            successChecker = { http200 }).await()
+        Unit
+    }
+
+    fun sendStudentMoodleCourseInvites(courseId: String, moodleIds: List<String>) = doInPromise {
+        debug { "Sending moodle course invites to students $moodleIds" }
+        fetchEms("/courses/moodle/${courseId.encodeURIComponent()}/students/invite", ReqMethod.POST,
+            mapOf("students" to moodleIds),
             successChecker = { http200 }).await()
         Unit
     }

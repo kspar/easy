@@ -72,7 +72,7 @@ class ParticipantsRootComp(
                             participants.students_pending,
                             participants.students_moodle_pending,
                             groups,
-                            !studentsSynced,
+                            studentsSynced,
                             {
                                 val t = tabsComp.getSelectedTab()
                                 createAndBuild().await()
@@ -164,11 +164,11 @@ class ParticipantsRootComp(
                     }
                 }
             )
-            if (isAdmin && !isMoodleLinked) add(
-                Sidenav.Action(Icons.moodle, "Seo UT Moodle kursusega") {
+//            if (isAdmin && !isMoodleLinked) add(
+//                Sidenav.Action(Icons.moodle, "Seo UT Moodle kursusega") {
                     // TODO
-                }
-            )
+//                }
+//            )
         }
 
         if (sideActions.isNotEmpty()) {

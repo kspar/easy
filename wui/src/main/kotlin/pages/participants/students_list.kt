@@ -6,6 +6,7 @@ import Key
 import addNotNull
 import components.EzCollComp
 import components.EzCollConf
+import components.ToastThing
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
@@ -16,7 +17,6 @@ import kotlinx.coroutines.await
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.plainDstStr
 import successMessage
 import translation.Str
 
@@ -26,14 +26,14 @@ class ParticipantsStudentsListComp(
     private val studentsPending: List<ParticipantsDAO.PendingStudent>,
     private val studentsMoodlePending: List<ParticipantsDAO.PendingMoodleStudent>,
     private val groups: List<ParticipantsDAO.CourseGroup>,
-    private val isEditable: Boolean,
+    private val isMoodleSynced: Boolean,
     private val onGroupsChanged: suspend () -> Unit,
     parent: Component?
 ) : Component(parent) {
 
     data class StudentProps(
         val firstName: String?, val lastName: String?,
-        val email: String, val username: String?, val utUsername: String?,
+        val email: String, val username: String?, val utUsername: String?, val utInviteId: String?,
         val isActive: Boolean, override val groups: List<ParticipantsDAO.CourseGroup>
     ) : EzCollComp.WithGroups
 
@@ -41,20 +41,21 @@ class ParticipantsStudentsListComp(
     private lateinit var removeFromCourseModal: ConfirmationTextModalComp
     private lateinit var addToGroupModal: AddToGroupModalComp
     private lateinit var removeFromGroupModal: RemoveFromGroupModalComp
+    private lateinit var showJoinLinkModal: ShowJoinLinkModalComp
 
     override val children: List<Component>
-        get() = listOf(coll, removeFromCourseModal, addToGroupModal, removeFromGroupModal)
+        get() = listOf(coll, removeFromCourseModal, addToGroupModal, removeFromGroupModal, showJoinLinkModal)
 
     override fun create() = doInPromise {
 
         val activeStudentProps = students.map {
-            StudentProps(it.given_name, it.family_name, it.email, it.id, it.moodle_username, true, it.groups)
+            StudentProps(it.given_name, it.family_name, it.email, it.id, it.moodle_username, null, true, it.groups)
         }
         val pendingStudentProps = studentsPending.map {
-            StudentProps(null, null, it.email, null, null, false, it.groups)
+            StudentProps(null, null, it.email, null, null, null, false, it.groups)
         }
         val moodlePendingStudentProps = studentsMoodlePending.map {
-            StudentProps(null, null, it.email, null, it.moodle_username, false, it.groups)
+            StudentProps(null, null, it.email, null, it.moodle_username, it.invite_id, false, it.groups)
         }
 
         val studentProps = activeStudentProps + pendingStudentProps + moodlePendingStudentProps
@@ -72,36 +73,53 @@ class ParticipantsStudentsListComp(
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
                     Icons.groupsUnf,
                 ) else null,
-                bottomAttrs = buildList<EzCollComp.Attr<StudentProps>> {
+                bottomAttrs = buildList {
                     add(EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf))
                     p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf)) }
                     p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUserUnf)) }
                 },
-                isSelectable = isEditable,
-                actions = if (isEditable) buildList {
-                    add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
-                    add(EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup))
-                    add(EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup))
-                    add(
-                        EzCollComp.Action(
-                            Icons.removeParticipant,
-                            "Eemalda kursuselt",
-                            onActivate = ::removeFromCourse
+                isSelectable = true,
+                actions = buildList {
+                    // Invites cannot be sent to active Moodle course students
+                    if (!(isMoodleSynced && p.isActive))
+                        add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
+
+                    if (!isMoodleSynced) {
+                        add(EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup))
+                        add(EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup))
+                    }
+
+                    // Moodle course invites cannot be deleted
+                    if (!(isMoodleSynced && !p.isActive))
+                        add(
+                            EzCollComp.Action(
+                                Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse
+                            )
                         )
-                    )
-                }
-                else emptyList(),
+
+                    if (isMoodleSynced && !p.isActive && p.utInviteId != null)
+                        add(
+                            EzCollComp.Action(
+                                Icons.share, "Näita liitumislinki",
+                                onActivate = {
+                                    showJoinLinkModal.setStudent(p.email, p.utInviteId)
+                                    showJoinLinkModal.openWithClosePromise().await()
+                                    EzCollComp.ResultUnmodified
+                                }
+                            )
+                        )
+                },
             )
         }
 
-        val massActions = if (isEditable) buildList {
-            if (hasGroups) {
+        val massActions = buildList {
+            if (!isMoodleSynced && hasGroups) {
                 add(EzCollComp.MassAction(Icons.addToGroup, "Lisa rühma", ::addToGroup))
                 add(EzCollComp.MassAction(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup))
             }
             add(EzCollComp.MassAction(Icons.sendEmail, "Saada kutse", ::sendInvite))
             add(EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse))
-        } else emptyList()
+        }
 
         coll = EzCollComp(
             items,
@@ -164,11 +182,9 @@ class ParticipantsStudentsListComp(
         removeFromGroupModal = RemoveFromGroupModalComp(
             courseId, groups, RemoveFromGroupModalComp.For.STUDENT, parent = this
         )
+        showJoinLinkModal = ShowJoinLinkModalComp(this)
     }
 
-    override fun render() = plainDstStr(
-        coll.dstId, removeFromCourseModal.dstId, addToGroupModal.dstId, removeFromGroupModal.dstId
-    )
 
     private suspend fun addToGroup(item: EzCollComp.Item<StudentProps>) =
         addToGroup(listOf(item))
@@ -292,8 +308,16 @@ class ParticipantsStudentsListComp(
     private suspend fun sendInvite(item: EzCollComp.Item<StudentProps>): EzCollComp.Result = sendInvite(listOf(item))
 
     private suspend fun sendInvite(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
-        ParticipantsDAO.sendStudentCourseInvites(courseId, items.map { it.props.email }).await()
-        successMessage { "Saadetud" }
+        val sentCount = if (isMoodleSynced) {
+            val pendingMoodleIds = items.filter { !it.props.isActive }.mapNotNull { it.props.utUsername }
+            ParticipantsDAO.sendStudentMoodleCourseInvites(courseId, pendingMoodleIds).await()
+            pendingMoodleIds.size
+        } else {
+            val studentEmails = items.map { it.props.email }
+            ParticipantsDAO.sendStudentCourseInvites(courseId, studentEmails).await()
+            studentEmails.size
+        }
+        ToastThing("Kutse saadetud $sentCount õpilasele")
         return EzCollComp.ResultUnmodified
     }
 }

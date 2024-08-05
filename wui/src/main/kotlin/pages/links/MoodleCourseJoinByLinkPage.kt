@@ -6,13 +6,13 @@ import kotlinx.dom.removeClass
 import pages.EasyPage
 import rip.kspar.ezspa.getHtml
 
-object CourseJoinByLinkPage : EasyPage() {
+object MoodleCourseJoinByLinkPage : EasyPage() {
 
     private var root: CourseJoinByLinkComp? = null
 
-    override val pageName = PageName.LINK_JOIN_COURSE
+    override val pageName = PageName.LINK_JOIN_MOODLE_COURSE
 
-    override val pathSchema = "/link/{inviteId}"
+    override val pathSchema = "/moodle/link/{inviteId}"
 
 
     val inviteId: String
@@ -22,7 +22,7 @@ object CourseJoinByLinkPage : EasyPage() {
         super.build(pageStateStr)
         getHtml().addClass("wui3")
 
-        root = CourseJoinByLinkComp(inviteId, false).also { it.createAndBuild() }
+        root = CourseJoinByLinkComp(inviteId, true).also { it.createAndBuild() }
     }
 
     override fun destruct() {

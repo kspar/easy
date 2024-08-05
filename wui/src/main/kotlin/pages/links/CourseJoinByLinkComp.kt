@@ -2,8 +2,8 @@ package pages.links
 
 import CONTENT_CONTAINER_ID
 import Icons
+import components.ButtonComp
 import components.ToastThing
-import components.form.OldButtonComp
 import dao.CoursesStudentDAO
 import kotlinx.coroutines.await
 import pages.Title
@@ -11,26 +11,29 @@ import pages.course_exercises_list.CourseExercisesPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.EzSpa
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.dstIfNotNull
 import template
+import translation.Str
 
 class CourseJoinByLinkComp(
-    private val inviteId: String,
+    inviteId: String,
+    private val isMoodleCourse: Boolean,
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
-    private val joinBtn = OldButtonComp(
-        OldButtonComp.Type.PRIMARY, "Liitu", Icons.check,
-        onClick = ::joinCourse,
-        parent = this
-    )
-
+    private val inviteId = inviteId.uppercase()
+    private var joinBtn: ButtonComp? = null
     private var courseTitle: String? = null
 
 
     override val children: List<Component>
-        get() = listOf(joinBtn)
+        get() = listOfNotNull(joinBtn)
 
     override fun create() = doInPromise {
-        val (id, title) = CoursesStudentDAO.getCourseTitleByLink(inviteId).await() ?: return@doInPromise
+        val (id, title) = if (isMoodleCourse)
+            CoursesStudentDAO.getMoodleCourseTitleByLink(inviteId).await() ?: return@doInPromise
+        else
+            CoursesStudentDAO.getCourseTitleByLink(inviteId).await() ?: return@doInPromise
+
         courseTitle = title
         Title.update { it.parentPageTitle = title }
 
@@ -39,6 +42,13 @@ class CourseJoinByLinkComp(
             EzSpa.PageManager.navigateTo(CourseExercisesPage.link(id))
             error("Do not render")
         }
+
+        joinBtn = ButtonComp(
+            ButtonComp.Type.FILLED, Str.doJoin, Icons.check,
+            onClick = ::joinCourse,
+            disableOnClick = true,
+            parent = this
+        )
     }
 
     override fun render() = template(
@@ -55,7 +65,7 @@ class CourseJoinByLinkComp(
                 {{#course}}
                     <h3>{{course}}</h3>
                     <p style='margin-bottom: 3rem;'>{{joinStr}}</p>
-                    $joinBtn
+                    ${joinBtn.dstIfNotNull()}
                 {{/course}}
                 {{^course}}
                     <h3>{{invalidHeading}}</h3>
@@ -63,15 +73,19 @@ class CourseJoinByLinkComp(
                 {{/course}}
             </ez-join-course>
         """.trimIndent(),
-        "joinStr" to """Kas soovid liituda kursusega "$courseTitle"?""",
-        "invalidHeading" to "Kehtetu link",
-        "invalidText" to "See link on vale või oma kehtivuse kaotanud. ¯\\_(ツ)_/¯",
+        "joinStr" to courseTitle?.let { Str.joinCoursePrompt(it) },
+        "invalidHeading" to Str.invalidLink,
+        "invalidText" to Str.invalidLinkMsg,
         "course" to courseTitle,
     )
 
     private suspend fun joinCourse() {
-        val courseId = CoursesStudentDAO.joinByLink(inviteId).await().course_id
+        val courseId = if (isMoodleCourse)
+            CoursesStudentDAO.joinMoodleCourseByLink(inviteId).await().course_id
+        else
+            CoursesStudentDAO.joinCourseByLink(inviteId).await().course_id
+
         EzSpa.PageManager.navigateTo(CourseExercisesPage.link(courseId))
-        ToastThing("Tere tulemast kursusele!")
+        ToastThing(Str.welcomeToTheCourse)
     }
 }
