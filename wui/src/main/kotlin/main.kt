@@ -18,6 +18,7 @@ import pages.exercise_in_library.ExercisePage
 import pages.exercise_library.ExerciseLibraryPage
 import pages.grade_table.GradeTablePage
 import pages.links.CourseJoinByLinkPage
+import pages.links.MoodleCourseJoinByLinkPage
 import pages.links.RegisterLinkPage
 import pages.participants.ParticipantsPage
 import pages.sidenav.Sidenav
@@ -33,14 +34,11 @@ private val PAGES = listOf(
     GradeTablePage, ParticipantsPage,
     ExerciseLibraryPage, ExercisePage,
     EmbedAnonAutoassessPage,
-    RegisterLinkPage, CourseJoinByLinkPage,
+    RegisterLinkPage, CourseJoinByLinkPage, MoodleCourseJoinByLinkPage,
     AboutPage, TermsProxyPage,
 )
 
 fun main() {
-    consoleEgg()
-    initScrollbar(getBody(), false)
-
     // Weird hack: strings have to be set first here to fetch possible locale from localstorage
     // but then refreshed again after auth because we might get a preference from there
     updateLanguage()
@@ -65,6 +63,8 @@ fun main() {
     // Do stuff that does not require auth
     initApplication()
     if (!isEmbedded()) {
+        consoleEgg()
+        initScrollbar(getBody(), false)
         EzSpa.Navigation.enableAnchorLinkInterception()
         EzSpa.Navigation.enableHistoryNavInterception()
     }
