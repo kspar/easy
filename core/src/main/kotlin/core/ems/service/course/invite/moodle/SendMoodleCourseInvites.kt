@@ -11,6 +11,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -53,7 +54,10 @@ class SendMoodleCourseInvites(val mailService: SendMailService) {
                 StudentMoodlePendingAccess.email,
                 StudentMoodlePendingAccess.inviteId
             )
-            .where { StudentMoodlePendingAccess.moodleUsername inList moodleUsernames }
+            .where {
+                StudentMoodlePendingAccess.course eq courseId and
+                        StudentMoodlePendingAccess.moodleUsername.inList(moodleUsernames)
+            }
             .forEach {
                 mailService.sendStudentInvitedToMoodleLinkedCourse(
                     course.alias ?: course.title,
