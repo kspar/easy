@@ -117,7 +117,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     ) {
         val subject =
             """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
-        val registerLink = "$wuiBaseUrl/courses/moodle/join/$inviteId"
+        val registerLink = "$wuiBaseUrl/moodle/link/$inviteId"
         val text = """
             |Tere!
             |
