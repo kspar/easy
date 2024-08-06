@@ -97,12 +97,12 @@ class ParticipantsStudentsListComp(
                             )
                         )
 
-                    if (isMoodleSynced && !p.isActive && p.utInviteId != null)
+                    if (isMoodleSynced && !p.isActive && p.utInviteId != null && p.utUsername != null)
                         add(
                             EzCollComp.Action(
                                 Icons.share, "Näita liitumislinki",
                                 onActivate = {
-                                    showJoinLinkModal.setStudent(p.email, p.utInviteId)
+                                    showJoinLinkModal.setStudent(p.email, p.utUsername, p.utInviteId)
                                     showJoinLinkModal.openWithClosePromise().await()
                                     EzCollComp.ResultUnmodified
                                 }

@@ -14,6 +14,8 @@ sealed class TranslatableStrings {
     abstract val somethingWentWrong: String
     abstract val yes: String
     abstract val no: String
+    abstract val email: String
+    abstract val moodleId: String
     abstract val myCourses: String
     abstract val exerciseLibrary: String
     abstract val gradedAutomatically: String
@@ -292,6 +294,11 @@ sealed class TranslatableStrings {
     abstract val solutionFilename: String
 
 
+    // Participants page
+    abstract val courseJoinHelpText: String
+    abstract val courseJoinLink: String
+
+
     // TSL UI
     abstract val tslPlaceholderTest: Pair<String, String>
     abstract val tslProgExecTest: Pair<String, String>
@@ -387,6 +394,8 @@ object EstStrings : TranslatableStrings() {
         "Midagi läks valesti... Proovi lehte uuendada ja kui viga kordub, siis võta ühendust administraatoriga."
     override val yes = "jah"
     override val no = "ei"
+    override val email = "Email"
+    override val moodleId = "Moodle'i kasutajanimi"
     override val myCourses = "Minu kursused"
     override val exerciseLibrary = "Ülesandekogu"
     override val gradedAutomatically = "Automaatselt hinnatud"
@@ -617,6 +626,9 @@ ole hea ja proovi hiljem uuesti.
     override val allowedExecMem = "Lubatud mälukasutus"
     override val allowedExecMemField = "Mälukasutus (MB)"
     override val solutionFilename = "Faili nimi"
+    override val courseJoinHelpText =
+        "See on isiklik link, mis võimaldab õpilasel kursusega liituda. Lingi kaudu liitumine seob õpilase konto tema Moodle'i kontoga. Hoia linki salajas ja jaga seda ainult õige õpilasega."
+    override val courseJoinLink = "Liitumislink"
     override val tslPlaceholderTest = "-" to "Uus test"
     override val tslProgExecTest = "Programmi käivitus" to "Programmi käivituse test"
     override val tslFuncCallTest = "Funktsiooni väljakutse" to "Funktsiooni väljakutse test"
@@ -733,6 +745,8 @@ object EngStrings : TranslatableStrings() {
         "Something went wrong... Try to refresh the page and if it doesn't get any better, please contact an administrator."
     override val yes = "Yes"
     override val no = "No"
+    override val email = "Email"
+    override val moodleId = "Moodle username"
     override val myCourses = "My courses"
     override val exerciseLibrary = "Exercise library"
     override val gradedAutomatically = "Graded automatically"
@@ -973,6 +987,9 @@ of the issue, please try again later.
     override val allowedExecMem = "Allowed memory usage"
     override val allowedExecMemField = "Allowed memory (MB)"
     override val solutionFilename = "File name"
+    override val courseJoinHelpText =
+        "This personal link can be used by the student to join this course. Using the link associates the student's account with their Moodle account. Keep the link private and share it only with this student."
+    override val courseJoinLink = "Enrolment link"
     override val tslPlaceholderTest = "-" to "New test"
     override val tslProgExecTest = "Program execution" to "Program execution test"
     override val tslFuncCallTest = "Function call" to "Function call test"

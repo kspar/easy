@@ -4,6 +4,7 @@ import components.modal.ModalComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class ShowJoinLinkModalComp(
     parent: Component,
@@ -11,8 +12,9 @@ class ShowJoinLinkModalComp(
 
     private lateinit var modalComp: ModalComp<Unit>
 
-    private var modalTitle: String = ""
-    private var linkId: String = ""
+    private var studentEmail: String = ""
+    private var studentMoodleId: String = ""
+    private var studentLinkId: String = ""
 
 
     override val children: List<Component>
@@ -20,11 +22,11 @@ class ShowJoinLinkModalComp(
 
     override fun create() = doInPromise {
         modalComp = ModalComp(
-            title = modalTitle,
+            title = Str.courseJoinLink,
             defaultReturnValue = Unit,
             isWide = true,
             bodyCompsProvider = {
-                listOf(ShowJoinLinkComp(linkId, it))
+                listOf(ShowJoinLinkComp(studentEmail, studentMoodleId, studentLinkId, it))
             },
             parent = this
         )
@@ -33,9 +35,10 @@ class ShowJoinLinkModalComp(
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
-    suspend fun setStudent(title: String, studentLinkId: String) {
-        modalTitle = title
-        linkId = studentLinkId
+    suspend fun setStudent(email: String, moodleId: String, linkId: String) {
+        studentEmail = email
+        studentMoodleId = moodleId
+        studentLinkId = linkId
         createAndBuild().await()
     }
 }
