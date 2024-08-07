@@ -134,7 +134,11 @@ class TeacherCourseExerciseStudentTabComp(
         )
 
         commentsSection = latestSubmissionId?.let {
-            SubmissionCommentsListComp(courseId, courseExId, studentId, it, !isOldSubmission, true, parent = this)
+            SubmissionCommentsListComp(
+                courseId, courseExId,
+                SubmissionCommentsListComp.TeacherConf(studentId, it, !isOldSubmission),
+                parent = this
+            )
         }
     }
 

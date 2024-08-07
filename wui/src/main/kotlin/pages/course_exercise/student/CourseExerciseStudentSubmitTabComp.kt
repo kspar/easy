@@ -1,6 +1,5 @@
 package pages.course_exercise.student
 
-import Auth
 import Icons
 import components.ToastThing
 import components.code_editor.CodeEditorComp
@@ -16,7 +15,10 @@ import pages.course_exercise.AutogradeLoaderComp
 import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import pages.course_exercise.teacher.SubmissionCommentsListComp
 import pages.course_exercise.teacher.SubmissionGradeComp
-import rip.kspar.ezspa.*
+import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
+import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.getElemByIdOrNull
 import saveAsFile
 import show
 import template
@@ -44,7 +46,7 @@ class CourseExerciseStudentSubmitTabComp(
     private lateinit var grade: SubmissionGradeComp
     private lateinit var testsFeedback: ExerciseAutoFeedbackHolderComp
     private lateinit var autogradeLoader: AutogradeLoaderComp
-    private var commentsList: SubmissionCommentsListComp? = null
+    private lateinit var commentsList: SubmissionCommentsListComp
 
     private var isAutogradeInProgressInitial = false
 
@@ -57,7 +59,7 @@ class CourseExerciseStudentSubmitTabComp(
 
 
     override val children: List<Component>
-        get() = listOfNotNull(editor, syncIcon, warning, submitBtn, grade, testsFeedback, autogradeLoader, commentsList)
+        get() = listOf(editor, syncIcon, warning, submitBtn, grade, testsFeedback, autogradeLoader, commentsList)
 
     override fun create() = doInPromise {
         val submissionP = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId)
@@ -151,9 +153,7 @@ class CourseExerciseStudentSubmitTabComp(
         )
         autogradeLoader = AutogradeLoaderComp(false, this)
 
-        commentsList = submission?.let {
-             SubmissionCommentsListComp(courseId, courseExId, Auth.username!!, it.id, false, false, this)
-        }
+        commentsList = SubmissionCommentsListComp(courseId, courseExId, null, parent = this)
     }
 
     override fun render() = template(
@@ -167,7 +167,7 @@ class CourseExerciseStudentSubmitTabComp(
             $autogradeLoader
             $grade
             $testsFeedback
-            ${commentsList.dstIfNotNull()}
+            $commentsList
         """.trimIndent(),
     )
 

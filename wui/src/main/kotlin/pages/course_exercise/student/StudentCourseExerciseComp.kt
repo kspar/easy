@@ -81,6 +81,7 @@ class StudentCourseExerciseComp(
                     id = oldSubmissionTabId, hidden = true,
                     compProvider = {
                         CourseExerciseStudentOldSubmissionTabComp(
+                            courseId, courseExId,
                             null,
                             courseEx.solution_file_name,
                             courseEx.solution_file_type,
@@ -117,7 +118,7 @@ class StudentCourseExerciseComp(
     }
 
     private suspend fun openSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {
-        tabs.setTabTitle(oldSubmissionTabId, "#" + submission.number.toString())
+        tabs.setTabTitle(oldSubmissionTabId, "# " + submission.number.toString())
         tabs.setSelectedTabById(oldSubmissionTabId)
         oldSubmissionTab.setSubmission(submission)
     }
