@@ -1,12 +1,13 @@
 package components.form.validation
 
 import EzDate
+import translation.Str
 
 class DateTimeConstraints {
 
     class NonNullAndValid(private val showMsg: Boolean) : FieldConstraint<EzDate?>() {
         override fun validate(value: EzDate?, fieldNameForMessage: String): ConstraintViolation<EzDate?>? = when {
-            value == null -> violation(if (showMsg) "Kuupäev või kellaaeg on puudu või vigane" else "")
+            value == null -> violation(if (showMsg) Str.constraintValidDate else "")
             else -> null
         }
     }
@@ -16,7 +17,7 @@ class DateTimeConstraints {
             value: EzDate?,
             fieldNameForMessage: String
         ): ConstraintViolation<EzDate?>? = when {
-            value != null && value < EzDate.now() -> violation("Aeg ei tohi olla minevikus")
+            value != null && value < EzDate.now() -> violation(Str.constraintNotInPast)
             else -> null
         }
     }
@@ -26,7 +27,7 @@ class DateTimeConstraints {
             value: EzDate?,
             fieldNameForMessage: String
         ): ConstraintViolation<EzDate?>? = when {
-            value != null && value > EzDate.now() -> violation("Aeg ei tohi olla tulevikus")
+            value != null && value > EzDate.now() -> violation(Str.constraintNotInFuture)
             else -> null
         }
     }
@@ -35,7 +36,7 @@ class DateTimeConstraints {
         override fun validate(
             value: EzDate?, fieldNameForMessage: String
         ): ConstraintViolation<EzDate?>? = when {
-            value != null && value > EzDate.future() -> violation("Aeg peab olema selles millenniumis")
+            value != null && value > EzDate.future() -> violation(Str.constraintInThisMillennium)
             else -> null
         }
     }

@@ -43,7 +43,7 @@ class SubmissionGradeComp(
     override fun create() = doInPromise {
         if (gradeEdit != null)
             pointsField = IntFieldComp(
-                "", true, 0, 100, fieldNameForMessage = Str.pointsFieldLabel,
+                "", true, 0, 100, fieldNameForMessage = Str.gradeFieldLabel,
                 initialValue = initialGrade?.grade,
                 paintRequiredOnInput = false,
                 onValueChange = {
@@ -90,7 +90,7 @@ class SubmissionGradeComp(
     override fun render() = template(
         """
             <ez-flex>
-                Punktid:
+                {{gradeLabel}}:
                 {{#editable}}<ez-inline-flex style=''>$pointsField</ez-inline-flex>{{/editable}} 
                 {{^editable}}{{points}}{{/editable}}
                 / 100
@@ -107,6 +107,7 @@ class SubmissionGradeComp(
             true -> Icons.robot
             false -> Icons.teacherFace
         }),
+        "gradeLabel" to Str.validGradeLabel,
     )
 
     override fun postChildrenBuilt() {

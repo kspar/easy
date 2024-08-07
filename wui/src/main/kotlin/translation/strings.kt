@@ -108,6 +108,18 @@ sealed class TranslatableStrings {
     abstract val permissionPRAW: String
     abstract val permissionPRAWM: String
 
+    abstract val constraintIsRequired: String
+    abstract val constraintTooShort: String
+    abstract val constraintTooLong: String
+    abstract val constraintMustBeInt: String
+    abstract val constraintMinMax: String
+    abstract val constraintValidDate: String
+    abstract val constraintNotInPast: String
+    abstract val constraintNotInFuture: String
+    abstract val constraintInThisMillennium: String
+    abstract val characterSingular: String
+    abstract val characterPlural: String
+
 
     // Navbar
     abstract val roleAdmin: String
@@ -180,7 +192,9 @@ sealed class TranslatableStrings {
     abstract val submissionPlural: String
     abstract val submission: String
     abstract val commentEditorPlaceholder: String
-    abstract val pointsFieldLabel: String
+    abstract val pointsLabel: String
+    abstract val validGradeLabel: String
+    abstract val gradeFieldLabel: String
     abstract val missingSolution: String
     abstract val newSubmission: String
     abstract val markAsNew: String
@@ -199,7 +213,7 @@ sealed class TranslatableStrings {
     abstract val graderTypeTeacher: String
     abstract val autoAssessmentLabel: String
     abstract val teacherAssessmentLabel: String
-    abstract val gradeLabel: String
+
     abstract val addAssessmentLink: String
     abstract val addAssessmentGradeLabel: String
     abstract val addAssessmentFeedbackLabel: String
@@ -404,7 +418,7 @@ object EstStrings : TranslatableStrings() {
 
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
     override val commentEditorPlaceholder = "Kirjuta kommentaar siia..."
-    override val pointsFieldLabel = "Punktisumma"
+    override val gradeFieldLabel = "Hinne"
     override val missingSolution = "Lahendus puudub"
     override val newSubmission = "Uus esitus"
     override val markAsNew = "Märgi uueks"
@@ -529,7 +543,8 @@ object EstStrings : TranslatableStrings() {
     override val tabSubmissionsLabel = "Esitused"
     override val autoAssessmentLabel = "Automaatsed testid"
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
-    override val gradeLabel = "Punktid"
+    override val pointsLabel = "Punktid"
+    override val validGradeLabel = "Kehtiv hinne"
     override val doAutoAssess = "Kontrolli"
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
@@ -667,6 +682,17 @@ ole hea ja proovi hiljem uuesti.
     override val permissionPRA = "Lisaja"
     override val permissionPRAW = "Muutja"
     override val permissionPRAWM = "Moderaator"
+    override val constraintIsRequired = "on kohustuslik"
+    override val constraintTooShort = "on liiga lühike, minimaalne pikkus on"
+    override val constraintTooLong = "on liiga pikk, maksimaalne pikkus on"
+    override val constraintMustBeInt = "peab olema täisarv"
+    override val constraintMinMax = "peab olema vahemikus"
+    override val constraintValidDate = "Kuupäev või kellaaeg on puudu või vigane"
+    override val constraintNotInPast = "Aeg peab olema tulevikus"
+    override val constraintNotInFuture = "Aeg peab olema minevikus"
+    override val characterSingular = "tähemärk"
+    override val characterPlural = "tähemärki"
+    override val constraintInThisMillennium = "Aeg peab olema selles millenniumis"
     override val tslTestType = "Testi tüüp"
     override val tslCopySuffix = "(koopia)"
     override val tslInputs = "Sisendandmed"
@@ -784,6 +810,17 @@ object EngStrings : TranslatableStrings() {
     override val permissionPRA = "Adder"
     override val permissionPRAW = "Editor"
     override val permissionPRAWM = "Moderator"
+    override val constraintIsRequired = "is required"
+    override val constraintTooShort = "is too short, minimum length is"
+    override val constraintTooLong = "is too long, maximum length is"
+    override val constraintMustBeInt = "must be an integer"
+    override val constraintMinMax = "must be in range"
+    override val constraintValidDate = "Date or time missing or invalid"
+    override val constraintNotInPast = "Time must be in the future"
+    override val constraintNotInFuture = "Time must be in the past"
+    override val constraintInThisMillennium = "Time must be in this millennium"
+    override val characterSingular = "character"
+    override val characterPlural = "characters"
 
     override val roleAdmin = "Admin"
     override val roleTeacher = "Teacher"
@@ -855,7 +892,7 @@ object EngStrings : TranslatableStrings() {
     override val studentMySubmissionNotDone = "To do"
     override val studentMySubmissionDone = "Finished"
     override val commentEditorPlaceholder = "Write your comment here..."
-    override val pointsFieldLabel = "Points"
+    override val gradeFieldLabel = "Grade"
     override val missingSolution = "No solution submitted"
     override val newSubmission = "New submission"
     override val markAsNew = "Mark as new"
@@ -883,7 +920,8 @@ object EngStrings : TranslatableStrings() {
     override val graderTypeTeacher = "manual"
     override val autoAssessmentLabel = "Automated tests"
     override val teacherAssessmentLabel = "Teacher feedback"
-    override val gradeLabel = "Points"
+    override val pointsLabel = "Points"
+    override val validGradeLabel = "Valid grade"
     override val doAutoAssess = "Check"
     override val autoAssessing = "Checking..."
     override val tryAgain = "Try again"

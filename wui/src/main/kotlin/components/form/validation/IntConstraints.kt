@@ -1,10 +1,12 @@
 package components.form.validation
 
+import translation.Str
+
 object IntConstraints {
 
     class MustBeInt : FieldConstraint<String>() {
         override fun validate(value: String, fieldNameForMessage: String) = when {
-            value.toIntOrNull() == null -> violation("$fieldNameForMessage peab olema arv")
+            value.toIntOrNull() == null -> violation("$fieldNameForMessage ${Str.constraintMustBeInt}")
             else -> null
         }
     }
@@ -16,7 +18,7 @@ object IntConstraints {
         override fun validate(value: String, fieldNameForMessage: String): ConstraintViolation<String>? {
             val int = value.toIntOrNull() ?: return null
             return when {
-                int < min || int > max -> violation("$fieldNameForMessage peab olema vahemikus $min–$max")
+                int < min || int > max -> violation("$fieldNameForMessage ${Str.constraintMinMax} $min–$max")
                 else -> null
             }
         }
