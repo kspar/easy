@@ -4,7 +4,7 @@
 
     --ez-green: #4DAB54;
     --ez-yellow: #ffd052;
-    --ez-yellow-text: #d59b00;
+    --ez-yellow-text: #ac7d00;
     --ez-blue: #688ffd;
     --ez-grey: #d5d5d5;
 
@@ -1505,14 +1505,14 @@ ez-notification-dot {
 ez-warning {
     display: flex;
     padding: 1rem 1rem 1rem 1.5rem;
-    color: #ac7d00;
+    color: var(--ez-yellow-text);
     background-color: ivory;
     border: 1px solid #ffe18f;
 }
 
 ez-warning ez-icon {
     margin-right: 1rem;
-    color: #ac7d00;
+    color: var(--ez-yellow-text);
 }
 
 
@@ -2064,6 +2064,11 @@ ez-icon > svg {
 .icon-med ez-icon > svg {
     width: 2.4rem;
     height: 2.4rem;
+}
+
+.icon-small ez-icon > svg {
+    width: 1.4rem;
+    height: 1.4rem;
 }
 
 ez-icon-action {
@@ -2790,14 +2795,14 @@ ez-tsl-compiler-feedback {
     display: flex;
     margin-top: 2rem;
     padding: 1rem;
-    color: #ac7d00;
+    color: var(--ez-yellow-text);
     background-color: ivory;
     border: 1px solid #ffe18f;
 }
 
 ez-tsl-compiler-feedback ez-icon {
     margin: 0 2rem 0 1rem;
-    color: #ac7d00;
+    color: var(--ez-yellow-text);
 }
 
 ez-tsl-compiler-feedback ez-icon > svg {

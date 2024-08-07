@@ -194,6 +194,7 @@ sealed class TranslatableStrings {
     abstract val commentEditorPlaceholder: String
     abstract val pointsLabel: String
     abstract val validGradeLabel: String
+    abstract val gradeTransferredHelp: String
     abstract val gradeFieldLabel: String
     abstract val missingSolution: String
     abstract val newSubmission: String
@@ -545,6 +546,7 @@ object EstStrings : TranslatableStrings() {
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
     override val pointsLabel = "Punktid"
     override val validGradeLabel = "Kehtiv hinne"
+    override val gradeTransferredHelp="Hinne on antud eelnevale esitusele"
     override val doAutoAssess = "Kontrolli"
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
@@ -922,6 +924,7 @@ object EngStrings : TranslatableStrings() {
     override val teacherAssessmentLabel = "Teacher feedback"
     override val pointsLabel = "Points"
     override val validGradeLabel = "Valid grade"
+    override val gradeTransferredHelp="Grade given to a previous submission"
     override val doAutoAssess = "Check"
     override val autoAssessing = "Checking..."
     override val tryAgain = "Try again"

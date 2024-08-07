@@ -70,6 +70,7 @@ object CourseExercisesTeacherDAO {
     data class Grade(
         val grade: Int,
         val is_autograde: Boolean,
+        val is_graded_directly: Boolean,
     )
 
     @Serializable

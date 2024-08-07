@@ -94,7 +94,10 @@ class SubmissionGradeComp(
                 {{#editable}}<ez-inline-flex style=''>$pointsField</ez-inline-flex>{{/editable}} 
                 {{^editable}}{{points}}{{/editable}}
                 / 100
-                {{{graderIcon}}}
+                <ez-flex style='margin-left: 1rem; align-items: start;' {{#indirectGrade}}title='{{pastGradeHelp}}'{{/indirectGrade}}>
+                    <ez-flex class='icon-med'>{{{graderIcon}}}</ez-flex>
+                    {{#indirectGrade}}<ez-flex class='icon-small'>{{{graderPastIcon}}}</ez-flex>{{/indirectGrade}}
+                </ez-flex>
                 $saveBtn
                 $cancelBtn
                 $notifyStudentCheckbox
@@ -107,7 +110,10 @@ class SubmissionGradeComp(
             true -> Icons.robot
             false -> Icons.teacherFace
         }),
+        "indirectGrade" to (initialGrade?.is_graded_directly == false),
+        "graderPastIcon" to Icons.past,
         "gradeLabel" to Str.validGradeLabel,
+        "pastGradeHelp" to Str.gradeTransferredHelp,
     )
 
     override fun postChildrenBuilt() {
