@@ -260,19 +260,29 @@ class ParticipantsStudentsListComp(
     private suspend fun removeFromCourse(items: List<EzCollComp.Item<StudentProps>>): EzCollComp.Result {
         debug { "Removing students ${items.map { it.title }}?" }
 
-        val text = if (items.size == 1) {
-            val item = items[0]
+        val validItems = items.filter { it.props.isActive || !isMoodleSynced }
+
+        if (validItems.isEmpty()) {
+            ToastThing(
+                "Kutseid ei saa eemaldada. Tee muudatused Moodle'i kursusel ja seejärel sünkroniseeri õpilased.",
+                icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+            )
+            return EzCollComp.ResultUnmodified
+        }
+
+        val text = if (validItems.size == 1) {
+            val item = validItems[0]
             val id = if (item.props.isActive) item.title else item.props.email
             StringComp.boldTriple("Eemalda õpilane ", id, "?")
         } else {
-            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpilast?")
+            StringComp.boldTriple("Eemalda ", validItems.size.toString(), " õpilast?")
         }
 
         removeFromCourseModal.setText(text)
         removeFromCourseModal.primaryAction = {
             debug { "Remove confirmed" }
 
-            val (active, pending) = items.partition { it.props.isActive }
+            val (active, pending) = validItems.partition { it.props.isActive }
 
             val body = mapOf(
                 "active_students" to active.map {
