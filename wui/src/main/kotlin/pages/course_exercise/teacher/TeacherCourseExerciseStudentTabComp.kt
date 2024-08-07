@@ -83,7 +83,7 @@ class TeacherCourseExerciseStudentTabComp(
         )
         allSubsBtn = submission?.let {
             ButtonComp(
-                if (isOldSubmission) ButtonComp.Type.TONAL else ButtonComp.Type.TEXT,
+                if (isOldSubmission) ButtonComp.Type.OUTLINED else ButtonComp.Type.TEXT,
                 Str.submission + " #" + it.submission_number,
                 Icons.history,
                 onClick = ::openAllSubsModal, parent = this
