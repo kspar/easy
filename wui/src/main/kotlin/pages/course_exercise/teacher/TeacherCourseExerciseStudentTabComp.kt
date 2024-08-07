@@ -114,18 +114,17 @@ class TeacherCourseExerciseStudentTabComp(
             MissingContentPlaceholderComp(Str.missingSolution, true, this)
         else null
 
-        gradeComp = submission?.let {
+        val s = submission
+        gradeComp = if (s != null && !isOldSubmission)
             SubmissionGradeComp(
-                it.grade,
+                s.grade,
                 if (!isOldSubmission)
-                    SubmissionGradeComp.GradeEdit(courseId, courseExId, it.id,
-                        onGradeSaved = {
-                            createAndBuild().await()
-                        }
+                    SubmissionGradeComp.GradeEdit(courseId, courseExId, s.id,
+                        onGradeSaved = { createAndBuild().await() }
                     ) else null,
                 parent = this
             )
-        }
+        else null
 
         val autoassessFeedback = submission?.auto_assessment?.feedback
         val autoassessFailed = submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
