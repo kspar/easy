@@ -172,6 +172,9 @@ class CourseExerciseStudentSubmitTabComp(
     )
 
     override fun postRender() {
+        if (currentSubmission == null)
+            grade.hide()
+
         doInPromise {
             observeValueChange(1000, 500,
                 valueProvider = { editor.getActiveTabContent()!! },
