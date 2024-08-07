@@ -897,7 +897,7 @@ object EngStrings : TranslatableStrings() {
     override val feedback = "Feedback"
     override val value = "Value"
     override val loading = "Loading..."
-    override val editedAt = "edited at"
+    override val editedAt = "edited"
     override val uploadSubmission = "Upload file"
     override val downloadSubmission = "Save as file"
     override val uploadErrorFileTooLarge = "The chosen file is too large"
