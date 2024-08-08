@@ -19,7 +19,6 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         filterChain: FilterChain
     ) {
         val oldId = request.getOptionalHeader("oidc_claim_preferred_username")
-        val oldMoodleUsername = request.getOptionalHeader("oidc_claim_ut_uid")
         val oldEmail = request.getOptionalHeader("oidc_claim_email")
         val oldRoles = request.getOptionalHeader("oidc_claim_easy_role")?.let {
             mapHeaderToRoles(it)
@@ -29,7 +28,6 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
         val jwt = token?.let { JWT.decode(it) }
 
         val newId = jwt?.claims?.get("preferred_username")?.asString()
-        val newMoodleUsername = jwt?.claims?.get("ut_uid")?.asString()
         val newEmail = jwt?.claims?.get("email")?.asString()
         val newGivenName = jwt?.claims?.get("given_name")?.asString()
         val newFamilyName = jwt?.claims?.get("family_name")?.asString()
@@ -37,22 +35,20 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
             mapRoleStringsToRoles(it)
         }
 
-        if (newMoodleUsername != oldMoodleUsername ||
-            newEmail != oldEmail ||
+        if (newEmail != oldEmail ||
             newRoles != oldRoles
         ) {
             val warningMsg = """
                 Old != new data for user $newId ($oldId):
                     oldEmail: '$oldEmail', newEmail: '$newEmail'
                     oldRoles: '$oldRoles', newRoles: '$newRoles'
-                    oldMoodleUsername: '$oldMoodleUsername', newMoodleUsername: '$newMoodleUsername'
                 """
             log.warn { warningMsg }
         }
 
         if (oldId != null
-            && oldEmail != null
-            && oldRoles != null
+            && newEmail != null
+            && newRoles != null
         ) {
             val id = if (newId != null)
                 newId
@@ -62,7 +58,7 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
             }
 
             SecurityContextHolder.getContext().authentication = EasyUser(
-                oldId, id, oldEmail, newGivenName, newFamilyName, oldRoles, oldMoodleUsername
+                oldId, id, newEmail, newGivenName, newFamilyName, newRoles
             )
         }
 

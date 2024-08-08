@@ -11,7 +11,6 @@ class EasyUser(
     val givenName: String?,
     val familyName: String?,
     val roles: Set<EasyGrantedAuthority>,
-    val moodleUsername: String?
 ) : AbstractAuthenticationToken(roles) {
 
     // We have no credentials

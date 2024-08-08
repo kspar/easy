@@ -16,7 +16,6 @@ class DummyZeroAuthFilter : OncePerRequestFilter() {
         filterChain: FilterChain
     ) {
         val username = request.getOptionalHeader("oidc_claim_preferred_username")
-        val moodleUsername = request.getOptionalHeader("oidc_claim_ut_uid")
         val email = request.getOptionalHeader("oidc_claim_email")
         val givenName = request.getOptionalHeader("oidc_claim_given_name")
         val familyName = request.getOptionalHeader("oidc_claim_family_name")
@@ -27,7 +26,7 @@ class DummyZeroAuthFilter : OncePerRequestFilter() {
             roles != null
         ) {
             SecurityContextHolder.getContext().authentication = EasyUser(
-                username, username, email, givenName, familyName, mapHeaderToRoles(roles), moodleUsername
+                username, username, email, givenName, familyName, mapHeaderToRoles(roles)
             )
         }
 
