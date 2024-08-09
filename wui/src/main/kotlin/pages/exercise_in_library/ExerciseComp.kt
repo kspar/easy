@@ -108,7 +108,7 @@ class ExerciseTextComp(
     override fun render() = template(
         """
             <h2 style="margin-top: 4rem;">{{title}}</h2>
-            <div id="exercise-text">{{{html}}}</div>
+            <div class="exercise-text">{{{html}}}</div>
         """.trimIndent(),
         "title" to title,
         "html" to textHtml,
@@ -133,6 +133,6 @@ class ExerciseTextComp(
         return super.destroyThis()
     }
 
-    private fun getDetailsElements() = getElemsBySelector("#exercise-text details")
+    private fun getDetailsElements() = getElemsBySelector(".exercise-text details")
         .filterIsInstance<HTMLDetailsElement>()
 }

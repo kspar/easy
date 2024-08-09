@@ -73,7 +73,7 @@ class EmbedAnonAutoassessRootComp(
         """
             <div id="anonauto">
                 {{#title}}<h2>{{title}}</h2>{{/title}}
-                <div id="exercise-text">
+                <div class="exercise-text">
                     {{{text}}}
                 </div>
                 $warning

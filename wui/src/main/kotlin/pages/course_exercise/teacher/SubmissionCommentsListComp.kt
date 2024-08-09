@@ -6,7 +6,6 @@ import components.ButtonComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
 import hide
-import highlightCode
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -63,7 +62,7 @@ class SubmissionCommentsListComp(
             if (teacher.canAddComment)
                 addCommentBtn = ButtonComp(
                     ButtonComp.Type.TEXT,
-                    Str.doAddComment,
+                    Str.addComment,
                     Icons.add,
                     onClick = {
                         addCommentBtn!!.hide()
@@ -97,8 +96,4 @@ class SubmissionCommentsListComp(
             mapOf("dst" to it.toString())
         }
     )
-
-    override fun postChildrenBuilt() {
-        highlightCode()
-    }
 }

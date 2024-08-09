@@ -1,6 +1,12 @@
 package pages.course_exercise.teacher
 
 import EzDate
+import Icons
+import components.DropdownIconMenuComp
+import components.DropdownMenuComp
+import components.form.OldButtonComp
+import components.modal.ConfirmationTextModalComp
+import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -30,10 +36,11 @@ class SubmissionCommentComp(
 ) : Component(parent) {
 
     private lateinit var commentContent: SubmissionCommentContentComp
-    private var commentGradeBadge: SubmissionCommentGradeComp? = null
+    private var menu: DropdownIconMenuComp? = null
+    private lateinit var deleteConfirmationModal: ConfirmationTextModalComp
 
     override val children: List<Component>
-        get() = listOfNotNull(commentContent, commentGradeBadge)
+        get() = listOfNotNull(commentContent, menu, deleteConfirmationModal)
 
     override fun create() = doInPromise {
         commentContent = if (isEditing)
@@ -48,35 +55,76 @@ class SubmissionCommentComp(
                 parent = this
             )
         else
-            SubmissionViewCommentComp(
-                courseId, courseExerciseId, submissionId, submissionNumber, activityId, commentHtml, isEditable,
-                onStartEditing = {
-                    isEditing = true
-                    createAndBuild().await()
+            SubmissionViewCommentComp(grade, commentHtml, parent = this)
+
+        menu = if (!isEditing && isEditable)
+            DropdownIconMenuComp(
+                Icons.dotsVertical, Str.doEdit, buildList {
+                    add(
+                        DropdownMenuComp.Item(
+                            if (commentAdoc.isBlank()) Str.addComment else Str.editComment,
+                            Icons.edit, {
+                                isEditing = true
+                                createAndBuild().await()
+                            })
+                    )
+                    if (commentAdoc.isNotBlank()) {
+                        add(DropdownMenuComp.Item(Str.deleteComment, Icons.delete, {
+                            val commentDeleted = deleteConfirmationModal.openWithClosePromise().await()
+                            if (commentDeleted)
+                                onActivitiesChanged()
+                        }))
+                    }
                 },
-                onCommentDeleted = onActivitiesChanged,
                 parent = this
             )
+        else null
 
-        if (grade != null)
-            commentGradeBadge = SubmissionCommentGradeComp(grade, this)
+        deleteConfirmationModal = ConfirmationTextModalComp(
+            Str.deleteComment, Str.doDelete, Str.cancel, Str.deleting,
+            primaryAction = {
+                CourseExercisesTeacherDAO.deleteComment(courseId, courseExerciseId, submissionId, activityId).await()
+                true
+            },
+            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+        )
     }
 
     override fun render() = template(
         """
-            <div style='border: 1px solid #bbb; margin: 1rem;'>
-                {{teacherName}} | {{time}} {{#edited}}({{editedLabel}} {{editedAt}}){{/edited}} | $commentContent
-                <div>
-                    ${commentGradeBadge.dstIfNotNull()}
-                </div>
-            </div>
+            <ez-flow-item>
+                <ez-avatar>{{teacherInitials}}</ez-avatar>
+                <ez-flow-item-content>
+                    <ez-flow-item-header>
+                        <ez-flow-item-header-left>
+                            <ez-flow-item-header-title>
+                                {{teacherName}}
+                            </ez-flow-item-header-title>
+                            <ez-flow-item-header-secondary>
+                                <span style='margin-right: .5rem;' title='{{timeFull}}{{#edited}} ({{editedLabel}} {{editedAt}}){{/edited}}'>
+                                    {{time}}
+                                </span>
+                                · 
+                                <span style='margin-left: .5rem;'>{{submissionLabel}} # {{subNum}}</span>
+                            </ez-flow-item-header-secondary>
+                        </ez-flow-item-header-left>
+                        
+                        ${menu.dstIfNotNull()}
+                    </ez-flow-item-header>
+                    
+                    $commentContent
+                </ez-ez-flow-item-content>
+            </ez-flow-item>
         """.trimIndent(),
         "teacherName" to "$authorFirstName $authorLastName",
+        "teacherInitials" to "${authorFirstName.first()}${authorLastName.first()}",
         "time" to createdAt.toHumanString(EzDate.Format.DATE),
+        "timeFull" to createdAt.toHumanString(EzDate.Format.FULL),
         "edited" to editedAt?.let {
             mapOf("editedAt" to maxOf(editedAt, createdAt).toHumanString(EzDate.Format.DATE))
         },
-        // TODO: should be "time (muudetud)" with editedAt only visible on hover
         "editedLabel" to Str.editedAt,
+        "subNum" to submissionNumber,
+        "submissionLabel" to Str.submission,
     )
 }

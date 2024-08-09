@@ -26,8 +26,8 @@ class AdocCommentPreviewComp(
 
     override fun render() = template(
         """
-            <div style='padding: 1rem; background-color: #ccc'>
-            {{{html}}}
+            <div style='padding: 1rem; background-color: #ccc' class='exercise-text'>
+                {{{html}}}
             </div>            
         """.trimIndent(),
         "html" to contentHtml,

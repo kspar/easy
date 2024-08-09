@@ -54,8 +54,6 @@ sealed class TranslatableStrings {
     abstract val withoutAccountGroups: String
     abstract val doDownload: String
     abstract val downloading: String
-    abstract val doAddComment: String
-    abstract val deleteComment: String
     abstract val doNotifyStudent: String
     abstract val feedback: String
     abstract val value: String
@@ -196,6 +194,9 @@ sealed class TranslatableStrings {
     abstract val validGradeLabel: String
     abstract val gradeTransferredHelp: String
     abstract val gradeFieldLabel: String
+    abstract val addComment: String
+    abstract val editComment: String
+    abstract val deleteComment: String
     abstract val missingSolution: String
     abstract val newSubmission: String
     abstract val markAsNew: String
@@ -546,7 +547,7 @@ object EstStrings : TranslatableStrings() {
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
     override val pointsLabel = "Punktid"
     override val validGradeLabel = "Kehtiv hinne"
-    override val gradeTransferredHelp="Hinne on antud eelnevale esitusele"
+    override val gradeTransferredHelp = "Hinne on antud eelnevale esitusele"
     override val doAutoAssess = "Kontrolli"
     override val autoAssessing = "Kontrollin..."
     override val tryAgain = "Proovi uuesti"
@@ -554,7 +555,8 @@ object EstStrings : TranslatableStrings() {
     override val withoutAccountGroups = "Ilma rühmata"
     override val doDownload = "Lae alla"
     override val downloading = "Laen..."
-    override val doAddComment = "Lisa kommentaar"
+    override val addComment = "Lisa kommentaar"
+    override val editComment = "Muuda kommentaari"
     override val deleteComment = "Kustuta kommentaar"
     override val doNotifyStudent = "Teavita õpilast"
     override val feedback = "Tagasiside"
@@ -924,7 +926,7 @@ object EngStrings : TranslatableStrings() {
     override val teacherAssessmentLabel = "Teacher feedback"
     override val pointsLabel = "Points"
     override val validGradeLabel = "Valid grade"
-    override val gradeTransferredHelp="Grade given to a previous submission"
+    override val gradeTransferredHelp = "Grade given to a previous submission"
     override val doAutoAssess = "Check"
     override val autoAssessing = "Checking..."
     override val tryAgain = "Try again"
@@ -932,7 +934,8 @@ object EngStrings : TranslatableStrings() {
     override val withoutAccountGroups = "Ungrouped"
     override val doDownload = "Download"
     override val downloading = "Downloading..."
-    override val doAddComment = "Add comment"
+    override val addComment = "Add comment"
+    override val editComment = "Edit comment"
     override val deleteComment = "Delete comment"
     override val doNotifyStudent = "Notify student"
     override val feedback = "Feedback"

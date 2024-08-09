@@ -11,7 +11,9 @@ class SubmissionCommentGradeComp(
 
     override fun render() = template(
         """
-            -- {{grade}} / 100 --
+            <ez-grade-badge>
+                {{grade}} / 100
+            </ez-grade-badge>
         """.trimIndent(),
         "grade" to grade.toString(),
     )

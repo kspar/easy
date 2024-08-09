@@ -528,6 +528,16 @@ ez-sub-time.over-deadline ez-icon {
     color: var(--ez-yellow-text);
 }
 
+ez-grade-badge {
+    display: flex;
+    align-items: center;
+    padding: .5rem 1.5rem;
+    border: 2px solid var(--ez-border);
+    border-radius: 2rem;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
 
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
@@ -2142,6 +2152,67 @@ ez-spinner .circle-clipper .circle {
 }
 
 
+/** Avatar **/
+
+ez-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    min-width: 4rem;
+    min-height: 4rem;
+    border-radius: 50%;
+    color: white;
+    letter-spacing: 1px;
+    cursor: default;
+    background-color: var(--ez-blue);
+}
+
+
+/** Avatar **/
+
+ez-flow-item {
+    display: flex;
+    align-items: start;
+    margin: 3rem 0;
+}
+
+ez-flow-item-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-grow: 1;
+    margin-left: 1.5rem;
+}
+
+ez-flow-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+}
+
+ez-flow-item-header-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+ez-flow-item-header-title {
+    font-weight: 500;
+    margin-right: 2rem;
+}
+
+ez-flow-item-header-secondary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    color: var(--ez-text-inactive);
+    font-size: .9em;
+}
+
+
 /** Ez Collection **/
 
 ez-coll-wrap {
@@ -2639,6 +2710,8 @@ ez-block-container {
 
 ez-block-container ez-block {
     flex-grow: 1;
+    /* Allow shrinking below base width */
+    min-width: 0;
 }
 
 /* Ez block container split 2-column design with expand divider */

@@ -1,31 +1,31 @@
-/* Note: all rules should be applied only to #exercise-text children */
+/* Note: all rules should be applied only to .exercise-text children */
 
-#exercise-text {
+.exercise-text {
     font-size: 1.5rem;
     overflow: auto;
 }
 
-#exercise-text p {
+.exercise-text p {
     margin-top: 1rem;
     margin-bottom: 1rem;
 }
 
-#exercise-text code {
+.exercise-text code {
     background-color: #f6f6f6;
     color: #333;
     font-style: normal;
     font-size: .9em;
 }
 
-#exercise-text code strong {
+.exercise-text code strong {
     font-weight: 600;
 }
 
-#exercise-text pre {
+.exercise-text pre {
     margin: 0;
 }
 
-#exercise-text img {
+.exercise-text img {
     display: block;
     max-width: 100%;
     height: auto;
@@ -34,104 +34,104 @@
 
 /* ADOC rules */
 
-#exercise-text .codehl.run {
+.exercise-text .codehl.run {
     display: inline-block !important;
     color: #999 !important;
 }
 
-#exercise-text .codehl.run * {
+.exercise-text .codehl.run * {
     color: #999 !important;
 }
 
-#exercise-text .codehl.input,
-#exercise-text .codehl.input * {
+.exercise-text .codehl.input,
+.exercise-text .codehl.input * {
     color: #0000ff !important;
 }
 
-#exercise-text .codehl.nohl,
-#exercise-text .codehl.nohl * {
+.exercise-text .codehl.nohl,
+.exercise-text .codehl.nohl * {
     color: #333 !important;
     font-weight: normal;
 }
 
 /* Fix Materialize lists */
-#exercise-text ul {
+.exercise-text ul {
     /* Waiting for revert support... */
     padding-left: 4rem !important;
     list-style-type: unset !important;
 }
 
-#exercise-text ul > li {
+.exercise-text ul > li {
     list-style-type: unset !important;
 }
 
-#exercise-text ul ul {
+.exercise-text ul ul {
     list-style-type: circle !important;
 }
 
-#exercise-text ul ul ul {
+.exercise-text ul ul ul {
     list-style-type: square !important;
 }
 
-#exercise-text details {
+.exercise-text details {
     padding: 1rem 0;
 }
 
-#exercise-text details > summary {
+.exercise-text details > summary {
     outline: none;
     cursor: pointer;
     color: #039be5;
 }
 
-#exercise-text details > summary:hover {
+.exercise-text details > summary:hover {
     text-decoration: underline;
 }
 
-#exercise-text details > .content {
+.exercise-text details > .content {
     padding: 1rem 2rem;
     background-color: #f6f6f6;
 }
 
 /* The following sibling - prevents margin when listing is not followed by anything, e.g. inside collapsible */
-#exercise-text .listingblock + * {
+.exercise-text .listingblock + * {
     margin-top: 2rem;
 }
 
-#exercise-text .listingblock > .title {
+.exercise-text .listingblock > .title {
     margin-top: 2rem;
     font-size: 0.95em;
 }
 
-#exercise-text .small {
+.exercise-text .small {
     font-size: 0.83em;
 }
 
-#exercise-text .imageblock.text-center {
+.exercise-text .imageblock.text-center {
     display: flex;
     justify-content: center;
 }
 
-#exercise-text blockquote {
+.exercise-text blockquote {
     border-left: 5px solid var(--ez-green);
 }
 
 
 /* Legacy pure-HTML rules */
 
-#exercise-text .italic {
+.exercise-text .italic {
     font-style: italic;
 }
 
-#exercise-text .bold {
+.exercise-text .bold {
     font-weight: bold;
 }
 
-#exercise-text .program-example {
+.exercise-text .program-example {
     border: 1px solid #ddd;
     padding: 0 1rem;
     white-space: pre-wrap;
 }
 
-#exercise-text .exercise-hint {
+.exercise-text .exercise-hint {
     font-size: 1.2rem;
 }

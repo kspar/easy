@@ -19,7 +19,7 @@ class CourseExerciseTextComp(
         """
             {{#deadline}}<p class="subheading-item"><span class="subheading">{{deadlineLabel}}:</span>{{deadline}}</p>{{/deadline}}
             <h2>{{title}}</h2>
-            <div id="exercise-text">{{{text}}}</div>
+            <div class="exercise-text">{{{text}}}</div>
         """.trimIndent(),
         "title" to title,
         "text" to textHtml,
