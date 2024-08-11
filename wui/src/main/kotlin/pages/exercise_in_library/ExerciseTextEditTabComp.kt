@@ -1,7 +1,7 @@
 package pages.exercise_in_library
 
 import Icons
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import components.form.OldIconButtonComp
 import components.form.StringFieldComp
 import components.form.validation.StringConstraints
@@ -39,7 +39,7 @@ class ExerciseTextEditTabComp(
         onClick = { window.open("https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/", "_blank") },
         parent = this
     )
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
 
     override val children: List<Component>
         get() = listOf(titleField, helpIcon, editor)
@@ -55,13 +55,13 @@ class ExerciseTextEditTabComp(
             parent = this
         )
 
-        editor = CodeEditorComp(
+        editor = OldCodeEditorComp(
             listOf(
-                CodeEditorComp.File(ADOC_FILENAME, textAdoc, CodeEditorComp.Edit.READONLY, lang = "asciidoc"),
-                CodeEditorComp.File(
+                OldCodeEditorComp.File(ADOC_FILENAME, textAdoc, OldCodeEditorComp.Edit.READONLY, lang = "asciidoc"),
+                OldCodeEditorComp.File(
                     HTML_FILENAME,
                     textHtml,
-                    CodeEditorComp.Edit.READONLY,
+                    OldCodeEditorComp.Edit.READONLY,
                     objOf("name" to "xml", "htmlMode" to true),
                 )
             ), softWrap = true, parent = this

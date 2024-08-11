@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor.tsl
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import debug
 import observeValueChange
 import pages.exercise_in_library.editor.AutoassessEditorComp.Companion.TSL_SPEC_FILENAME_JSON
@@ -17,8 +17,8 @@ class TSLTabTslComp(
 
     private var externallyChanged = false
 
-    private val editor = CodeEditorComp(
-        CodeEditorComp.File(TSL_SPEC_FILENAME_JSON, tslSpec),
+    private val editor = OldCodeEditorComp(
+        OldCodeEditorComp.File(TSL_SPEC_FILENAME_JSON, tslSpec),
         showTabs = false,
         parent = this,
     )

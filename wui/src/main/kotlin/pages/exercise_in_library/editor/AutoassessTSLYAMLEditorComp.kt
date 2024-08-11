@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import dao.TSLDAO
 import debug
 import kotlinx.coroutines.await
@@ -20,7 +20,7 @@ class AutoassessTSLYAMLEditorComp(
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
-    private lateinit var codeEditor: CodeEditorComp
+    private lateinit var codeEditor: OldCodeEditorComp
 
     private var isEditable = startEditable
     private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME_YAML) { "" }
@@ -36,12 +36,12 @@ class AutoassessTSLYAMLEditorComp(
         get() = listOf(codeEditor)
 
     override fun create() = doInPromise {
-        codeEditor = CodeEditorComp(
+        codeEditor = OldCodeEditorComp(
             listOf(
-                CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable)),
-                CodeEditorComp.File(TSL_SPEC_FILENAME_YAML, tslSpec, editorEditable(isEditable)),
+                OldCodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable)),
+                OldCodeEditorComp.File(TSL_SPEC_FILENAME_YAML, tslSpec, editorEditable(isEditable)),
             ) + generatedAssets.toList().sortedBy { it.first }.map {
-                CodeEditorComp.File(it.first, it.second, CodeEditorComp.Edit.READONLY)
+                OldCodeEditorComp.File(it.first, it.second, OldCodeEditorComp.Edit.READONLY)
             },
             parent = this,
         )
@@ -79,7 +79,7 @@ class AutoassessTSLYAMLEditorComp(
             compilerFeedbackEl.textContent = result.feedback
 
             result.scripts?.forEach {
-                codeEditor.setFileValue(it.name, it.value, newFileEdit = CodeEditorComp.Edit.READONLY)
+                codeEditor.setFileValue(it.name, it.value, newFileEdit = OldCodeEditorComp.Edit.READONLY)
             }
 
             result.meta?.let {
@@ -89,7 +89,7 @@ class AutoassessTSLYAMLEditorComp(
                                     Backend: ${it.backend_id} ${it.backend_version}
                                """.trimIndent()
                 codeEditor.setFileValue(
-                    TSL_META_FILENAME, metaFile, CodeEditorComp.Edit.READONLY
+                    TSL_META_FILENAME, metaFile, OldCodeEditorComp.Edit.READONLY
                 )
             }
         } finally {

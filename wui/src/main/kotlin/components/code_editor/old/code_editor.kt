@@ -1,4 +1,4 @@
-package components.code_editor
+package components.code_editor.old
 
 import Icons
 import components.text.LinkComp
@@ -16,7 +16,7 @@ import template
 import warn
 
 
-class CodeEditorComp(
+class OldCodeEditorComp(
     // Original files, can be used later to check for changes
     private val files: List<File>,
     private val fileCreator: CreateFile? = null,

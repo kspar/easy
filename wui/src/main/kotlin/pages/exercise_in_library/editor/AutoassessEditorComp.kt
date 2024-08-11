@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 
@@ -32,5 +32,5 @@ abstract class AutoassessEditorComp(
 
 
     protected fun editorEditable(isEditable: Boolean) =
-        if (isEditable) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
+        if (isEditable) OldCodeEditorComp.Edit.EDITABLE else OldCodeEditorComp.Edit.READONLY
 }

@@ -1,7 +1,7 @@
 package pages.about
 
 import EzDate
-import components.code_editor.CodeDiffEditorComp
+import components.code_editor.old.CodeDiffEditorComp
 import components.text.AttrsComp
 import dao.ExerciseDAO
 import kotlinx.coroutines.await

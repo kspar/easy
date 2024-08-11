@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
@@ -15,18 +15,18 @@ class AutoassessCodeEditorComp(
 
     private var isEditable = startEditable
 
-    private lateinit var codeEditorComp: CodeEditorComp
+    private lateinit var codeEditorComp: OldCodeEditorComp
 
     override val children: List<Component>
         get() = listOf(codeEditorComp)
 
     override fun create() = doInPromise {
-        codeEditorComp = CodeEditorComp(
-            listOf(CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable))) +
+        codeEditorComp = OldCodeEditorComp(
+            listOf(OldCodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable))) +
                     assets.toList().sortedBy { it.first }.map {
-                        CodeEditorComp.File(it.first, it.second, editorEditable(isEditable))
+                        OldCodeEditorComp.File(it.first, it.second, editorEditable(isEditable))
                     },
-            fileCreator = if (isEditable) CodeEditorComp.CreateFile(CodeEditorComp.Edit.EDITABLE) else null,
+            fileCreator = if (isEditable) OldCodeEditorComp.CreateFile(OldCodeEditorComp.Edit.EDITABLE) else null,
             parent = this,
         )
     }

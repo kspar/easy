@@ -1,4 +1,4 @@
-package components.code_editor
+package components.code_editor.old
 
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise

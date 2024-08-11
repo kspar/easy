@@ -2,7 +2,7 @@ package pages.embed_anon_autoassess
 
 import AppProperties
 import Icons
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import components.form.OldButtonComp
 import components.text.WarningComp
 import dao.AnonymousExerciseDAO
@@ -37,7 +37,7 @@ class EmbedAnonAutoassessRootComp(
 
     private lateinit var exercise: AnonymousExerciseDAO.AnonExercise
 
-    private var editor: CodeEditorComp? = null
+    private var editor: OldCodeEditorComp? = null
     private var submitBtn: OldButtonComp? = null
 
     private lateinit var feedback: ExerciseAutoFeedbackHolderComp
@@ -54,8 +54,8 @@ class EmbedAnonAutoassessRootComp(
         showSubmit = submit && exercise.submit_allowed
 
         if (showSubmit) {
-            editor = CodeEditorComp(
-                CodeEditorComp.File("lahendus.py", if (showTemplate) exercise.anonymous_autoassess_template else null),
+            editor = OldCodeEditorComp(
+                OldCodeEditorComp.File("lahendus.py", if (showTemplate) exercise.anonymous_autoassess_template else null),
                 showLineNumbers = false, showTabs = false, parent = this
             )
             submitBtn = OldButtonComp(OldButtonComp.Type.PRIMARY_ROUND, null, Icons.robot, { assess() }, parent = this)

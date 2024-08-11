@@ -5,7 +5,7 @@ import Icons
 import components.ButtonComp
 import components.IconButtonComp
 import components.MissingContentPlaceholderComp
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
@@ -43,7 +43,7 @@ class TeacherCourseExerciseStudentTabComp(
 
     private var oldSubmissionWarning: WarningComp? = null
 
-    private var solutionCodeEditor: CodeEditorComp? = null
+    private var solutionCodeEditor: OldCodeEditorComp? = null
     private var missingSolutionPlaceholder: MissingContentPlaceholderComp? = null
 
     private var gradeComp: SubmissionGradeComp? = null
@@ -104,8 +104,8 @@ class TeacherCourseExerciseStudentTabComp(
         //    - edit and submit
         //    - check similarity? (new tab with similarity page and filtered out results for only this student (new dropdown needed probably))
         solutionCodeEditor = submission?.let {
-            CodeEditorComp(
-                CodeEditorComp.File(solutionFileName, it.solution, CodeEditorComp.Edit.READONLY),
+            OldCodeEditorComp(
+                OldCodeEditorComp.File(solutionFileName, it.solution, OldCodeEditorComp.Edit.READONLY),
                 parent = this
             )
         }

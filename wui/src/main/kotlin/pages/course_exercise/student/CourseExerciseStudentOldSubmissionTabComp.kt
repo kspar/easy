@@ -1,6 +1,6 @@
 package pages.course_exercise.student
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
@@ -19,7 +19,7 @@ class CourseExerciseStudentOldSubmissionTabComp(
     parent: Component
 ) : Component(parent) {
 
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
     private lateinit var feedback: ExerciseAutoFeedbackHolderComp
     private var commentsList: SubmissionCommentsListComp? = null
 
@@ -29,8 +29,8 @@ class CourseExerciseStudentOldSubmissionTabComp(
 
     override fun create() = doInPromise {
 
-        editor = CodeEditorComp(
-            CodeEditorComp.File(solutionFileName, submission?.solution, CodeEditorComp.Edit.READONLY),
+        editor = OldCodeEditorComp(
+            OldCodeEditorComp.File(solutionFileName, submission?.solution, OldCodeEditorComp.Edit.READONLY),
             parent = this
         )
 

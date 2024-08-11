@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor.tsl
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import pages.exercise_in_library.editor.AutoassessEditorComp.Companion.TSL_META_FILENAME
 import rip.kspar.ezspa.Component
 
@@ -10,8 +10,8 @@ class TSLTabScriptsComp(
     parent: Component
 ) : Component(parent) {
 
-    private val editor = CodeEditorComp(
-        initialScripts.map { CodeEditorComp.File(it.key, it.value, CodeEditorComp.Edit.READONLY) },
+    private val editor = OldCodeEditorComp(
+        initialScripts.map { OldCodeEditorComp.File(it.key, it.value, OldCodeEditorComp.Edit.READONLY) },
         showTabs = true,
         parent = this,
     )
@@ -25,7 +25,7 @@ class TSLTabScriptsComp(
     fun setScripts(scripts: Map<String, String>) {
         // TODO: remove all files first
         scripts.forEach {
-            editor.setFileValue(it.key, it.value, CodeEditorComp.Edit.READONLY)
+            editor.setFileValue(it.key, it.value, OldCodeEditorComp.Edit.READONLY)
         }
     }
 

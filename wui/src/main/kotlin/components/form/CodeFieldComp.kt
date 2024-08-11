@@ -1,6 +1,6 @@
 package components.form
 
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import observeValueChange
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
@@ -32,17 +32,17 @@ class CodeFieldComp(
 
     private var isCurrentlyValid = !isRequired || initialValue.isNotBlank()
 
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
 
     override val children: List<Component>
         get() = listOf(editor)
 
     override fun create() = doInPromise {
-        editor = CodeEditorComp(
-            CodeEditorComp.File(
+        editor = OldCodeEditorComp(
+            OldCodeEditorComp.File(
                 editorFilename,
                 initialValue,
-                if (isDisabled) CodeEditorComp.Edit.READONLY else CodeEditorComp.Edit.EDITABLE
+                if (isDisabled) OldCodeEditorComp.Edit.READONLY else OldCodeEditorComp.Edit.EDITABLE
             ),
             placeholder = placeholder,
             showLineNumbers = false,

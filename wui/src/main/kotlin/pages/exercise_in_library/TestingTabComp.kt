@@ -3,7 +3,7 @@ package pages.exercise_in_library
 import EzDate
 import EzDateSerializer
 import Icons
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import components.form.OldButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
@@ -44,7 +44,7 @@ class TestingTabComp(
 
     private lateinit var warning: WarningComp
     private lateinit var attrs: AttrsComp
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
 
     private val submitBtn = OldButtonComp(
         OldButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
@@ -75,8 +75,8 @@ class TestingTabComp(
             this
         )
 
-        editor = CodeEditorComp(
-            CodeEditorComp.File(solutionFileName, latestSubmission?.solution.orEmpty()),
+        editor = OldCodeEditorComp(
+            OldCodeEditorComp.File(solutionFileName, latestSubmission?.solution.orEmpty()),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )
 

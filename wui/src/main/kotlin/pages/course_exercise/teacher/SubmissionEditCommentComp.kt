@@ -4,7 +4,7 @@ import Key
 import LocalStore
 import components.ButtonComp
 import components.CheckboxComp
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO
 import hide
@@ -32,7 +32,7 @@ class SubmissionEditCommentComp(
     parent: Component
 ) : SubmissionCommentContentComp(parent) {
 
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
     private lateinit var saveBtn: ButtonComp
     private lateinit var cancelBtn: ButtonComp
     private lateinit var notifyStudentCheckboxComp: CheckboxComp
@@ -46,8 +46,8 @@ class SubmissionEditCommentComp(
         get() = listOf(editor, saveBtn, cancelBtn, notifyStudentCheckboxComp, preview)
 
     override fun create() = doInPromise {
-        editor = CodeEditorComp(
-            CodeEditorComp.File(editorFilename, initialAdoc),
+        editor = OldCodeEditorComp(
+            OldCodeEditorComp.File(editorFilename, initialAdoc),
             softWrap = true, showLineNumbers = false, showTabs = false,
             placeholder = Str.commentEditorPlaceholder,
             parent = this

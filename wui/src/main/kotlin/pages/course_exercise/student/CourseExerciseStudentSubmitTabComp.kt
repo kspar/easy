@@ -2,7 +2,7 @@ package pages.course_exercise.student
 
 import Icons
 import components.ToastThing
-import components.code_editor.CodeEditorComp
+import components.code_editor.old.OldCodeEditorComp
 import components.form.OldButtonComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
@@ -39,7 +39,7 @@ class CourseExerciseStudentSubmitTabComp(
 
     private data class EditorContent(val content: String, val isDraft: Boolean)
 
-    private lateinit var editor: CodeEditorComp
+    private lateinit var editor: OldCodeEditorComp
     private lateinit var syncIcon: CourseExerciseEditorStatusComp
     private lateinit var submitBtn: OldButtonComp
     private val warning = WarningComp(parent = this)
@@ -101,10 +101,10 @@ class CourseExerciseStudentSubmitTabComp(
             }
         }
 
-        editor = CodeEditorComp(
-            CodeEditorComp.File(
+        editor = OldCodeEditorComp(
+            OldCodeEditorComp.File(
                 solutionFileName, content?.content,
-                editability = if (isOpenForSubmissions) CodeEditorComp.Edit.EDITABLE else CodeEditorComp.Edit.READONLY
+                editability = if (isOpenForSubmissions) OldCodeEditorComp.Edit.EDITABLE else OldCodeEditorComp.Edit.READONLY
             ),
             placeholder = Str.solutionEditorPlaceholder, parent = this
         )

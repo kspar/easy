@@ -1,4 +1,4 @@
-package components.code_editor
+package components.code_editor.old
 
 import components.form.StringFieldComp
 import components.form.validation.ConstraintViolation
