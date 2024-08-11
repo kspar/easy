@@ -11,7 +11,7 @@
 }
 
 .exercise-text code {
-    background-color: #f6f6f6;
+    background-color: var(--ez-bg-light-contrast);
     color: #333;
     font-style: normal;
     font-size: .9em;
@@ -89,7 +89,7 @@
 
 .exercise-text details > .content {
     padding: 1rem 2rem;
-    background-color: #f6f6f6;
+    background-color: var(--ez-bg-light-contrast);
 }
 
 /* The following sibling - prevents margin when listing is not followed by anything, e.g. inside collapsible */

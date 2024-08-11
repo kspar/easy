@@ -1,5 +1,6 @@
 :root {
-    --ez-background: #fff;
+    --ez-bg: #fff;
+    --ez-bg-light-contrast: #f6f8fa;
     --ez-animation-robot-color: #a8a8a8;
 
     --ez-green: #4DAB54;
@@ -3800,7 +3801,7 @@ ez-feedback-producer ez-icon svg {
 .autograde-animation .shade {
     height: 40px;
     width: 1px;
-    background-color: var(--ez-background);
+    background-color: var(--ez-bg);
     transform-origin: left;
     animation: letters-eating 3s 1500ms linear forwards;
 }
