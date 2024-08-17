@@ -3,12 +3,14 @@ package components.code_editor
 import Icons
 import components.DropdownMenuComp
 import components.IconButtonComp
+import components.TabID
 import components.TabsComp
 import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
+import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.dstIfNotNull
 import template
@@ -29,12 +31,14 @@ class CodeEditorTabsComp(
         val title: String,
         val isRenameable: Boolean,
         val isDeletable: Boolean,
+        val id: TabID = IdGenerator.nextId(),
     )
 
     private lateinit var tabsComp: TabsComp
     private var createTabBtn: IconButtonComp? = null
     private lateinit var createOrRenameTabModalComp: CodeEditorRenameTabModal
     private lateinit var deleteTabModalComp: ConfirmationTextModalComp
+
 
     override val children: List<Component>
         get() = listOfNotNull(tabsComp, createTabBtn, createOrRenameTabModalComp, deleteTabModalComp)
@@ -52,7 +56,10 @@ class CodeEditorTabsComp(
                         if (tab.isRenameable)
                             add(DropdownMenuComp.Item(Str.doRename, Icons.editUnf, onSelected = {
 
-                                val newTitle = createOrRenameTabModalComp.openAndWait(tab.title)
+                                val newTitle = createOrRenameTabModalComp.openAndWait(
+                                    tab.title,
+                                    bannedFilenames = tabs.map { it.title } - tab.title
+                                )
                                 if (newTitle != null && newTitle != tab.title)
                                     onTabRenamed(tab.title, newTitle)
                             }))
@@ -68,6 +75,7 @@ class CodeEditorTabsComp(
                                     onTabDeleted(tab.title)
                             }))
                     },
+                    id = tab.id
                 )
             },
             onTabActivate = {
@@ -80,7 +88,10 @@ class CodeEditorTabsComp(
             IconButtonComp(
                 Icons.add, null,
                 onClick = {
-                    createOrRenameTabModalComp.openAndWait("")?.let {
+                    createOrRenameTabModalComp.openAndWait(
+                        "",
+                        bannedFilenames = tabs.map { it.title }
+                    )?.let {
                         onCreateNewTab(it)
                     }
                 },
@@ -114,5 +125,10 @@ class CodeEditorTabsComp(
 
     fun setCreateFileEnabled(enabled: Boolean) {
         createTabBtn?.setEnabled(enabled)
+    }
+
+    fun setActiveTab(tabTitle: String) {
+        val id = tabs.first { it.title == tabTitle }.id
+        tabsComp.activateTab(id)
     }
 }

@@ -1,8 +1,7 @@
 package pages.exercise_in_library.editor
 
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import kotlinx.coroutines.await
-import rip.kspar.ezspa.plainDstStr
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 
@@ -15,50 +14,47 @@ class AutoassessCodeEditorComp(
 
     private var isEditable = startEditable
 
-    private lateinit var codeEditorComp: OldCodeEditorComp
+    private lateinit var codeEditorComp: CodeEditorComp
 
     override val children: List<Component>
         get() = listOf(codeEditorComp)
 
     override fun create() = doInPromise {
-        codeEditorComp = OldCodeEditorComp(
-            listOf(OldCodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable))) +
-                    assets.toList().sortedBy { it.first }.map {
-                        OldCodeEditorComp.File(it.first, it.second, editorEditable(isEditable))
-                    },
-            fileCreator = if (isEditable) OldCodeEditorComp.CreateFile(OldCodeEditorComp.Edit.EDITABLE) else null,
+        codeEditorComp = CodeEditorComp(
+            files = listOf(
+                CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, isEditable)
+            ) + assets.toList().sortedBy { it.first }.map {
+                CodeEditorComp.File(
+                    it.first, it.second,
+                    isEditable = isEditable,
+                    isRenameable = isEditable,
+                    isDeletable = isEditable
+                )
+            },
+            canCreateNewFiles = isEditable,
             parent = this,
         )
     }
-
-    override fun render() = plainDstStr(codeEditorComp.dstId)
 
     override suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
         createAndBuild().await()
     }
 
-    override fun getEvalScript(): String {
-        // TODO: codeEditorComp.getFileValue(EVAL_SCRIPT_FILENAME)?
-        val files = codeEditorComp.getAllFiles().associate { it.name to it.content.orEmpty() }
-        return files[EVAL_SCRIPT_FILENAME]!!
-    }
+    override fun getEvalScript() = codeEditorComp.getContent(EVAL_SCRIPT_FILENAME)
 
-    override fun getAssets(): Map<String, String> {
-        val files = codeEditorComp.getAllFiles().associate { it.name to it.content.orEmpty() }
-        return files - EVAL_SCRIPT_FILENAME
-    }
+    override fun getAssets(): Map<String, String> = codeEditorComp.getAllFiles() - EVAL_SCRIPT_FILENAME
 
     // Not checking anything in editor
     override fun isValid() = true
 
     data class ActiveView(
-        val editorTabId: String?,
+        val activeFileName: String,
     ) : AutoassessEditorComp.ActiveView
 
-    override fun getActiveView() = ActiveView(codeEditorComp.getActiveTabFilename())
+    override fun getActiveView() = ActiveView(codeEditorComp.getActiveFilename())
 
     override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {
-        (view as? ActiveView)?.editorTabId?.let { codeEditorComp.setActiveTabByFilename(it) }
+        (view as? ActiveView)?.activeFileName?.let { codeEditorComp.setActiveFilename(it) }
     }
 }

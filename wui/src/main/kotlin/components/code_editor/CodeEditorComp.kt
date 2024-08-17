@@ -124,7 +124,13 @@ class CodeEditorComp(
         refreshEditable()
     }
 
-    fun switchToFile(filename: String) {
+    fun getActiveFilename() = activeFile.name
+
+    fun setActiveFilename(filename: String) {
+        editorTabs?.setActiveTab(filename)
+    }
+
+    private fun switchToFile(filename: String) {
         activeFile = files.first { it.name == filename }
         editor.switchToFile(filename)
         refreshEditable()
@@ -133,6 +139,11 @@ class CodeEditorComp(
     fun getContent(filename: String? = null): String {
         val fname = filename ?: activeFile.name
         return editor.getContent(fname)
+    }
+
+    fun getAllFiles(): Map<String, String> {
+        refreshContent()
+        return files.associate { it.name to it.content.orEmpty() }
     }
 
     suspend fun setContent(content: String, filename: String? = null) {
@@ -164,6 +175,7 @@ class CodeEditorComp(
         else
             this.status.set("", "")
     }
+
 
     override fun hasUnsavedChanges(): Boolean {
         refreshContent()

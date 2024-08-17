@@ -68,6 +68,7 @@ sealed class TranslatableStrings {
     abstract val doRename: String
 
     abstract val editorMenuLabel: String
+    abstract val existingFileNameError: String
 
     abstract val ezcollEmpty: String
     abstract val ezcollNoMatchingItems: String
@@ -574,6 +575,7 @@ object EstStrings : TranslatableStrings() {
     override val doDeleteFile = "Kustuta fail"
     override val doRename = "Muuda nime"
     override val editorMenuLabel = "Redaktori tegevused..."
+    override val existingFileNameError = "Selle nimega fail juba eksisteerib"
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
     override val ezcollApply = "Rakenda..."
@@ -956,6 +958,7 @@ object EngStrings : TranslatableStrings() {
     override val doDeleteFile = "Delete file"
     override val doRename = "Rename"
     override val editorMenuLabel = "Editor actions..."
+    override val existingFileNameError = "This file already exists"
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"
     override val ezcollApply = "Apply..."
