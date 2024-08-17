@@ -78,13 +78,21 @@ class TeacherDownloadCourseExerciseSubmissionsController {
     private fun selectSubmissions(courseExId: Long, submissionIds: List<Long>): List<Zip> = transaction {
         val solutionFileName = selectSolutionFileName(courseExId)
         (Submission innerJoin Account)
-            .select(Submission.id, Submission.solution, Submission.student, Account.givenName, Account.familyName)
+            .select(
+                Submission.id,
+                Submission.solution,
+                Submission.student,
+                Submission.courseExercise,
+                Account.givenName,
+                Account.familyName
+            )
             .where { Submission.id inList submissionIds }
             .orderBy(Submission.createdAt, SortOrder.DESC)
             .map {
                 Zip(
                     it[Submission.solution],
                     createFileName(
+                        it[Submission.courseExercise].value,
                         it[Account.givenName],
                         it[Account.familyName],
                         it[Submission.id].value,
@@ -94,8 +102,10 @@ class TeacherDownloadCourseExerciseSubmissionsController {
             }
     }
 
-    private fun createFileName(givenName: String, familyName: String, submissionId: Long, solutionFileName: String): String =
-        "${familyName}_${givenName}_${submissionId}_${solutionFileName}".replace(" ", "_")
+    private fun createFileName(
+        courseExId: Long, givenName: String, familyName: String, submissionId: Long, solutionFileName: String
+    ): String =
+        "${courseExId}_${familyName}_${givenName}_${submissionId}_${solutionFileName}".replace(" ", "_")
 
     private fun selectSolutionFileName(courseExId: Long): String = transaction {
         (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
