@@ -63,6 +63,9 @@ sealed class TranslatableStrings {
     abstract val downloadSubmission: String
     abstract val uploadErrorFileTooLarge: String
     abstract val uploadErrorFileNotText: String
+    abstract val filename: String
+    abstract val doDeleteFile: String
+    abstract val doRename: String
 
     abstract val editorMenuLabel: String
 
@@ -567,6 +570,9 @@ object EstStrings : TranslatableStrings() {
     override val downloadSubmission = "Salvesta failina"
     override val uploadErrorFileTooLarge = "Valitud fail on liiga suur"
     override val uploadErrorFileNotText = "Valitud fail pole tekstifail"
+    override val filename = "Faili nimi"
+    override val doDeleteFile = "Kustuta fail"
+    override val doRename = "Muuda nime"
     override val editorMenuLabel = "Redaktori tegevused..."
     override val ezcollEmpty = "Siin pole veel midagi näidata"
     override val ezcollNoMatchingItems = "Valitud filtritele ei vasta ükski rida"
@@ -946,6 +952,9 @@ object EngStrings : TranslatableStrings() {
     override val downloadSubmission = "Save as file"
     override val uploadErrorFileTooLarge = "The chosen file is too large"
     override val uploadErrorFileNotText = "The chosen file is not a text file"
+    override val filename = "Filename"
+    override val doDeleteFile = "Delete file"
+    override val doRename = "Rename"
     override val editorMenuLabel = "Editor actions..."
     override val ezcollEmpty = "Nothing to see here yet"
     override val ezcollNoMatchingItems = "No items match the selected filters"

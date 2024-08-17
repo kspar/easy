@@ -13,6 +13,7 @@ class IconButtonComp(
     val size: Size = Size.NORMAL,
     private val onClick: suspend (() -> Unit),
     private val disableOnClick: Boolean = false,
+    private val stopPropagation: Boolean = false,
     private val btnId: String = IdGenerator.nextId(),
     parent: Component
 ) : Component(parent) {
@@ -61,6 +62,9 @@ class IconButtonComp(
 
             if (disableOnClick && existsElemById(btnId))
                 setEnabled(true)
+
+            if (stopPropagation)
+                it.stopPropagation()
         }
 
         if (toggle != null) {

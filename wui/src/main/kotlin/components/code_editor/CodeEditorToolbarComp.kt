@@ -1,10 +1,10 @@
-package components.code_editor.old
+package components.code_editor
 
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import template
 
-class CodeEditorTabsComp(
+class CodeEditorToolbarComp(
 
     parent: Component?,
 ) : Component(parent) {

@@ -888,6 +888,86 @@ ez-exercise-permissions ez-permission-email {
 
 /* Code editor */
 
+ez-editor {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--ez-border);
+    border-radius: 2rem;
+    overflow: hidden;
+}
+
+ez-editor .CodeMirror {
+    background: transparent;
+}
+
+ez-editor .CodeMirror-gutters {
+    background: transparent;
+}
+
+ez-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--ez-bg-light-contrast);
+    border-bottom: 1px solid var(--ez-border);
+}
+
+ez-editor[no-header] ez-editor-header {
+    display: none;
+}
+
+ez-editor-files {
+    display: flex;
+    align-items: center;
+}
+
+ez-editor[single-tab] ez-editor-files {
+    pointer-events: none;
+}
+
+ez-editor-tabs {
+    display: flex;
+    --md-secondary-tab-container-color: var(--ez-bg-light-contrast);
+    --md-secondary-tab-container-height: 4rem;
+    --md-divider-thickness: 0;
+    --md-icon-button-state-layer-height: 2rem;
+    --md-icon-button-state-layer-width: 2rem;
+    --md-icon-button-icon-size: 1.8rem;
+}
+
+ez-editor-tabs md-secondary-tab:has(ez-tab-menu) {
+    padding: 0 3px 0 16px;
+}
+
+ez-editor-create-file {
+    display: flex;
+    /* Prevent line-height from affecting alignment */
+    line-height: 0;
+    margin-left: .5rem;
+    --md-icon-button-state-layer-height: 3.2rem;
+    --md-icon-button-state-layer-width: 3.2rem;
+    --md-icon-button-icon-size: 1.8rem;
+}
+
+ez-editor-main {
+    padding: 1rem;
+}
+
+ez-editor[line-numbers] ez-editor-main {
+    padding-left: 0;
+}
+
+ez-editor.read-only .CodeMirror-cursors {
+    visibility: hidden !important;
+}
+
+ez-editor.read-only ez-editor-main {
+    background: var(--ez-bg-light-contrast);
+}
+
+
+
+
 ez-code-edit.readonly .CodeMirror-cursors {
     visibility: hidden;
 }
@@ -3096,6 +3176,11 @@ div.title-wrap > .title-button > i.material-icons {
 
 
 /** Tabs **/
+
+md-tabs md-primary-tab:not([active]) ez-tab-menu,
+md-tabs md-secondary-tab:not([active]) ez-tab-menu {
+    visibility: hidden;
+}
 
 ez-tabs-header {
     display: flex;

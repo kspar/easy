@@ -1,5 +1,6 @@
 package components
 
+import Icons
 import libheaders.MdTabs
 import org.w3c.dom.Element
 import rip.kspar.ezspa.*
@@ -24,11 +25,14 @@ class TabsComp(
         val onActivate: ((tab: Tab) -> Unit)? = null,
         var active: Boolean = false,
         var visible: Boolean = true,
+        val menuOptions: List<DropdownMenuComp.Item> = emptyList(),
         val id: TabID = IdGenerator.nextId(),
-        val compProvider: (parentComp: TabsComp) -> Component,
+        val compProvider: ((parentComp: TabsComp) -> Component)?,
     )
 
-    private val tabComps: List<Component> = tabs.map { it.compProvider(this) }
+    private lateinit var tabComps: List<Component>
+    private lateinit var menus: Map<TabID, DropdownIconMenuComp>
+
 
     private val tabsElement: Element
         get() = getElemBySelector("#$dstId > md-tabs")
@@ -37,37 +41,55 @@ class TabsComp(
         get() = tabsElement.MdTabs()
 
     override val children: List<Component>
-        get() = tabComps
+        get() = tabComps + menus.values
 
+
+    override fun create() = doInPromise {
+        tabComps = tabs.mapNotNull { it.compProvider?.invoke(this) }
+
+        menus = tabs.mapNotNull {
+            if (it.menuOptions.isNotEmpty())
+                it.id to DropdownIconMenuComp(Icons.dotsVertical, null, it.menuOptions, parent = this)
+            else null
+        }.toMap()
+    }
 
     override fun render() = template(
         """
-            <md-tabs>
+            <md-tabs style='overflow: visible;'>
                 {{#tabs}}
                     <{{#prim}}md-primary-tab{{/prim}}{{^prim}}md-secondary-tab{{/prim}} id='{{id}}' {{#active}}active{{/active}} class='{{^visible}}display-none{{/visible}}'>
                         {{#icon}}
                             <md-icon slot="icon">{{{icon}}}</md-icon>
                         {{/icon}}
                         <ez-tab-title>{{title}}</ez-tab-title>
+                        {{#menuDst}}
+                            <ez-tab-menu id='{{menuDst}}'></ez-tab-menu>
+                        {{/menuDst}}
                     </{{#prim}}md-primary-tab{{/prim}}{{^prim}}md-secondary-tab{{/prim}}>
                 {{/tabs}}
             </md-tabs>
             <ez-tabs-content class='mdtabs'>
-            {{#tabs}}
-                <ez-tab-content id="{{compDstId}}"></ez-tab-content>
-            {{/tabs}}
+            {{#tabComps}}
+                <ez-tab-content id="{{dstId}}"></ez-tab-content>
+            {{/tabComps}}
             </ez-tabs-content>
             
         """.trimIndent(),
         "prim" to (type == Type.PRIMARY),
-        "tabs" to tabs.zip(tabComps).map { (tab, comp) ->
+        "tabs" to tabs.map {
             mapOf(
-                "id" to tab.id,
-                "title" to tab.title,
-                "icon" to tab.icon,
-                "compDstId" to comp.dstId,
-                "active" to tab.active,
-                "visible" to tab.visible,
+                "id" to it.id,
+                "title" to it.title,
+                "icon" to it.icon,
+                "active" to it.active,
+                "visible" to it.visible,
+                "menuDst" to menus[it.id]?.dstId,
+            )
+        },
+        "tabComps" to tabComps.map {
+            mapOf(
+                "dstId" to it.dstId
             )
         },
     )

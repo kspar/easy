@@ -14,8 +14,11 @@ class DropdownIconMenuComp(
     private val anchorId = IdGenerator.nextId()
 
     private val iconBtn = IconButtonComp(
-        icon, label, onClick = { dropdown.toggleOpen() },
-        btnId = anchorId, parent = this
+        icon, label,
+        stopPropagation = true,
+        onClick = { dropdown.toggleOpen() },
+        btnId = anchorId,
+        parent = this
     )
 
     private val dropdown = DropdownMenuComp(anchorId, items, this)
@@ -31,4 +34,8 @@ class DropdownIconMenuComp(
             </ez-flex>
         """.trimIndent(),
     )
+
+    fun setEnabled(enabled: Boolean) {
+        iconBtn.setEnabled(enabled)
+    }
 }
