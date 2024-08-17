@@ -2243,11 +2243,10 @@ ez-avatar {
     height: 4rem;
     min-width: 4rem;
     min-height: 4rem;
+    border: 1px solid;
     border-radius: 50%;
-    color: white;
     letter-spacing: 1px;
     cursor: default;
-    background-color: var(--ez-blue);
 }
 
 
