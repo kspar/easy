@@ -183,46 +183,50 @@ class ExerciseAutoFeedbackComp(
     private fun OkV3.renderV3Html() = template(
         """
             <ez-feedback-v3>
-                {{#preEvalError}}<pre>{{preEvalError}}</pre>{{/preEvalError}}
-                <ul class="ez-collapsible collapsible" style='margin-top: 1rem;'>
-                    {{#tests}}
-                        <li>
-                            <div class="collapsible-header">
-                                <ez-feedback-test-header class='icon-med {{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}' 
-                                    style='display: flex; align-items: center;'>{{{status}}} {{title}}</ez-feedback-test-header>
-                                <ez-icon-action class='collapsible-dropdown-icon'>{{{expandIcon}}}</ez-icon-action>
-                            </div>
-                            <div class="collapsible-body">
-                                {{#exception}}
-                                    {{msg}}
-                                    <pre>{{error}}</pre>
-                                {{/exception}}
-                                {{#checks}}
-                                    <ez-feedback-check class='{{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}'>
-                                        {{{status}}}
-                                        {{title}}{{#title}}<br>{{/title}}
-                                        {{feedback}}
-                                        {{^title}}{{^feedback}}¯\_(ツ)_/¯{{/feedback}}{{/title}}
-                                    </ez-feedback-check>
-                                {{/checks}}
-                                <ez-feedback-data>
-                                    {{#files}}
+                {{#preEvalError}}
+                    <pre style='margin: 0; padding: 1rem; background: var(--ez-bg-light-contrast); '>{{preEvalError}}</pre>
+                {{/preEvalError}}
+                {{^preEvalError}}
+                    <ul class="ez-collapsible collapsible" style='margin-top: 1rem;'>
+                        {{#tests}}
+                            <li>
+                                <div class="collapsible-header">
+                                    <ez-feedback-test-header class='icon-med {{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}' 
+                                        style='display: flex; align-items: center;'>{{{status}}} {{title}}</ez-feedback-test-header>
+                                    <ez-icon-action class='collapsible-dropdown-icon'>{{{expandIcon}}}</ez-icon-action>
+                                </div>
+                                <div class="collapsible-body">
+                                    {{#exception}}
                                         {{msg}}
-                                        <pre>{{value}}</pre>
-                                    {{/files}}
-                                    {{#inputs}}
-                                        {{msg}}
-                                        <pre>{{value}}</pre>
-                                    {{/inputs}}
-                                    {{#outputs}}
-                                        {{msg}}
-                                        <pre>{{value}}</pre>
-                                    {{/outputs}}
-                                </ez-feedback-data>
-                            </div>
-                        </li>
-                    {{/tests}}
-                </ul>
+                                        <pre>{{error}}</pre>
+                                    {{/exception}}
+                                    {{#checks}}
+                                        <ez-feedback-check class='{{#pass}}pass{{/pass}} {{#fail}}fail{{/fail}}'>
+                                            {{{status}}}
+                                            {{title}}{{#title}}<br>{{/title}}
+                                            {{feedback}}
+                                            {{^title}}{{^feedback}}¯\_(ツ)_/¯{{/feedback}}{{/title}}
+                                        </ez-feedback-check>
+                                    {{/checks}}
+                                    <ez-feedback-data>
+                                        {{#files}}
+                                            {{msg}}
+                                            <pre>{{value}}</pre>
+                                        {{/files}}
+                                        {{#inputs}}
+                                            {{msg}}
+                                            <pre>{{value}}</pre>
+                                        {{/inputs}}
+                                        {{#outputs}}
+                                            {{msg}}
+                                            <pre>{{value}}</pre>
+                                        {{/outputs}}
+                                    </ez-feedback-data>
+                                </div>
+                            </li>
+                        {{/tests}}
+                    </ul>
+                {{/preEvalError}}
                 <ez-feedback-producer>{{{producerIcon}}}{{producer}}</ez-feedback-producer>
             </ez-feedback-v3>
     """.trimIndent(),
