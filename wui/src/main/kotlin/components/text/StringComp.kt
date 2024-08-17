@@ -14,7 +14,7 @@ class StringComp(
         fun simpleText(text: String) = listOf(Part(text))
         fun boldTriple(prefix: String, bold: String, suffix: String) = listOf(
             Part(prefix),
-            Part(bold, PartType.BOLD),
+            Part(bold, PartType.SEMIBOLD),
             Part(suffix),
         )
     }
