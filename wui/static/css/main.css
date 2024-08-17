@@ -539,6 +539,19 @@ ez-grade-badge {
     margin-top: 1rem;
 }
 
+ez-comment .CodeMirror-scroll {
+    min-height: 6rem;
+}
+
+ez-comment-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+
+
 
 #exercise-card .aa-files-wrap {
     margin-top: 1rem;
