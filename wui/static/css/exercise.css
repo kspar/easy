@@ -12,9 +12,8 @@
 
 .exercise-text code {
     background-color: var(--ez-bg-light-contrast);
-    color: #333;
-    font-style: normal;
     font-size: .9em;
+    padding: 2px;
 }
 
 .exercise-text code strong {
