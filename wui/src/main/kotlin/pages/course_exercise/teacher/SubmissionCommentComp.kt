@@ -121,7 +121,7 @@ class SubmissionCommentComp(
         "time" to createdAt.toHumanString(EzDate.Format.DATE),
         "timeFull" to createdAt.toHumanString(EzDate.Format.FULL),
         "edited" to editedAt?.let {
-            mapOf("editedAt" to maxOf(editedAt, createdAt).toHumanString(EzDate.Format.DATE))
+            mapOf("editedAt" to maxOf(editedAt, createdAt).toHumanString(EzDate.Format.FULL))
         },
         "editedLabel" to Str.editedAt,
         "subNum" to submissionNumber,
