@@ -4,16 +4,13 @@ import Key
 import LocalStore
 import components.ButtonComp
 import components.CheckboxComp
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.AdocEditorComp
 import dao.CourseExercisesTeacherDAO
-import dao.ExerciseDAO
 import hide
 import kotlinx.coroutines.await
-import observeValueChange
 import parseToOrCatch
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
-import rip.kspar.ezspa.getElemByIdOrNull
 import stringify
 import template
 import translation.Str
@@ -32,24 +29,24 @@ class SubmissionEditCommentComp(
     parent: Component
 ) : SubmissionCommentContentComp(parent) {
 
-    private lateinit var editor: OldCodeEditorComp
+    private lateinit var editor: AdocEditorComp
     private lateinit var saveBtn: ButtonComp
     private lateinit var cancelBtn: ButtonComp
     private lateinit var notifyStudentCheckboxComp: CheckboxComp
-    private lateinit var preview: AdocCommentPreviewComp
 
     private val isNew = activityId == null
 
-    private val editorFilename = "comment.adoc"
 
     override val children: List<Component>
-        get() = listOf(editor, saveBtn, cancelBtn, notifyStudentCheckboxComp, preview)
+        get() = listOf(editor, saveBtn, cancelBtn, notifyStudentCheckboxComp)
 
     override fun create() = doInPromise {
-        editor = OldCodeEditorComp(
-            OldCodeEditorComp.File(editorFilename, initialAdoc),
-            softWrap = true, showLineNumbers = false, showTabs = false,
+        editor = AdocEditorComp(
+            initialAdoc,
             placeholder = Str.commentEditorPlaceholder,
+            onContentChanged = {
+                saveBtn.setEnabled(it.isNotBlank())
+            },
             parent = this
         )
 
@@ -59,12 +56,12 @@ class SubmissionEditCommentComp(
             onClick = {
                 if (activityId == null)
                     CourseExercisesTeacherDAO.addComment(
-                        courseId, courseExId, submissionId, getEditorValue(),
+                        courseId, courseExId, submissionId, editor.getContent(),
                         notifyStudentCheckboxComp.value == CheckboxComp.Value.CHECKED
                     ).await()
                 else
                     CourseExercisesTeacherDAO.editComment(
-                        courseId, courseExId, submissionId, activityId, getEditorValue(),
+                        courseId, courseExId, submissionId, activityId, editor.getContent(),
                         notifyStudentCheckboxComp.value == CheckboxComp.Value.CHECKED
                     ).await()
 
@@ -94,17 +91,22 @@ class SubmissionEditCommentComp(
             },
             parent = this
         )
-
-        preview = AdocCommentPreviewComp(this)
     }
 
     override fun render() = template(
         """
-            $editor
-            $saveBtn
-            $cancelBtn
-            $notifyStudentCheckboxComp
-            $preview
+            <ez-comment>
+                $editor
+                <ez-comment-actions>
+                    <ez-flex>
+                        <ez-flex style='margin-right: 1rem;'>
+                            $saveBtn
+                        </ez-flex>
+                        $cancelBtn
+                    </ez-flex>                
+                    $notifyStudentCheckboxComp
+                </ez-comment-actions>
+            </ez-comment>
         """.trimIndent(),
     )
 
@@ -112,20 +114,4 @@ class SubmissionEditCommentComp(
         if (!startVisible)
             hide()
     }
-
-    override fun postChildrenBuilt() {
-        doInPromise {
-            observeValueChange(
-                200, 200, doActionFirst = true,
-                valueProvider = { getEditorValue() },
-                continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
-                action = { newValue ->
-                    saveBtn.setEnabled(newValue.isNotBlank())
-                    preview.contentHtml = ExerciseDAO.previewAdocContent(newValue).await()
-                },
-            )
-        }
-    }
-
-    private fun getEditorValue() = editor.getFileValue(editorFilename).trim()
 }

@@ -1,3 +1,4 @@
+import components.DropdownMenuComp
 import components.ToastIds
 import components.ToastThing
 import kotlinx.browser.document
@@ -10,9 +11,15 @@ import org.w3c.dom.asList
 import org.w3c.dom.url.URL
 import org.w3c.files.Blob
 import org.w3c.files.FileReader
+import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.objOf
 import rip.kspar.ezspa.onChange
 import translation.Str
+
+
+fun saveTextAsFile(filename: String, content: String) {
+    Blob(listOf(content).toTypedArray()).saveAsFile(filename)
+}
 
 fun Blob.saveAsFile(filename: String) {
     val url = URL.createObjectURL(this)
@@ -25,7 +32,7 @@ fun Blob.saveAsFile(filename: String) {
 
 data class UploadedFile(val filename: String, val content: String)
 
-fun uploadFile(callback: (UploadedFile) -> Unit) {
+fun uploadFile(callback: suspend (UploadedFile) -> Unit) {
     val el = document.createElement("input") as HTMLInputElement
     el.type = "file"
 
@@ -44,19 +51,21 @@ fun uploadFile(callback: (UploadedFile) -> Unit) {
 
             val reader = FileReader();
             reader.onload = {
-                val content = reader.result.unsafeCast<ArrayBuffer>()
+                doInPromise {
+                    val content = reader.result.unsafeCast<ArrayBuffer>()
 
-                try {
-                    val text = TextDecoder("utf-8", objOf("fatal" to true)).decode(content)
-                    val uploaded = UploadedFile(file.name, text)
-                    callback(uploaded)
+                    try {
+                        val text = TextDecoder("utf-8", objOf("fatal" to true)).decode(content)
+                        val uploaded = UploadedFile(file.name, text)
+                        callback(uploaded)
 
-                } catch (e: TypeError) {
-                    ToastThing(
-                        Str.uploadErrorFileNotText,
-                        icon = ToastThing.ERROR,
-                        id = ToastIds.uploadedFileError
-                    )
+                    } catch (e: TypeError) {
+                        ToastThing(
+                            Str.uploadErrorFileNotText,
+                            icon = ToastThing.ERROR,
+                            id = ToastIds.uploadedFileError
+                        )
+                    }
                 }
             }
             reader.readAsArrayBuffer(file);

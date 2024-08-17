@@ -1154,7 +1154,7 @@ ez-code-edit-tabs {
 }
 
 .CodeMirror-scroll {
-    min-height: 20vh;
+    min-height: min(20vh, 10rem);
     max-height: 80vh;
 }
 

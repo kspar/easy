@@ -27,7 +27,7 @@ class DropdownMenuComp(
 
     override fun render() = template(
         """
-            <md-menu id="{{id}}" anchor="{{anchorId}}">
+            <md-menu id="{{id}}" anchor="{{anchorId}}" positioning="popover">
                 {{#items}}
                     <md-menu-item id='{{id}}' {{#disabled}}disabled='true'{{/disabled}}>
                         {{#icon}}

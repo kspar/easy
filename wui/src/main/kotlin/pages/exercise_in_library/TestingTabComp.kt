@@ -3,20 +3,24 @@ package pages.exercise_in_library
 import EzDate
 import EzDateSerializer
 import Icons
-import components.code_editor.old.OldCodeEditorComp
+import components.DropdownMenuComp
+import components.code_editor.CodeEditorComp
 import components.form.OldButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import nowTimestamp
 import pages.course_exercise.AutogradeLoaderComp
 import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import saveTextAsFile
 import template
 import translation.Str
+import uploadFile
 import kotlin.js.Promise
 
 
@@ -44,7 +48,7 @@ class TestingTabComp(
 
     private lateinit var warning: WarningComp
     private lateinit var attrs: AttrsComp
-    private lateinit var editor: OldCodeEditorComp
+    private lateinit var editor: CodeEditorComp
 
     private val submitBtn = OldButtonComp(
         OldButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
@@ -75,9 +79,23 @@ class TestingTabComp(
             this
         )
 
-        editor = OldCodeEditorComp(
-            OldCodeEditorComp.File(solutionFileName, latestSubmission?.solution.orEmpty()),
-            placeholder = Str.solutionEditorPlaceholder, parent = this
+        editor = CodeEditorComp(
+            listOf(
+                CodeEditorComp.File(solutionFileName, latestSubmission?.solution),
+            ),
+            menuOptions = listOf(
+                DropdownMenuComp.Item(
+                    Str.uploadSubmission, Icons.upload, onSelected = {
+                        uploadFile { editor.setContent(it.content) }
+                    }
+                ),
+                DropdownMenuComp.Item(
+                    Str.downloadSubmission, Icons.download, onSelected = {
+                        saveTextAsFile("${exerciseId}_${nowTimestamp()}_$solutionFileName", editor.getContent())
+                    }
+                )
+            ),
+            parent = this
         )
 
         feedback = ExerciseAutoFeedbackHolderComp(null, false, false, parent = this)
@@ -107,11 +125,12 @@ class TestingTabComp(
 
     private suspend fun submit() {
         try {
-            editor.setFileEditable(solutionFileName, false)
+            editor.setEditable(false)
+            editor.setActionsEnabled(false)
             feedback.clear()
 
             var autoassessFinished = false
-            val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getFileValue(solutionFileName)).then {
+            val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getContent()).then {
                 autoassessFinished = true
                 it
             }
@@ -122,7 +141,8 @@ class TestingTabComp(
             feedback.setFeedback(assssment.feedback, false)
             attrs.attrs = mapOf(Str.lastTestingAttempt to assssment.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
-            editor.setFileEditable(solutionFileName, true)
+            editor.setActionsEnabled(true)
+            editor.setEditable(true)
         }
     }
 }

@@ -131,7 +131,7 @@ class TeacherCourseExerciseComp(
                 add(TabsComp.Tab("", Icons.user, visible = false) {
                     TeacherCourseExerciseStudentTabComp(
                         courseId, courseExId, courseEx.exercise_id, courseEx.soft_deadline, courseEx.solution_file_name,
-                        "", "", null, null,
+                        "", "", "", null, null,
                         { openNextStudent(it) }, { openPrevStudent(it) }, { updatePrevNextBtns() },
                         it
                     ).also { submissionTabComp = it }
@@ -187,7 +187,9 @@ class TeacherCourseExerciseComp(
         tabs.setTabVisible(submissionTabId, true)
         tabs.activateTab(submissionTabId)
 
-        submissionTabComp.setStudent(student.student_id, student.name, student.submission?.id, student.submission?.id)
+        submissionTabComp.setStudent(
+            student.student_id, student.given_name, student.family_name, student.submission?.id, student.submission?.id
+        )
         updatePrevNextBtns()
 
         if (student.submission != null)

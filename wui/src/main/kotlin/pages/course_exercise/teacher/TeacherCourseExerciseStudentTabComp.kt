@@ -3,9 +3,10 @@ package pages.course_exercise.teacher
 import EzDate
 import Icons
 import components.ButtonComp
+import components.DropdownMenuComp
 import components.IconButtonComp
 import components.MissingContentPlaceholderComp
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
@@ -24,9 +25,10 @@ class TeacherCourseExerciseStudentTabComp(
     private val deadline: EzDate?,
     private val solutionFileName: String,
     var studentId: String,
-    var studentName: String,
-    var submissionId: String?,
-    var latestSubmissionId: String?,
+    private var firstName: String,
+    private var lastName: String,
+    private var submissionId: String?,
+    private var latestSubmissionId: String?,
     private val onNextStudent: suspend (currentStudentId: String) -> Unit,
     private val onPrevStudent: suspend (currentStudentId: String) -> Unit,
     private val onNewSubmissionOpened: suspend () -> Unit,
@@ -43,7 +45,7 @@ class TeacherCourseExerciseStudentTabComp(
 
     private var oldSubmissionWarning: WarningComp? = null
 
-    private var solutionCodeEditor: OldCodeEditorComp? = null
+    private var editor: CodeEditorComp? = null
     private var missingSolutionPlaceholder: MissingContentPlaceholderComp? = null
 
     private var gradeComp: SubmissionGradeComp? = null
@@ -57,7 +59,7 @@ class TeacherCourseExerciseStudentTabComp(
             allSubsBtn,
             allSubsModal,
             oldSubmissionWarning,
-            solutionCodeEditor,
+            editor,
             missingSolutionPlaceholder,
             gradeComp,
             autoFeedbackComp,
@@ -90,7 +92,7 @@ class TeacherCourseExerciseStudentTabComp(
             )
         }
         allSubsModal = submissionId?.let {
-            AllSubmissionsModalComp(courseId, courseExId, studentId, studentName, it, this)
+            AllSubmissionsModalComp(courseId, courseExId, studentId, "$firstName $lastName", it, this)
         }
 
         // TODO: link to last submission if not too difficult
@@ -98,14 +100,21 @@ class TeacherCourseExerciseStudentTabComp(
             WarningComp(Str.oldSubmissionNote, parent = this)
         else null
 
-        // TODO:
-        //  - code editor menu items:
-        //    - download as file
+        // TODO: new code editor menu items:
         //    - edit and submit
         //    - check similarity? (new tab with similarity page and filtered out results for only this student (new dropdown needed probably))
-        solutionCodeEditor = submission?.let {
-            OldCodeEditorComp(
-                OldCodeEditorComp.File(solutionFileName, it.solution, OldCodeEditorComp.Edit.READONLY),
+        editor = submission?.let {
+            CodeEditorComp(
+                listOf(CodeEditorComp.File(solutionFileName, it.solution, isEditable = false)),
+                menuOptions = listOf(
+                    DropdownMenuComp.Item(
+                        Str.downloadSubmission, Icons.download, onSelected = {
+                            CourseExercisesTeacherDAO.downloadSubmissions(
+                                courseId, courseExId, listOf(submissionId!!)
+                            ).await()
+                        }
+                    )
+                ),
                 parent = this
             )
         }
@@ -165,8 +174,10 @@ class TeacherCourseExerciseStudentTabComp(
                     $oldSubmissionWarning
                 </div>
             {{/isOld}}
+            <div style='margin-top: 2rem;'>
+                ${editor.dstIfNotNull()}
+            </div>
             
-            ${solutionCodeEditor.dstIfNotNull()}
             ${missingSolutionPlaceholder.dstIfNotNull()}
             
             $autoFeedbackComp
@@ -177,7 +188,7 @@ class TeacherCourseExerciseStudentTabComp(
             ${allSubsModal.dstIfNotNull()}
             
         """.trimIndent(),
-        "name" to studentName,
+        "name" to "$firstName $lastName",
         "hasSubmission" to (submission != null),
         "isOld" to isOldSubmission,
         "timeIcon" to Icons.pending,
@@ -186,11 +197,14 @@ class TeacherCourseExerciseStudentTabComp(
         "subTime" to submission?.created_at?.toHumanString(EzDate.Format.FULL),
     )
 
-    suspend fun setStudent(id: String, name: String, submissionIdd: String?, latestSubmissionIdd: String?) {
+    suspend fun setStudent(
+        id: String, firstName: String, lastName: String, submissionId: String?, latestSubmissionId: String?
+    ) {
         studentId = id
-        studentName = name
-        submissionId = submissionIdd
-        latestSubmissionId = latestSubmissionIdd
+        this.firstName = firstName
+        this.lastName = lastName
+        this.submissionId = submissionId
+        this.latestSubmissionId = latestSubmissionId
         createAndBuild().await()
     }
 
