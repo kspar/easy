@@ -13,6 +13,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
@@ -197,6 +198,12 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             // Remove & insert all accesses because groups might have changed
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
+
+            // Remove pending access, if student is removed from Moodle
+            StudentMoodlePendingAccess.deleteWhere {
+                (StudentMoodlePendingAccess.course eq courseId) and
+                        (StudentMoodlePendingAccess.moodleUsername.notInList(newAccesses.map { it.moodleUsername }))
+            }
 
             val time = DateTime.now()
             newAccesses.forEach { newAccess ->
