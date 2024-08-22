@@ -18,7 +18,7 @@ import translation.Str
 class ExerciseAutoFeedbackComp(
     var autoFeedback: String?,
     var failed: Boolean,
-    val canRetry: Boolean,
+    var canRetry: Boolean,
     parent: Component,
 ) : Component(parent) {
 
@@ -74,6 +74,9 @@ class ExerciseAutoFeedbackComp(
     // TODO: if tests are added to the exercise after submission, we should be able to run them here
     override fun create() = doInPromise {
         val isV3 = parseAutofeedback() != null
+
+        // TODO: retry not implemented
+        canRetry = false
 
         if (canRetry)
             rerunTestsBtn = IconButtonComp(
