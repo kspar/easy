@@ -1,4 +1,4 @@
-package components.code_editor
+package components.code_editor.parts
 
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component

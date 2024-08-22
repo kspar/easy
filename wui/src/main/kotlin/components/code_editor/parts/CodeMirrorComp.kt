@@ -1,5 +1,6 @@
-package components.code_editor
+package components.code_editor.parts
 
+import components.code_editor.CodeEditorComp
 import libheaders.CodeMirror
 import libheaders.CodeMirrorInstance
 import libheaders.tabHandler

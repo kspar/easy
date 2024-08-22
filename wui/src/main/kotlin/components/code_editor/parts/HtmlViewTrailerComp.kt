@@ -1,4 +1,4 @@
-package components.code_editor
+package components.code_editor.parts
 
 import highlightCode
 import kotlinx.coroutines.await
