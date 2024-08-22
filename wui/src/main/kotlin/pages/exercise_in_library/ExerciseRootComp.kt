@@ -136,7 +136,6 @@ class ExerciseRootComp(
         val updatedExercise = ExerciseDAO.UpdatedExercise(
             exerciseProps.title,
             exerciseProps.textAdoc,
-            exerciseProps.textHtml,
             exerciseProps.editedSubmission.solutionFileName,
             exerciseProps.editedSubmission.solutionFileType,
             exerciseProps.editedSubmission.editedAutoassess?.let {
@@ -214,16 +213,15 @@ class ExerciseRootComp(
 
         val title = mergeValue(local.title, remote.title, initial.title)
         val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
-        val textHtml = mergeValue(local.textHtml, remote.text_html, initial.text_html)
         val solutionFileName = mergeValue(local.solutionFileName, remote.solution_file_name, initial.solution_file_name)
         val solutionFileType = mergeValue(local.solutionFileType, remote.solution_file_type, initial.solution_file_type)
         val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
         val embed = mergeValue(local.embedConfig, remoteEmbed, initialEmbed)
 
         return MergeResult(
-            listOf(title, textAdoc, textHtml, solutionFileName, solutionFileType, autoeval, embed).any { it.second },
+            listOf(title, textAdoc, solutionFileName, solutionFileType, autoeval, embed).any { it.second },
             ExerciseDAO.UpdatedExercise(
-                title.first, textAdoc.first, textHtml.first,
+                title.first, textAdoc.first,
                 solutionFileName.first, solutionFileType.first,
                 autoeval.first, embed.first
             )

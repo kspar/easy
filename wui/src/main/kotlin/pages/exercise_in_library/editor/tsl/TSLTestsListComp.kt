@@ -11,7 +11,7 @@ import tsl.common.model.Test
 
 class TSLTestsListComp(
     private var tests: List<Test>,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component
 ) : Component(parent) {

@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor
 
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import dao.TSLDAO
 import debug
 import kotlinx.coroutines.await
@@ -20,7 +20,7 @@ class AutoassessTSLYAMLEditorComp(
     parent: Component?,
 ) : AutoassessEditorComp(parent) {
 
-    private lateinit var codeEditor: OldCodeEditorComp
+    private lateinit var codeEditor: CodeEditorComp
 
     private var isEditable = startEditable
     private val tslSpec = assets.getOrElse(TSL_SPEC_FILENAME_YAML) { "" }
@@ -36,12 +36,12 @@ class AutoassessTSLYAMLEditorComp(
         get() = listOf(codeEditor)
 
     override fun create() = doInPromise {
-        codeEditor = OldCodeEditorComp(
+        codeEditor = CodeEditorComp(
             listOf(
-                OldCodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, editorEditable(isEditable)),
-                OldCodeEditorComp.File(TSL_SPEC_FILENAME_YAML, tslSpec, editorEditable(isEditable)),
+                CodeEditorComp.File(EVAL_SCRIPT_FILENAME, evaluateScript, isEditable = isEditable),
+                CodeEditorComp.File(TSL_SPEC_FILENAME_YAML, tslSpec, isEditable = isEditable),
             ) + generatedAssets.toList().sortedBy { it.first }.map {
-                OldCodeEditorComp.File(it.first, it.second, OldCodeEditorComp.Edit.READONLY)
+                CodeEditorComp.File(it.first, it.second, isEditable = false)
             },
             parent = this,
         )
@@ -54,11 +54,11 @@ class AutoassessTSLYAMLEditorComp(
         """.trimIndent(),
     )
 
-    override fun postRender() {
+    override fun postChildrenBuilt() {
         if (isEditable) {
             doInPromise {
                 observeValueChange(1000, 300,
-                    valueProvider = { codeEditor.getFileValue(TSL_SPEC_FILENAME_YAML) },
+                    valueProvider = { codeEditor.getContent(TSL_SPEC_FILENAME_YAML) },
                     continuationConditionProvider = { getElemByIdOrNull(codeEditor.dstId) != null && isEditable },
                     action = ::compile,
                     idleCallback = {
@@ -79,7 +79,8 @@ class AutoassessTSLYAMLEditorComp(
             compilerFeedbackEl.textContent = result.feedback
 
             result.scripts?.forEach {
-                codeEditor.setFileValue(it.name, it.value, newFileEdit = OldCodeEditorComp.Edit.READONLY)
+                codeEditor.setContent(it.value, it.name)
+                codeEditor.setFileProps(filename = it.name, editable = false, renameable = false, deletable = false)
             }
 
             result.meta?.let {
@@ -88,8 +89,9 @@ class AutoassessTSLYAMLEditorComp(
                                     Compiler version: ${it.compiler_version}
                                     Backend: ${it.backend_id} ${it.backend_version}
                                """.trimIndent()
-                codeEditor.setFileValue(
-                    TSL_META_FILENAME, metaFile, OldCodeEditorComp.Edit.READONLY
+                codeEditor.setContent(metaFile, TSL_META_FILENAME)
+                codeEditor.setFileProps(
+                    filename = TSL_META_FILENAME, editable = false, renameable = false, deletable = false
                 )
             }
         } finally {
@@ -103,12 +105,10 @@ class AutoassessTSLYAMLEditorComp(
         createAndBuild().await()
     }
 
-    override fun getEvalScript(): String {
-        return codeEditor.getFileValue(EVAL_SCRIPT_FILENAME)
-    }
+    override fun getEvalScript(): String = codeEditor.getContent(EVAL_SCRIPT_FILENAME)
 
     override fun getAssets(): Map<String, String> {
-        val files = codeEditor.getAllFiles().associate { it.name to it.content.orEmpty() }
+        val files = codeEditor.getAllFiles()
         return files - EVAL_SCRIPT_FILENAME
     }
 
@@ -119,9 +119,9 @@ class AutoassessTSLYAMLEditorComp(
         val editorTabId: String?,
     ) : AutoassessEditorComp.ActiveView
 
-    override fun getActiveView() = ActiveView(codeEditor.getActiveTabFilename())
+    override fun getActiveView() = ActiveView(codeEditor.getActiveFilename())
 
     override fun setActiveView(view: AutoassessEditorComp.ActiveView?) {
-        (view as? ActiveView)?.editorTabId?.let { codeEditor.setActiveTabByFilename(it) }
+        (view as? ActiveView)?.editorTabId?.let { codeEditor.setActiveFilename(it) }
     }
 }

@@ -14,12 +14,14 @@ import template
 class AdocEditorComp(
     private val adoc: String,
     private val placeholder: String = "",
+    private val inlinePreview: Boolean = true,
+    private val isEditable: Boolean = true,
     private val onContentChanged: suspend (newContent: String) -> Unit,
     parent: Component?,
 ) : Component(parent) {
 
     private lateinit var editor: CodeEditorComp
-    private lateinit var preview: HtmlViewEditorTrailerComp
+    private var preview: HtmlViewEditorTrailerComp? = null
     private lateinit var helpLink: IconButtonComp
 
     override val children
@@ -27,10 +29,12 @@ class AdocEditorComp(
 
     override fun create() = doInPromise {
 
-        preview = HtmlViewEditorTrailerComp(parent = this)
+        preview = if (inlinePreview)
+            HtmlViewEditorTrailerComp(parent = this)
+        else null
 
         editor = CodeEditorComp(
-            listOf(CodeEditorComp.File("", adoc, lang = "asciidoc")),
+            listOf(CodeEditorComp.File("", adoc, isEditable = isEditable, lang = "asciidoc")),
             placeholder = placeholder,
             headerVisible = false,
             tabs = false,
@@ -66,7 +70,7 @@ class AdocEditorComp(
                 valueProvider = { getContent() },
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 action = { newValue ->
-                    preview.set(ExerciseDAO.previewAdocContent(newValue).await())
+                    preview?.set(ExerciseDAO.previewAdocContent(newValue).await())
                     onContentChanged(newValue)
                 },
             )
@@ -74,4 +78,8 @@ class AdocEditorComp(
     }
 
     fun getContent() = editor.getContent().trim()
+
+    suspend fun setContent(content: String) = editor.setContent(content)
+
+    suspend fun setEditable(nowEditable: Boolean) = editor.setFileProps(editable = nowEditable)
 }

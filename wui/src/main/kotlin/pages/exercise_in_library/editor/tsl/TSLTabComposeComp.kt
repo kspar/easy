@@ -16,7 +16,7 @@ import tsl.common.model.Test
 
 class TSLTabComposeComp(
     var tests: List<Test>,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
     dstId: String = IdGenerator.nextId()

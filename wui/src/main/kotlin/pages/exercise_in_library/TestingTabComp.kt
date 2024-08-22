@@ -125,7 +125,7 @@ class TestingTabComp(
 
     private suspend fun submit() {
         try {
-            editor.setEditable(false)
+            editor.setFileProps(editable = false)
             editor.setActionsEnabled(false)
             feedback.clear()
 
@@ -142,7 +142,7 @@ class TestingTabComp(
             attrs.attrs = mapOf(Str.lastTestingAttempt to assssment.timestamp.toHumanString(EzDate.Format.FULL))
         } finally {
             editor.setActionsEnabled(true)
-            editor.setEditable(true)
+            editor.setFileProps(editable = true)
         }
     }
 }

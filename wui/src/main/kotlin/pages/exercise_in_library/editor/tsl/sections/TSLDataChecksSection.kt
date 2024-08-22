@@ -15,7 +15,7 @@ import tsl.common.model.GenericCheck
 
 class TSLDataChecksSection(
     private var checks: MutableList<GenericCheck>,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {
@@ -205,7 +205,7 @@ class TSLDataChecksSection(
         "addBtnDst" to addCheckBtn.dstId,
         "sent1" to Str.tslStdoutCheckSent1,
         "sent2" to Str.tslStdoutCheckSent2,
-        )
+    )
 
     fun updateAndGetChecks(): List<GenericCheck> {
         checks = sections.map {

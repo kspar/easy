@@ -19,7 +19,7 @@ import tsl.common.model.Test
 
 class TSLFunctionCallTest(
     private val initialModel: FunctionExecutionTest?,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
     dstId: String,

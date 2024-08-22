@@ -14,7 +14,7 @@ import tsl.common.model.Test
 
 class TSLProgramExecutionTest(
     private val initialModel: ProgramExecutionTest?,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
     dstId: String,

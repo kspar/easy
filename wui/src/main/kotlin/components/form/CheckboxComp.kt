@@ -13,7 +13,7 @@ class CheckboxComp(
     private val label: String,
     private val initialValue: Boolean = false,
     var isDisabled: Boolean = false,
-    private val onValueChange: ((Boolean) -> Unit)? = null,
+    private val onValueChange: (suspend (Boolean) -> Unit)? = null,
     parent: Component
 ) : Component(parent) {
 

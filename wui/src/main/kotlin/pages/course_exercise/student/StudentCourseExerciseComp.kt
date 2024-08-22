@@ -3,7 +3,7 @@ package pages.course_exercise.student
 import CONTENT_CONTAINER_ID
 import Key
 import cache.BasicCourseInfo
-import components.PageTabsComp
+import components.TabsComp
 import components.TwoColDividerComp
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
@@ -25,9 +25,8 @@ class StudentCourseExerciseComp(
     private val setPathSuffix: (String) -> Unit
 ) : Component(null, CONTENT_CONTAINER_ID) {
 
-
     private lateinit var exerciseTextComp: CourseExerciseTextComp
-    private lateinit var tabs: PageTabsComp
+    private lateinit var tabs: TabsComp
 
     private lateinit var colDividerComp: TwoColDividerComp
 
@@ -51,10 +50,9 @@ class StudentCourseExerciseComp(
         setPathSuffix(createPathChainSuffix(listOf(courseEx.effective_title)))
 
         exerciseTextComp = CourseExerciseTextComp(courseEx.effective_title, courseEx.text_html, courseEx.deadline, this)
-        tabs = PageTabsComp(
-            type = PageTabsComp.Type.SUBPAGE,
-            tabs = listOf(
-                PageTabsComp.Tab(Str.tabSubmit, preselected = true,
+        tabs = TabsComp(TabsComp.Type.PRIMARY,
+            listOf(
+                TabsComp.Tab(Str.tabSubmit,
                     compProvider = {
                         CourseExerciseStudentSubmitTabComp(
                             courseId,
@@ -66,8 +64,9 @@ class StudentCourseExerciseComp(
                             ::updateSubmissions,
                             it
                         )
-                    }),
-                PageTabsComp.Tab(Str.tabMySubmissions,
+                    }
+                ),
+                TabsComp.Tab(Str.tabMySubmissions,
                     compProvider = {
                         CourseExerciseStudentSubmissionsTabComp(
                             courseId,
@@ -76,9 +75,10 @@ class StudentCourseExerciseComp(
                             it
                         ).also { submissionsTab = it }
                     }),
-                PageTabsComp.Tab(
+                TabsComp.Tab(
                     "",
-                    id = oldSubmissionTabId, hidden = true,
+                    id = oldSubmissionTabId,
+                    visible = false,
                     compProvider = {
                         CourseExerciseStudentOldSubmissionTabComp(
                             courseId, courseExId,
@@ -89,7 +89,7 @@ class StudentCourseExerciseComp(
                         )
                             .also { oldSubmissionTab = it }
                     },
-                ),
+                )
             ),
             parent = this
         )
@@ -119,7 +119,8 @@ class StudentCourseExerciseComp(
 
     private suspend fun openSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {
         tabs.setTabTitle(oldSubmissionTabId, "# " + submission.number.toString())
-        tabs.setSelectedTabById(oldSubmissionTabId)
+        tabs.setTabVisible(oldSubmissionTabId, true)
+        tabs.activateTab(oldSubmissionTabId)
         oldSubmissionTab.setSubmission(submission)
     }
 }

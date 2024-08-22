@@ -89,7 +89,8 @@ html.embedded.light body {
 }
 
 html.embedded.light.bordered body {
-    border: 1px solid #ccc;
+    border: 1px solid var(--ez-border);
+    border-radius: 2rem;
 }
 
 html.embedded main {
@@ -500,10 +501,6 @@ ez-course-exercise > ez-block-container {
     justify-content: center;
     row-gap: 2rem;
     padding: 2rem 0 0 0;
-}
-
-.student-submit-editor .editor-top {
-    min-height: 4.4rem;
 }
 
 ez-course-exercise > ez-block-container > ez-block > ez-tabs-content.mdtabs {
@@ -1449,6 +1446,25 @@ ez-inline-flex {
 
 /** Buttons **/
 
+md-filled-button {
+    --md-circular-progress-size: 24px;
+    --md-circular-progress-active-indicator-width: 14;
+}
+
+md-filled-button[disabled] {
+    --md-circular-progress-active-indicator-color: var(--md-sys-color-on-surface);
+}
+
+md-filled-button md-circular-progress {
+    margin-right: 4px;
+}
+
+md-circular-progress::part(.progress.indeterminate) {
+    margin: 0;
+}
+
+
+
 .btn, .btn-flat, .btn-floating {
     display: inline-flex;
     align-items: center;
@@ -2150,6 +2166,8 @@ ez-icon {
 }
 
 md-icon > ez-icon {
+    width: inherit;
+    height: inherit;
     color: inherit;
 }
 

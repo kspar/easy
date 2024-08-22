@@ -28,15 +28,10 @@ class CodeEditorComp(
     data class File(
         var name: String, var content: String?,
         var isEditable: Boolean = true,
-        val isRenameable: Boolean = false,
-        val isDeletable: Boolean = false,
+        var isRenameable: Boolean = false,
+        var isDeletable: Boolean = false,
         // Auto-detect based on filename if null - not sure if hardcoding is necessary
         val lang: dynamic = null
-    )
-
-    data class Status(
-        val text: String = "",
-        val icon: String = "",
     )
 
 
@@ -147,21 +142,38 @@ class CodeEditorComp(
     }
 
     suspend fun setContent(content: String, filename: String? = null) {
-        val file = if (filename != null)
-            files.first { it.name == filename }
-        else activeFile
+        val file = if (filename != null) {
+
+            // Create file if doesn't exist
+            files.firstOrNull { it.name == filename }
+                ?: createNewFile(filename)
+
+        } else activeFile
 
         file.content = content
         createAndBuild().await()
     }
 
-    fun setEditable(editable: Boolean, filename: String? = null) {
+    suspend fun setFileProps(
+        editable: Boolean? = null, renameable: Boolean? = null, deletable: Boolean? = null,
+        filename: String? = null
+    ) {
         val file = if (filename != null)
             files.first { it.name == filename }
         else activeFile
 
-        file.isEditable = editable
-        refreshEditable()
+
+        editable?.let {
+            file.isEditable = editable
+        }
+        renameable?.let {
+            file.isRenameable = renameable
+        }
+        deletable?.let {
+            file.isDeletable = deletable
+        }
+
+        createAndBuild().await()
     }
 
     fun setActionsEnabled(enabled: Boolean) {
@@ -169,13 +181,13 @@ class CodeEditorComp(
         dropdownMenu?.setEnabled(enabled)
     }
 
-    fun setStatus(status: Status? = null) = doInPromise {
-        if (status != null)
-            this.status.set(status.text, status.icon)
-        else
-            this.status.set("", "")
+    fun setStatusText(text: String = "") = doInPromise {
+        status.set(text = text)
     }
 
+    fun setStatusIcon(icon: String = "") = doInPromise {
+        status.set(icon = icon)
+    }
 
     override fun hasUnsavedChanges(): Boolean {
         refreshContent()
@@ -195,10 +207,12 @@ class CodeEditorComp(
         createAndBuild().await()
     }
 
-    private suspend fun createNewFile(name: String) {
+    private suspend fun createNewFile(name: String): File {
         refreshContent()
-        files = files + File(name, null, isEditable = true, isRenameable = true, isDeletable = true)
+        val newFile = File(name, null, isEditable = true, isRenameable = true, isDeletable = true)
+        files = files + newFile
         createAndBuild().await()
+        return newFile
     }
 
     private fun refreshContent() {

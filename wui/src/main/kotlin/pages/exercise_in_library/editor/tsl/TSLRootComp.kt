@@ -42,13 +42,11 @@ class TSLRootComp(
             PageTabsComp.Tab(
                 Str.tslSpecTab,
                 compProvider = { TSLTabTslComp(initialTslSpecStr, ::updateCompose, it) },
-                onActivate = { tslComp.refreshEditor() },
                 id = Tab.SPEC.id
             ),
             PageTabsComp.Tab(
                 Str.tslGeneratedTab,
                 compProvider = { TSLTabScriptsComp(assets - TSL_SPEC_FILENAME_JSON, it) },
-                onActivate = { scriptsComp.refreshEditor() },
                 id = Tab.GENERATED.id
             )
         ), parent = this
@@ -79,7 +77,7 @@ class TSLRootComp(
 
     fun getTslSpec() = mapOf(TSL_SPEC_FILENAME_JSON to tslComp.getTsl())
 
-    fun setEditable(nowEditable: Boolean) {
+    suspend fun setEditable(nowEditable: Boolean) {
         isEditable = nowEditable
         composeComp.setEditable(nowEditable)
         tslComp.setEditable(nowEditable)
@@ -123,7 +121,7 @@ class TSLRootComp(
             compileTsl(tslSpec)
     }
 
-    private fun updateTsl() {
+    private suspend fun updateTsl() {
         debug { "Updating editor with tests: ${composeComp.getComposedTests().map { it.id }}" }
         val model = createTSLModel(composeComp.getComposedTests())
         val tslStr = TSLFormat.encodeToString(model)

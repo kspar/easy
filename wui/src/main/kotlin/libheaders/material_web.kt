@@ -117,6 +117,13 @@ external class MdCheckbox {
 fun Element.MdCheckbox() = unsafeCast<MdCheckbox>()
 
 
+@JsModule("@material/web/progress/circular-progress.js")
+@JsNonModule
+external class MdCircularProgress {
+    companion object
+}
+
+
 fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
     MdFilledButton
@@ -138,5 +145,7 @@ fun mentionMaterialComponents() {
     MdFilterChip
 
     MdCheckbox
+
+    MdCircularProgress
 }
 

@@ -8,7 +8,7 @@ import rip.kspar.ezspa.doInPromise
 import translation.Str
 
 class TSLEditTitleModalComp(
-    private val onTitleChanged: (String) -> Unit,
+    private val onTitleChanged: suspend (String) -> Unit,
     parent: Component,
 ) : Component(parent) {
 

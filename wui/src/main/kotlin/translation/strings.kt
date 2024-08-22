@@ -312,6 +312,7 @@ sealed class TranslatableStrings {
     abstract val allowedExecMem: String
     abstract val allowedExecMemField: String
     abstract val solutionFilename: String
+    abstract val exerciseTextEditorPlaceholder: String
 
 
     // Participants page
@@ -653,6 +654,7 @@ ole hea ja proovi hiljem uuesti.
     override val allowedExecMem = "Lubatud mälukasutus"
     override val allowedExecMemField = "Mälukasutus (MB)"
     override val solutionFilename = "Faili nimi"
+    override val exerciseTextEditorPlaceholder = "Kirjuta ülesande tekst siia..."
     override val courseJoinHelpText =
         "See on isiklik link, mis võimaldab õpilasel kursusega liituda. Lingi kaudu liitumine seob õpilase konto tema Moodle'i kontoga. Hoia linki salajas ja jaga seda ainult õige õpilasega."
     override val courseJoinLink = "Liitumislink"
@@ -1043,6 +1045,7 @@ of the issue, please try again later.
     override val allowedExecMem = "Allowed memory usage"
     override val allowedExecMemField = "Allowed memory (MB)"
     override val solutionFilename = "File name"
+    override val exerciseTextEditorPlaceholder = "Write your exercise text here..."
     override val courseJoinHelpText =
         "This personal link can be used by the student to join this course. Using the link associates the student's account with their Moodle account. Keep the link private and share it only with this student."
     override val courseJoinLink = "Enrolment link"

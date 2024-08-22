@@ -1,6 +1,6 @@
 package pages.course_exercise.student
 
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await
@@ -8,6 +8,7 @@ import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import pages.course_exercise.teacher.SubmissionCommentsListComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import template
 
 
 class CourseExerciseStudentOldSubmissionTabComp(
@@ -19,7 +20,7 @@ class CourseExerciseStudentOldSubmissionTabComp(
     parent: Component
 ) : Component(parent) {
 
-    private lateinit var editor: OldCodeEditorComp
+    private lateinit var editor: CodeEditorComp
     private lateinit var feedback: ExerciseAutoFeedbackHolderComp
     private var commentsList: SubmissionCommentsListComp? = null
 
@@ -29,8 +30,8 @@ class CourseExerciseStudentOldSubmissionTabComp(
 
     override fun create() = doInPromise {
 
-        editor = OldCodeEditorComp(
-            OldCodeEditorComp.File(solutionFileName, submission?.solution, OldCodeEditorComp.Edit.READONLY),
+        editor = CodeEditorComp(
+            listOf(CodeEditorComp.File(solutionFileName, submission?.solution, isEditable = false)),
             parent = this
         )
 
@@ -47,6 +48,16 @@ class CourseExerciseStudentOldSubmissionTabComp(
             parent = this
         )
     }
+
+    override fun render() = template(
+        """
+            <div style="margin-top: 3rem;">
+                $editor
+            </div>
+            $feedback
+            $commentsList
+        """.trimIndent()
+    )
 
     suspend fun setSubmission(submission: CourseExercisesStudentDAO.StudentSubmission) {
         this.submission = submission

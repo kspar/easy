@@ -21,9 +21,13 @@ class CodeEditorStatusComp(
         "icon" to icon
     )
 
-    suspend fun set(text: String, icon: String) {
-        this.text = text
-        this.icon = icon
+    suspend fun set(text: String? = null, icon: String? = null) {
+        text?.let {
+            this.text = it
+        }
+        icon?.let {
+            this.icon = it
+        }
         createAndBuild().await()
     }
 }

@@ -14,7 +14,7 @@ import tsl.common.model.ReturnValueCheck
 
 class TSLReturnCheckSection(
     private var check: ReturnValueCheck?,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {

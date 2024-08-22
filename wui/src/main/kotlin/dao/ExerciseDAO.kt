@@ -109,7 +109,6 @@ object ExerciseDAO {
     data class UpdatedExercise(
         val title: String,
         val textAdoc: String?,
-        val textHtml: String?,
         val solutionFileName: String,
         val solutionFileType: SolutionFileType,
         val autoeval: Autoeval?,
@@ -136,7 +135,6 @@ object ExerciseDAO {
                 "title" to it.title,
                 // avoid overwriting html with empty adoc for html-only exercises
                 "text_adoc" to it.textAdoc.blankToNull(),
-                "text_html" to it.textHtml,
                 // TODO: remove
                 "public" to false,
                 "grader_type" to if (it.autoeval != null) GraderType.AUTO.name else GraderType.TEACHER.name,

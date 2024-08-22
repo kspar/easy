@@ -2,7 +2,7 @@ package pages.embed_anon_autoassess
 
 import AppProperties
 import Icons
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import components.form.OldButtonComp
 import components.text.WarningComp
 import dao.AnonymousExerciseDAO
@@ -37,7 +37,7 @@ class EmbedAnonAutoassessRootComp(
 
     private lateinit var exercise: AnonymousExerciseDAO.AnonExercise
 
-    private var editor: OldCodeEditorComp? = null
+    private var editor: CodeEditorComp? = null
     private var submitBtn: OldButtonComp? = null
 
     private lateinit var feedback: ExerciseAutoFeedbackHolderComp
@@ -54,9 +54,17 @@ class EmbedAnonAutoassessRootComp(
         showSubmit = submit && exercise.submit_allowed
 
         if (showSubmit) {
-            editor = OldCodeEditorComp(
-                OldCodeEditorComp.File("lahendus.py", if (showTemplate) exercise.anonymous_autoassess_template else null),
-                showLineNumbers = false, showTabs = false, parent = this
+            editor = CodeEditorComp(
+                listOf(
+                    CodeEditorComp.File(
+                        "lahendus.py", if (showTemplate) exercise.anonymous_autoassess_template else null
+                    )
+                ),
+                placeholder = Str.solutionEditorPlaceholder,
+                tabs = false,
+                lineNumbers = false,
+                headerVisible = false,
+                parent = this
             )
             submitBtn = OldButtonComp(OldButtonComp.Type.PRIMARY_ROUND, null, Icons.robot, { assess() }, parent = this)
         }
@@ -79,7 +87,7 @@ class EmbedAnonAutoassessRootComp(
                 $warning
                 
                 {{#hasSubmit}}
-                    <div style="position: relative">
+                    <div style="position: relative; margin-top: 3rem;">
                         <div style="position: absolute; right: 10px; top: 10px;">
                             $submitBtn
                         </div>
@@ -124,7 +132,7 @@ class EmbedAnonAutoassessRootComp(
             val observer = ResizeObserver { entries, _ ->
                 entries.forEach {
                     it.borderBoxSize.firstOrNull()?.let {
-                        val height = it.blockSize.roundToInt()
+                        val height = it.blockSize.roundToInt() + 1
                         debug { "Content resized to $height px" }
                         val msg = FrameResizeMessage(window.location.toString(), height)
                         val msgStr = FrameResizeMessage.serializer().stringify(msg)
@@ -137,15 +145,18 @@ class EmbedAnonAutoassessRootComp(
         }
     }
 
-    override fun renderLoading() = "Laen ülesannet..."
+    override fun renderLoading() = Str.loading
 
     private suspend fun assess() {
-        val solution = editor?.getActiveTabContent().orEmpty()
+        val editor = editor!!
 
+        editor.setFileProps(editable = false)
+        val solution = editor.getContent()
         feedback.clear()
 
         val result = AnonymousExerciseDAO.submit(exerciseId, solution).await()
 
         feedback.setFeedback(result.feedback, false)
+        editor.setFileProps(editable = true)
     }
 }

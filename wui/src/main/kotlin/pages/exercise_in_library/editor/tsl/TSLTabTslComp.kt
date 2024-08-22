@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor.tsl
 
-import components.code_editor.old.OldCodeEditorComp
+import components.code_editor.CodeEditorComp
 import debug
 import observeValueChange
 import pages.exercise_in_library.editor.AutoassessEditorComp.Companion.TSL_SPEC_FILENAME_JSON
@@ -17,19 +17,20 @@ class TSLTabTslComp(
 
     private var externallyChanged = false
 
-    private val editor = OldCodeEditorComp(
-        OldCodeEditorComp.File(TSL_SPEC_FILENAME_JSON, tslSpec),
-        showTabs = false,
+    private val editor = CodeEditorComp(
+        listOf(CodeEditorComp.File(TSL_SPEC_FILENAME_JSON, tslSpec)),
+        tabs = false,
+        headerVisible = false,
         parent = this,
     )
 
     override val children: List<Component>
         get() = listOf(editor)
 
-    override fun postRender() {
+    override fun postChildrenBuilt() {
         doInPromise {
             observeValueChange(500, 250,
-                valueProvider = { editor.getActiveTabContent() },
+                valueProvider = { editor.getContent() },
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 action = {
                     if (externallyChanged) {
@@ -44,17 +45,14 @@ class TSLTabTslComp(
         }
     }
 
-    fun getTsl() = editor.getActiveTabContent().orEmpty()
+    fun getTsl() = editor.getContent()
 
-    fun setTsl(tslSpec: String) {
-        editor.setFileValue(TSL_SPEC_FILENAME_JSON, tslSpec)
+    suspend fun setTsl(tslSpec: String) {
+        editor.setContent(tslSpec)
         externallyChanged = true
     }
 
-    fun setEditable(nowEditable: Boolean) {
-        editor.setFileEditable(TSL_SPEC_FILENAME_JSON, nowEditable)
+    suspend fun setEditable(nowEditable: Boolean) {
+        editor.setFileProps(editable = nowEditable)
     }
-
-    fun refreshEditor() = editor.refresh()
 }
-

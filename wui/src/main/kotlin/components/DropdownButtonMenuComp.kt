@@ -17,7 +17,8 @@ class DropdownButtonMenuComp(
     private val anchorId = IdGenerator.nextId()
 
     val button = ButtonComp(
-        type, label, Icons.dropdownBtnExpand, true,
+        type, label, Icons.dropdownBtnExpand,
+        trailingIcon = true,
         onClick = { dropdown.toggleOpen() },
         btnId = anchorId,
         parent = this

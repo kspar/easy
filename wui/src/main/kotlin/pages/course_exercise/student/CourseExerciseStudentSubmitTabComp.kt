@@ -1,16 +1,17 @@
 package pages.course_exercise.student
 
 import Icons
+import components.ButtonComp
+import components.DropdownMenuComp
 import components.ToastThing
-import components.code_editor.old.OldCodeEditorComp
-import components.form.OldButtonComp
+import components.code_editor.CodeEditorComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import hide
 import kotlinx.coroutines.await
+import nowTimestamp
 import observeValueChange
-import org.w3c.files.Blob
 import pages.course_exercise.AutogradeLoaderComp
 import pages.course_exercise.ExerciseAutoFeedbackHolderComp
 import pages.course_exercise.teacher.SubmissionCommentsListComp
@@ -19,7 +20,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.getElemByIdOrNull
-import saveAsFile
+import saveTextAsFile
 import show
 import template
 import translation.Str
@@ -39,9 +40,8 @@ class CourseExerciseStudentSubmitTabComp(
 
     private data class EditorContent(val content: String, val isDraft: Boolean)
 
-    private lateinit var editor: OldCodeEditorComp
-    private lateinit var syncIcon: CourseExerciseEditorStatusComp
-    private lateinit var submitBtn: OldButtonComp
+    private lateinit var editor: CodeEditorComp
+    private lateinit var submitBtn: ButtonComp
     private val warning = WarningComp(parent = this)
     private lateinit var grade: SubmissionGradeComp
     private lateinit var testsFeedback: ExerciseAutoFeedbackHolderComp
@@ -59,7 +59,7 @@ class CourseExerciseStudentSubmitTabComp(
 
 
     override val children: List<Component>
-        get() = listOf(editor, syncIcon, warning, submitBtn, grade, testsFeedback, autogradeLoader, commentsList)
+        get() = listOf(editor, warning, submitBtn, grade, testsFeedback, autogradeLoader, commentsList)
 
     override fun create() = doInPromise {
         val submissionP = CourseExercisesStudentDAO.getLatestSubmission(courseId, courseExId)
@@ -101,32 +101,48 @@ class CourseExerciseStudentSubmitTabComp(
             }
         }
 
-        editor = OldCodeEditorComp(
-            OldCodeEditorComp.File(
-                solutionFileName, content?.content,
-                editability = if (isOpenForSubmissions) OldCodeEditorComp.Edit.EDITABLE else OldCodeEditorComp.Edit.READONLY
+        editor = CodeEditorComp(
+            listOf(
+                CodeEditorComp.File(
+                    solutionFileName, content?.content,
+                    isEditable = isOpenForSubmissions,
+                )
             ),
-            placeholder = Str.solutionEditorPlaceholder, parent = this
-        )
-
-        syncIcon = CourseExerciseEditorStatusComp(
-            "", CourseExerciseEditorStatusComp.Status.IN_SYNC,
-            canUpload = isOpenForSubmissions,
-            onUpload = ::uploadSolution,
-            onDownload = ::downloadSolution,
+            placeholder = Str.solutionEditorPlaceholder,
+            menuOptions = buildList {
+                if (isOpenForSubmissions)
+                    add(DropdownMenuComp.Item(
+                        Str.uploadSubmission, Icons.upload, onSelected = {
+                            uploadFile { editor.setContent(it.content) }
+                        }
+                    ))
+                add(DropdownMenuComp.Item(
+                    Str.downloadSubmission, Icons.download, onSelected = {
+                        saveTextAsFile("${courseExId}_${nowTimestamp()}_$solutionFileName", editor.getContent())
+                    }
+                ))
+            },
             parent = this
         )
+//
+//        syncIcon = CourseExerciseEditorStatusComp(
+//            "", CourseExerciseEditorStatusComp.Status.IN_SYNC,
+//            canUpload = isOpenForSubmissions,
+//            onUpload = ::uploadSolution,
+//            onDownload = ::downloadSolution,
+//            parent = this
+//        )
 
-        submitBtn = OldButtonComp(
-            OldButtonComp.Type.PRIMARY,
+        submitBtn = ButtonComp(
+            ButtonComp.Type.FILLED,
             if (graderType == ExerciseDAO.GraderType.AUTO) Str.doSubmitAndCheck else Str.doSubmit,
             if (graderType == ExerciseDAO.GraderType.AUTO) Icons.robot else null,
-            isEnabledInitial = isOpenForSubmissions,
+            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) Str.autoAssessing else Str.saving,
             onClick = {
                 try {
                     setEditorEditable(false)
                     if (!isAutogradeInProgressInitial)
-                        submit(editor.getActiveTabContent()!!)
+                        submit(editor.getContent())
                     isAutogradeInProgressInitial = false
                     testsFeedback.clear()
                     if (graderType == ExerciseDAO.GraderType.AUTO) {
@@ -139,7 +155,7 @@ class CourseExerciseStudentSubmitTabComp(
                     setEditorEditable(true)
                 }
             },
-            clickedLabel = if (graderType == ExerciseDAO.GraderType.AUTO) Str.autoAssessing else Str.saving,
+            disableOnClick = true,
             parent = this
         )
 
@@ -158,11 +174,12 @@ class CourseExerciseStudentSubmitTabComp(
 
     override fun render() = template(
         """
-            <div class='student-submit-editor' style="position: relative">
-                $syncIcon
+            <div style='margin-top: 3rem;'>
                 $editor
             </div>
-            <div id='${submitBtn.dstId}' style='display: flex; justify-content: center; margin-top: 3rem;'></div>
+            <ez-flex style='justify-content: center; margin-top: 3rem;'>
+                $submitBtn
+            </ez-flex>
             $warning
             $autogradeLoader
             $grade
@@ -171,26 +188,24 @@ class CourseExerciseStudentSubmitTabComp(
         """.trimIndent(),
     )
 
-    override fun postRender() {
+    override fun postChildrenBuilt() {
         if (currentSubmission == null)
             grade.hide()
 
         doInPromise {
             observeValueChange(1000, 500,
-                valueProvider = { editor.getActiveTabContent()!! },
+                valueProvider = { editor.getContent() },
                 action = ::saveDraft,
                 continuationConditionProvider = { getElemByIdOrNull(editor.dstId) != null },
                 idleCallback = {
                     // Race condition: if changed and submitted before this is called, then it will update to isDraft even though it's been submitted
-                    val isDistinctDraft = editor.getActiveTabContent() != currentSubmission
-                    updateStatus(CourseExerciseEditorStatusComp.Status.WAITING, isDistinctDraft)
+                    val isDistinctDraft = editor.getContent() != currentSubmission
+                    updateStatus(isDraft = isDistinctDraft)
                     hasUnsavedDraft = isDistinctDraft
                 })
         }
-    }
 
-    override fun postChildrenBuilt() {
-        updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, isDraft)
+        updateStatus(syncSuccess = true, isDraft)
         if (isAutogradeInProgressInitial)
             submitBtn.click()
         if (!isOpenForSubmissions) {
@@ -206,12 +221,10 @@ class CourseExerciseStudentSubmitTabComp(
                 ToastThing.Action(Str.tryAgain, { saveDraft(content) }),
                 icon = ToastThing.ERROR, displayTime = ToastThing.PERMANENT, id = syncFailToastId
             )
-            updateStatus(CourseExerciseEditorStatusComp.Status.SYNC_FAILED)
+            updateStatus(syncSuccess = false)
             hasUnsavedDraft = true
             return
         }
-
-        updateStatus(CourseExerciseEditorStatusComp.Status.SYNCING)
 
         try {
             CourseExercisesStudentDAO.postSubmissionDraft(courseId, courseExId, content).await()
@@ -220,25 +233,25 @@ class CourseExerciseStudentSubmitTabComp(
             return
         }
 
-        updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC)
+        updateStatus(syncSuccess = true)
         hasUnsavedDraft = false
         syncFailToast?.dismiss()
     }
 
-    private fun updateStatus(status: CourseExerciseEditorStatusComp.Status, isDraft: Boolean? = null) {
-        if (isDraft != null)
-            syncIcon.msg = when {
-                isDraft -> Str.solutionEditorStatusDraft
-                else -> Str.solutionEditorStatusSubmission
-            }
-        syncIcon.status = status
-        syncIcon.rebuild()
+    private fun updateStatus(syncSuccess: Boolean? = null, isDraft: Boolean? = null) {
+        isDraft?.let {
+            editor.setStatusText(if (isDraft) Str.solutionEditorStatusDraft else Str.solutionEditorStatusSubmission)
+        }
+
+        syncSuccess?.let {
+            editor.setStatusIcon(if (syncSuccess) Icons.cloudSuccess else Icons.cloudFail)
+        }
     }
 
     private suspend fun submit(solution: String) {
         currentSubmission = solution
         CourseExercisesStudentDAO.postSubmission(courseId, courseExId, solution).await()
-        updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
+        updateStatus(syncSuccess = true, isDraft = false)
         ToastThing(Str.submitSuccessMsg)
     }
 
@@ -261,21 +274,12 @@ class CourseExerciseStudentSubmitTabComp(
         )
 
         // Repeating this status to mitigate the edit-submit race condition
-        updateStatus(CourseExerciseEditorStatusComp.Status.IN_SYNC, false)
+        updateStatus(syncSuccess = true, isDraft = false)
     }
 
-    private fun uploadSolution() {
-        uploadFile {
-            editor.setFileValue(editor.getActiveTabFilename()!!, it.content)
-        }
-    }
-
-    private fun downloadSolution() {
-        Blob(listOf(editor.getActiveTabContent()!!).toTypedArray()).saveAsFile(solutionFileName)
-    }
-
-    private fun setEditorEditable(editable: Boolean) {
-        editor.setFileEditable(editor.getActiveTabFilename()!!, editable)
+    private suspend fun setEditorEditable(editable: Boolean) {
+        editor.setFileProps(editable = editable)
+        editor.setActionsEnabled(editable)
     }
 
     override fun hasUnsavedChanges() = hasUnsavedDraft

@@ -20,7 +20,7 @@ import tsl.common.model.*
 class TSLTestComp(
     val idx: Int,
     private val initialModel: Test,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     private val onCopy: suspend (Test, String) -> Unit,
     private val onDelete: suspend (Test) -> Unit,
@@ -194,7 +194,7 @@ class TSLTestComp(
         onUpdate()
     }
 
-    private fun changeTitle(newTitle: String) {
+    private suspend fun changeTitle(newTitle: String) {
         activeTitle = newTitle
         getElemById(dstId).getElemBySelector("ez-collapsible-title").textContent = newTitle
         onUpdate()
@@ -232,7 +232,7 @@ class TSLTestComp(
         is PlaceholderTest -> TestType.PLACEHOLDER
     }
 
-    private suspend fun createContentComp(type: TestType, model: Test?): TSLTestComponent =
+    private fun createContentComp(type: TestType, model: Test?): TSLTestComponent =
         // it might be better to show/hide content comps to preserve inputs
         when (type) {
             TestType.PROGRAM_EXECUTION ->

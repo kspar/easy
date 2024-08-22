@@ -12,7 +12,7 @@ import translation.Str
 
 class TSLStdInSection(
     private var inputs: List<String>,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {

@@ -15,7 +15,7 @@ import translation.Str
 
 class TSLInputFilesSection(
     private var files: MutableMap<String, String>,
-    private val onUpdate: () -> Unit,
+    private val onUpdate: suspend () -> Unit,
     private val onValidChanged: () -> Unit,
     parent: Component,
 ) : Component(parent) {

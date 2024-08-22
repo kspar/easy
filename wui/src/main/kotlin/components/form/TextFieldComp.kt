@@ -23,7 +23,7 @@ class TextFieldComp(
     private val helpText: String = "",
     constraints: List<FieldConstraint<String>> = emptyList(),
     onValidChange: ((Boolean) -> Unit)? = null,
-    private val onValueChange: ((String) -> Unit)? = null,
+    private val onValueChange: (suspend (String) -> Unit)? = null,
     private val trimValue: Boolean = true,
     parent: Component
 ) : ValidatableFieldComp<String>(
