@@ -14,15 +14,13 @@
     --ez-dim-blue: #aabdf3;
     --ez-dim-grey: #e5e4e4;
 
-    --ez-green-hover: #2D8C34;
-    --ez-attr-key: #4DAB54;
+    --ez-attr-key: var(--md-sys-color-primary);
     --ez-border: #ccc;
     --ez-border-radius: 4px;
     --ez-secondary-action-hover-bg: #f1f3f4;
 
     --ez-checkbox-border-col: rgba(0, 0, 0, .35);
     --ez-checkbox-disabled-border-col: rgba(0, 0, 0, .15);
-    --ez-checkbox-fill-col: #4DAB54;
 
     --ez-icon-col: rgba(0, 0, 0, .38);
     --ez-icon-inactive-col: rgba(0, 0, 0, .22);
@@ -149,7 +147,7 @@ main {
 }
 
 .subheading {
-    color: #4DAB54;
+    color: var(--md-sys-color-primary);
     font-weight: 500;
     margin-right: 0.6rem;
 }
@@ -164,7 +162,7 @@ ez-attr:last-child {
 }
 
 ez-attr-label {
-    color: #4DAB54;
+    color: var(--md-sys-color-primary);
     font-weight: 500;
     margin-right: 0.6rem;
 }
@@ -188,7 +186,7 @@ svg {
     width: 100%;
     height: 58px;
     line-height: 58px;
-    background-color: #4DAB54;
+    background-color: var(--md-sys-color-primary);
     color: #fff;
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 }
@@ -339,7 +337,7 @@ svg {
 
 .sidenav li.active a,
 .sidenav li.active a ez-icon {
-    color: var(--ez-checkbox-fill-col);
+    color: var(--md-sys-color-primary);
     font-weight: 500;
 }
 
@@ -1486,12 +1484,9 @@ md-filled-button.danger {
 }
 
 .btn, .btn:focus,
-.btn-floating, .btn-floating:focus {
-    background-color: var(--ez-green);
-}
-
+.btn-floating, .btn-floating:focus,
 .btn:hover, .btn-floating:hover {
-    background-color: var(--ez-green-hover);
+    background-color: var(--md-sys-color-primary);
 }
 
 .btn.danger,
@@ -1710,8 +1705,8 @@ input[type=tel]:not(.browser-default):focus:not([readonly]),
 input[type=number]:not(.browser-default):focus:not([readonly]),
 input[type=search]:not(.browser-default):focus:not([readonly]),
 textarea.materialize-textarea:focus:not([readonly]) {
-    border-bottom: 1px solid #469c45;
-    box-shadow: 0 1px 0 0 #469c45;
+    border-bottom: 1px solid var(--md-sys-color-primary);
+    box-shadow: 0 1px 0 0 var(--md-sys-color-primary);
 }
 
 input.invalid:not([type]),
@@ -1759,7 +1754,7 @@ input[type=tel]:not(.browser-default):focus:not([readonly]) + label,
 input[type=number]:not(.browser-default):focus:not([readonly]) + label,
 input[type=search]:not(.browser-default):focus:not([readonly]) + label,
 textarea.materialize-textarea:focus:not([readonly]) + label {
-    color: #469c45;
+    color: var(--md-sys-color-primary);
 }
 
 input:not([type]):focus.invalid ~ label,
@@ -1841,7 +1836,7 @@ textarea.materialize-textarea {
 }
 
 .select-wrapper input.select-dropdown:focus {
-    border-bottom: 1px solid var(--ez-checkbox-fill-col);
+    border-bottom: 1px solid var(--md-sys-color-primary);
     box-shadow: 0 1px 0 0 #469c45;
 }
 
@@ -1897,8 +1892,8 @@ ez-checkbox > label {
 
 [type="checkbox"].filled-in:checked + span:not(.lever)::after,
 [type="checkbox"].filled-in:indeterminate + span:not(.lever)::after {
-    border: 2px solid var(--ez-checkbox-fill-col);
-    background-color: var(--ez-checkbox-fill-col);
+    border: 2px solid var(--md-sys-color-primary);
+    background-color: var(--md-sys-color-primary);
 }
 
 [type="checkbox"].filled-in + span:not(.lever)::before {
@@ -1929,8 +1924,8 @@ ez-checkbox > label {
 }
 
 [type="checkbox"]:checked + span:not(.lever)::before {
-    border-right-color: var(--ez-checkbox-fill-col);
-    border-bottom-color: var(--ez-checkbox-fill-col);
+    border-right-color: var(--md-sys-color-primary);
+    border-bottom-color: var(--md-sys-color-primary);
 }
 
 .switch label {
@@ -1938,7 +1933,7 @@ ez-checkbox > label {
 }
 
 .switch label input[type=checkbox]:checked+.lever:after {
-    background-color: var(--ez-green);
+    background-color: var(--md-sys-color-primary);
 }
 
 .switch label .lever:before {
@@ -2023,13 +2018,13 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
 
 [type="radio"]:checked+span:after,
 [type="radio"].with-gap:checked+span:after {
-    background-color: var(--ez-checkbox-fill-col);
+    background-color: var(--md-sys-color-primary);
 }
 
 [type="radio"]:checked+span:after,
 [type="radio"].with-gap:checked+span:before,
 [type="radio"].with-gap:checked+span:after {
-    border-color: var(--ez-checkbox-fill-col);
+    border-color: var(--md-sys-color-primary);
 }
 
 [type="radio"]:checked+span {
@@ -2526,7 +2521,7 @@ ezc-item.two-rows ezc-title > a {
 }
 
 ezc-title > a:hover[href] {
-    color: var(--ez-green-hover);
+    color: var(--md-sys-color-primary);
     text-decoration: underline;
 }
 
@@ -3193,7 +3188,7 @@ div.title-wrap > .title-button > i.material-icons {
 .tabs .tab a:hover,
 .tabs .tab a.active {
     background-color: transparent;
-    color: #4DAB54;
+    color: var(--md-sys-color-primary);
 }
 
 .tabs .tab a:focus,
@@ -3203,7 +3198,7 @@ div.title-wrap > .title-button > i.material-icons {
 }
 
 .tabs .indicator {
-    background-color: #4DAB54;
+    background-color: var(--md-sys-color-primary);
 }
 
 .tabs-wrap + .card-content {
@@ -3277,11 +3272,11 @@ ez-tabs.toplevel > ez-tabs-header {
 }
 
 ez-tabs.toplevel > ez-tabs-header .tabs .indicator {
-    background-color: var(--ez-green);
+    background-color: var(--md-sys-color-primary);
 }
 
 ez-tabs.toplevel > ez-tabs-header .tabs > .tab > a.active {
-    color: var(--ez-green);
+    color: var(--md-sys-color-primary);
 }
 
 
