@@ -1304,6 +1304,10 @@ ez-similarity-select-exercise .input-field {
     text-overflow: ellipsis;
 }
 
+.grade-table-wrap table.truncated-ex.sub-nums > thead > tr > th .text {
+    width: 12rem;
+}
+
 .grade-table-wrap table > thead > tr > th,
 .grade-table-wrap table > tbody > tr > td {
     padding: 1rem 1rem;
@@ -1379,7 +1383,8 @@ ez-similarity-select-exercise .input-field {
 
 .grade-table-wrap td a {
     color: inherit;
-    padding: .5rem 1rem;
+    display: flex;
+    justify-content: center;
 }
 
 .grade-table-wrap td a:hover,

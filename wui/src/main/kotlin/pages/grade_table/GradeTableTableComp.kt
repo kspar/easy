@@ -42,6 +42,7 @@ class GradeTableTableComp(
     data class GradeCell(
         val courseExerciseId: String,
         val grade: Int?,
+        val submissionNumber: Int?,
         val status: CourseExercisesStudentDAO.SubmissionStatus,
         val isAutograde: Boolean?,
     )
@@ -76,6 +77,7 @@ class GradeTableTableComp(
                     GradeCell(
                         it.course_exercise_id,
                         submission.submission?.grade?.grade,
+                        submission.submission?.submission_number,
                         submission.status,
                         submission.submission?.grade?.is_autograde
                     )
@@ -108,7 +110,9 @@ class GradeTableTableComp(
             val grades = student.grades.map {
                 objOf(
                     "grade" to (it.grade?.toString() ?: "-"),
+                    "num" to it.submissionNumber,
                     "teacherGraded" to (it.isAutograde == false),
+                    "teacherIcon" to Icons.teacherFace,
                     "unstarted" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED),
                     "ungraded" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.UNGRADED),
                     "unfinished" to (it.status == CourseExercisesStudentDAO.SubmissionStatus.STARTED),
@@ -149,7 +153,7 @@ class GradeTableTableComp(
                 """
                     <div class="grades-wrap">
                         <div class="grade-table-wrap">
-                            <table class="colored truncated-ex">
+                            <table class="colored truncated-ex sub-nums">
                                 <thead><tr>
                                     <th class="header-spacer"></th>
                                     <th><span class="text" title="{{exerciseCountTitle}}">Σ ({{exerciseCount}})</span></th>
@@ -171,7 +175,13 @@ class GradeTableTableComp(
                                         <td class="neutral" title="{{studentSummaryTitle}}">{{finishedCount}}</td>
                                         {{#grades}}
                                             <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">
-                                                <a href='{{submissionHref}}'>{{grade}}{{#teacherGraded}}*{{/teacherGraded}}</a>
+                                                <a href='{{submissionHref}}'>
+                                                    <span style='margin-right: 5px; font-weight: 500;'>{{grade}}</span>
+                                                    {{#num}}
+                                                        ·
+                                                        <span style='margin: 0 5px;'>#{{num}}</span>
+                                                    {{/num}}
+                                                    {{#teacherGraded}}{{{teacherIcon}}}{{/teacherGraded}}</a>
                                             </td>
                                         {{/grades}}
                                     </tr>
