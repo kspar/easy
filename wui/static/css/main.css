@@ -904,6 +904,11 @@ ez-editor {
     border: 1px solid var(--ez-border);
     border-radius: 2rem;
     overflow: hidden;
+    transition: all 100ms ease-in-out;
+}
+
+ez-editor:not(.read-only):has(div.CodeMirror-focused) {
+    border: 1px solid var(--md-sys-color-primary);
 }
 
 ez-editor .CodeMirror {
