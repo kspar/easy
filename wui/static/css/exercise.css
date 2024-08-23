@@ -111,7 +111,7 @@
 }
 
 .exercise-text blockquote {
-    border-left: 5px solid var(--ez-green);
+    border-left: 5px solid var(--md-sys-color-primary);
 }
 
 
