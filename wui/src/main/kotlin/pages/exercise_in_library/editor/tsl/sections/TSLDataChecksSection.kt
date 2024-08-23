@@ -105,8 +105,12 @@ class TSLDataChecksSection(
                 ),
                 CheckboxComp(
                     Str.tslStdoutOrdered,
-                    initialValue = check.elementsOrdered ?: false,
-                    onValueChange = { onUpdate() },
+                    value = when (check.elementsOrdered) {
+                        null -> CheckboxComp.Value.UNCHECKED
+                        true -> CheckboxComp.Value.CHECKED
+                        false -> CheckboxComp.Value.UNCHECKED
+                    },
+                    onChange = { onUpdate() },
                     parent = this
                 ),
                 StringFieldComp(
@@ -246,7 +250,7 @@ class TSLDataChecksSection(
             it.type.isDisabled = !nowEditable
             it.comparison.isDisabled = !nowEditable
             it.value.isDisabled = !nowEditable
-            it.ordered.isDisabled = !nowEditable
+            it.ordered.enabled = nowEditable
             it.passMsg.isDisabled = !nowEditable
             it.failMsg.isDisabled = !nowEditable
         }

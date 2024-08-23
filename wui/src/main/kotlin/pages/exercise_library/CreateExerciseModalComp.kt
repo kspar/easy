@@ -43,7 +43,7 @@ class CreateExerciseModalComp(
 
     // TODO: should save/remember addToCourse checkbox default value, requires EZ-1491
     private val addToCourseCheckbox: CheckboxComp? = if (allowAddingToCourseId != null)
-        CheckboxComp(Str.addToThisCourse, initialValue = true, parent = modalComp)
+        CheckboxComp(Str.addToThisCourse, value = CheckboxComp.Value.CHECKED, parent = modalComp)
     else null
 
     override val children: List<Component>
