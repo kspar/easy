@@ -4,8 +4,8 @@ import EzDate
 import HumanStringComparator
 import Icons
 import Key
-import components.EzCollComp
-import components.EzCollConf
+import components.ezcoll.EzCollComp
+import components.ezcoll.EzCollConf
 import dao.CourseExercisesTeacherDAO
 import dao.ParticipantsDAO
 import kotlinx.coroutines.await
@@ -130,7 +130,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                 )
             ),
             sorters = buildList {
-                add(EzCollComp.Sorter("Nimi",
+                add(
+                    EzCollComp.Sorter("Nimi",
                     compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>, String?>(
                         HumanStringComparator
                     ) {
@@ -139,7 +140,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                     confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.NAME
                 )
                 )
-                add(EzCollComp.Sorter("Punktid",
+                add(
+                    EzCollComp.Sorter("Punktid",
                     compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                         // nulls last
                         if (it.props.submission?.grade == null) 1 else 0
@@ -155,7 +157,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                     confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.POINTS
                 )
                 )
-                add(EzCollComp.Sorter(Str.submissionTimeLabel,
+                add(
+                    EzCollComp.Sorter(Str.submissionTimeLabel,
                     compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                         // nulls last
                         if (it.props.submission?.time == null) 1 else 0

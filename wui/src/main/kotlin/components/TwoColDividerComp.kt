@@ -3,6 +3,7 @@ package components
 import Icons
 import Key
 import LocalStore
+import components.form.IconButtonComp
 import hide
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass

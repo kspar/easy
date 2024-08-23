@@ -1,7 +1,16 @@
-package components
+package components.ezcoll
 
 import Icons
 import LocalStore
+import components.*
+import components.chips.FilterChipSetComp
+import components.chips.FilterDropdownChipComp
+import components.dropdown.DropdownButtonMenuSelectComp
+import components.dropdown.DropdownIconMenuComp
+import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
+import components.form.CheckboxComp
+import components.form.IconButtonComp
 import dao.ParticipantsDAO
 import debug
 import hide

@@ -3,8 +3,8 @@ package pages.course_exercise.teacher
 import Icons
 import Key
 import LocalStore
-import components.CheckboxComp
-import components.IconButtonComp
+import components.form.CheckboxComp
+import components.form.IconButtonComp
 import components.form.IntFieldComp
 import dao.CourseExercisesTeacherDAO
 import hide

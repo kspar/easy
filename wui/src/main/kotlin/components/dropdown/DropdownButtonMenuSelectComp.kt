@@ -1,6 +1,7 @@
-package components
+package components.dropdown
 
 import Icons
+import components.form.ButtonComp
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import template

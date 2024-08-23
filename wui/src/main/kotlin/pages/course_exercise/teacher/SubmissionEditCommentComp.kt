@@ -2,8 +2,8 @@ package pages.course_exercise.teacher
 
 import Key
 import LocalStore
-import components.ButtonComp
-import components.CheckboxComp
+import components.form.ButtonComp
+import components.form.CheckboxComp
 import components.code_editor.AdocEditorComp
 import dao.CourseExercisesTeacherDAO
 import hide

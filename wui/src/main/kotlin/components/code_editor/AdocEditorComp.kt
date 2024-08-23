@@ -1,7 +1,7 @@
 package components.code_editor
 
 import Icons
-import components.IconButtonComp
+import components.form.IconButtonComp
 import components.code_editor.parts.HtmlViewEditorTrailerComp
 import dao.ExerciseDAO
 import kotlinx.browser.window

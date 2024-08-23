@@ -3,8 +3,8 @@ package pages.exercise_in_library
 import EzDate
 import EzDateSerializer
 import Icons
-import components.ButtonComp
-import components.DropdownMenuComp
+import components.form.ButtonComp
+import components.dropdown.DropdownMenuComp
 import components.code_editor.CodeEditorComp
 import components.text.AttrsComp
 import components.text.WarningComp

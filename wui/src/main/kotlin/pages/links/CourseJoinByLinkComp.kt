@@ -2,7 +2,7 @@ package pages.links
 
 import CONTENT_CONTAINER_ID
 import Icons
-import components.ButtonComp
+import components.form.ButtonComp
 import components.ToastThing
 import dao.CoursesStudentDAO
 import kotlinx.coroutines.await

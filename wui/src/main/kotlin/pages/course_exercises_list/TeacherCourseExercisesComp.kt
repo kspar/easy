@@ -6,9 +6,9 @@ import Icons
 import Key
 import LocalStore
 import cache.BasicCourseInfo
-import components.ButtonComp
-import components.EzCollComp
-import components.EzCollConf
+import components.form.ButtonComp
+import components.ezcoll.EzCollComp
+import components.ezcoll.EzCollConf
 import components.ToastThing
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp

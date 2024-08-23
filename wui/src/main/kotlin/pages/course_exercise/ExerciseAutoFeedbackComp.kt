@@ -3,8 +3,8 @@ package pages.course_exercise
 import EzDate
 import EzDateSerializer
 import Icons
-import components.ButtonComp
-import components.IconButtonComp
+import components.form.ButtonComp
+import components.form.IconButtonComp
 import debug
 import hide
 import kotlinx.serialization.Serializable

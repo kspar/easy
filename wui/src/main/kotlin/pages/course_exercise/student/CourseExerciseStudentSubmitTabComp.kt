@@ -1,8 +1,8 @@
 package pages.course_exercise.student
 
 import Icons
-import components.ButtonComp
-import components.DropdownMenuComp
+import components.form.ButtonComp
+import components.dropdown.DropdownMenuComp
 import components.ToastThing
 import components.code_editor.CodeEditorComp
 import components.text.WarningComp
@@ -111,12 +111,14 @@ class CourseExerciseStudentSubmitTabComp(
             placeholder = Str.solutionEditorPlaceholder,
             menuOptions = buildList {
                 if (isOpenForSubmissions)
-                    add(DropdownMenuComp.Item(
+                    add(
+                        DropdownMenuComp.Item(
                         Str.uploadSubmission, Icons.upload, onSelected = {
                             uploadFile { editor.setContent(it.content) }
                         }
                     ))
-                add(DropdownMenuComp.Item(
+                add(
+                    DropdownMenuComp.Item(
                     Str.downloadSubmission, Icons.download, onSelected = {
                         saveTextAsFile("${courseExId}_${nowTimestamp()}_$solutionFileName", editor.getContent())
                     }

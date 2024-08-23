@@ -4,9 +4,9 @@ import HumanStringComparator
 import Icons
 import Key
 import addNotNull
-import components.ButtonComp
-import components.EzCollComp
-import components.EzCollConf
+import components.form.ButtonComp
+import components.ezcoll.EzCollComp
+import components.ezcoll.EzCollConf
 import components.ToastThing
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp

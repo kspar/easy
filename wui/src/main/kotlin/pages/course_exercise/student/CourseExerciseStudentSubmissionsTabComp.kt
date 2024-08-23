@@ -1,7 +1,7 @@
 package pages.course_exercise.student
 
 import EzDate
-import components.EzCollComp
+import components.ezcoll.EzCollComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
 import kotlinx.coroutines.await

@@ -3,7 +3,7 @@ package pages.participants
 import AppProperties
 import EzDate
 import Icons
-import components.ButtonComp
+import components.form.ButtonComp
 import components.form.DateTimeFieldComp
 import components.form.IntFieldComp
 import components.form.ToggleComp

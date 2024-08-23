@@ -1,6 +1,6 @@
 package components.modal
 
-import components.ButtonComp
+import components.form.ButtonComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -42,7 +42,8 @@ open class BinaryModalComp<T>(
         parent = this
     )
 
-    val secondaryButton = ButtonComp(ButtonComp.Type.TEXT, secondaryBtnText, null,
+    val secondaryButton = ButtonComp(
+        ButtonComp.Type.TEXT, secondaryBtnText, null,
         clickedLabel = secondaryBtnLoadingText,
         onClick = {
             secondaryAction?.invoke()

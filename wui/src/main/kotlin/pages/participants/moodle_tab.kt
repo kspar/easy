@@ -1,7 +1,7 @@
 package pages.participants
 
 import Icons
-import components.ButtonComp
+import components.form.ButtonComp
 import dao.ParticipantsDAO
 import debug
 import kotlinx.coroutines.await

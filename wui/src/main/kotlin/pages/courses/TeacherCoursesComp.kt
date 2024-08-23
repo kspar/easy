@@ -1,7 +1,7 @@
 package pages.courses
 
 import Icons
-import components.EzCollComp
+import components.ezcoll.EzCollComp
 import dao.CoursesTeacherDAO
 import debug
 import kotlinx.coroutines.await

@@ -1,7 +1,7 @@
 package pages.participants
 
 import Icons
-import components.ButtonComp
+import components.form.ButtonComp
 import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints

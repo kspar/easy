@@ -2,7 +2,7 @@ package dao
 
 import EzDate
 import EzDateSerializer
-import components.EzCollComp
+import components.ezcoll.EzCollComp
 import dao.CourseExercisesStudentDAO.SubmissionStatus
 import debug
 import kotlinx.coroutines.await

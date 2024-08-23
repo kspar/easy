@@ -1,6 +1,9 @@
-package components
+package components.ezcoll
 
 import Icons
+import components.form.CheckboxComp
+import components.dropdown.DropdownIconMenuComp
+import components.dropdown.DropdownMenuComp
 import hide
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass

@@ -5,6 +5,9 @@ import HumanStringComparator
 import Icons
 import Key
 import components.*
+import components.ezcoll.EzCollComp
+import components.ezcoll.EzCollConf
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ExerciseDAO

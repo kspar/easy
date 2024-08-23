@@ -1,7 +1,7 @@
 package pages.course_exercise.teacher
 
 import EzDate
-import components.EzCollComp
+import components.ezcoll.EzCollComp
 import components.modal.ModalComp
 import dao.CourseExercisesTeacherDAO
 import dao.ExerciseDAO

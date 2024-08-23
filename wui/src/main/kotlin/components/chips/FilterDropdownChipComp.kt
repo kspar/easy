@@ -1,6 +1,7 @@
-package components
+package components.chips
 
 import Icons
+import components.dropdown.DropdownMenuComp
 import rip.kspar.ezspa.*
 import template
 import truncate

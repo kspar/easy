@@ -1,4 +1,4 @@
-package components
+package components.ezcoll
 
 import Key
 import LocalStore

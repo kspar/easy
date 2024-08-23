@@ -1,4 +1,4 @@
-package components
+package components.chips
 
 import rip.kspar.ezspa.Component
 import template

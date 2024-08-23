@@ -2,8 +2,8 @@ package pages.participants
 
 import EzDate
 import Icons
-import components.ButtonComp
-import components.EzCollComp
+import components.form.ButtonComp
+import components.ezcoll.EzCollComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO

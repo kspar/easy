@@ -2,9 +2,9 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
-import components.ButtonComp
-import components.DropdownMenuComp
-import components.IconButtonComp
+import components.form.ButtonComp
+import components.dropdown.DropdownMenuComp
+import components.form.IconButtonComp
 import components.MissingContentPlaceholderComp
 import components.code_editor.CodeEditorComp
 import components.text.WarningComp

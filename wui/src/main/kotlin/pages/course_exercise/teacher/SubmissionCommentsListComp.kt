@@ -2,7 +2,7 @@ package pages.course_exercise.teacher
 
 import Auth
 import Icons
-import components.ButtonComp
+import components.form.ButtonComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
 import hide

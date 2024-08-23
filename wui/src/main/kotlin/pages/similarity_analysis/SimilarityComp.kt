@@ -6,7 +6,7 @@ import Icons
 import Key
 import LocalStore
 import cache.BasicCourseInfo
-import components.ButtonComp
+import components.form.ButtonComp
 import components.form.SelectComp
 import dao.CourseExercisesTeacherDAO
 import dao.CoursesTeacherDAO

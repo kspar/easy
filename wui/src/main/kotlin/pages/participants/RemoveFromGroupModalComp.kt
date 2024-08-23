@@ -1,6 +1,6 @@
 package pages.participants
 
-import components.ButtonComp
+import components.form.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
 import components.text.StringComp

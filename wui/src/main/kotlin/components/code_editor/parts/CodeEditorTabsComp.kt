@@ -2,6 +2,9 @@ package components.code_editor.parts
 
 import Icons
 import components.*
+import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
+import components.form.IconButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import kotlinx.coroutines.await

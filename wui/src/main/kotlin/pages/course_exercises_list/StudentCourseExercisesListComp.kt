@@ -5,8 +5,8 @@ import EzDate
 import Icons
 import Key
 import cache.BasicCourseInfo
-import components.EzCollComp
-import components.EzCollConf
+import components.ezcoll.EzCollComp
+import components.ezcoll.EzCollConf
 import dao.CourseExercisesStudentDAO
 import kotlinx.coroutines.await
 import pages.Title

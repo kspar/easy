@@ -1,8 +1,8 @@
 package components.code_editor
 
 import Icons
-import components.DropdownIconMenuComp
-import components.DropdownMenuComp
+import components.dropdown.DropdownIconMenuComp
+import components.dropdown.DropdownMenuComp
 import components.code_editor.parts.CodeEditorStatusComp
 import components.code_editor.parts.CodeEditorTabsComp
 import components.code_editor.parts.CodeMirrorComp

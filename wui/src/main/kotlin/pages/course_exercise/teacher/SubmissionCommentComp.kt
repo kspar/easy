@@ -2,9 +2,9 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
-import components.ButtonComp
-import components.DropdownIconMenuComp
-import components.DropdownMenuComp
+import components.form.ButtonComp
+import components.dropdown.DropdownIconMenuComp
+import components.dropdown.DropdownMenuComp
 import components.modal.ConfirmationTextModalComp
 import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
