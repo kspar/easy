@@ -6,7 +6,6 @@ import rip.kspar.ezspa.*
 import template
 import truncate
 
-typealias FilterChipId = String
 
 class FilterDropdownChipComp(
     private val label: String,
@@ -14,15 +13,7 @@ class FilterDropdownChipComp(
     var enabled: Boolean = true,
     val onChange: suspend (Filter?) -> Unit,
     val id: FilterChipId = IdGenerator.nextId(),
-    parent: Component
-) : Component(parent) {
-
-    data class Filter(
-        val label: String,
-        val icon: String? = null,
-        var selected: Boolean,
-        val id: String = IdGenerator.nextId()
-    )
+) : FilterChipComponent() {
 
     private val elementId = IdGenerator.nextId()
 
@@ -33,18 +24,17 @@ class FilterDropdownChipComp(
 
     override fun create() = doInPromise {
         dropdown = DropdownMenuComp(
-            elementId,
-            filters.map {
+            elementId, filters.map {
                 DropdownMenuComp.Item(it.label, it.icon, onSelected = ::selectFilter, id = it.id)
-            },
-            this
+            }, this
         )
     }
 
     override fun render() = template(
         """
             <span style='position: relative'>
-                <md-filter-chip id='{{id}}' label="{{label}}" {{^enabled}}disabled{{/enabled}}>
+                <md-filter-chip id='{{id}}' {{^enabled}}disabled{{/enabled}}>
+                    {{label}}
                 </md-filter-chip>
                 $dropdown
             </span>

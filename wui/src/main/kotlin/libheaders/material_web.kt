@@ -101,7 +101,11 @@ external class MdChipSet {
 @JsNonModule
 external class MdFilterChip {
     companion object
+
+    var selected: Boolean
 }
+
+fun Element.MdFilterChip() = unsafeCast<MdFilterChip>()
 
 
 @JsModule("@material/web/checkbox/checkbox.js")

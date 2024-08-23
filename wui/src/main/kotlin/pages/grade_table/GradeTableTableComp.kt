@@ -17,7 +17,9 @@ import tmRender
 
 class GradeTableTableComp(
     private val courseId: String,
-    private val groupId: String?,
+    private var groupId: String?,
+    private var showSubNumbers: Boolean,
+    private var truncateExerciseTitles: Boolean,
     parent: Component,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -153,7 +155,7 @@ class GradeTableTableComp(
                 """
                     <div class="grades-wrap">
                         <div class="grade-table-wrap">
-                            <table class="colored truncated-ex sub-nums">
+                            <table class="colored {{#truncateTitles}}truncated-ex{{/truncateTitles}} {{#showSubNums}}sub-nums{{/showSubNums}}">
                                 <thead><tr>
                                     <th class="header-spacer"></th>
                                     <th><span class="text" title="{{exerciseCountTitle}}">Σ ({{exerciseCount}})</span></th>
@@ -177,10 +179,10 @@ class GradeTableTableComp(
                                             <td class="{{#finished}}finished{{/finished}} {{#unfinished}}unfinished{{/unfinished}} {{#unstarted}}unstarted{{/unstarted}} {{#ungraded}}ungraded{{/ungraded}}">
                                                 <a href='{{submissionHref}}'>
                                                     <span style='margin-right: 5px; font-weight: 500;'>{{grade}}</span>
-                                                    {{#num}}
+                                                    {{#showSubNums}}{{#num}}
                                                         ·
                                                         <span style='margin: 0 5px;'>#{{num}}</span>
-                                                    {{/num}}
+                                                    {{/num}}{{/showSubNums}}
                                                     {{#teacherGraded}}{{{teacherIcon}}}{{/teacherGraded}}</a>
                                             </td>
                                         {{/grades}}
@@ -191,6 +193,8 @@ class GradeTableTableComp(
                         </div>
                     </div>
                 """.trimIndent(),
+                "truncateTitles" to truncateExerciseTitles,
+                "showSubNums" to showSubNumbers,
                 "exerciseCount" to exercises.size,
                 "exerciseCountTitle" to "Kokku ${exercises.size} ülesannet",
                 "studentCount" to students.size,
@@ -200,6 +204,21 @@ class GradeTableTableComp(
                 "exerciseSummaries" to exerciseSummaries,
             )
         }
+    }
+
+    suspend fun setSettings(subNumbers: Boolean? = null, truncatedTitles: Boolean? = null) {
+        subNumbers?.let {
+            showSubNumbers = subNumbers
+        }
+        truncatedTitles?.let {
+            truncateExerciseTitles = truncatedTitles
+        }
+        createAndBuild().await()
+    }
+
+    suspend fun setGroup(groupId: String?) {
+        this.groupId = groupId
+        createAndBuild().await()
     }
 
     private fun downloadGradesCSV(sidenavAction: Sidenav.Action) {

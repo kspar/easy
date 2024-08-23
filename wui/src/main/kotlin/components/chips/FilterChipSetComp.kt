@@ -4,11 +4,8 @@ import rip.kspar.ezspa.Component
 import template
 
 class FilterChipSetComp(
-    chipProvider: (parent: Component) -> List<FilterDropdownChipComp>,
-    parent: Component
-) : Component(parent) {
-
-    private val chips = chipProvider(this)
+    private val chips: List<FilterChipComponent>,
+) : Component() {
 
     override val children: List<Component>
         get() = chips
@@ -26,10 +23,14 @@ class FilterChipSetComp(
         }
     )
 
-    fun getActiveFilters(): Map<FilterChipId, FilterDropdownChipComp.Filter?> =
+    fun getActiveFilters(): Map<FilterChipId, FilterChipComponent.Filter?> =
         chips.associate {
-            val selectedFilter = it.filters.singleOrNull { it.selected }
-            it.id to selectedFilter
+            when (it) {
+                is FilterToggleChipComp -> it.id to (if (it.filter.selected) it.filter else null)
+                is FilterDropdownChipComp -> {
+                    val selectedFilter = it.filters.singleOrNull { it.selected }
+                    it.id to selectedFilter
+                }
+            }
         }
-
 }

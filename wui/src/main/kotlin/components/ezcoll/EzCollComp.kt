@@ -2,7 +2,8 @@ package components.ezcoll
 
 import Icons
 import LocalStore
-import components.*
+import components.MissingContentPlaceholderComp
+import components.chips.FilterChipComponent
 import components.chips.FilterChipSetComp
 import components.chips.FilterDropdownChipComp
 import components.dropdown.DropdownButtonMenuSelectComp
@@ -306,26 +307,22 @@ class EzCollComp<P>(
 
     override fun create() = doInPromise {
         filterChips = FilterChipSetComp(
-            { chipParent ->
-                filterGroups.map {
-                    FilterDropdownChipComp(
-                        it.groupLabel,
-                        it.filters.map {
-                            FilterDropdownChipComp.Filter(
-                                it.label, icon = null,
-                                selected = activeFilters.contains(it),
-                                id = it.id
-                            )
-                        },
-                        onChange = {
-                            setActiveFilters()
-                            onConfChange?.invoke(createActiveUserConf())
-                        },
-                        parent = chipParent
-                    )
-                }
+            chips = filterGroups.map {
+                FilterDropdownChipComp(
+                    it.groupLabel,
+                    it.filters.map {
+                        FilterChipComponent.Filter(
+                            it.label, icon = null,
+                            selected = activeFilters.contains(it),
+                            id = it.id
+                        )
+                    },
+                    onChange = {
+                        setActiveFilters()
+                        onConfChange?.invoke(createActiveUserConf())
+                    },
+                )
             },
-            parent = this
         )
 
         if (hasChangeableSorting) {
