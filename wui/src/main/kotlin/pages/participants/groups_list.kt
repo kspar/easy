@@ -2,8 +2,8 @@ package pages.participants
 
 import HumanStringComparator
 import Icons
+import components.ButtonComp
 import components.EzCollComp
-import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -71,8 +71,8 @@ class ParticipantsGroupsListComp(
         )
 
         deleteGroupModal = ConfirmationTextModalComp(
-            null, "Kustuta", "Tühista", "Kustutan...",
-            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+            null, Str.doDelete, Str.cancel, Str.deleting,
+            primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
         )
     }
 

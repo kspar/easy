@@ -6,10 +6,10 @@ import Icons
 import Key
 import LocalStore
 import cache.BasicCourseInfo
+import components.ButtonComp
 import components.EzCollComp
 import components.EzCollConf
 import components.ToastThing
-import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
@@ -168,7 +168,7 @@ class TeacherCourseExercisesComp(
 
         removeModal = ConfirmationTextModalComp(
             null, Str.doRemove, Str.cancel, Str.removing,
-            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
         )
 
         Sidenav.replacePageSection(

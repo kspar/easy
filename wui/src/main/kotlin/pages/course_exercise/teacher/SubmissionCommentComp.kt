@@ -2,9 +2,9 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
+import components.ButtonComp
 import components.DropdownIconMenuComp
 import components.DropdownMenuComp
-import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
@@ -86,7 +86,7 @@ class SubmissionCommentComp(
                 CourseExercisesTeacherDAO.deleteComment(courseId, courseExerciseId, submissionId, activityId).await()
                 true
             },
-            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+            primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
         )
     }
 

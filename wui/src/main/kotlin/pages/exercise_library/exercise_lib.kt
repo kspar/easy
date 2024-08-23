@@ -5,7 +5,6 @@ import HumanStringComparator
 import Icons
 import Key
 import components.*
-import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ExerciseDAO
@@ -63,10 +62,10 @@ class ExerciseLibComp(
     private val addToCourseModal = AddToCourseModalComp(emptyList(), "", this)
     private val updateDirModal = UpdateDirModalComp(this)
     private val confirmDeleteDirModal = ConfirmationTextModalComp(
-        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
     )
     private val confirmDeleteExerciseModal = ConfirmationTextModalComp(
-        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+        null, Str.doDelete, Str.cancel, Str.deleting, primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
     )
     private lateinit var currentDirPermissionsModal: PermissionsModalComp
     private val itemPermissionsModal = PermissionsModalComp(currentDirId = dirId, parent = this)

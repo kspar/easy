@@ -155,7 +155,6 @@ class CourseExerciseStudentSubmitTabComp(
                     setEditorEditable(true)
                 }
             },
-            disableOnClick = true,
             parent = this
         )
 

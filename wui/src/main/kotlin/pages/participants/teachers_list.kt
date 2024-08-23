@@ -2,8 +2,8 @@ package pages.participants
 
 import EzDate
 import Icons
+import components.ButtonComp
 import components.EzCollComp
-import components.form.OldButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -15,6 +15,7 @@ import queries.http200
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import successMessage
+import translation.Str
 
 
 class ParticipantsTeachersListComp(
@@ -72,8 +73,8 @@ class ParticipantsTeachersListComp(
         )
 
         removeFromCourseModal = ConfirmationTextModalComp(
-            null, "Eemalda", "Tühista", "Eemaldan...",
-            primaryBtnType = OldButtonComp.Type.DANGER, parent = this
+            null, Str.doRemove, Str.cancel, Str.removing,
+            primaryBtnType = ButtonComp.Type.FILLED_DANGER, parent = this
         )
     }
 

@@ -67,7 +67,6 @@ class SubmissionEditCommentComp(
 
                 onCommentEdited()
             },
-            disableOnClick = true,
             parent = this
         )
 

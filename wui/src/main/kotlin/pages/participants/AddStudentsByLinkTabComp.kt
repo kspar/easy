@@ -3,7 +3,7 @@ package pages.participants
 import AppProperties
 import EzDate
 import Icons
-import components.form.OldButtonComp
+import components.ButtonComp
 import components.form.DateTimeFieldComp
 import components.form.IntFieldComp
 import components.form.ToggleComp
@@ -16,6 +16,7 @@ import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import show
 import template
+import translation.Str
 
 class AddStudentsByLinkTabComp(
     private val courseId: String,
@@ -30,7 +31,7 @@ class AddStudentsByLinkTabComp(
     private var usedCount: AddStudentsByLinkUsedCountComp? = null
     private var maxUses: IntFieldComp? = null
     private var warning: WarningComp? = null
-    private var save: OldButtonComp? = null
+    private var save: ButtonComp? = null
 
     private var currentLink: CoursesTeacherDAO.ExistingLink? = null
 
@@ -67,9 +68,10 @@ class AddStudentsByLinkTabComp(
 
             warning = WarningComp(parent = this)
 
-            save = OldButtonComp(
-                OldButtonComp.Type.PRIMARY, "Salvesta",
-                onClick = { updateJoinLink() }, parent = this
+            save = ButtonComp(
+                ButtonComp.Type.FILLED, Str.doSave,
+                onClick = { updateJoinLink() },
+                parent = this
             )
         } else {
             usedCount?.destroy()

@@ -1,6 +1,6 @@
 package components.modal
 
-import components.form.OldButtonComp
+import components.ButtonComp
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
@@ -13,7 +13,7 @@ open class BinaryModalComp<T>(
     primaryBtnLoadingText: String? = null,
     secondaryBtnLoadingText: String? = null,
     defaultReturnValue: T,
-    primaryBtnType: OldButtonComp.Type = OldButtonComp.Type.PRIMARY,
+    primaryBtnType: ButtonComp.Type = ButtonComp.Type.FILLED,
     val primaryButtonEnabledInitial: Boolean = true,
     fixFooter: Boolean = false,
     isWide: Boolean = false,
@@ -30,18 +30,30 @@ open class BinaryModalComp<T>(
     parent = parent
 ) {
 
-    val primaryButton = OldButtonComp(primaryBtnType, primaryBtnText, null, {
-        val actionResult = primaryAction?.invoke() ?: defaultReturnValue
-        super.closeAndReturnWith(actionResult)
-    }, primaryButtonEnabledInitial, primaryBtnLoadingText, true, { primaryPostAction?.invoke() }, this)
+    val primaryButton = ButtonComp(
+        primaryBtnType, primaryBtnText, null,
+        enabled = primaryButtonEnabledInitial,
+        clickedLabel = primaryBtnLoadingText,
+        onClick = {
+            val actionResult = primaryAction?.invoke() ?: defaultReturnValue
+            super.closeAndReturnWith(actionResult)
+        },
+        onPostClick = { primaryPostAction?.invoke() },
+        parent = this
+    )
 
-    val secondaryButton = OldButtonComp(OldButtonComp.Type.FLAT, secondaryBtnText, null, {
-        secondaryAction?.invoke()
-        super.closeAndReturnWith(defaultReturnValue)
-    }, true, secondaryBtnLoadingText, true, { secondaryPostAction?.invoke() }, this)
+    val secondaryButton = ButtonComp(ButtonComp.Type.TEXT, secondaryBtnText, null,
+        clickedLabel = secondaryBtnLoadingText,
+        onClick = {
+            secondaryAction?.invoke()
+            super.closeAndReturnWith(defaultReturnValue)
+        },
+        onPostClick = { secondaryPostAction?.invoke() },
+        parent = this
+    )
 
     override fun create() = doInPromise {
-        super.create()?.await()
+        super.create().await()
         super.setFooterComps {
             listOf(secondaryButton, primaryButton)
         }

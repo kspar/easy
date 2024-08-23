@@ -1,7 +1,7 @@
 package pages.participants
 
 import Icons
-import components.form.OldButtonComp
+import components.ButtonComp
 import dao.ParticipantsDAO
 import debug
 import kotlinx.coroutines.await
@@ -32,20 +32,26 @@ class ParticipantsMoodleTabComp(
     enum class MoodleSyncStatus { FINISHED, IN_PROGRESS }
 
 
-    private lateinit var syncStudentsBtn: OldButtonComp
-    private lateinit var syncGradesBtn: OldButtonComp
+    private lateinit var syncStudentsBtn: ButtonComp
+    private lateinit var syncGradesBtn: ButtonComp
 
     override val children: List<Component>
         get() = listOf(syncStudentsBtn, syncGradesBtn)
 
     override fun create() = doInPromise {
-        syncStudentsBtn = OldButtonComp(
-            OldButtonComp.Type.PRIMARY, "Sünkroniseeri õpilased", Icons.doSync, ::syncStudents,
-            moodleStatus.students_synced, "Sünkroniseerin...", parent = this
+        syncStudentsBtn = ButtonComp(
+            ButtonComp.Type.FILLED, "Sünkroniseeri õpilased", Icons.doSync,
+            clickedLabel = "Sünkroniseerin...",
+            enabled = moodleStatus.students_synced,
+            onClick = ::syncStudents,
+            parent = this
         )
-        syncGradesBtn = OldButtonComp(
-            OldButtonComp.Type.PRIMARY, "Sünkroniseeri hinded", Icons.doSync, ::syncGrades,
-            moodleStatus.grades_synced, "Sünkroniseerin...", parent = this
+        syncGradesBtn = ButtonComp(
+            ButtonComp.Type.FILLED, "Sünkroniseeri hinded", Icons.doSync,
+            clickedLabel = "Sünkroniseerin...",
+            enabled = moodleStatus.grades_synced,
+            onClick = ::syncGrades,
+            parent = this
         )
     }
 

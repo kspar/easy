@@ -1,11 +1,7 @@
 package components.code_editor.parts
 
 import Icons
-import components.DropdownMenuComp
-import components.IconButtonComp
-import components.TabID
-import components.TabsComp
-import components.form.OldButtonComp
+import components.*
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import kotlinx.coroutines.await
@@ -103,7 +99,7 @@ class CodeEditorTabsComp(
         deleteTabModalComp = ConfirmationTextModalComp(
             "", Str.doDelete, Str.cancel, Str.deleting,
             primaryAction = { true },
-            primaryBtnType = OldButtonComp.Type.DANGER,
+            primaryBtnType = ButtonComp.Type.FILLED_DANGER,
             parent = this
         )
     }

@@ -46,7 +46,6 @@ class CourseJoinByLinkComp(
         joinBtn = ButtonComp(
             ButtonComp.Type.FILLED, Str.doJoin, Icons.check,
             onClick = ::joinCourse,
-            disableOnClick = true,
             parent = this
         )
     }

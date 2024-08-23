@@ -1,6 +1,6 @@
 package pages.participants
 
-import components.form.OldButtonComp
+import components.ButtonComp
 import components.form.SelectComp
 import components.modal.BinaryModalComp
 import components.text.StringComp
@@ -36,9 +36,9 @@ class RemoveFromGroupModalComp(
 
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        null, "Eemalda", Str.cancel, "Eemaldan...",
+        null, Str.doRemove, Str.cancel, Str.removing,
         defaultReturnValue = false,
-        primaryBtnType = OldButtonComp.Type.DANGER, primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
+        primaryBtnType = ButtonComp.Type.FILLED_DANGER, primaryAction = { removeFromGroup(groupSelectComp.getValue()) },
         primaryPostAction = ::reinitialise,
         parent = this
     )

@@ -1,7 +1,7 @@
 package pages.participants
 
 import Icons
-import components.form.OldButtonComp
+import components.ButtonComp
 import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
@@ -30,7 +30,7 @@ class AddStudentsByEmailTabComp(
     private lateinit var helpText: ParagraphsComp
     private var groupSelect: SelectComp? = null
     private lateinit var emailField: TextFieldComp
-    private lateinit var submitBtn: OldButtonComp
+    private lateinit var submitBtn: ButtonComp
 
     override val children: List<Component>
         get() = listOfNotNull(helpText, groupSelect, emailField, submitBtn)
@@ -60,14 +60,14 @@ class AddStudentsByEmailTabComp(
             parent = this
         )
 
-        submitBtn = OldButtonComp(
-            OldButtonComp.Type.PRIMARY,
-            label = Str.doAdd, clickedLabel = Str.adding, iconHtml = Icons.add,
+        submitBtn = ButtonComp(
+            ButtonComp.Type.FILLED, Str.doAdd, Icons.add,
+            clickedLabel = Str.adding,
             onClick = {
                 addStudents(groupSelect?.getValue(), emailField.getValue())
                 onAddingFinished()
             },
-            postClick = ::reinitialise,
+            onPostClick = ::reinitialise,
             parent = this,
         )
     }

@@ -3,9 +3,9 @@ package pages.exercise_in_library
 import EzDate
 import EzDateSerializer
 import Icons
+import components.ButtonComp
 import components.DropdownMenuComp
 import components.code_editor.CodeEditorComp
-import components.form.OldButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
 import dao.ExerciseDAO
@@ -50,9 +50,11 @@ class TestingTabComp(
     private lateinit var attrs: AttrsComp
     private lateinit var editor: CodeEditorComp
 
-    private val submitBtn = OldButtonComp(
-        OldButtonComp.Type.PRIMARY, Str.doAutoAssess, Icons.robot, ::submit,
-        clickedLabel = Str.autoAssessing, parent = this
+    private val submitBtn = ButtonComp(
+        ButtonComp.Type.FILLED, Str.doAutoAssess, Icons.robot,
+        clickedLabel = Str.autoAssessing,
+        onClick = ::submit,
+        parent = this
     )
 
     private lateinit var feedback: ExerciseAutoFeedbackHolderComp
