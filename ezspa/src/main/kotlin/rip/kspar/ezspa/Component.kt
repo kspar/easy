@@ -20,7 +20,7 @@ import kotlin.js.Promise
  * Components should not directly call any methods other than [createAndBuild] and [rebuild] on themselves.
  */
 abstract class Component(
-    private val parent: Component?,
+    private val parent: Component? = null,
     val dstId: String = IdGenerator.nextId()
 ) {
 
@@ -89,7 +89,7 @@ abstract class Component(
      *
      * The default implementation calls this component's parent's [onStateChanged] i.e. bubbles the change up.
      */
-    var onStateChanged: () -> Unit = { parent?.onStateChanged?.invoke() }
+//    var onStateChanged: () -> Unit = { parent?.onStateChanged?.invoke() }
 
     /**
      * Create and build this component, and then recursively create and build its children in parallel.
@@ -158,14 +158,14 @@ abstract class Component(
         try {
             rootElement.innerHTML = render()
         } catch (e: ElementNotFoundException) {
-            val ancestorDstStr = getAncestorsRec().joinToString(" > ") { it.dstId }
-            EzSpa.Logger.warn { "Couldn't find destination ID $dstId when painting component \n  Trace: $ancestorDstStr" }
+//            val ancestorDstStr = getAncestorsRec().joinToString(" > ") { it.dstId }
+//            EzSpa.Logger.warn { "Couldn't find destination ID $dstId when painting component \n  Trace: $ancestorDstStr" }
             throw e
         }
     }
 
-    private fun getAncestorsRec(): List<Component> =
-        (parent?.getAncestorsRec() ?: emptyList()) + listOf(this)
+//    private fun getAncestorsRec(): List<Component> =
+//        (parent?.getAncestorsRec() ?: emptyList()) + listOf(this)
 }
 
 fun Component?.dstIfNotNull() = if (this != null) plainDstStr(this.dstId) else ""
