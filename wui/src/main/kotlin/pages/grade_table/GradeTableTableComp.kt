@@ -14,12 +14,13 @@ import pages.sidenav.Sidenav
 import rip.kspar.ezspa.*
 import template
 import tmRender
+import translation.Str
 
 class GradeTableTableComp(
     private val courseId: String,
     private var groupId: String?,
     private var showSubNumbers: Boolean,
-    private var truncateExerciseTitles: Boolean,
+    private var comparator: Comparator<StudentRow>,
     parent: Component,
     dstId: String = IdGenerator.nextId()
 ) : Component(parent, dstId) {
@@ -37,7 +38,10 @@ class GradeTableTableComp(
 
     data class StudentRow(
         val id: String,
-        val name: String,
+        val firstName: String,
+        val lastName: String,
+        val groups: List<String>,
+        val finishedCount: Int,
         val grades: List<GradeCell>,
     )
 
@@ -71,33 +75,37 @@ class GradeTableTableComp(
                 .thenBy { it.family_name.lowercase() }
                 .thenBy { it.given_name.lowercase() }
         )?.map { student ->
+            val grades = exercisesData.map {
+                val submission = it.latest_submissions.single { it.student_id == student.student_id }
+                GradeCell(
+                    it.course_exercise_id,
+                    submission.submission?.grade?.grade,
+                    submission.submission?.submission_number,
+                    submission.status,
+                    submission.submission?.grade?.is_autograde
+                )
+            }
             StudentRow(
                 student.student_id,
-                student.name,
-                exercisesData.map {
-                    val submission = it.latest_submissions.single { it.student_id == student.student_id }
-                    GradeCell(
-                        it.course_exercise_id,
-                        submission.submission?.grade?.grade,
-                        submission.submission?.submission_number,
-                        submission.status,
-                        submission.submission?.grade?.is_autograde
-                    )
-                }
+                student.given_name,
+                student.family_name,
+                student.groups.map { it.name },
+                grades.count { it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED },
+                grades
             )
-        }.orEmpty()
+        }.orEmpty().sortedWith(comparator)
 
         table = Table(exercises, students)
 
         Sidenav.replacePageSection(
             Sidenav.PageSection(
-                "Hinded",
-                listOf(Sidenav.Action(Icons.download, "Ekspordi hindetabel", ::downloadGradesCSV))
+                Str.grades,
+                listOf(Sidenav.Action(Icons.download, Str.exportGrades, ::downloadGradesCSV))
             )
         )
     }
 
-    override fun renderLoading(): String = "Laen hindeid..."
+    override fun renderLoading() = Icons.spinner
 
     override fun render(): String {
         val exercises = table.exercises.map {
@@ -123,14 +131,10 @@ class GradeTableTableComp(
                 )
             }.toTypedArray()
 
-            val finishedCount = student.grades.count {
-                it.status == CourseExercisesStudentDAO.SubmissionStatus.COMPLETED
-            }
-
             objOf(
-                "name" to student.name,
-                "finishedCount" to finishedCount,
-                "studentSummaryTitle" to "Lahendanud $finishedCount ülesannet",
+                "name" to "${student.firstName} ${student.lastName}",
+                "finishedCount" to student.finishedCount,
+                "studentSummaryTitle" to "${Str.solvedExercises1} ${student.finishedCount} ${Str.solvedExercises2}",
                 "grades" to grades,
             )
         }.toTypedArray()
@@ -141,21 +145,21 @@ class GradeTableTableComp(
             }
             objOf(
                 "finishedCount" to finishedCount,
-                "exerciseSummaryTitle" to "Lahendatud $finishedCount õpilase poolt",
+                "exerciseSummaryTitle" to "${Str.solvedBy1} $finishedCount ${Str.solvedBy2}",
             )
         }.toTypedArray()
 
         return when {
             exercises.isEmpty() -> tmRender(
                 "t-s-missing-content-wandering-eyes",
-                "text" to "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
+                "text" to Str.emptyGradeTablePlaceholder
             )
 
             else -> template(
                 """
                     <div class="grades-wrap">
                         <div class="grade-table-wrap">
-                            <table class="colored {{#truncateTitles}}truncated-ex{{/truncateTitles}} {{#showSubNums}}sub-nums{{/showSubNums}}">
+                            <table class="colored truncated-ex {{#showSubNums}}sub-nums{{/showSubNums}}">
                                 <thead><tr>
                                     <th class="header-spacer"></th>
                                     <th><span class="text" title="{{exerciseCountTitle}}">Σ ({{exerciseCount}})</span></th>
@@ -193,12 +197,11 @@ class GradeTableTableComp(
                         </div>
                     </div>
                 """.trimIndent(),
-                "truncateTitles" to truncateExerciseTitles,
                 "showSubNums" to showSubNumbers,
                 "exerciseCount" to exercises.size,
-                "exerciseCountTitle" to "Kokku ${exercises.size} ülesannet",
+                "exerciseCountTitle" to "${Str.total} ${exercises.size} ${if (exercises.size == 1) Str.exerciseSingular else Str.exercisePlural}",
                 "studentCount" to students.size,
-                "studentCountTitle" to "Kokku ${students.size} õpilast",
+                "studentCountTitle" to "${Str.total} ${students.size} ${if (students.size == 1) Str.studentsSingular else Str.studentsPlural}",
                 "exercises" to exercises,
                 "students" to students,
                 "exerciseSummaries" to exerciseSummaries,
@@ -206,13 +209,8 @@ class GradeTableTableComp(
         }
     }
 
-    suspend fun setSettings(subNumbers: Boolean? = null, truncatedTitles: Boolean? = null) {
-        subNumbers?.let {
-            showSubNumbers = subNumbers
-        }
-        truncatedTitles?.let {
-            truncateExerciseTitles = truncatedTitles
-        }
+    suspend fun setShowSubNumbers(subNumbers: Boolean) {
+        showSubNumbers = subNumbers
         createAndBuild().await()
     }
 
@@ -221,19 +219,39 @@ class GradeTableTableComp(
         createAndBuild().await()
     }
 
+    suspend fun setComparator(comparator: Comparator<StudentRow>) {
+        this.comparator = comparator
+        createAndBuild().await()
+    }
+
     private fun downloadGradesCSV(sidenavAction: Sidenav.Action) {
         val fields = listOf(
-            objOf("id" to "name", "label" to "Nimi"),
-        ) + table.exercises.mapIndexed { i, e ->
-            objOf(
-                "id" to "ex$i",
-                "label" to e.title
-            )
+            objOf("id" to "name", "label" to Str.name),
+        ) + table.exercises.flatMapIndexed { i, e ->
+            buildList {
+                add(
+                    objOf(
+                        "id" to "ex$i",
+                        "label" to e.title
+                    )
+                )
+                if (showSubNumbers)
+                    add(
+                        objOf(
+                            "id" to "ex$i-subs",
+                            "label" to "${Str.submissionCount} - " + e.title
+                        )
+                    )
+            }
         }
 
         val records = table.students.map {
-            (listOf("name" to it.name) + it.grades.mapIndexed { i, g ->
-                "ex$i" to g.grade
+            (listOf("name" to "${it.firstName} ${it.lastName}") + it.grades.flatMapIndexed { i, g ->
+                buildList<Pair<String, Int?>> {
+                    add(("ex$i" to g.grade))
+                    if (showSubNumbers)
+                        add("ex$i-subs" to g.submissionNumber)
+                }
             }).toMap().toJsObj()
         }
 
@@ -246,7 +264,7 @@ class GradeTableTableComp(
 
         val downloadLink = document.createElement("a") as HTMLAnchorElement
         downloadLink.setAttribute("href", "data:text/plain;charset=utf-8,${csv.encodeURIComponent()}")
-        downloadLink.setAttribute("download", "hinded-$courseId-${nowTimestamp()}.csv")
+        downloadLink.setAttribute("download", "${Str.grades}-$courseId-${nowTimestamp()}.csv")
         downloadLink.click()
     }
 }

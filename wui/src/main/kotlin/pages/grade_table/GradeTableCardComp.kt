@@ -1,17 +1,22 @@
 package pages.grade_table
 
+import HumanStringComparator
 import Key
 import LocalStore
+import components.SorterComp
 import components.chips.FilterChipComponent
 import components.chips.FilterChipSetComp
+import components.chips.FilterDropdownChipComp
 import components.chips.FilterToggleChipComp
-import components.form.SelectComp
 import dao.CoursesTeacherDAO
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
+import pages.grade_table.GradeTableCardComp.Sorter.FINISHED_COUNT
+import pages.grade_table.GradeTableCardComp.Sorter.NAME
 import parseToOrCatch
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import stringify
 import template
 import translation.Str
 
@@ -22,16 +27,41 @@ class GradeTableCardComp(
 ) : Component(parent) {
 
     @Serializable
-    data class Settings(val showSubNumbers: Boolean, val truncateTitles: Boolean)
+    data class Settings(
+        val showSubNumbers: Boolean, val sorterId: String, val sorterReversed: Boolean,
+    )
 
-    private var groupSelectComp: SelectComp? = null
+    enum class Sorter(
+        val comparator: Comparator<GradeTableTableComp.StudentRow>,
+        val id: String
+    ) {
+        NAME(
+            compareBy<GradeTableTableComp.StudentRow, String?>(HumanStringComparator) { it.groups.getOrNull(0) }
+                .thenBy(HumanStringComparator) { it.groups.getOrNull(1) }
+                .thenBy(HumanStringComparator) { it.groups.getOrNull(2) }
+                .thenBy(HumanStringComparator) { it.groups.getOrNull(3) }
+                .thenBy(HumanStringComparator) { it.groups.getOrNull(4) }
+                .thenBy { it.lastName.lowercase() }
+                .thenBy { it.firstName.lowercase() },
+            "SORTER_NAME",
+        ),
+        FINISHED_COUNT(
+            compareByDescending { it.finishedCount },
+            "SORTER_FINISHED",
+        )
+    }
+
+
+    private var groupSelectComp: FilterDropdownChipComp? = null
     private lateinit var subNumberChip: FilterToggleChipComp
     private lateinit var chipSetComp: FilterChipSetComp
+    private lateinit var sorter: SorterComp
+
     private lateinit var tableComp: GradeTableTableComp
 
 
     override val children: List<Component>
-        get() = listOfNotNull(groupSelectComp, chipSetComp, tableComp)
+        get() = listOfNotNull(groupSelectComp, chipSetComp, sorter, tableComp)
 
     override fun create() = doInPromise {
         val groups = CoursesTeacherDAO.getGroups(courseId).await()
@@ -40,34 +70,58 @@ class GradeTableCardComp(
             if (groups.map { it.id }.contains(it)) it else null
         }
 
-        if (groups.isNotEmpty()) {
-            val options = buildList {
-                add(SelectComp.Option("Kõik õpilased", ""))
-                groups.forEach {
-                    add(SelectComp.Option(it.name, it.id, it.id == preselectedGroupId))
+        groupSelectComp = if (groups.isNotEmpty()) {
+            FilterDropdownChipComp(
+                Str.accountGroup,
+                groups.map {
+                    FilterChipComponent.Filter(it.name, selected = it.id == preselectedGroupId, id = it.id)
+                },
+                onChange = {
+                    handleGroupChange(it?.id)
                 }
-            }
-            groupSelectComp = SelectComp(Str.accountGroup, options, onOptionChange = ::handleGroupChange, parent = this)
-        }
+            )
+        } else null
 
         val settings = LocalStore.get(Key.GRADE_TABLE_SHOW_SUB_NUMBERS)?.parseToOrCatch(Settings.serializer())
-            ?: Settings(showSubNumbers = false, truncateTitles = false)
+            ?: Settings(showSubNumbers = false, sorterId = Sorter.values().first().id, sorterReversed = false)
 
-        // TODO: groups into chip as well
+        val activeSorter = Sorter.values().first { it.id == settings.sorterId }
+
         subNumberChip = FilterToggleChipComp(
-            FilterChipComponent.Filter("Näita esituste arvu", selected = settings.showSubNumbers),
+            FilterChipComponent.Filter(Str.showSubmissionNumber, selected = settings.showSubNumbers),
             onChange = {
-                tableComp.setSettings(subNumbers = it)
+                tableComp.setShowSubNumbers(it)
+                saveSettings()
             }
         )
 
-        chipSetComp = FilterChipSetComp(listOf(subNumberChip))
+        chipSetComp = FilterChipSetComp(listOfNotNull(groupSelectComp, subNumberChip))
+
+        val compSorters = listOf(
+            SorterComp.Sorter(Str.sortByName, NAME.id),
+            SorterComp.Sorter(Str.sortBySuccess, FINISHED_COUNT.id),
+        )
+
+        sorter = SorterComp(
+            compSorters,
+            onChanged = { sorter, reversed ->
+                val activeComparator = Sorter.values().first { it.id == sorter.id }.comparator
+                val comparator = if (reversed) activeComparator.reversed() else activeComparator
+                tableComp.setComparator(comparator)
+                saveSettings()
+            },
+            initialSorter = compSorters.first { it.id == activeSorter.id },
+            initialReversed = settings.sorterReversed,
+        )
+
 
         tableComp = GradeTableTableComp(
             courseId,
             groupId = preselectedGroupId,
             showSubNumbers = settings.showSubNumbers,
-            truncateExerciseTitles = settings.truncateTitles,
+            comparator = Sorter.values().first { it.id == settings.sorterId }.comparator.let {
+                if (settings.sorterReversed) it.reversed() else it
+            },
             parent = this,
         )
     }
@@ -75,9 +129,9 @@ class GradeTableCardComp(
     override fun render() = template(
         """
             <h2>{{title}}</h2>
-            <ez-flex style='margin-top: 3rem;'>
-                $groupSelectComp
+            <ez-flex style='justify-content: space-between; margin: 3rem 0;'>
                 $chipSetComp
+                $sorter
             </ez-flex>
             $tableComp
         """.trimIndent(),
@@ -87,5 +141,18 @@ class GradeTableCardComp(
     private suspend fun handleGroupChange(newGroupId: String?) {
         LocalStore.set(Key.TEACHER_SELECTED_GROUP, newGroupId)
         tableComp.setGroup(newGroupId)
+    }
+
+    private fun saveSettings() {
+        LocalStore.set(
+            Key.GRADE_TABLE_SHOW_SUB_NUMBERS,
+            Settings.serializer().stringify(
+                Settings(
+                    showSubNumbers = subNumberChip.filter.selected,
+                    sorterId = sorter.activeSorter.id,
+                    sorterReversed = sorter.isReversed,
+                )
+            )
+        )
     }
 }

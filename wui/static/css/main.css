@@ -1263,6 +1263,7 @@ ez-similarity-select-exercise .input-field {
     max-height: 85vh;
     white-space: nowrap;
     overflow: auto;
+    border-radius: 1rem;
 }
 
 .grade-table-wrap table > tbody > tr {
@@ -1272,7 +1273,7 @@ ez-similarity-select-exercise .input-field {
 .grade-table-wrap table > thead > tr > th {
     position: sticky;
     top: 0;
-    background-color: #fff;
+    background-color: var(--ez-bg-light-contrast);
     font-weight: 500;
 }
 
@@ -1320,7 +1321,7 @@ ez-similarity-select-exercise .input-field {
     position: sticky;
     left: 0;
     box-shadow: 0 0 1px 0 #bbb;  /* Border may not work for sticky elements, and this hack may also not work */
-    background-color: #fff;
+    background-color: var(--ez-bg-light-contrast);
     max-width: 10rem;
     text-align: right;
     font-weight: 500;
@@ -1347,7 +1348,7 @@ ez-similarity-select-exercise .input-field {
 }
 
 .grade-table-wrap table.colored > tbody > tr > td.unstarted {
-    background-color: #f6f6f6;
+    background-color: #fff;
 }
 
 .grade-table-wrap table.colored > tbody > tr > td.ungraded {
@@ -1355,7 +1356,7 @@ ez-similarity-select-exercise .input-field {
 }
 
 .grade-table-wrap table.colored > tbody > tr:hover > td.neutral {
-    background-color: #f8f8f8;
+    background-color: var(--ez-bg-light-contrast);
 }
 
 .grade-table-wrap table.colored > tbody > tr:hover > td.finished {
@@ -1367,7 +1368,7 @@ ez-similarity-select-exercise .input-field {
 }
 
 .grade-table-wrap table.colored > tbody > tr:hover > td.unstarted {
-    background-color: #ededed;
+    background-color: var(--ez-bg-light-contrast);
 }
 
 .grade-table-wrap table.colored > tbody > tr:hover > td.ungraded {

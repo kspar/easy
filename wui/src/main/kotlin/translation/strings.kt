@@ -6,6 +6,7 @@ import pages.exercise_library.DirAccess
 sealed class TranslatableStrings {
 
     // General
+    abstract val name: String
     abstract val otherLanguage: String
     abstract val notFoundPageTitle: String
     abstract val notFoundPageMsg: String
@@ -66,6 +67,7 @@ sealed class TranslatableStrings {
     abstract val filename: String
     abstract val doDeleteFile: String
     abstract val doRename: String
+    abstract val total: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -239,7 +241,6 @@ sealed class TranslatableStrings {
     abstract val aaTitle: String
     abstract val submitSuccessMsg: String
     abstract val allStudents: String
-    abstract val total: String
     abstract val feedbackEmailNote: String
     abstract val noVisibleExerciseError: String
     abstract val autogradeException: String
@@ -318,6 +319,19 @@ sealed class TranslatableStrings {
     // Participants page
     abstract val courseJoinHelpText: String
     abstract val courseJoinLink: String
+
+    // Grade table page
+    abstract val grades: String
+    abstract val loadingGrades: String
+    abstract val showSubmissionNumber: String
+    abstract val sortBySuccess: String
+    abstract val exportGrades: String
+    abstract val submissionCount: String
+    abstract val solvedExercises1: String
+    abstract val solvedExercises2: String
+    abstract val solvedBy1: String
+    abstract val solvedBy2: String
+    abstract val emptyGradeTablePlaceholder: String
 
 
     // TSL UI
@@ -406,6 +420,7 @@ sealed class TranslatableStrings {
 
 
 object EstStrings : TranslatableStrings() {
+    override val name = "Nimi"
     override val otherLanguage = "In English"
     override val notFoundPageTitle = "Lehte ei leitud"
     override val notFoundPageMsg = "Siin pole midagi kasulikku näha :("
@@ -618,7 +633,7 @@ object EstStrings : TranslatableStrings() {
     override val aaTitle = "Automaatkontroll"
     override val submitSuccessMsg = "Lahendus esitatud"
     override val allStudents = "Kõik õpilased"
-    override val total = "kokku"
+    override val total = "Kokku"
     override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
     override val noVisibleExerciseError = "Seda ülesannet ei eksisteeri või see on peidetud"
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
@@ -658,6 +673,17 @@ ole hea ja proovi hiljem uuesti.
     override val courseJoinHelpText =
         "See on isiklik link, mis võimaldab õpilasel kursusega liituda. Lingi kaudu liitumine seob õpilase konto tema Moodle'i kontoga. Hoia linki salajas ja jaga seda ainult õige õpilasega."
     override val courseJoinLink = "Liitumislink"
+    override val grades = "Hinded"
+    override val loadingGrades = "Laen hindeid..."
+    override val showSubmissionNumber = "Näita esituste arvu"
+    override val sortBySuccess = "Edukus"
+    override val exportGrades = "Ekspordi hindetabel"
+    override val submissionCount = "Esituste arv"
+    override val solvedExercises1 = "Lahendanud"
+    override val solvedExercises2 = "ülesannet"
+    override val solvedBy1 = "Lahendatud"
+    override val solvedBy2 = "õpilase poolt"
+    override val emptyGradeTablePlaceholder = "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
     override val tslPlaceholderTest = "-" to "Uus test"
     override val tslProgExecTest = "Programmi käivitus" to "Programmi käivituse test"
     override val tslFuncCallTest = "Funktsiooni väljakutse" to "Funktsiooni väljakutse test"
@@ -776,6 +802,7 @@ ole hea ja proovi hiljem uuesti.
 
 
 object EngStrings : TranslatableStrings() {
+    override val name = "Name"
     override val otherLanguage = "Eesti keeles"
     override val notFoundPageTitle = "Page not found"
     override val notFoundPageMsg = "Nothing to see here :("
@@ -1009,7 +1036,7 @@ object EngStrings : TranslatableStrings() {
     override val aaTitle = "Automated tests"
     override val submitSuccessMsg = "Solution submitted"
     override val allStudents = "All students"
-    override val total = "total"
+    override val total = "Total"
     override val feedbackEmailNote = "If you added a comment then the student will be notified by email."
     override val noVisibleExerciseError = "This exercise does not exist or is hidden"
     override val autogradeException = "There was an exception during the program's execution:"
@@ -1049,6 +1076,18 @@ of the issue, please try again later.
     override val courseJoinHelpText =
         "This personal link can be used by the student to join this course. Using the link associates the student's account with their Moodle account. Keep the link private and share it only with this student."
     override val courseJoinLink = "Enrolment link"
+    override val grades = "Grades"
+    override val loadingGrades = "Loading grades..."
+    override val showSubmissionNumber = "Show submission count"
+    override val sortBySuccess = "Solved count"
+    override val exportGrades = "Export grade table"
+    override val submissionCount = "Submission count"
+    override val solvedExercises1 = "Solved"
+    override val solvedExercises2 = "exercises"
+    override val solvedBy1 = "Solved by"
+    override val solvedBy2 = "students"
+    override val emptyGradeTablePlaceholder =
+        "If this course had any exercises, then you would see the grade table here :-)"
     override val tslPlaceholderTest = "-" to "New test"
     override val tslProgExecTest = "Program execution" to "Program execution test"
     override val tslFuncCallTest = "Function call" to "Function call test"
