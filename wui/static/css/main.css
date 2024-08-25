@@ -63,6 +63,10 @@ body {
     min-width: 320px;
 }
 
+h5 {
+    margin: 1.5rem 0;
+}
+
 /* Embedded - when displaying page in embed */
 
 html.embedded {
@@ -527,11 +531,11 @@ ez-sub-time.over-deadline ez-icon {
 ez-grade-badge {
     display: inline-flex;
     align-items: center;
-    padding: .5rem 1.5rem;
+    padding: .8rem 1.5rem;
     border: 2px solid var(--ez-border);
     border-radius: 2rem;
     font-weight: 500;
-    margin-top: 1rem;
+    line-height: 1;
 }
 
 ez-comment .CodeMirror-scroll {
@@ -2028,8 +2032,9 @@ ez-radio-buttons.invalid [type="radio"]:not(:checked)+span:after {
     border-color: var(--md-sys-color-primary);
 }
 
-[type="radio"]:checked+span {
+[type="radio"]:checked + span {
     color: #000;
+    font-weight: 500;
 }
 
 [type="radio"]:disabled:not(:checked)+span:before {

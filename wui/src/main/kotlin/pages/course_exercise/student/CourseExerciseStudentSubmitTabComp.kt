@@ -1,10 +1,10 @@
 package pages.course_exercise.student
 
 import Icons
-import components.form.ButtonComp
-import components.dropdown.DropdownMenuComp
 import components.ToastThing
 import components.code_editor.CodeEditorComp
+import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
@@ -183,8 +183,8 @@ class CourseExerciseStudentSubmitTabComp(
             </ez-flex>
             $warning
             $autogradeLoader
-            $grade
             $testsFeedback
+            $grade
             $commentsList
         """.trimIndent(),
     )

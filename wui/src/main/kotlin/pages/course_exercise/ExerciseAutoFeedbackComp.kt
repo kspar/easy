@@ -115,7 +115,7 @@ class ExerciseAutoFeedbackComp(
             """
                 <ez-feedback>
                     <ez-tests-heading>
-                        <h5 style='margin: 1.5rem .5rem 1.5rem 0;'>{{autoTitle}}</h5>
+                        <h5 style='margin-right: .5rem;'>{{autoTitle}}</h5>
                         <ez-run-tests-btn>${rerunTestsBtn.dstIfNotNull()}</ez-run-tests-btn>
                     </ez-tests-heading>
                     

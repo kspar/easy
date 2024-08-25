@@ -5,7 +5,7 @@ import Key
 import LocalStore
 import components.form.CheckboxComp
 import components.form.IconButtonComp
-import components.form.IntFieldComp
+import components.form.MdGradeFieldExperimentComp
 import dao.CourseExercisesTeacherDAO
 import hide
 import kotlinx.coroutines.await
@@ -32,7 +32,7 @@ class SubmissionGradeComp(
         val onGradeSaved: suspend () -> Unit,
     )
 
-    private var pointsField: IntFieldComp? = null
+    private var pointsField: MdGradeFieldExperimentComp? = null
     private lateinit var saveBtn: IconButtonComp
     private lateinit var cancelBtn: IconButtonComp
     private lateinit var notifyStudentCheckbox: CheckboxComp
@@ -42,20 +42,15 @@ class SubmissionGradeComp(
 
     override fun create() = doInPromise {
         if (gradeEdit != null)
-            pointsField = IntFieldComp(
-                "", true, 0, 100, fieldNameForMessage = Str.gradeFieldLabel,
+            pointsField = MdGradeFieldExperimentComp(
+                Str.gradeFieldLabel,
                 initialValue = initialGrade?.grade,
-                paintRequiredOnInput = false,
                 onValueChange = {
                     saveBtn.show()
                     cancelBtn.show()
                     notifyStudentCheckbox.show()
                 },
-                onValidChange = {
-                    saveBtn.setEnabled(it)
-                },
-                onENTER = { saveGrade() },
-                parent = this
+                onENTER = { saveGrade() }
             )
 
         saveBtn = IconButtonComp(
@@ -89,19 +84,33 @@ class SubmissionGradeComp(
 
     override fun render() = template(
         """
-            <ez-flex>
-                {{gradeLabel}}:
-                {{#editable}}<ez-inline-flex style=''>$pointsField</ez-inline-flex>{{/editable}} 
-                {{^editable}}{{points}}{{/editable}}
-                / 100
-                <ez-flex style='margin-left: 1rem; align-items: start;' {{#indirectGrade}}title='{{pastGradeHelp}}'{{/indirectGrade}}>
-                    <ez-flex class='icon-med'>{{{graderIcon}}}</ez-flex>
-                    {{#indirectGrade}}<ez-flex class='icon-small'>{{{graderPastIcon}}}</ez-flex>{{/indirectGrade}}
+            <h5 style='margin-top: 3rem; margin-bottom: 5rem;'>
+                <ez-flex>
+                    {{gradeLabel}}:
+                    {{#editable}}
+                        <ez-inline-flex style='margin-left: 1rem; 
+                            --md-outlined-text-field-bottom-space: 10px;
+                            --md-outlined-text-field-top-space: 10px;
+                            --md-outlined-text-field-focus-outline-width: 2px;
+                        '>$pointsField</ez-inline-flex>
+                    {{/editable}} 
+                    {{^editable}}
+                        <ez-grade-badge style='margin-left: 1rem;'>
+                            {{points}} / 100
+                        </ez-grade-badge>
+                    {{/editable}}
+                    
+                    <ez-flex style='margin-left: 1.5rem; align-items: start;' {{#indirectGrade}}title='{{pastGradeHelp}}'{{/indirectGrade}}>
+                        <ez-flex class='icon-med'>{{{graderIcon}}}</ez-flex>
+                        {{#indirectGrade}}<ez-flex class='icon-small'>{{{graderPastIcon}}}</ez-flex>{{/indirectGrade}}
+                    </ez-flex>
+                    <ez-flex style='margin-left: 2rem;'>
+                        $saveBtn
+                        $cancelBtn
+                        $notifyStudentCheckbox
+                    </ez-flex>
                 </ez-flex>
-                $saveBtn
-                $cancelBtn
-                $notifyStudentCheckbox
-            </ez-flex>
+            </h5>
         """.trimIndent(),
         "editable" to (gradeEdit != null),
         "points" to (initialGrade?.grade ?: "-"),
@@ -128,7 +137,7 @@ class SubmissionGradeComp(
     }
 
     private suspend fun saveGrade() {
-        val points = pointsField?.getIntValue()
+        val points = pointsField?.getValue()
         if (gradeEdit != null && points != null) {
             CourseExercisesTeacherDAO.changeGrade(
                 gradeEdit.courseId, gradeEdit.courseExerciseId, gradeEdit.submissionId, points,

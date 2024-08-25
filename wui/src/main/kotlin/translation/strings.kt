@@ -676,7 +676,7 @@ ole hea ja proovi hiljem uuesti.
     override val grades = "Hinded"
     override val loadingGrades = "Laen hindeid..."
     override val showSubmissionNumber = "Näita esituste arvu"
-    override val sortBySuccess = "Edukus"
+    override val sortBySuccess = "Lahendatud ülesannete arv"
     override val exportGrades = "Ekspordi hindetabel"
     override val submissionCount = "Esituste arv"
     override val solvedExercises1 = "Lahendanud"

@@ -127,6 +127,19 @@ external class MdCircularProgress {
     companion object
 }
 
+@JsModule("@material/web/textfield/outlined-text-field.js")
+@JsNonModule
+external class MdOutlinedTextField {
+    companion object
+
+    var value: String
+    var valueAsNumber: Number
+
+    fun select()
+}
+
+fun Element.MdTextField() = unsafeCast<MdOutlinedTextField>()
+
 
 fun mentionMaterialComponents() {
 //     Used components need to be referenced here, so that they're not DCEd
@@ -151,5 +164,7 @@ fun mentionMaterialComponents() {
     MdCheckbox
 
     MdCircularProgress
+
+    MdOutlinedTextField
 }
 
