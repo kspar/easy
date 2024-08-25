@@ -64,7 +64,7 @@ class ExerciseAttributesComp(
                     ExerciseSummaryPage.link(it.id, it.course_exercise_id)
                 )
             } + if (exercise.on_courses_no_access > 0)
-                listOf(UnorderedListComp.Item("+ ${exercise.on_courses_no_access} ${Str.hiddenCourses}"))
+                listOf(UnorderedListComp.Item("${exercise.on_courses_no_access} ${if (exercise.on_courses_no_access == 1) Str.hiddenCourseSingular else Str.hiddenCoursePlural}"))
             else emptyList(),
             maxItemsToShow = 5,
             parent = this

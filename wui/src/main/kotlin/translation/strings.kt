@@ -296,7 +296,8 @@ sealed class TranslatableStrings {
     abstract val exerciseAlreadyOnCourse: String
     abstract val autoAssessTypeImgRec: String
     abstract val usedOnCourses: String
-    abstract val hiddenCourses: String
+    abstract val hiddenCourseSingular: String
+    abstract val hiddenCoursePlural: String
     abstract val modifiedAt: String
     abstract val exerciseCreatedAtPhrase: String
     abstract val exerciseSaved: String
@@ -714,7 +715,8 @@ ole hea ja proovi hiljem uuesti.
     override val exerciseAlreadyOnCourse = "See ülesanne on kursusel juba olemas"
     override val autoAssessTypeImgRec = "tkinter pildituvastus"
     override val usedOnCourses = "Kasutusel kursustel"
-    override val hiddenCourses = "peidetud kursust"
+    override val hiddenCourseSingular = "peidetud kursus"
+    override val hiddenCoursePlural = "peidetud kursust"
     override val exerciseSingular = "ülesanne"
     override val exercisePlural = "ülesannet"
     override val permissionP = "Läbikäija"
@@ -1117,7 +1119,8 @@ of the issue, please try again later.
     override val exerciseAlreadyOnCourse = "This exercise already exists on this course"
     override val autoAssessTypeImgRec = "tkinter image recognition"
     override val usedOnCourses = "Used on courses"
-    override val hiddenCourses = "hidden courses"
+    override val hiddenCourseSingular = "hidden course"
+    override val hiddenCoursePlural = "hidden courses"
 
     override val tslTestType = "Test type"
     override val tslCopySuffix = "(copy)"
