@@ -1,11 +1,11 @@
 package components.code_editor
 
 import Icons
-import components.dropdown.DropdownIconMenuComp
-import components.dropdown.DropdownMenuComp
 import components.code_editor.parts.CodeEditorStatusComp
 import components.code_editor.parts.CodeEditorTabsComp
 import components.code_editor.parts.CodeMirrorComp
+import components.dropdown.DropdownIconMenuComp
+import components.dropdown.DropdownMenuComp
 import kotlinx.coroutines.await
 import kotlinx.dom.addClass
 import kotlinx.dom.removeClass
@@ -43,7 +43,8 @@ class CodeEditorComp(
     private lateinit var status: CodeEditorStatusComp
     private lateinit var editor: CodeMirrorComp
 
-    private val initialFiles = files.map { it.copy() }
+    // Copy and convert nulls to empty for change checking
+    private val initialFiles = files.map { it.copy(content = it.content.orEmpty()) }
 
     // Note: deleting the last file is allowed in principle and this will break if this happens
     private var activeFile = files.firstOrNull()
