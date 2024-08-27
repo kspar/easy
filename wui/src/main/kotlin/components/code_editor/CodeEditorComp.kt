@@ -177,6 +177,7 @@ class CodeEditorComp(
             file.isDeletable = deletable
         }
 
+        refreshContent()
         createAndBuild().await()
     }
 

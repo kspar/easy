@@ -113,27 +113,19 @@ class CourseExerciseStudentSubmitTabComp(
                 if (isOpenForSubmissions)
                     add(
                         DropdownMenuComp.Item(
-                        Str.uploadSubmission, Icons.upload, onSelected = {
-                            uploadFile { editor.setContent(it.content) }
-                        }
-                    ))
+                            Str.uploadSubmission, Icons.upload, onSelected = {
+                                uploadFile { editor.setContent(it.content) }
+                            }
+                        ))
                 add(
                     DropdownMenuComp.Item(
-                    Str.downloadSubmission, Icons.download, onSelected = {
-                        saveTextAsFile("${courseExId}_${nowTimestamp()}_$solutionFileName", editor.getContent())
-                    }
-                ))
+                        Str.downloadSubmission, Icons.download, onSelected = {
+                            saveTextAsFile("${courseExId}_${nowTimestamp()}_$solutionFileName", editor.getContent())
+                        }
+                    ))
             },
             parent = this
         )
-//
-//        syncIcon = CourseExerciseEditorStatusComp(
-//            "", CourseExerciseEditorStatusComp.Status.IN_SYNC,
-//            canUpload = isOpenForSubmissions,
-//            onUpload = ::uploadSolution,
-//            onDownload = ::downloadSolution,
-//            parent = this
-//        )
 
         submitBtn = ButtonComp(
             ButtonComp.Type.FILLED,
@@ -155,6 +147,7 @@ class CourseExerciseStudentSubmitTabComp(
                     onNewSubmission()
                 } finally {
                     setEditorEditable(true)
+                    updateStatus(syncSuccess = true, isDraft = false)
                 }
             },
             parent = this
@@ -273,9 +266,6 @@ class CourseExerciseStudentSubmitTabComp(
             submission?.auto_assessment?.feedback,
             submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
         )
-
-        // Repeating this status to mitigate the edit-submit race condition
-        updateStatus(syncSuccess = true, isDraft = false)
     }
 
     private suspend fun setEditorEditable(editable: Boolean) {
