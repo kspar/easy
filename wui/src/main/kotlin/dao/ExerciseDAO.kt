@@ -253,9 +253,14 @@ object ExerciseDAO {
         val timestamp: EzDate = EzDate.now(),
     )
 
-    fun autoassess(exerciseId: String, solution: String) = doInPromise {
+    fun autoassess(exerciseId: String, solution: String, courseId: String? = null) = doInPromise {
         debug { "Autoassessing solution to exercise $exerciseId" }
-        fetchEms("/exercises/${exerciseId.encodeURIComponent()}/testing/autoassess",
+
+        val q = if (courseId != null) {
+            createQueryString("course" to courseId)
+        } else ""
+
+        fetchEms("/exercises/${exerciseId.encodeURIComponent()}/testing/autoassess$q",
             ReqMethod.POST, mapOf("solution" to solution), successChecker = { http200 }
         ).await().parseTo(AutoAssessment.serializer()).await()
     }

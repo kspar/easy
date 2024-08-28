@@ -3,9 +3,9 @@ package pages.exercise_in_library
 import EzDate
 import EzDateSerializer
 import Icons
-import components.form.ButtonComp
-import components.dropdown.DropdownMenuComp
 import components.code_editor.CodeEditorComp
+import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
 import components.text.AttrsComp
 import components.text.WarningComp
 import dao.ExerciseDAO
@@ -26,6 +26,7 @@ import kotlin.js.Promise
 
 class TestingTabComp(
     private val exerciseId: String,
+    private val courseId: String?,
     private val solutionFileName: String,
     private val solutionFileType: ExerciseDAO.SolutionFileType,
     parent: Component?
@@ -132,7 +133,7 @@ class TestingTabComp(
             feedback.clear()
 
             var autoassessFinished = false
-            val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getContent()).then {
+            val assessmentP = ExerciseDAO.autoassess(exerciseId, editor.getContent(), courseId).then {
                 autoassessFinished = true
                 it
             }

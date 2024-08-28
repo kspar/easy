@@ -91,6 +91,7 @@ class ExerciseTabsComp(
                         PageTabsComp.Tab(Str.tabTesting, id = TAB_ID_TESTING) {
                             TestingTabComp(
                                 exerciseId,
+                                null,
                                 initialExercise.solution_file_name,
                                 initialExercise.solution_file_type,
                                 it

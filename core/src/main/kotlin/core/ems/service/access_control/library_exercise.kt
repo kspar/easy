@@ -33,13 +33,11 @@ fun assertUnauthAccessToExercise(exerciseId: Long) {
         Exercise.select(Exercise.anonymousAutoassessEnabled)
             .where { Exercise.id.eq(exerciseId) }
             .map { it[Exercise.anonymousAutoassessEnabled] }
-            .singleOrNull() ?: throw ForbiddenException(
-            "No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS
-        )
+            .singleOrNull()
     }
 
-    if (!unauthEnabled) {
-        throw ForbiddenException("No access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+    if (unauthEnabled != true) {
+        throw ForbiddenException("No unauthenticated access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
     }
 }
 

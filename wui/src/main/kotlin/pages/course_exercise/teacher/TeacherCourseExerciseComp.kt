@@ -109,6 +109,7 @@ class TeacherCourseExerciseComp(
                         ) {
                             TestingTabComp(
                                 courseEx.exercise_id,
+                                courseId,
                                 courseEx.solution_file_name,
                                 courseEx.solution_file_type,
                                 it
