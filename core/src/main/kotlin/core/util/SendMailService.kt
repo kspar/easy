@@ -125,7 +125,9 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Kursusele ligi pääsemiseks klõpsa järgneval lingil:
             |  $registerLink
-            |            
+            |
+            |Kui sul on juba Lahenduse konto olemas, siis logi sellega sisse. Kui kontot pole, siis palun loo endale konto. Pärast sisse logimist või registreerumist võib olla vajalik uuesti lingil klõpsata, et kursusega liituda.
+            |
             |
             |Mõnusat progemist!
             |Lahenduse meeskond
@@ -139,7 +141,10 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             | To access the course, click on the following link:
             |  $registerLink
-            |  
+            |
+            |If you already have a Lahendus account, then log in. If you don't have an account, then please create one. After logging in or creating your account you might need to click on the above link again to join the course.
+            |
+            |
             |Happy coding!
             |The Lahendus Team
             |
