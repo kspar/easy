@@ -23,7 +23,7 @@ fun submissionExists(submissionId: Long, courseExId: Long, courseId: Long): Bool
         .count() == 1L
 }
 
-fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isAfterNow
+fun DateTime.hasSecondsPassed(seconds: Int) = this.plusSeconds(seconds).isBeforeNow
 
 fun assertSubmissionExists(submissionId: Long, courseExId: Long, courseId: Long) {
     if (!submissionExists(submissionId, courseExId, courseId)) {
