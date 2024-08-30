@@ -149,7 +149,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 .associate { it[StudentCourseAccess.moodleUsername] to it[StudentCourseAccess.student] }
 
 
-            // Combine students from Moodle with easy username (if they have on).
+            // Combine students from Moodle with easy username (if they have one).
             val studentInfoCombined = moodleResponse.students.map { student ->
                 StudentInfo(
                     student.email.lowercase(),
@@ -168,16 +168,15 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                         (StudentMoodlePendingAccess.moodleUsername.notInList(studentInfoCombined.map { it.moodleUsername }))
             }
 
-            // Diff accesses before and after to send invitations for only new accesses
+            // Diff accesses before and after to send invitations for only new accesses later
             val previousEmailsPending =
                 StudentMoodlePendingAccess.select(StudentMoodlePendingAccess.email)
                     .where { StudentMoodlePendingAccess.course.eq(courseId) }
                     .map { it[StudentMoodlePendingAccess.email] }
                     .toSet()
 
-            // Remove all pending group accesses for readding them later (to update them)
+            // Remove all pending group accesses for re-adding them later (to update them)
             StudentMoodlePendingCourseGroup.deleteWhere { StudentMoodlePendingCourseGroup.course eq courseId }
-
 
             val time = DateTime.now()
             // Add pending access for students who did not have course access previously
