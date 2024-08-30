@@ -3,8 +3,6 @@ package pages.about
 import AppProperties
 import CONTENT_CONTAINER_ID
 import Icons
-import Key
-import LocalStore
 import cache.BasicCourseInfo
 import components.form.ButtonComp
 import components.form.SelectComp
@@ -15,6 +13,8 @@ import kotlinx.coroutines.await
 import pages.Title
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.getSavedGroupId
+import storage.saveGroup
 import template
 import translation.Str
 
@@ -53,7 +53,7 @@ class SimilarityComp(
 
         val groups = CoursesTeacherDAO.getGroups(courseId).await()
 
-        val preselectedGroupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)?.let {
+        val preselectedGroupId = getSavedGroupId(courseId)?.let {
             if (groups.map { it.id }.contains(it)) it else null
         }
 
@@ -66,7 +66,7 @@ class SimilarityComp(
             }
             selectGroup = SelectComp(
                 Str.accountGroup, options,
-                onOptionChange = { LocalStore.set(Key.TEACHER_SELECTED_GROUP, it) },
+                onOptionChange = { saveGroup(courseId, it) },
                 parent = this
             )
         }

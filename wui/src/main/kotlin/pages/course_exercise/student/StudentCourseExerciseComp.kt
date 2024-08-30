@@ -1,7 +1,7 @@
 package pages.course_exercise.student
 
 import CONTENT_CONTAINER_ID
-import Key
+import storage.Key
 import cache.BasicCourseInfo
 import components.TabsComp
 import components.TwoColDividerComp

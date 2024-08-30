@@ -1,9 +1,11 @@
 package components.ezcoll
 
-import Key
-import LocalStore
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import storage.Key
+import storage.LocalStore
+import storage.getSavedGroupId
+import storage.saveGroup
 import warn
 
 object EzCollConf {
@@ -57,7 +59,7 @@ object EzCollConf {
         val sortOrderReversed: Boolean = false,
     ) {
         companion object {
-            fun retrieve(localStoreKey: Key): UserConf {
+            fun retrieve(localStoreKey: Key, courseId: String? = null): UserConf {
                 val str = LocalStore.get(localStoreKey)
                 val conf = try {
                     if (str != null)
@@ -70,7 +72,7 @@ object EzCollConf {
                 }
 
                 // populate from global course group filter
-                val groupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)
+                val groupId = courseId?.let { getSavedGroupId(courseId) }
                 if (groupId != null)
                     conf.globalGroupFilter = TeacherSelectedGroupFilter(groupId)
 
@@ -78,13 +80,13 @@ object EzCollConf {
             }
         }
 
-        fun store(localStoreKey: Key, hasCourseGroupFilter: Boolean = false) {
+        fun store(localStoreKey: Key, courseId: String? = null, hasCourseGroupFilter: Boolean = false) {
             // If the course group filter:
             // 1) exists, then set it globally
             // 2) *can exist* but did not exist (user removed it or wasn't selected before),
             //    then remove this selection from global store as well
-            if (hasCourseGroupFilter)
-                LocalStore.set(Key.TEACHER_SELECTED_GROUP, globalGroupFilter?.id)
+            if (hasCourseGroupFilter && courseId != null)
+                saveGroup(courseId, globalGroupFilter?.id)
 
             // This should never be stored here, only globally
             globalGroupFilter = null

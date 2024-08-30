@@ -1,8 +1,6 @@
 package pages.grade_table
 
 import HumanStringComparator
-import Key
-import LocalStore
 import components.SorterComp
 import components.chips.FilterChipComponent
 import components.chips.FilterChipSetComp
@@ -16,6 +14,10 @@ import pages.grade_table.GradeTableCardComp.Sorter.NAME
 import parseToOrCatch
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.Key
+import storage.LocalStore
+import storage.getSavedGroupId
+import storage.saveGroup
 import stringify
 import template
 import translation.Str
@@ -66,7 +68,7 @@ class GradeTableCardComp(
     override fun create() = doInPromise {
         val groups = CoursesTeacherDAO.getGroups(courseId).await()
 
-        val preselectedGroupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)?.let {
+        val preselectedGroupId = getSavedGroupId(courseId)?.let {
             if (groups.map { it.id }.contains(it)) it else null
         }
 
@@ -139,7 +141,7 @@ class GradeTableCardComp(
     )
 
     private suspend fun handleGroupChange(newGroupId: String?) {
-        LocalStore.set(Key.TEACHER_SELECTED_GROUP, newGroupId)
+        saveGroup(courseId, newGroupId)
         tableComp.setGroup(newGroupId)
     }
 

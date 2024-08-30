@@ -3,7 +3,6 @@ package pages.course_exercises_list
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
-import Key
 import cache.BasicCourseInfo
 import components.ezcoll.EzCollComp
 import components.ezcoll.EzCollConf
@@ -13,6 +12,7 @@ import pages.Title
 import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.Key
 import template
 import translation.Str
 

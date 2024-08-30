@@ -2,12 +2,11 @@ package pages.participants
 
 import HumanStringComparator
 import Icons
-import Key
 import addNotNull
-import components.form.ButtonComp
+import components.ToastThing
 import components.ezcoll.EzCollComp
 import components.ezcoll.EzCollConf
-import components.ToastThing
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -17,6 +16,7 @@ import kotlinx.coroutines.await
 import queries.*
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.Key
 import successMessage
 import translation.Str
 
@@ -168,8 +168,8 @@ class ParticipantsStudentsListComp(
                     )
                 )
             },
-            userConf = EzCollConf.UserConf.retrieve(Key.COURSE_PARTICIPANTS_USER_CONF),
-            onConfChange = { it.store(Key.COURSE_PARTICIPANTS_USER_CONF, hasCourseGroupFilter = true) },
+            userConf = EzCollConf.UserConf.retrieve(Key.COURSE_PARTICIPANTS_USER_CONF, courseId),
+            onConfChange = { it.store(Key.COURSE_PARTICIPANTS_USER_CONF, courseId, hasCourseGroupFilter = true) },
             parent = this
         )
 

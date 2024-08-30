@@ -3,13 +3,11 @@ package pages.course_exercises_list
 import CONTENT_CONTAINER_ID
 import EzDate
 import Icons
-import Key
-import LocalStore
 import cache.BasicCourseInfo
-import components.form.ButtonComp
+import components.ToastThing
 import components.ezcoll.EzCollComp
 import components.ezcoll.EzCollConf
-import components.ToastThing
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.CourseExercisesTeacherDAO
@@ -25,6 +23,9 @@ import pages.exercise_library.CreateExerciseModalComp
 import pages.sidenav.Sidenav
 import restore
 import rip.kspar.ezspa.*
+import storage.Key
+import storage.LocalStore
+import storage.getSavedGroupId
 import successMessage
 import template
 import tmRender
@@ -71,7 +72,7 @@ class TeacherCourseExercisesComp(
         get() = listOfNotNull(coll, reorderModal, updateModal, removeModal, newExerciseModal)
 
     override fun create() = doInPromise {
-        groupId = LocalStore.get(Key.TEACHER_SELECTED_GROUP)?.let {
+        groupId = getSavedGroupId(courseId)?.let {
             if (it == LocalStore.TEACHER_SELECTED_GROUP_NONE_ID) null else it
         }
 
@@ -153,9 +154,9 @@ class TeacherCourseExercisesComp(
                     )
                 ),
             ),
-            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISES_USER_CONF),
+            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISES_USER_CONF, courseId),
             onConfChange = {
-                it.store(Key.TEACHER_COURSE_EXERCISES_USER_CONF, hasCourseGroupFilter = true)
+                it.store(Key.TEACHER_COURSE_EXERCISES_USER_CONF, courseId, hasCourseGroupFilter = true)
                 if (it.globalGroupFilter?.id != groupId) {
                     // group changed
                     createAndBuild().await()

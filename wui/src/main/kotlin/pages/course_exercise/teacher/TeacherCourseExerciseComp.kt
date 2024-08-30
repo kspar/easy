@@ -2,7 +2,7 @@ package pages.course_exercise.teacher
 
 import CONTENT_CONTAINER_ID
 import Icons
-import Key
+import storage.Key
 import cache.BasicCourseInfo
 import components.TabID
 import components.TabsComp

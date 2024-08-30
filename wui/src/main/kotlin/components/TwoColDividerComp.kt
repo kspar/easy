@@ -1,8 +1,8 @@
 package components
 
 import Icons
-import Key
-import LocalStore
+import storage.Key
+import storage.LocalStore
 import components.form.IconButtonComp
 import hide
 import kotlinx.dom.addClass

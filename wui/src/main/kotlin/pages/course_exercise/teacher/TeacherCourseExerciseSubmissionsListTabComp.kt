@@ -3,7 +3,6 @@ package pages.course_exercise.teacher
 import EzDate
 import HumanStringComparator
 import Icons
-import Key
 import components.ezcoll.EzCollComp
 import components.ezcoll.EzCollConf
 import dao.CourseExercisesTeacherDAO
@@ -11,6 +10,7 @@ import dao.ParticipantsDAO
 import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.Key
 import translation.Str
 
 class TeacherCourseExerciseSubmissionsListTabComp(
@@ -132,47 +132,47 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             sorters = buildList {
                 add(
                     EzCollComp.Sorter("Nimi",
-                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>, String?>(
-                        HumanStringComparator
-                    ) {
-                        it.props.family_name
-                    }.thenBy(HumanStringComparator) { it.props.given_name },
-                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.NAME
-                )
+                        compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>, String?>(
+                            HumanStringComparator
+                        ) {
+                            it.props.family_name
+                        }.thenBy(HumanStringComparator) { it.props.given_name },
+                        confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.NAME
+                    )
                 )
                 add(
                     EzCollComp.Sorter("Punktid",
-                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
-                        // nulls last
-                        if (it.props.submission?.grade == null) 1 else 0
-                    }.thenByDescending { it.props.submission?.grade?.grade }
-                        .thenBy(HumanStringComparator) { it.props.family_name }
-                        .thenBy(HumanStringComparator) { it.props.given_name },
-                    reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
-                        // nulls last
-                        if (it.props.submission?.grade == null) 1 else 0
-                    }.thenBy { it.props.submission?.grade?.grade }
-                        .thenBy(HumanStringComparator) { it.props.family_name }
-                        .thenBy(HumanStringComparator) { it.props.given_name },
-                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.POINTS
-                )
+                        compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                            // nulls last
+                            if (it.props.submission?.grade == null) 1 else 0
+                        }.thenByDescending { it.props.submission?.grade?.grade }
+                            .thenBy(HumanStringComparator) { it.props.family_name }
+                            .thenBy(HumanStringComparator) { it.props.given_name },
+                        reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                            // nulls last
+                            if (it.props.submission?.grade == null) 1 else 0
+                        }.thenBy { it.props.submission?.grade?.grade }
+                            .thenBy(HumanStringComparator) { it.props.family_name }
+                            .thenBy(HumanStringComparator) { it.props.given_name },
+                        confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.POINTS
+                    )
                 )
                 add(
                     EzCollComp.Sorter(Str.submissionTimeLabel,
-                    compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
-                        // nulls last
-                        if (it.props.submission?.time == null) 1 else 0
-                    }.thenBy { it.props.submission?.time }
-                        .thenBy(HumanStringComparator) { it.props.family_name }
-                        .thenBy(HumanStringComparator) { it.props.given_name },
-                    reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
-                        // nulls last
-                        if (it.props.submission?.time == null) 1 else 0
-                    }.thenByDescending { it.props.submission?.time }
-                        .thenBy(HumanStringComparator) { it.props.family_name }
-                        .thenBy(HumanStringComparator) { it.props.given_name },
-                    confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.TIME
-                )
+                        compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                            // nulls last
+                            if (it.props.submission?.time == null) 1 else 0
+                        }.thenBy { it.props.submission?.time }
+                            .thenBy(HumanStringComparator) { it.props.family_name }
+                            .thenBy(HumanStringComparator) { it.props.given_name },
+                        reverseComparator = compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
+                            // nulls last
+                            if (it.props.submission?.time == null) 1 else 0
+                        }.thenByDescending { it.props.submission?.time }
+                            .thenBy(HumanStringComparator) { it.props.family_name }
+                            .thenBy(HumanStringComparator) { it.props.given_name },
+                        confType = EzCollConf.TeacherCourseExerciseSubmissionsSorter.TIME
+                    )
                 )
             },
             massActions = listOf(
@@ -205,9 +205,9 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                 )
             ),
             compact = true,
-            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF),
+            userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, courseId),
             onConfChange = {
-                it.store(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, hasCourseGroupFilter = true)
+                it.store(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, courseId, hasCourseGroupFilter = true)
                 onStudentListChange()
             },
             parent = this

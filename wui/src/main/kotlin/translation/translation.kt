@@ -1,7 +1,7 @@
 package translation
 
-import Key
-import LocalStore
+import storage.Key
+import storage.LocalStore
 import kotlinx.browser.window
 
 // Top-level property to access strings

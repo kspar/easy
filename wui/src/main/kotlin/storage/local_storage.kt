@@ -1,3 +1,5 @@
+package storage
+
 import kotlinx.browser.localStorage
 import org.w3c.dom.get
 import org.w3c.dom.set

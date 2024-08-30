@@ -1,7 +1,7 @@
 package components.ezcoll
 
 import Icons
-import LocalStore
+import storage.LocalStore
 import components.MissingContentPlaceholderComp
 import components.chips.FilterChipComponent
 import components.chips.FilterChipSetComp

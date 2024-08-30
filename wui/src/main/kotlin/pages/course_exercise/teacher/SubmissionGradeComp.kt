@@ -1,8 +1,8 @@
 package pages.course_exercise.teacher
 
 import Icons
-import Key
-import LocalStore
+import storage.Key
+import storage.LocalStore
 import components.form.CheckboxComp
 import components.form.IconButtonComp
 import components.form.MdGradeFieldExperimentComp

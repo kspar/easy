@@ -1,6 +1,8 @@
 import components.ToastIds
 import components.ToastThing
 import rip.kspar.ezspa.objOf
+import storage.Key
+import storage.LocalStore
 import translation.Str
 import translation.activeLanguage
 import kotlin.js.Promise

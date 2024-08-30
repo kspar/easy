@@ -1,7 +1,7 @@
 package pages.course_exercise.teacher
 
-import Key
-import LocalStore
+import storage.Key
+import storage.LocalStore
 import components.form.ButtonComp
 import components.form.CheckboxComp
 import components.code_editor.AdocEditorComp
