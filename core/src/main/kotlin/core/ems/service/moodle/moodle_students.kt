@@ -213,8 +213,9 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             }
 
             // Finally send invitation for only new pending accesses
-            val newEmailsPending = studentInfoCombined
+            val invitationEmailRecipients = studentInfoCombined
                 .filter { !previousEmailsPending.contains(it.email) }
+                .filter { !existingAccesses.contains(it.email) }
                 .map {
                     mailService.sendStudentInvitedToMoodleLinkedCourse(
                         courseTitle,
@@ -224,8 +225,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     it.email
                 }
 
-            log.debug { "Giving pending access to students: ${studentInfoCombined.map { it.email }}" }
-            log.debug { "New pending emails: $newEmailsPending" }
+            log.debug { "Pending and existing accesses have now students: ${studentInfoCombined.map { it.email }}" }
+            log.debug { "Of all accesses, new pending emails: $invitationEmailRecipients" }
 
             val syncedPendingStudentsCount = studentInfoCombined.size
             log.info { "Synced $syncedPendingStudentsCount pending students" }
