@@ -13,6 +13,7 @@ import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
@@ -28,7 +29,7 @@ import org.springframework.web.client.RestTemplate
 private val log = KotlinLogging.logger {}
 
 
-data class MoodleSyncedStudents(val syncedStudents: Int, val syncedPendingStudents: Int)
+data class MoodleSyncedStudents(val syncedPendingStudents: Int)
 
 @Service
 class MoodleStudentsSyncService(val mailService: SendMailService) {
@@ -107,9 +108,6 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
     private fun insertStudentsFromMoodleResponse(moodleResponse: MoodleResponse, courseId: Long): MoodleSyncedStudents {
 
         data class MoodleGroup(val id: String, val name: String)
-        data class NewAccess(
-            val email: String, val username: String, val moodleUsername: String, val groups: List<MoodleGroup>
-        )
 
         data class NewPendingAccess(
             val email: String,
@@ -143,50 +141,16 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 moodleGroupName to groupId
             }.toMap()
 
-
             // Partition users by whether they have an Easy account
-            val newAccesses =
-                moodleResponse.students.flatMap { moodleStudent ->
-                    val moodleEmail = moodleStudent.email.lowercase()
-
-                    (Account innerJoin StudentCourseAccess).select(Account.id, Account.email)
-                        .where {
-                            StudentCourseAccess.moodleUsername eq moodleStudent.username or
-                                    (Account.email eq moodleEmail) and (StudentCourseAccess.course eq courseId)
-                        }
-                        .withDistinct()
-                        .map {
-                            NewAccess(
-                                it[Account.email],
-                                it[Account.id].value,
-                                moodleStudent.username,
-                                moodleStudent.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
-                            )
-                        }
-                        .also {
-                            if (it.size > 1) {
-                                log.warn { "Several accounts found with Moodle username ${moodleStudent.username} or email $moodleEmail: $it" }
-                                mailService.sendSystemNotification(
-                                    "Several accounts with Moodle username ${moodleStudent.username} or email $moodleEmail found on course $courseId: $it"
-                                )
-                            }
-                        }
-                }
-            log.debug { "Giving access to students: $newAccesses" }
-
-            val newPendingAccesses = moodleResponse.students
-                .filter { moodleStudent ->
-                    newAccesses.none { it.moodleUsername == moodleStudent.username }
-                }.map {
-                    NewPendingAccess(
-                        it.email.lowercase(),
-                        generateInviteId(10), // generate inviteId for all, but later do not update for existing
-                        it.username,
-                        it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
-                    )
-                }
+            val newPendingAccesses = moodleResponse.students.map {
+                NewPendingAccess(
+                    it.email.lowercase(),
+                    generateInviteId(10), // generate inviteId for all, but later do not update for existing
+                    it.username,
+                    it.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList()
+                )
+            }
             log.debug { "Giving pending access to students: ${newPendingAccesses.map { it.email }}" }
-
 
             // Diff accesses before and after to send notifications for only new accesses
             val previousStudentEmails =
@@ -198,28 +162,14 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             // Remove & insert all accesses because groups might have changed
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
-            val time = DateTime.now()
-            newAccesses.forEach { newAccess ->
-                // TODO: maybe can batchInsert
-                StudentCourseAccess.insert {
-                    it[student] = newAccess.username
-                    it[moodleUsername] = newAccess.moodleUsername
-                    it[course] = courseEntity
-                    it[createdAt] = time
-                }
-                StudentCourseGroup.batchInsert(newAccess.groups) {
-                    this[StudentCourseGroup.student] = newAccess.username
-                    this[StudentCourseGroup.course] = courseId
-                    this[StudentCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
-                }
+
+            val moodleStudents = moodleResponse.students.map { moodleStudent -> moodleStudent.username }
+            // Remove pending access, if student is removed from Moodle.
+            StudentMoodlePendingAccess.deleteWhere {
+                (StudentMoodlePendingAccess.course eq courseId) and
+                        (StudentMoodlePendingAccess.moodleUsername.notInList(moodleStudents))
             }
 
-            // Send notifications for only new accesses
-            val newStudentEmails = newAccesses.map { it.email } - previousStudentEmails.toSet()
-            log.debug { "New active emails: $newStudentEmails" }
-            newStudentEmails.forEach {
-                mailService.sendStudentAddedToCourseActive(courseTitle, it)
-            }
 
             // Diff accesses before and after to send invitations for only new accesses
             val previousEmailsPending =
@@ -229,6 +179,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             // Remove & insert all pending group accesses
             StudentMoodlePendingCourseGroup.deleteWhere { StudentMoodlePendingCourseGroup.course eq courseId }
+
+            val time = DateTime.now()
 
             newPendingAccesses.forEach { newPendingAccess ->
                 // TODO: maybe can batchInsert
@@ -260,14 +212,11 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     it.email
                 }
             log.debug { "New pending emails: $newEmailsPending" }
-
-            val syncedStudentsCount = newAccesses.size
             val syncedPendingStudentsCount = newPendingAccesses.size
-            log.info { "Synced $syncedStudentsCount students and $syncedPendingStudentsCount pending students" }
-            MoodleSyncedStudents(newAccesses.size, newPendingAccesses.size)
+            log.info { "Synced $syncedPendingStudentsCount pending students" }
+            MoodleSyncedStudents(newPendingAccesses.size)
         }
     }
-
 
     @Scheduled(cron = "\${easy.core.moodle-sync.users.cron}")
     fun moodleSyncAllCoursesStudents() {
