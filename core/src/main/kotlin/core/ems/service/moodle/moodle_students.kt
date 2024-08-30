@@ -205,7 +205,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                     it[createdAt] = time
                 }
                 StudentCourseGroup.batchInsert(hadAccess.groups) {
-                    this[StudentCourseGroup.student] = hadAccess.moodleUsername
+                    this[StudentCourseGroup.student] = hadAccess.existingStudentId!!
                     this[StudentCourseGroup.course] = courseId
                     this[StudentCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
                 }
