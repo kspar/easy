@@ -2,7 +2,6 @@ package pages.course_exercise.teacher
 
 import CONTENT_CONTAINER_ID
 import Icons
-import storage.Key
 import cache.BasicCourseInfo
 import components.TabID
 import components.TabsComp
@@ -19,6 +18,7 @@ import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import storage.Key
 import template
 import translation.Str
 
@@ -26,7 +26,7 @@ class TeacherCourseExerciseComp(
     private val courseId: String,
     private val courseExId: String,
     private val preselectedStudentId: String?,
-    // FIXME: for testing
+    // Hidden feature, mostly for testing
     private val tabId: String?,
     private val setPathSuffix: (String) -> Unit
 ) : Component(null, CONTENT_CONTAINER_ID) {
@@ -83,7 +83,6 @@ class TeacherCourseExerciseComp(
                 add(
                     TabsComp.Tab(
                         "Kontroll", Icons.knobs,
-                        // FIXME: for testing
                         active = (tabId == "1")
                     ) {
                         val aaProps = if (courseEx.grading_script != null) {
@@ -104,7 +103,6 @@ class TeacherCourseExerciseComp(
                     add(
                         TabsComp.Tab(
                             "Katseta", Icons.robot,
-                            // FIXME: for testing
                             active = (tabId == "2")
                         ) {
                             TestingTabComp(

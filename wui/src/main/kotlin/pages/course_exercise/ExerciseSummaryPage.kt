@@ -70,8 +70,7 @@ object ExerciseSummaryPage : EasyPage() {
                 }
             }
 
-            // FIXME: commented out for easier testing
-//            updateUrl(window.location.pathname)
+            updateUrl(window.location.pathname)
 
             rootComp!!.createAndBuild().await()
             scrollPosition?.restore()
