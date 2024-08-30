@@ -11,6 +11,8 @@ import kotlinx.coroutines.await
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import storage.Key
+import storage.LocalStore
+import storage.getSavedGroupId
 import translation.Str
 
 class TeacherCourseExerciseSubmissionsListTabComp(
@@ -21,6 +23,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
     parent: Component
 ) : Component(parent) {
 
+    private var groupId: String? = null
 
     private lateinit var coll: EzCollComp<CourseExercisesTeacherDAO.LatestStudentSubmission>
 
@@ -28,10 +31,14 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         get() = listOf(coll)
 
     override fun create() = doInPromise {
+        groupId = getSavedGroupId(courseId)?.let {
+            if (it == LocalStore.TEACHER_SELECTED_GROUP_NONE_ID) null else it
+        }
+
         val groups = ParticipantsDAO.getCourseGroups(courseId).await()
 
         val submissions =
-            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId).await().latest_submissions.map {
+            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId, groupId).await().latest_submissions.map {
                 EzCollComp.Item(
                     it,
                     EzCollComp.ItemTypeIcon(
@@ -208,6 +215,10 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, courseId),
             onConfChange = {
                 it.store(Key.TEACHER_COURSE_EXERCISE_SUBMISSIONS_USER_CONF, courseId, hasCourseGroupFilter = true)
+                if (getSavedGroupId(courseId) != groupId) {
+                    // group changed
+                    createAndBuild().await()
+                }
                 onStudentListChange()
             },
             parent = this
