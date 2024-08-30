@@ -215,7 +215,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             // Finally send invitation for only new pending accesses
             val invitationEmailRecipients = studentInfoCombined
                 .filter { !previousEmailsPending.contains(it.email) }
-                .filter { !existingAccesses.contains(it.email) }
+                .filter { it.existingStudentId == null }
                 .map {
                     mailService.sendStudentInvitedToMoodleLinkedCourse(
                         courseTitle,
