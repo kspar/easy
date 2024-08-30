@@ -25,6 +25,5 @@ object AppProperties {
     const val DISCORD_INVITE_ID = ""
     const val TOS_URL = ""
 
-    const val PARTICIPANTS_ROWS_ON_PAGE = 50
-    const val SUBMISSIONS_ROWS_ON_PAGE = 50
+    const val STATIC_UPDATE_POLL_SEC = 5 * 60
 }

@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
 
+cd static
+python3 ../version_static_files.py index.html pace.min.js pace.css main.css exercise.css md.css wui.js
+cd ..
 
-scp build/developmentExecutable/wui.js devgate:/var/www/wui/static/js/
-scp static/index.html devgate:/var/www/wui/index.html
-scp static/css/main.css devgate:/var/www/wui/static/css/main.css
-scp static/css/md.css devgate:/var/www/wui/static/css/md.css
-scp static/css/exercise.css devgate:/var/www/wui/static/css/exercise.css
+cp build/developmentExecutable/wui.js static/js
+zip -r -q static.zip static/
+
+scp static.zip devgate:
+ssh devgate "unzip -q static.zip; rm static.zip; mv static/versioned.index.html /var/www/wui/index.html; rm -rf /var/www/wui/static; mv static /var/www/wui"
+
+rm static.zip
+rm static/versioned.index.html
+rm static/version.txt
+
+
+#scp build/developmentExecutable/wui.js devgate:/var/www/wui/static/js/
+#scp static/index.html devgate:/var/www/wui/index.html
+#scp static/css/main.css devgate:/var/www/wui/static/css/main.css
+#scp static/css/md.css devgate:/var/www/wui/static/css/md.css
+#scp static/css/exercise.css devgate:/var/www/wui/static/css/exercise.css
 
 
 

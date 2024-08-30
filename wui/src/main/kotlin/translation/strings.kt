@@ -68,6 +68,8 @@ sealed class TranslatableStrings {
     abstract val doDeleteFile: String
     abstract val doRename: String
     abstract val total: String
+    abstract val lahendusUpdated: String
+    abstract val doRefresh: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -635,6 +637,8 @@ object EstStrings : TranslatableStrings() {
     override val submitSuccessMsg = "Lahendus esitatud"
     override val allStudents = "Kõik õpilased"
     override val total = "Kokku"
+    override val lahendusUpdated = "Lahendus on vahepeal uuenenud. Värskenda lehte, et kasutamist jätkata."
+    override val doRefresh = "Lahendus on vahepeal uuenenud. Värskenda lehte, et kasutamist jätkata."
     override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
     override val noVisibleExerciseError = "Seda ülesannet ei eksisteeri või see on peidetud"
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
@@ -1039,6 +1043,8 @@ object EngStrings : TranslatableStrings() {
     override val submitSuccessMsg = "Solution submitted"
     override val allStudents = "All students"
     override val total = "Total"
+    override val lahendusUpdated = "Lahendus has been updated. Please refresh the page."
+    override val doRefresh = "Refresh"
     override val feedbackEmailNote = "If you added a comment then the student will be notified by email."
     override val noVisibleExerciseError = "This exercise does not exist or is hidden"
     override val autogradeException = "There was an exception during the program's execution:"

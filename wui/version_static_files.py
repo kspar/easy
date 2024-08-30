@@ -3,7 +3,7 @@ import time
 
 
 def create_versioned_files(src_filename, filenames):
-    timestamp = int(time.time())
+    timestamp = str(int(time.time()))
 
     with open(src_filename, encoding='utf-8') as html_file:
 
@@ -18,8 +18,13 @@ def create_versioned_files(src_filename, filenames):
             new_filename = "{}?v={}".format(filename, timestamp)
             html_file_content = html_file_content.replace(filename, new_filename)
 
+        html_file_content = html_file_content.replace('ez_wui_version_placeholder', timestamp)
+
     with open('versioned.' + src_filename, mode="w", encoding="utf-8") as f:
         f.write(html_file_content)
+
+    with open('version.txt', mode='w') as f:
+        f.write(timestamp)
 
 
 if __name__ == '__main__':

@@ -67,6 +67,7 @@ fun main() {
         initScrollbar(getBody(), false)
         EzSpa.Navigation.enableAnchorLinkInterception()
         EzSpa.Navigation.enableHistoryNavInterception()
+        startPollingForStaticUpdate()
     }
 }
 
