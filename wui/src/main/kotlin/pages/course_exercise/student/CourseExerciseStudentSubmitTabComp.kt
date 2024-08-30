@@ -158,8 +158,8 @@ class CourseExerciseStudentSubmitTabComp(
         testsFeedback = ExerciseAutoFeedbackHolderComp(
             submission?.auto_assessment?.feedback,
             submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
-            false,
-            this
+            canRetry = false, isOpen = false,
+            parent = this
         )
         autogradeLoader = AutogradeLoaderComp(false, this)
 

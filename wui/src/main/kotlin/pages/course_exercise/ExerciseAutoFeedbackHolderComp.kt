@@ -8,10 +8,12 @@ class ExerciseAutoFeedbackHolderComp(
     private var autoFeedback: String?,
     private var failed: Boolean,
     private val canRetry: Boolean,
+    private var isOpen: Boolean,
     parent: Component,
 ) : Component(parent) {
 
     private var feedbackComp: ExerciseAutoFeedbackComp? = null
+
 
     override val children
         get() = listOfNotNull(feedbackComp)
@@ -19,7 +21,8 @@ class ExerciseAutoFeedbackHolderComp(
     override fun create() = doInPromise {
         feedbackComp = autoFeedback?.let {
             ExerciseAutoFeedbackComp(
-                it, failed, canRetry,
+                it, failed, canRetry, isOpen,
+                onToggle = { isOpen = it },
                 parent = this
             )
         }

@@ -101,7 +101,11 @@ class TestingTabComp(
             parent = this
         )
 
-        feedback = ExerciseAutoFeedbackHolderComp(null, false, false, parent = this)
+        feedback = ExerciseAutoFeedbackHolderComp(
+            null,
+            failed = false, canRetry = false, isOpen = true,
+            parent = this
+        )
         autogradeLoader = AutogradeLoaderComp(false, this)
     }
 

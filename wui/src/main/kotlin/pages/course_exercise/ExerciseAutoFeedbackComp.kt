@@ -16,9 +16,11 @@ import template
 import translation.Str
 
 class ExerciseAutoFeedbackComp(
-    var autoFeedback: String?,
-    var failed: Boolean,
-    var canRetry: Boolean,
+    private var autoFeedback: String?,
+    private var failed: Boolean,
+    private var canRetry: Boolean,
+    private var startOpen: Boolean,
+    private val onToggle: (nowOpen: Boolean) -> Unit,
     parent: Component,
 ) : Component(parent) {
 
@@ -89,11 +91,11 @@ class ExerciseAutoFeedbackComp(
             )
 
         if (isV3) {
-
             expandTestsBtn = ButtonComp(
                 ButtonComp.Type.TEXT, Str.showTestDetails, Icons.expandCaret, trailingIcon = true,
                 onClick = {
                     toggleTests(true)
+                    onToggle(true)
                 },
                 parent = this
             )
@@ -101,6 +103,7 @@ class ExerciseAutoFeedbackComp(
                 ButtonComp.Type.TEXT, Str.hideTestDetails, Icons.shrinkCaret, trailingIcon = true,
                 onClick = {
                     toggleTests(false)
+                    onToggle(false)
                 },
                 parent = this
             )
@@ -160,7 +163,7 @@ class ExerciseAutoFeedbackComp(
     }
 
     override fun postRender() {
-        toggleTests(false)
+        toggleTests(startOpen)
 
         // If there's an error or we don't have expandable tests for some other reason, then don't show toggle at all
         parseAutofeedback()?.let {

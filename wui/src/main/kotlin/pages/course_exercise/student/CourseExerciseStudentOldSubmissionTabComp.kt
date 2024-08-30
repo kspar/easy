@@ -38,8 +38,8 @@ class CourseExerciseStudentOldSubmissionTabComp(
         feedback = ExerciseAutoFeedbackHolderComp(
             submission?.auto_assessment?.feedback,
             submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED,
-            false,
-            this
+            canRetry = false, isOpen = false,
+            parent = this
         )
 
         commentsList = SubmissionCommentsListComp(

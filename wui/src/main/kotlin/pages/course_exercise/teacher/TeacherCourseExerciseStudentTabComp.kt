@@ -2,11 +2,11 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
-import components.form.ButtonComp
-import components.dropdown.DropdownMenuComp
-import components.form.IconButtonComp
 import components.MissingContentPlaceholderComp
 import components.code_editor.CodeEditorComp
+import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
+import components.form.IconButtonComp
 import components.text.WarningComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
@@ -138,7 +138,9 @@ class TeacherCourseExerciseStudentTabComp(
         val autoassessFeedback = submission?.auto_assessment?.feedback
         val autoassessFailed = submission?.autograde_status == CourseExercisesStudentDAO.AutogradeStatus.FAILED
         autoFeedbackComp = ExerciseAutoFeedbackHolderComp(
-            autoassessFeedback, autoassessFailed, !isOldSubmission, parent = this
+            autoassessFeedback, autoassessFailed,
+            canRetry = !isOldSubmission, isOpen = false,
+            parent = this
         )
 
         commentsSection = latestSubmissionId?.let {
