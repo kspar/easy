@@ -144,7 +144,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             // Query existing accesses. Need later to re-add some of them after removing them.
             val existingAccesses = StudentCourseAccess
-                .select(StudentCourseAccess.moodleUsername)
+                .select(StudentCourseAccess.moodleUsername, StudentCourseAccess.student)
                 .where(StudentCourseAccess.course eq courseId)
                 .associate { it[StudentCourseAccess.moodleUsername] to it[StudentCourseAccess.student] }
 
