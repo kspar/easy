@@ -157,7 +157,7 @@ class TeacherCourseExercisesComp(
             userConf = EzCollConf.UserConf.retrieve(Key.TEACHER_COURSE_EXERCISES_USER_CONF, courseId),
             onConfChange = {
                 it.store(Key.TEACHER_COURSE_EXERCISES_USER_CONF, courseId, hasCourseGroupFilter = true)
-                if (it.globalGroupFilter?.id != groupId) {
+                if (getSavedGroupId(courseId) != groupId) {
                     // group changed
                     createAndBuild().await()
                 }
