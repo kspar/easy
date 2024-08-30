@@ -3836,13 +3836,10 @@ ez-feedback-producer ez-icon svg {
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    height: 180px;
-    width: 250px;
-    line-height: 1;
+    line-height: 1.35;
     font-size: 17px;
     animation: appear 1s forwards;
     opacity: 0;
-
 }
 
 .autograde-animation {
@@ -3850,14 +3847,17 @@ ez-feedback-producer ez-icon svg {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 25vh;
     margin-top: 2rem;
     padding: 40px;
 }
 
 .autograde-animation .wrap {
     width: 380px;
-    height: 180px;
+    height: 200px;
+}
+
+.autograde-animation .wrap pre {
+    margin: 15px 0;
 }
 
 .autograde-animation .robots {
@@ -3866,7 +3866,19 @@ ez-feedback-producer ez-icon svg {
     height: 180px;
     width: 38px;
     justify-content: space-between;
-    transform: translateY(-180px);
+    transform: translateY(-210px);
+}
+
+.autograde-animation .shade {
+    height: 40px;
+    width: 1px;
+    background-color: var(--ez-bg);
+    transform-origin: left;
+    animation: letters-eating 3s 1500ms linear forwards;
+}
+
+.autograde-animation .robot-row {
+    display: flex;
 }
 
 .autograde-animation .robot-wrap {
@@ -3877,7 +3889,7 @@ ez-feedback-producer ez-icon svg {
     opacity: 0;
     z-index: 1;
     margin-bottom: 5px;
-    transform: translateY(-30px);
+    transform: translateY(-15px);
 }
 
 .autograde-animation .robots .robot-row:nth-child(1) {
@@ -3928,22 +3940,6 @@ ez-feedback-producer ez-icon svg {
     transform-origin: right;
 }
 
-.autograde-animation .shade {
-    height: 40px;
-    width: 1px;
-    background-color: var(--ez-bg);
-    transform-origin: left;
-    animation: letters-eating 3s 1500ms linear forwards;
-}
-
-.autograde-animation .robot-row {
-    display: flex;
-}
-
-.autograde-animation .wrap pre {
-    margin-top: 19px;
-}
-
 @keyframes eating {
     0%, 100% {
         transform: translateY(0px);
@@ -3955,13 +3951,13 @@ ez-feedback-producer ez-icon svg {
 
 @keyframes eating-direction {
     100% {
-        transform: translate(330px, -30px);
+        transform: translate(330px, -15px);
     }
 }
 
 @keyframes eating-direction-middle {
     100% {
-        transform: translate(-330px, -30px);
+        transform: translate(-330px, -15px);
     }
 }
 
