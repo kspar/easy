@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
-cd static
+../gradlew wuiDevBuild
+
+cd static || exit
 python3 ../version_static_files.py index.html pace.min.js pace.css main.css exercise.css md.css wui.js
 cd ..
 
 cp build/developmentExecutable/wui.js static/js
 zip -r -q static.zip static/
+rm static/js/wui.js
 
 scp static.zip devgate:
 ssh devgate "unzip -q static.zip; rm static.zip; mv static/versioned.index.html /var/www/wui/index.html; rm -rf /var/www/wui/static; mv static /var/www/wui"
