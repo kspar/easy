@@ -72,7 +72,7 @@ abstract class EasyPage : Page() {
                 }
 
                 ToastThing(
-                    Str.noPermissionForPageMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG,
+                    Str.noPermissionForPageMsg, icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG,
                     id = ToastIds.noPermissionForPage
                 )
                 Sidenav.refresh(Sidenav.Spec())

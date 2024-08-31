@@ -265,7 +265,7 @@ class ParticipantsStudentsListComp(
         if (validItems.isEmpty()) {
             ToastThing(
                 "Kutseid ei saa eemaldada. Tee muudatused Moodle'i kursusel ja seejärel sünkroniseeri õpilased.",
-                icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG
             )
             return EzCollComp.ResultUnmodified
         }

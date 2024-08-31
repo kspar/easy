@@ -143,7 +143,7 @@ object LibraryDirDAO {
             ReqMethod.DELETE, successChecker = { http200 },
             errorHandler = {
                 it.handleByCode(RespError.DIR_NOT_EMPTY) {
-                    ToastThing(Str.cannotDeleteNonemptyDir, icon = ToastThing.ERROR)
+                    ToastThing(Str.cannotDeleteNonemptyDir, icon = ToastThing.ERROR_INFO)
                 }
             }
         ).await()

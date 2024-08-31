@@ -108,7 +108,7 @@ class AddToCourseModalComp(
             else
                 ToastThing(
                     Str.exerciseAlreadyOnCourse,
-                    icon = ToastThing.ERROR,
+                    icon = ToastThing.ERROR_INFO,
                     id = ToastIds.exerciseAddedToCourse
                 )
         } else {

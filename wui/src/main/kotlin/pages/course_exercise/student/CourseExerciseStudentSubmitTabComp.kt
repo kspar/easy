@@ -213,7 +213,7 @@ class CourseExerciseStudentSubmitTabComp(
             syncFailToast = ToastThing(
                 Str.draftSaveFailedMsg,
                 ToastThing.Action(Str.tryAgain, { saveDraft(content) }),
-                icon = ToastThing.ERROR, displayTime = ToastThing.PERMANENT, id = syncFailToastId
+                icon = ToastThing.ERROR_INFO, displayTime = ToastThing.PERMANENT, id = syncFailToastId
             )
             updateStatus(syncSuccess = false)
             hasUnsavedDraft = true

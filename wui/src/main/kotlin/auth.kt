@@ -80,7 +80,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 ToastThing(
                     Str.authFailed,
                     ToastThing.Action(Str.tryAgain, { login(objOf("locale" to activeLanguage.localeId)) }),
-                    icon = ToastThing.ERROR,
+                    icon = ToastThing.ERROR_INFO,
                     isDismissable = false,
                     displayTime = ToastThing.PERMANENT,
                     id = ToastIds.authFail
@@ -100,7 +100,7 @@ object Auth : InternalKeycloak(AppProperties.KEYCLOAK_CONF_URL) {
                 ToastThing(
                     Str.authRefreshFailed,
                     ToastThing.Action(Str.logIn, { login(objOf("locale" to activeLanguage.localeId)) }),
-                    icon = ToastThing.ERROR,
+                    icon = ToastThing.ERROR_INFO,
                     displayTime = ToastThing.PERMANENT,
                     id = ToastIds.loginToContinue
                 )

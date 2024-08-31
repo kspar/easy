@@ -22,7 +22,7 @@ fun startPollingForStaticUpdate() = doInPromise {
                 ToastThing(
                     Str.lahendusUpdated,
                     ToastThing.Action(Str.doRefresh, { window.location.reload() }),
-                    icon = ToastThing.ERROR,
+                    icon = ToastThing.ERROR_INFO,
                     isDismissable = false,
                     displayTime = ToastThing.PERMANENT
                 )

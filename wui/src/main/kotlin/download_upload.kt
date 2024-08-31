@@ -42,7 +42,7 @@ fun uploadFile(callback: suspend (UploadedFile) -> Unit) {
             if (file.size.toDouble() > 300000) {
                 ToastThing(
                     Str.uploadErrorFileTooLarge,
-                    icon = ToastThing.ERROR,
+                    icon = ToastThing.ERROR_INFO,
                     id = ToastIds.uploadedFileError
                 )
                 return@onChange
@@ -61,7 +61,7 @@ fun uploadFile(callback: suspend (UploadedFile) -> Unit) {
                     } catch (e: TypeError) {
                         ToastThing(
                             Str.uploadErrorFileNotText,
-                            icon = ToastThing.ERROR,
+                            icon = ToastThing.ERROR_INFO,
                             id = ToastIds.uploadedFileError
                         )
                     }

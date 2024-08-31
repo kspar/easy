@@ -78,7 +78,7 @@ class TeacherCourseExerciseComp(
         exerciseTextComp = CourseExerciseTextComp(courseEx.effectiveTitle, courseEx.text_html, null, this)
 
         tabs = TabsComp(
-            TabsComp.Type.SECONDARY,
+            TabsComp.Type.PRIMARY,
             tabs = buildList {
                 add(
                     TabsComp.Tab(

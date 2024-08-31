@@ -44,7 +44,7 @@ class ExerciseRootComp(
         val exercise = try {
             ExerciseDAO.getExercise(exerciseId).await()
         } catch (e: ExerciseDAO.NoLibAccessException) {
-            ToastThing(Str.noAccessToLibExerciseMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG)
+            ToastThing(Str.noAccessToLibExerciseMsg, icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG)
             error("No exercise lib access to exercise $exerciseId")
         }
         initialExercise = exercise

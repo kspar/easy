@@ -19,7 +19,7 @@ class TSLCompilerFeedbackComp(
                 </ez-tsl-compiler-feedback>
             {{/feedback}}
         """.trimIndent(),
-        "icon" to Icons.errorUnf,
+        "icon" to Icons.errorInfoUnf,
         "feedback" to feedback,
     )
 

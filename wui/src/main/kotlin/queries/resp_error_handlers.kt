@@ -23,7 +23,7 @@ object ErrorHandlers {
         errorBody.handleByCode(RespError.NO_COURSE_ACCESS) {
             EzSpa.PageManager.navigateTo(CoursesPage.link())
             ToastThing(
-                Str.noCourseAccessPageMsg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG,
+                Str.noCourseAccessPageMsg, icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG,
                 id = ToastIds.noCourseAccess
             )
         }
@@ -34,7 +34,7 @@ object ErrorHandlers {
 
     fun noEntityFoundMessage(msg: String, toastId: ToastId): RespErrorHandler = { errorBody ->
         errorBody.handleByCode(RespError.ENTITY_WITH_ID_NOT_FOUND) {
-            ToastThing(msg, icon = ToastThing.ERROR, displayTime = ToastThing.LONG, id = toastId)
+            ToastThing(msg, icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG, id = toastId)
         }
     }
 
@@ -45,18 +45,18 @@ object ErrorHandlers {
             this.text().then { body ->
                 ToastThing(
                     Str.translateServerError(status, null, body.truncate(150)),
-                    icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                    icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG
                 )
             }.catch {
                 ToastThing(
                     Str.serverErrorMsg + " " + status,
-                    icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                    icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG
                 )
             }
         } else {
             ToastThing(
                 Str.translateServerError(status, errorBody.code, errorBody.log_msg),
-                icon = ToastThing.ERROR, displayTime = ToastThing.LONG
+                icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG
             )
         }
         true

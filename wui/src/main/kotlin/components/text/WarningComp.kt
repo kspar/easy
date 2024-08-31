@@ -24,7 +24,7 @@ class WarningComp(
                 </ez-warning>
             {{/msg}}
         """.trimIndent(),
-        "icon" to Icons.errorUnf,
+        "icon" to Icons.errorInfoUnf,
         "msg" to msg,
         "pre" to monospaceMsg,
     )

@@ -39,7 +39,7 @@ class ToastThing(
         const val PERMANENT = 60 * 60 * 24 * 365
 
         const val SUCCESS = Icons.check
-        const val ERROR = Icons.errorUnf
+        const val ERROR_INFO = Icons.errorInfoUnf
     }
 
     data class Action(

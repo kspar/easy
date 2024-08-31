@@ -231,7 +231,7 @@ object ExerciseDAO {
             ReqMethod.DELETE, successChecker = { http200 },
             errorHandler = {
                 it.handleByCode(RespError.EXERCISE_USED_ON_COURSE) {
-                    ToastThing(Str.cannotDeleteExerciseUsedOnCourse, icon = ToastThing.ERROR)
+                    ToastThing(Str.cannotDeleteExerciseUsedOnCourse, icon = ToastThing.ERROR_INFO)
                 }
             }
         ).await()
