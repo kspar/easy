@@ -12,8 +12,7 @@ import rip.kspar.ezspa.getElemByIdOrNull
 class TSLTabTslComp(
     private val tslSpec: String,
     private val onTslChanged: suspend (String?) -> Unit,
-    parent: Component
-) : Component(parent) {
+) : Component() {
 
     private var externallyChanged = false
 

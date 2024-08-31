@@ -1,7 +1,8 @@
 package components.code_editor.parts
 
 import Icons
-import components.*
+import components.TabID
+import components.TabsComp
 import components.dropdown.DropdownMenuComp
 import components.form.ButtonComp
 import components.form.IconButtonComp
@@ -49,7 +50,7 @@ class CodeEditorTabsComp(
                 TabsComp.Tab(
                     tab.title,
                     active = tab.title == selectedTabName,
-                    compProvider = null,
+                    comp = null,
                     menuOptions = buildList {
 
                         if (tab.isRenameable)
@@ -80,7 +81,6 @@ class CodeEditorTabsComp(
             onTabActivate = {
                 onTabSelected(it.title)
             },
-            parent = this
         )
 
         createTabBtn = if (canCreateTabs)

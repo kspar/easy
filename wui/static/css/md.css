@@ -75,7 +75,7 @@
 
     /* tab icons smaller (24 -> 18) */
     --md-secondary-tab-icon-size: 18px;
-
+    --md-primary-tab-icon-size: 18px;
 }
 
 md-icon-button.small {

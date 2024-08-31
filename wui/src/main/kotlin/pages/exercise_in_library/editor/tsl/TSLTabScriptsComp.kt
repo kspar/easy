@@ -7,8 +7,7 @@ import rip.kspar.ezspa.Component
 
 class TSLTabScriptsComp(
     private val initialScripts: Map<String, String>,
-    parent: Component
-) : Component(parent) {
+) : Component() {
 
     private val editor = CodeEditorComp(
         initialScripts.map { CodeEditorComp.File(it.key, it.value, isEditable = false) },

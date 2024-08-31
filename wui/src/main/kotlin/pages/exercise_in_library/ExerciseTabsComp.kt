@@ -54,7 +54,6 @@ class ExerciseTabsComp(
                             exerciseTextChanged,
                             exerciseTitleChanged,
                             ::validChanged,
-                            it
                         )
                             .also { exerciseTab = it }
                     }
@@ -64,7 +63,7 @@ class ExerciseTabsComp(
                     PageTabsComp.Tab(
                         Str.tabSubmission,
                         id = TAB_ID_AUTOASSESS,
-                        onActivate = { autoassessTab.refreshTSLTabs() }) {
+                    ) {
                         val aaProps = if (initialExercise.grading_script != null) {
                             AutoAssessmentTabComp.AutoAssessProps(
                                 initialExercise.grading_script!!,
@@ -80,7 +79,6 @@ class ExerciseTabsComp(
                             initialExercise.solution_file_name,
                             initialExercise.solution_file_type,
                             ::validChanged,
-                            it
                         )
                             .also { autoassessTab = it }
                     }
@@ -94,7 +92,6 @@ class ExerciseTabsComp(
                                 null,
                                 initialExercise.solution_file_name,
                                 initialExercise.solution_file_type,
-                                it
                             )
                                 .also { testingTab = it }
                         }

@@ -29,8 +29,7 @@ class TestingTabComp(
     private val courseId: String?,
     private val solutionFileName: String,
     private val solutionFileType: ExerciseDAO.SolutionFileType,
-    parent: Component?
-) : Component(parent) {
+) : Component() {
 
     @Serializable
     data class LatestSubmissions(

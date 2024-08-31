@@ -17,8 +17,7 @@ class ExerciseTextEditTabComp(
     private val exerciseTextChanged: suspend (newHtml: String) -> Unit,
     private val exerciseTitleChanged: suspend (newTitle: String) -> Unit,
     private val validChanged: (Boolean) -> Unit,
-    parent: Component?
-) : Component(parent) {
+) : Component() {
 
     private lateinit var titleField: StringFieldComp
     private lateinit var editor: AdocEditorComp

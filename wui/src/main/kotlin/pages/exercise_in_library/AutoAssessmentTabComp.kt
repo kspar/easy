@@ -16,8 +16,7 @@ class AutoAssessmentTabComp(
     private val solutionFileName: String,
     private val solutionFileType: ExerciseDAO.SolutionFileType,
     private val onValidChanged: (Boolean) -> Unit,
-    parent: Component?
-) : Component(parent) {
+) : Component() {
 
     data class AutoAssessProps(
         val evalScript: String,
@@ -155,8 +154,6 @@ class AutoAssessmentTabComp(
     }
 
     fun isValid() = attrs.isValid() && (editor?.isValid() ?: true)
-
-    fun refreshTSLTabs() = (editor as? AutoassessTSLEditorComp)?.tslRoot?.tabs?.refreshIndicator()
 
     private suspend fun changeType(typeId: String?) {
         debug { "Set type to $typeId" }

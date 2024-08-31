@@ -20,8 +20,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
     private val courseExId: String,
     private val onOpenStudent: suspend (CourseExercisesTeacherDAO.LatestStudentSubmission) -> Unit,
     private val onStudentListChange: () -> Unit,
-    parent: Component
-) : Component(parent) {
+) : Component() {
 
     private var groupId: String? = null
 
@@ -38,7 +37,8 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         val groups = ParticipantsDAO.getCourseGroups(courseId).await()
 
         val submissions =
-            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId, groupId).await().latest_submissions.map {
+            CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId, groupId)
+                .await().latest_submissions.map {
                 EzCollComp.Item(
                     it,
                     EzCollComp.ItemTypeIcon(

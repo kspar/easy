@@ -32,8 +32,7 @@ class TeacherCourseExerciseStudentTabComp(
     private val onNextStudent: suspend (currentStudentId: String) -> Unit,
     private val onPrevStudent: suspend (currentStudentId: String) -> Unit,
     private val onNewSubmissionOpened: suspend () -> Unit,
-    parent: Component
-) : Component(parent) {
+) : Component() {
 
     private var submission: CourseExercisesTeacherDAO.StudentSubmissionDetails? = null
     private var isOldSubmission: Boolean = false  // set in create

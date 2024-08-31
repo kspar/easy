@@ -1,7 +1,6 @@
 package pages.course_exercise.student
 
 import CONTENT_CONTAINER_ID
-import storage.Key
 import cache.BasicCourseInfo
 import components.TabsComp
 import components.TwoColDividerComp
@@ -15,6 +14,7 @@ import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.IdGenerator
 import rip.kspar.ezspa.doInPromise
+import storage.Key
 import template
 import translation.Str
 
@@ -50,48 +50,41 @@ class StudentCourseExerciseComp(
         setPathSuffix(createPathChainSuffix(listOf(courseEx.effective_title)))
 
         exerciseTextComp = CourseExerciseTextComp(courseEx.effective_title, courseEx.text_html, courseEx.deadline, this)
-        tabs = TabsComp(TabsComp.Type.PRIMARY,
+        submissionsTab = CourseExerciseStudentSubmissionsTabComp(courseId, courseExId, { openSubmission(it) }, this)
+        oldSubmissionTab = CourseExerciseStudentOldSubmissionTabComp(
+            courseId, courseExId, null,
+            courseEx.solution_file_name,
+            courseEx.solution_file_type,
+            this
+        )
+
+        tabs = TabsComp(
+            TabsComp.Type.PRIMARY,
             listOf(
-                TabsComp.Tab(Str.tabSubmit,
-                    compProvider = {
-                        CourseExerciseStudentSubmitTabComp(
-                            courseId,
-                            courseExId,
-                            courseEx.grader_type,
-                            courseEx.is_open,
-                            courseEx.solution_file_name,
-                            courseEx.solution_file_type,
-                            ::updateSubmissions,
-                            it
-                        )
-                    }
+                TabsComp.Tab(
+                    Str.tabSubmit,
+                    comp = CourseExerciseStudentSubmitTabComp(
+                        courseId,
+                        courseExId,
+                        courseEx.grader_type,
+                        courseEx.is_open,
+                        courseEx.solution_file_name,
+                        courseEx.solution_file_type,
+                        ::updateSubmissions,
+                        this
+                    )
                 ),
-                TabsComp.Tab(Str.tabMySubmissions,
-                    compProvider = {
-                        CourseExerciseStudentSubmissionsTabComp(
-                            courseId,
-                            courseExId,
-                            { openSubmission(it) },
-                            it
-                        ).also { submissionsTab = it }
-                    }),
+                TabsComp.Tab(
+                    Str.tabMySubmissions,
+                    comp = submissionsTab
+                ),
                 TabsComp.Tab(
                     "",
                     id = oldSubmissionTabId,
                     visible = false,
-                    compProvider = {
-                        CourseExerciseStudentOldSubmissionTabComp(
-                            courseId, courseExId,
-                            null,
-                            courseEx.solution_file_name,
-                            courseEx.solution_file_type,
-                            it
-                        )
-                            .also { oldSubmissionTab = it }
-                    },
+                    comp = oldSubmissionTab,
                 )
             ),
-            parent = this
         )
 
         colDividerComp = TwoColDividerComp(

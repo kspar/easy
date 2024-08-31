@@ -15,9 +15,7 @@ class TabsComp(
     private val type: Type,
     private val tabs: List<Tab>,
     private val onTabActivate: ((Tab) -> Unit)? = null,
-    parent: Component?,
-    dstId: String = IdGenerator.nextId()
-) : Component(parent, dstId) {
+) : Component() {
 
     enum class Type { PRIMARY, SECONDARY }
 
@@ -29,7 +27,7 @@ class TabsComp(
         var visible: Boolean = true,
         val menuOptions: List<DropdownMenuComp.Item> = emptyList(),
         val id: TabID = IdGenerator.nextId(),
-        val compProvider: ((parentComp: TabsComp) -> Component)?,
+        val comp: Component?,
     )
 
     private lateinit var tabComps: List<Component>
@@ -47,7 +45,7 @@ class TabsComp(
 
 
     override fun create() = doInPromise {
-        tabComps = tabs.mapNotNull { it.compProvider?.invoke(this) }
+        tabComps = tabs.mapNotNull { it.comp }
 
         menus = tabs.mapNotNull {
             if (it.menuOptions.isNotEmpty())
@@ -60,7 +58,7 @@ class TabsComp(
         """
             <md-tabs style='overflow: visible;'>
                 {{#tabs}}
-                    <{{#prim}}md-primary-tab{{/prim}}{{^prim}}md-secondary-tab{{/prim}} id='{{id}}' {{#active}}active{{/active}} class='{{^visible}}display-none{{/visible}}'>
+                    <{{#prim}}md-primary-tab inline-icon{{/prim}}{{^prim}}md-secondary-tab{{/prim}} id='{{id}}' {{#active}}active{{/active}} class='{{^visible}}display-none{{/visible}}'>
                         {{#icon}}
                             <md-icon slot="icon">{{{icon}}}</md-icon>
                         {{/icon}}
@@ -127,6 +125,8 @@ class TabsComp(
         tabs.first { it.id == id }.title = newTitle
         tabsElement.getElemBySelector("#$id ez-tab-title").textContent = newTitle
     }
+
+    fun getActiveTab() = tabs.first { it.active }
 
     fun activateTab(id: TabID) {
         tabs.forEach { it.active = (it.id == id) }

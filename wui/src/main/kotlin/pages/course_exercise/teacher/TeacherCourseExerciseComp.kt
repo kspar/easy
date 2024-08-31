@@ -77,66 +77,71 @@ class TeacherCourseExerciseComp(
 
         exerciseTextComp = CourseExerciseTextComp(courseEx.effectiveTitle, courseEx.text_html, null, this)
 
+        studentsTabComp = TeacherCourseExerciseSubmissionsListTabComp(
+            courseId, courseExId,
+            { openStudent(it) },
+            ::updatePrevNextBtns,
+        )
+
+        submissionTabComp = TeacherCourseExerciseStudentTabComp(
+            courseId, courseExId, courseEx.exercise_id, courseEx.soft_deadline, courseEx.solution_file_name,
+            "", "", "", null, null,
+            { openNextStudent(it) }, { openPrevStudent(it) }, { updatePrevNextBtns() },
+        )
+
         tabs = TabsComp(
             TabsComp.Type.PRIMARY,
             tabs = buildList {
+
                 add(
                     TabsComp.Tab(
                         "Kontroll", Icons.knobs,
-                        active = (tabId == "1")
-                    ) {
-                        val aaProps = if (courseEx.grading_script != null) {
-                            AutoAssessmentTabComp.AutoAssessProps(
-                                courseEx.grading_script,
-                                courseEx.assets!!.associate { it.file_name to it.file_content },
-                                courseEx.container_image!!,
-                                courseEx.max_time_sec!!,
-                                courseEx.max_mem_mb!!
-                            )
-                        } else null
-
-                        AutoAssessmentTabComp(aaProps, courseEx.solution_file_name, courseEx.solution_file_type, {}, it)
-                    }
+                        active = (tabId == "1"),
+                        comp = AutoAssessmentTabComp(
+                            if (courseEx.grading_script != null)
+                                AutoAssessmentTabComp.AutoAssessProps(
+                                    courseEx.grading_script,
+                                    courseEx.assets!!.associate { it.file_name to it.file_content },
+                                    courseEx.container_image!!,
+                                    courseEx.max_time_sec!!,
+                                    courseEx.max_mem_mb!!
+                                )
+                            else null,
+                            courseEx.solution_file_name,
+                            courseEx.solution_file_type,
+                            {},
+                        )
+                    )
                 )
 
                 if (courseEx.grading_script != null)
                     add(
                         TabsComp.Tab(
                             "Katseta", Icons.robot,
-                            active = (tabId == "2")
-                        ) {
-                            TestingTabComp(
+                            active = (tabId == "2"),
+                            comp = TestingTabComp(
                                 courseEx.exercise_id,
                                 courseId,
                                 courseEx.solution_file_name,
                                 courseEx.solution_file_type,
-                                it
                             )
-                        }
+                        )
                     )
+
                 add(
                     TabsComp.Tab(
                         "Esitused", Icons.courseParticipants,
-                        active = true
-                    ) {
-                        TeacherCourseExerciseSubmissionsListTabComp(
-                            courseId, courseExId,
-                            { openStudent(it) },
-                            ::updatePrevNextBtns,
-                            it
-                        ).also { studentsTabComp = it }
-                    })
+                        active = true,
+                        comp = studentsTabComp
+                    )
+                )
 
-                add(TabsComp.Tab("", Icons.user, visible = false) {
-                    TeacherCourseExerciseStudentTabComp(
-                        courseId, courseExId, courseEx.exercise_id, courseEx.soft_deadline, courseEx.solution_file_name,
-                        "", "", "", null, null,
-                        { openNextStudent(it) }, { openPrevStudent(it) }, { updatePrevNextBtns() },
-                        it
-                    ).also { submissionTabComp = it }
-                }.also { submissionTabId = it.id })
-            },
-            parent = this
+                add(TabsComp.Tab(
+                    "", Icons.user,
+                    visible = false,
+                    comp = submissionTabComp
+                ).also { submissionTabId = it.id })
+            }
         )
 
         colDividerComp = TwoColDividerComp(

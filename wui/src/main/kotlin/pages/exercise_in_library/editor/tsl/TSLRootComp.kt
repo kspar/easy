@@ -1,6 +1,6 @@
 package pages.exercise_in_library.editor.tsl
 
-import components.PageTabsComp
+import components.TabsComp
 import dao.TSLDAO
 import debug
 import kotlinx.coroutines.await
@@ -31,30 +31,30 @@ class TSLRootComp(
 
     private val initialTslSpecStr = assets[TSL_SPEC_FILENAME_JSON] ?: createEmptyTslSpec()
 
-    val tabs = PageTabsComp(
-        PageTabsComp.Type.SUBPAGE,
+    private var composeComp = TSLTabComposeComp(emptyList(), ::updateTsl, onValidChanged)
+    private val tslComp = TSLTabTslComp(initialTslSpecStr, ::updateCompose)
+    private val scriptsComp = TSLTabScriptsComp(assets - TSL_SPEC_FILENAME_JSON)
+
+    val tabs = TabsComp(
+        TabsComp.Type.SECONDARY,
         listOf(
-            PageTabsComp.Tab(
+            TabsComp.Tab(
                 Str.tslTestsTab,
-                compProvider = { TSLTabComposeComp(emptyList(), ::updateTsl, onValidChanged, it) },
+                comp = composeComp,
                 id = Tab.COMPOSE.id
             ),
-            PageTabsComp.Tab(
+            TabsComp.Tab(
                 Str.tslSpecTab,
-                compProvider = { TSLTabTslComp(initialTslSpecStr, ::updateCompose, it) },
+                comp = tslComp,
                 id = Tab.SPEC.id
             ),
-            PageTabsComp.Tab(
+            TabsComp.Tab(
                 Str.tslGeneratedTab,
-                compProvider = { TSLTabScriptsComp(assets - TSL_SPEC_FILENAME_JSON, it) },
+                comp = scriptsComp,
                 id = Tab.GENERATED.id
             )
-        ), parent = this
+        )
     )
-
-    private var composeComp: TSLTabComposeComp = tabs.getTabComps()[0] as TSLTabComposeComp
-    private val tslComp: TSLTabTslComp = tabs.getTabComps()[1] as TSLTabTslComp
-    private val scriptsComp: TSLTabScriptsComp = tabs.getTabComps()[2] as TSLTabScriptsComp
 
     override val children: List<Component>
         get() = listOf(compilerFeedback, tabs)
@@ -89,9 +89,9 @@ class TSLRootComp(
 
     fun openTests(testIds: List<Long>) = composeComp.openTests(testIds)
 
-    fun getActiveTab(): Tab = Tab.values().single { it.id == tabs.getSelectedTab().id }
+    fun getActiveTab(): Tab = Tab.values().single { it.id == tabs.getActiveTab().id }
 
-    fun setActiveTab(tab: Tab) = tabs.setSelectedTabById(tab.id)
+    fun setActiveTab(tab: Tab) = tabs.activateTab(tab.id)
 
     // Only check TSL spec changes, ignore compose
     override fun hasUnsavedChanges() = tslComp.getTsl() != initialTslSpecStr
