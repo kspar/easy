@@ -1,8 +1,8 @@
 package components.code_editor
 
 import Icons
-import components.form.IconButtonComp
 import components.code_editor.parts.HtmlViewEditorTrailerComp
+import components.form.IconButtonComp
 import dao.ExerciseDAO
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -78,7 +78,7 @@ class AdocEditorComp(
         }
     }
 
-    fun getContent() = editor.getContent().trim()
+    fun getContent() = editor.getContent()
 
     suspend fun setContent(content: String) = editor.setContent(content)
 
