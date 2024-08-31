@@ -638,7 +638,7 @@ object EstStrings : TranslatableStrings() {
     override val allStudents = "Kõik õpilased"
     override val total = "Kokku"
     override val lahendusUpdated = "Lahendus on vahepeal uuenenud. Värskenda lehte, et kasutamist jätkata."
-    override val doRefresh = "Lahendus on vahepeal uuenenud. Värskenda lehte, et kasutamist jätkata."
+    override val doRefresh = "Värskenda"
     override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
     override val noVisibleExerciseError = "Seda ülesannet ei eksisteeri või see on peidetud"
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
