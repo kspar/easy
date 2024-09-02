@@ -176,7 +176,11 @@ data class ExercisesResp(
 /**
  * All students with or without submission on a single course for all exercises.
  */
-fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = null): List<ExercisesResp> =
+fun selectAllCourseExercisesLatestSubmissions(
+    courseId: Long,
+    courseExId: Long? = null,
+    groupId: Long? = null
+): List<ExercisesResp> =
     transaction {
         val courseStudents: Map<String, StudentsResp> = selectStudentsOnCourse(courseId, groupId).associateBy { it.id }
 
@@ -211,6 +215,11 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 ExerciseVer.graderType
             )
             .where { CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() }
+            .also {
+                if (courseExId != null) {
+                    it.andWhere { CourseExercise.id eq courseExId }
+                }
+            }
             .orderBy(CourseExercise.orderIdx, SortOrder.ASC)
             .mapIndexed { i, it ->
                 ExercisesDTO(
@@ -247,6 +256,10 @@ fun selectAllCourseExercisesLatestSubmissions(courseId: Long, groupId: Long? = n
                 CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(
                     courseStudents.keys
                 )
+            }.also {
+                if (courseExId != null) {
+                    it.andWhere { CourseExercise.id eq courseExId }
+                }
             }.orderBy(
                 CourseExercise.id to SortOrder.DESC,
                 Submission.student to SortOrder.DESC,
