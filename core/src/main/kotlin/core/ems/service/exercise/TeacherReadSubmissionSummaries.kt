@@ -37,8 +37,6 @@ class TeacherReadSubmissionSummariesController {
             teacherOnCourse(courseId)
         }
 
-        return selectAllCourseExercisesLatestSubmissions(courseId, groupId)
-            .filter { it.courseExerciseId.toLong() == courseExId }
-            .singleOrInvalidRequest()
+        return selectAllCourseExercisesLatestSubmissions(courseId, courseExId, groupId).singleOrInvalidRequest()
     }
 }

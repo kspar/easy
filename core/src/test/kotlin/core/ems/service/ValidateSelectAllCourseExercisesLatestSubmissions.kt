@@ -55,7 +55,6 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
         assertEquals(4, submissions.size)
     }
 
-
     /**
      * Student 1 has two EX1 submissions:
      * 1. grade: 71 - expect not see it
@@ -104,6 +103,34 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
         assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
         assertEquals(false, stud1Ex2Sub.latestSubmission!!.grade!!.isAutograde)
     }
+
+    /**
+     * Student 2 has 1 EX2 submissions:
+     * 1. grade: 51 - expect to see
+     */
+    @Test
+    fun `selectCourseExercise2 student 2 should return 1 submission with grade 51`() {
+        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id, ce2Id)
+
+        assertEquals(1, latestSubmissions.size)
+        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
+
+        val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student2Id }
+        assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
+        assertEquals(false, stud1Ex2Sub.latestSubmission!!.grade!!.isAutograde)
+    }
+
+    @Test
+    fun `selectCourseExercise1 student 1 should return 1 submission with grade 81`() {
+        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id, ce1Id)
+
+        assertEquals(1, latestSubmissions.size)
+        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
+
+        val stud1Ex1Sub = ex2Submissions.latestSubmissions.single { it.accountId == student1Id }
+        assertEquals(81, stud1Ex1Sub.latestSubmission!!.grade!!.grade)
+    }
+
 
     /**
      * EX threshold: 90
