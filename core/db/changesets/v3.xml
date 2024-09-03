@@ -554,4 +554,17 @@
             ]]>
     </sql>
     </changeSet>
+
+    <changeSet id="030924-1" author="kspar">
+        <dropForeignKeyConstraint baseTableName="autograde_activity" constraintName="fk_automatic_assessment_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="autograde_activity" baseColumnNames="course_exercise_id"
+                                 referencedTableName="course_exercise" referencedColumnNames="id"
+                                 constraintName="fk_autograde_activity_course_exercise" onDelete="CASCADE"/>
+
+        <dropForeignKeyConstraint baseTableName="teacher_activity" constraintName="fk_teacher_assessment_course_exercise"/>
+        <addForeignKeyConstraint baseTableName="teacher_activity" baseColumnNames="course_exercise_id"
+                                 referencedTableName="course_exercise" referencedColumnNames="id"
+                                 constraintName="fk_teacher_activity_course_exercise" onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>
