@@ -25,5 +25,6 @@ object AppProperties {
     const val DISCORD_INVITE_ID = ""
     const val TOS_URL = ""
 
+    const val STATIC_UPDATE_ENABLED = true
     const val STATIC_UPDATE_POLL_SEC = 5 * 60
 }
