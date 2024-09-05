@@ -110,7 +110,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
             data class MoodleGroup(val id: String, val name: String)
 
-            data class StudentInfo(
+            data class ActiveOrPendingStudent(
                 val email: String,
                 val inviteId: String,
                 val moodleUsername: String,
@@ -119,7 +119,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             )
 
             val courseTitle = getCourse(courseId)!!.let { it.alias ?: it.title }
-            val courseEntity = EntityID(courseId, Course)
+            val time = DateTime.now()
 
             // TODO: ask Moodle to send all groups separately
             // TODO: then delete groups that don't exist anymore
@@ -129,6 +129,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                 .flatten()
                 .map { it.name }
 
+            // Make sure all groups from Moodle are here as well or add them if needed
             val groupNamesToIds = moodleGroups.associateWith { moodleGroupName ->
                 val groupId =
                     CourseGroup.selectAll()
@@ -137,12 +138,12 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
                         .singleOrNull()
                         ?: CourseGroup.insertAndGetId {
                             it[name] = moodleGroupName
-                            it[course] = courseEntity
+                            it[course] = courseId
                         }
                 groupId
             }
 
-            // Query existing accesses. Need later to re-add some of them after removing them.
+            // All existing active accesses on the course
             val existingAccesses = StudentCourseAccess
                 .select(StudentCourseAccess.moodleUsername, StudentCourseAccess.student)
                 .where(StudentCourseAccess.course eq courseId)
@@ -150,86 +151,87 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
 
             // Combine students from Moodle with easy username (if they have one).
-            val studentInfoCombined = moodleResponse.students.map { student ->
-                StudentInfo(
+            val allStudents = moodleResponse.students.map { student ->
+                ActiveOrPendingStudent(
                     student.email.lowercase(),
-                    generateInviteId(10), // generate inviteId for all, but later do not update for existing
+                    // generate inviteId for all students, but do not use this
+                    // for existing active accesses (not needed) and existing pending accesses (keep the old one)
+                    generateInviteId(10),
                     student.username,
                     student.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList(),
                     existingAccesses[student.username]
                 )
             }
 
+            // Delete all active accesses to update groups
             StudentCourseAccess.deleteWhere { StudentCourseAccess.course eq courseId }
 
-            // Remove previous pending accesses, if student is removed from Moodle.
+            // Delete only pending accesses that are missing from this Moodle response - don't update existing inviteIds
             StudentMoodlePendingAccess.deleteWhere {
                 (StudentMoodlePendingAccess.course eq courseId) and
-                        (StudentMoodlePendingAccess.email.notInList(studentInfoCombined.map { it.email }))
+                        (StudentMoodlePendingAccess.email.notInList(allStudents.map { it.email }))
             }
 
             // Diff accesses before and after to send invitations for only new accesses later
-            val previousEmailsPending =
+            val existingPendingEmails =
                 StudentMoodlePendingAccess.select(StudentMoodlePendingAccess.email)
                     .where { StudentMoodlePendingAccess.course.eq(courseId) }
                     .map { it[StudentMoodlePendingAccess.email] }
                     .toSet()
 
-            // Remove all pending group accesses for re-adding them later (to update them)
+            // Remove all pending group accesses to update them
             StudentMoodlePendingCourseGroup.deleteWhere { StudentMoodlePendingCourseGroup.course eq courseId }
 
-            val time = DateTime.now()
-            // Add pending access for students who did not have course access previously
-            studentInfoCombined.filter { it.existingStudentId == null }.forEach { newPendingAccess ->
+            // Add new pending accesses - insertIgnore to prevent old ones from being update with new inviteIds
+            allStudents.filter { it.existingStudentId == null }.forEach { pendingStudent ->
                 StudentMoodlePendingAccess.insertIgnore {
-                    it[moodleUsername] = newPendingAccess.moodleUsername
-                    it[course] = courseEntity
-                    it[email] = newPendingAccess.email
+                    it[moodleUsername] = pendingStudent.moodleUsername
+                    it[course] = courseId
+                    it[email] = pendingStudent.email
                     it[createdAt] = time
-                    // InsertIgnore to update inviteId only to new ones.
-                    it[inviteId] = newPendingAccess.inviteId
+                    it[inviteId] = pendingStudent.inviteId
                 }
-                StudentMoodlePendingCourseGroup.batchInsert(newPendingAccess.groups) {
-                    this[StudentMoodlePendingCourseGroup.moodleUsername] = newPendingAccess.moodleUsername
+                StudentMoodlePendingCourseGroup.batchInsert(pendingStudent.groups) {
+                    this[StudentMoodlePendingCourseGroup.moodleUsername] = pendingStudent.moodleUsername
                     this[StudentMoodlePendingCourseGroup.course] = courseId
                     this[StudentMoodlePendingCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
                 }
             }
 
-            // Add pending access for students who did have course access previously
-            studentInfoCombined.filter { it.existingStudentId != null }.forEach { hadAccess ->
+            // Readd existing active accesses
+            allStudents.filter { it.existingStudentId != null }.forEach { activeStudent ->
                 StudentCourseAccess.insertIgnore {
-                    it[student] = hadAccess.existingStudentId!!
-                    it[moodleUsername] = hadAccess.moodleUsername
-                    it[course] = courseEntity
+                    it[student] = activeStudent.existingStudentId!!
+                    it[moodleUsername] = activeStudent.moodleUsername
+                    it[course] = courseId
                     it[createdAt] = time
                 }
-                StudentCourseGroup.batchInsert(hadAccess.groups) {
-                    this[StudentCourseGroup.student] = hadAccess.existingStudentId!!
+                StudentCourseGroup.batchInsert(activeStudent.groups) {
+                    this[StudentCourseGroup.student] = activeStudent.existingStudentId!!
                     this[StudentCourseGroup.course] = courseId
                     this[StudentCourseGroup.courseGroup] = groupNamesToIds.getValue(it.name)
                 }
             }
 
-            // Finally send invitation for only new pending accesses
-            val invitationEmailRecipients = studentInfoCombined
-                .filter { !previousEmailsPending.contains(it.email) }
+            // Send invitations for only new pending accesses
+            val invitationEmailRecipients = allStudents
+                // only pending students
                 .filter { it.existingStudentId == null }
-                .map {
-                    mailService.sendStudentInvitedToMoodleLinkedCourse(
-                        courseTitle,
-                        it.inviteId,
-                        it.email
-                    )
+                // only if the email is new
+                .filter { !existingPendingEmails.contains(it.email) }
+
+            invitationEmailRecipients.forEach {
+                mailService.sendStudentInvitedToMoodleLinkedCourse(
+                    courseTitle,
+                    it.inviteId,
                     it.email
-                }
+                )
+            }
 
-            log.debug { "Pending and existing accesses have now students: ${studentInfoCombined.map { it.email }}" }
-            log.debug { "Of all accesses, new pending emails: $invitationEmailRecipients" }
+            log.debug { "All synced students (${allStudents.size}): $allStudents" }
+            log.debug { "New invitations (${invitationEmailRecipients.size}): $invitationEmailRecipients" }
 
-            val syncedPendingStudentsCount = studentInfoCombined.size
-            log.info { "Synced $syncedPendingStudentsCount pending students" }
-            MoodleSyncedStudents(studentInfoCombined.size)
+            MoodleSyncedStudents(allStudents.size)
         }
 
     @Scheduled(cron = "\${easy.core.moodle-sync.users.cron}")
