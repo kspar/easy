@@ -165,7 +165,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
             // Remove previous pending accesses, if student is removed from Moodle.
             StudentMoodlePendingAccess.deleteWhere {
                 (StudentMoodlePendingAccess.course eq courseId) and
-                        (StudentMoodlePendingAccess.moodleUsername.notInList(studentInfoCombined.map { it.moodleUsername }))
+                        (StudentMoodlePendingAccess.email.notInList(studentInfoCombined.map { it.email }))
             }
 
             // Diff accesses before and after to send invitations for only new accesses later
