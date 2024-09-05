@@ -61,11 +61,16 @@ fun AccessChecksBuilder.exerciseViaCourse(exerciseId: Long, courseId: Long) = ad
     }
 }
 
-fun assertCourseExerciseIsOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: RequireStudentVisible? = null) {
+fun assertCourseExerciseIsOnCourse(
+    courseExId: Long,
+    courseId: Long,
+    requireStudentVisible: RequireStudentVisible? = null
+) {
     if (!isCourseExerciseOnCourse(courseExId, courseId, requireStudentVisible)) {
         throw InvalidRequestException(
             "Course exercise $courseExId not found on course $courseId " + if (requireStudentVisible != null) "or it is hidden" else "",
-            ReqError.ENTITY_WITH_ID_NOT_FOUND
+            ReqError.ENTITY_WITH_ID_NOT_FOUND,
+            notify = false
         )
     }
 }
@@ -78,7 +83,11 @@ fun isExerciseOnCourse(exerciseId: Long, courseId: Long): Boolean = transaction 
 
 data class RequireStudentVisible(val studentId: String)
 
-private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireStudentVisible: RequireStudentVisible?): Boolean =
+private fun isCourseExerciseOnCourse(
+    courseExId: Long,
+    courseId: Long,
+    requireStudentVisible: RequireStudentVisible?
+): Boolean =
     transaction {
         val query =
             CourseExercise.select(CourseExercise.id, CourseExercise.studentVisibleFrom)
@@ -92,7 +101,12 @@ private fun isCourseExerciseOnCourse(courseExId: Long, courseId: Long, requireSt
             val defaultVisible = query.map { it[CourseExercise.studentVisibleFrom] }.singleOrNull()
 
             val exceptions = selectCourseExerciseExceptions(courseExId, requireStudentVisible.studentId)
-            val visibleFrom = determineCourseExerciseVisibleFrom(exceptions, courseExId, requireStudentVisible.studentId, defaultVisible)
+            val visibleFrom = determineCourseExerciseVisibleFrom(
+                exceptions,
+                courseExId,
+                requireStudentVisible.studentId,
+                defaultVisible
+            )
 
             val isHidden = visibleFrom == null || visibleFrom.isAfterNow
             !isHidden && courseExerciseOnCourse

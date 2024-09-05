@@ -61,7 +61,8 @@ class AddTeachersToCourse {
 
         val accesses = body.teachers.distinctBy { it.email }.map {
             val id = getUsernameByEmail(it.email) ?: throw InvalidRequestException(
-                "Account with email ${it.email} not found", ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email
+                "Account with email ${it.email} not found", ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email,
+                notify = false
             )
             val groupIds = it.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
             TeacherNewAccess(id, it.email, groupIds)
