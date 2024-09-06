@@ -28,12 +28,12 @@ class TeacherReadCourseExercisesController {
         caller: EasyUser
     ): Resp {
 
-        log.info { "Getting exercises on course $courseIdString for teacher/admin ${caller.id}" }
+        log.info { "Getting exercises on course $courseIdString for teacher/admin ${caller.id} (courseId: $courseIdString, groupId: $groupIdString)" }
         val courseId = courseIdString.idToLongOrInvalidReq()
         val groupId = groupIdString?.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId) }
-        return Resp(selectAllCourseExercisesLatestSubmissions(courseId, groupId))
+        return Resp(selectAllCourseExercisesLatestSubmissions(courseId, groupId = groupId))
     }
 
 }
