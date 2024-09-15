@@ -50,7 +50,7 @@ class AllSubmissionsModalComp(
                                 },
                             topAttr = it.grade?.let {
                                 EzCollComp.SimpleAttr(
-                                    Str.pointsLabel,
+                                    Str.points,
                                     "${it.grade} / 100",
                                     if (it.is_autograde) ExerciseDAO.GraderType.ICON_AUTO else ExerciseDAO.GraderType.ICON_TEACHER,
                                     topAttrMinWidth = EzCollComp.CollMinWidth.W400

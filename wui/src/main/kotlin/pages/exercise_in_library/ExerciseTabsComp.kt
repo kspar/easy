@@ -61,7 +61,7 @@ class ExerciseTabsComp(
 
                 add(
                     PageTabsComp.Tab(
-                        Str.tabSubmission,
+                        Str.tabAssessment,
                         id = TAB_ID_AUTOASSESS,
                     ) {
                         val aaProps = if (initialExercise.grading_script != null) {

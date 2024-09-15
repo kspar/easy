@@ -134,21 +134,21 @@ class TeacherCourseExercisesComp(
             filterGroups = listOfNotNull(
                 EzCollComp.createGroupFilter(groups, noGroupOption = false),
                 EzCollComp.FilterGroup(
-                    "Olek", listOf(
+                    Str.state, listOf(
                         EzCollComp.Filter(
-                            "Hindamata esitused",
+                            Str.ungradedSubmissions,
                             confType = EzCollConf.TeacherCourseExercisesFilter.STATE_HAS_UNGRADED
                         ) { it.props.ungraded > 0 },
                         EzCollComp.Filter(
-                            "Nähtavad ülesanded",
+                            Str.visibleExercises,
                             confType = EzCollConf.TeacherCourseExercisesFilter.STATE_VISIBLE
                         ) { it.props.isVisible },
                         EzCollComp.Filter(
-                            "Tähtaeg tulevikus",
+                            Str.deadlineInFuture,
                             confType = EzCollConf.TeacherCourseExercisesFilter.STATE_DEADLINE_FUTURE
                         ) { it.props.deadline != null && it.props.deadline > EzDate.now() },
                         EzCollComp.Filter(
-                            "Tähtaeg möödas",
+                            Str.deadlineInPast,
                             confType = EzCollConf.TeacherCourseExercisesFilter.STATE_DEADLINE_PAST
                         ) { it.props.deadline != null && it.props.deadline < EzDate.now() },
                     )

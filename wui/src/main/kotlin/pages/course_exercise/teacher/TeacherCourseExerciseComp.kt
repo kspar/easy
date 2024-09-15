@@ -103,7 +103,7 @@ class TeacherCourseExerciseComp(
 
                 add(
                     TabsComp.Tab(
-                        "Kontroll", Icons.knobs,
+                        Str.tabAssessment, Icons.knobs,
                         active = (tabId == "1"),
                         comp = AutoAssessmentTabComp(
                             if (courseEx.grading_script != null)
@@ -125,7 +125,7 @@ class TeacherCourseExerciseComp(
                 if (courseEx.grading_script != null)
                     add(
                         TabsComp.Tab(
-                            "Katseta", Icons.robot,
+                            Str.tabTesting, Icons.robot,
                             active = (tabId == "2"),
                             comp = TestingTabComp(
                                 courseEx.exercise_id,
@@ -138,7 +138,7 @@ class TeacherCourseExerciseComp(
 
                 add(
                     TabsComp.Tab(
-                        "Esitused", Icons.courseParticipants,
+                        Str.tabSubmissions, Icons.courseParticipants,
                         active = true,
                         comp = studentsTabComp
                     )

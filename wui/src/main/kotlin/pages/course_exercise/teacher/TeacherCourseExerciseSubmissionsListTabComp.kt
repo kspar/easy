@@ -39,76 +39,76 @@ class TeacherCourseExerciseSubmissionsListTabComp(
         val submissions =
             CourseExercisesTeacherDAO.getLatestSubmissions(courseId, courseExId, groupId)
                 .await().latest_submissions.map {
-                EzCollComp.Item(
-                    it,
-                    EzCollComp.ItemTypeIcon(
-                        when {
-                            it.submission?.grade == null -> Icons.dotsHorizontal
-                            it.submission.grade.is_autograde -> Icons.robot
-                            else -> Icons.teacherFace
-                        }
-                    ),
-                    it.name,
-                    titleIcon = if (it.submission?.seen == false)
-                        EzCollComp.TitleIcon(Icons.notificationDot, Str.newSubmission)
-                    else null,
-                    titleInteraction = EzCollComp.TitleAction<CourseExercisesTeacherDAO.LatestStudentSubmission> {
-                        onOpenStudent(it)
-                    },
-                    // TODO: paint and icon if time > deadline ?
-                    topAttr =
-                    if (it.submission != null) {
-                        EzCollComp.SimpleAttr(
-                            Str.submissionTimeLabel,
-                            shortValue = it.submission.time.toHumanString(EzDate.Format.DATE),
-                            longValue = it.submission.time.toHumanString(EzDate.Format.FULL),
-                        )
-                    } else null,
-                    // TODO: action and massaction to rerun automatic tests (how to wait on them and update?)
-                    actions = buildList {
-                        if (it.submission?.seen == true)
-                            add(
-                                EzCollComp.Action(
-                                    Icons.circle, Str.markAsNew,
-                                    onActivate = {
-                                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(
-                                            courseId, courseExId, false, listOf(it.props.submission!!.id)
-                                        ).await()
-                                        createAndBuild().await()
-                                        EzCollComp.ResultUnmodified
-                                    }
-                                ))
-                        if (it.submission?.seen == false)
-                            add(
-                                EzCollComp.Action(
-                                    Icons.circleUnf, Str.markAsSeen,
-                                    onActivate = {
-                                        CourseExercisesTeacherDAO.setSubmissionSeenStatus(
-                                            courseId, courseExId, true, listOf(it.props.submission!!.id)
-                                        ).await()
-                                        createAndBuild().await()
-                                        EzCollComp.ResultUnmodified
-                                    }
-                                ))
-
-                        it.submission?.id?.let { submissionId ->
-                            add(
-                                EzCollComp.Action(
-                                    Icons.download, Str.downloadSubmission,
-                                    onActivate = {
-                                        CourseExercisesTeacherDAO.downloadSubmissions(
-                                            courseId, courseExId, listOf(submissionId)
-                                        ).await()
-                                        EzCollComp.ResultUnmodified
-                                    }
-                                )
+                    EzCollComp.Item(
+                        it,
+                        EzCollComp.ItemTypeIcon(
+                            when {
+                                it.submission?.grade == null -> Icons.dotsHorizontal
+                                it.submission.grade.is_autograde -> Icons.robot
+                                else -> Icons.teacherFace
+                            }
+                        ),
+                        it.name,
+                        titleIcon = if (it.submission?.seen == false)
+                            EzCollComp.TitleIcon(Icons.notificationDot, Str.newSubmission)
+                        else null,
+                        titleInteraction = EzCollComp.TitleAction<CourseExercisesTeacherDAO.LatestStudentSubmission> {
+                            onOpenStudent(it)
+                        },
+                        // TODO: paint and icon if time > deadline ?
+                        topAttr =
+                        if (it.submission != null) {
+                            EzCollComp.SimpleAttr(
+                                Str.submissionTimeLabel,
+                                shortValue = it.submission.time.toHumanString(EzDate.Format.DATE),
+                                longValue = it.submission.time.toHumanString(EzDate.Format.FULL),
                             )
-                        }
-                    },
-                    isSelectable = it.submission != null,
-                    progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
-                )
-            }
+                        } else null,
+                        // TODO: action and massaction to rerun automatic tests (how to wait on them and update?)
+                        actions = buildList {
+                            if (it.submission?.seen == true)
+                                add(
+                                    EzCollComp.Action(
+                                        Icons.circle, Str.markAsNew,
+                                        onActivate = {
+                                            CourseExercisesTeacherDAO.setSubmissionSeenStatus(
+                                                courseId, courseExId, false, listOf(it.props.submission!!.id)
+                                            ).await()
+                                            createAndBuild().await()
+                                            EzCollComp.ResultUnmodified
+                                        }
+                                    ))
+                            if (it.submission?.seen == false)
+                                add(
+                                    EzCollComp.Action(
+                                        Icons.circleUnf, Str.markAsSeen,
+                                        onActivate = {
+                                            CourseExercisesTeacherDAO.setSubmissionSeenStatus(
+                                                courseId, courseExId, true, listOf(it.props.submission!!.id)
+                                            ).await()
+                                            createAndBuild().await()
+                                            EzCollComp.ResultUnmodified
+                                        }
+                                    ))
+
+                            it.submission?.id?.let { submissionId ->
+                                add(
+                                    EzCollComp.Action(
+                                        Icons.download, Str.downloadSubmission,
+                                        onActivate = {
+                                            CourseExercisesTeacherDAO.downloadSubmissions(
+                                                courseId, courseExId, listOf(submissionId)
+                                            ).await()
+                                            EzCollComp.ResultUnmodified
+                                        }
+                                    )
+                                )
+                            }
+                        },
+                        isSelectable = it.submission != null,
+                        progressBar = EzCollComp.ProgressBar(it.status.translateToProgress()),
+                    )
+                }
 
         coll = EzCollComp(
             submissions,
@@ -116,21 +116,21 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             filterGroups = listOfNotNull(
                 EzCollComp.createGroupFilter(groups),
                 EzCollComp.FilterGroup(
-                    "Olek", listOf(
+                    Str.state, listOf(
                         EzCollComp.Filter(
-                            "Automaatselt hinnatud",
+                            Str.gradedAutomatically,
                             confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_GRADED_AUTO
                         ) { it.props.submission?.grade?.is_autograde == true },
                         EzCollComp.Filter(
-                            "Õpetaja hinnatud",
+                            Str.gradedByTeacher,
                             confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_GRADED_TEACHER
                         ) { it.props.submission?.grade?.is_autograde == false },
                         EzCollComp.Filter(
-                            "Hindamata",
+                            Str.notGradedYet,
                             confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_UNGRADED
                         ) { it.props.submission?.grade == null },
                         EzCollComp.Filter(
-                            "Esitamata",
+                            Str.notSubmitted,
                             confType = EzCollConf.TeacherCourseExerciseSubmissionsFilter.STATE_UNSUBMITTED
                         ) { it.props.submission == null },
                     )
@@ -138,7 +138,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
             ),
             sorters = buildList {
                 add(
-                    EzCollComp.Sorter("Nimi",
+                    EzCollComp.Sorter(Str.name,
                         compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>, String?>(
                             HumanStringComparator
                         ) {
@@ -148,7 +148,7 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                     )
                 )
                 add(
-                    EzCollComp.Sorter("Punktid",
+                    EzCollComp.Sorter(Str.points,
                         compareBy<EzCollComp.Item<CourseExercisesTeacherDAO.LatestStudentSubmission>> {
                             // nulls last
                             if (it.props.submission?.grade == null) 1 else 0

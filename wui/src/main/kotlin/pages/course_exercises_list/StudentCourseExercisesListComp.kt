@@ -71,7 +71,7 @@ class StudentCourseExercisesListComp(
             items, EzCollComp.Strings(Str.exerciseSingular, Str.exercisePlural),
             filterGroups = listOf(
                 EzCollComp.FilterGroup(
-                    Str.studentMySubmissionFilter, listOf(
+                    Str.state, listOf(
                         EzCollComp.Filter(
                             Str.studentMySubmissionNotDone,
                             confType = EzCollConf.StudentCourseExercisesFilter.STATE_NOT_DONE

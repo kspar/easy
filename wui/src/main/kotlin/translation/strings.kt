@@ -21,6 +21,7 @@ sealed class TranslatableStrings {
     abstract val exerciseLibrary: String
     abstract val gradedAutomatically: String
     abstract val gradedByTeacher: String
+    abstract val notSubmitted: String
     abstract val notGradedYet: String
     abstract val closeToggleLink: String
     abstract val doSave: String
@@ -72,6 +73,8 @@ sealed class TranslatableStrings {
     abstract val doRefresh: String
     abstract val enabled: String
     abstract val disabled: String
+    abstract val state: String
+    abstract val points: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -184,14 +187,19 @@ sealed class TranslatableStrings {
     abstract val startedLabel: String
     abstract val ungradedLabel: String
     abstract val unstartedLabel: String
-    abstract val studentMySubmissionFilter: String
     abstract val studentMySubmissionNotDone: String
     abstract val studentMySubmissionDone: String
+    abstract val ungradedSubmissions: String
+    abstract val visibleExercises: String
+    abstract val deadlineInFuture: String
+    abstract val deadlineInPast: String
 
 
     // Course exercise page
     abstract val tabSubmit: String
     abstract val tabMySubmissions: String
+    abstract val tabAssessment: String
+    abstract val tabSubmissions: String
     abstract val draftSaveFailedMsg: String
     abstract val exerciseClosedForSubmissions: String
     abstract val solutionEditorStatusDraft: String
@@ -200,7 +208,6 @@ sealed class TranslatableStrings {
     abstract val submissionPlural: String
     abstract val submission: String
     abstract val commentEditorPlaceholder: String
-    abstract val pointsLabel: String
     abstract val validGradeLabel: String
     abstract val gradeTransferredHelp: String
     abstract val gradeFieldLabel: String
@@ -216,8 +223,6 @@ sealed class TranslatableStrings {
     abstract val hideTestDetails: String
 
     abstract val tabExerciseLabel: String
-    abstract val tabTestingLabel: String
-    abstract val tabSubmissionsLabel: String
     abstract val softDeadlineLabel: String
     abstract val hardDeadlineLabel: String
     abstract val studentVisibleFromTimeLabel: String
@@ -292,7 +297,6 @@ sealed class TranslatableStrings {
 
     // Exercise page
     abstract val tabExercise: String
-    abstract val tabSubmission: String
     abstract val tabTesting: String
     abstract val addToCourseModalTitle: String
     abstract val addToCourseModalText1: String
@@ -441,7 +445,8 @@ object EstStrings : TranslatableStrings() {
     override val myCourses = "Minu kursused"
     override val exerciseLibrary = "Ülesandekogu"
     override val gradedAutomatically = "Automaatselt hinnatud"
-    override val gradedByTeacher = "Õpetaja poolt hinnatud"
+    override val gradedByTeacher = "Õpetaja hinnatud"
+    override val notSubmitted = "Esitamata"
     override val notGradedYet = "Hindamata"
 
     override val solutionEditorPlaceholder = "Kirjuta, kopeeri või lohista lahendus siia..."
@@ -489,6 +494,7 @@ object EstStrings : TranslatableStrings() {
     override val allSubmissions = "Kõik esitused"
     override val tabSubmit = "Esita"
     override val tabMySubmissions = "Minu esitused"
+    override val tabAssessment = "Kontroll"
     override val draftSaveFailedMsg = "Mustandi salvestamine ebaõnnestus"
     override val exerciseClosedForSubmissions = "See ülesanne on suletud ja ei luba enam uusi esitusi"
     override val solutionEditorStatusDraft = "Esitamata mustand"
@@ -563,15 +569,18 @@ object EstStrings : TranslatableStrings() {
     override val startedLabel = "nässu läinud"
     override val ungradedLabel = "hindamata"
     override val unstartedLabel = "esitamata"
-    override val studentMySubmissionFilter = "Olek"
+    override val state = "Olek"
     override val studentMySubmissionNotDone = "Pooleli"
     override val studentMySubmissionDone = "Lõpetatud"
+    override val ungradedSubmissions = "Hindamata esitused"
+    override val visibleExercises = "Nähtavad ülesanded"
+    override val deadlineInFuture = "Tähtaeg tulevikus"
+    override val deadlineInPast = "Tähtaeg möödas"
     override val tabExerciseLabel = "Ülesanne"
-    override val tabTestingLabel = "Katseta"
-    override val tabSubmissionsLabel = "Esitused"
+    override val tabSubmissions = "Esitused"
     override val autoAssessmentLabel = "Automaatsed testid"
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
-    override val pointsLabel = "Punktid"
+    override val points = "Punktid"
     override val validGradeLabel = "Kehtiv hinne"
     override val gradeTransferredHelp = "Hinne on antud eelnevale esitusele"
     override val doAutoAssess = "Kontrolli"
@@ -717,7 +726,6 @@ ole hea ja proovi hiljem uuesti.
     override val sortByModified = "Viimati muudetud"
     override val sortByPopularity = "Populaarsus"
     override val tabExercise = "Ülesanne"
-    override val tabSubmission = "Esitamine"
     override val tabTesting = "Katseta"
     override val addToCourseModalTitle = "Lisa ülesanne kursusele"
     override val addToCourseModalText1 = "Lisa "
@@ -830,6 +838,7 @@ object EngStrings : TranslatableStrings() {
     override val exerciseLibrary = "Exercise library"
     override val gradedAutomatically = "Graded automatically"
     override val gradedByTeacher = "Graded by teacher"
+    override val notSubmitted = "Esitamata"
     override val notGradedYet = "Not graded"
     override val closeToggleLink = "▼ Close"
     override val doSave = "Save"
@@ -941,9 +950,13 @@ object EngStrings : TranslatableStrings() {
     override val startedLabel = "unsuccessful"
     override val ungradedLabel = "ungraded"
     override val unstartedLabel = "not submitted"
-    override val studentMySubmissionFilter = "State"
+    override val state = "State"
     override val studentMySubmissionNotDone = "To do"
     override val studentMySubmissionDone = "Finished"
+    override val ungradedSubmissions = "Ungraded submissions"
+    override val visibleExercises = "Visible exercises"
+    override val deadlineInFuture = "Deadline in future"
+    override val deadlineInPast = "Deadline in past"
     override val commentEditorPlaceholder = "Write your comment here..."
     override val gradeFieldLabel = "Grade"
     override val missingSolution = "No solution submitted"
@@ -955,10 +968,11 @@ object EngStrings : TranslatableStrings() {
     override val hideTestDetails = "Hide tests"
 
     override val tabExerciseLabel = "Exercise"
-    override val tabTestingLabel = "Test"
-    override val tabSubmissionsLabel = "Submissions"
+    override val tabTesting = "Test"
+    override val tabSubmissions = "Submissions"
     override val tabSubmit = "Submit"
     override val tabMySubmissions = "My submissions"
+    override val tabAssessment = "Assessment"
     override val draftSaveFailedMsg = "Saving the draft failed"
     override val exerciseClosedForSubmissions = "This exercise is closed and does not allow any new submissions"
     override val solutionEditorStatusDraft = "Unsubmitted draft"
@@ -973,7 +987,7 @@ object EngStrings : TranslatableStrings() {
     override val graderTypeTeacher = "manual"
     override val autoAssessmentLabel = "Automated tests"
     override val teacherAssessmentLabel = "Teacher feedback"
-    override val pointsLabel = "Points"
+    override val points = "Points"
     override val validGradeLabel = "Valid grade"
     override val gradeTransferredHelp = "Grade given to a previous submission"
     override val doAutoAssess = "Check"
@@ -1126,8 +1140,6 @@ of the issue, please try again later.
     override val sortByModified = "Last modified"
     override val sortByPopularity = "Popular"
     override val tabExercise = "Exercise"
-    override val tabSubmission = "Submitting"
-    override val tabTesting = "Test"
     override val addToCourseModalTitle = "Add exercise to course"
     override val addToCourseModalText1 = "Add "
     override val addToCourseModalText2 = " to course:"
