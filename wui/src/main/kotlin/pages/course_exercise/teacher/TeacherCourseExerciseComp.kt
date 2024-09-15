@@ -19,6 +19,7 @@ import pages.exercise_library.createPathChainSuffix
 import pages.sidenav.Sidenav
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import rip.kspar.ezspa.dstIfNotNull
 import storage.Key
 import template
 import translation.Str
@@ -44,7 +45,7 @@ class TeacherCourseExerciseComp(
     private lateinit var colDividerComp: TwoColDividerComp
 
     private lateinit var updateModal: UpdateCourseExerciseModalComp
-    private lateinit var embedModal: EmbedModalComp
+    private var embedModal: EmbedModalComp? = null
 
 
     override val children: List<Component>
@@ -70,12 +71,12 @@ class TeacherCourseExerciseComp(
                         }
                     })
 
-                    if (courseEx.has_lib_access)
+                    if (courseEx.has_lib_access) {
                         add(Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(courseEx.exercise_id)))
-
-                    add(Sidenav.Action(Icons.code, Str.embedding) {
-                        embedModal.openWithClosePromise().await()
-                    })
+                        add(Sidenav.Action(Icons.code, Str.embedding) {
+                            embedModal!!.openWithClosePromise().await()
+                        })
+                    }
                 }
             )
         )
@@ -167,10 +168,12 @@ class TeacherCourseExerciseComp(
 
         // FIXME: canEdit should use condition exercise.effective_access >= DirAccess.PRAW
         //  the service needs to return the lib access level instead of has_lib_access
-        embedModal = EmbedModalComp(
-            courseEx.exercise_id, courseEx.has_lib_access,
-            courseId, courseExId, courseEx.title_alias
-        )
+        embedModal = if (courseEx.has_lib_access)
+            EmbedModalComp(
+                courseEx.exercise_id, true,
+                courseId, courseExId, courseEx.title_alias
+            )
+        else null
     }
 
     override fun render() = template(
@@ -185,7 +188,7 @@ class TeacherCourseExerciseComp(
                 </ez-block-container>
             </ez-course-exercise>
             $updateModal
-            $embedModal
+            ${embedModal.dstIfNotNull()}
         """.trimIndent(),
     )
 
