@@ -33,9 +33,6 @@ class UpdateExercise(private val adocService: AdocService) {
         @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
         @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
         @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
-        @JsonProperty("public", required = true) val public: Boolean,
-        @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
-        @JsonProperty("anonymous_autoassess_template", required = false) val anonymousAutoassessTemplate: String?,
         @JsonProperty("grader_type", required = true) val graderType: GraderType,
         @JsonProperty("solution_file_name", required = true) val solutionFileName: String,
         @JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
@@ -99,13 +96,6 @@ class UpdateExercise(private val adocService: AdocService) {
                     req.assets?.map { it.fileName to it.fileContent })
 
             } else null
-
-
-        Exercise.update({ Exercise.id eq exerciseId }) {
-            it[public] = req.public
-            it[anonymousAutoassessEnabled] = req.anonymousAutoassessEnabled
-            it[anonymousAutoassessTemplate] = req.anonymousAutoassessTemplate
-        }
 
         val lastVersionId = ExerciseVer
             .selectAll().where { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
