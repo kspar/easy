@@ -65,7 +65,7 @@ class ExerciseRootComp(
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
         // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
         permissionsModal = PermissionsModalComp(null, false, null, exercise.title, this)
-        embedModal = EmbedModalComp(exerciseId)
+        embedModal = EmbedModalComp(exerciseId, exercise.effective_access >= DirAccess.PRAW)
 
         Title.update {
             it.pageTitle = exercise.title

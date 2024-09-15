@@ -12,6 +12,7 @@ import pages.Title
 import pages.course_exercise.CourseExerciseTextComp
 import pages.course_exercises_list.UpdateCourseExerciseModalComp
 import pages.exercise_in_library.AutoAssessmentTabComp
+import pages.exercise_in_library.EmbedModalComp
 import pages.exercise_in_library.ExercisePage
 import pages.exercise_in_library.TestingTabComp
 import pages.exercise_library.createPathChainSuffix
@@ -43,10 +44,11 @@ class TeacherCourseExerciseComp(
     private lateinit var colDividerComp: TwoColDividerComp
 
     private lateinit var updateModal: UpdateCourseExerciseModalComp
+    private lateinit var embedModal: EmbedModalComp
 
 
     override val children: List<Component>
-        get() = listOf(exerciseTextComp, tabs, colDividerComp, updateModal)
+        get() = listOfNotNull(exerciseTextComp, tabs, colDividerComp, updateModal, embedModal)
 
     override fun create() = doInPromise {
         val courseEx = CourseExercisesTeacherDAO.getCourseExerciseDetails(courseId, courseExId).await()
@@ -67,8 +69,13 @@ class TeacherCourseExerciseComp(
                             createAndBuild().await()
                         }
                     })
+
                     if (courseEx.has_lib_access)
                         add(Sidenav.Link(Icons.library, Str.openInLib, ExercisePage.link(courseEx.exercise_id)))
+
+                    add(Sidenav.Action(Icons.code, Str.embedding) {
+                        embedModal.openWithClosePromise().await()
+                    })
                 }
             )
         )
@@ -157,6 +164,13 @@ class TeacherCourseExerciseComp(
             ),
             parent = this
         )
+
+        // FIXME: canEdit should use condition exercise.effective_access >= DirAccess.PRAW
+        //  the service needs to return the lib access level instead of has_lib_access
+        embedModal = EmbedModalComp(
+            courseEx.exercise_id, courseEx.has_lib_access,
+            courseId, courseExId, courseEx.title_alias
+        )
     }
 
     override fun render() = template(
@@ -171,6 +185,7 @@ class TeacherCourseExerciseComp(
                 </ez-block-container>
             </ez-course-exercise>
             $updateModal
+            $embedModal
         """.trimIndent(),
     )
 

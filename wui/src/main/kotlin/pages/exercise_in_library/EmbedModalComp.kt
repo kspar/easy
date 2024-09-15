@@ -7,8 +7,10 @@ import translation.Str
 
 class EmbedModalComp(
     private val exerciseId: String,
+    private val canEdit: Boolean,
     private val courseId: String? = null,
     private val courseExId: String? = null,
+    private val titleAlias: String? = null,
 ) : Component() {
 
     private lateinit var modalComp: ModalComp<Unit>
@@ -19,7 +21,7 @@ class EmbedModalComp(
 
     override fun create() = doInPromise {
 
-        options = EmbedModalOptionsComp(exerciseId, courseId, courseExId)
+        options = EmbedModalOptionsComp(exerciseId, canEdit, courseId, courseExId, titleAlias)
 
         modalComp = ModalComp(
             Str.embedding,

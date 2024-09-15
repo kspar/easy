@@ -14,8 +14,10 @@ import translation.Str
 
 class EmbedModalOptionsComp(
     private val exerciseId: String,
+    private val canEdit: Boolean,
     private val courseId: String? = null,
     private val courseExId: String? = null,
+    private val titleAlias: String? = null,
 ) : Component() {
 
     private lateinit var toggle: ToggleComp
@@ -30,6 +32,7 @@ class EmbedModalOptionsComp(
         toggle = ToggleComp(
             Str.disabled, Str.enabled,
             initialValue = exercise.is_anonymous_autoassess_enabled,
+            isDisabled = !canEdit,
             onValueChange = {
                 updateEmbedSettings(it)
                 createAndBuild().await()
@@ -40,7 +43,7 @@ class EmbedModalOptionsComp(
         val src = AppProperties.WUI_ROOT + EmbedAnonAutoassessPage.link(
             exerciseId,
             showTitle = true, showBorder = true, showSubmit = false, showTemplate = true, dynamicResize = true,
-            titleAlias = null, titleForPath = exercise.title,
+            titleAlias = titleAlias, titleForPath = exercise.title,
             linkCourseId = courseId, linkCourseExerciseId = courseExId,
         )
 
