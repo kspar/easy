@@ -115,15 +115,12 @@ class ExerciseTabsComp(
 
     data class EditedExercise(
         val title: String, val textAdoc: String,
-        val embedConfig: ExerciseDAO.EmbedConfig?, val editedSubmission: AutoAssessmentTabComp.EditedSubmission
+        val editedSubmission: AutoAssessmentTabComp.EditedSubmission
     )
 
     fun getEditedProps() = EditedExercise(
         exerciseTab.getCurrentTitle(),
         exerciseTab.getCurrentAdoc(),
-        if (initialExercise.is_anonymous_autoassess_enabled)
-            ExerciseDAO.EmbedConfig(initialExercise.anonymous_autoassess_template)
-        else null,
         autoassessTab.getEditedProps()
     )
 

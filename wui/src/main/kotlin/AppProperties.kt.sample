@@ -27,4 +27,6 @@ object AppProperties {
 
     const val STATIC_UPDATE_ENABLED = true
     const val STATIC_UPDATE_POLL_SEC = 5 * 60
+
+    const val EMBED_RESIZER_SCRIPT_URL = "https://dev.lahendus.ut.ee/static/js/ez-embed-frame-resizer.js"
 }

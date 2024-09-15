@@ -70,6 +70,8 @@ sealed class TranslatableStrings {
     abstract val total: String
     abstract val lahendusUpdated: String
     abstract val doRefresh: String
+    abstract val enabled: String
+    abstract val disabled: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -317,6 +319,7 @@ sealed class TranslatableStrings {
     abstract val allowedExecMemField: String
     abstract val solutionFilename: String
     abstract val exerciseTextEditorPlaceholder: String
+    abstract val embedding: String
 
 
     // Participants page
@@ -639,6 +642,8 @@ object EstStrings : TranslatableStrings() {
     override val total = "Kokku"
     override val lahendusUpdated = "Lahendus on uuenenud. Palun värskenda lehte."
     override val doRefresh = "Värskenda"
+    override val enabled = "Lubatud"
+    override val disabled = "Keelatud"
     override val feedbackEmailNote = "Kui lisasid kommentaari, siis saadetakse see õpilasele emailiga."
     override val noVisibleExerciseError = "Seda ülesannet ei eksisteeri või see on peidetud"
     override val autogradeException = "Programmi käivitamisel tekkis viga:"
@@ -675,6 +680,7 @@ ole hea ja proovi hiljem uuesti.
     override val allowedExecMemField = "Mälukasutus (MB)"
     override val solutionFilename = "Faili nimi"
     override val exerciseTextEditorPlaceholder = "Kirjuta ülesande tekst siia..."
+    override val embedding = "Vistuta"
     override val courseJoinHelpText =
         "See on isiklik link, mis võimaldab õpilasel kursusega liituda. Lingi kaudu liitumine seob õpilase konto tema Moodle'i kontoga. Hoia linki salajas ja jaga seda ainult õige õpilasega."
     override val courseJoinLink = "Liitumislink"
@@ -1045,6 +1051,8 @@ object EngStrings : TranslatableStrings() {
     override val total = "Total"
     override val lahendusUpdated = "Lahendus has been updated. Please refresh the page."
     override val doRefresh = "Refresh"
+    override val enabled = "Enabled"
+    override val disabled = "Disabled"
     override val feedbackEmailNote = "If you added a comment then the student will be notified by email."
     override val noVisibleExerciseError = "This exercise does not exist or is hidden"
     override val autogradeException = "There was an exception during the program's execution:"
@@ -1081,6 +1089,7 @@ of the issue, please try again later.
     override val allowedExecMemField = "Allowed memory (MB)"
     override val solutionFilename = "File name"
     override val exerciseTextEditorPlaceholder = "Write your exercise text here..."
+    override val embedding = "Embed"
     override val courseJoinHelpText =
         "This personal link can be used by the student to join this course. Using the link associates the student's account with their Moodle account. Keep the link private and share it only with this student."
     override val courseJoinLink = "Enrolment link"

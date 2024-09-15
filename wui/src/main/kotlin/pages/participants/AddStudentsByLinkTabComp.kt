@@ -43,7 +43,7 @@ class AddStudentsByLinkTabComp(
         currentLink = link
 
         switch = ToggleComp(
-            "Keelatud", "Lubatud",
+            Str.disabled, Str.enabled,
             initialValue = (currentLink != null),
             onValueChange = { updateJoinLink(true) },
             parent = this,

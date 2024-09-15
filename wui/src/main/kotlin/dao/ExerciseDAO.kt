@@ -112,11 +112,6 @@ object ExerciseDAO {
         val solutionFileName: String,
         val solutionFileType: SolutionFileType,
         val autoeval: Autoeval?,
-        val embedConfig: EmbedConfig?,
-    )
-
-    data class EmbedConfig(
-        val template: String? = null
     )
 
     data class Autoeval(
@@ -135,8 +130,6 @@ object ExerciseDAO {
                 "title" to it.title,
                 // avoid overwriting html with empty adoc for html-only exercises
                 "text_adoc" to it.textAdoc.blankToNull(),
-                // TODO: remove
-                "public" to false,
                 "grader_type" to if (it.autoeval != null) GraderType.AUTO.name else GraderType.TEACHER.name,
                 "solution_file_name" to it.solutionFileName,
                 "solution_file_type" to it.solutionFileType.name,
@@ -145,12 +138,21 @@ object ExerciseDAO {
                 "max_time_sec" to it.autoeval?.maxTime,
                 "max_mem_mb" to it.autoeval?.maxMem,
                 "assets" to it.autoeval?.assets?.map { mapOf("file_name" to it.key, "file_content" to it.value) },
-                "anonymous_autoassess_enabled" to (it.embedConfig != null),
-                "anonymous_autoassess_template" to it.embedConfig?.template,
             )
         }
 
         fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.PUT, body,
+            successChecker = { http200 }).await()
+    }
+
+    fun setExerciseEmbed(exerciseId: String, enabled: Boolean): Promise<Unit> = doInPromise {
+        debug { "Setting exercise $exerciseId embed enabled: $enabled" }
+
+        val body = mapOf(
+            "anonymous_autoassess_enabled" to enabled,
+        )
+
+        fetchEms("/exercises/${exerciseId.encodeURIComponent()}", ReqMethod.PATCH, body,
             successChecker = { http200 }).await()
     }
 

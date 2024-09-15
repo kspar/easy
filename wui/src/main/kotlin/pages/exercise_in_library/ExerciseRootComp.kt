@@ -31,6 +31,7 @@ class ExerciseRootComp(
     private lateinit var crumbs: BreadcrumbsComp
     private lateinit var addToCourseModal: AddToCourseModalComp
     private lateinit var permissionsModal: PermissionsModalComp
+    private lateinit var embedModal: EmbedModalComp
 
     private lateinit var exercisePane: ExerciseComp
     private lateinit var tabsPane: ExerciseTabsComp
@@ -38,7 +39,7 @@ class ExerciseRootComp(
     private lateinit var initialExercise: ExerciseDAO.Exercise
 
     override val children: List<Component>
-        get() = listOf(crumbs, exercisePane, tabsPane, addToCourseModal, permissionsModal)
+        get() = listOf(crumbs, exercisePane, tabsPane, addToCourseModal, permissionsModal, embedModal)
 
     override fun create() = doInPromise {
         val exercise = try {
@@ -64,6 +65,7 @@ class ExerciseRootComp(
         addToCourseModal = AddToCourseModalComp(exerciseId, exercise.title, this)
         // Set dirId to null at first because the user might not have M access, so we don't want to try to load permissions
         permissionsModal = PermissionsModalComp(null, false, null, exercise.title, this)
+        embedModal = EmbedModalComp(exerciseId)
 
         Title.update {
             it.pageTitle = exercise.title
@@ -78,6 +80,9 @@ class ExerciseRootComp(
                         if (r != null) {
                             recreate()
                         }
+                    })
+                    add(Sidenav.Action(Icons.code, Str.embedding) {
+                        embedModal.openWithClosePromise().await()
                     })
                     if (exercise.effective_access == DirAccess.PRAWM) {
                         add(Sidenav.Action(Icons.addPerson, Str.share) {
@@ -107,8 +112,9 @@ class ExerciseRootComp(
                     <ez-block id='${exercisePane.dstId}' style='width: 46.5rem; max-width: 100rem; overflow: auto;'></ez-block>
                     <ez-block id='${tabsPane.dstId}' style='width: 46.5rem; max-width: 140rem;'></ez-block>
                 </ez-block-container>
-                <ez-dst id="${addToCourseModal.dstId}"></ez-dst>
-                <ez-dst id="${permissionsModal.dstId}"></ez-dst>
+                $addToCourseModal
+                $permissionsModal
+                $embedModal
             </div>
         """.trimIndent(),
     )
@@ -147,7 +153,6 @@ class ExerciseRootComp(
                     it.maxMem,
                 )
             },
-            exerciseProps.embedConfig,
         )
 
         val merge = mergeChanges(updatedExercise)
@@ -199,31 +204,18 @@ class ExerciseRootComp(
             )
         else null
 
-        val remoteEmbed = if (remote.is_anonymous_autoassess_enabled)
-            ExerciseDAO.EmbedConfig(
-                remote.anonymous_autoassess_template
-            )
-        else null
-
-        val initialEmbed = if (initial.is_anonymous_autoassess_enabled)
-            ExerciseDAO.EmbedConfig(
-                initial.anonymous_autoassess_template
-            )
-        else null
-
         val title = mergeValue(local.title, remote.title, initial.title)
         val textAdoc = mergeValue(local.textAdoc, remote.text_adoc, initial.text_adoc)
         val solutionFileName = mergeValue(local.solutionFileName, remote.solution_file_name, initial.solution_file_name)
         val solutionFileType = mergeValue(local.solutionFileType, remote.solution_file_type, initial.solution_file_type)
         val autoeval = mergeValue(local.autoeval, remoteAutoeval, initialAutoeval)
-        val embed = mergeValue(local.embedConfig, remoteEmbed, initialEmbed)
 
         return MergeResult(
-            listOf(title, textAdoc, solutionFileName, solutionFileType, autoeval, embed).any { it.second },
+            listOf(title, textAdoc, solutionFileName, solutionFileType, autoeval).any { it.second },
             ExerciseDAO.UpdatedExercise(
                 title.first, textAdoc.first,
                 solutionFileName.first, solutionFileType.first,
-                autoeval.first, embed.first
+                autoeval.first
             )
         )
     }
