@@ -96,8 +96,10 @@ class TabsComp(
 
     override fun postRender() {
         // Show active tab's contents
-        val initialTab = tabs.firstOrNull { it.active }
-        val initialIdx = if (initialTab != null) tabs.indexOf(initialTab) else 0
+        val initialTab = tabs.firstOrNull { it.active } ?: tabs.first()
+        // Caller might not have set active
+        initialTab.active = true
+        val initialIdx = tabs.indexOf(initialTab)
         refreshContentVisibility(initialIdx)
 
         tabsElement.onChange {
