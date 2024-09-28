@@ -69,15 +69,13 @@ class DeleteExercise {
     }
 
     private fun deleteVersions(exId: Long) {
-        // Delete auto exercises
         val autoExIds = ExerciseVer.selectAll().where { ExerciseVer.exercise eq exId }.mapNotNull {
             it[ExerciseVer.autoExerciseId]?.value
         }
 
+        ExerciseVer.deleteWhere { ExerciseVer.exercise eq exId }
+
         Asset.deleteWhere { Asset.autoExercise.inList(autoExIds) }
         AutoExercise.deleteWhere { AutoExercise.id.inList(autoExIds) }
-
-        // Delete versions
-        ExerciseVer.deleteWhere { ExerciseVer.exercise eq exId }
     }
 }
