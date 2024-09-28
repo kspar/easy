@@ -1,6 +1,5 @@
 package pages.about
 
-import AppProperties
 import CONTENT_CONTAINER_ID
 import Icons
 import cache.BasicCourseInfo
@@ -59,7 +58,7 @@ class SimilarityComp(
 
         if (groups.isNotEmpty()) {
             val options = buildList {
-                add(SelectComp.Option("Kõik õpilased", ""))
+                add(SelectComp.Option(Str.allStudents, ""))
                 groups.forEach {
                     add(SelectComp.Option(it.name, it.id, it.id == preselectedGroupId))
                 }
@@ -98,14 +97,8 @@ class SimilarityComp(
                 <h2 class="">{{title}}</h2>
             </div>
             
-            <p>Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel, mis võib teha ebaausalt esitatud lahenduste tuvastamise lihtsamaks.</p>
-            
-            <p>Hetkel on lahenduste võrdlus eksperimentaalne. Katsetame kahte erinevat meetrikat: 
-                <a href='https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient' target='_blank'>Sørensen–Dice'i suhtarv</a> 
-                ja <a href='https://en.wikipedia.org/wiki/Levenshtein_distance' target='_blank'>Levenshteini kaugus</a>. 
-                Tule jaga oma kogemust <a href='{{discordUrl}}${AppProperties.DISCORD_INVITE_ID}' target='_blank'>Discordis</a>.
-            </p>
-            
+            <p>{{explanation}}</p>
+           
             <ez-similarity-select-exercise id='${selectExercise.dstId}' style='margin-top: 2rem;'>
             </ez-similarity-select-exercise>
             
@@ -115,7 +108,7 @@ class SimilarityComp(
             $results
         """.trimIndent(),
         "title" to Str.similarityAnalysis,
-        "discordUrl" to "https://discord.gg/",
+        "explanation" to Str.similaritiesHelpText,
     )
 }
 

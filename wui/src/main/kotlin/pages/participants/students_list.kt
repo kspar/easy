@@ -66,41 +66,47 @@ class ParticipantsStudentsListComp(
             EzCollComp.Item(
                 p,
                 EzCollComp.ItemTypeIcon(if (p.isActive) Icons.user else Icons.pending),
-                if (p.isActive) "${p.firstName} ${p.lastName}" else "(Kutse ootel)",
+                if (p.isActive) "${p.firstName} ${p.lastName}" else Str.pendingStudentName,
                 titleStatus = if (p.isActive) EzCollComp.TitleStatus.NORMAL else EzCollComp.TitleStatus.INACTIVE,
                 topAttr = if (hasGroups) EzCollComp.ListAttr(
-                    "Rühmad",
+                    Str.groups,
                     p.groups.map { EzCollComp.ListAttrItem(it.name) }.toMutableList(),
                     Icons.groupsUnf,
                 ) else null,
                 bottomAttrs = buildList {
-                    add(EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf))
-                    p.username?.let { add(EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf)) }
-                    p.utUsername?.let { add(EzCollComp.SimpleAttr("UT kasutajanimi", p.utUsername, Icons.utUserUnf)) }
+                    add(EzCollComp.SimpleAttr(Str.email, p.email, Icons.emailUnf))
+                    p.username?.let { add(EzCollComp.SimpleAttr(Str.username, p.username, Icons.userUnf)) }
+                    p.utUsername?.let { add(EzCollComp.SimpleAttr(Str.moodleId, p.utUsername, Icons.utUserUnf)) }
                 },
                 isSelectable = true,
                 actions = buildList {
                     // Invites cannot be sent to active Moodle course students
                     if (!(isMoodleSynced && p.isActive))
-                        add(EzCollComp.Action(Icons.sendEmail, "Saada kutse", onActivate = ::sendInvite))
+                        add(EzCollComp.Action(Icons.sendEmail, Str.sendInvite, onActivate = ::sendInvite))
 
                     if (!isMoodleSynced) {
-                        add(EzCollComp.Action(Icons.addToGroup, "Lisa rühma", onActivate = ::addToGroup))
-                        add(EzCollComp.Action(Icons.removeFromGroup, "Eemalda rühmast", onActivate = ::removeFromGroup))
+                        add(EzCollComp.Action(Icons.addToGroup, Str.addToGroup, onActivate = ::addToGroup))
+                        add(
+                            EzCollComp.Action(
+                                Icons.removeFromGroup,
+                                Str.removeFromGroup,
+                                onActivate = ::removeFromGroup
+                            )
+                        )
                     }
 
                     // Moodle course invites cannot be deleted
                     if (!(isMoodleSynced && !p.isActive))
                         add(
                             EzCollComp.Action(
-                                Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse
+                                Icons.removeParticipant, Str.removeFromCourse, onActivate = ::removeFromCourse
                             )
                         )
 
                     if (isMoodleSynced && !p.isActive && p.utInviteId != null && p.utUsername != null)
                         add(
                             EzCollComp.Action(
-                                Icons.share, "Näita liitumislinki",
+                                Icons.share, Str.showEnrolmentLink,
                                 onActivate = {
                                     showJoinLinkModal.setStudent(p.email, p.utUsername, p.utInviteId)
                                     showJoinLinkModal.openWithClosePromise().await()
@@ -114,11 +120,11 @@ class ParticipantsStudentsListComp(
 
         val massActions = buildList {
             if (!isMoodleSynced && hasGroups) {
-                add(EzCollComp.MassAction(Icons.addToGroup, "Lisa rühma", ::addToGroup))
-                add(EzCollComp.MassAction(Icons.removeFromGroup, "Eemalda rühmast", ::removeFromGroup))
+                add(EzCollComp.MassAction(Icons.addToGroup, Str.addToGroup, ::addToGroup))
+                add(EzCollComp.MassAction(Icons.removeFromGroup, Str.removeFromGroup, ::removeFromGroup))
             }
-            add(EzCollComp.MassAction(Icons.sendEmail, "Saada kutse", ::sendInvite))
-            add(EzCollComp.MassAction(Icons.removeParticipant, "Eemalda kursuselt", ::removeFromCourse))
+            add(EzCollComp.MassAction(Icons.sendEmail, Str.sendInvite, ::sendInvite))
+            add(EzCollComp.MassAction(Icons.removeParticipant, Str.removeFromCourse, ::removeFromCourse))
         }
 
         coll = EzCollComp(
@@ -129,11 +135,11 @@ class ParticipantsStudentsListComp(
                 addNotNull(EzCollComp.createGroupFilter(groups))
                 add(
                     EzCollComp.FilterGroup(
-                        "Olek", listOf(
-                            EzCollComp.Filter("Aktiivne", confType = EzCollConf.ParticipantsFilter.STATE_ACTIVE) {
+                        Str.state, listOf(
+                            EzCollComp.Filter(Str.actives, confType = EzCollConf.ParticipantsFilter.STATE_ACTIVE) {
                                 it.props.isActive
                             },
-                            EzCollComp.Filter("Ootel", confType = EzCollConf.ParticipantsFilter.STATE_PENDING) {
+                            EzCollComp.Filter(Str.pending, confType = EzCollConf.ParticipantsFilter.STATE_PENDING) {
                                 !it.props.isActive
                             },
                         )
@@ -144,7 +150,7 @@ class ParticipantsStudentsListComp(
                 if (hasGroups)
                     add(
                         EzCollComp.Sorter(
-                            "Rühm / nimi",
+                            Str.sortByGroupAndName,
                             compareBy<EzCollComp.Item<StudentProps>, String?>(HumanStringComparator) {
                                 it.props.groups.getOrNull(0)?.name
                             }
@@ -159,7 +165,7 @@ class ParticipantsStudentsListComp(
                     )
                 add(
                     EzCollComp.Sorter(
-                        "Nimi",
+                        Str.sortByName,
                         compareBy<EzCollComp.Item<StudentProps>> {
                             it.props.lastName?.lowercase() ?: it.props.email.lowercase()
                         }
@@ -193,9 +199,9 @@ class ParticipantsStudentsListComp(
         val text = if (items.size == 1) {
             val item = items[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            StringComp.boldTriple("Lisa õpilane ", id, " rühma:")
+            StringComp.boldTriple("${Str.doAdd} ", id, " ${Str.toGroup}:")
         } else {
-            StringComp.boldTriple("Lisa ", items.size.toString(), " õpilast rühma:")
+            StringComp.boldTriple("${Str.doAdd} ", items.size.toString(), " ${Str.studentsPlural} ${Str.toGroup}:")
         }
 
         addToGroupModal.setText(text)
@@ -221,9 +227,9 @@ class ParticipantsStudentsListComp(
         val text = if (items.size == 1) {
             val item = items[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            StringComp.boldTriple("Eemalda õpilane ", id, " rühmast:")
+            StringComp.boldTriple("${Str.doRemove} ", id, " ${Str.fromGroup}:")
         } else {
-            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpilast rühmast:")
+            StringComp.boldTriple("${Str.doRemove} ", items.size.toString(), " ${Str.studentsPlural} ${Str.fromGroup}:")
         }
 
         removeFromGroupModal.setText(text)
@@ -264,7 +270,7 @@ class ParticipantsStudentsListComp(
 
         if (validItems.isEmpty()) {
             ToastThing(
-                "Kutseid ei saa eemaldada. Tee muudatused Moodle'i kursusel ja seejärel sünkroniseeri õpilased.",
+                Str.moodleRemoveInviteError,
                 icon = ToastThing.ERROR_INFO, displayTime = ToastThing.LONG
             )
             return EzCollComp.ResultUnmodified
@@ -273,9 +279,9 @@ class ParticipantsStudentsListComp(
         val text = if (validItems.size == 1) {
             val item = validItems[0]
             val id = if (item.props.isActive) item.title else item.props.email
-            StringComp.boldTriple("Eemalda õpilane ", id, "?")
+            StringComp.boldTriple("${Str.doRemove} ", id, "?")
         } else {
-            StringComp.boldTriple("Eemalda ", validItems.size.toString(), " õpilast?")
+            StringComp.boldTriple("${Str.doRemove} ", validItems.size.toString(), " ${Str.studentsPlural}?")
         }
 
         removeFromCourseModal.setText(text)
@@ -302,7 +308,7 @@ class ParticipantsStudentsListComp(
                 }
             ).await()
 
-            successMessage { "Eemaldatud" }
+            successMessage { Str.removed }
 
             true
         }
@@ -327,7 +333,7 @@ class ParticipantsStudentsListComp(
             ParticipantsDAO.sendStudentCourseInvites(courseId, studentEmails).await()
             studentEmails.size
         }
-        ToastThing("Kutse saadetud $sentCount õpilasele")
+        ToastThing(Str.inviteSentToStudents(sentCount))
         return EzCollComp.ResultUnmodified
     }
 }

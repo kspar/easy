@@ -5,6 +5,7 @@ import components.modal.ModalComp
 import dao.ParticipantsDAO
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
+import translation.Str
 
 class AddStudentsModalComp(
     private val courseId: String,
@@ -22,7 +23,7 @@ class AddStudentsModalComp(
 
     override fun create() = doInPromise {
         modalComp = ModalComp(
-            "Lisa õpilasi",
+            Str.addStudents,
             defaultReturnValue = false,
             fixFooter = true,
             isWide = true,
@@ -44,10 +45,10 @@ class AddStudentsModalComp(
         PageTabsComp(
             type = PageTabsComp.Type.SUBPAGE,
             tabs = listOf(
-                PageTabsComp.Tab("Lingiga") {
+                PageTabsComp.Tab(Str.byLink) {
                     AddStudentsByLinkTabComp(courseId, it).also { linkTab = it }
                 },
-                PageTabsComp.Tab("Emailiga") {
+                PageTabsComp.Tab(Str.byEmail) {
                     AddStudentsByEmailTabComp(courseId, availableGroups, { modalComp.closeAndReturnWith(true) }, it)
                 },
             ),

@@ -105,6 +105,7 @@ class AddToGroupModalComp(
                     successChecker = { http200 }).await()
 
             }
+
             For.TEACHER -> {
                 val teacherIds = participants.map { it.teacherId }
                 debug { "Adding teachers $teacherIds to group $groupId" }
@@ -119,7 +120,7 @@ class AddToGroupModalComp(
             }
         }
 
-        successMessage { "Lisatud" }
+        successMessage { Str.added }
         return AddedGroup(groupId, groupName)
     }
 }

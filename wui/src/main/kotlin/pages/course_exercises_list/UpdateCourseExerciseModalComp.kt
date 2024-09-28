@@ -48,7 +48,7 @@ class UpdateCourseExerciseModalComp(
     private lateinit var threshold: IntFieldComp
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Ülesande sätted", Str.doSave, Str.cancel, Str.saving, fixFooter = true,
+        Str.exerciseSettings, Str.doSave, Str.cancel, Str.saving, fixFooter = true,
         primaryAction = ::updateCourseExercise,
         primaryButtonEnabledInitial = false, defaultReturnValue = false, htmlClasses = "update-course-ex-title-modal",
         parent = this
@@ -60,12 +60,12 @@ class UpdateCourseExerciseModalComp(
     override fun create() = doInPromise {
 
         title = AttrsComp(
-            mapOf("Pealkiri ülesandekogus" to exercise.title),
+            mapOf(Str.titleInLib to exercise.title),
             parent = modalComp
         )
 
         aliasComp = StringFieldComp(
-            "Pealkiri kursusel", false,
+            Str.titleOnCourse, false,
             initialValue = exercise.alias ?: exercise.title,
             constraints = listOf(StringConstraints.Length(max = 100)),
             onValidChange = { validate() },
@@ -76,19 +76,19 @@ class UpdateCourseExerciseModalComp(
         visibleRadio = RadioButtonsComp(
             listOf(
                 RadioButtonsComp.Button(
-                    "Nähtav",
+                    Str.visible,
                     type = if (exercise.isVisible) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
                     value = optionIdVisible
                 ),
                 RadioButtonsComp.Button(
-                    "Peidetud",
+                    Str.hidden,
                     type = if (exercise.visibleFrom == null) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
                     value = optionIdHidden
                 ),
                 RadioButtonsComp.Button(
-                    "Muutub nähtavaks",
+                    Str.visibleFrom,
                     type = if (!exercise.isVisible && exercise.visibleFrom != null) RadioButtonsComp.Type.PRESELECTED
                     else RadioButtonsComp.Type.SELECTABLE,
                     value = optionIdOpensLater
@@ -106,33 +106,33 @@ class UpdateCourseExerciseModalComp(
             notInPast = true,
             initialValue = if (!exercise.isVisible) exercise.visibleFrom else null,
             onValidChange = { validate() },
-            fieldNameForMessage = "See väli",
-            helpText = "Sel ajal muutub ülesanne automaatselt õpilastele nähtavaks",
+            fieldNameForMessage = Str.fieldNameThisField,
+            helpText = Str.visibleFromHelp,
             parent = modalComp
         )
 
         softDeadline = DateTimeFieldComp(
-            "Tähtaeg", false,
+            Str.deadline, false,
             initialValue = exercise.softDeadline,
-            helpText = "Õpilastele näidatav tähtaeg, aga esitamist lubatakse ka pärast tähtaega",
+            helpText = Str.deadlineHelp,
             htmlClasses = "update-course-exercise-deadline",
             onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
         hardDeadline = DateTimeFieldComp(
-            "Sulgemise aeg", false,
+            Str.closingTime, false,
             initialValue = exercise.hardDeadline,
-            helpText = "Pärast seda aega esitamist enam ei lubata",
+            helpText = Str.closingTimeHelp,
             htmlClasses = "update-course-exercise-closing",
             onENTER = { modalComp.primaryButton.click() },
             parent = this
         )
 
         threshold = IntFieldComp(
-            "Lävend", true, minValue = 0, maxValue = 100,
+            Str.threshold, true, minValue = 0, maxValue = 100,
             initialValue = exercise.threshold,
-            helpText = "Minimaalne punktisumma, mille korral loetakse ülesanne sooritatuks, 0–100",
+            helpText = Str.thresholdHelp,
             htmlClasses = "update-course-exercise-threshold",
             onValidChange = { validate() },
             onENTER = { modalComp.primaryButton.click() },
@@ -212,7 +212,7 @@ class UpdateCourseExerciseModalComp(
         )
 
         CourseExercisesTeacherDAO.updateCourseExercise(courseId, exercise.id, update).await()
-        successMessage { "Muudetud" }
+        successMessage { Str.changed }
         return true
     }
 

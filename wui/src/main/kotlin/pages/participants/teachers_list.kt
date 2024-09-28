@@ -2,8 +2,8 @@ package pages.participants
 
 import EzDate
 import Icons
-import components.form.ButtonComp
 import components.ezcoll.EzCollComp
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -51,7 +51,7 @@ class ParticipantsTeachersListComp(
             compareBy<TeacherProps> { it.lastName.lowercase() }.thenBy { it.firstName.lowercase() }
         ).map { p ->
             val actions = listOf(
-                EzCollComp.Action(Icons.removeParticipant, "Eemalda kursuselt", onActivate = ::removeFromCourse),
+                EzCollComp.Action(Icons.removeParticipant, Str.removeFromCourse, onActivate = ::removeFromCourse),
             )
 
             EzCollComp.Item(
@@ -59,8 +59,8 @@ class ParticipantsTeachersListComp(
                 EzCollComp.ItemTypeIcon(Icons.teacher),
                 "${p.firstName} ${p.lastName}",
                 bottomAttrs = listOfNotNull(
-                    EzCollComp.SimpleAttr("Email", p.email, Icons.emailUnf),
-                    EzCollComp.SimpleAttr("Kasutajanimi", p.username, Icons.userUnf),
+                    EzCollComp.SimpleAttr(Str.email, p.email, Icons.emailUnf),
+                    EzCollComp.SimpleAttr(Str.username, p.username, Icons.userUnf),
                 ),
                 actions = actions
             )
@@ -68,7 +68,7 @@ class ParticipantsTeachersListComp(
 
         teachersColl = EzCollComp(
             items,
-            EzCollComp.Strings("õpetaja", "õpetajat"),
+            EzCollComp.Strings(Str.teachersSingular, Str.teachersPlural),
             parent = this,
         )
 
@@ -86,9 +86,9 @@ class ParticipantsTeachersListComp(
         debug { "Removing teachers ${items.map { it.title }}?" }
 
         val text = if (items.size == 1)
-            StringComp.boldTriple("Eemalda õpetaja ", items[0].title, "?")
+            StringComp.boldTriple("${Str.doRemove} ", items[0].title, "?")
         else
-            StringComp.boldTriple("Eemalda ", items.size.toString(), " õpetajat?")
+            StringComp.boldTriple("${Str.doRemove} ", items.size.toString(), " ${Str.teachersPlural}?")
 
         removeFromCourseModal.setText(text)
         removeFromCourseModal.primaryAction = {
@@ -105,7 +105,7 @@ class ParticipantsTeachersListComp(
                 body, successChecker = { http200 }
             ).await()
 
-            successMessage { "Eemaldatud" }
+            successMessage { Str.removed }
 
             true
         }

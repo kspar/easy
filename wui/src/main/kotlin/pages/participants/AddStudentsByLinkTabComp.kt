@@ -53,7 +53,7 @@ class AddStudentsByLinkTabComp(
             usedCount = AddStudentsByLinkUsedCountComp(courseId, link.used_count, this)
 
             validity = DateTimeFieldComp(
-                "Aktiivne kuni", true, showRequiredMsg = false,
+                Str.validUntil, true, showRequiredMsg = false,
                 initialValue = link.expires_at,
                 onValueChange = { updateSaveBtn() },
                 parent = this
@@ -90,7 +90,7 @@ class AddStudentsByLinkTabComp(
                 {{#isEnabled}}
                     <ez-block-container style='margin-top: 3rem; gap: 0 4rem;'>
                         <ez-block style='flex-grow: 0;'>$validity</ez-block>
-                        <ez-block>Kasutatud $usedCount / 
+                        <ez-block>{{usedLabel}} $usedCount / 
                             <ez-inline-flex style='margin-left: .2rem;'>$maxUses</ez-inline-flex>    
                         </ez-block>
                     </ez-block-container>
@@ -105,6 +105,7 @@ class AddStudentsByLinkTabComp(
         "isEnabled" to (currentLink != null),
         "used" to currentLink?.used_count,
         "link" to currentLink?.invite_id?.let { AppProperties.WUI_ROOT_PRETTY + CourseJoinByLinkPage.link(it) },
+        "usedLabel" to Str.used,
     )
 
     override fun postChildrenBuilt() {
@@ -139,11 +140,11 @@ class AddStudentsByLinkTabComp(
             if (!isSomethingToSave) {
                 when {
                     validityFieldValue != null && validityFieldValue < EzDate.now() -> {
-                        warningMsg.setMsg("Link on aegunud")
+                        warningMsg.setMsg(Str.linkExpired)
                     }
 
                     maxUsesValue != null && link.used_count >= maxUsesValue -> {
-                        warningMsg.setMsg("Lingi kasutuskordade arv on täis")
+                        warningMsg.setMsg(Str.linkAllowedUsesFull)
                     }
 
                     else -> {

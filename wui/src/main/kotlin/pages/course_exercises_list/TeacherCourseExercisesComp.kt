@@ -105,7 +105,7 @@ class TeacherCourseExercisesComp(
                 // TODO: editable, open exercise settings
                 topAttr = if (it.deadline != null) {
                     EzCollComp.SimpleAttr(
-                        Str.deadlineLabel,
+                        Str.deadline,
                         it.deadline.toHumanString(EzDate.Format.FULL),
                         Icons.pending
                     )

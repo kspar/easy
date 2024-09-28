@@ -26,9 +26,9 @@ class ReorderCourseExerciseModalComp(
 
     private val modalComp: BinaryModalComp<Unit?> = BinaryModalComp(
         null,
-        "Liiguta",
+        Str.doMove,
         Str.cancel,
-        "Liigutan...",
+        Str.moving,
         defaultReturnValue = null,
         primaryButtonEnabledInitial = false,
         fixFooter = true,
@@ -86,6 +86,6 @@ class ReorderCourseExerciseModalComp(
         val movableId = movableExercise!!.id
         debug { "Move ex $movableId to idx $newIdx" }
         CourseExercisesTeacherDAO.reorderCourseExercise(courseId, movableId, newIdx).await()
-        successMessage { "Liigutatud" }
+        successMessage { Str.moved }
     }
 }

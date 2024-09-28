@@ -48,7 +48,7 @@ class StudentCourseExercisesListComp(
                                 it.status == CourseExercisesStudentDAO.SubmissionStatus.UNSTARTED)
                     ) {
                         EzCollComp.RenderedAttr(
-                            Str.deadlineLabel, it.deadline,
+                            Str.deadline, it.deadline,
                             renderShortValue = {
                                 """<ez-deadline-close>${it.toHumanString(EzDate.Format.FULL)}</ez-deadline-close>"""
                             },
@@ -57,7 +57,7 @@ class StudentCourseExercisesListComp(
                         )
                     } else {
                         EzCollComp.SimpleAttr(
-                            Str.deadlineLabel,
+                            Str.deadline,
                             it.deadline.toHumanString(EzDate.Format.FULL),
                             Icons.pending
                         )

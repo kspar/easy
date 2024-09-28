@@ -2,8 +2,8 @@ package pages.participants
 
 import HumanStringComparator
 import Icons
-import components.form.ButtonComp
 import components.ezcoll.EzCollComp
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import components.text.StringComp
 import dao.ParticipantsDAO
@@ -48,13 +48,13 @@ class ParticipantsGroupsListComp(
             EzCollComp.Item(
                 p, EzCollComp.ItemTypeIcon(Icons.groups), p.name,
                 topAttr = EzCollComp.SimpleAttr(
-                    "Rühmas on",
+                    Str.groupContains,
                     "${p.studentsCount} ${if (p.studentsCount == 1) Str.studentsSingular else Str.studentsPlural}",
                     Icons.userUnf
                 ),
                 actions = buildList {
                     if (isEditable) add(
-                        EzCollComp.Action(Icons.delete, "Kustuta",
+                        EzCollComp.Action(Icons.delete, Str.doDelete,
                             onActivate = ::deleteGroup,
                             onResultModified = { onGroupDeleted() })
                     )
@@ -63,9 +63,9 @@ class ParticipantsGroupsListComp(
         }
 
         groupsColl = EzCollComp(
-            items, EzCollComp.Strings("rühm", "rühma"),
+            items, EzCollComp.Strings(Str.groupsSingular, Str.groupsPlural),
             sorters = listOf(
-                EzCollComp.Sorter("Nimi", compareBy(HumanStringComparator) { it.props.name })
+                EzCollComp.Sorter(Str.name, compareBy(HumanStringComparator) { it.props.name })
             ),
             parent = this
         )
@@ -79,19 +79,17 @@ class ParticipantsGroupsListComp(
     override fun render() = plainDstStr(groupsColl.dstId, deleteGroupModal.dstId)
 
     private suspend fun deleteGroup(group: EzCollComp.Item<GroupProp>): EzCollComp.Result {
-        val notEmptyMsg = "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased."
-
         if (group.props.studentsCount > 0) {
-            errorMessage { notEmptyMsg }
+            errorMessage { Str.groupNotEmpty }
             return EzCollComp.ResultUnmodified
         }
 
-        deleteGroupModal.setText(StringComp.boldTriple("Kustuta ", group.props.name, "?"))
+        deleteGroupModal.setText(StringComp.boldTriple("${Str.doDelete} ", group.props.name, "?"))
         deleteGroupModal.primaryAction = {
             fetchEms("/courses/$courseId/groups/${group.props.id}", ReqMethod.DELETE, successChecker = { http200 },
                 errorHandler = {
                     it.handleByCode(RespError.GROUP_NOT_EMPTY) {
-                        errorMessage { notEmptyMsg }
+                        errorMessage { Str.groupNotEmpty }
                     }
                 }).await()
 
@@ -99,7 +97,7 @@ class ParticipantsGroupsListComp(
         }
 
         return if (deleteGroupModal.openWithClosePromise().await()) {
-            successMessage { "Rühm ${group.props.name} kustutatud" }
+            successMessage { Str.deleted }
             EzCollComp.ResultModified<GroupProp>(emptyList())
         } else {
             EzCollComp.ResultUnmodified

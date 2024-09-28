@@ -38,20 +38,19 @@ class AddStudentsByEmailTabComp(
     override fun create() = doInPromise {
         helpText = ParagraphsComp(
             listOf(
-                "Sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega.",
-                "Kui sisestatud emaili aadressiga õpilast ei leidu, siis lisatakse õpilane kursusele kasutaja " +
-                        "registreerimise hetkel või siis, kui õpilane muudab oma meiliaadressi vastavaks."
+                Str.studentAddHelpText1,
+                Str.studentAddHelpText2,
             ), this
         )
 
         groupSelect = if (availableGroups.isNotEmpty())
             SelectComp(
-                "Lisa rühma", availableGroups.map { SelectComp.Option(it.name, it.id) }, true,
+                Str.addToGroup, availableGroups.map { SelectComp.Option(it.name, it.id) }, true,
                 parent = this
             ) else null
 
         emailField = TextFieldComp(
-            "Õpilaste meiliaadressid",
+            Str.studentEmails,
             true,
             "oskar@ohakas.ee &#x0a;mari@maasikas.com",
             startActive = true, paintRequiredOnInput = false,
@@ -124,9 +123,9 @@ class AddStudentsByEmailTabComp(
         val active = resp.accesses_added
         val pending = resp.pending_accesses_added_updated
         val msg = (if (active > 0)
-            "Lisatud $active ${if (active == 1) "aktiivne õpilane" else "aktiivset õpilast"}. " else "") +
+            "${Str.added} $active ${if (active == 1) Str.activeStudentsSingular else Str.activeStudentsPlural}. " else "") +
                 if (pending > 0)
-                    "Lisatud/uuendatud $pending ootel ${if (pending == 1) "kutse" else "kutset"}."
+                    "${Str.addedOrUpdated} $pending ${if (pending == 1) Str.invitationsSingular else Str.invitationsPlural}."
                 else ""
 
         successMessage { msg }

@@ -27,14 +27,14 @@ class CreateGroupModalComp(
         val existingGroupNames = existingGroups.map { it.name }
         override fun validate(value: String, fieldNameForMessage: String): ConstraintViolation<String>? {
             return when {
-                existingGroupNames.contains(value) -> violation("Selle nimega rühm on juba kursusel olemas")
+                existingGroupNames.contains(value) -> violation(Str.groupAlreadyExists)
                 else -> null
             }
         }
     }
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Loo uus rühm", Str.doSave, Str.cancel, Str.saving,
+        Str.createGroup, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryAction = { createGroup(groupNameFieldComp.getValue()) }, primaryPostAction = ::reinitialise,
         onOpened = { groupNameFieldComp.focus() },
@@ -42,7 +42,7 @@ class CreateGroupModalComp(
     )
 
     private val groupNameFieldComp = StringFieldComp(
-        "Rühma nimi",
+        Str.groupName,
         true, paintRequiredOnInput = false,
         constraints = listOf(StringConstraints.Length(max = 50), nonDuplicateGroupConstraint),
         onValidChange = ::updateSubmitBtn,
@@ -82,7 +82,7 @@ class CreateGroupModalComp(
             "name" to groupName
         ), successChecker = { http200 }).await()
 
-        successMessage { "Rühm loodud" }
+        successMessage { Str.created }
 
         return true
     }

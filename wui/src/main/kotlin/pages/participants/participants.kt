@@ -55,7 +55,7 @@ class ParticipantsRootComp(
         val studentsSynced = moodleStatus.moodle_props?.students_synced ?: false
 
         addStudentsModal = AddStudentsModalComp(courseId, groups, this)
-        addTeachersModal = AddTeachersModalComp(courseId, groups, this)
+        addTeachersModal = AddTeachersModalComp(courseId, this)
         createGroupModal = CreateGroupModalComp(courseId, groups, this)
 
         // for load testing
@@ -65,7 +65,7 @@ class ParticipantsRootComp(
         tabsComp = PageTabsComp(
             tabs = buildList {
                 add(
-                    PageTabsComp.Tab("Õpilased", preselected = true, id = tabStudentsId) {
+                    PageTabsComp.Tab(Str.students, preselected = true, id = tabStudentsId) {
                         ParticipantsStudentsListComp(
                             courseId,
                             participants.students,
@@ -83,7 +83,7 @@ class ParticipantsRootComp(
                     }
                 )
                 add(
-                    PageTabsComp.Tab("Õpetajad", id = tabTeachersId) {
+                    PageTabsComp.Tab(Str.teachers, id = tabTeachersId) {
                         ParticipantsTeachersListComp(
                             courseId,
                             participants.teachers,
@@ -98,7 +98,7 @@ class ParticipantsRootComp(
                 )
 
                 if (groups.isNotEmpty()) add(
-                    PageTabsComp.Tab("Rühmad", id = tabGroupsId) {
+                    PageTabsComp.Tab(Str.groups, id = tabGroupsId) {
                         ParticipantsGroupsListComp(
                             courseId,
                             groups,
@@ -138,7 +138,7 @@ class ParticipantsRootComp(
         // Create sidenav actions
         val sideActions = buildList {
             if (!studentsSynced) add(
-                Sidenav.Action(Icons.addPerson, "Lisa õpilasi") {
+                Sidenav.Action(Icons.addPerson, Str.addStudents) {
                     if (addStudentsModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
@@ -147,7 +147,7 @@ class ParticipantsRootComp(
                 }
             )
             add(
-                Sidenav.Action(Icons.addPerson, "Lisa õpetajaid") {
+                Sidenav.Action(Icons.addPerson, Str.addTeachers) {
                     if (addTeachersModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
@@ -156,7 +156,7 @@ class ParticipantsRootComp(
                 }
             )
             if (!studentsSynced) add(
-                Sidenav.Action(Icons.createCourseGroup, "Loo uus rühm") {
+                Sidenav.Action(Icons.createCourseGroup, Str.createGroup) {
                     if (createGroupModal.openWithClosePromise().await()) {
                         val t = tabsComp.getSelectedTab()
                         createAndBuild().await()
@@ -166,14 +166,14 @@ class ParticipantsRootComp(
             )
 //            if (isAdmin && !isMoodleLinked) add(
 //                Sidenav.Action(Icons.moodle, "Seo UT Moodle kursusega") {
-                    // TODO
+            // TODO
 //                }
 //            )
         }
 
         if (sideActions.isNotEmpty()) {
             Sidenav.replacePageSection(
-                Sidenav.PageSection("Osalejad", sideActions)
+                Sidenav.PageSection(Str.participants, sideActions)
             )
         }
     }

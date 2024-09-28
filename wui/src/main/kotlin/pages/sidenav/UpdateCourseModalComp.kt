@@ -23,7 +23,7 @@ class UpdateCourseModalComp(
     private lateinit var alias: StringFieldComp
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Kursuse sätted", Str.doSave, Str.cancel, Str.saving,
+        Str.courseSettings, Str.doSave, Str.cancel, Str.saving,
         defaultReturnValue = false,
         primaryButtonEnabledInitial = false,
         primaryAction = { updateCourse() }, onOpened = { alias.focus() },
@@ -37,7 +37,7 @@ class UpdateCourseModalComp(
 
         title = if (isAdmin)
             StringFieldComp(
-                "Kursuse identifikaator", true, initialValue = courseTitle,
+                Str.courseIdentifier, true, initialValue = courseTitle,
                 constraints = listOf(StringConstraints.Length(max = 100)),
                 onValidChange = { modalComp.primaryButton.setEnabled(it) },
                 onENTER = { modalComp.primaryButton.click() },
@@ -45,12 +45,12 @@ class UpdateCourseModalComp(
             )
         else
             AttrsComp(
-                mapOf("Kursuse identifikaator" to courseTitle),
+                mapOf(Str.courseIdentifier to courseTitle),
                 parent = modalComp
             )
 
         alias = StringFieldComp(
-            "Kursuse nimi", false,
+            Str.courseName, false,
             initialValue = courseAlias.orEmpty(),
             constraints = listOf(StringConstraints.Length(max = 100)),
             onValidChange = { modalComp.primaryButton.setEnabled(it) },

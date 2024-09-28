@@ -40,15 +40,15 @@ class ParticipantsMoodleTabComp(
 
     override fun create() = doInPromise {
         syncStudentsBtn = ButtonComp(
-            ButtonComp.Type.FILLED, "Sünkroniseeri õpilased", Icons.doSync,
-            clickedLabel = "Sünkroniseerin...",
+            ButtonComp.Type.FILLED, Str.doSyncStudents, Icons.doSync,
+            clickedLabel = Str.syncing,
             enabled = moodleStatus.students_synced,
             onClick = ::syncStudents,
             parent = this
         )
         syncGradesBtn = ButtonComp(
-            ButtonComp.Type.FILLED, "Sünkroniseeri hinded", Icons.doSync,
-            clickedLabel = "Sünkroniseerin...",
+            ButtonComp.Type.FILLED, Str.doSyncGrades, Icons.doSync,
+            clickedLabel = Str.syncing,
             enabled = moodleStatus.grades_synced,
             onClick = ::syncGrades,
             parent = this
@@ -57,13 +57,11 @@ class ParticipantsMoodleTabComp(
 
     override fun render() = tmRender(
         "t-c-participants-moodle",
-        "moodleShortnameLabel" to "Moodle'i kursuse lühinimi",
-        "studentsSyncedLabel" to "Õpilased sünkroniseeritud",
-        "gradesSyncedLabel" to "Hinded sünkroniseeritud",
-        "studentsExplanation" to "Õpilasi sünkroniseeritakse automaatselt igal öösel. Soovi korral saad siin ka kohe " +
-                "kõik õpilased Moodle'ist uuesti laadida, näiteks kui oled lisanud õpilasi Moodle'i kursusele juurde.",
-        "gradesExplanation" to "Pärast igat õpilase esitust või ümberhindamist salvestatakse hinne automaatselt " +
-                "Moodle'isse. Vajadusel saad siin ka kõik hinded uuesti sünkroniseerida, kuid üldiselt pole see vajalik.",
+        "moodleShortnameLabel" to Str.moodleCourseShortname,
+        "studentsSyncedLabel" to Str.studentsSynced,
+        "gradesSyncedLabel" to Str.gradesSynced,
+        "studentsExplanation" to Str.studentsSyncHelpText,
+        "gradesExplanation" to Str.gradesSyncHelpText,
         "moodleShortname" to moodleStatus.moodle_short_name,
         "studentsSynced" to Str.translateBoolean(moodleStatus.students_synced),
         "gradesSynced" to Str.translateBoolean(moodleStatus.grades_synced),
@@ -101,7 +99,7 @@ class ParticipantsMoodleTabComp(
         awaitSyncEnd(moodleStudentsSyncStatus, SyncType.STUDENTS)
 
         debug { "Sync completed" }
-        successMessage { "Õpilased edukalt sünkroniseeritud" }
+        successMessage { Str.studentsSynced }
 
         onStudentsSynced()
     }
@@ -115,7 +113,7 @@ class ParticipantsMoodleTabComp(
         awaitSyncEnd(moodleGradesSyncStatus, SyncType.GRADES)
 
         debug { "Sync completed" }
-        successMessage { "Hinded edukalt sünkroniseeritud" }
+        successMessage { Str.gradesSynced }
     }
 
 

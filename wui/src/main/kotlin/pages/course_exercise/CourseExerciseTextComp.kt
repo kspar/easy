@@ -24,7 +24,7 @@ class CourseExerciseTextComp(
         "title" to title,
         "text" to textHtml,
         "deadline" to deadline?.toHumanString(EzDate.Format.FULL),
-        "deadlineLabel" to Str.softDeadlineLabel,
+        "deadlineLabel" to Str.deadline,
     )
 
     override fun postRender() {

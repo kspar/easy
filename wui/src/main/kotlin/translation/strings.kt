@@ -16,6 +16,7 @@ sealed class TranslatableStrings {
     abstract val yes: String
     abstract val no: String
     abstract val email: String
+    abstract val username: String
     abstract val moodleId: String
     abstract val myCourses: String
     abstract val exerciseLibrary: String
@@ -36,6 +37,7 @@ sealed class TranslatableStrings {
     abstract val exercisePlural: String
     abstract val doEditTitle: String
     abstract val doMove: String
+    abstract val moved: String
     abstract val moveUp: String
     abstract val moveDown: String
     abstract val moving: String
@@ -75,6 +77,14 @@ sealed class TranslatableStrings {
     abstract val disabled: String
     abstract val state: String
     abstract val points: String
+    abstract val fieldNameThisField: String
+    abstract val changed: String
+    abstract val validUntil: String
+    abstract val linkExpired: String
+    abstract val linkAllowedUsesFull: String
+    abstract val used: String
+    abstract val created: String
+    abstract val exercise: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -174,8 +184,16 @@ sealed class TranslatableStrings {
 
     // Course exercises page
     abstract val completedBadgeLabel: String
-    abstract val deadlineLabel: String
+    abstract val deadline: String
+    abstract val deadlineHelp: String
+    abstract val closingTime: String
+    abstract val closingTimeHelp: String
+    abstract val visible: String
     abstract val hidden: String
+    abstract val visibleFrom: String
+    abstract val visibleFromHelp: String
+    abstract val threshold: String
+    abstract val thresholdHelp: String
     abstract val doHide: String
     abstract val doReveal: String
     abstract val revealed: String
@@ -193,6 +211,8 @@ sealed class TranslatableStrings {
     abstract val visibleExercises: String
     abstract val deadlineInFuture: String
     abstract val deadlineInPast: String
+    abstract val courseIdentifier: String
+    abstract val courseName: String
 
 
     // Course exercise page
@@ -221,11 +241,10 @@ sealed class TranslatableStrings {
     abstract val runAutoTests: String
     abstract val showTestDetails: String
     abstract val hideTestDetails: String
+    abstract val titleInLib: String
+    abstract val titleOnCourse: String
 
     abstract val tabExerciseLabel: String
-    abstract val softDeadlineLabel: String
-    abstract val hardDeadlineLabel: String
-    abstract val studentVisibleFromTimeLabel: String
     abstract val graderTypeAuto: String
     abstract val graderTypeTeacher: String
     abstract val autoAssessmentLabel: String
@@ -327,8 +346,58 @@ sealed class TranslatableStrings {
 
 
     // Participants page
+    abstract val students: String
+    abstract val teachers: String
+    abstract val groups: String
+    abstract val addStudents: String
+    abstract val addTeachers: String
+    abstract val createGroup: String
+    abstract val groupName: String
+    abstract val groupAlreadyExists: String
+    abstract val byLink: String
+    abstract val byEmail: String
+    abstract val teacherAddHelpText: String
+    abstract val teachersEmails: String
+    abstract val teacherEmailNotFound: String
+    abstract val teachersSingular: String
+    abstract val teachersPlural: String
+    abstract val studentAddHelpText1: String
+    abstract val studentAddHelpText2: String
+    abstract val studentEmails: String
+    abstract val addToGroup: String
+    abstract val activeStudentsSingular: String
+    abstract val activeStudentsPlural: String
+    abstract val invitationsSingular: String
+    abstract val invitationsPlural: String
+    abstract val addedOrUpdated: String
+    abstract val groupsSingular: String
+    abstract val groupsPlural: String
+    abstract val groupNotEmpty: String
+    abstract val groupContains: String
+    abstract val pendingStudentName: String
+    abstract val sendInvite: String
+    abstract val removeFromGroup: String
+    abstract val removeFromCourse: String
+    abstract val showEnrolmentLink: String
+    abstract val actives: String
+    abstract val pending: String
+    abstract val sortByGroupAndName: String
+    abstract val toGroup: String
+    abstract val fromGroup: String
+    abstract val moodleRemoveInviteError: String
+    abstract fun inviteSentToStudents(count: Int): String
+    abstract val nothingToRemove: String
     abstract val courseJoinHelpText: String
     abstract val courseJoinLink: String
+    abstract val moodleCourseShortname: String
+    abstract val doSyncStudents: String
+    abstract val doSyncGrades: String
+    abstract val syncing: String
+    abstract val studentsSynced: String
+    abstract val gradesSynced: String
+    abstract val studentsSyncHelpText: String
+    abstract val gradesSyncHelpText: String
+
 
     // Grade table page
     abstract val grades: String
@@ -396,7 +465,7 @@ sealed class TranslatableStrings {
 
 
     // Similarity page
-    abstract val exercise: String
+    abstract val similaritiesHelpText: String
     abstract val findSimilarities: String
     abstract val searching: String
     abstract val topSimilarPairs: String
@@ -441,6 +510,7 @@ object EstStrings : TranslatableStrings() {
     override val yes = "jah"
     override val no = "ei"
     override val email = "Email"
+    override val username = "Kasutajanimi"
     override val moodleId = "Moodle'i kasutajanimi"
     override val myCourses = "Minu kursused"
     override val exerciseLibrary = "Ülesandekogu"
@@ -459,6 +529,8 @@ object EstStrings : TranslatableStrings() {
     override val runAutoTests = "Käivita automaattestid"
     override val showTestDetails = "Näita teste"
     override val hideTestDetails = "Peida testid"
+    override val titleInLib = "Pealkiri ülesandekogus"
+    override val titleOnCourse = "Pealkiri kursusel"
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
     override val roleStudent = "Õpilane"
@@ -471,6 +543,7 @@ object EstStrings : TranslatableStrings() {
     override val cancel = "Tühista"
     override val doEditTitle = "Muuda pealkirja"
     override val doMove = "Liiguta"
+    override val moved = "Liigutatud"
     override val moveUp = "Liiguta üles"
     override val moveDown = "Liiguta alla"
     override val moving = "Liigutan..."
@@ -504,9 +577,10 @@ object EstStrings : TranslatableStrings() {
     override val submission = "esitus"
     override val doSubmitAndCheck = "Esita ja kontrolli"
     override val doSubmit = "Esita"
-    override val softDeadlineLabel = "Tähtaeg"
-    override val hardDeadlineLabel = "Sulgemise aeg"
-    override val studentVisibleFromTimeLabel = "Muutub nähtavaks"
+    override val visibleFrom = "Muutub nähtavaks"
+    override val visibleFromHelp = "Sel ajal muutub ülesanne automaatselt õpilastele nähtavaks"
+    override val threshold = "Lävend"
+    override val thresholdHelp = "Minimaalne punktisumma, mille korral loetakse ülesanne sooritatuks, 0–100"
     override val submissionTimeLabel = "Esitamise aeg"
 
     override val studentsSingular = "õpilane"
@@ -555,7 +629,11 @@ object EstStrings : TranslatableStrings() {
     override val welcomeToTheCourse = "Tere tulemast kursusele!"
 
     override val coursesTitle = "Minu kursused"
-    override val deadlineLabel = "Tähtaeg"
+    override val deadline = "Tähtaeg"
+    override val deadlineHelp = "Õpilastele näidatav tähtaeg, aga esitamist lubatakse ka pärast tähtaega"
+    override val closingTime = "Sulgemise aeg"
+    override val closingTimeHelp = "Pärast seda aega esitamist enam ei lubata"
+    override val visible = "Nähtav"
     override val hidden = "Peidetud"
     override val doHide = "Peida"
     override val doReveal = "Avalikusta"
@@ -576,11 +654,20 @@ object EstStrings : TranslatableStrings() {
     override val visibleExercises = "Nähtavad ülesanded"
     override val deadlineInFuture = "Tähtaeg tulevikus"
     override val deadlineInPast = "Tähtaeg möödas"
+    override val courseIdentifier = "Kursuse identifikaator"
+    override val courseName = "Kursuse nimi"
     override val tabExerciseLabel = "Ülesanne"
     override val tabSubmissions = "Esitused"
     override val autoAssessmentLabel = "Automaatsed testid"
     override val teacherAssessmentLabel = "Õpetaja kommentaar"
     override val points = "Punktid"
+    override val fieldNameThisField = "See väli"
+    override val changed = "Muudetud"
+    override val validUntil = "Kehtib kuni"
+    override val linkExpired = "Link on aegunud"
+    override val linkAllowedUsesFull = "Lingi kasutuskordade arv on täis"
+    override val used = "Kasutatud"
+    override val created = "Loodud"
     override val validGradeLabel = "Kehtiv hinne"
     override val gradeTransferredHelp = "Hinne on antud eelnevale esitusele"
     override val doAutoAssess = "Kontrolli"
@@ -690,9 +777,65 @@ ole hea ja proovi hiljem uuesti.
     override val solutionFilename = "Faili nimi"
     override val exerciseTextEditorPlaceholder = "Kirjuta ülesande tekst siia..."
     override val embedding = "Vistuta"
+    override val students = "Õpilased"
+    override val teachers = "Õpetajad"
+    override val groups = "Rühmad"
+    override val addStudents = "Lisa õpilasi"
+    override val addTeachers = "Lisa õpetajaid"
+    override val createGroup = "Loo rühm"
+    override val groupName = "Rühma nimi"
+    override val groupAlreadyExists = "Selle nimega rühm on juba kursusel olemas"
+    override val byLink = "Lingiga"
+    override val byEmail = "Emailiga"
+    override val teacherAddHelpText =
+        "Õpetajate lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega."
+    override val teachersEmails = "Õpetajate meiliaadressid"
+    override val teacherEmailNotFound = "Ei leidnud õpetajat emailiga "
+    override val teachersSingular = "õpetaja"
+    override val teachersPlural = "õpetajat"
+    override val studentAddHelpText1 = "Sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega."
+    override val studentAddHelpText2 =
+        "Kui sisestatud emaili aadressiga kasutajat ei leidu, siis lisatakse õpilane kursusele kasutaja " +
+                "registreerimise hetkel või siis, kui õpilane muudab oma meiliaadressi vastavaks."
+    override val studentEmails = "Õpilaste meiliaadressid"
+    override val addToGroup = "Lisa rühma"
+    override val activeStudentsSingular = "aktiivne õpilane"
+    override val activeStudentsPlural = "aktiivset õpilast"
+    override val invitationsSingular = "ootel kutse"
+    override val invitationsPlural = "ootel kutset"
+    override val addedOrUpdated = "Lisatud/uuendatud"
+    override val groupsSingular = "rühm"
+    override val groupsPlural = "rühma"
+    override val groupNotEmpty = "See rühm pole tühi. Enne kustutamist eemalda rühmast kõik õpilased."
+    override val groupContains = "Rühmas on"
+    override val pendingStudentName = "(Ootel kutse)"
+    override val sendInvite = "Saada kutse"
+    override val removeFromGroup = "Eemalda rühmast"
+    override val removeFromCourse = "Eemalda kursuselt"
+    override val showEnrolmentLink = "Näita liitumislinki"
+    override val actives = "Aktiivsed"
+    override val pending = "Ootel"
+    override val sortByGroupAndName = "Rühm / nimi"
+    override val toGroup = "rühma"
+    override val fromGroup = "rühmast"
+    override val moodleRemoveInviteError =
+        "Kutseid ei saa eemaldada. Tee muudatused Moodle'i kursusel ja seejärel sünkroniseeri õpilased."
+
+    override fun inviteSentToStudents(count: Int) = "Kutse saadetud $count õpilasele"
+    override val nothingToRemove = "Pole midagi eemaldada"
     override val courseJoinHelpText =
         "See on isiklik link, mis võimaldab õpilasel kursusega liituda. Lingi kaudu liitumine seob õpilase konto tema Moodle'i kontoga. Hoia linki salajas ja jaga seda ainult õige õpilasega."
     override val courseJoinLink = "Liitumislink"
+    override val moodleCourseShortname = "Moodle'i kursuse lühinimi"
+    override val doSyncStudents = "Sünkroniseeri õpilased"
+    override val doSyncGrades = "Sünkroniseeri hinded"
+    override val syncing = "Sünkroniseerin..."
+    override val studentsSynced = "Õpilased sünkroniseeritud"
+    override val gradesSynced = "Hinded sünkroniseeritud"
+    override val studentsSyncHelpText =
+        "Õpilasi sünkroniseeritakse automaatselt igal öösel. Soovi korral saad siin ka kohe kõik õpilased Moodle'ist uuesti laadida, näiteks kui oled lisanud õpilasi Moodle'i kursusele juurde."
+    override val gradesSyncHelpText =
+        "Pärast igat õpilase esitust või ümberhindamist salvestatakse hinne automaatselt Moodle'isse. Vajadusel saad siin ka kõik hinded uuesti sünkroniseerida, kuid üldiselt pole see vajalik."
     override val grades = "Hinded"
     override val loadingGrades = "Laen hindeid..."
     override val showSubmissionNumber = "Näita esituste arvu"
@@ -786,6 +929,8 @@ ole hea ja proovi hiljem uuesti.
     override val tslReturnCheckValueHelp = "Oodatav funktsiooni tagastusväärtus Pythoni süntaksis"
     override val tslReturnCheckPass = "Funktsioon tagastas õige väärtuse {expected}"
     override val tslReturnCheckFail = "Ootasin, et funktsioon tagastaks {expected}, aga tagastas {actual}"
+    override val similaritiesHelpText =
+        "Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel, mis võib teha ebaausalt esitatud lahenduste tuvastamise lihtsamaks."
     override val exercise = "Ülesanne"
     override val findSimilarities = "Leia sarnasused"
     override val searching = "Otsin..."
@@ -833,6 +978,7 @@ object EngStrings : TranslatableStrings() {
     override val yes = "Yes"
     override val no = "No"
     override val email = "Email"
+    override val username = "Username"
     override val moodleId = "Moodle username"
     override val myCourses = "My courses"
     override val exerciseLibrary = "Exercise library"
@@ -853,6 +999,7 @@ object EngStrings : TranslatableStrings() {
     override val exercisePlural = "exercises"
     override val doEditTitle = "Edit title"
     override val doMove = "Move"
+    override val moved = "Moved"
     override val moveUp = "Move up"
     override val moveDown = "Move down"
     override val moving = "Moving..."
@@ -937,7 +1084,11 @@ object EngStrings : TranslatableStrings() {
     override val coursesPlural = "courses"
     override val completedBadgeLabel = "\uD83D\uDCAF"
 
-    override val deadlineLabel = "Deadline"
+    override val deadline = "Deadline"
+    override val deadlineHelp = "Visible deadline, but submitting is also allowed after this time"
+    override val closingTime = "Closing time"
+    override val closingTimeHelp = "Submitting after this time is not allowed"
+    override val visible = "Visible"
     override val hidden = "Hidden"
     override val doHide = "Hide"
     override val doReveal = "Reveal"
@@ -957,6 +1108,8 @@ object EngStrings : TranslatableStrings() {
     override val visibleExercises = "Visible exercises"
     override val deadlineInFuture = "Deadline in future"
     override val deadlineInPast = "Deadline in past"
+    override val courseIdentifier = "Course identifier"
+    override val courseName = "Course name"
     override val commentEditorPlaceholder = "Write your comment here..."
     override val gradeFieldLabel = "Grade"
     override val missingSolution = "No solution submitted"
@@ -966,6 +1119,8 @@ object EngStrings : TranslatableStrings() {
     override val runAutoTests = "Run tests"
     override val showTestDetails = "Show tests"
     override val hideTestDetails = "Hide tests"
+    override val titleInLib = "Title in exercise library"
+    override val titleOnCourse = "Title on this course"
 
     override val tabExerciseLabel = "Exercise"
     override val tabTesting = "Test"
@@ -980,14 +1135,22 @@ object EngStrings : TranslatableStrings() {
     override val submissionSingular = "submission"
     override val submissionPlural = "submissions"
     override val submission = "submission"
-    override val softDeadlineLabel = "Deadline"
-    override val hardDeadlineLabel = "Submissions allowed until"
-    override val studentVisibleFromTimeLabel = "Visible from"
+    override val visibleFrom = "Visible from"
+    override val visibleFromHelp = "The exercise will become automatically visible at this time"
+    override val threshold = "Threshold"
+    override val thresholdHelp = "Minimum points to show the exercise as completed, 0–100"
     override val graderTypeAuto = "automatic"
     override val graderTypeTeacher = "manual"
     override val autoAssessmentLabel = "Automated tests"
     override val teacherAssessmentLabel = "Teacher feedback"
     override val points = "Points"
+    override val fieldNameThisField = "This field"
+    override val changed = "Changed"
+    override val validUntil = "Valid until"
+    override val linkExpired = "Link has expired"
+    override val linkAllowedUsesFull = "Link's allowed uses are depleted"
+    override val used = "Used"
+    override val created = "Created"
     override val validGradeLabel = "Valid grade"
     override val gradeTransferredHelp = "Grade given to a previous submission"
     override val doAutoAssess = "Check"
@@ -1104,9 +1267,65 @@ of the issue, please try again later.
     override val solutionFilename = "File name"
     override val exerciseTextEditorPlaceholder = "Write your exercise text here..."
     override val embedding = "Embed"
+    override val students = "Students"
+    override val teachers = "Teachers"
+    override val groups = "Groups"
+    override val addStudents = "Add students"
+    override val addTeachers = "Add teachers"
+    override val createGroup = "Create group"
+    override val groupName = "Group name"
+    override val groupAlreadyExists = "This group already exists on the course"
+    override val byLink = "Link"
+    override val byEmail = "Email"
+    override val teacherAddHelpText =
+        "To add teachers, write their email addresses on separate lines or separated by spaces."
+    override val teachersEmails = "Teacher emails"
+    override val teacherEmailNotFound = "Could not find any teacher with email "
+    override val teachersSingular = "teacher"
+    override val teachersPlural = "teachers"
+    override val studentAddHelpText1 = "Enter student email addresses on separate lines or separated by spaces."
+    override val studentAddHelpText2 =
+        "If there is no account with the given email address yet, then they will be added to the course when the account is created " +
+                "or when the account's email address is changed to the given address."
+    override val studentEmails = "Student emails"
+    override val addToGroup = "Add to group"
+    override val activeStudentsSingular = "active student"
+    override val activeStudentsPlural = "active students"
+    override val invitationsSingular = "pending invite"
+    override val invitationsPlural = "pending invites"
+    override val addedOrUpdated = "Added/updated"
+    override val groupsSingular = "group"
+    override val groupsPlural = "groups"
+    override val groupNotEmpty = "This group is not empty. Remove all students from this group before deleting it."
+    override val groupContains = "Group contains"
+    override val pendingStudentName = "(Pending invitation)"
+    override val sendInvite = "Send invitation"
+    override val removeFromGroup = "Remove from group"
+    override val removeFromCourse = "Remove from course"
+    override val showEnrolmentLink = "Show enrolment link"
+    override val actives = "Active"
+    override val pending = "Pending"
+    override val sortByGroupAndName = "Group / Name"
+    override val toGroup = "to group"
+    override val fromGroup = "from group"
+    override val moodleRemoveInviteError =
+        "Invitations cannot be removed. Make your changes in Moodle and then sync students."
+
+    override fun inviteSentToStudents(count: Int) = "Sent invitations to $count students"
+    override val nothingToRemove = "Nothing to remove"
     override val courseJoinHelpText =
         "This personal link can be used by the student to join this course. Using the link associates the student's account with their Moodle account. Keep the link private and share it only with this student."
     override val courseJoinLink = "Enrolment link"
+    override val moodleCourseShortname = "Moodle short name"
+    override val doSyncStudents = "Sync students"
+    override val doSyncGrades = "Sync grades"
+    override val syncing = "Syncing..."
+    override val studentsSynced = "Students synced"
+    override val gradesSynced = "Grades synced"
+    override val studentsSyncHelpText =
+        "Students are synced automatically each night. You can also start the sync process here manually, for example if you've made changes to students in Moodle."
+    override val gradesSyncHelpText =
+        "After each submission or grading, the grade is automatically synced to Moodle. You can also sync all grades here manually, but usually this shouldn't be needed."
     override val grades = "Grades"
     override val loadingGrades = "Loading grades..."
     override val showSubmissionNumber = "Show submission count"
@@ -1183,6 +1402,8 @@ of the issue, please try again later.
     override val tslReturnCheckValueHelp = "Expected function return value in Python syntax"
     override val tslReturnCheckPass = "Function returned the correct value {expected}"
     override val tslReturnCheckFail = "Expected the function to return {expected}, but instead it returned {actual}"
+    override val similaritiesHelpText =
+        "Similarity analysis aims to find similarities between students' solutions, which could make it easier to find cases of plagiarism."
     override val exercise = "Exercise"
     override val findSimilarities = "Find similarities"
     override val searching = "Searching..."

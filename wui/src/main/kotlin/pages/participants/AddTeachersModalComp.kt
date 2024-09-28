@@ -1,11 +1,9 @@
 package pages.participants
 
-import components.form.SelectComp
 import components.form.TextFieldComp
 import components.form.validation.StringConstraints
 import components.modal.BinaryModalComp
 import components.text.ParagraphsComp
-import dao.ParticipantsDAO
 import debug
 import errorMessage
 import kotlinx.coroutines.await
@@ -19,34 +17,27 @@ import translation.Str
 
 class AddTeachersModalComp(
     private val courseId: String,
-    private val availableGroups: List<ParticipantsDAO.CourseGroup>,
     parent: Component,
 ) : Component(parent) {
 
     private val modalComp: BinaryModalComp<Boolean> = BinaryModalComp(
-        "Lisa õpetajaid", Str.doAdd, Str.cancel, Str.adding,
+        Str.addTeachers, Str.doAdd, Str.cancel, Str.adding,
         defaultReturnValue = false,
         fixFooter = true,
         isWide = true,
-        primaryAction = { addTeachers(groupSelectComp?.getValue(), teachersFieldComp.getValue()) },
+        primaryAction = { addTeachers(teachersFieldComp.getValue()) },
         primaryPostAction = ::reinitialise, onOpened = { teachersFieldComp.focus() },
         htmlClasses = "add-participants-modal",
         parent = this
     )
 
     private val helpTextComp = ParagraphsComp(
-        listOf("Õpetajate lisamiseks sisesta kasutajate meiliaadressid eraldi ridadele või eraldatuna tühikutega."),
+        listOf(Str.teacherAddHelpText),
         modalComp
     )
 
-    private val groupSelectComp = if (availableGroups.isNotEmpty())
-        SelectComp(
-            "Lisa rühma", availableGroups.map { SelectComp.Option(it.name, it.id) }, true,
-            parent = modalComp
-        ) else null
-
     private val teachersFieldComp = TextFieldComp(
-        "Õpetajate meiliaadressid",
+        Str.teachersEmails,
         true,
         "oskar@opetaja.ee &#x0a;mari@opetaja.com",
         startActive = true, paintRequiredOnInput = false,
@@ -59,7 +50,7 @@ class AddTeachersModalComp(
         get() = listOf(modalComp)
 
     override fun create() = doInPromise {
-        modalComp.setContentComps { listOfNotNull(helpTextComp, groupSelectComp, teachersFieldComp) }
+        modalComp.setContentComps { listOfNotNull(helpTextComp, teachersFieldComp) }
     }
 
     override fun render() = plainDstStr(modalComp.dstId)
@@ -71,7 +62,6 @@ class AddTeachersModalComp(
     fun openWithClosePromise() = modalComp.openWithClosePromise()
 
     private fun reinitialise() {
-        groupSelectComp?.rebuild()
         teachersFieldComp.rebuild()
         teachersFieldComp.validateInitial()
     }
@@ -86,20 +76,15 @@ class AddTeachersModalComp(
         val accesses_added: Int,
     )
 
-    private suspend fun addTeachers(groupId: String?, teachersString: String): Boolean {
+    private suspend fun addTeachers(teachersString: String): Boolean {
         val teachers = teachersString.split(" ", "\n")
             .filter { it.isNotBlank() }
 
-        debug { "Adding teachers (group $groupId): $teachers" }
-
-        val groups: List<Map<String, String>> = if (groupId != null)
-            listOf(mapOf("id" to groupId))
-        else emptyList()
+        debug { "Adding teachers: $teachers" }
 
         val newTeachers = teachers.map {
             mapOf(
                 "email" to it,
-                "groups" to groups
             )
         }
 
@@ -108,12 +93,12 @@ class AddTeachersModalComp(
         ), successChecker = { http200 }, errorHandler = {
             it.handleByCode(RespError.ACCOUNT_EMAIL_NOT_FOUND) {
                 val notFoundEmail = it.attrs["email"]!!
-                errorMessage { "Ei leidnud õpetajat emailiga '$notFoundEmail'" }
+                errorMessage { Str.teacherEmailNotFound + notFoundEmail }
             }
         }).await().parseTo(AddTeachersResp.serializer()).await()
 
         val added = resp.accesses_added
-        val msg = "Lisatud $added ${if (added == 1) "õpetaja" else "õpetajat"}"
+        val msg = "${Str.added} $added ${if (added == 1) Str.teachersSingular else Str.teachersPlural}"
 
         successMessage { msg }
 

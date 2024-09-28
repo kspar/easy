@@ -79,7 +79,7 @@ class RemoveFromGroupModalComp(
         }
 
         if (groupOptions.isEmpty()) {
-            errorMessage { "Pole midagi eemaldada ¯\\_(ツ)_/¯" }
+            errorMessage { "${Str.nothingToRemove} ¯\\_(ツ)_/¯" }
             return false
         }
 
@@ -121,6 +121,7 @@ class RemoveFromGroupModalComp(
                     successChecker = { http200 }).await()
 
             }
+
             For.TEACHER -> {
                 val teacherIds = participants.map { it.teacherId }
                 debug { "Removing teachers $teacherIds from group $groupId" }
@@ -135,7 +136,7 @@ class RemoveFromGroupModalComp(
             }
         }
 
-        successMessage { "Eemaldatud" }
+        successMessage { Str.removed }
         return true
     }
 }
