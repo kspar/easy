@@ -1884,7 +1884,7 @@ ez-checkbox {
 }
 
 ez-checkbox > label {
-    font-size: .8em;
+    font-size: 1.4rem;
 }
 
 [type="checkbox"] + span:not(.lever) {

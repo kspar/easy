@@ -84,7 +84,7 @@ class ExerciseTabsComp(
                     }
                 )
 
-                if (initialExercise.grader_type == ExerciseDAO.GraderType.AUTO) {
+                if (initialExercise.isAutoAssessable) {
                     add(
                         PageTabsComp.Tab(Str.tabTesting, id = TAB_ID_TESTING) {
                             TestingTabComp(

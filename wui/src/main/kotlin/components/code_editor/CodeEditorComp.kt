@@ -25,6 +25,7 @@ class CodeEditorComp(
     private val menuOptions: List<DropdownMenuComp.Item> = emptyList(),
     private val headerVisible: Boolean = true,
     private val footerComp: Component? = null,
+    private val onFileSwitch: (filename: String) -> Unit = {},
     parent: Component?,
 ) : Component(parent) {
 
@@ -34,7 +35,8 @@ class CodeEditorComp(
         var isRenameable: Boolean = false,
         var isDeletable: Boolean = false,
         // Auto-detect based on filename if null - not sure if hardcoding is necessary
-        val lang: dynamic = null
+        val lang: dynamic = null,
+        val startActive: Boolean = false,
     )
 
 
@@ -47,7 +49,7 @@ class CodeEditorComp(
     private val initialFiles = files.map { it.copy(content = it.content.orEmpty()) }
 
     // Note: deleting the last file is allowed in principle and this will break if this happens
-    private var activeFile = files.firstOrNull()
+    private var activeFile = files.firstOrNull { it.startActive } ?: files.firstOrNull()
         ?: error("Files must not be empty")
 
 
@@ -133,6 +135,7 @@ class CodeEditorComp(
         activeFile = files.first { it.name == filename }
         editor.switchToFile(filename)
         refreshEditable()
+        onFileSwitch(filename)
     }
 
     fun getContent(filename: String? = null): String {

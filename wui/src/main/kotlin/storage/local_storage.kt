@@ -23,6 +23,8 @@ enum class Key {
     TEACHER_SEND_GRADE_NOTIFICATION,
 
     GRADE_TABLE_SHOW_SUB_NUMBERS,
+
+    EXERCISE_EMBED_OPTIONS_VIEW,
 }
 
 object LocalStore {

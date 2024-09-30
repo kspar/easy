@@ -45,7 +45,10 @@ object ExerciseDAO {
         val on_courses_no_access: Int,
         val is_anonymous_autoassess_enabled: Boolean,
         val anonymous_autoassess_template: String?,
-    )
+    ) {
+        val isAutoAssessable: Boolean
+            get() = grader_type == GraderType.AUTO
+    }
 
     @Serializable
     data class Asset(

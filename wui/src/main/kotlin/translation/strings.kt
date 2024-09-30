@@ -343,6 +343,7 @@ sealed class TranslatableStrings {
     abstract val solutionFilename: String
     abstract val exerciseTextEditorPlaceholder: String
     abstract val embedding: String
+    abstract val embedAllowTesting: String
 
 
     // Participants page
@@ -777,6 +778,7 @@ ole hea ja proovi hiljem uuesti.
     override val solutionFilename = "Faili nimi"
     override val exerciseTextEditorPlaceholder = "Kirjuta ülesande tekst siia..."
     override val embedding = "Vistuta"
+    override val embedAllowTesting = "Luba kontrollimine"
     override val students = "Õpilased"
     override val teachers = "Õpetajad"
     override val groups = "Rühmad"
@@ -1267,6 +1269,7 @@ of the issue, please try again later.
     override val solutionFilename = "File name"
     override val exerciseTextEditorPlaceholder = "Write your exercise text here..."
     override val embedding = "Embed"
+    override val embedAllowTesting = "Allow testing"
     override val students = "Students"
     override val teachers = "Teachers"
     override val groups = "Groups"
