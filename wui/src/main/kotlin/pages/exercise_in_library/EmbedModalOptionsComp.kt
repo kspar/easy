@@ -96,9 +96,9 @@ class EmbedModalOptionsComp(
 
     override fun render() = template(
         """
-            <div style='margin-bottom: 3rem;'>
+            <div style='margin-bottom: 2rem;'>
                 $toggle
-                <ez-flex style='margin-top: 1rem;'>
+                <ez-flex style='margin-top: 2rem;'>
                     ${allowTestingCheckbox.dstIfNotNull()}
                 </ez-flex>
             </div>
