@@ -72,7 +72,7 @@ class SubmissionCommentsListComp(
 
             newCommentVisible = commentDraft != null
 
-            if (teacher.canAddComment)
+            if (teacher.canAddComment) {
                 addCommentBtn = ButtonComp(
                     ButtonComp.Type.TEXT,
                     Str.addComment,
@@ -82,16 +82,16 @@ class SubmissionCommentsListComp(
                     },
                     parent = this
                 )
-
-            newComment = SubmissionEditCommentComp(
-                courseId, courseExerciseId, studentId, teacher.latestSubmissionId, null, commentDraft.orEmpty(),
-                onCommentEdited = { createAndBuild().await() },
-                onCommentCancelled = {
-                    toggleComment(false)
-                },
-                startVisible = false,
-                parent = this
-            )
+                newComment = SubmissionEditCommentComp(
+                    courseId, courseExerciseId, studentId, teacher.latestSubmissionId, null, commentDraft.orEmpty(),
+                    onCommentEdited = { createAndBuild().await() },
+                    onCommentCancelled = {
+                        toggleComment(false)
+                    },
+                    startVisible = false,
+                    parent = this
+                )
+            }
         }
     }
 
@@ -114,7 +114,7 @@ class SubmissionCommentsListComp(
     }
 
     private fun toggleComment(commentVisible: Boolean) {
-        newComment!!.show(commentVisible)
-        addCommentBtn!!.show(!commentVisible)
+        newComment?.show(commentVisible)
+        addCommentBtn?.show(!commentVisible)
     }
 }
