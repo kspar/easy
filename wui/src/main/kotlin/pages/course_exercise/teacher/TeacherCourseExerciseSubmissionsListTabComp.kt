@@ -1,13 +1,16 @@
 package pages.course_exercise.teacher
 
+import AppProperties
 import EzDate
 import HumanStringComparator
 import Icons
 import components.ezcoll.EzCollComp
 import components.ezcoll.EzCollConf
+import copyToClipboard
 import dao.CourseExercisesTeacherDAO
 import dao.ParticipantsDAO
 import kotlinx.coroutines.await
+import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import storage.Key
@@ -98,6 +101,22 @@ class TeacherCourseExerciseSubmissionsListTabComp(
                                         onActivate = {
                                             CourseExercisesTeacherDAO.downloadSubmissions(
                                                 courseId, courseExId, listOf(submissionId)
+                                            ).await()
+                                            EzCollComp.ResultUnmodified
+                                        }
+                                    )
+                                )
+                            }
+
+                            if (it.submission != null) {
+                                add(
+                                    EzCollComp.Action(
+                                        Icons.copy, Str.copySubmissionLink,
+                                        onActivate = {
+                                            copyToClipboard(
+                                                AppProperties.WUI_ROOT + ExerciseSummaryPage.link(
+                                                    courseId, courseExId, it.props.student_id
+                                                )
                                             ).await()
                                             EzCollComp.ResultUnmodified
                                         }

@@ -1,5 +1,6 @@
 package pages.course_exercise.teacher
 
+import AppProperties
 import EzDate
 import Icons
 import components.MissingContentPlaceholderComp
@@ -8,10 +9,12 @@ import components.dropdown.DropdownMenuComp
 import components.form.ButtonComp
 import components.form.IconButtonComp
 import components.text.WarningComp
+import copyToClipboard
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
 import pages.course_exercise.ExerciseAutoFeedbackHolderComp
+import pages.course_exercise.ExerciseSummaryPage
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.dstIfNotNull
@@ -110,6 +113,13 @@ class TeacherCourseExerciseStudentTabComp(
                         Str.downloadSubmission, Icons.download, onSelected = {
                             CourseExercisesTeacherDAO.downloadSubmissions(
                                 courseId, courseExId, listOf(submissionId!!)
+                            ).await()
+                        }
+                    ),
+                    DropdownMenuComp.Item(
+                        Str.copySubmissionLink, Icons.copy, onSelected = {
+                            copyToClipboard(
+                                AppProperties.WUI_ROOT + ExerciseSummaryPage.link(courseId, courseExId, studentId)
                             ).await()
                         }
                     )

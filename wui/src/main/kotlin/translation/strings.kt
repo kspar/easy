@@ -243,6 +243,7 @@ sealed class TranslatableStrings {
     abstract val hideTestDetails: String
     abstract val titleInLib: String
     abstract val titleOnCourse: String
+    abstract val copySubmissionLink: String
 
     abstract val tabExerciseLabel: String
     abstract val graderTypeAuto: String
@@ -532,6 +533,7 @@ object EstStrings : TranslatableStrings() {
     override val hideTestDetails = "Peida testid"
     override val titleInLib = "Pealkiri ülesandekogus"
     override val titleOnCourse = "Pealkiri kursusel"
+    override val copySubmissionLink = "Kopeeri esituse link"
     override val roleAdmin = "Admin"
     override val roleTeacher = "Õpetaja"
     override val roleStudent = "Õpilane"
@@ -1123,6 +1125,7 @@ object EngStrings : TranslatableStrings() {
     override val hideTestDetails = "Hide tests"
     override val titleInLib = "Title in exercise library"
     override val titleOnCourse = "Title on this course"
+    override val copySubmissionLink = "Copy submission link"
 
     override val tabExerciseLabel = "Exercise"
     override val tabTesting = "Test"
