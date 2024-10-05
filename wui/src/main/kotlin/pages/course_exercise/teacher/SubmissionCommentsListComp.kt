@@ -5,18 +5,22 @@ import Icons
 import components.form.ButtonComp
 import dao.CourseExercisesStudentDAO
 import dao.CourseExercisesTeacherDAO
-import hide
 import kotlinx.coroutines.await
+import pages.course_exercise.teacher.SubmissionEditCommentComp.Companion.draftListSerializer
+import parseToOrCatch
 import rip.kspar.ezspa.Component
 import rip.kspar.ezspa.doInPromise
 import rip.kspar.ezspa.dstIfNotNull
 import show
+import storage.Key
+import storage.LocalStore
 import template
 import translation.Str
 
 class SubmissionCommentsListComp(
     val courseId: String,
     val courseExerciseId: String,
+    val studentId: String,
     val teacher: TeacherConf?,
     val onlyForSubmissionId: String? = null,
     parent: Component
@@ -27,6 +31,8 @@ class SubmissionCommentsListComp(
     private var addCommentBtn: ButtonComp? = null
     private var newComment: SubmissionEditCommentComp? = null
     private lateinit var comments: List<SubmissionCommentComp>
+
+    private var newCommentVisible: Boolean = false
 
 
     override val children: List<Component>
@@ -46,7 +52,7 @@ class SubmissionCommentsListComp(
             }
             .map {
                 SubmissionCommentComp(
-                    courseId, courseExerciseId, it.submission_id, it.submission_number, it.id,
+                    courseId, courseExerciseId, studentId, it.submission_id, it.submission_number, it.id,
                     it.teacher.given_name, it.teacher.family_name, it.created_at, it.edited_at,
                     it.feedback?.feedback_adoc.orEmpty(), it.feedback?.feedback_html.orEmpty(), it.grade,
                     isEditable = teacher != null && it.teacher.id == Auth.username,
@@ -59,24 +65,29 @@ class SubmissionCommentsListComp(
             }
 
         if (teacher != null) {
+
+            val commentDraft = LocalStore.get(Key.TEACHER_COURSE_EXERCISE_FEEDBACK_DRAFT_LIST)
+                ?.parseToOrCatch(draftListSerializer).orEmpty()
+                .firstOrNull { it.courseExId == courseExerciseId && it.studentId == studentId }?.feedbackDraft
+
+            newCommentVisible = commentDraft != null
+
             if (teacher.canAddComment)
                 addCommentBtn = ButtonComp(
                     ButtonComp.Type.TEXT,
                     Str.addComment,
                     Icons.add,
                     onClick = {
-                        addCommentBtn!!.hide()
-                        newComment!!.show()
+                        toggleComment(true)
                     },
                     parent = this
                 )
 
             newComment = SubmissionEditCommentComp(
-                courseId, courseExerciseId, teacher.latestSubmissionId, null, "", "",
+                courseId, courseExerciseId, studentId, teacher.latestSubmissionId, null, commentDraft.orEmpty(),
                 onCommentEdited = { createAndBuild().await() },
                 onCommentCancelled = {
-                    newComment!!.hide()
-                    addCommentBtn!!.show()
+                    toggleComment(false)
                 },
                 startVisible = false,
                 parent = this
@@ -96,4 +107,14 @@ class SubmissionCommentsListComp(
             mapOf("dst" to it.toString())
         }
     )
+
+    override fun postChildrenBuilt() {
+        if (newCommentVisible)
+            toggleComment(true)
+    }
+
+    private fun toggleComment(commentVisible: Boolean) {
+        newComment!!.show(commentVisible)
+        addCommentBtn!!.show(!commentVisible)
+    }
 }

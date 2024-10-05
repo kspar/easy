@@ -1,5 +1,6 @@
 package pages.course_exercise.student
 
+import Auth
 import components.code_editor.CodeEditorComp
 import dao.CourseExercisesStudentDAO
 import dao.ExerciseDAO
@@ -43,7 +44,7 @@ class CourseExerciseStudentOldSubmissionTabComp(
         )
 
         commentsList = SubmissionCommentsListComp(
-            courseId, courseExId, null,
+            courseId, courseExId, Auth.username!!, null,
             onlyForSubmissionId = submission?.id,
             parent = this
         )

@@ -1,5 +1,6 @@
 package pages.course_exercise.student
 
+import Auth
 import Icons
 import components.ToastThing
 import components.code_editor.CodeEditorComp
@@ -163,7 +164,7 @@ class CourseExerciseStudentSubmitTabComp(
         )
         autogradeLoader = AutogradeLoaderComp(false, this)
 
-        commentsList = SubmissionCommentsListComp(courseId, courseExId, null, parent = this)
+        commentsList = SubmissionCommentsListComp(courseId, courseExId, Auth.username!!, null, parent = this)
     }
 
     override fun render() = template(

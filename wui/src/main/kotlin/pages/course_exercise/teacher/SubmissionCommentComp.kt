@@ -2,9 +2,9 @@ package pages.course_exercise.teacher
 
 import EzDate
 import Icons
-import components.form.ButtonComp
 import components.dropdown.DropdownIconMenuComp
 import components.dropdown.DropdownMenuComp
+import components.form.ButtonComp
 import components.modal.ConfirmationTextModalComp
 import dao.CourseExercisesTeacherDAO
 import kotlinx.coroutines.await
@@ -19,6 +19,7 @@ abstract class SubmissionCommentContentComp(parent: Component) : Component(paren
 class SubmissionCommentComp(
     val courseId: String,
     val courseExerciseId: String,
+    val studentId: String,
     val submissionId: String,
     val submissionNumber: Int,
     val activityId: String,
@@ -45,7 +46,7 @@ class SubmissionCommentComp(
     override fun create() = doInPromise {
         commentContent = if (isEditing)
             SubmissionEditCommentComp(
-                courseId, courseExerciseId, submissionId, activityId, commentAdoc, commentHtml,
+                courseId, courseExerciseId, studentId, submissionId, activityId, commentAdoc,
                 onCommentEdited = onActivitiesChanged,
                 onCommentCancelled = {
                     isEditing = false
