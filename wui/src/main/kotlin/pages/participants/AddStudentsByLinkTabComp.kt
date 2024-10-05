@@ -3,11 +3,10 @@ package pages.participants
 import AppProperties
 import EzDate
 import Icons
-import components.form.ButtonComp
-import components.form.DateTimeFieldComp
-import components.form.IntFieldComp
-import components.form.ToggleComp
+import components.ToastThing
+import components.form.*
 import components.text.WarningComp
+import copyToClipboard
 import dao.CoursesTeacherDAO
 import debug
 import kotlinx.coroutines.await
@@ -32,11 +31,12 @@ class AddStudentsByLinkTabComp(
     private var maxUses: IntFieldComp? = null
     private var warning: WarningComp? = null
     private var save: ButtonComp? = null
+    private var copyBtn: IconButtonComp? = null
 
     private var currentLink: CoursesTeacherDAO.ExistingLink? = null
 
     override val children: List<Component>
-        get() = listOfNotNull(switch, validity, usedCount, maxUses, warning, save)
+        get() = listOfNotNull(switch, validity, usedCount, maxUses, warning, save, copyBtn)
 
     override fun create() = doInPromise {
         val link = CoursesTeacherDAO.getJoinLink(courseId).await()
@@ -73,6 +73,17 @@ class AddStudentsByLinkTabComp(
                 onClick = { updateJoinLink() },
                 parent = this
             )
+
+            copyBtn = IconButtonComp(
+                Icons.copy, Str.doCopy,
+                onClick = {
+                    copyToClipboard(
+                        AppProperties.WUI_ROOT + CourseJoinByLinkPage.link(link.invite_id)
+                    ).await()
+                    ToastThing(Str.copied)
+                },
+                parent = this
+            )
         } else {
             usedCount?.destroy()
             usedCount = null
@@ -80,6 +91,7 @@ class AddStudentsByLinkTabComp(
             maxUses = null
             warning = null
             save = null
+            copyBtn = null
         }
     }
 
@@ -97,7 +109,9 @@ class AddStudentsByLinkTabComp(
                     $warning
                     <ez-flex style='margin-bottom: 1rem'>$save</ez-flex>
                     <ez-link-wrap>
-                        ${Icons.lahendus}<ez-link>{{link}}</ez-link>                    
+                        <ez-link-icon>${Icons.lahendus}</ez-link-icon>
+                        <ez-link>{{link}}</ez-link>
+                        <ez-link-copy>$copyBtn</ez-link-copy>
                     </ez-link-wrap>
                 {{/isEnabled}}
             </ez-course-join-link>

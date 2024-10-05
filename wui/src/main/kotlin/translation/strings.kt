@@ -85,6 +85,8 @@ sealed class TranslatableStrings {
     abstract val used: String
     abstract val created: String
     abstract val exercise: String
+    abstract val doCopy: String
+    abstract val copied: String
 
     abstract val editorMenuLabel: String
     abstract val existingFileNameError: String
@@ -936,6 +938,8 @@ ole hea ja proovi hiljem uuesti.
     override val similaritiesHelpText =
         "Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel, mis võib teha ebaausalt esitatud lahenduste tuvastamise lihtsamaks."
     override val exercise = "Ülesanne"
+    override val doCopy = "Kopeeri"
+    override val copied = "Kopeeritud"
     override val findSimilarities = "Leia sarnasused"
     override val searching = "Otsin..."
     override val topSimilarPairs = "Kõige sarnasemad paarid"
@@ -1411,6 +1415,8 @@ of the issue, please try again later.
     override val similaritiesHelpText =
         "Similarity analysis aims to find similarities between students' solutions, which could make it easier to find cases of plagiarism."
     override val exercise = "Exercise"
+    override val doCopy = "Copy"
+    override val copied = "Copied"
     override val findSimilarities = "Find similarities"
     override val searching = "Searching..."
     override val topSimilarPairs = "Top similarities"

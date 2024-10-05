@@ -1223,12 +1223,21 @@ ez-link-wrap {
     font-size: 2rem;
 }
 
-ez-link-wrap ez-icon {
+ez-link-icon ez-icon {
     margin-right: 1rem;
     background-color: var(--ez-green);
     border-radius: 50%;
     padding: 0.6rem;
     color: var(--ez-btn-active-text);
+}
+
+ez-link-copy {
+    margin-left: 1rem;
+    visibility: hidden;
+}
+
+ez-link-wrap:hover ez-link-copy {
+    visibility: visible;
 }
 
 @media only screen and (max-width: 500px) {
