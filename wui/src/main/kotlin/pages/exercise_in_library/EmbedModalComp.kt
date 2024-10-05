@@ -38,4 +38,6 @@ class EmbedModalComp(
     }
 
     fun openWithClosePromise() = modalComp.openWithClosePromise()
+
+    override fun hasUnsavedChanges() = false
 }
