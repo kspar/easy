@@ -42,8 +42,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
     @PostMapping("/account/checkin")
     fun controller(@Valid @RequestBody dto: PersonalDataBody, caller: EasyUser) {
 
-        checkIdMigration(caller, dto)
-
         val account = AccountData(
             caller.id,
             caller.email.lowercase(),
@@ -85,86 +83,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
 
         updateLastSeen(caller.id)
     }
-
-    private fun checkIdMigration(caller: EasyUser, dto: PersonalDataBody) {
-        if (caller.oldId != caller.id) {
-            log.debug { "Old id '${caller.oldId}' != new id '${caller.id}'" }
-
-            // Possible cases:
-            // only account with old id and migrated=false - migrate
-            // only account with old id and migrated=true - error, notify
-            // only account with new id and migrated=true - nothing
-            // only account with new id and migrated=false - nothing
-            // both accounts - error, notify
-            // no accounts - nothing
-
-            val oldAccount = cachingService.selectAccount(caller.oldId)
-            val newAccount = cachingService.selectAccount(caller.id)
-
-            if (oldAccount != null && newAccount != null) {
-                val msg = "Accounts with both old and migrated ids exist. Old: $oldAccount, new: $newAccount"
-                log.error { msg }
-                mailService.sendSystemNotification(msg)
-                throwMigrationFailed()
-            }
-
-            if (oldAccount != null) {
-                if (oldAccount.isIdMigrated) {
-                    val msg = "Non-migrated account with migrated=true: $oldAccount, newId: ${caller.id}"
-                    log.error { msg }
-                    mailService.sendSystemNotification(msg)
-                    throwMigrationFailed()
-                } else {
-                    migrateAccountId(caller.oldId, caller.id)
-                }
-            }
-
-            if (newAccount != null) {
-                if (newAccount.isIdMigrated) {
-                    log.info { "Account already migrated: $newAccount" }
-                } else {
-                    log.info { "Account not migrated: $newAccount" }
-                }
-            }
-        }
-
-        if (dto.firstName != caller.givenName ||
-            dto.lastName != caller.familyName
-        ) {
-            val msg = """
-               Account data mismatch from token and checkin:
-                dto.firstName '${dto.firstName}' != caller.givenName '${caller.givenName}'
-                dto.lastName '${dto.lastName}' != caller.familyName '${caller.familyName}'
-            """
-            log.warn { msg }
-        }
-    }
-
-    private fun migrateAccountId(oldId: String, newId: String) {
-        log.info { "Migrating account id '$oldId' -> '$newId'" }
-
-        try {
-            transaction {
-                Account.update({ Account.id eq oldId }) {
-                    it[id] = newId
-                    it[idMigrationDone] = true
-                    it[preMigrationId] = oldId
-                }
-            }
-        } catch (e: Exception) {
-            val msg = "Updating account id failed: $oldId -> $newId"
-            log.error { msg }
-            mailService.sendSystemNotification(msg)
-            throwMigrationFailed()
-        }
-
-        cachingService.evictAccountCache(oldId)
-        // Probs not necessary for new account since it was null before and wasn't cached, just precautionary
-        cachingService.evictAccountCache(newId)
-    }
-
-    private fun throwMigrationFailed(): Nothing =
-        throw InvalidRequestException("Account migration failed", ReqError.ACCOUNT_MIGRATION_FAILED, notify = false)
 
     private fun updateLastSeen(id: String) {
         // Not evicting cache, so lastSeen shouldn't be included in the cached query, or else it will be false
