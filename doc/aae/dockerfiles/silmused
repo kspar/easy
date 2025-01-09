@@ -1,10 +1,15 @@
 FROM python:3.10
 
-ENV PYTHONIOENCODING utf-8
+ENV PYTHONIOENCODING=utf-8
 
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y postgresql-17
+RUN apt-get update && \
+	apt-get upgrade -y
+	
+RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+
+RUN apt-get update
+RUN apt-get install postgresql-17 -y
 
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir psycopg2==2.9.9
@@ -19,4 +24,3 @@ RUN /etc/init.d/postgresql start && \
     psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
-
