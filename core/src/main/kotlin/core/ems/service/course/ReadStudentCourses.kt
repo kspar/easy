@@ -1,11 +1,14 @@
 package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.StudentCourseAccess
+import core.util.DateTimeSerializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -26,6 +29,8 @@ class ReadStudentCourses {
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
         @JsonProperty("archived") val archived: Boolean,
+        @JsonSerialize(using = DateTimeSerializer::class)
+        @JsonProperty("last_accessed") val lastAccessed: DateTime,
     )
 
     @Secured("ROLE_STUDENT")
@@ -39,7 +44,7 @@ class ReadStudentCourses {
     private fun selectCoursesForStudent(studentId: String): Resp = transaction {
         Resp(
             (StudentCourseAccess innerJoin Course).select(
-                Course.id, Course.title, Course.alias, Course.archived
+                Course.id, Course.title, Course.alias, Course.archived, StudentCourseAccess.lastAccessed
             ).where {
                 StudentCourseAccess.student eq studentId
             }.map {
@@ -48,6 +53,7 @@ class ReadStudentCourses {
                     it[Course.title],
                     it[Course.alias],
                     it[Course.archived],
+                    it[StudentCourseAccess.lastAccessed],
                 )
             }
         )

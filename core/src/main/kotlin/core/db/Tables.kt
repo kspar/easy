@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.jodatime.datetime
+import org.joda.time.DateTime
 
 
 object Account : IdTable<String>("account") {
@@ -121,6 +122,7 @@ object TeacherCourseAccess : Table("teacher_course_access") {
     val teacher = reference("teacher_id", Account)
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
+    val lastAccessed = datetime("last_accessed").clientDefault { DateTime.now() }
     override val primaryKey = PrimaryKey(teacher, course)
 }
 
@@ -129,6 +131,7 @@ object StudentCourseAccess : Table("student_course_access") {
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
     val moodleUsername = text("moodle_username").nullable()
+    val lastAccessed = datetime("last_accessed").clientDefault { DateTime.now() }
     override val primaryKey = PrimaryKey(student, course)
 }
 
