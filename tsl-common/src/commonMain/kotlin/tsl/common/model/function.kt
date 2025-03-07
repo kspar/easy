@@ -60,7 +60,19 @@ data class FunctionContainsKeywordTest(
 
     override fun copyTest(newId: Long) = copy(id = newId)
 }
+@Serializable
+@SerialName("function_contains_phrase_test")
+data class FunctionContainsPhraseTest(
+        override val id: Long,
+        val functionName: String,
+        val genericCheck: GenericCheck,
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon sisaldab fraasi"
+    }
 
+    override fun copyTest(newId: Long) = copy(id = newId)
+}
 @Serializable
 @SerialName("function_contains_return_test")
 data class FunctionContainsReturnTest(
@@ -84,6 +96,19 @@ data class FunctionCallsFunctionTest(
 ) : Test() {
     override fun getDefaultName(): String {
         return "Funktsioon kutsub välja teist funktsiooni"
+    }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
+}
+@Serializable
+@SerialName("function_calls_class_function_test")
+data class FunctionCallsClassFunctionTest(
+        override val id: Long,
+        val functionName: String,
+        val genericCheck: GenericCheckLong
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Funktsioon kutsub välja klassi funktsiooni"
     }
 
     override fun copyTest(newId: Long) = copy(id = newId)

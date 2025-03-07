@@ -1,0 +1,18 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: class_calls_class_function_test
+    id: 12
+    className: ChildClass
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - test
+        - parent_method
+      beforeMessage: Kontrollib, kas funktsioon kutsub välja turtle funktsiooni.
+      passedMessage: Funktsioon kutsus välja vähemalt ühe turtle funktsiooni.
+      failedMessage: Funktsioon ei kutsnud välja ühtegi turtle funktsiooni.
+    name: Funktsioon kutsub välja turtle funktsiooni.

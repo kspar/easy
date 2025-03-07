@@ -87,6 +87,19 @@ data class ProgramContainsKeywordTest(
 }
 
 @Serializable
+@SerialName("program_contains_phrase_test")
+data class ProgramContainsPhraseTest(
+        override val id: Long,
+        val genericCheck: GenericCheck
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Programm sisaldab fraasi"
+    }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
+}
+
+@Serializable
 @SerialName("program_calls_function_test")
 data class ProgramCallsFunctionTest(
     override val id: Long,

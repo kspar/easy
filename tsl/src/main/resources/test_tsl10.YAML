@@ -1,0 +1,21 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: class_instance_test
+    id: 222
+    className: ChildClass
+    createObject: test = ChildClass().lisa(); return test,
+    genericChecks:
+      - checkType: ANY_OF_THESE
+        id: 654
+        elementsOrdered: false
+        expectedValue:
+          - uuuus
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+    name: Funktsiooni käivituse test (isendimeetod).
+

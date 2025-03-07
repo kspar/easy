@@ -1,0 +1,15 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_is_pure_test
+    id: 18
+    functionName: test
+    containsLocalVars:
+      mustNotContain: False
+      beforeMessage: Kontrollib, kas funktsioon kasutab ainult lokaalseid muutujaid.
+      passedMessage: Funktsioon kasutab ainult lokaalseid muutujaid.
+      failedMessage: Funktsioon ei kasuta ainult lokaalseid muutujaid.
+    name: Funktsioon kasutab ainult lokaalseid muutujaid

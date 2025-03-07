@@ -1,0 +1,28 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: mainProgram_contains_keyword_test
+    id: 10
+    genericCheck:
+      id: 765
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - andmed.txt
+      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
+      passedMessage: Funktsioon sisaldab võtmesõna.
+      failedMessage: Funktsioon ei sisalda võtmesõna.
+    name: Funktsioon sisaldab võtmesõna.
+  - type: mainProgram_contains_phrase_test
+    id: 101
+    genericCheck:
+      id: 7659
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - andmed.txt
+      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
+      passedMessage: Funktsioon sisaldab võtmesõna.
+      failedMessage: Funktsioon ei sisalda võtmesõna.
+    name: Funktsioon sisaldab võtmesõna.

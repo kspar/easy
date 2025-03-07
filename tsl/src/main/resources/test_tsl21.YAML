@@ -1,0 +1,18 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: class_contains_keyword_test
+    id: 10
+    className: ChildClass
+    genericCheck:
+      id: 765
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - andmed.txt
+      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
+      passedMessage: Funktsioon sisaldab võtmesõna.
+      failedMessage: Funktsioon ei sisalda võtmesõna.
+    name: Funktsioon sisaldab võtmesõna.

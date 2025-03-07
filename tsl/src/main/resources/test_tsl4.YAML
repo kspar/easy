@@ -1,0 +1,19 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+
+tests:
+  - type: class_is_parent_class_test
+    id: 222
+    className: ParentClass
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - ChildClass
+        - TestClass
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
+    name: Funktsiooni käivituse test (isendimeetod).

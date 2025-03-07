@@ -1,0 +1,18 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_execution_test
+    id: 222
+    functionName: test
+    functionType: FUNCTION
+    arguments: [2,3]
+    returnValueCheck:
+      returnValue: '''lambda x: 4 < x <= 7'''
+      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
+      passedMessage: Funktsioon tagastab antudvõtmesõna.
+      failedMessage: Funktsioon ei tagasta antud võtmesõna.
+    name: Funktsiooni käivituse test (isendimeetod).

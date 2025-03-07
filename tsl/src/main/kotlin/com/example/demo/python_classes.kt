@@ -35,6 +35,7 @@ class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive()
                 PyDict(
                     mapOf(
                         "'check_type'" to PyStr(it.checkType.toString()),
+                        "'output_category'" to PyStr(it.outputCategory.toString()),
                         "'nothing_else'" to PyBool(it.nothingElse),
                         "'expected_value'" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
                         "'elements_ordered'" to PyBool(it.elementsOrdered),

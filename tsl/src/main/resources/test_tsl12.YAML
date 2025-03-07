@@ -1,0 +1,17 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: mainProgram_calls_class_test
+    id: 3
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - ChildClass
+      beforeMessage: Kontrollib, kas programm kutsub välja turtle funktsiooni.
+      passedMessage: Programm kutsus välja vähemalt ühe turtle funktsiooni.
+      failedMessage: Programm ei kutsnud välja ühtegi turtle funktsiooni.
+    name: Programm kutsub välja turtle funktsiooni.
