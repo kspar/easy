@@ -108,7 +108,6 @@ class ExerciseAutoFeedbackComp(
                 parent = this
             )
         }
-//        }
     }
 
     override fun render(): String {
@@ -118,7 +117,7 @@ class ExerciseAutoFeedbackComp(
             """
                 <ez-feedback>
                     <ez-tests-heading>
-                        <h5 style='margin-right: .5rem;'>{{autoTitle}}</h5>
+                        <h5 style='margin-right: .5rem;'>{{autoTitle}}{{#points}} ({{points}}/100){{/points}}</h5>
                         <ez-run-tests-btn>${rerunTestsBtn.dstIfNotNull()}</ez-run-tests-btn>
                     </ez-tests-heading>
                     
@@ -146,6 +145,7 @@ class ExerciseAutoFeedbackComp(
             "autoTitle" to Str.autoAssessmentLabel,
             "failed" to failed,
             "failMsg" to Str.autogradeFailedMsg,
+            "points" to parsedV3?.points?.toString(),
             "isRaw" to (parsedV3 == null),
             "isV3" to (parsedV3 != null),
             "rawFeedback" to autoFeedback,
