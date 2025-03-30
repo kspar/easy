@@ -67,3 +67,15 @@ data class MainProgramContainsPhraseTest(
 
     override fun copyTest(newId: Long) = copy(id = newId)
 }
+@Serializable
+@SerialName("mainProgram_contains_loop_test")
+data class MainProgramContainsLoopTest(
+        override val id: Long,
+        val programContainsLoop: ContainsCheck
+) : Test() {
+    override fun getDefaultName(): String {
+        return "Põhirogramm sisaldab tsüklit"
+    }
+
+    override fun copyTest(newId: Long) = copy(id = newId)
+}

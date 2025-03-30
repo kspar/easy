@@ -707,6 +707,27 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         )
                 ).generatePyString()
             }
+            is MainProgramContainsLoopTest -> {
+                PyExecuteTest(
+                        test,
+                        "mainProgram_contains_loop_test",
+                        mapOf(
+                                "file_name" to PyStr(fileName),
+                                "generic_checks" to PyList(
+                                        listOf(
+                                                PyDict(
+                                                        mapOf(
+                                                                "'expected_value'" to PyBool(!test.programContainsLoop.mustNotContain),
+                                                                "'before_message'" to PyStr(test.programContainsLoop.beforeMessage),
+                                                                "'passed_message'" to PyStr(test.programContainsLoop.passedMessage),
+                                                                "'failed_message'" to PyStr(test.programContainsLoop.failedMessage)
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
+                ).generatePyString()
+            }
 
             // Only used as an empty placeholder test - the user hasn't decided on the type yet
             is PlaceholderTest -> ""
