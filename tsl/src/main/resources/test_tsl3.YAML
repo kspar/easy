@@ -12,7 +12,7 @@ tests:
       checkType: ANY_OF_THESE
       expectedValue:
         - ParentClass
-      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
-      passedMessage: Funktsioon tagastab antudvõtmesõna.
-      failedMessage: Funktsioon ei tagasta antud võtmesõna.
-    name: Funktsiooni käivituse test (isendimeetod).
+      beforeMessage: Kontrollib, kas klass on etteantud klassi alamklass.
+      passedMessage: Klass on etteantud klassi alamklass.
+      failedMessage: Klass ei ole etteantud klassi alamklass.
+    name: Alamklassi kontroll.

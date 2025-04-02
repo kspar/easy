@@ -19,9 +19,14 @@ tests:
           tulemus = set()
           for a in hulk1:
             for b in hulk2:
-              tulemus.add(abi(a,b))
-          return tulemus'''
-    beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
-    passedMessage: Funktsioon tagastab antudvõtmesõna.
-    failedMessage: Funktsioon ei tagasta antud võtmesõna.
-  name: Funktsiooni käivituse test (klassimeetod).
+              tulemus.add((a,b))
+          return tulemus
+      '''
+    beforeMessage: Kontrollib, kas funktsioon tagastab õige väärtuse.
+    passedMessage: Funktsioon tagastab õige väärtuse.
+    failedMessage: Funktsioon ei tagasta õiget väärtust.
+  name: Funktsiooni käivituse test.
+
+
+
+

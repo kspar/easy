@@ -11,8 +11,15 @@ tests:
     functionType: FUNCTION
     arguments: [2,3]
     returnValueCheck:
-      returnValue: '''lambda x: 4 < x <= 7'''
-      beforeMessage: Kontrollib, kas funktsioon tagastab antud võtmesõna.
-      passedMessage: Funktsioon tagastab antudvõtmesõna.
-      failedMessage: Funktsioon ei tagasta antud võtmesõna.
-    name: Funktsiooni käivituse test (isendimeetod).
+      returnValue: '''lambda x: 4 <= x <= 7'''
+      beforeMessage: Kontrollib, kas funktsiooni tagastatud väärtus on vahemikus 4-7.
+      passedMessage: Funktsiooni tagastatud väärtus on õiges vahemiks.
+      failedMessage: Funktsiooni tagastatud väärtus ei ole vahemiks 4-7.
+    name: Funktsiooni käivituse test.
+
+
+
+
+
+
+

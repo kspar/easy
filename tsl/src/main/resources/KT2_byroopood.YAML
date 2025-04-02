@@ -1,0 +1,471 @@
+#https://lahendus.ut.ee/courses/137/exercises/4915/KT2-(variant-B)-n%C3%A4idis%C3%BClesanne-2.-P%C3%BCropood
+{
+  "language": "python3",
+  "validateFiles": true,
+  "requiredFiles": [
+    "lahendus.py"
+  ],
+  "tslVersion": "1.0",
+  "tests": [
+    {
+      "type": "program_defines_function_test",
+      "name": "Funktsioon 'loe_failist' leidub",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["loe_failist"],
+        "beforeMessage": "",
+        "passedMessage": "Leidsin programmist funktsiooni 'loe_failist'.",
+        "failedMessage": "Ei leidnud programmist funktsiooni 'loe_failist'."
+      }
+    },
+    {
+      "type": "function_execution_test",
+      "name": "loe_failist('muinasaeg.txt')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "functionName": "loe_failist",
+      "functionType": "FUNCTION",
+      "arguments": [
+        "'muinasaeg.txt'"
+      ],
+      "inputFiles": [
+        {
+          "fileName": "muinasaeg.txt",
+          "fileContent": "kivid,1.25,hall\nliiv,0.35,pruun\nliiv,0.8,kuldne\nkivid,2.5,must\nkivid,3.75,valge\nliiv,0.99,must"
+        }
+      ],
+      "returnValueCheck": {
+        "returnValue": "{'kivid': {'hall': 1.25, 'must': 2.5, 'valge': 3.75}, 'liiv': {'pruun': 0.35, 'kuldne': 0.8, 'must': 0.99}}",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon tagastas {actual}, aga oleks pidanud tagastama {expected}."
+      },
+      "outOfInputsErrorMsg": "Programm küsis rohkem sisendeid kui testil oli anda",
+      "functionNotDefinedErrorMsg": "Ei leia funktsiooni 'loe_failist'.",
+      "tooManyArgumentsProvidedErrorMsg": "Funktsioonil 'loe_failist' peaks olema üksainus parameeter, failinimi."
+    },
+    {
+      "type": "function_execution_test",
+      "name": "loe_failist('uusaasta.txt')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "functionName": "loe_failist",
+      "functionType": "FUNCTION",
+      "arguments": [
+        "'uusaasta.txt'"
+      ],
+      "inputFiles": [
+        {
+          "fileName": "uusaasta.txt",
+          "fileContent": "vulkaan,15.50,punane\npatarei,145.00,kollane\nsuits,3.50,valge\nvaikne komeet,4.90,sinine"
+        }
+      ],
+      "returnValueCheck": {
+        "returnValue": "{'vulkaan': {'punane': 15.5}, 'patarei': {'kollane': 145.0}, 'suits': {'valge': 3.5}, 'vaikne komeet': {'sinine': 4.9}}",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon tagastas {actual}, aga oleks pidanud tagastama {expected}."
+      },"genericChecks": [
+    ],
+      "outOfInputsErrorMsg": "Programm küsis rohkem sisendeid kui testil oli anda",
+      "functionNotDefinedErrorMsg": "Ei leia funktsiooni 'loe_failist'.",
+      "tooManyArgumentsProvidedErrorMsg": "Funktsioonil 'loe_failist' peaks olema üksainus parameeter, failinimi."
+    },
+    {
+      "type": "function_execution_test",
+      "name": "loe_failist('patareid.txt')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "functionName": "loe_failist",
+      "functionType": "FUNCTION",
+      "arguments": [
+        "'patareid.txt'"
+      ],
+      "inputFiles": [
+        {
+          "fileName": "patareid.txt",
+          "fileContent": "100-lasuline patarei,65,valge\n100-lasuline patarei,75,kollane\n50-lasuline patarei,90,valge\n50-lasuline patarei,100,kollane"
+        }
+      ],
+      "returnValueCheck": {
+        "returnValue": "{'100-lasuline patarei': {'valge': 65.0, 'kollane': 75.0}, '50-lasuline patarei': {'valge': 90.0, 'kollane': 100.0}}",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon tagastas {actual}, aga oleks pidanud tagastama {expected}."
+      },"genericChecks": [
+    ],
+      "outOfInputsErrorMsg": "Programm küsis rohkem sisendeid kui testil oli anda",
+      "functionNotDefinedErrorMsg": "Ei leia funktsiooni 'loe_failist'.",
+      "tooManyArgumentsProvidedErrorMsg": "Funktsioonil 'loe_failist' peaks olema üksainus parameeter, failinimi."
+    },
+    {
+      "type": "function_execution_test",
+      "name": "loe_failist('thunderking.txt')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "functionName": "loe_failist",
+      "functionType": "FUNCTION",
+      "createObject": null,
+      "arguments": [
+        "'thunderking.txt'"
+      ],
+      "inputFiles": [
+        {
+          "fileName": "thunderking.txt",
+          "fileContent": "Thunder King,5.00,punane"
+        }
+      ],
+      "returnValueCheck": {
+        "returnValue": "{'Thunder King': {'punane': 5.0}}",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon tagastas {actual}, aga oleks pidanud tagastama {expected}."
+      },"genericChecks": [
+    ],
+      "outOfInputsErrorMsg": "Programm küsis rohkem sisendeid kui testil oli anda",
+      "functionNotDefinedErrorMsg": "Ei leia funktsiooni 'loe_failist'.",
+      "tooManyArgumentsProvidedErrorMsg": "Funktsioonil 'loe_failist' peaks olema üksainus parameeter, failinimi."
+    },
+    {
+      "type": "function_execution_test",
+      "name": "loe_failist('mittemidagi.txt')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "functionName": "loe_failist",
+      "functionType": "FUNCTION",
+      "createObject": null,
+      "arguments": [
+        "'mittemidagi.txt'"
+      ],
+      "inputFiles": [
+        {
+          "fileName": "mittemidagi.txt",
+          "fileContent": ""
+        }
+      ],
+      "returnValueCheck": {
+        "returnValue": "{}",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon tagastas {actual}, aga oleks pidanud tagastama {expected}."
+      },
+      "outOfInputsErrorMsg": "Programm küsis rohkem sisendeid kui testil oli anda",
+      "functionNotDefinedErrorMsg": "Ei leia funktsiooni 'loe_failist'.",
+      "tooManyArgumentsProvidedErrorMsg": "Funktsioonil 'loe_failist' peaks olema üksainus parameeter, failinimi."
+    },
+    {
+      "type": "mainProgram_calls_function_test",
+      "name": "Funktsiooni 'loe_failist' kasutatakse",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ANY_OF_THESE",
+        "expectedValue": ["loe_failist"],
+        "beforeMessage": "",
+        "passedMessage": "Programm kutsub välja funktsiooni 'loe_failist'.",
+        "failedMessage": "Programm ei kutsu välja funktsiooni 'loe_failist'."
+      }
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: muinasaeg",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "kivid", "hall", "kivid", "must", "kivid", "kollane", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "kivid,1.25,hall\nliiv,0.35,pruun\nliiv,0.8,kuldne\nkivid,2.5,must\nkivid,3.75,valge\nliiv,0.99,must"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "3.75"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 3.75.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 3.75."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: muinasaeg (2)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "liiv", "kuldne", "kruus", "pruun", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "kivid,1.25,hall\nliiv,0.35,pruun\nliiv,0.8,kuldne\nkivid,2.5,must\nkivid,3.75,valge\nliiv,0.99,must"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "0.8"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 0.8.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 0.8."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: uusaasta",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "vaikne komeet", "sinine", "patarei", "kollane", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "vulkaan,15.50,punane\npatarei,145.00,kollane\nsuits,3.50,valge\nvaikne komeet,4.90,sinine"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "149.9"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 149.9.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 149.9."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: patareid",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "50-lasuline patarei", "valge", "50-lasuline patarei", "kollane", "100-lasuline patarei", "valge", "100-lasuline patarei", "kollane", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "100-lasuline patarei,65,valge\n100-lasuline patarei,75,kollane\n50-lasuline patarei,90,valge\n50-lasuline patarei,100,kollane"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "330.0"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 330.0.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 330.0."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: thunderking",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "Thunder King", "sinine", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "Thunder King,5.00,punane"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "0"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 0.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 0."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: thunderking (2)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "Babahh", "roheline", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "Thunder King,5.00,punane"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "0"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 0.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 0."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: mittemidagi",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "kinkekaart", "valge", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": ""
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "0"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 0.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on 0."
+        }
+      ]
+    },
+    {
+      "type": "program_execution_test",
+      "name": "Põhiprogramm: patareid",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 11679,
+      "standardInputData": [
+        "50-lasuline patarei", "valge", "50-lasuline patarei", "kollane", "100-lasuline patarei", "valge", "100-lasuline patarei", "kollane", ""
+      ],
+      "inputFiles": [
+        {
+          "fileName": "hinnakiri.txt",
+          "fileContent": "100-lasuline patarei,65,valge\n100-lasuline patarei,75,kollane\n50-lasuline patarei,90,valge\n50-lasuline patarei,100,kollane"
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 11711,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "330.0"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "outputCategory": "LAST_OUTPUT",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige kogusumma 330.0.",
+          "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on {expected}."
+        },
+          {
+              "id": 11711,
+              "checkType": "ALL_OF_THESE",
+              "expectedValue": [
+                  "90.0"
+              ],
+              "elementsOrdered": false,
+              "dataCategory": "CONTAINS_STRINGS",
+              "outputCategory": "OUTPUT_NUMBER_2",
+              "beforeMessage": "",
+              "passedMessage": "Programm väljastas õige kogusumma {expected}.",
+              "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on {expected}."
+          },
+          {
+              "id": 11711,
+              "checkType": "ALL_OF_THESE",
+              "expectedValue": [
+                  "190.0"
+              ],
+              "elementsOrdered": false,
+              "dataCategory": "CONTAINS_STRINGS",
+              "outputCategory": "OUTPUT_NUMBER_4",
+              "beforeMessage": "",
+              "passedMessage": "Programm väljastas õige kogusumma {expected}.",
+              "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on {expected}."
+          },
+          {
+              "id": 11711,
+              "checkType": "ALL_OF_THESE",
+              "expectedValue": [
+                  "255.0"
+              ],
+              "elementsOrdered": false,
+              "dataCategory": "CONTAINS_STRINGS",
+              "outputCategory": "OUTPUT_NUMBER_6",
+              "beforeMessage": "",
+              "passedMessage": "Programm väljastas õige kogusumma {expected}.",
+              "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on {expected}."
+          }
+      ]
+    },
+      {
+          "name": "Põhiprogramm sisaldab tsüklit",
+          "type": "mainProgram_contains_loop_test",
+          "id": 1,
+          "programContainsLoop": {
+              "mustNotContain": false,
+              "beforeMessage": "",
+              "passedMessage": "Põhiprogrammis leidub tsükkel.",
+              "failedMessage": "Põhiprogrammis ei leidu tsükkel"
+          }
+      },
+
+  ]
+}
