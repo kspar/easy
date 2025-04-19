@@ -1,0 +1,23 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_execution_test
+    id: 222
+    functionName: test
+    functionType: FUNCTION
+    arguments: []
+    genericChecks:
+      - checkType: ANY_OF_THESE
+        id: 654
+        elementsOrdered: false
+        expectedValue:
+          - regex:\\d+
+          - andmed.txt
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+    name: Funktsiooni käivituse test (isendimeetod).

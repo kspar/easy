@@ -1,0 +1,34 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+
+tests:
+  - type: class_is_parent_class_test
+    id: 222
+    className: ParentClass
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - ChildClass
+        - TestClass
+      beforeMessage: Kontrollib, kas klass on etteantud klasside ülemklass.
+      passedMessage: Klass on etteantud klasside ülemklass.
+      failedMessage: Klass ei ole etteantud klasside ülemklass.
+    name: Ülemklassi kontroll
+  - type: class_is_subclass_test
+    id: 222
+    className: ChildClass
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - ParentClass
+        - TestClass
+      beforeMessage: Kontrollib, kas klass on etteantud klassi alamklass.
+      passedMessage: Klass on etteantud klassi alamklass.
+      failedMessage: Klass ei ole etteantud klassi alamklass.
+    name: Alamklassi kontroll.
+
+
+

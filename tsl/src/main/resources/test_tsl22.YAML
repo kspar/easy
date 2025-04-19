@@ -1,0 +1,28 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: mainProgram_contains_keyword_test
+    id: 10
+    genericCheck:
+      id: 765
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - andmed.txt
+      beforeMessage: Kontrollib, kas põhiprogramm sisaldab võtmesõna.
+      passedMessage: Põhiprogramm sisaldab võtmesõna.
+      failedMessage: Põhiprogramm ei sisalda võtmesõna.
+    name: Põhiprogramm sisaldab võtmesõna.
+  - type: mainProgram_contains_phrase_test
+    id: 101
+    genericCheck:
+      id: 7659
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - andmed.txt
+      beforeMessage: Põhiprogramm, kas funktsioon sisaldab fraasi.
+      passedMessage: Põhiprogramm sisaldab fraasi.
+      failedMessage: Põhiprogramm ei sisalda fraasi.
+    name: Põhiprogramm sisaldab fraasi.
