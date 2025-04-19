@@ -12,7 +12,7 @@ tests:
       expectedValue:
         - test
         - parent_method
-      beforeMessage: Kontrollib, kas funktsioon kutsub välja turtle funktsiooni.
-      passedMessage: Funktsioon kutsus välja vähemalt ühe turtle funktsiooni.
-      failedMessage: Funktsioon ei kutsnud välja ühtegi turtle funktsiooni.
-    name: Funktsioon kutsub välja turtle funktsiooni.
+      beforeMessage: Kontrollib, kas klass kutsub välja klassi meetodid.
+      passedMessage: Klass kutsus välja kõik vajalikud klassi meetodid.
+      failedMessage: Klass ei kutsnud kõik vajalikud klassi meetodid.
+    name: Klass kutsub välja klassi meetodid.

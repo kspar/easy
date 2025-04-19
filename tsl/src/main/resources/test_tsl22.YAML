@@ -11,10 +11,10 @@ tests:
       checkType: ANY_OF_THESE
       expectedValue:
         - andmed.txt
-      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
-      passedMessage: Funktsioon sisaldab võtmesõna.
-      failedMessage: Funktsioon ei sisalda võtmesõna.
-    name: Funktsioon sisaldab võtmesõna.
+      beforeMessage: Kontrollib, kas põhiprogramm sisaldab võtmesõna.
+      passedMessage: Põhiprogramm sisaldab võtmesõna.
+      failedMessage: Põhiprogramm ei sisalda võtmesõna.
+    name: Põhiprogramm sisaldab võtmesõna.
   - type: mainProgram_contains_phrase_test
     id: 101
     genericCheck:
@@ -22,7 +22,7 @@ tests:
       checkType: ANY_OF_THESE
       expectedValue:
         - andmed.txt
-      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
-      passedMessage: Funktsioon sisaldab võtmesõna.
-      failedMessage: Funktsioon ei sisalda võtmesõna.
-    name: Funktsioon sisaldab võtmesõna.
+      beforeMessage: Põhiprogramm, kas funktsioon sisaldab fraasi.
+      passedMessage: Põhiprogramm sisaldab fraasi.
+      failedMessage: Põhiprogramm ei sisalda fraasi.
+    name: Põhiprogramm sisaldab fraasi.

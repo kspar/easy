@@ -15,16 +15,16 @@ tests:
         expectedValue:
           - tere
         elementsOrdered: true
-        beforeMessage: Kontrollib, kas funktsiooni väljundfail sisaldab võtmesõna.
-        passedMessage: Funktsiooni väljundfail sisaldab antud võtmesõna.
-        failedMessage: Funktsiooni väljundfail ei sisalda antud võtmesõna.
+        beforeMessage: Kontrollib, kas klassi isendi väljundfail sisaldab võtmesõna.
+        passedMessage: Klassi isendi  väljundfail sisaldab antud võtmesõna.
+        failedMessage: Klassi isendi  väljundfail ei sisalda antud võtmesõna.
       - fileName: valjundfail2.txt
         checkType: ALL_OF_THESE
         expectedValue:
            - tere
         elementsOrdered: true
-        beforeMessage: Kontrollib, kas funktsiooni väljundfail sisaldab võtmesõna.
-        passedMessage: Funktsiooni väljundfail sisaldab antud võtmesõna.
-        failedMessage: Funktsiooni väljundfail ei sisalda antud võtmesõna.
-    name: Funktsiooni käivituse test (tavaline).
+        beforeMessage: Kontrollib, kas klassi isendi väljundfail sisaldab võtmesõna.
+        passedMessage: Klassi isendi  väljundfail sisaldab antud võtmesõna.
+        failedMessage: Klassi isendi  väljundfail ei sisalda antud võtmesõna.
+    name: klassi käivituse test.
 

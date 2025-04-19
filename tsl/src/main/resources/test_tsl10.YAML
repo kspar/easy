@@ -14,8 +14,8 @@ tests:
         elementsOrdered: false
         expectedValue:
           - uuuus
-        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
-        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
-        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
-    name: Funktsiooni käivituse test (isendimeetod).
+        beforeMessage: Kontrollib, kas klassi isendi väljund sisaldab võtmesõna.
+        passedMessage: Klassi isendi  väljund sisaldab antud võtmesõna.
+        failedMessage: klassi isendi väljund ei sisalda antud võtmesõna.
+    name: klassi käivituse test.
 

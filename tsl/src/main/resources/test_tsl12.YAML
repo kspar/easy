@@ -11,7 +11,7 @@ tests:
       checkType: ANY_OF_THESE
       expectedValue:
         - ChildClass
-      beforeMessage: Kontrollib, kas programm kutsub välja turtle funktsiooni.
-      passedMessage: Programm kutsus välja vähemalt ühe turtle funktsiooni.
-      failedMessage: Programm ei kutsnud välja ühtegi turtle funktsiooni.
-    name: Programm kutsub välja turtle funktsiooni.
+      beforeMessage: Kontrollib, kas põhiprogramm kutsub välja {expected} klassi.
+      passedMessage: Põhirogramm kutsus välja {expected} klassi.
+      failedMessage: Põhirogramm ei kutsnud välja {expected} klassi.
+    name: Põhirogramm kutsub välja klassi.

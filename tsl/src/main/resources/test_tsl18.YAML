@@ -12,7 +12,7 @@ tests:
       checkType: ALL_OF_THESE
       expectedValue:
         - SUvalineFunktsiooon
-      beforeMessage: Kontrollib, kas funktsioon kutsub välja turtle funktsiooni.
-      passedMessage: Funktsioon kutsus välja vähemalt ühe turtle funktsiooni.
-      failedMessage: Funktsioon ei kutsnud välja ühtegi turtle funktsiooni.
-    name: Funktsioon kutsub välja turtle funktsiooni.
+      beforeMessage: Kontrollib, kas klass kutsub välja {expected} klassi meetodi.
+      passedMessage: Klass kutsus välja {expected} klassi meetodi.
+      failedMessage: Klass ei kutsnud välja {expected} klassi meetodi.
+    name: Klass kutsub välja klassi meetodi.

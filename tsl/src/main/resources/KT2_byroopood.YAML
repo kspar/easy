@@ -438,7 +438,7 @@
               "outputCategory": "OUTPUT_NUMBER_4",
               "beforeMessage": "",
               "passedMessage": "Programm väljastas õige kogusumma {expected}.",
-              "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat. Ootasin, et kogusumma on {expected}."
+              "failedMessage": "Ei leidnud programmi väljundist õiget kogusummat, sain {actual}. Ootasin, et kogusumma on {expected}."
           },
           {
               "id": 11711,

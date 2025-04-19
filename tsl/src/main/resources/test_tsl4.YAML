@@ -29,3 +29,6 @@ tests:
       passedMessage: Klass on etteantud klassi alamklass.
       failedMessage: Klass ei ole etteantud klassi alamklass.
     name: Alamklassi kontroll.
+
+
+

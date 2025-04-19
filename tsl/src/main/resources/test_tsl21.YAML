@@ -12,7 +12,7 @@ tests:
       checkType: ANY_OF_THESE
       expectedValue:
         - andmed.txt
-      beforeMessage: Kontrollib, kas funktsioon sisaldab võtmesõna.
-      passedMessage: Funktsioon sisaldab võtmesõna.
-      failedMessage: Funktsioon ei sisalda võtmesõna.
-    name: Funktsioon sisaldab võtmesõna.
+      beforeMessage: Kontrollib, kas klass sisaldab võtmesõna.
+      passedMessage: Klass sisaldab võtmesõna.
+      failedMessage: Klass ei sisalda võtmesõna.
+    name: Klass sisaldab võtmesõna.
