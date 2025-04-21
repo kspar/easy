@@ -1,0 +1,24 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+- type: class_instance_test
+  id: 1323
+  className: ChildClass
+  classInstanceChecks:
+    - fieldsFinal:
+        - fieldName: "title"
+          fieldContent: '"yks"'
+        - fieldName: "pages"
+          fieldContent: 453
+      checkName: True
+      checkValue: True
+      nothingElse: True
+      beforeMessage: Kontrollib, kas klassi isend väärtustab õiged väljad.
+      passedMessage: Klassi isend väärtustas õiged väljad.
+      failedMessage: Klassi isend ei väärtustanud õigeid välju.
+  createObject: return ChildClass("yks", 453)
+  name: Klassi isendi loomise test

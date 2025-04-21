@@ -1,0 +1,18 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_calls_class_function_test
+    id: 12
+    functionName: test
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - test
+        - parent_method
+      beforeMessage: Kontrollib, kas funktsioon kutsub välja klassi meetodid.
+      passedMessage: Funktsioon kutsus välja kõik vajalikud klassi meetodid.
+      failedMessage: Funktsioon ei kutsnud kõik vajalikud klassi meetodid.
+    name: Funktsioon kutsub välja klassi meetodid.

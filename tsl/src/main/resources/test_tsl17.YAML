@@ -1,0 +1,48 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_execution_test
+    id: 224
+    functionName: test
+    functionType: FUNCTION
+    standardInputData:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+    genericChecks:
+      - checkType: ALL_OF_THESE
+        id: 543
+        elementsOrdered: false
+        outputCategory: OUTPUT_NUMBER_0
+        expectedValue:
+          - Enne esimest
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+      - checkType: ALL_OF_THESE
+        id: 543
+        elementsOrdered: false
+        outputCategory: OUTPUT_NUMBER_1
+        expectedValue:
+          - Pärast esimest
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+      - checkType: ALL_OF_THESE
+        id: 543
+        elementsOrdered: false
+        outputCategory: OUTPUT_NUMBER_2
+        expectedValue:
+          - Pärast teist
+        beforeMessage: Kontrollib, kas funktsiooni väljund sisaldab võtmesõna.
+        passedMessage: Funktsiooni väljund sisaldab antud võtmesõna.
+        failedMessage: Funktsiooni väljund ei sisalda antud võtmesõna.
+
+    name: Funktsiooni käivituse test (klassimeetod).
