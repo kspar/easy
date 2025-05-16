@@ -581,5 +581,15 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="160525-1" author="priit">
+        <dropForeignKeyConstraint baseTableName="group_exercise_dir_access"
+                                  constraintName="fk_group_exercise_dir_access_group"/>
+
+
+        <addForeignKeyConstraint baseTableName="group_exercise_dir_access" baseColumnNames="group_id"
+                                 referencedTableName="group" referencedColumnNames="id"
+                                 constraintName="fk_group_exercise_dir_access_group" onDelete="CASCADE"/>
+    </changeSet>
+
 
 </databaseChangeLog>
