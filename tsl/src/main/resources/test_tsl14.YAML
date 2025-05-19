@@ -1,0 +1,17 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: mainProgram_calls_class_function_test
+    id: 3
+    genericCheck:
+      checkType: ANY_OF_THESE
+      expectedValue:
+        - main
+      beforeMessage: Kontrollib, kas põhiprogramm kutsub välja {expected} klassi meetodi.
+      passedMessage: Põhirogramm kutsus välja {expected} klassi meetodi.
+      failedMessage: Põhirogramm ei kutsnud välja {expected} klassi meetodi.
+    name: Põhirogramm kutsub välja klassi meetodi.

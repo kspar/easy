@@ -1,0 +1,25 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_execution_test
+    id: 222
+    functionName: test
+    functionType: FUNCTION
+    arguments: [2,3]
+    returnValueCheck:
+      returnValue: '''lambda x: 4 <= x <= 7'''
+      beforeMessage: Kontrollib, kas funktsiooni tagastatud väärtus on vahemikus 4-7.
+      passedMessage: Funktsiooni tagastatud väärtus on õiges vahemiks.
+      failedMessage: Funktsiooni tagastatud väärtus ei ole vahemiks 4-7.
+    name: Funktsiooni käivituse test.
+
+
+
+
+
+
+

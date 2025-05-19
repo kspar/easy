@@ -1,0 +1,32 @@
+# Example TSL file.
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+- type: function_execution_test
+  id: 223
+  functionName: hulkade_otsekorrutis
+  functionType: FUNCTION
+  arguments:
+    - '{"a","b"}'
+    - '{1,2,3}'
+  returnValueCheck:
+    returnValue: |
+      '''
+      def hulkade_otsekorrutis(hulk1, hulk2): 
+          tulemus = set()
+          for a in hulk1:
+            for b in hulk2:
+              tulemus.add((a,b))
+          return tulemus
+      '''
+    beforeMessage: Kontrollib, kas funktsioon tagastab õige väärtuse.
+    passedMessage: Funktsioon tagastab õige väärtuse.
+    failedMessage: Funktsioon ei tagasta õiget väärtust.
+  name: Funktsiooni käivituse test.
+
+
+
+

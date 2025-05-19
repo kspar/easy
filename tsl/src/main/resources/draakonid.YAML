@@ -1,0 +1,1112 @@
+##https://lahendus.ut.ee/courses/137/exercises/4922/Harjutus%C3%BClesanne-14.2.-Draakonid
+
+{
+  "language": "python3",
+  "validateFiles": true,
+  "requiredFiles": [
+    "lahendus.py"
+  ],
+  "tslVersion": "1.0",
+  "tests": [
+    {
+      "type": "program_defines_class_test",
+      "name": "Leidub klass Draakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "Draakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab klassi Draakon.",
+        "failedMessage": "Ei leidnud programmist klassi Draakon."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Draakon leidub konstruktor",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Draakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "nothingElse": null,
+        "expectedValue": [
+          "__init__"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Draakon leidub konstruktor.",
+        "failedMessage": "Ei leidnud klassist Draakon konstruktorit __init__."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Draakon leidub meetod 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Draakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "nothingElse": null,
+        "expectedValue": [
+          "ründa"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Draakon leidub meetod 'ründa'.",
+        "failedMessage": "Ei leidnud klassist Draakon meetodit 'ründa'."
+      }
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Draakon('Falak')",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Draakon",
+      "createObject": "a = Draakon('Falak')\na.ründa()\nreturn a",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Falak'"
+            }
+          ],
+          "checkName": true,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Draakon('Falak') sisu on õige.",
+          "failedMessage": "Klassi isendi Draakon('Falak') väljad või nende väärtused pole õiged, sain {class_real_fields}. Ootasin, et isend on järgmine: {expected}."
+        }
+      ],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Falak", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Falak möirgab'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Falak ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Draakon('Falak')",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Falak", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Falak möirgab'."
+        }
+      ]
+    },
+    {
+      "type": "program_defines_class_test",
+      "name": "Leidub klass Maadraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "Maadraakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab klassi Maadraakon.",
+        "failedMessage": "Ei leidnud programmist klassi Maadraakon."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Maadraakon leidub konstruktor",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Maadraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "nothingElse": null,
+        "expectedValue": [
+          "__init__"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Maadraakon leidub konstruktor.",
+        "failedMessage": "Ei leidnud klassist Maadraakon konstruktorit __init__."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Maadraakon leidub meetod 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Maadraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "ründa"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Maadraakon leidub meetod 'ründa'.",
+        "failedMessage": "Ei leidnud klassist Maadraakon meetodit 'ründa'."
+      }
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Maadraakon('Kryos', 3)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Maadraakon",
+      "createObject": "return Maadraakon('Kryos', 3)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Kryos'"
+            },
+            {
+              "fieldName": "energiat",
+              "fieldContent": "3"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Maadraakon('Kryos', 3) sisu on õige.",
+          "failedMessage": "Klassi isendi Maadraakon('Kryos', 3) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Maadraakon(nimi='Kryos', energiat=3)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Kryos ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Maadraakon('Kryos', 3)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Kryos", "maad"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Kryos väristab maad'."
+        }
+      ]
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Maadraakon('Fyra', 0)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Maadraakon",
+      "createObject": "return Maadraakon('Fyra', 0)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Fyra'"
+            },
+            {
+              "fieldName": "energiat",
+              "fieldContent": "0"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Maadraakon('Fyra', 0) sisu on õige.",
+          "failedMessage": "Klassi isendi Maadraakon('Fyra', 0) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Maadraakon(nimi='Fyra', energiat=0)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Fyra ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Maadraakon('Fyra', 0)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Fyra", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Fyra möirgab'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "maad"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon väristab maad, kuigi tal selleks energiat ei ole. Ootasin, et väljastatakse ainult tekst 'Fyra möirgab'."
+        }
+      ]
+    },
+    {
+      "type": "program_defines_class_test",
+      "name": "Leidub klass Tuledraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "Tuledraakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab klassi Tuledraakon.",
+        "failedMessage": "Ei leidnud programmist klassi Tuledraakon."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Tuledraakon leidub konstruktor",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Tuledraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "__init__"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Tuledraakon leidub konstruktor.",
+        "failedMessage": "Ei leidnud klassist Tuledraakon konstruktorit __init__."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Tuledraakon leidub meetod 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Tuledraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "ründa"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Tuledraakon leidub meetod 'ründa'.",
+        "failedMessage": "Ei leidnud klassist Tuledraakon meetodit 'ründa'."
+      }
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Tuledraakon('Ignis', 15)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Tuledraakon",
+      "createObject": "return Tuledraakon('Ignis', 15)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Ignis'"
+            },
+            {
+              "fieldName": "kütust",
+              "fieldContent": "15"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Tuledraakon('Ignis', 15) sisu on õige.",
+          "failedMessage": "Klassi isendi Tuledraakon('Ignis', 15) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Tuledraakon(nimi='Ignis', kütust=15)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Ignis ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Tuledraakon('Ignis', 15)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Ignis", "tuld"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Ignis sülgab tuld'."
+        }
+      ]
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Tuledraakon('Pyroth', 5)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Tuledraakon",
+      "createObject": "return Tuledraakon('Pyroth', 5)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Pyroth'"
+            },
+            {
+              "fieldName": "kütust",
+              "fieldContent": "5"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Tuledraakon('Pyroth', 5) sisu on õige.",
+          "failedMessage": "Klassi isendi Tuledraakon('Pyroth', 5) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Tuledraakon(nimi='Pyroth', kütust=5)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Pyroth ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Tuledraakon('Pyroth', 5)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Pyroth", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Pyroth möirgab'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "maad"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon sülgab tuld, kuigi tal ei ole selleks piisavalt kütust. Ootasin, et väljastatakse ainult tekst 'Pyroth möirgab'."
+        }
+      ]
+    },
+    {
+      "type": "program_defines_class_test",
+      "name": "Leidub klass Kividraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "Kividraakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab klassi Kividraakon.",
+        "failedMessage": "Ei leidnud programmist klassi Kividraakon."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Kividraakon leidub konstruktor",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Kividraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "__init__"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Kividraakon leidub konstruktor.",
+        "failedMessage": "Ei leidnud klassist Kividraakon konstruktorit __init__."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Kividraakon leidub meetod 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Kividraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "ründa"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Kividraakon leidub meetod 'ründa'.",
+        "failedMessage": "Ei leidnud klassist Kividraakon meetodit 'ründa'."
+      }
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Kividraakon('Rhea', 10, 5)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Kividraakon",
+      "createObject": "return Kividraakon('Rhea', 10, 5)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Rhea'"
+            },
+            {
+              "fieldName": "energiat",
+              "fieldContent": "10"
+            },
+            {
+              "fieldName": "kivisid",
+              "fieldContent": "5"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Kividraakon('Rhea', 10, 5) sisu on õige.",
+          "failedMessage": "Klassi isendi Kividraakon('Rhea', 10, 5) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Kividraakon(nimi='Rhea', energiat=10, kivisid=5)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Rhea ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Kividraakon('Rhea', 10, 5)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Rhea", "kivi"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Rhea heidab 3 kivi'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "maad", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon väristab maad või möirgab. Ootasin, et väljastatakse ainult tekst 'Rhea heidab 3 kivi'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Kividraakon('Kora', 8, 2) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Kividraakon('Kora', 8, 2)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Kora", "kivi"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Kora heidab 2 kivi'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "maad", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon väristab maad või möirgab. Ootasin, et väljastatakse ainult tekst 'Kora heidab 2 kivi'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Kividraakon('Theo', 2, 0) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Kividraakon('Theo', 2, 0)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Theo", "maad"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Theo väristab maad'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "kivi", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon heidab kivi või möirgab. Ootasin, et väljastatakse ainult tekst 'Theo väristab maad'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Kividraakon('Zare', 0, 0) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Kividraakon('Zare', 0, 0)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Zare", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Zare möirgab'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "kivi", "maad"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon heidab kivi või väristab maad. Ootasin, et väljastatakse ainult tekst 'Zare möirgab'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Kividraakon('Norq', 3, 4) ründab kuus korda",
+      "type": "function_execution_test",
+      "functionName": "test",
+      "functionType": "METHOD",
+      "createObject": "class Test:\n def test():\n  k = Kividraakon('Norq', 3, 4)\n  for i in range(6): k.ründa()\nreturn Test",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "kivi", "kivi", "maad", "maad", "maad", "möirgab"
+          ],
+          "elementsOrdered": true,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti tekstid.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õigeid tekste. Ootasin, et draakon heidab kaks korda kive, väristab kolm korda maad ja möirgab üks kord."
+        }
+      ]
+    },
+    {
+      "type": "program_defines_class_test",
+      "name": "Leidub klass Laavadraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "Laavadraakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab klassi Laavadraakon.",
+        "failedMessage": "Ei leidnud programmist klassi Laavadraakon."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Laavadraakon leidub konstruktor",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Laavadraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "nothingElse": null,
+        "expectedValue": [
+          "__init__"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Laavadraakon leidub konstruktor.",
+        "failedMessage": "Ei leidnud klassist Laavadraakon konstruktorit __init__."
+      }
+    },
+    {
+      "type": "class_defines_function_test",
+      "name": "Klassis Laavadraakon leidub meetod 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Laavadraakon",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "ründa"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Klassis Laavadraakon leidub meetod 'ründa'.",
+        "failedMessage": "Ei leidnud klassist Laavadraakon meetodit 'ründa'."
+      }
+    },
+    {
+      "type": "program_calls_function_test",
+      "name": "Programm kasutab juhuslikkust.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ANY_OF_THESE",
+        "expectedValue": ["randint", "randrange", "randbelow"],
+        "beforeMessage": "",
+        "passedMessage": "Programm genereerib juhusliku täisarvu.",
+        "failedMessage": "Programm ei genereeri laava kogust juhuslikult."
+      }
+    },
+    {
+      "type": "class_instance_test",
+      "name": "Laavadraakon('Sira', 25, 200)",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 2,
+      "className": "Laavadraakon",
+      "createObject": "return Laavadraakon('Sira', 25, 200)",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {
+              "fieldName": "nimi",
+              "fieldContent": "'Sira'"
+            },
+            {
+              "fieldName": "kütust",
+              "fieldContent": "25"
+            },
+            {
+              "fieldName": "laavat",
+              "fieldContent": "200"
+            }
+          ],
+          "checkName": false,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "",
+          "passedMessage": "Klassi isendi Laavadraakon('Sira', 25, 200) sisu on õige.",
+          "failedMessage": "Klassi isendi Laavadraakon('Sira', 25, 200) väljad või nende väärtused pole õiged. Ootasin, et isend on järgmine: Laavadraakon(nimi='Sira', kütust=25, laavat=200)."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Sira ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Laavadraakon('Sira', 25, 200)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Sira", "laavat"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Sira paiskab laavat'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "tuld", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon sülgab tuld või möirgab. Ootasin, et väljastatakse ainult tekst 'Sira paiskab laavat'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Laavadraakon('Zephyr', 20, 1) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Laavadraakon('Zephyr', 20, 1)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": [
+            "Zephyr", "laavat"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Zephyr paiskab laavat'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "tuld", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon sülgab tuld või möirgab. Ootasin, et väljastatakse ainult tekst 'Zephyr paiskab laavat'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Laavadraakon('Nala', 30, 0) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Laavadraakon('Nala', 30, 0)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Nala", "tuld"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Nala sülgab tuld'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "laavat", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon paiskab laavat või möirgab. Ootasin, et väljastatakse ainult tekst 'Nala sülgab tuld'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Laavadraakon('Laki', 0, 0) ründab",
+      "type": "function_execution_test",
+      "functionName": "ründa",
+      "functionType": "METHOD",
+      "createObject": "return Laavadraakon('Laki', 0, 0)",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "Laki", "möirgab"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti teksti.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õiget teksti. Ootasin, et väljastatakse tekst 'Laki möirgab'."
+        },
+        {
+          "id": 10481,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "laavat", "tuld"
+          ],
+          "elementsOrdered": false,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() ei väljastanud mittesobivat teksti.",
+          "failedMessage": "Meetod ründa() väljastas, et draakon paiskab laavat või sülgab tuld. Ootasin, et väljastatakse ainult tekst 'Laki möirgab'."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Laavadraakon('Brynx', 25, 1) ründab viis korda",
+      "type": "function_execution_test",
+      "functionName": "test",
+      "functionType": "METHOD",
+      "createObject": "class Test:\n def test():\n  k = Laavadraakon('Brynx', 25, 1)\n  for i in range(5): k.ründa()\nreturn Test",
+      "arguments": [],
+      "genericChecks": [
+        {
+          "id": 10481,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "laavat", "tuld", "tuld", "möirgab", "möirgab"
+          ],
+          "elementsOrdered": true,
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Meetod ründa() väljastas õigesti tekstid.",
+          "failedMessage": "Meetod ründa() ei väljastanud ekraanile õigeid tekste. Ootasin, et draakon paiskab üks kord laavat, sülgab kaks korda tuld ja möirgab kaks korda."
+        }
+      ]
+    },
+    {
+      "type": "program_calls_function_test",
+      "name": "Programm loob draakoni",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ANY_OF_THESE",
+        "nothingElse": null,
+        "expectedValue": [
+          "Draakon", "Maadraakon", "Tuledraakon", "Kividraakon", "Laavadraakon"
+        ],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm loob vähemalt ühe draakonit.",
+        "failedMessage": "Programm ei loo ühtegi draakonit."
+      }
+    },
+    {
+      "type": "program_contains_loop_test",
+      "name": "Programm sisaldab tsüklit",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "programContainsLoop": {
+        "mustNotContain": false,
+        "beforeMessage": "",
+        "passedMessage": "Programm sisaldab tsüklit.",
+        "failedMessage": "Programm ei sisalda tsüklit. Programm peaks korduvalt valima draakoni ja rakendama selle meetodit ründa()."
+      }
+    },
+    {
+      "type": "program_calls_function_test",
+      "name": "Programm rakendab isendimeetodit 'ründa'.",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["ründa"],
+        "beforeMessage": "",
+        "passedMessage": "Programm kutsub välja isendimeetodi 'ründa'.",
+        "failedMessage": "Programm ei kutsu välja isendimeetodit 'ründa'."
+      }
+    },
+    {
+      "type": "class_is_subclass_test",
+      "name": "Tuledraakon on DRaakoni alamklass.",
+      "className": "Maadraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [ "Draakon" ],
+        "beforeMessage": "",
+        "passedMessage": "Maadraakon on Draakoni alamklass",
+        "failedMessage": "Maadraakon ei ole Draakoni alamklass"
+      }
+    },
+    {
+      "type": "class_is_subclass_test",
+      "name": "Tuledraakon on DRaakoni alamklass.",
+      "className": "Kividraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [ "Maadraakon" ],
+        "beforeMessage": "",
+        "passedMessage": "Kividraakon on Maadraakon alamklass",
+        "failedMessage": "Kividraakon ei ole Maadraakon alamklass"
+      }
+    },
+    {
+      "type": "class_is_subclass_test",
+      "name": "Tuledraakon on DRaakoni alamklass.",
+      "className": "Tuledraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [ "Draakon" ],
+        "beforeMessage": "",
+        "passedMessage": "Tuledraakon on Draakoni alamklass",
+        "failedMessage": "Tuledraakon ei ole Draakoni alamklass"
+      }
+    },
+    {
+      "type": "class_is_subclass_test",
+      "name": "Tuledraakon on DRaakoni alamklass.",
+      "className": "Laavadraakon",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [ "Tuledraakon" ],
+        "beforeMessage": "",
+        "passedMessage": "Laavadraakon on Tuledraakoni alamklass",
+        "failedMessage": "Laavadraakon ei ole Tuledraakoni alamklass"
+      }
+    }
+
+  ]
+}

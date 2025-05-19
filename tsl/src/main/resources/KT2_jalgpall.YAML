@@ -1,0 +1,470 @@
+#https://lahendus.ut.ee/courses/137/exercises/4914/KT2-(variant-A)-n%C3%A4idis%C3%BClesanne-1.-Jalgpall
+
+{
+  "language": "python3",
+  "validateFiles": true,
+  "requiredFiles": [
+    "lahendus.py"
+  ],
+  "tslVersion": "1.0",
+  "tests": [
+    {
+      "name": "Leidub funktsioon 'leia_keskmised'.",
+      "type": "program_defines_function_test",
+      "id": 2,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["leia_keskmised"],
+        "beforeMessage": "",
+        "passedMessage": "Leidsin programmist funktsiooni 'leia_keskmised' definitsiooni.",
+        "failedMessage": "Ei leidnud programmist funktsiooni 'leia_keskmised' definitsiooni."
+      }
+    },
+    {
+      "type": "function_contains_keyword_test",
+      "name": "Funktsioon 'leia_keskmised' kasutab õiget sisendfaili",
+      "pointsWeight": 1,
+      "visibleToUser": true,
+      "id": 1,
+        "functionName": "leia_keskmised",
+      "genericCheck": {
+        "id": 2,
+        "checkType": "MISSING_AT_LEAST_ONE_OF_THESE",
+        "expectedValue": ["väravad", "txt"],
+        "elementsOrdered": true,
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon kasutab õiget faili.",
+        "failedMessage": "Funktsioon peaks andmed lugema sellest failist, mis antakse talle ette argumendina (st mitte failist 'väravad.txt')."
+      }
+    },
+    {
+      "name": "leia_keskmised('rahvaliiga.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "rahvaliiga.txt",
+          "fileContent": "1 2 0 0 0 2\n0 0 0 0 0 0\n10 5 9 2 6 14\n0 3 0 11 2 1"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": ["'rahvaliiga.txt'"],
+      "returnValueCheck": {
+        "returnValue": "[0.83, 0.0, 7.67, 2.83]",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('rahvaliiga.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "rahvaliiga.txt",
+          "fileContent": "1 2 0 0 0 2\n0 0 0 0 0 0\n10 5 9 2 6 14\n0 3 0 11 2 1"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": [ "'rahvaliiga.txt'" ],
+      "returnValueCheck": {
+        "returnValue":  '''\ndef leia_keskmised(fail):\n    f = open(fail, "r")\n    keskmised = []\n    for rida in f:\n        j\u00e4rjendtekst = rida.strip().split(\" \")\n        j\u00e4rjend = []\n        for el in j\u00e4rjendtekst:\n            el = int(el)\n            j\u00e4rjend.append(el)\n        keskmine = round(sum(j\u00e4rjend) / len(j\u00e4rjend), 2)\n        keskmised.append(keskmine)\n    return keskmised\n'''
+        ,
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('rahvaliiga.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "rahvaliiga.txt",
+          "fileContent": "1 2 3 0 2 2\n0 0 0 0 0 0\n10 5 9 2 1 14\n1 3 0 11 2 1"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": [ "'rahvaliiga.txt'" ],
+      "returnValueCheck": {
+        "returnValue": '''\ndef leia_keskmised(fail):\n    f = open(fail, "r")\n    keskmised = []\n    for rida in f:\n        j\u00e4rjendtekst = rida.strip().split(\" \")\n        j\u00e4rjend = []\n        for el in j\u00e4rjendtekst:\n            el = int(el)\n            j\u00e4rjend.append(el)\n        keskmine = round(sum(j\u00e4rjend) / len(j\u00e4rjend), 2)\n        keskmised.append(keskmine)\n    return keskmised\n'''
+        ,
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('rahvaliiga.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "rahvaliiga.txt",
+          "fileContent": "9 9 3 0 2 2\n0 0 1 0 0 0\n0 1 9 2 1 14\n1 3 0 11 2 9"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": [ "'rahvaliiga.txt'" ],
+      "returnValueCheck": {
+        "returnValue": '''\ndef leia_keskmised(fail):\n    f = open(fail, "r")\n    keskmised = []\n    for rida in f:\n        j\u00e4rjendtekst = rida.strip().split(\" \")\n        j\u00e4rjend = []\n        for el in j\u00e4rjendtekst:\n            el = int(el)\n            j\u00e4rjend.append(el)\n        keskmine = round(sum(j\u00e4rjend) / len(j\u00e4rjend), 2)\n        keskmised.append(keskmine)\n    return keskmised\n'''
+        ,
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('rahvaliiga.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "rahvaliiga.txt",
+          "fileContent": "9 9 3 0 2 2\n0 0 1 0 0 0\n0 1 9 2 1 14\n1 3 0 11 2 9"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": [ "'rahvaliiga.txt'" ],
+      "returnValueCheck": {
+        "returnValue": '''lambda x: isinstance(x, list) and all(isinstance(el, float) for el in x)''',
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas massiivi kus kõik elemdid on float tüüpi.",
+        "failedMessage": "Funktsioon ei tagastanud massiivi kus kõik elemdid on float tüüpi."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('voor.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "voor.txt",
+          "fileContent": "1\n2\n1\n3\n0\n1\n0"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": ["'voor.txt'"],
+      "returnValueCheck": {
+        "returnValue": "[1.0, 2.0, 1.0, 3.0, 0.0, 1.0, 0.0]",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('mängija.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "mängija.txt",
+          "fileContent": "1 2 2 0 1 0 2"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": ["'mängija.txt'"],
+      "returnValueCheck": {
+        "returnValue": "[1.14]",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "leia_keskmised('tulemus.txt')",
+      "type": "function_execution_test",
+      "id": 3,
+      "inputFiles": [
+        {
+          "fileName": "tulemus.txt",
+          "fileContent": "2"
+        }
+      ],
+      "functionName": "leia_keskmised",
+      "functionType": "FUNCTION",
+      "arguments": ["'tulemus.txt'"],
+      "returnValueCheck": {
+        "returnValue": "[2.0]",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "Leidub funktsioon 'kas_rohkem_väravaid'.",
+      "type": "program_defines_function_test",
+      "id": 2,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["kas_rohkem_väravaid"],
+        "beforeMessage": "",
+        "passedMessage": "Leidsin programmist funktsiooni 'kas_rohkem_väravaid' definitsiooni.",
+        "failedMessage": "Ei leidnud programmist funktsiooni 'kas_rohkem_väravaid' definitsiooni."
+      }
+    },
+    {
+      "name": "kas_rohkem_väravaid([0.55, 0.82, 0.64, 0.75], 20)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[0.55, 0.82, 0.64, 0.75]", "20"],
+      "returnValueCheck": {
+        "returnValue": "True",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "kas_rohkem_väravaid([0.75, 1.1, 0.8, 0.55, 0.9], 21)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[0.75, 1.1, 0.8, 0.55, 0.9]", "23"],
+      "returnValueCheck": {
+        "returnValue": "False",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "kas_rohkem_väravaid([0.9, 0.5, 1.2, 0.6, 0.8], 28)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[0.9, 0.5, 1.2, 0.6, 0.8]", "28"],
+      "returnValueCheck": {
+        "returnValue": "False",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "kas_rohkem_väravaid([1.3, 0.9, 1.0, 0.5], 30)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[1.3, 0.9, 1.0, 0.5]", "30"],
+      "returnValueCheck": {
+        "returnValue": "False",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "kas_rohkem_väravaid([1.0, 1.5, 1.2, 1.7], 38)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[1.0, 1.5, 1.2, 1.7]", "38"],
+      "returnValueCheck": {
+        "returnValue": "True",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "kas_rohkem_väravaid([2.5, 3.2], 76)",
+      "type": "function_execution_test",
+      "id": 3,
+      "functionName": "kas_rohkem_väravaid",
+      "functionType": "FUNCTION",
+      "arguments": ["[2.5, 1.8]", "76"],
+      "returnValueCheck": {
+        "returnValue": "False",
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon tagastas õige väärtuse {expected}.",
+        "failedMessage": "Funktsioon ei tööta nii nagu vaja, funktsioon peaks tagastama {expected}, aga tagastas {actual}."
+      },
+      "functionNotDefinedErrorMsg": "Funktsioon on defineerimata."
+    },
+    {
+      "name": "Funktsioon 'kas_rohkem_väravaid' ei prindi",
+      "type": "function_calls_print_test",
+      "id": 1,
+      "functionName": "kas_rohkem_väravaid",
+      "callsCheck": {
+        "mustNotCall": true,
+        "beforeMessage": "",
+        "passedMessage": "Funktsioon 'kas_rohkem_väravaid' käsitleb leitud väärtust korrektselt.",
+        "failedMessage": "Funktsioon 'kas_rohkem_väravaid' ei tohiks midagi printida, väärtus tuleks tagastada käsuga 'return'."
+      }
+    },
+    {
+      "name": "Programm kasutab funktsioone 'leia_keskmised' ja 'kas_rohkem_väravaid'.",
+      "type": "program_calls_function_test",
+      "id": 2,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["leia_keskmised", "kas_rohkem_väravaid"],
+        "beforeMessage": "",
+        "passedMessage": "Programm kutsub välja funktsioonid 'leia_keskmised' ja 'kas_rohkem_väravaid'.",
+        "failedMessage": "Programm ei kutsu välja kõiki funktsioone: 'leia_keskmised', 'kas_rohkem_väravaid'."
+      }
+    },
+    {
+      "name": "Põhiprogramm kasutab funktsioone 'leia_keskmised' ja 'kas_rohkem_väravaid'.",
+      "type": "mainProgram_calls_function_test",
+      "id": 2,
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [ "leia_keskmised", "kas_rohkem_väravaid" ],
+        "beforeMessage": "",
+        "passedMessage": "Põhiprogramm kutsub välja funktsioonid 'leia_keskmised' ja 'kas_rohkem_väravaid'.",
+        "failedMessage": "Põhiprogramm ei kutsu välja kõiki funktsioone: 'leia_keskmised', 'kas_rohkem_väravaid'."
+      }
+    },
+    {
+      "name": "turniir.txt",
+      "type": "program_execution_test",
+      "id": 4,
+      "inputFiles": [
+        {
+          "fileName": "turniir.txt",
+          "fileContent": "2 3 0 2\n0 1 2 3\n3 1 2 1\n0 0 2 2\n0 2 2 1"
+        }
+      ],
+      "standardInputData": ["turniir.txt", "38"],
+      "genericChecks": [
+        {
+          "id": 10554,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "38", "1.75", "1.5", "1.75", "1.0", "1.25"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "elementsOrdered": true,
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õiged mängijate keskmised tulemused.",
+          "failedMessage": "Ei leidnud programmi väljundist õigeid mängijate keskmisi tulemusi: 1.75, 1.5, 1.75, 1.0, 1.25."
+        },
+        {
+          "id": 12604,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "löövad"
+          ],
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige hinnangu, et kõik mängijad löövad tõenäoliselt piisavalt väravaid.",
+          "failedMessage": "Ei leidnud programmi väljundist teksti, et kõik mängijad löövad tõenäoliselt piisavalt väravaid."
+        },
+        {
+          "id": 10554,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "38", "1.75", "1.5", "1.75", "1.0", "1.25"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "nothingElse": true,
+          "beforeMessage": "",
+          "passedMessage": "Väljund on sobival kujul.",
+          "failedMessage": "Programm väljastas veel muid, asjakohatuid arve."
+        },
+        {
+          "id": 12604,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "ei löö"
+          ],
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Hinnangu kuju sobib.",
+          "failedMessage": "Programm väljastas lisaks ka teksti, et mängijad ei löö piisavalt väravaid."
+        }
+      ]
+    },
+    {
+      "name": "statistika.txt",
+      "type": "program_execution_test",
+      "id": 4,
+      "inputFiles": [
+        {
+          "fileName": "statistika.txt",
+          "fileContent": "0 0 0 0 0 2 1 0 1 0 1 1 0 0 0\n1 0 1 0 1 0 0 1 0 0 0 0 1 0 0"
+        }
+      ],
+      "standardInputData": ["statistika.txt", "15"],
+      "genericChecks": [
+        {
+          "id": 10554,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "15", "0.4", "0.33"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "elementsOrdered": true,
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õiged mängijate keskmised tulemused.",
+          "failedMessage": "Ei leidnud programmi väljundist õigeid mängijate keskmisi tulemusi: 0.4, 0.33."
+        },
+        {
+          "id": 12604,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "ei löö"
+          ],
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Programm väljastas õige hinnangu, et kõik mängijad ei löö tõenäoliselt piisavalt väravaid.",
+          "failedMessage": "Ei leidnud programmi väljundist teksti, et kõik mängijad ei löö tõenäoliselt piisavalt väravaid."
+        },
+        {
+          "id": 10554,
+          "checkType": "ALL_OF_THESE",
+          "expectedValue": [
+            "15", "0.4", "0.33"
+          ],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "nothingElse": true,
+          "beforeMessage": "",
+          "passedMessage": "Väljund on sobival kujul.",
+          "failedMessage": "Programm väljastas veel muid, asjakohatuid arve."
+        },
+        {
+          "id": 12604,
+          "checkType": "NONE_OF_THESE",
+          "expectedValue": [
+            "löövad"
+          ],
+          "dataCategory": "CONTAINS_STRINGS",
+          "beforeMessage": "",
+          "passedMessage": "Hinnangu kuju sobib.",
+          "failedMessage": "Programm väljastas lisaks ka teksti, et mängijad löövad piisavalt väravaid."
+        }
+      ]
+    }
+  ]
+}

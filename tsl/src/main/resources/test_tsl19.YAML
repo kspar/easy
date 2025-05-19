@@ -1,0 +1,18 @@
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: function_calls_class_function_test
+    id: 12
+    functionName: funkstioonMidaPoleOemas
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - test
+        - parent_method
+      beforeMessage: Kontrollib, kas funktsioon kutsub välja {expected} klassi meetodi.
+      passedMessage: Funktsioon kutsus välja {expected} klassi meetodi.
+      failedMessage: Funktsioon ei kutsnud välja {expected} klassi meetodi.
+    name: Funktsioon kutsub välja klassi meetodi.

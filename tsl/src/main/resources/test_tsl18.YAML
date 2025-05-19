@@ -1,0 +1,18 @@
+#
+language: python3
+validateFiles: true
+tslVersion: 1.0.0
+requiredFiles:
+  - lahendus.py
+tests:
+  - type: class_calls_class_function_test
+    id: 12
+    className: KlassMidaPoleOlemas
+    genericCheck:
+      checkType: ALL_OF_THESE
+      expectedValue:
+        - SUvalineFunktsiooon
+      beforeMessage: Kontrollib, kas klass kutsub välja {expected} klassi meetodi.
+      passedMessage: Klass kutsus välja {expected} klassi meetodi.
+      failedMessage: Klass ei kutsnud välja {expected} klassi meetodi.
+    name: Klass kutsub välja klassi meetodi.
