@@ -10,12 +10,13 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.util.LinkedMultiValueMap
-import org.springframework.web.client.RestTemplate
+import java.time.Duration
 import java.util.*
 
 
@@ -49,68 +50,7 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
         @JsonProperty("id") val id: String,
     )
 
-    // FIXME: for testing only
-    @Scheduled(cron = "*/30 * * * * *")
-    fun testingCron() {
-        val deletedAccounts = transaction {
-            val twoYearsAgo = DateTime.now().minusYears(2)
-            val fiveYearsAgo = DateTime.now().minusYears(5)
-
-            Account.insertIgnoreAndGetId {
-                it[Account.id] = defaultUser
-                it[createdAt] = DateTime.now()
-                it[lastSeen] = DateTime.now()
-                it[email] = UUID.randomUUID().toString()
-                it[givenName] = "Kustutatud"
-                it[familyName] = "Kasutaja"
-                it[idMigrationDone] = true
-                it[isTeacher] = false
-                it[isStudent] = false
-                it[isAdmin] = false
-                it[pseudonym] = defaultUser
-            }
-
-            val accountsToDelete: List<String> = Account
-                .select(Account.id)
-                .where {
-                    not(Account.isAdmin) and ( // Admin account is never deleted
-                            (Account.isStudent and not(Account.isTeacher)) and (Account.lastSeen lessEq twoYearsAgo) or // Student account 2 years
-                                    (Account.isTeacher and (Account.lastSeen lessEq fiveYearsAgo)) // Teacher account 5 years
-                            )
-                }.map { it[Account.id].value }
-
-            if (accountsToDelete.isEmpty()) {
-                log.debug { "No inactive users qualifying for deletion found." }
-                return@transaction emptyList()
-            }
-
-            log.info { "Deleting inactive users: $accountsToDelete" }
-            accountsToDelete
-        }
-
-        // Delete from Keycloak
-        val token = getAccessToken()
-        deletedAccounts.forEach {
-            val keycloakUserId = getKeycloakUserId(it, token)
-            if (keycloakUserId == null) {
-                if (!ignoreMissingKeycloakUsers) {
-                    log.error { "Cannot find Keycloak user '$it'" }
-                    sendMailService.sendSystemNotification("Could not find inactive Keycloak user '$it'")
-                }
-            } else {
-                log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
-//                val deleted = deleteKeycloakUser(keycloakUserId, token)
-//                if (!deleted) {
-//                    log.error { "Cannot delete Keycloak user '$it'" }
-//                    sendMailService.sendSystemNotification("Failed to delete inactive Keycloak user '$it'")
-//                }
-            }
-        }
-        log.info { "Deleted Keycloak users" }
-    }
-
-    // TODO: once a day
-    //@Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "\${easy.core.keycloak.cron}")
     fun cron() {
         val deletedAccounts = transaction {
             val twoYearsAgo = DateTime.now().minusYears(2)
@@ -215,22 +155,39 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
         // Delete from Keycloak
         val token = getAccessToken()
+
+        val failedUsers = mutableListOf<Pair<String, String>>()
         deletedAccounts.forEach {
-            val keycloakUserId = getKeycloakUserId(it, token)
-            if (keycloakUserId == null) {
-                if (!ignoreMissingKeycloakUsers) {
-                    log.error { "Cannot find Keycloak user '$it'" }
-                    sendMailService.sendSystemNotification("Could not find inactive Keycloak user '$it'")
+            try {
+                val keycloakUserId = getKeycloakUserId(it, token)
+                if (keycloakUserId == null) {
+                    if (!ignoreMissingKeycloakUsers) {
+                        log.error { "Cannot find Keycloak user '$it'" }
+                        failedUsers.add(it to "Could not find inactive Keycloak user")
+                    }
+                } else {
+                    log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
+                    val deleted = deleteKeycloakUser(keycloakUserId, token)
+                    if (!deleted) {
+                        log.error { "Cannot delete Keycloak user '$it'" }
+                        failedUsers.add(it to "Failed to delete inactive Keycloak user")
+                    }
                 }
-            } else {
-                log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
-                val deleted = deleteKeycloakUser(keycloakUserId, token)
-                if (!deleted) {
-                    log.error { "Cannot delete Keycloak user '$it'" }
-                    sendMailService.sendSystemNotification("Failed to delete inactive Keycloak user '$it'")
-                }
+            } catch (e: Exception) {
+                log.error { "Deleting inactive Keycloak user failed with exception: ${e.message}" }
+                failedUsers.add(it to e.message.orEmpty())
             }
         }
+
+        if (failedUsers.isNotEmpty())
+            sendMailService.sendSystemNotification(
+                """
+                    Failed to delete inactive Keycloak users:
+                    
+                    ${failedUsers.joinToString("\n") { it.first + " - " + it.second }}
+                """.trimIndent()
+            )
+
         log.info { "Deleted Keycloak users" }
     }
 
@@ -248,7 +205,7 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
         }
 
         val request = HttpEntity(body, headers)
-        val response = RestTemplate().postForObject(tokenUrl, request, TokenResponse::class.java)
+        val response = restTemplate().postForObject(tokenUrl, request, TokenResponse::class.java)
 
         return response?.accessToken ?: throw RuntimeException("Failed to get access token")
     }
@@ -267,7 +224,7 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
         val responseType = object : ParameterizedTypeReference<List<KeycloakUser>>() {}
 
-        val response = RestTemplate().exchange(
+        val response = restTemplate().exchange(
             "$searchUrl?username={username}&exact={exact}",
             HttpMethod.GET,
             HttpEntity<Any>(headers),
@@ -305,7 +262,7 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
             setBearerAuth(accessToken)
         }
 
-        val response = RestTemplate().exchange(
+        val response = restTemplate().exchange(
             deleteUrl,
             HttpMethod.DELETE,
             HttpEntity<Any>(headers),
@@ -314,4 +271,9 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
         return response.statusCode == HttpStatus.NO_CONTENT
     }
+
+    private fun restTemplate() = RestTemplateBuilder()
+        .setConnectTimeout(Duration.ofSeconds(60))
+        .setReadTimeout(Duration.ofSeconds(60))
+        .build()
 }

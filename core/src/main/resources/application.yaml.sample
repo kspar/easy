@@ -70,6 +70,7 @@ easy:
         s: "300"
 
     keycloak:
+      cron: "0 5 2 * * *"
       base-url: "<base-url>"
       realm: "<realm>"
       client-id: "<client-id>"
