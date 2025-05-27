@@ -37,6 +37,9 @@ class DeleteInactiveUsers {
     @Value("\${easy.core.keycloak.client-secret}")
     private lateinit var clientSecret: String
 
+    @Value("\${easy.core.keycloak.ignore-missing-keycloak-users}")
+    private var ignoreMissingKeycloakUsers: Boolean = false
+
     private data class TokenResponse(
         @JsonProperty("access_token") val accessToken: String,
     )
@@ -91,10 +94,11 @@ class DeleteInactiveUsers {
 
         deletedAccounts.forEach {
             val keycloakUserId = getKeycloakUserId(it, token)
-            log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
             if (keycloakUserId == null) {
-                log.error { "Cannot delete Keycloak user '$it'" }
+                if (!ignoreMissingKeycloakUsers)
+                    log.error { "Cannot delete Keycloak user '$it'" }
             } else {
+                log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
                 //deleteKeycloakUser(keycloakUserId, token)
             }
         }
@@ -210,10 +214,10 @@ class DeleteInactiveUsers {
 
         deletedAccounts.forEach {
             val keycloakUserId = getKeycloakUserId(it, token)
-            log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
             if (keycloakUserId == null) {
                 log.error { "Cannot delete Keycloak user '$it'" }
             } else {
+                log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
                 //deleteKeycloakUser(keycloakUserId, token)
             }
         }
@@ -269,7 +273,8 @@ class DeleteInactiveUsers {
         }
 
         if (body.isEmpty()) {
-            log.error { "Keycloak user not found by username '$username'" }
+            if (!ignoreMissingKeycloakUsers)
+                log.error { "Keycloak user not found by username '$username'" }
             return null
         }
 

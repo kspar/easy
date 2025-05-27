@@ -74,6 +74,7 @@ easy:
       realm: "<realm>"
       client-id: "<client-id>"
       client-secret: "<client-secret>"
+      ignore-missing-keycloak-users: false
 
 
   wui:
