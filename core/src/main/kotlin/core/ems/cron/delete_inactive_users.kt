@@ -3,6 +3,7 @@ package core.ems.cron
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
+import core.util.SendMailService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -19,7 +20,7 @@ import java.util.*
 
 
 @Component
-class DeleteInactiveUsers {
+class DeleteInactiveUsers(val sendMailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     // Chosen by fair dice roll, guaranteed to be random - do not change
@@ -78,8 +79,6 @@ class DeleteInactiveUsers {
                             )
                 }.map { it[Account.id].value }
 
-
-
             if (accountsToDelete.isEmpty()) {
                 log.debug { "No inactive users qualifying for deletion found." }
                 return@transaction emptyList()
@@ -91,21 +90,26 @@ class DeleteInactiveUsers {
 
         // Delete from Keycloak
         val token = getAccessToken()
-
         deletedAccounts.forEach {
             val keycloakUserId = getKeycloakUserId(it, token)
             if (keycloakUserId == null) {
-                if (!ignoreMissingKeycloakUsers)
-                    log.error { "Cannot delete Keycloak user '$it'" }
+                if (!ignoreMissingKeycloakUsers) {
+                    log.error { "Cannot find Keycloak user '$it'" }
+                    sendMailService.sendSystemNotification("Could not find inactive Keycloak user '$it'")
+                }
             } else {
                 log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
-                //deleteKeycloakUser(keycloakUserId, token)
+//                val deleted = deleteKeycloakUser(keycloakUserId, token)
+//                if (!deleted) {
+//                    log.error { "Cannot delete Keycloak user '$it'" }
+//                    sendMailService.sendSystemNotification("Failed to delete inactive Keycloak user '$it'")
+//                }
             }
         }
         log.info { "Deleted Keycloak users" }
     }
 
-            // TODO: once a day, for now every 30 seconds for testing
+    // TODO: once a day
     //@Scheduled(cron = "*/30 * * * * *")
     fun cron() {
         val deletedAccounts = transaction {
@@ -211,14 +215,20 @@ class DeleteInactiveUsers {
 
         // Delete from Keycloak
         val token = getAccessToken()
-
         deletedAccounts.forEach {
             val keycloakUserId = getKeycloakUserId(it, token)
             if (keycloakUserId == null) {
-                log.error { "Cannot delete Keycloak user '$it'" }
+                if (!ignoreMissingKeycloakUsers) {
+                    log.error { "Cannot find Keycloak user '$it'" }
+                    sendMailService.sendSystemNotification("Could not find inactive Keycloak user '$it'")
+                }
             } else {
                 log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
-                //deleteKeycloakUser(keycloakUserId, token)
+                val deleted = deleteKeycloakUser(keycloakUserId, token)
+                if (!deleted) {
+                    log.error { "Cannot delete Keycloak user '$it'" }
+                    sendMailService.sendSystemNotification("Failed to delete inactive Keycloak user '$it'")
+                }
             }
         }
         log.info { "Deleted Keycloak users" }
