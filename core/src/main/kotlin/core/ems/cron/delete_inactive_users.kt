@@ -45,9 +45,64 @@ class DeleteInactiveUsers {
         @JsonProperty("id") val id: String,
     )
 
-
-    // TODO: once a day, for now every 30 seconds for testing
+    // FIXME: for testing only
     @Scheduled(cron = "*/30 * * * * *")
+    fun testingCron() {
+        val deletedAccounts = transaction {
+            val twoYearsAgo = DateTime.now().minusYears(2)
+            val fiveYearsAgo = DateTime.now().minusYears(5)
+
+            Account.insertIgnoreAndGetId {
+                it[Account.id] = defaultUser
+                it[createdAt] = DateTime.now()
+                it[lastSeen] = DateTime.now()
+                it[email] = UUID.randomUUID().toString()
+                it[givenName] = "Kustutatud"
+                it[familyName] = "Kasutaja"
+                it[idMigrationDone] = true
+                it[isTeacher] = false
+                it[isStudent] = false
+                it[isAdmin] = false
+                it[pseudonym] = defaultUser
+            }
+
+            val accountsToDelete: List<String> = Account
+                .select(Account.id)
+                .where {
+                    not(Account.isAdmin) and ( // Admin account is never deleted
+                            (Account.isStudent and not(Account.isTeacher)) and (Account.lastSeen lessEq twoYearsAgo) or // Student account 2 years
+                                    (Account.isTeacher and (Account.lastSeen lessEq fiveYearsAgo)) // Teacher account 5 years
+                            )
+                }.map { it[Account.id].value }
+
+
+
+            if (accountsToDelete.isEmpty()) {
+                log.debug { "No inactive users qualifying for deletion found." }
+                return@transaction emptyList()
+            }
+
+            log.info { "Deleting inactive users: $accountsToDelete" }
+            accountsToDelete
+        }
+
+        // Delete from Keycloak
+        val token = getAccessToken()
+
+        deletedAccounts.forEach {
+            val keycloakUserId = getKeycloakUserId(it, token)
+            log.info { "Deleting Keycloak user '$it' ($keycloakUserId)" }
+            if (keycloakUserId == null) {
+                log.error { "Cannot delete Keycloak user '$it'" }
+            } else {
+                //deleteKeycloakUser(keycloakUserId, token)
+            }
+        }
+        log.info { "Deleted Keycloak users" }
+    }
+
+            // TODO: once a day, for now every 30 seconds for testing
+    //@Scheduled(cron = "*/30 * * * * *")
     fun cron() {
         val deletedAccounts = transaction {
             val twoYearsAgo = DateTime.now().minusYears(2)
