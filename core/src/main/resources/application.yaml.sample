@@ -69,5 +69,12 @@ easy:
       merge-window:
         s: "300"
 
+    keycloak:
+      base-url: "<base-url>"
+      realm: "<realm>"
+      client-id: "<client-id>"
+      client-secret: "<client-secret>"
+
+
   wui:
     base-url: "https://easy.example"
