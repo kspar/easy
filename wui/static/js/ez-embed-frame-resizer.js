@@ -6,9 +6,14 @@ window.addEventListener("message", m => {
             return
         }
 
-        document.querySelector("iframe[src=\"" + decodeURI(update.url) + "\"]")
+        document.querySelector("iframe[src=\"" + normalizeForComparison(update.url) + "\"]")
             .setAttribute("height", update.height + "px")
 
     } catch (error) {
     }
 });
+
+function normalizeForComparison(url) {
+    const [pathPart, queryPart] = url.split('?');
+    return decodeURI(pathPart) + (queryPart ? '?' + queryPart : '');
+}
