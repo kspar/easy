@@ -99,18 +99,7 @@ data class ProgramContainsPhraseTest(
     override fun copyTest(newId: Long) = copy(id = newId)
 }
 
-@Serializable
-@SerialName("program_calls_function_test")
-data class ProgramCallsFunctionTest(
-    override val id: Long,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Programm kutsub välja funktsiooni"
-    }
 
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
 
 @Serializable
 @SerialName("program_defines_function_test")
@@ -155,28 +144,4 @@ data class ProgramDefinesSubclassTest(
     override fun copyTest(newId: Long) = copy(id = newId)
 }
 
-@Serializable
-@SerialName("program_calls_class_test")
-data class ProgramCallsClassTest(
-    override val id: Long,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Programm kutsub välja klassi"
-    }
 
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
-
-@Serializable
-@SerialName("program_calls_class_function_test")
-data class ProgramCallsClassFunctionTest(
-    override val id: Long,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Programm kutsub välja klassi funktsiooni"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}

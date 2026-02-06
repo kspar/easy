@@ -34,19 +34,7 @@ data class ClassDefinesFunctionTest(
 }
 
 
-@Serializable
-@SerialName("class_calls_class_test")
-data class ClassCallsClassTest(
-    override val id: Long,
-    val className: String,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Klass kutsub välja teise klassi"
-    }
 
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
 
 @Serializable
 @SerialName("class_function_calls_function_test")
@@ -107,19 +95,7 @@ data class ClassIsParentClassTest(
 
     override fun copyTest(newId: Long) = copy(id = newId)
 }
-@Serializable
-@SerialName("class_calls_class_function_test")
-data class ClassCallsClassFunctionTest(
-        override val id: Long,
-        val className: String,
-        val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Klass kutsub välja klassi funktsiooni"
-    }
 
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
 @Serializable
 @SerialName("class_contains_keyword_test")
 data class ClassContainsKeywordTest(
