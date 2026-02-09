@@ -15,4 +15,11 @@ core/src/test/resources/application.yaml
 wui/gradle.properties
 wui/src/main/kotlin/AppProperties.kt
 
+web/.env.local
+
 aae/gunicorn-conf.py
+
+# Runtime artifacts
+*.log
+*.dylib
+.gradle/
