@@ -1,6 +1,6 @@
 Properties liquibaseProperties = new Properties()
 liquibaseProperties.load(new FileInputStream(
-        file("db/database.properties").exists() ? file("db/database.properties") : file("db/database.properties.sample")))
+        file("src/main/resources/db/database.properties").exists() ? file("src/main/resources/db/database.properties") : file("src/main/resources/db/database.properties.sample")))
 
 
 buildscript {
@@ -74,6 +74,7 @@ dependencies {
 
     implementation 'com.zaxxer:HikariCP:3.4.5'
     implementation 'org.postgresql:postgresql:42.6.0'
+    implementation 'org.liquibase:liquibase-core:3.6.3'
     liquibaseRuntime 'org.liquibase:liquibase-core:3.6.3'
     liquibaseRuntime 'org.postgresql:postgresql:42.6.0'
 
@@ -110,7 +111,7 @@ dependencies {
 liquibase {
     activities {
         main {
-            changeLogFile 'db/changelog.xml'
+            changeLogFile 'src/main/resources/db/changelog.xml'
             url liquibaseProperties.url
             username liquibaseProperties.username
             password liquibaseProperties.password
