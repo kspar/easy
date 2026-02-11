@@ -1,9 +1,11 @@
 import { Typography, Box, Link } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import config from '../../config.ts'
+import usePageTitle from '../../hooks/usePageTitle.ts'
 
 export default function AboutPage() {
   const { t } = useTranslation()
+  usePageTitle(t('nav.about'))
 
   return (
     <Box py={4} maxWidth={600}>

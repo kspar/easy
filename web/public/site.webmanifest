@@ -1,0 +1,7 @@
+{
+    "name": "Lahendus",
+    "short_name": "Lahendus",
+    "theme_color": "#43a047",
+    "background_color": "#ffffff",
+    "display": "standalone"
+}
