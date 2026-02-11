@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <!--
+        Test data for local development.
+        Each changeset uses runAlways="true" with preconditions so it
+        re-inserts when the database is recreated but is skipped otherwise.
+
+        Uses kspar as the primary account (matches Keycloak preferred_username).
+    -->
+
+    <changeSet id="testdata-accounts" author="dev" runAlways="true">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM account WHERE username = 'kspar'</sqlCheck>
+        </preConditions>
+        <comment>Insert test accounts</comment>
+        <sql>
+            INSERT INTO account (username, created_at, email, given_name, family_name, last_seen,
+                                 id_migration_done, is_teacher, is_admin, is_student, pseudonym)
+            VALUES ('kspar', now(), 'kaspar@test.ee', 'Kaspar', 'Dev', now(),
+                    true, true, true, true, 'pseudo-kspar-001');
+
+            INSERT INTO account (username, created_at, email, given_name, family_name, last_seen,
+                                 id_migration_done, is_teacher, is_admin, is_student, pseudonym)
+            VALUES ('dev-student', now(), 'student@test.ee', 'Test', 'Student', now(),
+                    true, false, false, true, 'pseudo-student-001');
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-groups" author="dev" runAlways="true">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM "group" WHERE name = 'kspar' AND implicit = true</sqlCheck>
+        </preConditions>
+        <comment>Insert implicit groups for test accounts</comment>
+        <sql>
+            INSERT INTO "group" (id, name, implicit, created_at) VALUES (9001, 'kspar', true, now());
+            INSERT INTO "group" (id, name, implicit, created_at) VALUES (9002, 'dev-student', true, now());
+            INSERT INTO account_group_access (account_id, group_id, manager, created_at)
+            VALUES ('kspar', 9001, false, now());
+            INSERT INTO account_group_access (account_id, group_id, manager, created_at)
+            VALUES ('dev-student', 9002, false, now());
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-exercises" author="dev" runAlways="true">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM exercise WHERE id = 9001</sqlCheck>
+        </preConditions>
+        <comment>Insert test exercises with implicit dirs</comment>
+        <sql>
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9001, '9001', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9002, '9002', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9003, '9003', true, now(), now());
+
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9001, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9002, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9003, 4, now());
+
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9001, now(), 'kspar', false, 9001, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9002, now(), 'kspar', false, 9002, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9003, now(), 'kspar', false, 9003, false);
+
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9001, 9001, 'kspar', now(), 'AUTO', 'Hello World',
+                    '&lt;p&gt;Write a program that prints "Hello, World!".&lt;/p&gt;',
+                    'solution.py', 0);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9002, 9002, 'kspar', now(), 'AUTO', 'Sum of Two Numbers',
+                    '&lt;p&gt;Write a program that reads two integers and prints their sum.&lt;/p&gt;',
+                    'solution.py', 0);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9003, 9003, 'kspar', now(), 'TEACHER', 'Essay: Algorithms',
+                    '&lt;p&gt;Write a short essay about your favorite sorting algorithm.&lt;/p&gt;',
+                    'essay.txt', 0);
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-courses" author="dev" runAlways="true">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9001</sqlCheck>
+        </preConditions>
+        <comment>Insert test courses with exercises, enrollments, and sample submissions</comment>
+        <sql>
+            INSERT INTO course (id, created_at, title, alias, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9001, now(), 'Introduction to Programming', 'ITP-2026', false, false, false, false, false);
+            INSERT INTO course (id, created_at, title, alias, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9002, now(), 'Advanced Algorithms', null, false, false, false, false, false);
+
+            <!-- kspar as teacher on both courses -->
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9001, now(), now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9002, now(), now());
+
+            <!-- kspar also as student on both courses (for testing student view) -->
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9001, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9002, now(), now());
+
+            <!-- dev-student enrolled on both courses -->
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('dev-student', 9001, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('dev-student', 9002, now(), now());
+
+            <!-- Course exercises on course 9001: 3 exercises -->
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from, soft_deadline)
+            VALUES (9001, 9001, 9001, now(), now(), 50, 0, true, now(),
+                    now() + interval '30 days');
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9002, 9001, 9002, now(), now(), 60, 1, true, now());
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from, soft_deadline)
+            VALUES (9003, 9001, 9003, now(), now(), 1, 2, true, now(),
+                    now() - interval '2 days');
+
+            <!-- Course exercises on course 9002: 1 exercise -->
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9004, 9002, 9002, now(), now(), 80, 0, true, now());
+
+            <!-- Submissions by kspar (as student) on course 9001 -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, seen, number)
+            VALUES (9001, 9001, 'kspar', now() - interval '5 days',
+                    'print("Hello, World!")', 'COMPLETED', 100, true, true, 1);
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, seen, number)
+            VALUES (9002, 9002, 'kspar', now() - interval '3 days',
+                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 40, true, true, 1);
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, seen, number)
+            VALUES (9003, 9002, 'kspar', now() - interval '1 day',
+                    E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 60, true, true, 2);
+
+            <!-- Autograde results -->
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
+                                            created_at, grade, feedback)
+            VALUES (9001, 9001, 'kspar', 9001, now() - interval '5 days', 100,
+                    'All tests passed! Great job.');
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
+                                            created_at, grade, feedback)
+            VALUES (9002, 9002, 'kspar', 9002, now() - interval '3 days', 40,
+                    E'Test 1: PASSED\nTest 2: FAILED - expected 5, got 6\nTest 3: FAILED');
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
+                                            created_at, grade, feedback)
+            VALUES (9003, 9002, 'kspar', 9003, now() - interval '1 day', 60,
+                    E'Test 1: PASSED\nTest 2: PASSED\nTest 3: FAILED - edge case with negative numbers');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
