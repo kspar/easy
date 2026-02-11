@@ -6,16 +6,18 @@ import type {
   ExerciseDetails,
   ParticipantsResp,
   SubmissionResp,
+  TeacherActivityResp,
   TeacherCourseExercise,
 } from './types.ts'
 
-export function useCourseExercises(courseId: string) {
+export function useCourseExercises(courseId: string | undefined) {
   return useQuery({
     queryKey: ['student', 'courses', courseId, 'exercises'],
     queryFn: () =>
       apiFetch<{ exercises: CourseExercise[] }>(
         `/student/courses/${courseId}/exercises`,
       ).then((r) => r.exercises),
+    enabled: !!courseId,
   })
 }
 
@@ -121,6 +123,26 @@ export function useSaveDraft(
         ],
       })
     },
+  })
+}
+
+export function useTeacherActivities(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  return useQuery({
+    queryKey: [
+      'student',
+      'courses',
+      courseId,
+      'exercises',
+      courseExerciseId,
+      'activities',
+    ],
+    queryFn: () =>
+      apiFetch<{ teacher_activities: TeacherActivityResp[] }>(
+        `/student/courses/${courseId}/exercises/${courseExerciseId}/activities`,
+      ).then((r) => r.teacher_activities),
   })
 }
 

@@ -55,7 +55,13 @@
     "myCourses": "My courses",
     "exerciseLibrary": "Exercise library",
     "about": "About Lahendus",
-    "terms": "Terms"
+    "terms": "Terms",
+    "university": "University of Tartu {{year}}",
+    "splitView": "Split view",
+    "collapseLeft": "Collapse left pane",
+    "collapseRight": "Collapse right pane",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode"
   },
   "courses": {
     "title": "My courses",
@@ -117,7 +123,20 @@
     "markAsNew": "Mark as new",
     "markAsSeen": "Mark as seen",
     "runAutoTests": "Run tests",
-    "exerciseClosed": "This exercise is closed and does not allow any new submissions"
+    "exerciseClosed": "This exercise is closed and does not allow any new submissions",
+    "currentGrade": "Grade",
+    "noSubmissions": "No submissions yet",
+    "previousSubmissions": "Previous submissions",
+    "teacherFeedback": "Teacher feedback",
+    "replyPlaceholder": "Write a reply...",
+    "replyComing": "Replies coming soon",
+    "testPassed": "Passed",
+    "testFailed": "Failed",
+    "stdout": "Standard output",
+    "stderr": "Error output",
+    "gradedPoints": "Graded: {{points}} points",
+    "autoGrade": "Auto-assessment grade",
+    "submissionNr": "Submission #{{nr}}"
   },
   "library": {
     "title": "Exercise library",

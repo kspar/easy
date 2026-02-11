@@ -8,11 +8,10 @@ import { python } from '@codemirror/lang-python'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
 import { useTheme } from '@mui/material/styles'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useSubmitSolution,
   useAwaitAutograde,
-  useDraft,
-  useSaveDraft,
 } from '../../api/exercises.ts'
 import type { ExerciseDetails } from '../../api/types.ts'
 
@@ -20,19 +19,20 @@ export default function SubmitTab({
   courseId,
   courseExerciseId,
   exercise,
+  onSubmitted,
 }: {
   courseId: string
   courseExerciseId: string
   exercise: ExerciseDetails
+  onSubmitted?: () => void
 }) {
   const { t } = useTranslation()
   const theme = useTheme()
+  const queryClient = useQueryClient()
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const [snackMsg, setSnackMsg] = useState<string | null>(null)
 
-  const { data: draft } = useDraft(courseId, courseExerciseId)
-  const saveDraft = useSaveDraft(courseId, courseExerciseId)
   const submit = useSubmitSolution(courseId, courseExerciseId)
   const awaitAutograde = useAwaitAutograde(courseId, courseExerciseId)
   const isSubmitting = submit.isPending || awaitAutograde.isPending
@@ -52,7 +52,7 @@ export default function SubmitTab({
     }
 
     const state = EditorState.create({
-      doc: draft?.solution ?? '',
+      doc: '',
       extensions,
     })
 
@@ -65,58 +65,49 @@ export default function SubmitTab({
       viewRef.current?.destroy()
       viewRef.current = null
     }
-    // Only init once; draft loading handled separately
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Load draft into editor when it arrives (only if editor is empty)
-  useEffect(() => {
-    if (!viewRef.current || !draft?.solution) return
-    const currentDoc = viewRef.current.state.doc.toString()
-    if (currentDoc === '' && draft.solution !== '') {
-      viewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: currentDoc.length,
-          insert: draft.solution,
-        },
-      })
-    }
-  }, [draft])
 
   const getSolution = useCallback(() => {
     return viewRef.current?.state.doc.toString() ?? ''
   }, [])
 
-  const handleSaveDraft = useCallback(() => {
-    const solution = getSolution()
-    if (!solution.trim()) return
-    saveDraft.mutate(solution)
-  }, [getSolution, saveDraft])
+  const refetchAfterSubmit = useCallback(() => {
+    queryClient.refetchQueries({
+      queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'submissions'],
+    })
+    queryClient.refetchQueries({
+      queryKey: ['student', 'courses', courseId, 'exercises'],
+    })
+  }, [queryClient, courseId, courseExerciseId])
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     const solution = getSolution()
     if (!solution.trim()) return
 
     submit.mutate(solution, {
       onSuccess: () => {
         setSnackMsg(t('submission.submitSuccess'))
+        refetchAfterSubmit()
         if (exercise.grader_type === 'AUTO') {
           awaitAutograde.mutate()
+        } else {
+          onSubmitted?.()
         }
       },
     })
-  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t])
+  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, refetchAfterSubmit])
+
+  // Switch to submissions tab after autograde completes
+  useEffect(() => {
+    if (awaitAutograde.isSuccess) {
+      refetchAfterSubmit()
+      onSubmitted?.()
+    }
+  }, [awaitAutograde.isSuccess, onSubmitted, refetchAfterSubmit])
 
   return (
     <Box>
-      {exercise.instructions_html && (
-        <Box
-          sx={{ mb: 2 }}
-          dangerouslySetInnerHTML={{ __html: exercise.instructions_html }}
-        />
-      )}
-
       <Box
         ref={editorRef}
         sx={{
@@ -142,13 +133,6 @@ export default function SubmitTab({
           {exercise.grader_type === 'AUTO'
             ? t('submission.submitAndCheck')
             : t('submission.submit')}
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={handleSaveDraft}
-          disabled={saveDraft.isPending}
-        >
-          {saveDraft.isPending ? t('general.saving') : t('general.save')}
         </Button>
       </Box>
 

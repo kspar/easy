@@ -84,6 +84,30 @@ export function createAppTheme(mode: PaletteMode) {
         : never
       : never,
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          '*': {
+            // Webkit (Chrome, Safari, Edge)
+            '&::-webkit-scrollbar': {
+              width: 6,
+              height: 6,
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(128, 128, 128, 0.25)',
+              borderRadius: 3,
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: 'rgba(128, 128, 128, 0.45)',
+            },
+            // Firefox
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(128, 128, 128, 0.25) transparent',
+          },
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
@@ -160,6 +184,7 @@ export function createAppTheme(mode: PaletteMode) {
             boxShadow: isLight
               ? '1px 0 0 #e8e8e8'
               : '1px 0 0 #2a2a2a',
+            overflowX: 'hidden',
           },
         },
       },

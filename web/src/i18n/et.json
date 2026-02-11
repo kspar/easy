@@ -55,7 +55,13 @@
     "myCourses": "Minu kursused",
     "exerciseLibrary": "Ülesandekogu",
     "about": "Lahendusest",
-    "terms": "Kasutustingimused"
+    "terms": "Kasutustingimused",
+    "university": "Tartu Ülikool {{year}}",
+    "splitView": "Poolitatud vaade",
+    "collapseLeft": "Peida vasak paneel",
+    "collapseRight": "Peida parem paneel",
+    "lightMode": "Hele režiim",
+    "darkMode": "Tume režiim"
   },
   "courses": {
     "title": "Minu kursused",
@@ -117,7 +123,20 @@
     "markAsNew": "Märgi uueks",
     "markAsSeen": "Märgi vaadatuks",
     "runAutoTests": "Käivita automaattestid",
-    "exerciseClosed": "See ülesanne on suletud ja ei luba enam uusi esitusi"
+    "exerciseClosed": "See ülesanne on suletud ja ei luba enam uusi esitusi",
+    "currentGrade": "Hinne",
+    "noSubmissions": "Esitusi veel pole",
+    "previousSubmissions": "Varasemad esitused",
+    "teacherFeedback": "Õpetaja tagasiside",
+    "replyPlaceholder": "Kirjuta vastus...",
+    "replyComing": "Vastamine tuleb peagi",
+    "testPassed": "Läbitud",
+    "testFailed": "Ebaõnnestunud",
+    "stdout": "Standardväljund",
+    "stderr": "Veaväljund",
+    "gradedPoints": "Hinnatud: {{points}} punkti",
+    "autoGrade": "Automaathinnangu tulemus",
+    "submissionNr": "Esitus #{{nr}}"
   },
   "library": {
     "title": "Ülesandekogu",

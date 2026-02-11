@@ -74,6 +74,30 @@ export interface DraftResp {
   created_at: string
 }
 
+// Teacher activity types (student view)
+
+export interface TeacherResp {
+  id: string
+  given_name: string
+  family_name: string
+}
+
+export interface FeedbackResp {
+  feedback_html: string
+  feedback_adoc: string
+}
+
+export interface TeacherActivityResp {
+  id: string
+  submission_id: string
+  submission_number: number
+  created_at: string
+  grade: number | null
+  edited_at: string | null
+  feedback: FeedbackResp | null
+  teacher: TeacherResp
+}
+
 // Teacher exercise types
 
 export interface GroupResp {

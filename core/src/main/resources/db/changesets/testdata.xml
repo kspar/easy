@@ -7,13 +7,19 @@
 
     <!--
         Test data for local development.
-        Each changeset uses runAlways="true" with preconditions so it
+        Each changeset uses with preconditions so it
         re-inserts when the database is recreated but is skipped otherwise.
 
         Uses kspar as the primary account (matches Keycloak preferred_username).
+
+        Test scenarios for student exercise page:
+        - Exercise 9001 (Hello World, AUTO):       auto-graded only, V3 JSON feedback, 0 teacher comments
+        - Exercise 9002 (Sum of Two Numbers, AUTO): auto-graded + teacher-graded, 3 teacher comments
+        - Exercise 9003 (Essay, TEACHER):           teacher-graded only, 1 teacher comment
+        - Exercise 9004 (Debug Challenge, AUTO):    ungraded, submission pending, 0 comments
     -->
 
-    <changeSet id="testdata-accounts" author="dev" runAlways="true">
+    <changeSet id="testdata-accounts" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM account WHERE username = 'kspar'</sqlCheck>
         </preConditions>
@@ -28,10 +34,15 @@
                                  id_migration_done, is_teacher, is_admin, is_student, pseudonym)
             VALUES ('dev-student', now(), 'student@test.ee', 'Test', 'Student', now(),
                     true, false, false, true, 'pseudo-student-001');
+
+            INSERT INTO account (username, created_at, email, given_name, family_name, last_seen,
+                                 id_migration_done, is_teacher, is_admin, is_student, pseudonym)
+            VALUES ('dev-teacher', now(), 'teacher@test.ee', 'Mari', 'Maasikas', now(),
+                    true, true, false, false, 'pseudo-teacher-001');
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-groups" author="dev" runAlways="true">
+    <changeSet id="testdata-groups" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM "group" WHERE name = 'kspar' AND implicit = true</sqlCheck>
         </preConditions>
@@ -39,14 +50,17 @@
         <sql>
             INSERT INTO "group" (id, name, implicit, created_at) VALUES (9001, 'kspar', true, now());
             INSERT INTO "group" (id, name, implicit, created_at) VALUES (9002, 'dev-student', true, now());
+            INSERT INTO "group" (id, name, implicit, created_at) VALUES (9003, 'dev-teacher', true, now());
             INSERT INTO account_group_access (account_id, group_id, manager, created_at)
             VALUES ('kspar', 9001, false, now());
             INSERT INTO account_group_access (account_id, group_id, manager, created_at)
             VALUES ('dev-student', 9002, false, now());
+            INSERT INTO account_group_access (account_id, group_id, manager, created_at)
+            VALUES ('dev-teacher', 9003, false, now());
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-exercises" author="dev" runAlways="true">
+    <changeSet id="testdata-exercises" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM exercise WHERE id = 9001</sqlCheck>
         </preConditions>
@@ -58,10 +72,13 @@
             VALUES (9002, '9002', true, now(), now());
             INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
             VALUES (9003, '9003', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9004, '9004', true, now(), now());
 
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9001, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9002, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9003, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9004, 4, now());
 
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9001, now(), 'kspar', false, 9001, false);
@@ -69,6 +86,8 @@
             VALUES (9002, now(), 'kspar', false, 9002, false);
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9003, now(), 'kspar', false, 9003, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9004, now(), 'kspar', false, 9004, false);
 
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
                                           text_html, solution_file_name, solution_file_type)
@@ -83,16 +102,25 @@
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
                                           text_html, solution_file_name, solution_file_type)
             VALUES (9003, 9003, 'kspar', now(), 'TEACHER', 'Essay: Algorithms',
-                    '&lt;p&gt;Write a short essay about your favorite sorting algorithm.&lt;/p&gt;',
+                    '&lt;p&gt;Write a short essay about your favorite sorting algorithm. Discuss its time complexity, best use cases, and why you find it interesting.&lt;/p&gt;',
                     'essay.txt', 0);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9004, 9004, 'kspar', now(), 'AUTO', 'Debug Challenge',
+                    '&lt;p&gt;The following function is supposed to return the factorial of n, but it has a bug. Find and fix it.&lt;/p&gt;&lt;pre&gt;def factorial(n):
+    result = 0
+    for i in range(1, n + 1):
+        result *= i
+    return result&lt;/pre&gt;',
+                    'solution.py', 0);
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-courses" author="dev" runAlways="true">
+    <changeSet id="testdata-courses" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9001</sqlCheck>
         </preConditions>
-        <comment>Insert test courses with exercises, enrollments, and sample submissions</comment>
+        <comment>Insert test courses with exercises, enrollments, and submissions</comment>
         <sql>
             INSERT INTO course (id, created_at, title, alias, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
@@ -107,6 +135,10 @@
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9002, now(), now());
 
+            <!-- dev-teacher also teaches course 9001 -->
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('dev-teacher', 9001, now(), now());
+
             <!-- kspar also as student on both courses (for testing student view) -->
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9001, now(), now());
@@ -119,7 +151,7 @@
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('dev-student', 9002, now(), now());
 
-            <!-- Course exercises on course 9001: 3 exercises -->
+            <!-- Course exercises on course 9001: 4 exercises -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from, soft_deadline)
@@ -134,6 +166,10 @@
                                          student_visible_from, soft_deadline)
             VALUES (9003, 9001, 9003, now(), now(), 1, 2, true, now(),
                     now() - interval '2 days');
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9005, 9001, 9004, now(), now(), 50, 3, true, now());
 
             <!-- Course exercises on course 9002: 1 exercise -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
@@ -141,33 +177,106 @@
                                          student_visible_from)
             VALUES (9004, 9002, 9002, now(), now(), 80, 0, true, now());
 
-            <!-- Submissions by kspar (as student) on course 9001 -->
+            <!--
+                =============================================
+                Exercise 9001: Hello World (AUTO only, 0 teacher comments)
+                - 1 submission, V3 JSON autograde feedback, fully passed
+                =============================================
+            -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9001, 9001, 'kspar', now() - interval '5 days',
-                    'print("Hello, World!")', 'COMPLETED', 100, true, true, 1);
-            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, seen, number)
-            VALUES (9002, 9002, 'kspar', now() - interval '3 days',
-                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 40, true, true, 1);
-            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, seen, number)
-            VALUES (9003, 9002, 'kspar', now() - interval '1 day',
-                    E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 60, true, true, 2);
+                    'print("Hello, World!")', 'COMPLETED', 100, true, false, true, 1);
 
-            <!-- Autograde results -->
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
                                             created_at, grade, feedback)
             VALUES (9001, 9001, 'kspar', 9001, now() - interval '5 days', 100,
-                    'All tests passed! Great job.');
+                    '{"groups":[{"points":100,"max_points":100,"checks":[{"point_nr":1,"feedback":"Output matches expected","stdout":"Hello, World!","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Trailing newline check","stdout":"Hello, World!\n","stderr":"","status":"PASSED"}]}]}');
+
+            <!--
+                =============================================
+                Exercise 9002: Sum of Two Numbers (AUTO + TEACHER, 3 teacher comments)
+                - 2 submissions with autogrades
+                - Teacher gave initial grade, then feedback, then follow-up
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9002, 9002, 'kspar', now() - interval '3 days',
+                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 40, true, false, true, 1);
+
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9003, 9002, 'kspar', now() - interval '1 day',
+                    E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 60, true, false, true, 2);
+
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
                                             created_at, grade, feedback)
             VALUES (9002, 9002, 'kspar', 9002, now() - interval '3 days', 40,
-                    E'Test 1: PASSED\nTest 2: FAILED - expected 5, got 6\nTest 3: FAILED');
+                    '{"groups":[{"points":40,"max_points":100,"checks":[{"point_nr":1,"feedback":"Basic addition works","stdout":"5","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Expected 0, got 1","stdout":"1","stderr":"","status":"FAILED"},{"point_nr":3,"feedback":"Expected -3, got -2","stdout":"-2","stderr":"","status":"FAILED"},{"point_nr":4,"feedback":"Large numbers","stdout":"2000000","stderr":"","status":"PASSED"}]}]}');
+
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
                                             created_at, grade, feedback)
             VALUES (9003, 9002, 'kspar', 9003, now() - interval '1 day', 60,
-                    E'Test 1: PASSED\nTest 2: PASSED\nTest 3: FAILED - edge case with negative numbers');
+                    '{"groups":[{"points":60,"max_points":100,"checks":[{"point_nr":1,"feedback":"Basic addition works","stdout":"5","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Zero handling OK","stdout":"0","stderr":"","status":"PASSED"},{"point_nr":3,"feedback":"Expected -3, got -2","stdout":"-2","stderr":"Traceback (most recent call last):\n  File \"solution.py\", line 3, in &lt;module&gt;\n    print(a + b + 1)\nAssertionError","status":"FAILED"},{"point_nr":4,"feedback":"Large numbers","stdout":"2000001","stderr":"","status":"FAILED"}]}]}');
+
+            <!--
+                =============================================
+                Exercise 9003: Essay (TEACHER only, 1 teacher comment)
+                - 1 submission, teacher graded with feedback
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9004, 9003, 'kspar', now() - interval '4 days',
+                    E'Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.\n\nIt works by splitting an array in half recursively until each piece has one element,\nthen merging them back together in sorted order. The time complexity is O(n log n)\nin all cases — best, average, and worst — which makes it very predictable.\n\nI find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.',
+                    'NONE', 4, false, true, true, 1);
+
+            <!--
+                =============================================
+                Exercise 9004/CE 9005: Debug Challenge (AUTO, ungraded, 0 comments)
+                - 1 submission, autograde not yet completed
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9005, 9005, 'kspar', now() - interval '2 hours',
+                    E'def factorial(n):\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result',
+                    'IN_PROGRESS', null, false, false, false, 1);
+
+            <!--
+                =============================================
+                Teacher activities
+                =============================================
+            -->
+
+            <!-- Exercise 9002: 3 teacher comments (grade-only, feedback-only, grade+feedback) -->
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback_adoc, feedback_html)
+            VALUES (9001, 9002, 9002, 'kspar', 'dev-teacher',
+                    now() - interval '2 days 6 hours', 45, null, null);
+
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback_adoc, feedback_html)
+            VALUES (9002, 9002, 9002, 'kspar', 'dev-teacher',
+                    now() - interval '2 days', null,
+                    'Your solution handles basic cases but fails on edge cases with zero and negative numbers. The `+1` in your second submission makes it worse — review how `input()` works and think about what the tests expect.',
+                    '&lt;p&gt;Your solution handles basic cases but fails on edge cases with zero and negative numbers. The &lt;code&gt;+1&lt;/code&gt; in your second submission makes it worse &amp;mdash; review how &lt;code&gt;input()&lt;/code&gt; works and think about what the tests expect.&lt;/p&gt;');
+
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback_adoc, feedback_html)
+            VALUES (9003, 9003, 9002, 'kspar', 'kspar',
+                    now() - interval '12 hours', 65,
+                    'Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!',
+                    '&lt;p&gt;Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!&lt;/p&gt;');
+
+            <!-- Exercise 9003: 1 teacher comment (grade + detailed feedback with HTML list) -->
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback_adoc, feedback_html)
+            VALUES (9004, 9004, 9003, 'kspar', 'dev-teacher',
+                    now() - interval '1 day 8 hours', 4,
+                    'Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.',
+                    '&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Overall well-written and clear.&lt;/p&gt;');
         </sql>
     </changeSet>
 

@@ -13,6 +13,10 @@ export default defineConfig({
           // Mimic Apache OIDC reverse proxy: extract JWT claims from
           // Authorization header and set them as oidc_claim_* headers
           proxy.on('proxyReq', (proxyReq, req) => {
+            // Remove Origin header so backend CORS filter doesn't reject
+            // requests from the Vite dev server (localhost:5173)
+            proxyReq.removeHeader('origin')
+
             const authHeader = req.headers['authorization']
             if (!authHeader?.startsWith('Bearer ')) return
 

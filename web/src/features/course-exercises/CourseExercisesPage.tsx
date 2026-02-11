@@ -178,6 +178,8 @@ function TeacherExercises() {
 function Header({ courseId }: { courseId: string }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { activeRole } = useAuth()
+  const isTeacherOrAdmin = activeRole === 'teacher' || activeRole === 'admin'
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -186,18 +188,22 @@ function Header({ courseId }: { courseId: string }) {
       </IconButton>
       <Typography variant="h5">{t('exercises.title')}</Typography>
       <Box sx={{ flex: 1 }} />
-      <Chip
-        label={t('participants.students')}
-        size="small"
-        variant="outlined"
-        onClick={() => navigate(`/courses/${courseId}/participants`)}
-      />
-      <Chip
-        label={t('grades.title')}
-        size="small"
-        variant="outlined"
-        onClick={() => navigate(`/courses/${courseId}/grades`)}
-      />
+      {isTeacherOrAdmin && (
+        <>
+          <Chip
+            label={t('participants.students')}
+            size="small"
+            variant="outlined"
+            onClick={() => navigate(`/courses/${courseId}/participants`)}
+          />
+          <Chip
+            label={t('grades.title')}
+            size="small"
+            variant="outlined"
+            onClick={() => navigate(`/courses/${courseId}/grades`)}
+          />
+        </>
+      )}
     </Box>
   )
 }

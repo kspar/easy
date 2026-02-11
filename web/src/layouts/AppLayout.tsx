@@ -33,13 +33,18 @@ import {
   Menu as MenuIcon,
   School,
   LibraryBooks,
-  Info,
   DarkMode,
   LightMode,
   Translate,
   Logout,
+  Circle,
+  CheckCircle,
+  RadioButtonUnchecked,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/ThemeContext.tsx'
+import { useCourseExercises } from '../api/exercises.ts'
+import { useStudentCourses } from '../api/courses.ts'
+import type { StudentExerciseStatus } from '../api/types.ts'
 import logoSvg from '../assets/logo.svg'
 
 const DRAWER_WIDTH = 260
@@ -60,6 +65,19 @@ export default function AppLayout() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
+  // Extract courseId from route if inside a course
+  const courseMatch = location.pathname.match(/^\/courses\/(\d+)/)
+  const courseId = activeRole === 'student' && courseMatch ? courseMatch[1] : undefined
+  const { data: exercises } = useCourseExercises(courseId)
+  const { data: studentCourses } = useStudentCourses()
+  const courseTitle = courseId
+    ? studentCourses?.find((c) => c.id === courseId)?.title
+    : undefined
+
+  // Extract current exercise ID from route for highlighting
+  const exerciseMatch = location.pathname.match(/^\/courses\/\d+\/exercises\/(\d+)/)
+  const activeExerciseId = exerciseMatch ? exerciseMatch[1] : undefined
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null)
 
@@ -76,6 +94,20 @@ export default function AppLayout() {
   const handleRoleSwitch = (role: typeof activeRole) => {
     switchRole(role)
     navigate('/courses')
+  }
+
+  const statusIcon = (status: StudentExerciseStatus) => {
+    switch (status) {
+      case 'COMPLETED':
+        return <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
+      case 'STARTED':
+        return <Circle sx={{ fontSize: 16, color: 'warning.main' }} />
+      case 'UNGRADED':
+        return <Circle sx={{ fontSize: 16, color: 'info.main' }} />
+      case 'UNSTARTED':
+      default:
+        return <RadioButtonUnchecked sx={{ fontSize: 16, color: 'text.disabled' }} />
+    }
   }
 
   const isActive = (path: string) => location.pathname.startsWith(path)
@@ -195,17 +227,61 @@ export default function AppLayout() {
           {t('nav.myCourses')}
         </ListSubheader>
         <ListItemButton
-          selected={isActive('/courses')}
+          selected={location.pathname === '/courses'}
           onClick={() => navTo('/courses')}
         >
           <ListItemIcon>
-            <School color={isActive('/courses') ? 'primary' : 'action'} />
+            <School color={location.pathname === '/courses' ? 'primary' : 'action'} />
           </ListItemIcon>
           <ListItemText
             primary={t('nav.myCourses')}
             primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
           />
         </ListItemButton>
+
+        {courseId && exercises && exercises.length > 0 && (
+          <List disablePadding>
+            <ListSubheader
+              disableSticky
+              sx={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                lineHeight: '32px',
+                mt: 1,
+                px: 2.5,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={courseTitle}
+            >
+              {courseTitle ?? t('exercises.title')}
+            </ListSubheader>
+            {exercises.map((ex) => (
+              <ListItemButton
+                key={ex.id}
+                selected={activeExerciseId === ex.id}
+                onClick={() => navTo(`/courses/${courseId}/exercises/${ex.id}`)}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  {statusIcon(ex.status)}
+                </ListItemIcon>
+                <ListItemText
+                  primary={ex.effective_title}
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    noWrap: true,
+                    fontSize: '0.82rem',
+                  }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        )}
 
         {(activeRole === 'teacher' || activeRole === 'admin') && (
           <>
@@ -244,17 +320,31 @@ export default function AppLayout() {
 
       {/* Footer */}
       <Divider />
-      <List sx={{ py: 0.5 }}>
-        <ListItemButton dense onClick={() => navTo('/about')}>
-          <ListItemIcon>
-            <Info fontSize="small" color="action" />
-          </ListItemIcon>
-          <ListItemText
-            primary={t('nav.about')}
-            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
-          />
-        </ListItemButton>
-      </List>
+      <Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            component={RouterLink}
+            to="/about"
+            sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
+            {t('nav.about')}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            component={RouterLink}
+            to="/tos"
+            sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
+            {t('nav.terms')}
+          </Typography>
+        </Box>
+        <Typography variant="caption" color="text.disabled">
+          {t('nav.university', { year: new Date().getFullYear() })}
+        </Typography>
+      </Box>
     </Box>
   )
 
@@ -353,7 +443,7 @@ export default function AppLayout() {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            <IconButton size="small" onClick={toggleMode} title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <IconButton size="small" onClick={toggleMode} title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
               {mode === 'dark' ? (
                 <LightMode fontSize="small" />
               ) : (
