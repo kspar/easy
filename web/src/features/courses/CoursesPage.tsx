@@ -12,12 +12,14 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext.tsx'
 import { useStudentCourses, useTeacherCourses } from '../../api/courses.ts'
+import usePageTitle from '../../hooks/usePageTitle.ts'
 import { formatDistanceToNow } from 'date-fns'
 import { et, enUS } from 'date-fns/locale'
 
 export default function CoursesPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { activeRole } = useAuth()
+  usePageTitle(t('courses.title'))
 
   if (activeRole === 'student') {
     return <StudentCourses />
@@ -33,7 +35,7 @@ function StudentCourses() {
 
   return (
     <>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" sx={{ mb: 3 }}>
         {t('courses.title')}
       </Typography>
 
@@ -42,33 +44,39 @@ function StudentCourses() {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {courses?.map((course) => (
-          <Card key={course.id} variant="outlined">
+          <Card key={course.id}>
             <CardActionArea
               onClick={() => navigate(`/courses/${course.id}/exercises`)}
             >
-              <CardContent
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle1">
-                    {course.title}
-                  </Typography>
-                  {course.alias && (
-                    <Typography variant="body2" color="text.secondary">
-                      {course.alias}
+              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ lineHeight: 1.4 }}>
+                      {course.title}
                     </Typography>
-                  )}
+                    {course.alias && (
+                      <Typography variant="caption" color="text.secondary">
+                        {course.alias}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ whiteSpace: 'nowrap', ml: 2, mt: 0.3 }}
+                  >
+                    {formatDistanceToNow(new Date(course.last_accessed), {
+                      addSuffix: true,
+                      locale: dateFnsLocale,
+                    })}
+                  </Typography>
                 </Box>
-                <Typography variant="caption" color="text.secondary">
-                  {formatDistanceToNow(new Date(course.last_accessed), {
-                    addSuffix: true,
-                    locale: dateFnsLocale,
-                  })}
-                </Typography>
               </CardContent>
             </CardActionArea>
           </Card>
@@ -87,7 +95,7 @@ function TeacherCourses() {
 
   return (
     <>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" sx={{ mb: 3 }}>
         {activeRole === 'admin' ? t('courses.titleAdmin') : t('courses.title')}
       </Typography>
 
@@ -96,39 +104,53 @@ function TeacherCourses() {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {courses?.map((course) => (
-          <Card key={course.id} variant="outlined">
+          <Card key={course.id}>
             <CardActionArea
               onClick={() => navigate(`/courses/${course.id}/exercises`)}
             >
-              <CardContent
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle1">
-                    {course.title}
-                  </Typography>
-                  {course.alias && (
-                    <Typography variant="body2" color="text.secondary">
-                      {course.alias}
+              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ lineHeight: 1.4 }}>
+                      {course.title}
                     </Typography>
-                  )}
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Chip
-                    label={`${course.student_count} ${course.student_count === 1 ? t('courses.studentSingular') : t('courses.studentPlural')}`}
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDistanceToNow(new Date(course.last_accessed), {
-                      addSuffix: true,
-                      locale: dateFnsLocale,
-                    })}
-                  </Typography>
+                    {course.alias && (
+                      <Typography variant="caption" color="text.secondary">
+                        {course.alias}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      ml: 2,
+                      mt: 0.3,
+                    }}
+                  >
+                    <Chip
+                      label={`${course.student_count} ${course.student_count === 1 ? t('courses.studentSingular') : t('courses.studentPlural')}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      {formatDistanceToNow(new Date(course.last_accessed), {
+                        addSuffix: true,
+                        locale: dateFnsLocale,
+                      })}
+                    </Typography>
+                  </Box>
                 </Box>
               </CardContent>
             </CardActionArea>
