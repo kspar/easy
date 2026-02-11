@@ -1,9 +1,15 @@
 import { useState } from 'react'
-import { Outlet, useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
+import {
+  Outlet,
+  useNavigate,
+  useLocation,
+  Link as RouterLink,
+} from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext.tsx'
 import {
   AppBar,
+  Avatar,
   Box,
   Toolbar,
   Typography,
@@ -20,6 +26,7 @@ import {
   Container,
   useMediaQuery,
   useTheme,
+  ListSubheader,
 } from '@mui/material'
 import {
   AccountCircle,
@@ -29,15 +36,24 @@ import {
   Info,
   DarkMode,
   LightMode,
+  Translate,
+  Logout,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/ThemeContext.tsx'
+import logoSvg from '../assets/logo.svg'
 
-const DRAWER_WIDTH = 250
+const DRAWER_WIDTH = 260
 
 export default function AppLayout() {
   const { t, i18n } = useTranslation()
-  const { authenticated, firstName, activeRole, availableRoles, switchRole, logout } =
-    useAuth()
+  const {
+    authenticated,
+    firstName,
+    activeRole,
+    availableRoles,
+    switchRole,
+    logout,
+  } = useAuth()
   const { mode, toggleMode } = useThemeMode()
   const navigate = useNavigate()
   const location = useLocation()
@@ -64,6 +80,13 @@ export default function AppLayout() {
 
   const isActive = (path: string) => location.pathname.startsWith(path)
 
+  const navTo = (path: string) => {
+    navigate(path)
+    if (isMobile) setDrawerOpen(false)
+  }
+
+  const initials = firstName?.charAt(0)?.toUpperCase() ?? '?'
+
   const sidenavContent = (
     <Box
       sx={{
@@ -73,91 +96,162 @@ export default function AppLayout() {
         flexDirection: 'column',
       }}
     >
-      {/* Logo */}
-      <Box sx={{ px: 2.5, py: 2.5 }}>
-        <Typography
-          component={RouterLink}
-          to="/courses"
+      {/* Logo area */}
+      <Box
+        component={RouterLink}
+        to="/courses"
+        sx={{
+          px: 2.5,
+          pt: 2.5,
+          pb: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          textDecoration: 'none',
+        }}
+      >
+        <Box
+          component="img"
+          src={logoSvg}
+          alt=""
           sx={{
-            textDecoration: 'none',
+            width: 28,
+            height: 28,
             color: 'primary.main',
-            fontWeight: 700,
-            fontSize: '1.25rem',
-            letterSpacing: '0.06em',
+            filter: (theme) =>
+              theme.palette.mode === 'light'
+                ? 'invert(42%) sepia(52%) saturate(600%) hue-rotate(84deg) brightness(92%)'
+                : 'invert(70%) sepia(30%) saturate(500%) hue-rotate(84deg) brightness(95%)',
+          }}
+        />
+        <Typography
+          sx={{
+            fontFamily: "'Sniglet', cursive",
+            fontSize: '1.35rem',
+            color: 'primary.main',
+            letterSpacing: '0.01em',
           }}
         >
           LAHENDUS
         </Typography>
       </Box>
 
-      {/* Role switcher */}
+      {/* User & role switcher */}
       {authenticated && (
-        <>
-          <Box sx={{ px: 2.5, pb: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {firstName ?? ''}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-              {availableRoles.map((role) => (
-                <Chip
-                  key={role}
-                  label={roleLabel(role)}
-                  size="small"
-                  color={role === activeRole ? 'primary' : 'default'}
-                  variant={role === activeRole ? 'filled' : 'outlined'}
-                  onClick={() => handleRoleSwitch(role)}
-                />
-              ))}
+        <Box sx={{ px: 2.5, pb: 2, pt: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: 'primary.main',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" sx={{ lineHeight: 1.3 }}>
+                {firstName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {roleLabel(activeRole)}
+              </Typography>
             </Box>
           </Box>
-          <Divider />
-        </>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {availableRoles.map((role) => (
+              <Chip
+                key={role}
+                label={roleLabel(role)}
+                size="small"
+                color={role === activeRole ? 'primary' : 'default'}
+                variant={role === activeRole ? 'filled' : 'outlined'}
+                onClick={() => handleRoleSwitch(role)}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Box>
+        </Box>
       )}
 
+      <Divider />
+
       {/* Navigation */}
-      <List sx={{ py: 1, flexGrow: 1 }}>
+      <List sx={{ py: 1.5, flexGrow: 1 }}>
+        <ListSubheader
+          disableSticky
+          sx={{
+            fontSize: '0.68rem',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            lineHeight: '32px',
+            px: 2.5,
+          }}
+        >
+          {t('nav.myCourses')}
+        </ListSubheader>
         <ListItemButton
-          component={RouterLink}
-          to="/courses"
           selected={isActive('/courses')}
-          onClick={() => isMobile && setDrawerOpen(false)}
+          onClick={() => navTo('/courses')}
         >
           <ListItemIcon>
             <School color={isActive('/courses') ? 'primary' : 'action'} />
           </ListItemIcon>
-          <ListItemText primary={t('nav.myCourses')} />
+          <ListItemText
+            primary={t('nav.myCourses')}
+            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+          />
         </ListItemButton>
 
         {(activeRole === 'teacher' || activeRole === 'admin') && (
-          <ListItemButton
-            component={RouterLink}
-            to="/library"
-            selected={isActive('/library')}
-            onClick={() => isMobile && setDrawerOpen(false)}
-          >
-            <ListItemIcon>
-              <LibraryBooks color={isActive('/library') ? 'primary' : 'action'} />
-            </ListItemIcon>
-            <ListItemText primary={t('nav.exerciseLibrary')} />
-          </ListItemButton>
+          <>
+            <ListSubheader
+              disableSticky
+              sx={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                lineHeight: '32px',
+                mt: 1,
+                px: 2.5,
+              }}
+            >
+              {t('nav.exerciseLibrary')}
+            </ListSubheader>
+            <ListItemButton
+              selected={isActive('/library')}
+              onClick={() => navTo('/library')}
+            >
+              <ListItemIcon>
+                <LibraryBooks
+                  color={isActive('/library') ? 'primary' : 'action'}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={t('nav.exerciseLibrary')}
+                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+              />
+            </ListItemButton>
+          </>
         )}
       </List>
 
       {/* Footer */}
       <Divider />
       <List sx={{ py: 0.5 }}>
-        <ListItemButton
-          component={RouterLink}
-          to="/about"
-          dense
-          onClick={() => isMobile && setDrawerOpen(false)}
-        >
+        <ListItemButton dense onClick={() => navTo('/about')}>
           <ListItemIcon>
             <Info fontSize="small" color="action" />
           </ListItemIcon>
           <ListItemText
             primary={t('nav.about')}
-            primaryTypographyProps={{ variant: 'body2' }}
+            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
           />
         </ListItemButton>
       </List>
@@ -165,7 +259,13 @@ export default function AppLayout() {
   )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+      }}
+    >
       {/* Permanent sidenav on desktop */}
       {!isMobile && (
         <Drawer
@@ -191,7 +291,14 @@ export default function AppLayout() {
         </Drawer>
       )}
 
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+        }}
+      >
         <AppBar
           position="sticky"
           elevation={0}
@@ -201,45 +308,69 @@ export default function AppLayout() {
             borderColor: 'divider',
           }}
         >
-          <Toolbar variant="dense" sx={{ minHeight: 52 }}>
+          <Toolbar variant="dense" sx={{ minHeight: 48, gap: 0.5 }}>
             {isMobile && (
-              <IconButton edge="start" onClick={toggleDrawer} sx={{ mr: 1 }}>
+              <IconButton edge="start" onClick={toggleDrawer} sx={{ mr: 0.5 }}>
                 <MenuIcon />
               </IconButton>
             )}
 
             {isMobile && (
-              <Typography
-                variant="h6"
+              <Box
                 component={RouterLink}
                 to="/courses"
                 sx={{
-                  flexGrow: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
                   textDecoration: 'none',
-                  color: 'primary.main',
-                  fontWeight: 700,
-                  letterSpacing: '0.06em',
-                  fontSize: '1.1rem',
                 }}
               >
-                LAHENDUS
-              </Typography>
+                <Box
+                  component="img"
+                  src={logoSvg}
+                  alt=""
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    filter: (theme) =>
+                      theme.palette.mode === 'light'
+                        ? 'invert(42%) sepia(52%) saturate(600%) hue-rotate(84deg) brightness(92%)'
+                        : 'invert(70%) sepia(30%) saturate(500%) hue-rotate(84deg) brightness(95%)',
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontFamily: "'Sniglet', cursive",
+                    fontSize: '1.1rem',
+                    color: 'primary.main',
+                  }}
+                >
+                  LAHENDUS
+                </Typography>
+              </Box>
             )}
 
-            {!isMobile && <Box sx={{ flexGrow: 1 }} />}
+            <Box sx={{ flexGrow: 1 }} />
 
-            <IconButton size="small" onClick={toggleMode} sx={{ mr: 0.5 }}>
-              {mode === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+            <IconButton size="small" onClick={toggleMode} title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+              {mode === 'dark' ? (
+                <LightMode fontSize="small" />
+              ) : (
+                <DarkMode fontSize="small" />
+              )}
+            </IconButton>
+
+            <IconButton size="small" onClick={toggleLanguage} title={t('general.otherLanguage')}>
+              <Translate fontSize="small" />
             </IconButton>
 
             {authenticated && (
               <>
-                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                  {firstName}
-                </Typography>
                 <IconButton
                   size="small"
                   onClick={(e) => setProfileAnchor(e.currentTarget)}
+                  sx={{ ml: 0.5 }}
                 >
                   <AccountCircle />
                 </IconButton>
@@ -249,25 +380,39 @@ export default function AppLayout() {
                   onClose={() => setProfileAnchor(null)}
                   anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                   transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  slotProps={{
+                    paper: {
+                      sx: { minWidth: 180, mt: 0.5, borderRadius: 2 },
+                    },
+                  }}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      toggleLanguage()
-                      setProfileAnchor(null)
-                    }}
-                  >
-                    {t('general.otherLanguage')}
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setProfileAnchor(null)
-                    }}
-                  >
-                    {t('nav.accountSettings')}
-                  </MenuItem>
+                  <Box sx={{ px: 2, py: 1 }}>
+                    <Typography variant="subtitle2">{firstName}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {roleLabel(activeRole)}
+                    </Typography>
+                  </Box>
                   <Divider />
-                  <MenuItem onClick={() => logout()}>
-                    {t('nav.logOut')}
+                  <MenuItem
+                    onClick={() => {
+                      setProfileAnchor(null)
+                    }}
+                  >
+                    <ListItemIcon>
+                      <AccountCircle fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{t('nav.accountSettings')}</ListItemText>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      logout()
+                      setProfileAnchor(null)
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Logout fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{t('nav.logOut')}</ListItemText>
                   </MenuItem>
                 </Menu>
               </>
