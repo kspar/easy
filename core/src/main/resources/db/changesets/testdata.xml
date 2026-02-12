@@ -89,30 +89,43 @@
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9004, now(), 'kspar', false, 9004, false);
 
+            <!-- Container image and auto exercises for AUTO-graded exercises -->
+            INSERT INTO container_image (id) VALUES ('mock');
+
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9001, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9002, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9003, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type)
+                                          text_html, solution_file_name, solution_file_type,
+                                          auto_exercise_id)
             VALUES (9001, 9001, 'kspar', now(), 'AUTO', 'Hello World',
                     '&lt;p&gt;Write a program that prints "Hello, World!".&lt;/p&gt;',
-                    'solution.py', 0);
+                    'solution.py', 0, 9001);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type)
+                                          text_html, solution_file_name, solution_file_type,
+                                          auto_exercise_id)
             VALUES (9002, 9002, 'kspar', now(), 'AUTO', 'Sum of Two Numbers',
                     '&lt;p&gt;Write a program that reads two integers and prints their sum.&lt;/p&gt;',
-                    'solution.py', 0);
+                    'solution.py', 0, 9002);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
                                           text_html, solution_file_name, solution_file_type)
             VALUES (9003, 9003, 'kspar', now(), 'TEACHER', 'Essay: Algorithms',
                     '&lt;p&gt;Write a short essay about your favorite sorting algorithm. Discuss its time complexity, best use cases, and why you find it interesting.&lt;/p&gt;',
                     'essay.txt', 0);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type)
+                                          text_html, solution_file_name, solution_file_type,
+                                          auto_exercise_id)
             VALUES (9004, 9004, 'kspar', now(), 'AUTO', 'Debug Challenge',
                     '&lt;p&gt;The following function is supposed to return the factorial of n, but it has a bug. Find and fix it.&lt;/p&gt;&lt;pre&gt;def factorial(n):
     result = 0
     for i in range(1, n + 1):
         result *= i
     return result&lt;/pre&gt;',
-                    'solution.py', 0);
+                    'solution.py', 0, 9003);
         </sql>
     </changeSet>
 
@@ -277,6 +290,20 @@
                     now() - interval '1 day 8 hours', 4,
                     'Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.',
                     '&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Overall well-written and clear.&lt;/p&gt;');
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-mock-executor" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM executor WHERE id = 9001</sqlCheck>
+        </preConditions>
+        <comment>Insert mock executor for local dev</comment>
+        <sql>
+            INSERT INTO executor (id, name, base_url, max_load, drain)
+            VALUES (9001, 'mock-executor', 'http://localhost:5111', 10, false);
+
+            INSERT INTO executor_container_image (executor_id, container_image_id)
+            VALUES (9001, 'mock');
         </sql>
     </changeSet>
 
