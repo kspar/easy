@@ -184,6 +184,11 @@
     "s1": "Lahenduse keskkonda haldab ja arendab",
     "s2": "Tartu Ülikooli arvutiteaduse instituut",
     "s3": "Lahendus põhineb vabavaralisel rakendusel",
+    "discord": "Kui sul on Lahenduse kasutamise või arenduse kohta küsimusi, või kui leidsid kuskilt vea, siis tule räägi sellest",
+    "discordLink": "Lahenduse Discordi serveris",
+    "statsAutograding": "Hetkel kontrollimisel",
+    "statsSubmissions": "Lahendust",
+    "statsAccounts": "Kasutajat",
     "sponsors": "Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
   },
   "validation": {

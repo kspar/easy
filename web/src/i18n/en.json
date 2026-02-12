@@ -184,6 +184,11 @@
     "s1": "Lahendus is operated and developed by the",
     "s2": "Institute of Computer Science at the University of Tartu",
     "s3": "Lahendus is based on an open-source application called",
+    "discord": "If you have any questions about Lahendus or are interested in its development, or if you found a bug, then come talk to us in",
+    "discordLink": "our Discord server",
+    "statsAutograding": "Currently grading",
+    "statsSubmissions": "Submissions",
+    "statsAccounts": "Accounts",
     "sponsors": "The development of Lahendus and easy, and creating some of the exercises has been supported by"
   },
   "validation": {

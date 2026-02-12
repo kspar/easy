@@ -16,7 +16,7 @@ export class ApiResponseError extends Error {
   }
 }
 
-let getToken: (() => Promise<string | undefined>) | null = null
+export let getToken: (() => Promise<string | undefined>) | null = null
 
 export function setTokenProvider(provider: () => Promise<string | undefined>) {
   getToken = provider

@@ -8,6 +8,7 @@ const config = {
   },
   keycloakTokenMinValidSec: 30,
   repoUrl: 'https://github.com/kspar/easy',
+  discordInviteUrl: 'https://discord.gg/6FBC8Z8pBP',
 } as const
 
 export default config
