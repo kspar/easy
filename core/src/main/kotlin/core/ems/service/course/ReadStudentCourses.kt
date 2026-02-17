@@ -28,6 +28,7 @@ class ReadStudentCourses {
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
+        @JsonProperty("course_code") val courseCode: String?,
         @JsonProperty("archived") val archived: Boolean,
         @JsonSerialize(using = DateTimeSerializer::class)
         @JsonProperty("last_accessed") val lastAccessed: DateTime,
@@ -45,7 +46,7 @@ class ReadStudentCourses {
     private fun selectCoursesForStudent(studentId: String): Resp = transaction {
         Resp(
             (StudentCourseAccess innerJoin Course).select(
-                Course.id, Course.title, Course.alias, Course.archived, Course.color, StudentCourseAccess.lastAccessed
+                Course.id, Course.title, Course.alias, Course.courseCode, Course.archived, Course.color, StudentCourseAccess.lastAccessed
             ).where {
                 StudentCourseAccess.student eq studentId
             }.map {
@@ -53,6 +54,7 @@ class ReadStudentCourses {
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.courseCode],
                     it[Course.archived],
                     it[StudentCourseAccess.lastAccessed],
                     it[Course.color],

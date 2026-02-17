@@ -32,6 +32,7 @@ class ReadTeacherCourses {
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
+        @JsonProperty("course_code") val courseCode: String?,
         @JsonProperty("archived") val archived: Boolean,
         @JsonProperty("student_count") val studentCount: Long,
         @JsonSerialize(using = DateTimeSerializer::class)
@@ -63,13 +64,14 @@ class ReadTeacherCourses {
 
         val studentCount = StudentCourseAccess.student.count().alias("student_count")
         (Course leftJoin StudentCourseAccess)
-            .select(Course.id, Course.title, Course.alias, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color, studentCount)
-            .groupBy(Course.id, Course.title, Course.alias, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color)
+            .select(Course.id, Course.title, Course.alias, Course.courseCode, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color, studentCount)
+            .groupBy(Course.id, Course.title, Course.alias, Course.courseCode, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color)
             .map {
                 CourseResp(
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.courseCode],
                     it[Course.archived],
                     it[studentCount],
                     currentTime,
@@ -83,7 +85,7 @@ class ReadTeacherCourses {
     private fun selectCoursesForTeacher(teacherId: String): List<CourseResp> = transaction {
         // get teacher course accesses with groups
         (Course innerJoin TeacherCourseAccess)
-            .select(Course.id, Course.title, Course.alias, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color, TeacherCourseAccess.lastAccessed)
+            .select(Course.id, Course.title, Course.alias, Course.courseCode, Course.archived, Course.moodleShortName, Course.lastSubmissionAt, Course.color, TeacherCourseAccess.lastAccessed)
             .where { TeacherCourseAccess.teacher eq teacherId }
             .map {
                 // Get student count for each course
@@ -91,6 +93,7 @@ class ReadTeacherCourses {
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.courseCode],
                     it[Course.archived],
                     selectStudentCountForCourse(it[Course.id].value),
                     it[TeacherCourseAccess.lastAccessed],

@@ -63,6 +63,7 @@ object Course : LongIdTable("course") {
     val archived = bool("archived")
     val lastSubmissionAt = datetime("last_submission_at").nullable()
     val color = text("color")
+    val courseCode = text("course_code").nullable()
 }
 
 object CourseGroup : LongIdTable("course_group") {

@@ -146,15 +146,15 @@
         </preConditions>
         <comment>Insert test courses with exercises, enrollments, and submissions</comment>
         <sql>
-            INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_sync_students, moodle_sync_grades,
+            INSERT INTO course (id, created_at, title, alias, course_code, last_submission_at, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
-            VALUES (9001, now(), 'Introduction to Programming', 'ITP-2026', now() - interval '2 hours', '#7986cb', false, false, false, false, false);
+            VALUES (9001, now(), 'Introduction to Programming', 'prog1', 'PROG-1', now() - interval '2 hours', '#7986cb', false, false, false, false, false);
             INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
             VALUES (9002, now(), 'Advanced Algorithms', null, now() - interval '3 days', '#4db6ac', false, false, false, false, false);
             INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_short_name, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
-            VALUES (9003, now(), 'Data Structures and Complexity', 'LTAT.03.005', now() - interval '30 days', '#ff8a65', 'ds-2026', true, true, false, false, false);
+            VALUES (9003, now(), 'Data Structures and Complexity', 'ds', now() - interval '30 days', '#ff8a65', 'LTAT.01.001', true, true, false, false, false);
             INSERT INTO course (id, created_at, title, alias, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
             VALUES (9004, now(), 'Machine Learning Fundamentals', null, '#9575cd', false, false, false, false, false);

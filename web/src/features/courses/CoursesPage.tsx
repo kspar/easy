@@ -185,10 +185,15 @@ function StudentCourses() {
                 '&:hover': { ...cardSx['&:hover'], boxShadow: hoverShadow(color) },
               }}
             >
-              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 }, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="subtitle1" sx={{ lineHeight: 1.4 }}>
                   {title}
                 </Typography>
+                {course.course_code && (
+                  <Typography variant="caption" color="text.secondary">
+                    {course.course_code}
+                  </Typography>
+                )}
                 {progress.total > 0 && (
                   <Box sx={{ mt: 0.75, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LinearProgress
@@ -235,6 +240,8 @@ function TeacherCourses() {
           const title = isAdmin ? course.title : (course.alias ?? course.title)
           const color = viewMode === 'grid' ? course.color : null
           const activity = getActivityLevel(course.last_submission_at)
+          const secondaryCode = course.moodle_short_name ?? course.course_code
+          const secondaryParts = [secondaryCode, isAdmin && course.alias].filter(Boolean)
           return (
             <Card
               key={course.id}
@@ -245,8 +252,8 @@ function TeacherCourses() {
                 '&:hover': { ...cardSx['&:hover'], boxShadow: hoverShadow(color) },
               }}
             >
-              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 }, height: '100%', display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, width: '100%' }}>
                   <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                       <Box
@@ -267,9 +274,10 @@ function TeacherCourses() {
                         {title}
                       </Typography>
                     </Box>
-                    {isAdmin && course.alias && (
-                      <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5, display: 'block' }}>
-                        {course.alias}
+                    {secondaryParts.length > 0 && (
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {course.moodle_short_name && <LinkOutlined sx={{ fontSize: 14 }} />}
+                        {secondaryParts.join(' · ')}
                       </Typography>
                     )}
                   </Box>
@@ -279,15 +287,6 @@ function TeacherCourses() {
                       size="small"
                       variant="outlined"
                     />
-                    {course.moodle_short_name && (
-                      <Chip
-                        icon={<LinkOutlined />}
-                        label="Moodle"
-                        size="small"
-                        variant="outlined"
-                        color="info"
-                      />
-                    )}
                   </Box>
                 </Box>
               </CardContent>

@@ -599,6 +599,14 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="180226-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="course_code" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
     <changeSet id="170226-2" author="kspar">
         <addColumn tableName="course">
             <column name="color" type="text">

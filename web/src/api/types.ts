@@ -4,6 +4,7 @@ export interface StudentCourse {
   id: string
   title: string
   alias: string | null
+  course_code: string | null
   archived: boolean
   last_accessed: string
   color: string
@@ -13,6 +14,7 @@ export interface TeacherCourse {
   id: string
   title: string
   alias: string | null
+  course_code: string | null
   archived: boolean
   student_count: number
   last_accessed: string

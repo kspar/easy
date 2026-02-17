@@ -25,6 +25,7 @@ class UpdateCourse {
         @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String,
         @JsonProperty("alias") @field:Size(max = 100) val alias: String?,
         @JsonProperty("color") @field:NotBlank @field:Size(max = 20) val color: String,
+        @JsonProperty("course_code") @field:Size(max = 100) val courseCode: String?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -43,8 +44,10 @@ class UpdateCourse {
 
     private fun putCourse(courseId: Long, dto: Req, isAdmin: Boolean) = transaction {
         Course.update({ Course.id.eq(courseId) }) {
-            if (isAdmin)
+            if (isAdmin) {
                 it[title] = dto.title
+                it[courseCode] = dto.courseCode
+            }
             it[alias] = dto.alias
             it[color] = dto.color
         }
