@@ -74,11 +74,14 @@
             VALUES (9003, '9003', true, now(), now());
             INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
             VALUES (9004, '9004', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9005, '9005', true, now(), now());
 
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9001, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9002, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9003, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9004, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9005, 4, now());
 
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9001, now(), 'kspar', false, 9001, false);
@@ -88,6 +91,8 @@
             VALUES (9003, now(), 'kspar', false, 9003, false);
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9004, now(), 'kspar', false, 9004, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9005, now(), 'kspar', false, 9005, false);
 
             <!-- Container image and auto exercises for AUTO-graded exercises -->
             INSERT INTO container_image (id) VALUES ('mock');
@@ -126,6 +131,12 @@
         result *= i
     return result&lt;/pre&gt;',
                     'solution.py', 0, 9003);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type,
+                                          auto_exercise_id)
+            VALUES (9005, 9005, 'kspar', now(), 'AUTO', 'FizzBuzz',
+                    '&lt;p&gt;Write a program that prints the numbers from 1 to 100. But for multiples of three print "Fizz" instead of the number and for the multiples of five print "Buzz". For numbers which are multiples of both three and five print "FizzBuzz".&lt;/p&gt;',
+                    'solution.py', 0, 9001);
         </sql>
     </changeSet>
 
@@ -135,34 +146,52 @@
         </preConditions>
         <comment>Insert test courses with exercises, enrollments, and submissions</comment>
         <sql>
-            INSERT INTO course (id, created_at, title, alias, moodle_sync_students, moodle_sync_grades,
+            INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
-            VALUES (9001, now(), 'Introduction to Programming', 'ITP-2026', false, false, false, false, false);
-            INSERT INTO course (id, created_at, title, alias, moodle_sync_students, moodle_sync_grades,
+            VALUES (9001, now(), 'Introduction to Programming', 'ITP-2026', now() - interval '2 hours', '#7986cb', false, false, false, false, false);
+            INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
-            VALUES (9002, now(), 'Advanced Algorithms', null, false, false, false, false, false);
+            VALUES (9002, now(), 'Advanced Algorithms', null, now() - interval '3 days', '#4db6ac', false, false, false, false, false);
+            INSERT INTO course (id, created_at, title, alias, last_submission_at, color, moodle_short_name, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9003, now(), 'Data Structures and Complexity', 'LTAT.03.005', now() - interval '30 days', '#ff8a65', 'ds-2026', true, true, false, false, false);
+            INSERT INTO course (id, created_at, title, alias, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9004, now(), 'Machine Learning Fundamentals', null, '#9575cd', false, false, false, false, false);
 
-            <!-- kspar as teacher on both courses -->
+            <!-- kspar as teacher on all courses -->
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9001, now(), now());
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9002, now(), now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9003, now(), now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9004, now(), now());
 
             <!-- dev-teacher also teaches course 9001 -->
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
             VALUES ('dev-teacher', 9001, now(), now());
 
-            <!-- kspar also as student on both courses (for testing student view) -->
+            <!-- kspar also as student on all courses (for testing student view) -->
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9001, now(), now());
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9002, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9003, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9004, now(), now());
 
-            <!-- dev-student enrolled on both courses -->
+            <!-- dev-student enrolled on all courses -->
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('dev-student', 9001, now(), now());
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('dev-student', 9002, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('dev-student', 9003, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('dev-student', 9004, now(), now());
 
             <!-- Course exercises on course 9001: 4 exercises -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
@@ -183,12 +212,29 @@
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from)
             VALUES (9005, 9001, 9004, now(), now(), 50, 3, true, now());
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9006, 9001, 9005, now(), now(), 50, 4, true, now());
 
             <!-- Course exercises on course 9002: 1 exercise -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from)
             VALUES (9004, 9002, 9002, now(), now(), 80, 0, true, now());
+
+            <!-- Course exercises on course 9003: 2 exercises -->
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from, soft_deadline)
+            VALUES (9007, 9003, 9001, now(), now(), 50, 0, true, now(),
+                    now() + interval '14 days');
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9008, 9003, 9005, now(), now(), 50, 1, true, now());
+
+            <!-- Course 9004: no exercises (empty course) -->
 
             <!--
                 =============================================
@@ -199,7 +245,7 @@
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
                                     auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9001, 9001, 'kspar', now() - interval '5 days',
-                    'print("Hello, World!")', 'COMPLETED', 100, true, false, true, 1);
+                    'print("Hello, World!")', 'COMPLETED', 100, true, true, true, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
                                             created_at, grade, feedback)
@@ -216,12 +262,12 @@
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
                                     auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9002, 9002, 'kspar', now() - interval '3 days',
-                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 40, true, false, true, 1);
+                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 45, false, true, true, 1);
 
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
                                     auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9003, 9002, 'kspar', now() - interval '1 day',
-                    E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 60, true, false, true, 2);
+                    E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 65, false, true, true, 2);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
                                             created_at, grade, feedback)
