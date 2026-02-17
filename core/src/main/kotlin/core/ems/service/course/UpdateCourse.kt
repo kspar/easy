@@ -24,6 +24,7 @@ class UpdateCourse {
     data class Req(
         @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String,
         @JsonProperty("alias") @field:Size(max = 100) val alias: String?,
+        @JsonProperty("color") @field:NotBlank @field:Size(max = 20) val color: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -45,6 +46,7 @@ class UpdateCourse {
             if (isAdmin)
                 it[title] = dto.title
             it[alias] = dto.alias
+            it[color] = dto.color
         }
     }
 }

@@ -591,5 +591,37 @@
                                  constraintName="fk_group_exercise_dir_access_group" onDelete="CASCADE"/>
     </changeSet>
 
+    <changeSet id="170226-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="last_submission_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="170226-2" author="kspar">
+        <addColumn tableName="course">
+            <column name="color" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <sql>
+            <![CDATA[
+            UPDATE course SET color = CASE abs(hashtext(title)) % 10
+                WHEN 0 THEN '#7986cb'
+                WHEN 1 THEN '#4db6ac'
+                WHEN 2 THEN '#ff8a65'
+                WHEN 3 THEN '#9575cd'
+                WHEN 4 THEN '#4fc3f7'
+                WHEN 5 THEN '#aed581'
+                WHEN 6 THEN '#f06292'
+                WHEN 7 THEN '#ffd54f'
+                WHEN 8 THEN '#a1887f'
+                WHEN 9 THEN '#90a4ae'
+            END;
+            ]]>
+        </sql>
+        <addNotNullConstraint tableName="course" columnName="color"/>
+    </changeSet>
 
 </databaseChangeLog>

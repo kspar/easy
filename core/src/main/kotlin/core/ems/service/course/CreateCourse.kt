@@ -23,7 +23,8 @@ class CreateCourse {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String
+        @JsonProperty("title") @field:NotBlank @field:Size(max = 100) val title: String,
+        @JsonProperty("color") @field:NotBlank @field:Size(max = 20) val color: String,
     )
 
     data class Resp(@JsonProperty("id") val id: String)
@@ -32,14 +33,15 @@ class CreateCourse {
     @PostMapping("/admin/courses")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
         log.info { "Create course '${dto.title}' by ${caller.id}" }
-        val courseId = insertCourse(dto.title)
+        val courseId = insertCourse(dto.title, dto.color)
         return Resp(courseId.toString())
     }
 
-    private fun insertCourse(courseTitle: String): Long = transaction {
+    private fun insertCourse(courseTitle: String, courseColor: String): Long = transaction {
         Course.insertAndGetId {
             it[createdAt] = DateTime.now()
             it[title] = courseTitle
+            it[color] = courseColor
         }
     }.value
 }

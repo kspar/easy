@@ -61,6 +61,8 @@ object Course : LongIdTable("course") {
     val moodleSyncGrades = bool("moodle_sync_grades")
     val moodleSyncGradesInProgress = bool("moodle_sync_grades_in_progress")
     val archived = bool("archived")
+    val lastSubmissionAt = datetime("last_submission_at").nullable()
+    val color = text("color")
 }
 
 object CourseGroup : LongIdTable("course_group") {

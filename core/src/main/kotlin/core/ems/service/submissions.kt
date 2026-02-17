@@ -193,12 +193,17 @@ fun insertSubmission(
             }
         }.value
 
-        val exerciseId = CourseExercise
-            .select(CourseExercise.exercise)
+        val ceRow = CourseExercise
+            .select(CourseExercise.exercise, CourseExercise.course)
             .where { CourseExercise.id eq courseExId }
-            .map { it[CourseExercise.exercise] }
             .single()
-            .value
+
+        val exerciseId = ceRow[CourseExercise.exercise].value
+        val courseId = ceRow[CourseExercise.course].value
+
+        Course.update({ Course.id eq courseId }) {
+            it[lastSubmissionAt] = time
+        }
 
         StatsSubmission.insert {
             it[StatsSubmission.submissionId] = submissionId
