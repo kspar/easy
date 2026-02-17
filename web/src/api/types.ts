@@ -6,6 +6,7 @@ export interface StudentCourse {
   alias: string | null
   archived: boolean
   last_accessed: string
+  color: string
 }
 
 export interface TeacherCourse {
@@ -15,6 +16,9 @@ export interface TeacherCourse {
   archived: boolean
   student_count: number
   last_accessed: string
+  moodle_short_name: string | null
+  last_submission_at: string | null
+  color: string
 }
 
 // Exercise types

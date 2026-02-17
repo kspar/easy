@@ -71,7 +71,10 @@
     "studentPlural": "students",
     "enrolledAttr": "Enrolled",
     "courseSingular": "course",
-    "coursePlural": "courses"
+    "coursePlural": "courses",
+    "viewGrid": "Grid view",
+    "viewList": "List view",
+    "ungraded": "ungraded"
   },
   "exercises": {
     "title": "Exercises",

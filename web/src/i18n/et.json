@@ -71,7 +71,10 @@
     "studentPlural": "õpilast",
     "enrolledAttr": "Kursusel on",
     "courseSingular": "kursus",
-    "coursePlural": "kursust"
+    "coursePlural": "kursust",
+    "viewGrid": "Ruudustikvaade",
+    "viewList": "Loendivaade",
+    "ungraded": "hindamata"
   },
   "exercises": {
     "title": "Ülesanded",
