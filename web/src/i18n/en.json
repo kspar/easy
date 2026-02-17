@@ -128,8 +128,10 @@
     "runAutoTests": "Run tests",
     "exerciseClosed": "This exercise is closed and does not allow any new submissions",
     "currentGrade": "Grade",
+    "gradePreviousSubmission": "Grade given to a previous submission",
     "noSubmissions": "No submissions yet",
     "previousSubmissions": "Previous submissions",
+    "restore": "Restore to editor",
     "teacherFeedback": "Teacher feedback",
     "replyPlaceholder": "Write a reply...",
     "replyComing": "Replies coming soon",
@@ -137,9 +139,13 @@
     "testFailed": "Failed",
     "stdout": "Standard output",
     "stderr": "Error output",
-    "gradedPoints": "Graded: {{points}} points",
+    "gradedPoints": "Graded: {{points}} / 100",
     "autoGrade": "Auto-assessment grade",
-    "submissionNr": "Submission #{{nr}}"
+    "submissionNr": "submission #{{nr}}",
+    "uploadFile": "Upload file",
+    "saveAsFile": "Save as file",
+    "uploadErrorTooLarge": "The chosen file is too large",
+    "uploadErrorNotText": "The chosen file is not a text file"
   },
   "library": {
     "title": "Exercise library",
@@ -205,6 +211,9 @@
   "datetime": {
     "today": "today",
     "yesterday": "yesterday",
-    "tomorrow": "tomorrow"
+    "tomorrow": "tomorrow",
+    "justNow": "just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}} hours ago"
   }
 }

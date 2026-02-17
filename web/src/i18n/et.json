@@ -128,8 +128,10 @@
     "runAutoTests": "Käivita automaattestid",
     "exerciseClosed": "See ülesanne on suletud ja ei luba enam uusi esitusi",
     "currentGrade": "Hinne",
+    "gradePreviousSubmission": "Hinne on antud eelnevale esitusele",
     "noSubmissions": "Esitusi veel pole",
     "previousSubmissions": "Varasemad esitused",
+    "restore": "Kopeeri redaktorisse",
     "teacherFeedback": "Õpetaja tagasiside",
     "replyPlaceholder": "Kirjuta vastus...",
     "replyComing": "Vastamine tuleb peagi",
@@ -137,9 +139,13 @@
     "testFailed": "Ebaõnnestunud",
     "stdout": "Standardväljund",
     "stderr": "Veaväljund",
-    "gradedPoints": "Hinnatud: {{points}} punkti",
+    "gradedPoints": "Hinnatud: {{points}} / 100",
     "autoGrade": "Automaathinnangu tulemus",
-    "submissionNr": "Esitus #{{nr}}"
+    "submissionNr": "esitus #{{nr}}",
+    "uploadFile": "Vali fail arvutist",
+    "saveAsFile": "Salvesta failina",
+    "uploadErrorTooLarge": "Valitud fail on liiga suur",
+    "uploadErrorNotText": "Valitud fail pole tekstifail"
   },
   "library": {
     "title": "Ülesandekogu",
@@ -205,6 +211,9 @@
   "datetime": {
     "today": "täna",
     "yesterday": "eile",
-    "tomorrow": "homme"
+    "tomorrow": "homme",
+    "justNow": "just praegu",
+    "minutesAgo": "{{count}} min tagasi",
+    "hoursAgo": "{{count}} tundi tagasi"
   }
 }

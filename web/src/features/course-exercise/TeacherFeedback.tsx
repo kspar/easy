@@ -4,13 +4,10 @@ import {
   Alert,
   Divider,
   Paper,
-  TextField,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
-import { et, enUS } from 'date-fns/locale'
+import RelativeTime from '../../components/RelativeTime.tsx'
 import { useTeacherActivities } from '../../api/exercises.ts'
 
 export default function TeacherFeedback({
@@ -20,8 +17,7 @@ export default function TeacherFeedback({
   courseId: string
   courseExerciseId: string
 }) {
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enUS
+  const { t } = useTranslation()
 
   const { data: activities, isLoading, error } = useTeacherActivities(
     courseId,
@@ -39,7 +35,7 @@ export default function TeacherFeedback({
         {t('submission.teacherFeedback')}
       </Typography>
 
-      {activities.map((activity) => (
+      {[...activities].reverse().map((activity) => (
         <Paper key={activity.id} variant="outlined" sx={{ p: 2, mb: 1.5 }}>
           <Box
             sx={{
@@ -53,9 +49,9 @@ export default function TeacherFeedback({
               {activity.teacher.given_name} {activity.teacher.family_name}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {format(new Date(activity.created_at), 'PPp', {
-                locale: dateFnsLocale,
-              })}
+              <RelativeTime date={activity.created_at} />
+              {' · '}
+              {t('submission.submissionNr', { nr: activity.submission_number })}
             </Typography>
           </Box>
 
@@ -75,16 +71,6 @@ export default function TeacherFeedback({
           )}
         </Paper>
       ))}
-
-      <Tooltip title={t('submission.replyComing')}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder={t('submission.replyPlaceholder')}
-          disabled
-          sx={{ mt: 1 }}
-        />
-      </Tooltip>
     </Box>
   )
 }

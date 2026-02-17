@@ -8,10 +8,10 @@ import {
   Typography,
 } from '@mui/material'
 import {
-  ExpandMore,
+  ExpandMoreOutlined,
   CheckCircle,
   Cancel,
-  HelpOutline,
+  HelpOutlineOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
@@ -66,7 +66,7 @@ export default function AutoTestResults({
       </Typography>
 
       <Typography variant="body2" sx={{ mb: 2 }}>
-        {t('submission.autoGrade')}: <strong>{autoAssessment.grade}p</strong>
+        {t('submission.autoGrade')}: <strong>{autoAssessment.grade} / 100</strong>
       </Typography>
 
       {v3 ? (
@@ -78,7 +78,7 @@ export default function AutoTestResults({
               ) : check.status === 'FAILED' ? (
                 <Cancel color="error" fontSize="small" />
               ) : (
-                <HelpOutline color="disabled" fontSize="small" />
+                <HelpOutlineOutlined color="disabled" fontSize="small" />
               )
 
             const label =
@@ -95,7 +95,7 @@ export default function AutoTestResults({
                 variant="outlined"
                 sx={{ '&:before': { display: 'none' } }}
               >
-                <AccordionSummary expandIcon={<ExpandMore />}>
+                <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
                   <Box
                     sx={{
                       display: 'flex',

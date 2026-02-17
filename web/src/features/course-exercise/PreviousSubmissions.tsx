@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -7,25 +7,33 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Button,
   Divider,
-  Paper,
   Typography,
 } from '@mui/material'
-import { ExpandMore } from '@mui/icons-material'
+import { ExpandMoreOutlined, ContentCopyOutlined } from '@mui/icons-material'
+import { useTheme } from '@mui/material/styles'
+import { EditorView } from '@codemirror/view'
+import { EditorState } from '@codemirror/state'
+import { python } from '@codemirror/lang-python'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { basicSetup } from 'codemirror'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
-import { et, enUS } from 'date-fns/locale'
+import RelativeTime from '../../components/RelativeTime.tsx'
+import AutoTestResults from './AutoTestResults.tsx'
 import { useSubmissions } from '../../api/exercises.ts'
+import type { AutomaticAssessmentResp } from '../../api/types.ts'
 
 export default function PreviousSubmissions({
   courseId,
   courseExerciseId,
+  onRestore,
 }: {
   courseId: string
   courseExerciseId: string
+  onRestore?: (solution: string) => void
 }) {
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enUS
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   const {
@@ -49,7 +57,7 @@ export default function PreviousSubmissions({
         variant="outlined"
         sx={{ '&:before': { display: 'none' } }}
       >
-        <AccordionSummary expandIcon={<ExpandMore />}>
+        <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
           <Typography variant="h6">
             {t('submission.previousSubmissions')} ({submissions.length})
           </Typography>
@@ -59,7 +67,7 @@ export default function PreviousSubmissions({
             <SubmissionItem
               key={sub.id}
               submission={sub}
-              dateFnsLocale={dateFnsLocale}
+              onRestore={onRestore}
             />
           ))}
         </AccordionDetails>
@@ -70,17 +78,17 @@ export default function PreviousSubmissions({
 
 function SubmissionItem({
   submission,
-  dateFnsLocale,
+  onRestore,
 }: {
   submission: {
     id: string
     number: number
     solution: string
     submission_time: string
-    grade: { grade: number } | null
     autograde_status: string
+    auto_assessment: AutomaticAssessmentResp | null
   }
-  dateFnsLocale: Locale
+  onRestore?: (solution: string) => void
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -102,15 +110,13 @@ function SubmissionItem({
         <Typography variant="body2" fontWeight={500}>
           {t('submission.submissionNr', { nr: submission.number })}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {format(new Date(submission.submission_time), 'PPp', {
-            locale: dateFnsLocale,
-          })}
+        <Typography variant="caption" color="text.secondary" component="span">
+          <RelativeTime date={submission.submission_time} />
         </Typography>
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-          {submission.grade != null && (
+          {submission.auto_assessment != null && (
             <Chip
-              label={`${submission.grade.grade}p`}
+              label={`${submission.auto_assessment.grade} / 100`}
               size="small"
               color="primary"
               variant="outlined"
@@ -123,26 +129,71 @@ function SubmissionItem({
       </Box>
 
       {open && (
-        <Paper
-          variant="outlined"
-          sx={{ mx: 2, mb: 1.5, p: 1.5, bgcolor: 'action.hover' }}
-        >
-          <Typography
-            variant="body2"
-            component="pre"
-            sx={{
-              whiteSpace: 'pre-wrap',
-              fontFamily: 'monospace',
-              fontSize: '0.8rem',
-              maxHeight: 300,
-              overflow: 'auto',
-              m: 0,
-            }}
-          >
-            {submission.solution}
-          </Typography>
-        </Paper>
+        <>
+          <ReadOnlyEditor code={submission.solution} />
+          {onRestore && (
+            <Button
+              size="small"
+              startIcon={<ContentCopyOutlined />}
+              onClick={() => {
+                onRestore(submission.solution)
+                document.querySelector('.cm-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }}
+              sx={{ mx: 2, mt: 1, mb: 1 }}
+            >
+              {t('submission.restore')}
+            </Button>
+          )}
+          {submission.auto_assessment && (
+            <Box sx={{ mx: 2, mt: 1, mb: 2 }}>
+              <AutoTestResults autoAssessment={submission.auto_assessment} />
+            </Box>
+          )}
+        </>
       )}
     </Box>
+  )
+}
+
+function ReadOnlyEditor({ code }: { code: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const theme = useTheme()
+
+  useEffect(() => {
+    if (!ref.current) return
+
+    const extensions = [
+      basicSetup,
+      python(),
+      EditorView.editable.of(false),
+      EditorState.readOnly.of(true),
+      EditorView.lineWrapping,
+    ]
+    if (theme.palette.mode === 'dark') {
+      extensions.push(oneDark)
+    }
+
+    const view = new EditorView({
+      state: EditorState.create({ doc: code, extensions }),
+      parent: ref.current,
+    })
+
+    return () => view.destroy()
+  }, [code, theme.palette.mode])
+
+  return (
+    <Box
+      ref={ref}
+      sx={{
+        mx: 2,
+        mt: 0.5,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        overflow: 'hidden',
+        '& .cm-editor': { maxHeight: 300, fontSize: '0.85rem' },
+        '& .cm-focused': { outline: 'none' },
+      }}
+    />
   )
 }

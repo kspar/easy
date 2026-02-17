@@ -12,10 +12,14 @@ import {
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import {
-  ArrowBack,
-  FirstPage,
-  LastPage,
-  VerticalSplit,
+  ArrowBackOutlined,
+  CheckCircle,
+  CircleOutlined,
+  FaceOutlined,
+  FirstPageOutlined,
+  UpdateOutlined,
+  LastPageOutlined,
+  VerticalSplitOutlined,
 } from '@mui/icons-material'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -26,10 +30,11 @@ import {
   useSubmissions,
 } from '../../api/exercises.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
-import SubmitTab from './SubmitTab.tsx'
+import SubmitTab, { type SubmitTabHandle } from './SubmitTab.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
 import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
+import { RobotIcon } from '../../components/icons.tsx'
 
 function GradeBanner({
   courseId,
@@ -48,7 +53,7 @@ function GradeBanner({
   const latest = submissions[0]
   if (!latest.grade) {
     return (
-      <Alert severity="info" sx={{ mb: 2 }}>
+      <Alert severity="info" sx={{ mb: 2 }} iconMapping={{ info: <CircleOutlined fontSize="inherit" /> }}>
         {t('submission.currentGrade')}: {t('exercises.notGraded')}
       </Alert>
     )
@@ -56,10 +61,16 @@ function GradeBanner({
 
   const grade = latest.grade.grade
   const severity = grade >= threshold ? 'success' : 'warning'
+  const indirect = !latest.grade.is_graded_directly
 
   return (
-    <Alert severity={severity} sx={{ mb: 2 }}>
+    <Alert severity={severity} sx={{ mb: 2 }} iconMapping={{ success: <CheckCircle fontSize="inherit" />, warning: <CircleOutlined fontSize="inherit" /> }}>
       {t('submission.currentGrade')}: {grade} / 100
+      {indirect && (
+        <Tooltip title={t('submission.gradePreviousSubmission')}>
+          <UpdateOutlined sx={{ fontSize: 18, ml: 1, verticalAlign: 'text-bottom', cursor: 'help' }} />
+        </Tooltip>
+      )}
     </Alert>
   )
 }
@@ -249,7 +260,7 @@ function SplitPane({
                   '&:hover': { opacity: 1, bgcolor: 'action.hover' },
                 }}
               >
-                <VerticalSplit fontSize="small" />
+                <VerticalSplitOutlined fontSize="small" />
               </IconButton>
             </Tooltip>
           ) : (
@@ -263,7 +274,7 @@ function SplitPane({
                     '&:hover': { opacity: 1, bgcolor: 'action.hover' },
                   }}
                 >
-                  <FirstPage fontSize="small" />
+                  <FirstPageOutlined fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title={t('nav.collapseRight')} placement="right">
@@ -275,7 +286,7 @@ function SplitPane({
                     '&:hover': { opacity: 1, bgcolor: 'action.hover' },
                   }}
                 >
-                  <LastPage fontSize="small" />
+                  <LastPageOutlined fontSize="small" />
                 </IconButton>
               </Tooltip>
             </>
@@ -316,13 +327,14 @@ export default function ExerciseSummaryPage() {
 
   const { data: submissions } = useSubmissions(courseId!, courseExerciseId!)
 
+  const submitTabRef = useRef<SubmitTabHandle>(null)
+
   usePageTitle(exercise?.effective_title)
 
   if (isLoading) return <CircularProgress />
   if (error)
     return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
   if (!exercise) return null
-
   const latestSubmission = submissions?.[0] ?? null
 
   const leftPane = (
@@ -348,9 +360,11 @@ export default function ExerciseSummaryPage() {
       />
 
       <SubmitTab
+        ref={submitTabRef}
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
         exercise={exercise}
+        initialSolution={latestSubmission?.solution}
       />
 
       {latestSubmission?.auto_assessment && (
@@ -370,32 +384,30 @@ export default function ExerciseSummaryPage() {
       <PreviousSubmissions
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
+        onRestore={(solution) => submitTabRef.current?.setSolution(solution)}
       />
     </>
   )
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <IconButton
           onClick={() => navigate(`/courses/${courseId}/exercises`)}
           size="small"
         >
-          <ArrowBack />
+          <ArrowBackOutlined />
         </IconButton>
         <Typography variant="h5">{exercise.effective_title}</Typography>
+        <Tooltip title={exercise.grader_type === 'AUTO' ? t('exercises.gradedAutomatically') : t('exercises.gradedByTeacher')}>
+          {exercise.grader_type === 'AUTO'
+            ? <RobotIcon sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
+            : <FaceOutlined sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
+          }
+        </Tooltip>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        <Chip
-          label={
-            exercise.grader_type === 'AUTO'
-              ? t('exercises.gradedAutomatically')
-              : t('exercises.gradedByTeacher')
-          }
-          size="small"
-          variant="outlined"
-        />
         {exercise.deadline && (
           <Chip
             label={`${t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
