@@ -13,13 +13,14 @@ import {
 import {
   CheckCircle,
   RadioButtonUnchecked,
-  HourglassEmpty,
-  ErrorOutline,
-  ArrowBack,
+  HourglassEmptyOutlined,
+  CircleOutlined,
+  ArrowBackOutlined,
 } from '@mui/icons-material'
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format, isPast } from 'date-fns'
+import { format, isPast, differenceInHours } from 'date-fns'
 import { et, enUS } from 'date-fns/locale'
 import { useAuth } from '../../auth/AuthContext.tsx'
 import usePageTitle from '../../hooks/usePageTitle.ts'
@@ -27,6 +28,7 @@ import {
   useCourseExercises,
   useTeacherCourseExercises,
 } from '../../api/exercises.ts'
+import { useUpdateLastAccess } from '../../api/courses.ts'
 import type {
   CourseExercise,
   StudentExerciseStatus,
@@ -38,9 +40,9 @@ function statusIcon(status: StudentExerciseStatus) {
     case 'COMPLETED':
       return <CheckCircle color="success" />
     case 'STARTED':
-      return <ErrorOutline color="warning" />
+      return <CircleOutlined color="warning" />
     case 'UNGRADED':
-      return <HourglassEmpty color="info" />
+      return <HourglassEmptyOutlined color="info" />
     case 'UNSTARTED':
       return <RadioButtonUnchecked color="disabled" />
   }
@@ -75,9 +77,13 @@ function statusColor(
 }
 
 export default function CourseExercisesPage() {
+  const { courseId } = useParams<{ courseId: string }>()
   const { t } = useTranslation()
   const { activeRole } = useAuth()
   usePageTitle(t('exercises.title'))
+
+  const updateAccess = useUpdateLastAccess(activeRole!, courseId!)
+  useEffect(() => { updateAccess.mutate() }, [courseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (activeRole === 'student') {
     return <StudentExercises />
@@ -184,7 +190,7 @@ function Header({ courseId }: { courseId: string }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
       <IconButton onClick={() => navigate('/courses')} size="small">
-        <ArrowBack />
+        <ArrowBackOutlined />
       </IconButton>
       <Typography variant="h5">{t('exercises.title')}</Typography>
       <Box sx={{ flex: 1 }} />
@@ -220,6 +226,7 @@ function StudentExerciseRow({
   const { t } = useTranslation()
   const deadline = exercise.deadline ? new Date(exercise.deadline) : null
   const isPastDeadline = deadline ? isPast(deadline) : false
+  const isApproaching = deadline ? !isPastDeadline && differenceInHours(deadline, new Date()) < 24 : false
 
   return (
     <ListItemButton onClick={onClick} sx={{ borderRadius: 1, mb: 0.5 }}>
@@ -234,21 +241,24 @@ function StudentExerciseRow({
             : undefined
         }
         secondaryTypographyProps={{
-          color: isPastDeadline ? 'error' : 'text.secondary',
+          color: exercise.status === 'COMPLETED' || !exercise.is_open ? 'text.secondary' : isPastDeadline ? 'error' : isApproaching ? 'warning.main' : 'text.secondary',
         }}
       />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {exercise.grade && (
           <Typography variant="body2" fontWeight={500}>
-            {exercise.grade.grade}p
+            {exercise.grade.grade} / 100
           </Typography>
         )}
-        <Chip
-          label={statusLabel(exercise.status, t)}
-          color={statusColor(exercise.status)}
-          size="small"
-          variant="outlined"
-        />
+        {exercise.status !== 'UNSTARTED' && (
+          <Chip
+            label={statusLabel(exercise.status, t)}
+            color={statusColor(exercise.status)}
+            size="small"
+            variant="outlined"
+            sx={{ display: { xs: 'none', sm: 'flex' } }}
+          />
+        )}
       </Box>
     </ListItemButton>
   )

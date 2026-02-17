@@ -29,16 +29,16 @@ import {
   ListSubheader,
 } from '@mui/material'
 import {
-  AccountCircle,
+  AccountCircleOutlined,
   Menu as MenuIcon,
-  School,
-  LibraryBooks,
-  DarkMode,
-  LightMode,
-  Translate,
-  Logout,
-  Circle,
+  SchoolOutlined,
+  LibraryBooksOutlined,
+  DarkModeOutlined,
+  LightModeOutlined,
+  TranslateOutlined,
+  LogoutOutlined,
   CheckCircle,
+  CircleOutlined,
   RadioButtonUnchecked,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/ThemeContext.tsx'
@@ -101,9 +101,9 @@ export default function AppLayout() {
       case 'COMPLETED':
         return <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
       case 'STARTED':
-        return <Circle sx={{ fontSize: 16, color: 'warning.main' }} />
+        return <CircleOutlined sx={{ fontSize: 16, color: 'warning.main' }} />
       case 'UNGRADED':
-        return <Circle sx={{ fontSize: 16, color: 'info.main' }} />
+        return <CircleOutlined sx={{ fontSize: 16, color: 'info.main' }} />
       case 'UNSTARTED':
       default:
         return <RadioButtonUnchecked sx={{ fontSize: 16, color: 'text.disabled' }} />
@@ -212,26 +212,12 @@ export default function AppLayout() {
 
       {/* Navigation */}
       <List sx={{ py: 1.5, flexGrow: 1 }}>
-        <ListSubheader
-          disableSticky
-          sx={{
-            fontSize: '0.68rem',
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'text.secondary',
-            lineHeight: '32px',
-            px: 2.5,
-          }}
-        >
-          {t('nav.myCourses')}
-        </ListSubheader>
         <ListItemButton
           selected={location.pathname === '/courses'}
           onClick={() => navTo('/courses')}
         >
           <ListItemIcon>
-            <School color={location.pathname === '/courses' ? 'primary' : 'action'} />
+            <SchoolOutlined color={location.pathname === '/courses' ? 'primary' : 'action'} />
           </ListItemIcon>
           <ListItemText
             primary={t('nav.myCourses')}
@@ -243,6 +229,7 @@ export default function AppLayout() {
           <List disablePadding>
             <ListSubheader
               disableSticky
+              onClick={() => navTo(`/courses/${courseId}/exercises`)}
               sx={{
                 fontSize: '0.68rem',
                 fontWeight: 600,
@@ -255,6 +242,8 @@ export default function AppLayout() {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                '&:hover': { color: 'text.primary' },
               }}
               title={courseTitle}
             >
@@ -305,7 +294,7 @@ export default function AppLayout() {
               onClick={() => navTo('/library')}
             >
               <ListItemIcon>
-                <LibraryBooks
+                <LibraryBooksOutlined
                   color={isActive('/library') ? 'primary' : 'action'}
                 />
               </ListItemIcon>
@@ -366,7 +355,9 @@ export default function AppLayout() {
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
               boxSizing: 'border-box',
-              bgcolor: 'background.paper',
+              bgcolor: 'background.default',
+              border: 'none',
+              boxShadow: 'none',
             },
           }}
         >
@@ -387,15 +378,14 @@ export default function AppLayout() {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
+          mt: isMobile ? 0 : 1,
         }}
       >
         <AppBar
           position="sticky"
           elevation={0}
           sx={{
-            bgcolor: 'background.paper',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            bgcolor: 'background.default',
           }}
         >
           <Toolbar variant="dense" sx={{ minHeight: 48, gap: 0.5 }}>
@@ -445,14 +435,14 @@ export default function AppLayout() {
 
             <IconButton size="small" onClick={toggleMode} title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
               {mode === 'dark' ? (
-                <LightMode fontSize="small" />
+                <LightModeOutlined fontSize="small" />
               ) : (
-                <DarkMode fontSize="small" />
+                <DarkModeOutlined fontSize="small" />
               )}
             </IconButton>
 
             <IconButton size="small" onClick={toggleLanguage} title={t('general.otherLanguage')}>
-              <Translate fontSize="small" />
+              <TranslateOutlined fontSize="small" />
             </IconButton>
 
             {authenticated && (
@@ -462,7 +452,7 @@ export default function AppLayout() {
                   onClick={(e) => setProfileAnchor(e.currentTarget)}
                   sx={{ ml: 0.5 }}
                 >
-                  <AccountCircle />
+                  <AccountCircleOutlined />
                 </IconButton>
                 <Menu
                   anchorEl={profileAnchor}
@@ -489,7 +479,7 @@ export default function AppLayout() {
                     }}
                   >
                     <ListItemIcon>
-                      <AccountCircle fontSize="small" />
+                      <AccountCircleOutlined fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{t('nav.accountSettings')}</ListItemText>
                   </MenuItem>
@@ -500,7 +490,7 @@ export default function AppLayout() {
                     }}
                   >
                     <ListItemIcon>
-                      <Logout fontSize="small" />
+                      <LogoutOutlined fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{t('nav.logOut')}</ListItemText>
                   </MenuItem>
@@ -510,9 +500,18 @@ export default function AppLayout() {
           </Toolbar>
         </AppBar>
 
-        <Container maxWidth="lg" sx={{ py: 3, flexGrow: 1 }}>
-          <Outlet />
-        </Container>
+        <Box
+          sx={{
+            flexGrow: 1,
+            bgcolor: 'background.paper',
+            borderTopLeftRadius: isMobile ? 0 : 16,
+            minHeight: 0,
+          }}
+        >
+          <Container maxWidth="lg" sx={{ py: 3 }}>
+            <Outlet />
+          </Container>
+        </Box>
       </Box>
     </Box>
   )

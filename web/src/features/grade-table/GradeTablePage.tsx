@@ -13,7 +13,7 @@ import {
   TableRow,
   Paper,
 } from '@mui/material'
-import { ArrowBack } from '@mui/icons-material'
+import { ArrowBackOutlined } from '@mui/icons-material'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useTeacherCourseExercises } from '../../api/exercises.ts'
@@ -84,7 +84,7 @@ export default function GradeTablePage() {
           onClick={() => navigate(`/courses/${courseId}/exercises`)}
           size="small"
         >
-          <ArrowBack />
+          <ArrowBackOutlined />
         </IconButton>
         <Typography variant="h5">{t('grades.title')}</Typography>
       </Box>

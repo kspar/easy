@@ -15,7 +15,7 @@ import {
   TableRow,
   Chip,
 } from '@mui/material'
-import { ArrowBack } from '@mui/icons-material'
+import { ArrowBackOutlined } from '@mui/icons-material'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useParticipants } from '../../api/exercises.ts'
@@ -36,7 +36,7 @@ export default function ParticipantsPage() {
           onClick={() => navigate(`/courses/${courseId}/exercises`)}
           size="small"
         >
-          <ArrowBack />
+          <ArrowBackOutlined />
         </IconButton>
         <Typography variant="h5">{t('participants.students')}</Typography>
       </Box>
