@@ -441,10 +441,6 @@ export default function AppLayout() {
               )}
             </IconButton>
 
-            <IconButton size="small" onClick={toggleLanguage} title={t('general.otherLanguage')}>
-              <TranslateOutlined fontSize="small" />
-            </IconButton>
-
             {authenticated && (
               <>
                 <IconButton
@@ -483,6 +479,18 @@ export default function AppLayout() {
                     </ListItemIcon>
                     <ListItemText>{t('nav.accountSettings')}</ListItemText>
                   </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      toggleLanguage()
+                      setProfileAnchor(null)
+                    }}
+                  >
+                    <ListItemIcon>
+                      <TranslateOutlined fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{t('general.otherLanguage')}</ListItemText>
+                  </MenuItem>
+                  <Divider />
                   <MenuItem
                     onClick={() => {
                       logout()
