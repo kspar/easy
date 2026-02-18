@@ -433,14 +433,6 @@ export default function AppLayout() {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            <IconButton size="small" onClick={toggleMode} title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
-              {mode === 'dark' ? (
-                <LightModeOutlined fontSize="small" />
-              ) : (
-                <DarkModeOutlined fontSize="small" />
-              )}
-            </IconButton>
-
             {authenticated && (
               <>
                 <IconButton
@@ -489,6 +481,19 @@ export default function AppLayout() {
                       <TranslateOutlined fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{t('general.otherLanguage')}</ListItemText>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      toggleMode()
+                      setProfileAnchor(null)
+                    }}
+                  >
+                    <ListItemIcon>
+                      {mode === 'dark'
+                        ? <LightModeOutlined fontSize="small" />
+                        : <DarkModeOutlined fontSize="small" />}
+                    </ListItemIcon>
+                    <ListItemText>{mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}</ListItemText>
                   </MenuItem>
                   <Divider />
                   <MenuItem
