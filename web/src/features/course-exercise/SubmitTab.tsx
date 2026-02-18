@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
-import { Alert, Box, Button, CircularProgress, IconButton, Snackbar, Tooltip, Typography } from '@mui/material'
-import { SendOutlined, FileUploadOutlined, FileDownloadOutlined } from '@mui/icons-material'
+import { Alert, Box, Button, CircularProgress, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Snackbar, Tooltip, Typography } from '@mui/material'
+import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
@@ -38,6 +38,7 @@ export default forwardRef<SubmitTabHandle, {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const [snackMsg, setSnackMsg] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   const submit = useSubmitSolution(courseId, courseExerciseId)
   const awaitAutograde = useAwaitAutograde(courseId, courseExerciseId)
@@ -183,18 +184,23 @@ export default forwardRef<SubmitTabHandle, {
             {exercise.solution_file_name}
           </Typography>
           <Box sx={{ flex: 1 }} />
-          {exercise.is_open && (
-            <Tooltip title={t('submission.uploadFile')}>
-              <IconButton onClick={handleUpload} size="small">
-                <FileUploadOutlined fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title={t('submission.saveAsFile')}>
-            <IconButton onClick={handleDownload} size="small">
-              <FileDownloadOutlined fontSize="small" />
+          <Tooltip title={t('general.moreOptions')}>
+            <IconButton size="small" onClick={e => setMenuAnchor(e.currentTarget)}>
+              <MoreVertOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
+          <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+            {exercise.is_open && (
+              <MenuItem onClick={() => { setMenuAnchor(null); handleUpload() }}>
+                <ListItemIcon><FileUploadOutlined fontSize="small" /></ListItemIcon>
+                <ListItemText>{t('submission.uploadFile')}</ListItemText>
+              </MenuItem>
+            )}
+            <MenuItem onClick={() => { setMenuAnchor(null); handleDownload() }}>
+              <ListItemIcon><FileDownloadOutlined fontSize="small" /></ListItemIcon>
+              <ListItemText>{t('submission.saveAsFile')}</ListItemText>
+            </MenuItem>
+          </Menu>
         </Box>
         <Box
           ref={editorRef}

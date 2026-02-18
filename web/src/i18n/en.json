@@ -40,7 +40,8 @@
     "copied": "Copied",
     "tryAgain": "Try again",
     "logIn": "Log in",
-    "exercise": "Exercise"
+    "exercise": "Exercise",
+    "moreOptions": "More options"
   },
   "auth": {
     "failed": "Authentication failed",
@@ -105,7 +106,7 @@
     "tabAssessment": "Assessment",
     "tabSubmissions": "Submissions",
     "submit": "Submit",
-    "submitAndCheck": "Submit and check",
+    "submitAndCheck": "Submit and test",
     "submitSuccess": "Solution submitted",
     "editorPlaceholder": "Write, paste or drag your solution here...",
     "submissionSingular": "submission",

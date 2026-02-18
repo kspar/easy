@@ -40,7 +40,8 @@
     "copied": "Kopeeritud",
     "tryAgain": "Proovi uuesti",
     "logIn": "Logi sisse",
-    "exercise": "Ülesanne"
+    "exercise": "Ülesanne",
+    "moreOptions": "Rohkem valikuid"
   },
   "auth": {
     "failed": "Autentimine ebaõnnestus",
@@ -141,7 +142,7 @@
     "stdout": "Standardväljund",
     "stderr": "Veaväljund",
     "gradedPoints": "Hinnatud: {{points}} / 100",
-    "autoGrade": "Automaathinnangu tulemus",
+    "autoGrade": "Automaatkontrolli tulemus",
     "submissionNr": "esitus #{{nr}}",
     "uploadFile": "Vali fail arvutist",
     "saveAsFile": "Salvesta failina",

@@ -81,13 +81,6 @@ export default function AutoTestResults({
                 <HelpOutlineOutlined color="disabled" fontSize="small" />
               )
 
-            const label =
-              check.status === 'PASSED'
-                ? t('submission.testPassed')
-                : check.status === 'FAILED'
-                  ? t('submission.testFailed')
-                  : check.status
-
             return (
               <Accordion
                 key={`${gi}-${ci}`}
@@ -107,13 +100,6 @@ export default function AutoTestResults({
                     {statusIcon}
                     <Typography variant="body2">
                       Test {check.point_nr}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ ml: 'auto', mr: 1 }}
-                    >
-                      {label}
                     </Typography>
                   </Box>
                 </AccordionSummary>
