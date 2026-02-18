@@ -205,8 +205,9 @@ export default forwardRef<SubmitTabHandle, {
         <Box
           ref={editorRef}
           sx={{
-            '& .cm-editor': { minHeight: 200 },
+            '& .cm-editor': { minHeight: 200, cursor: 'text' },
             '& .cm-focused': { outline: 'none' },
+            '& .cm-scroller': { cursor: 'text' },
           }}
         />
       </Box>
