@@ -1,16 +1,16 @@
 import { createTheme, type PaletteMode } from '@mui/material/styles'
 
 const GREEN = {
-  50: '#e8f5e9',
-  100: '#c8e6c9',
-  200: '#a5d6a7',
-  300: '#81c784',
-  400: '#66bb6a',
-  500: '#4caf50',
-  600: '#43a047',
-  700: '#388e3c',
-  800: '#2e7d32',
-  900: '#1b5e20',
+  50: '#e7f0e3',
+  100: '#c2d9b8',
+  200: '#99c089',
+  300: '#70a75a',
+  400: '#4f9337',
+  500: '#387d14',
+  600: '#23590b',  // old WUI primary — used for contained button bg
+  700: '#1a4308',
+  800: '#112c05',
+  900: '#081603',
 }
 
 export function createAppTheme(mode: PaletteMode) {
@@ -20,9 +20,9 @@ export function createAppTheme(mode: PaletteMode) {
     palette: {
       mode,
       primary: {
-        main: GREEN[600],
+        main: GREEN[500],
         light: GREEN[400],
-        dark: GREEN[800],
+        dark: GREEN[600],
         contrastText: '#fff',
       },
       secondary: {
@@ -31,8 +31,8 @@ export function createAppTheme(mode: PaletteMode) {
         dark: '#3949ab',
       },
       success: {
-        main: GREEN[600],
-        light: GREEN[100],
+        main: GREEN[500],
+        light: GREEN[50],
       },
       warning: {
         main: '#f9a825',
@@ -123,7 +123,7 @@ export function createAppTheme(mode: PaletteMode) {
           },
           containedPrimary: {
             '&:hover': {
-              backgroundColor: GREEN[700],
+              backgroundColor: GREEN[600],
             },
           },
           outlined: {
