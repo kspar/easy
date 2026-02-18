@@ -147,7 +147,9 @@
     "uploadFile": "Vali fail arvutist",
     "saveAsFile": "Salvesta failina",
     "uploadErrorTooLarge": "Valitud fail on liiga suur",
-    "uploadErrorNotText": "Valitud fail pole tekstifail"
+    "uploadErrorNotText": "Valitud fail pole tekstifail",
+    "exception": "Erind",
+    "actualOutput": "Väljund"
   },
   "library": {
     "title": "Ülesandekogu",

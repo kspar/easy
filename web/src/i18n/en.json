@@ -147,7 +147,9 @@
     "uploadFile": "Upload file",
     "saveAsFile": "Save as file",
     "uploadErrorTooLarge": "The chosen file is too large",
-    "uploadErrorNotText": "The chosen file is not a text file"
+    "uploadErrorNotText": "The chosen file is not a text file",
+    "exception": "Exception",
+    "actualOutput": "Output"
   },
   "library": {
     "title": "Exercise library",

@@ -7,16 +7,17 @@
 
     <!--
         Test data for local development.
-        Each changeset uses with preconditions so it
-        re-inserts when the database is recreated but is skipped otherwise.
-
+        Each changeset uses preconditions so it re-inserts when the database is recreated but is skipped otherwise.
         Uses kspar as the primary account (matches Keycloak preferred_username).
 
-        Test scenarios for student exercise page:
-        - Exercise 9001 (Hello World, AUTO):       auto-graded only, V3 JSON feedback, 0 teacher comments
-        - Exercise 9002 (Sum of Two Numbers, AUTO): auto-graded + teacher-graded, 3 teacher comments
-        - Exercise 9003 (Essay, TEACHER):           teacher-graded only, 1 teacher comment
-        - Exercise 9004 (Debug Challenge, AUTO):    ungraded, submission pending, 0 comments
+        Autograde feedback scenarios on course 9001 (Introduction to Programming):
+        - CE 9001 / Hello World:         OK_V3, all PASS, actual_output, 1-2 checks per test
+        - CE 9002 / Sum of Two Numbers:  OK_V3, mixed PASS/FAIL, multiple checks, actual_output; 2 submissions
+        - CE 9003 / Essay:               TEACHER-only, 1 teacher comment
+        - CE 9005 / Debug Challenge:     OK_V3, PASS + FAIL with exception_message
+        - CE 9006 / FizzBuzz:            OK_V3, file-based test (created_files), SKIP test
+        - CE 9009 / Factorial:           OK_V3, pre_evaluate_error (syntax error before tests run)
+        - CE 9010 / Palindrome Check:    Raw legacy feedback (old groups format, no longer parsed — shows as plain text)
     -->
 
     <changeSet id="testdata-accounts" author="kspar">
@@ -76,12 +77,24 @@
             VALUES (9004, '9004', true, now(), now());
             INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
             VALUES (9005, '9005', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9006, '9006', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9007, '9007', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9008, '9008', true, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, created_at, modified_at)
+            VALUES (9009, '9009', true, now(), now());
 
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9001, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9002, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9003, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9004, 4, now());
             INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9005, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9006, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9007, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9008, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9009, 4, now());
 
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9001, now(), 'kspar', false, 9001, false);
@@ -93,6 +106,14 @@
             VALUES (9004, now(), 'kspar', false, 9004, false);
             INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
             VALUES (9005, now(), 'kspar', false, 9005, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9006, now(), 'kspar', false, 9006, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9007, now(), 'kspar', false, 9007, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9008, now(), 'kspar', false, 9008, false);
+            INSERT INTO exercise (id, created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+            VALUES (9009, now(), 'kspar', false, 9009, false);
 
             <!-- Container image and auto exercises for AUTO-graded exercises -->
             INSERT INTO container_image (id) VALUES ('mock');
@@ -103,16 +124,22 @@
             VALUES (9002, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
             INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
             VALUES (9003, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9004, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9005, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9006, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
+            INSERT INTO automatic_exercise (id, grading_script, container_image_id, max_time_sec, max_mem_mb)
+            VALUES (9007, '#!/bin/bash\necho "mock grading"', 'mock', 30, 256);
 
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type,
-                                          auto_exercise_id)
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
             VALUES (9001, 9001, 'kspar', now(), 'AUTO', 'Hello World',
                     '&lt;p&gt;Write a program that prints "Hello, World!".&lt;/p&gt;',
                     'solution.py', 0, 9001);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type,
-                                          auto_exercise_id)
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
             VALUES (9002, 9002, 'kspar', now(), 'AUTO', 'Sum of Two Numbers',
                     '&lt;p&gt;Write a program that reads two integers and prints their sum.&lt;/p&gt;',
                     'solution.py', 0, 9002);
@@ -122,8 +149,7 @@
                     '&lt;p&gt;Write a short essay about your favorite sorting algorithm. Discuss its time complexity, best use cases, and why you find it interesting.&lt;/p&gt;',
                     'essay.txt', 0);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type,
-                                          auto_exercise_id)
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
             VALUES (9004, 9004, 'kspar', now(), 'AUTO', 'Debug Challenge',
                     '&lt;p&gt;The following function is supposed to return the factorial of n, but it has a bug. Find and fix it.&lt;/p&gt;&lt;pre&gt;def factorial(n):
     result = 0
@@ -132,11 +158,30 @@
     return result&lt;/pre&gt;',
                     'solution.py', 0, 9003);
             INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
-                                          text_html, solution_file_name, solution_file_type,
-                                          auto_exercise_id)
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
             VALUES (9005, 9005, 'kspar', now(), 'AUTO', 'FizzBuzz',
                     '&lt;p&gt;Write a program that prints the numbers from 1 to 100. But for multiples of three print "Fizz" instead of the number and for the multiples of five print "Buzz". For numbers which are multiples of both three and five print "FizzBuzz".&lt;/p&gt;',
                     'solution.py', 0, 9001);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9006, 9006, 'kspar', now(), 'AUTO', 'Factorial Function',
+                    '&lt;p&gt;Write a function &lt;code&gt;factorial(n)&lt;/code&gt; that returns n!. Handle edge cases such as n=0 and negative inputs.&lt;/p&gt;',
+                    'solution.py', 0, 9004);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9009, 9009, 'kspar', now(), 'AUTO', 'Recursion Basics',
+                    '&lt;p&gt;Write a recursive function &lt;code&gt;sum_list(lst)&lt;/code&gt; that returns the sum of all integers in a list without using loops or built-in &lt;code&gt;sum()&lt;/code&gt;.&lt;/p&gt;',
+                    'solution.py', 0, 9007);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9008, 9008, 'kspar', now(), 'AUTO', 'Binary Search (closed)',
+                    '&lt;p&gt;Implement &lt;code&gt;binary_search(arr, target)&lt;/code&gt; that returns the index of &lt;code&gt;target&lt;/code&gt; in the sorted list &lt;code&gt;arr&lt;/code&gt;, or &lt;code&gt;-1&lt;/code&gt; if not found.&lt;/p&gt;',
+                    'solution.py', 0, 9006);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9007, 9007, 'kspar', now(), 'AUTO', 'Palindrome Check',
+                    '&lt;p&gt;Write a function &lt;code&gt;is_palindrome(s)&lt;/code&gt; that returns &lt;code&gt;True&lt;/code&gt; if the string reads the same forwards and backwards.&lt;/p&gt;',
+                    'solution.py', 0, 9005);
         </sql>
     </changeSet>
 
@@ -158,6 +203,9 @@
             INSERT INTO course (id, created_at, title, alias, color, moodle_sync_students, moodle_sync_grades,
                                 moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
             VALUES (9004, now(), 'Machine Learning Fundamentals', null, '#9575cd', false, false, false, false, false);
+            INSERT INTO course (id, created_at, title, alias, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9005, now() - interval '365 days', 'Operating Systems (archived)', null, '#78909c', false, false, false, false, true);
 
             <!-- kspar as teacher on all courses -->
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
@@ -168,6 +216,8 @@
             VALUES ('kspar', 9003, now(), now());
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9004, now(), now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9005, now() - interval '365 days', now() - interval '365 days');
 
             <!-- dev-teacher also teaches course 9001 -->
             INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
@@ -182,6 +232,8 @@
             VALUES ('kspar', 9003, now(), now());
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('kspar', 9004, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9005, now() - interval '365 days', now() - interval '365 days');
 
             <!-- dev-student enrolled on all courses -->
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
@@ -192,8 +244,10 @@
             VALUES ('dev-student', 9003, now(), now());
             INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
             VALUES ('dev-student', 9004, now(), now());
+            INSERT INTO student_course_access (student_id, course_id, created_at, last_accessed)
+            VALUES ('dev-student', 9005, now() - interval '365 days', now() - interval '365 days');
 
-            <!-- Course exercises on course 9001: 4 exercises -->
+            <!-- Course exercises on course 9001: 9 exercises covering all autograde feedback scenarios and UI states -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from, soft_deadline)
@@ -201,8 +255,9 @@
                     now() + interval '30 days');
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
-                                         student_visible_from)
-            VALUES (9002, 9001, 9002, now(), now(), 60, 1, true, now());
+                                         student_visible_from, instructions_html)
+            VALUES (9002, 9001, 9002, now(), now(), 60, 1, true, now(),
+                    '&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; Read two integers from &lt;em&gt;separate lines&lt;/em&gt; of standard input. Do not use &lt;code&gt;input().split()&lt;/code&gt;.&lt;/p&gt;');
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from, soft_deadline)
@@ -210,12 +265,29 @@
                     now() - interval '2 days');
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
-                                         student_visible_from)
-            VALUES (9005, 9001, 9004, now(), now(), 50, 3, true, now());
+                                         student_visible_from, title_alias)
+            VALUES (9005, 9001, 9004, now(), now(), 50, 3, true, now(), 'Lab 4: Debugging');
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
                                          grade_threshold, ordering_index, assessments_student_visible,
                                          student_visible_from)
             VALUES (9006, 9001, 9005, now(), now(), 50, 4, true, now());
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9009, 9001, 9006, now(), now(), 50, 5, true, now());
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9010, 9001, 9007, now(), now(), 50, 6, true, now());
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from, hard_deadline)
+            VALUES (9011, 9001, 9008, now(), now(), 50, 7, false, now() - interval '14 days',
+                    now() - interval '7 days');
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9012, 9001, 9009, now(), now(), 50, 8, true, now() + interval '10 years');
 
             <!-- Course exercises on course 9002: 1 exercise -->
             INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
@@ -238,8 +310,8 @@
 
             <!--
                 =============================================
-                Exercise 9001: Hello World (AUTO only, 0 teacher comments)
-                - 1 submission, V3 JSON autograde feedback, fully passed
+                CE 9001 / Hello World
+                Scenario: OK_V3, all PASS, actual_output shown, 1-2 checks per test
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
@@ -247,16 +319,15 @@
             VALUES (9001, 9001, 'kspar', now() - interval '5 days',
                     'print("Hello, World!")', 'COMPLETED', 100, true, true, true, 1);
 
-            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
-                                            created_at, grade, feedback)
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9001, 9001, 'kspar', 9001, now() - interval '5 days', 100,
-                    '{"groups":[{"points":100,"max_points":100,"checks":[{"point_nr":1,"feedback":"Output matches expected","stdout":"Hello, World!","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Trailing newline check","stdout":"Hello, World!\n","stderr":"","status":"PASSED"}]}]}');
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-15T10:20:00Z","pre_evaluate_error":null,"points":100,"tests":[{"title":"Output check","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"Hello, World!\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Output matches expected exactly."}]},{"title":"Whitespace and formatting","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"Hello, World!\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Trailing newline is present."},{"title":"","status":"PASS","feedback":"No leading or trailing spaces."}]}]}');
 
             <!--
                 =============================================
-                Exercise 9002: Sum of Two Numbers (AUTO + TEACHER, 3 teacher comments)
-                - 2 submissions with autogrades
-                - Teacher gave initial grade, then feedback, then follow-up
+                CE 9002 / Sum of Two Numbers
+                Scenario: OK_V3, mixed PASS/FAIL, multiple checks per test, actual_output shown
+                Two submissions showing partial improvement
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
@@ -269,20 +340,18 @@
             VALUES (9003, 9002, 'kspar', now() - interval '1 day',
                     E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 65, false, true, true, 2);
 
-            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
-                                            created_at, grade, feedback)
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9002, 9002, 'kspar', 9002, now() - interval '3 days', 40,
-                    '{"groups":[{"points":40,"max_points":100,"checks":[{"point_nr":1,"feedback":"Basic addition works","stdout":"5","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Expected 0, got 1","stdout":"1","stderr":"","status":"FAILED"},{"point_nr":3,"feedback":"Expected -3, got -2","stdout":"-2","stderr":"","status":"FAILED"},{"point_nr":4,"feedback":"Large numbers","stdout":"2000000","stderr":"","status":"PASSED"}]}]}');
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-13T09:15:00Z","pre_evaluate_error":null,"points":40,"tests":[{"title":"Add positive numbers (2+3)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"5\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Correct result: 5."}]},{"title":"Add zero (0+0)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"1\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"PASS","feedback":"Program ran without errors."},{"title":"","status":"FAIL","feedback":"Expected 0 but got 1. Check your logic for zero inputs."}]},{"title":"Add negative numbers (-1+-2)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"-2\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Expected -3 but got -2."}]},{"title":"Add large numbers (1000000+1000000)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"2000001\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Expected 2000000 but got 2000001."}]}]}');
 
-            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id,
-                                            created_at, grade, feedback)
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9003, 9002, 'kspar', 9003, now() - interval '1 day', 60,
-                    '{"groups":[{"points":60,"max_points":100,"checks":[{"point_nr":1,"feedback":"Basic addition works","stdout":"5","stderr":"","status":"PASSED"},{"point_nr":2,"feedback":"Zero handling OK","stdout":"0","stderr":"","status":"PASSED"},{"point_nr":3,"feedback":"Expected -3, got -2","stdout":"-2","stderr":"Traceback (most recent call last):\n  File \"solution.py\", line 3, in &lt;module&gt;\n    print(a + b + 1)\nAssertionError","status":"FAILED"},{"point_nr":4,"feedback":"Large numbers","stdout":"2000001","stderr":"","status":"FAILED"}]}]}');
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-17T14:30:00Z","pre_evaluate_error":null,"points":60,"tests":[{"title":"Add positive numbers (2+3)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"5\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Correct result: 5."}]},{"title":"Add zero (0+0)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"0\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Correct result: 0."}]},{"title":"Add negative numbers (-1+-2)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"-2\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"PASS","feedback":"Program ran without errors."},{"title":"","status":"FAIL","feedback":"Expected -3 but got -2. Are you sure you are reading two separate lines?"}]},{"title":"Add large numbers (1000000+1000000)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"2000001\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Expected 2000000 but got 2000001."}]}]}');
 
             <!--
                 =============================================
-                Exercise 9003: Essay (TEACHER only, 1 teacher comment)
-                - 1 submission, teacher graded with feedback
+                CE 9003 / Essay
+                Scenario: TEACHER-only grading, 1 teacher comment
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
@@ -293,15 +362,83 @@
 
             <!--
                 =============================================
-                Exercise 9004/CE 9005: Debug Challenge (AUTO, ungraded, 0 comments)
-                - 1 submission, autograde not yet completed
+                CE 9005 / Debug Challenge
+                Scenario: OK_V3, 2 PASS tests + 1 FAIL with exception_message
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
                                     auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9005, 9005, 'kspar', now() - interval '2 hours',
                     E'def factorial(n):\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result',
-                    'IN_PROGRESS', null, false, false, false, 1);
+                    'COMPLETED', 50, true, true, true, 1);
+
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
+            VALUES (9004, 9005, 'kspar', 9005, now() - interval '2 hours', 50,
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-18T16:00:00Z","pre_evaluate_error":null,"points":50,"tests":[{"title":"factorial(5) == 120","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"120\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"factorial(5) correctly returns 120."}]},{"title":"factorial(0) == 1","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"1\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"factorial(0) correctly returns 1 (base case)."}]},{"title":"factorial(-1) should raise ValueError","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":null,"exception_message":"Traceback (most recent call last):\n  File \"solution.py\", line 3, in factorial\n    for i in range(1, n + 1):\nOverflowError: Python int too large to convert to C ssize_t","status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Program crashed with an unhandled exception. Handle negative inputs gracefully."}]}]}');
+
+            <!--
+                =============================================
+                CE 9006 / FizzBuzz
+                Scenario: OK_V3, 1 PASS + 1 FAIL with created_files (file input) + 1 SKIP
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9006, 9006, 'kspar', now() - interval '10 days',
+                    E'for i in range(1, 101):\n    print(i)',
+                    'COMPLETED', 33, true, true, true, 1);
+
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
+            VALUES (9005, 9006, 'kspar', 9006, now() - interval '10 days', 33,
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-19T11:00:00Z","pre_evaluate_error":null,"points":33,"tests":[{"title":"FizzBuzz 1 to 15 (stdout)","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Output for 1 to 15 is correct."}]},{"title":"FizzBuzz range from file (input: limits.txt)","user_inputs":["limits.txt"],"created_files":[{"name":"limits.txt","content":"1\n20"}],"converted_submission":null,"actual_output":"\n","exception_message":null,"status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Program did not read the range from the input file. Expected FizzBuzz output for 1-20 but got blank output."}]},{"title":"Performance test for large range","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":null,"exception_message":null,"status":"SKIP","checks":[{"title":"","status":"SKIP","feedback":"Skipped because a required earlier test failed."}]}]}');
+
+            <!--
+                =============================================
+                CE 9009 / Factorial Function
+                Scenario: OK_V3, pre_evaluate_error (syntax error — no tests run at all)
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9007, 9009, 'kspar', now() - interval '5 days',
+                    E'def factorial(n):\n    result = 1\n    for i in range(n\n        result *= i\n    return result',
+                    'COMPLETED', 0, true, true, true, 1);
+
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
+            VALUES (9006, 9009, 'kspar', 9007, now() - interval '5 days', 0,
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-20T09:00:00Z","pre_evaluate_error":"SyntaxError: invalid syntax (solution.py, line 3)\n    for i in range(n\n                  ^\nSyntaxError: ''('' was never closed","points":0,"tests":[]}');
+
+            <!--
+                =============================================
+                CE 9010 / Palindrome Check
+                Scenario: Raw legacy feedback (old groups format — not parsed, shown as plain text)
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9008, 9010, 'kspar', now() - interval '3 days',
+                    E'def is_palindrome(s):\n    return s == s[::-1]',
+                    'COMPLETED', 50, true, true, true, 1);
+
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
+            VALUES (9007, 9010, 'kspar', 9008, now() - interval '3 days', 50,
+                    E'Test 1: Basic palindrome ("racecar") ... PASSED\nTest 2: Empty string ("") ... PASSED\nTest 3: Case sensitivity ("Racecar") ... FAILED\n  Expected: True\n  Got:      False\nTest 4: Special characters ("A man, a plan, a canal: Panama") ... FAILED\n  Expected: True\n  Got:      False\n\nScore: 50 / 100');
+
+            <!--
+                =============================================
+                CE 9011 / Binary Search (closed)
+                Scenario: OK_V3, exercise past hard_deadline — submissions no longer accepted
+                =============================================
+            -->
+            INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+            VALUES (9009, 9011, 'kspar', now() - interval '9 days',
+                    E'def binary_search(arr, target):\n    lo, hi = 0, len(arr) - 1\n    while lo &lt;= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] &lt; target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1',
+                    'COMPLETED', 75, true, true, true, 1);
+
+            INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
+            VALUES (9008, 9011, 'kspar', 9009, now() - interval '9 days', 75,
+                    '{"producer":"tiivad 0.0.30","result_type":"OK_V3","finished_at":"2026-01-09T08:00:00Z","pre_evaluate_error":null,"points":75,"tests":[{"title":"Search in sorted array","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"3\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"Found target at correct index."}]},{"title":"Target not present returns -1","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":"-1\n","exception_message":null,"status":"PASS","checks":[{"title":"","status":"PASS","feedback":"-1 returned correctly when target is absent."}]},{"title":"Empty array edge case","user_inputs":[],"created_files":[],"converted_submission":null,"actual_output":null,"exception_message":"IndexError: list index out of range","status":"FAIL","checks":[{"title":"","status":"FAIL","feedback":"Crashed on empty input. Add a bounds check before entering the loop."}]}]}');
 
             <!--
                 =============================================
