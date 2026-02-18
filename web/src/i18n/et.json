@@ -96,7 +96,8 @@
     "notSubmitted": "Esitamata",
     "notGraded": "Hindamata",
     "exerciseSingular": "ülesanne",
-    "exercisePlural": "ülesannet"
+    "exercisePlural": "ülesannet",
+    "noExercises": "Siin pole veel ülesandeid"
   },
   "submission": {
     "tabSubmit": "Esita",

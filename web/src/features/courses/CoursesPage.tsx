@@ -9,7 +9,6 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  LinearProgress,
 } from '@mui/material'
 import { GridViewOutlined, ViewListOutlined, LinkOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -82,14 +81,6 @@ function hoverShadow(color: string | null) {
     '0px 3px 3px -2px rgba(0,0,0,0.2), 0px 3px 4px 0px rgba(0,0,0,0.14), 0px 1px 8px 0px rgba(0,0,0,0.12)'
   const inset = color ? `inset 4px 0 0 0 ${color}` : ''
   return inset ? `${inset}, ${elevation}` : elevation
-}
-
-// TODO: Replace with real API data once backend endpoints are extended
-function mockStudentProgress(courseId: string): { completed: number; total: number } {
-  const hash = parseInt(courseId, 10) || courseId.charCodeAt(0)
-  const total = 5 + (hash % 15)
-  const completed = hash % (total + 1)
-  return { completed, total }
 }
 
 // Activity level: 'active' = submissions in last 24h, 'recent' = last 7 days, 'dormant' = older/none
@@ -174,7 +165,6 @@ function StudentCourses() {
         {courses?.map((course) => {
           const title = course.alias ?? course.title
           const color = viewMode === 'grid' ? course.color : null
-          const progress = mockStudentProgress(course.id)
           return (
             <Card
               key={course.id}
@@ -193,18 +183,6 @@ function StudentCourses() {
                   <Typography variant="caption" color="text.secondary">
                     {course.course_code}
                   </Typography>
-                )}
-                {progress.total > 0 && (
-                  <Box sx={{ mt: 0.75, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(progress.completed / progress.total) * 100}
-                      sx={{ flexGrow: 1, height: 4, borderRadius: 2, opacity: 0.6 }}
-                    />
-                    <Typography variant="caption" color="text.disabled" sx={{ whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
-                      {progress.completed}/{progress.total}
-                    </Typography>
-                  </Box>
                 )}
               </CardContent>
             </Card>
@@ -254,7 +232,7 @@ function TeacherCourses() {
             >
               <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 }, height: '100%', display: 'flex', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, width: '100%' }}>
-                  <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+                  <Box sx={{ minWidth: 0, overflow: 'visible' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                       <Box
                         sx={{

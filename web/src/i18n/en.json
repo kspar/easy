@@ -96,7 +96,8 @@
     "notSubmitted": "Not submitted",
     "notGraded": "Not graded",
     "exerciseSingular": "exercise",
-    "exercisePlural": "exercises"
+    "exercisePlural": "exercises",
+    "noExercises": "No exercises here yet"
   },
   "submission": {
     "tabSubmit": "Submit",
@@ -131,7 +132,7 @@
     "gradePreviousSubmission": "Grade given to a previous submission",
     "noSubmissions": "No submissions yet",
     "previousSubmissions": "Previous submissions",
-    "restore": "Restore to editor",
+    "restore": "Copy to editor",
     "teacherFeedback": "Teacher feedback",
     "replyPlaceholder": "Write a reply...",
     "replyComing": "Replies coming soon",

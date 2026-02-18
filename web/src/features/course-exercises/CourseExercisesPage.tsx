@@ -17,6 +17,7 @@ import {
   CircleOutlined,
   ArrowBackOutlined,
 } from '@mui/icons-material'
+import RobotPlaceholder from '../../components/RobotPlaceholder.tsx'
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -108,9 +109,7 @@ function StudentExercises() {
       )}
 
       {exercises && exercises.length === 0 && (
-        <Typography color="text.secondary">
-          {t('exercises.notSubmitted')}
-        </Typography>
+        <RobotPlaceholder message={t('exercises.noExercises')} />
       )}
 
       {exercises && exercises.length > 0 && (
@@ -154,9 +153,7 @@ function TeacherExercises() {
       )}
 
       {exercises && exercises.length === 0 && (
-        <Typography color="text.secondary">
-          {t('exercises.notSubmitted')}
-        </Typography>
+        <RobotPlaceholder message={t('exercises.noExercises')} />
       )}
 
       {exercises && exercises.length > 0 && (
