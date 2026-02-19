@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Tooltip } from '@mui/material'
 import { format, isToday, isYesterday, isTomorrow } from 'date-fns'
-import { et, enUS } from 'date-fns/locale'
+import { et, enGB } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 
 function formatRelative(
@@ -52,7 +52,7 @@ function getRefreshInterval(date: Date): number {
 
 export default function RelativeTime({ date }: { date: string }) {
   const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enUS
+  const dateFnsLocale = i18n.language === 'et' ? et : enGB
   const parsed = new Date(date)
   const fullFormatted = format(parsed, 'PPp', { locale: dateFnsLocale })
 

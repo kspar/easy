@@ -241,6 +241,15 @@ export function createAppTheme(mode: PaletteMode) {
           },
         },
       },
+      MuiInputLabel: {
+        styleOverrides: {
+          root: {
+            '&.Mui-focused': {
+              color: isLight ? '#212121' : '#e0e0e0',
+            },
+          },
+        },
+      },
       MuiAlert: {
         styleOverrides: {
           root: { borderRadius: 8 },

@@ -22,7 +22,7 @@ import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, isPast, differenceInHours } from 'date-fns'
-import { et, enUS } from 'date-fns/locale'
+import { et, enGB } from 'date-fns/locale'
 import { useAuth } from '../../auth/AuthContext.tsx'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import {
@@ -97,11 +97,11 @@ function StudentExercises() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { data: exercises, isLoading, error } = useCourseExercises(courseId!)
-  const dateFnsLocale = i18n.language === 'et' ? et : enUS
+  const dateFnsLocale = i18n.language === 'et' ? et : enGB
 
   return (
     <>
-      <Header courseId={courseId!} />
+      <Header />
 
       {isLoading && <CircularProgress />}
       {error && (
@@ -141,11 +141,11 @@ function TeacherExercises() {
     isLoading,
     error,
   } = useTeacherCourseExercises(courseId!)
-  const dateFnsLocale = i18n.language === 'et' ? et : enUS
+  const dateFnsLocale = i18n.language === 'et' ? et : enGB
 
   return (
     <>
-      <Header courseId={courseId!} />
+      <Header />
 
       {isLoading && <CircularProgress />}
       {error && (
@@ -178,11 +178,9 @@ function TeacherExercises() {
   )
 }
 
-function Header({ courseId }: { courseId: string }) {
+function Header() {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { activeRole } = useAuth()
-  const isTeacherOrAdmin = activeRole === 'teacher' || activeRole === 'admin'
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -190,23 +188,6 @@ function Header({ courseId }: { courseId: string }) {
         <ArrowBackOutlined />
       </IconButton>
       <Typography variant="h5">{t('exercises.title')}</Typography>
-      <Box sx={{ flex: 1 }} />
-      {isTeacherOrAdmin && (
-        <>
-          <Chip
-            label={t('participants.students')}
-            size="small"
-            variant="outlined"
-            onClick={() => navigate(`/courses/${courseId}/participants`)}
-          />
-          <Chip
-            label={t('grades.title')}
-            size="small"
-            variant="outlined"
-            onClick={() => navigate(`/courses/${courseId}/grades`)}
-          />
-        </>
-      )}
     </Box>
   )
 }

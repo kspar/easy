@@ -68,6 +68,10 @@
     "title": "My courses",
     "titleAdmin": "All courses",
     "newCourse": "New course",
+    "courseTitle": "Course title",
+    "courseCode": "Course code",
+    "courseColor": "Color",
+    "courseCreated": "Course created",
     "studentSingular": "student",
     "studentPlural": "students",
     "enrolledAttr": "Enrolled",
@@ -75,7 +79,11 @@
     "coursePlural": "courses",
     "viewGrid": "Grid view",
     "viewList": "List view",
-    "ungraded": "ungraded"
+    "ungraded": "ungraded",
+    "courseSettings": "Course settings",
+    "courseName": "Course name",
+    "courseIdentifier": "Course identifier",
+    "courseSaved": "Course saved"
   },
   "exercises": {
     "title": "Exercises",
@@ -98,7 +106,18 @@
     "notGraded": "Not graded",
     "exerciseSingular": "exercise",
     "exercisePlural": "exercises",
-    "noExercises": "No exercises here yet"
+    "noExercises": "No exercises here yet",
+    "exerciseSettings": "Exercise settings",
+    "titleAlias": "Title on course",
+    "visibility": "Visibility",
+    "exceptions": "Exceptions",
+    "studentExceptions": "Student exceptions",
+    "groupExceptions": "Group exceptions",
+    "addStudentException": "Add student exception",
+    "addGroupException": "Add group exception",
+    "noExceptions": "No exceptions",
+    "noOverride": "Default",
+    "noOptions": "No options"
   },
   "submission": {
     "tabSubmit": "Submit",
@@ -169,6 +188,7 @@
     "sortByPopularity": "Popular"
   },
   "participants": {
+    "title": "Participants",
     "students": "Students",
     "teachers": "Teachers",
     "groups": "Groups",
@@ -188,10 +208,12 @@
     "emptyPlaceholder": "If this course had any exercises, then you would see the grade table here :-)"
   },
   "similarity": {
+    "title": "Similarity analysis",
     "helpText": "Similarity analysis aims to find similarities between students' solutions, which could make it easier to find cases of plagiarism.",
     "find": "Find similarities",
     "searching": "Searching...",
-    "topPairs": "Top similarities"
+    "topPairs": "Top similarities",
+    "comingSoon": "Coming soon..."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

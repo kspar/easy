@@ -4,10 +4,12 @@ import type {
   CourseExercise,
   DraftResp,
   ExerciseDetails,
+  GroupResp,
   ParticipantsResp,
   SubmissionResp,
   TeacherActivityResp,
   TeacherCourseExercise,
+  TeacherExerciseDetails,
 } from './types.ts'
 
 export function useCourseExercises(courseId: string | undefined) {
@@ -148,6 +150,51 @@ export function useTeacherActivities(
 
 // Teacher hooks
 
+export function useTeacherExerciseDetails(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+    queryFn: () =>
+      apiFetch<TeacherExerciseDetails>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}`,
+      ),
+  })
+}
+
+export function useUpdateCourseExercise(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      replace?: {
+        title_alias?: string
+        threshold?: number
+        soft_deadline?: string
+        hard_deadline?: string
+        student_visible?: boolean
+        student_visible_from?: string
+      }
+      delete?: string[]
+    }) =>
+      apiFetch(`/courses/${courseId}/exercises/${courseExerciseId}`, {
+        method: 'PATCH',
+        body,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
 export function useTeacherCourseExercises(courseId: string) {
   return useQuery({
     queryKey: ['teacher', 'courses', courseId, 'exercises'],
@@ -163,6 +210,70 @@ export function useParticipants(courseId: string) {
     queryKey: ['courses', courseId, 'participants'],
     queryFn: () =>
       apiFetch<ParticipantsResp>(`/courses/${courseId}/participants`),
+  })
+}
+
+export function useCourseGroups(courseId: string) {
+  return useQuery({
+    queryKey: ['courses', courseId, 'groups'],
+    queryFn: () =>
+      apiFetch<{ groups: GroupResp[] }>(`/courses/${courseId}/groups`).then(
+        (r) => r.groups,
+      ),
+  })
+}
+
+export function usePutExerciseExceptions(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      exception_students?: {
+        student_id: string
+        soft_deadline?: { value: string | null } | null
+        hard_deadline?: { value: string | null } | null
+        student_visible_from?: { value: string | null } | null
+      }[]
+      exception_groups?: {
+        group_id: number
+        soft_deadline?: { value: string | null } | null
+        hard_deadline?: { value: string | null } | null
+        student_visible_from?: { value: string | null } | null
+      }[]
+    }) =>
+      apiFetch(
+        `/courses/${courseId}/exercises/${courseExerciseId}/exception`,
+        { method: 'PUT', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+export function useDeleteExerciseExceptions(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      exception_students?: string[]
+      exception_groups?: number[]
+    }) =>
+      apiFetch(
+        `/courses/${courseId}/exercises/${courseExerciseId}/exception`,
+        { method: 'DELETE', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
   })
 }
 

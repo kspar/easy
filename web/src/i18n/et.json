@@ -68,6 +68,10 @@
     "title": "Minu kursused",
     "titleAdmin": "Kõik kursused",
     "newCourse": "Uus kursus",
+    "courseTitle": "Kursuse pealkiri",
+    "courseCode": "Kursuse kood",
+    "courseColor": "Värv",
+    "courseCreated": "Kursus loodud",
     "studentSingular": "õpilane",
     "studentPlural": "õpilast",
     "enrolledAttr": "Kursusel on",
@@ -75,7 +79,11 @@
     "coursePlural": "kursust",
     "viewGrid": "Ruudustikvaade",
     "viewList": "Loendivaade",
-    "ungraded": "hindamata"
+    "ungraded": "hindamata",
+    "courseSettings": "Kursuse sätted",
+    "courseName": "Kursuse nimi",
+    "courseIdentifier": "Kursuse identifikaator",
+    "courseSaved": "Kursus salvestatud"
   },
   "exercises": {
     "title": "Ülesanded",
@@ -98,7 +106,18 @@
     "notGraded": "Hindamata",
     "exerciseSingular": "ülesanne",
     "exercisePlural": "ülesannet",
-    "noExercises": "Siin pole veel ülesandeid"
+    "noExercises": "Siin pole veel ülesandeid",
+    "exerciseSettings": "Ülesande sätted",
+    "titleAlias": "Pealkiri kursusel",
+    "visibility": "Nähtavus",
+    "exceptions": "Erandid",
+    "studentExceptions": "Õpilaste erandid",
+    "groupExceptions": "Rühmade erandid",
+    "addStudentException": "Lisa õpilase erand",
+    "addGroupException": "Lisa rühma erand",
+    "noExceptions": "Erandid puuduvad",
+    "noOverride": "Vaikimisi",
+    "noOptions": "Valikud puuduvad"
   },
   "submission": {
     "tabSubmit": "Esita",
@@ -169,6 +188,7 @@
     "sortByPopularity": "Populaarsus"
   },
   "participants": {
+    "title": "Osalejad",
     "students": "Õpilased",
     "teachers": "Õpetajad",
     "groups": "Rühmad",
@@ -188,10 +208,12 @@
     "emptyPlaceholder": "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
   },
   "similarity": {
+    "title": "Lahenduste sarnasus",
     "helpText": "Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel.",
     "find": "Leia sarnasused",
     "searching": "Otsin...",
-    "topPairs": "Kõige sarnasemad paarid"
+    "topPairs": "Kõige sarnasemad paarid",
+    "comingSoon": "Tulekul..."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

@@ -476,6 +476,37 @@
         </sql>
     </changeSet>
 
+    <changeSet id="testdata-course-groups" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM course_group WHERE id = 9001</sqlCheck>
+        </preConditions>
+        <comment>Insert course groups and assign students to them</comment>
+        <sql>
+            <!-- Groups on course 9001 (Introduction to Programming) -->
+            INSERT INTO course_group (id, name, course_id) VALUES (9001, 'Lab group 1', 9001);
+            INSERT INTO course_group (id, name, course_id) VALUES (9002, 'Lab group 2', 9001);
+            INSERT INTO course_group (id, name, course_id) VALUES (9003, 'Bonus group', 9001);
+
+            <!-- Groups on course 9003 (Data Structures and Complexity) -->
+            INSERT INTO course_group (id, name, course_id) VALUES (9004, 'Monday seminar', 9003);
+            INSERT INTO course_group (id, name, course_id) VALUES (9005, 'Wednesday seminar', 9003);
+
+            <!-- Assign students to groups on course 9001 -->
+            INSERT INTO student_course_group_access (student_id, course_id, group_id)
+            VALUES ('kspar', 9001, 9001);
+            INSERT INTO student_course_group_access (student_id, course_id, group_id)
+            VALUES ('kspar', 9001, 9003);
+            INSERT INTO student_course_group_access (student_id, course_id, group_id)
+            VALUES ('dev-student', 9001, 9002);
+
+            <!-- Assign students to groups on course 9003 -->
+            INSERT INTO student_course_group_access (student_id, course_id, group_id)
+            VALUES ('kspar', 9003, 9004);
+            INSERT INTO student_course_group_access (student_id, course_id, group_id)
+            VALUES ('dev-student', 9003, 9005);
+        </sql>
+    </changeSet>
+
     <changeSet id="testdata-mock-executor" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM executor WHERE id = 9001</sqlCheck>

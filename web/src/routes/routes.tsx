@@ -7,6 +7,7 @@ import CourseExercisesPage from '../features/course-exercises/CourseExercisesPag
 import ExerciseSummaryPage from '../features/course-exercise/ExerciseSummaryPage.tsx'
 import ParticipantsPage from '../features/participants/ParticipantsPage.tsx'
 import GradeTablePage from '../features/grade-table/GradeTablePage.tsx'
+import SimilarityPage from '../features/similarity/SimilarityPage.tsx'
 import ExerciseLibraryPage from '../features/library/ExerciseLibraryPage.tsx'
 import ExercisePage from '../features/library/ExercisePage.tsx'
 import AboutPage from '../features/about/AboutPage.tsx'
@@ -54,6 +55,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth allowedRoles={['teacher', 'admin']}>
             <GradeTablePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'courses/:courseId/similarity',
+        element: (
+          <RequireAuth allowedRoles={['teacher', 'admin']}>
+            <SimilarityPage />
           </RequireAuth>
         ),
       },

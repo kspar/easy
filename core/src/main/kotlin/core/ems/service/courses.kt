@@ -523,7 +523,7 @@ private fun CourseExerciseException.extractGroups(courseExId: Long): List<GroupE
     return this.groupExceptions[courseExId]
 }
 
-private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? = this?.sortedBy { it.value }?.last()?.value
+private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? = this?.maxByOrNull { it.value ?: DateTime(0) }?.value
 
 /**
  * Determines the soft deadline for a specific course exercise, prioritizing student and group exceptions
@@ -543,7 +543,7 @@ fun determineSoftDeadline(
     defaultSoftDeadline: DateTime?
 ): DateTime? {
     val studentException: ExceptionValue? = exceptions.extractStudentException(courseExId, studentId)?.softDeadline
-    val groupException: List<ExceptionValue>? = exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }
+    val groupException: List<ExceptionValue>? = exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }?.ifEmpty { null }
 
     return when {
         studentException != null -> studentException.value
@@ -571,7 +571,7 @@ fun determineCourseExerciseVisibleFrom(
     defaultVisibleFrom: DateTime?
 ): DateTime? {
     val studentException = exceptions.extractStudentException(courseExId, studentId)?.studentVisibleFrom
-    val groupException = exceptions.extractGroups(courseExId)?.mapNotNull { it.studentVisibleFrom }
+    val groupException = exceptions.extractGroups(courseExId)?.mapNotNull { it.studentVisibleFrom }?.ifEmpty { null }
 
     return when {
         studentException != null -> studentException.value
@@ -588,7 +588,7 @@ fun isCourseExerciseOpenForSubmit(
     defaultHardDeadline: DateTime?
 ): Boolean {
     val studentException = exceptions.extractStudentException(courseExId, studentId)?.hardDeadline
-    val groupExceptions = exceptions.extractGroups(courseExId)?.mapNotNull { it.hardDeadline }
+    val groupExceptions = exceptions.extractGroups(courseExId)?.mapNotNull { it.hardDeadline }?.ifEmpty { null }
 
     return when {
         studentException != null -> studentException.value?.isAfterNow ?: true

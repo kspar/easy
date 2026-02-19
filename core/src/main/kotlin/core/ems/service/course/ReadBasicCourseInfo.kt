@@ -24,6 +24,8 @@ class ReadBasicCourseInfo {
         @JsonProperty("title") val title: String,
         @JsonProperty("alias") val alias: String?,
         @JsonProperty("archived") val archived: Boolean,
+        @JsonProperty("color") val color: String,
+        @JsonProperty("course_code") val courseCode: String?,
     )
 
     @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
@@ -40,13 +42,15 @@ class ReadBasicCourseInfo {
     }
 
     private fun selectCourseInfo(courseId: Long): Resp = transaction {
-        Course.select(Course.title, Course.alias, Course.archived)
+        Course.select(Course.title, Course.alias, Course.archived, Course.color, Course.courseCode)
             .where { Course.id eq courseId }
             .map {
                 Resp(
                     it[Course.title],
                     it[Course.alias],
                     it[Course.archived],
+                    it[Course.color],
+                    it[Course.courseCode],
                 )
             }
             .single()

@@ -9,26 +9,39 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar,
 } from '@mui/material'
-import { GridViewOutlined, ViewListOutlined, LinkOutlined } from '@mui/icons-material'
+import { GridViewOutlined, ViewListOutlined, LinkOutlined, AddOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext.tsx'
-import { useStudentCourses, useTeacherCourses } from '../../api/courses.ts'
+import { useStudentCourses, useTeacherCourses, useCreateCourse } from '../../api/courses.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 
 export const COLOR_PALETTE = [
-  '#7986cb', // indigo
-  '#4db6ac', // teal
-  '#ff8a65', // deep orange
-  '#9575cd', // deep purple
-  '#4fc3f7', // light blue
-  '#aed581', // light green
+  '#e57373', // red
   '#f06292', // pink
+  '#9575cd', // purple
+  '#7986cb', // indigo
+  '#4fc3f7', // blue
+  '#4db6ac', // teal
+  '#aed581', // green
+  '#dce775', // lime
   '#ffd54f', // amber
+  '#ff8a65', // orange
   '#a1887f', // brown
-  '#90a4ae', // blue grey
+  '#90a4ae', // grey
 ]
+
+function randomColor() {
+  return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]
+}
 
 export function stringToColor(str: string): string {
   let hash = 0
@@ -193,6 +206,96 @@ function StudentCourses() {
   )
 }
 
+function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const createCourse = useCreateCourse()
+  const [title, setTitle] = useState('')
+  const [courseCode, setCourseCode] = useState('')
+  const [color, setColor] = useState(randomColor)
+  const [snackOpen, setSnackOpen] = useState(false)
+
+  const handleSubmit = () => {
+    createCourse.mutate(
+      { title: title.trim(), color, ...(courseCode.trim() && { course_code: courseCode.trim() }) },
+      {
+        onSuccess: (data) => {
+          setSnackOpen(true)
+          onClose()
+          setTitle('')
+          setCourseCode('')
+          setColor(randomColor())
+          navigate(`/courses/${data.id}/exercises`)
+        },
+      },
+    )
+  }
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+        <DialogTitle>{t('courses.newCourse')}</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+          <TextField
+            label={t('courses.courseTitle')}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            autoFocus
+            inputProps={{ maxLength: 100 }}
+          />
+          <TextField
+            label={t('courses.courseCode')}
+            value={courseCode}
+            onChange={(e) => setCourseCode(e.target.value)}
+            inputProps={{ maxLength: 100 }}
+          />
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t('courses.courseColor')}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: '2%' }}>
+              {COLOR_PALETTE.map((c) => (
+                <Box
+                  key={c}
+                  onClick={() => setColor(c)}
+                  sx={{
+                    flex: 1,
+                    aspectRatio: '1',
+                    borderRadius: '50%',
+                    backgroundColor: c,
+                    cursor: 'pointer',
+                    outline: color === c ? '2px solid' : 'none',
+                    outlineColor: 'text.primary',
+                    outlineOffset: 2,
+                    transition: 'outline 0.15s',
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>{t('general.cancel')}</Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={!title.trim() || createCourse.isPending}
+          >
+            {createCourse.isPending ? t('general.adding') : t('general.add')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackOpen(false)}
+        message={t('courses.courseCreated')}
+      />
+    </>
+  )
+}
+
 function TeacherCourses() {
   const { t } = useTranslation()
   const { activeRole } = useAuth()
@@ -200,6 +303,7 @@ function TeacherCourses() {
   const navigate = useNavigate()
   const { data: courses, isLoading, error } = useTeacherCourses()
   const [viewMode, setViewMode] = useViewMode()
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
     <>
@@ -208,7 +312,18 @@ function TeacherCourses() {
           {isAdmin ? t('courses.titleAdmin') : t('courses.title')}
         </Typography>
         <ViewToggle mode={viewMode} onChange={setViewMode} />
+        {isAdmin && (
+          <Button
+            startIcon={<AddOutlined />}
+            size="small"
+            onClick={() => setDialogOpen(true)}
+            sx={{ ml: 'auto' }}
+          >
+            {t('courses.newCourse')}
+          </Button>
+        )}
       </Box>
+      {isAdmin && <CreateCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />}
 
       {isLoading && <CircularProgress />}
       {error && <Alert severity="error">{t('general.somethingWentWrong')}</Alert>}

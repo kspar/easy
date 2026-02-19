@@ -5,8 +5,11 @@ import {
   useLocation,
   Link as RouterLink,
 } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../auth/AuthContext.tsx'
+import { useAuth, type Role } from '../auth/AuthContext.tsx'
+import { apiFetch } from '../api/client.ts'
+import type { StudentCourse, TeacherCourse } from '../api/types.ts'
 import {
   AppBar,
   Avatar,
@@ -40,11 +43,17 @@ import {
   CheckCircle,
   CircleOutlined,
   RadioButtonUnchecked,
+  AssignmentOutlined,
+  GradingOutlined,
+  PeopleOutlined,
+  CompareArrowsOutlined,
+  SettingsOutlined,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/ThemeContext.tsx'
 import { useCourseExercises } from '../api/exercises.ts'
-import { useStudentCourses } from '../api/courses.ts'
+import { useCourse } from '../api/courses.ts'
 import type { StudentExerciseStatus } from '../api/types.ts'
+import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import logoSvg from '../assets/logo.svg'
 
 const DRAWER_WIDTH = 260
@@ -67,18 +76,23 @@ export default function AppLayout() {
 
   // Extract courseId from route if inside a course
   const courseMatch = location.pathname.match(/^\/courses\/(\d+)/)
-  const courseId = activeRole === 'student' && courseMatch ? courseMatch[1] : undefined
-  const { data: exercises } = useCourseExercises(courseId)
-  const { data: studentCourses } = useStudentCourses()
-  const courseTitle = courseId
-    ? studentCourses?.find((c) => c.id === courseId)?.title
-    : undefined
+  const courseId = courseMatch ? courseMatch[1] : undefined
+  const isTeacherOrAdmin = activeRole === 'teacher' || activeRole === 'admin'
+
+  // Student exercise sidebar
+  const studentCourseId = activeRole === 'student' ? courseId : undefined
+  const { data: exercises } = useCourseExercises(studentCourseId)
+
+  // Course info for sidebar heading
+  const { data: courseInfo } = useCourse(courseId)
+  const courseTitle = courseInfo ? (courseInfo.alias || courseInfo.title) : undefined
 
   // Extract current exercise ID from route for highlighting
   const exerciseMatch = location.pathname.match(/^\/courses\/\d+\/exercises\/(\d+)/)
   const activeExerciseId = exerciseMatch ? exerciseMatch[1] : undefined
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null)
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev)
@@ -91,9 +105,74 @@ export default function AppLayout() {
   const roleLabel = (role: string) =>
     t(`nav.role${role.charAt(0).toUpperCase() + role.slice(1)}`)
 
-  const handleRoleSwitch = (role: typeof activeRole) => {
-    switchRole(role)
-    navigate('/courses')
+  const queryClient = useQueryClient()
+
+  const handleRoleSwitch = async (newRole: Role) => {
+    const path = location.pathname
+    const target = await resolveRoleTarget(newRole, path)
+    switchRole(newRole)
+    if (target) navigate(target)
+  }
+
+  async function resolveRoleTarget(newRole: Role, path: string): Promise<string | null> {
+    // Non-course pages accessible to all roles — stay
+    if (path === '/courses' || path === '/about' || path === '/tos') return null
+
+    // Switching between admin ↔ teacher — all pages are shared
+    if (newRole !== 'student' && activeRole !== 'student') return null
+
+    // Switching to student
+    if (newRole === 'student') {
+      if (path.startsWith('/library')) return '/courses'
+
+      if (courseId) {
+        const hasAccess = await hasStudentAccess(courseId)
+        if (!hasAccess) return '/courses'
+        // Teacher-only course sub-pages → exercise list
+        if (/\/(grades|participants|similarity)$/.test(path)) {
+          return `/courses/${courseId}/exercises`
+        }
+        return null // exercise pages — stay
+      }
+    }
+
+    // Switching from student to teacher/admin
+    if (activeRole === 'student' && courseId) {
+      const hasAccess = await hasTeacherAccess(courseId)
+      if (!hasAccess) return '/courses'
+    }
+
+    return null
+  }
+
+  async function hasStudentAccess(id: string): Promise<boolean> {
+    try {
+      const courses =
+        queryClient.getQueryData<StudentCourse[]>(['student', 'courses']) ??
+        (await queryClient.fetchQuery({
+          queryKey: ['student', 'courses'],
+          queryFn: () =>
+            apiFetch<{ courses: StudentCourse[] }>('/student/courses').then((r) => r.courses),
+        }))
+      return courses.some((c) => c.id === id)
+    } catch {
+      return false
+    }
+  }
+
+  async function hasTeacherAccess(id: string): Promise<boolean> {
+    try {
+      const courses =
+        queryClient.getQueryData<TeacherCourse[]>(['teacher', 'courses']) ??
+        (await queryClient.fetchQuery({
+          queryKey: ['teacher', 'courses'],
+          queryFn: () =>
+            apiFetch<{ courses: TeacherCourse[] }>('/teacher/courses').then((r) => r.courses),
+        }))
+      return courses.some((c) => c.id === id)
+    } catch {
+      return false
+    }
   }
 
   const statusIcon = (status: StudentExerciseStatus) => {
@@ -225,11 +304,29 @@ export default function AppLayout() {
           />
         </ListItemButton>
 
-        {courseId && exercises && exercises.length > 0 && (
+        {isTeacherOrAdmin && (
+          <ListItemButton
+            selected={isActive('/library')}
+            onClick={() => navTo('/library')}
+          >
+            <ListItemIcon>
+              <LibraryBooksOutlined
+                color={isActive('/library') ? 'primary' : 'action'}
+              />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('nav.exerciseLibrary')}
+              primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+            />
+          </ListItemButton>
+        )}
+
+        {/* Student: exercise list in sidebar */}
+        {studentCourseId && exercises && exercises.length > 0 && (
           <List disablePadding>
             <ListSubheader
               disableSticky
-              onClick={() => navTo(`/courses/${courseId}/exercises`)}
+              onClick={() => navTo(`/courses/${studentCourseId}/exercises`)}
               sx={{
                 fontSize: '0.68rem',
                 fontWeight: 600,
@@ -253,7 +350,7 @@ export default function AppLayout() {
               <ListItemButton
                 key={ex.id}
                 selected={activeExerciseId === ex.id}
-                onClick={() => navTo(`/courses/${courseId}/exercises/${ex.id}`)}
+                onClick={() => navTo(`/courses/${studentCourseId}/exercises/${ex.id}`)}
                 sx={{ py: 0.5, minHeight: 36, pl: 3 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -272,10 +369,12 @@ export default function AppLayout() {
           </List>
         )}
 
-        {(activeRole === 'teacher' || activeRole === 'admin') && (
-          <>
+        {/* Teacher/Admin: course sub-page links in sidebar */}
+        {isTeacherOrAdmin && courseId && (
+          <List disablePadding>
             <ListSubheader
               disableSticky
+              onClick={() => navTo(`/courses/${courseId}/exercises`)}
               sx={{
                 fontSize: '0.68rem',
                 fontWeight: 600,
@@ -285,26 +384,68 @@ export default function AppLayout() {
                 lineHeight: '32px',
                 mt: 1,
                 px: 2.5,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                '&:hover': { color: 'text.primary' },
               }}
+              title={courseTitle}
             >
-              {t('nav.exerciseLibrary')}
+              {courseTitle ?? t('exercises.title')}
             </ListSubheader>
             <ListItemButton
-              selected={isActive('/library')}
-              onClick={() => navTo('/library')}
+              selected={isActive(`/courses/${courseId}/exercises`)}
+              onClick={() => navTo(`/courses/${courseId}/exercises`)}
+              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
             >
-              <ListItemIcon>
-                <LibraryBooksOutlined
-                  color={isActive('/library') ? 'primary' : 'action'}
-                />
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <AssignmentOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/exercises`) ? 'primary' : 'action'} />
               </ListItemIcon>
-              <ListItemText
-                primary={t('nav.exerciseLibrary')}
-                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-              />
+              <ListItemText primary={t('exercises.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
             </ListItemButton>
-          </>
+            <ListItemButton
+              selected={isActive(`/courses/${courseId}/grades`)}
+              onClick={() => navTo(`/courses/${courseId}/grades`)}
+              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+            >
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <GradingOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/grades`) ? 'primary' : 'action'} />
+              </ListItemIcon>
+              <ListItemText primary={t('grades.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+            </ListItemButton>
+            <ListItemButton
+              selected={isActive(`/courses/${courseId}/participants`)}
+              onClick={() => navTo(`/courses/${courseId}/participants`)}
+              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+            >
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <PeopleOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/participants`) ? 'primary' : 'action'} />
+              </ListItemIcon>
+              <ListItemText primary={t('participants.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+            </ListItemButton>
+            <ListItemButton
+              selected={isActive(`/courses/${courseId}/similarity`)}
+              onClick={() => navTo(`/courses/${courseId}/similarity`)}
+              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+            >
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <CompareArrowsOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/similarity`) ? 'primary' : 'action'} />
+              </ListItemIcon>
+              <ListItemText primary={t('similarity.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+            </ListItemButton>
+            <ListItemButton
+              onClick={() => { setSettingsOpen(true); if (isMobile) setDrawerOpen(false) }}
+              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+            >
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <SettingsOutlined sx={{ fontSize: 18 }} color="action" />
+              </ListItemIcon>
+              <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+            </ListItemButton>
+          </List>
         )}
+
       </List>
 
       {/* Footer */}
@@ -526,6 +667,14 @@ export default function AppLayout() {
           </Container>
         </Box>
       </Box>
+
+      {isTeacherOrAdmin && courseId && (
+        <EditCourseDialog
+          courseId={courseId}
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </Box>
   )
 }

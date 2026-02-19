@@ -148,6 +148,45 @@ export interface TeacherCourseExercise {
   latest_submissions: SubmissionRow[]
 }
 
+// Teacher exercise detail types
+
+export interface ExceptionValue {
+  value: string | null
+}
+
+export interface ExceptionStudent {
+  student_id: string
+  soft_deadline: ExceptionValue | null
+  hard_deadline: ExceptionValue | null
+  student_visible_from: ExceptionValue | null
+}
+
+export interface ExceptionGroup {
+  group_id: number
+  soft_deadline: ExceptionValue | null
+  hard_deadline: ExceptionValue | null
+  student_visible_from: ExceptionValue | null
+}
+
+export interface TeacherExerciseDetails {
+  exercise_id: string
+  title: string
+  title_alias: string | null
+  text_html: string | null
+  instructions_html: string | null
+  soft_deadline: string | null
+  hard_deadline: string | null
+  grader_type: GraderType
+  solution_file_name: string
+  solution_file_type: SolutionFileType
+  threshold: number
+  student_visible: boolean
+  student_visible_from: string | null
+  has_lib_access: boolean
+  exception_students: ExceptionStudent[] | null
+  exception_groups: ExceptionGroup[] | null
+}
+
 // Participants types
 
 export interface StudentParticipant {
