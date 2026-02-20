@@ -5,21 +5,6 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-@SerialName("class_imports_module_test")
-data class ClassImportsModuleTest(
-    override val id: Long,
-    val className: String,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Klass impordib mooduli"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
-
-
-@Serializable
 @SerialName("class_defines_function_test")
 data class ClassDefinesFunctionTest(
     override val id: Long,
@@ -32,8 +17,6 @@ data class ClassDefinesFunctionTest(
 
     override fun copyTest(newId: Long) = copy(id = newId)
 }
-
-
 
 
 @Serializable
@@ -71,9 +54,9 @@ data class ClassInstanceTest(
 @Serializable
 @SerialName("class_is_subclass_test")
 data class ClassIsSubClassTest(
-        override val id: Long,
-        val className: String,
-        val genericCheck: GenericCheckLong
+    override val id: Long,
+    val className: String,
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Klassi on teise klassi alamklass"
@@ -85,9 +68,9 @@ data class ClassIsSubClassTest(
 @Serializable
 @SerialName("class_is_parent_class_test")
 data class ClassIsParentClassTest(
-        override val id: Long,
-        val className: String,
-        val genericCheck: GenericCheckLong
+    override val id: Long,
+    val className: String,
+    val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
         return "Klassi on teise klassi ülamklass"
@@ -96,29 +79,3 @@ data class ClassIsParentClassTest(
     override fun copyTest(newId: Long) = copy(id = newId)
 }
 
-@Serializable
-@SerialName("class_contains_keyword_test")
-data class ClassContainsKeywordTest(
-        override val id: Long,
-        val className: String,
-        val genericCheck: GenericCheck,
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Klass sisaldab märksõna"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
-@Serializable
-@SerialName("class_contains_phrase_test")
-data class ClassContainsPhraseTest(
-        override val id: Long,
-        val className: String,
-        val genericCheck: GenericCheck,
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Klass sisaldab fraasi"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}

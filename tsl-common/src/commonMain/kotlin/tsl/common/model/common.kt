@@ -77,8 +77,17 @@ enum class CheckTypeLong {
 enum class DataCategory {
     CONTAINS_LINES, CONTAINS_NUMBERS, CONTAINS_STRINGS, EQUALS
 }
+
 enum class OutputCategory {
     ALL_IO, ALL_OUTPUT, LAST_OUTPUT, OUTPUT_NUMBER_0, OUTPUT_NUMBER_1, OUTPUT_NUMBER_2, OUTPUT_NUMBER_3, OUTPUT_NUMBER_4, OUTPUT_NUMBER_5, OUTPUT_NUMBER_6, OUTPUT_NUMBER_7, OUTPUT_NUMBER_8, OUTPUT_NUMBER_9
+}
+
+enum class Scope(val value: String) {
+    PROGRAM("program"),
+    FUNCTION("function"),
+    CLASS("class"),
+    MAIN_PROGRAM("main_program")
+
 }
 
 @Serializable

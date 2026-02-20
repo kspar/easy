@@ -54,6 +54,25 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 PyExecuteTest(test, "calls_test", args).generatePyString()
             }
 
+            is ContainsTest -> {
+                PyExecuteTest(
+                    test,
+                    "contains_test",
+                    mapOf(
+                        "file_name" to PyStr(fileName),
+                        "contains_checks" to PyGenericChecksLong(test.genericCheck),
+
+                        "contains_what" to PyStr(test.containsWhat.name),
+                        "contains_what_arg" to PyStr(test.containsWhatArg),
+
+                        "scope" to PyStr(test.scope.value),
+                        "scope_class_name" to PyStr(test.className),
+                        "scope_function_name" to PyStr(test.functionName),
+                    )
+                ).generatePyString()
+            }
+
+
             is FunctionExecutionTest -> {
                 val standardInputData: PyList = if (test.standardInputData == null) {
                     PyList(listOf())
@@ -120,98 +139,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is FunctionContainsLoopTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_contains_loop_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.containsLoop.mustNotContain),
-                                        "'before_message'" to PyStr(test.containsLoop.beforeMessage),
-                                        "'passed_message'" to PyStr(test.containsLoop.passedMessage),
-                                        "'failed_message'" to PyStr(test.containsLoop.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionContainsKeywordTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_contains_keyword_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionContainsPhraseTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_contains_phrase_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionContainsReturnTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_contains_return_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.containsReturn.mustNotContain),
-                                        "'before_message'" to PyStr(test.containsReturn.beforeMessage),
-                                        "'passed_message'" to PyStr(test.containsReturn.passedMessage),
-                                        "'failed_message'" to PyStr(test.containsReturn.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionCallsPrintTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_calls_print_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.callsCheck.mustNotCall),
-                                        "'before_message'" to PyStr(test.callsCheck.beforeMessage),
-                                        "'passed_message'" to PyStr(test.callsCheck.passedMessage),
-                                        "'failed_message'" to PyStr(test.callsCheck.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
 
             is FunctionIsRecursiveTest -> {
                 PyExecuteTest(
@@ -244,41 +171,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         "file_name" to PyStr(fileName),
                         "function_name" to PyStr(test.functionName),
                         "contains_checks" to PyGenericChecksLong(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionImportsModuleTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_imports_module_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "contains_checks" to PyGenericChecksLong(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is FunctionContainsTryExceptTest -> {
-                PyExecuteTest(
-                    test,
-                    "function_contains_try_except_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "function_name" to PyStr(test.functionName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.containsTryExcept.mustNotContain),
-                                        "'before_message'" to PyStr(test.containsTryExcept.beforeMessage),
-                                        "'passed_message'" to PyStr(test.containsTryExcept.passedMessage),
-                                        "'failed_message'" to PyStr(test.containsTryExcept.failedMessage)
-                                    )
-                                )
-                            )
-                        )
                     )
                 ).generatePyString()
             }
@@ -343,106 +235,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is ProgramContainsTryExceptTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_contains_try_except_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.programContainsTryExcept.mustNotContain),
-                                        "'before_message'" to PyStr(test.programContainsTryExcept.beforeMessage),
-                                        "'passed_message'" to PyStr(test.programContainsTryExcept.passedMessage),
-                                        "'failed_message'" to PyStr(test.programContainsTryExcept.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
-
-            is ProgramCallsPrintTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_calls_print_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.programCallsPrint.mustNotCall),
-                                        "'before_message'" to PyStr(test.programCallsPrint.beforeMessage),
-                                        "'passed_message'" to PyStr(test.programCallsPrint.passedMessage),
-                                        "'failed_message'" to PyStr(test.programCallsPrint.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
-
-            is ProgramContainsLoopTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_contains_loop_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.programContainsLoop.mustNotContain),
-                                        "'before_message'" to PyStr(test.programContainsLoop.beforeMessage),
-                                        "'passed_message'" to PyStr(test.programContainsLoop.passedMessage),
-                                        "'failed_message'" to PyStr(test.programContainsLoop.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
-
-            is ProgramImportsModuleTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_imports_module_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "contains_checks" to PyGenericChecksLong(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is ProgramContainsKeywordTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_contains_keyword_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is ProgramContainsPhraseTest -> {
-                PyExecuteTest(
-                    test,
-                    "program_contains_phrase_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-
             is ProgramDefinesFunctionTest -> {
                 PyExecuteTest(
                     test,
@@ -454,17 +246,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is ClassImportsModuleTest -> {
-                PyExecuteTest(
-                    test,
-                    "class_imports_module_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "class_name" to PyStr(test.className),
-                        "contains_checks" to PyGenericChecksLong(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
 
             is ClassDefinesFunctionTest -> {
                 PyExecuteTest(
@@ -516,29 +297,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is ClassContainsKeywordTest -> {
-                PyExecuteTest(
-                    test,
-                    "class_contains_keyword_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "class_name" to PyStr(test.className),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is ClassContainsPhraseTest -> {
-                PyExecuteTest(
-                    test,
-                    "class_contains_phrase_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "class_name" to PyStr(test.className),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
 
             is ProgramDefinesClassTest -> {
                 PyExecuteTest(
@@ -601,49 +359,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 ).generatePyString()
             }
 
-            is MainProgramContainsKeywordTest -> {
-                PyExecuteTest(
-                    test,
-                    "mainProgram_contains_keyword_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is MainProgramContainsPhraseTest -> {
-                PyExecuteTest(
-                    test,
-                    "mainProgram_contains_phrase_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "contains_checks" to PyGenericChecks(test.genericCheck)
-                    )
-                ).generatePyString()
-            }
-
-            is MainProgramContainsLoopTest -> {
-                PyExecuteTest(
-                    test,
-                    "mainProgram_contains_loop_test",
-                    mapOf(
-                        "file_name" to PyStr(fileName),
-                        "generic_checks" to PyList(
-                            listOf(
-                                PyDict(
-                                    mapOf(
-                                        "'expected_value'" to PyBool(!test.programContainsLoop.mustNotContain),
-                                        "'before_message'" to PyStr(test.programContainsLoop.beforeMessage),
-                                        "'passed_message'" to PyStr(test.programContainsLoop.passedMessage),
-                                        "'failed_message'" to PyStr(test.programContainsLoop.failedMessage)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ).generatePyString()
-            }
 
             // Only used as an empty placeholder test - the user hasn't decided on the type yet
             is PlaceholderTest -> ""

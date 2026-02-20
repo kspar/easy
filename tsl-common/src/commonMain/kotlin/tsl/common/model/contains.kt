@@ -3,20 +3,20 @@ package tsl.common.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
-enum class Target(val value: String) {
-    FUNCTION("function"),
-    CLASS("class"),
-    CLASS_FUNCTION("class_function")
+enum class ContainsWhat {
+    KEYWORD_NO_ARG, // Python märksõna (try, except, finally, if, elif, else, break, continue, import, return, for, while)
+    KEYWORD_WITH_PRECEDING_ARG, // Python märksõna (import, return)
+    PHRASE, // Suvaline teksti string
 }
 
 
 @Serializable
-@SerialName("calls_test")
-data class CallsTest(
+@SerialName("contains_test")
+data class ContainsTest(
     override val id: Long,
     val scope: Scope,
-    val target: Target,
+    val containsWhat: ContainsWhat,
+    val containsWhatArg: String? = null,
     val functionName: String? = null,
     val className: String? = null,
     val scopeTargetName: Scope? = null,  // Required for FUNCTION and CLASS scopes
@@ -30,17 +30,26 @@ data class CallsTest(
             Scope.CLASS -> "Klass"
         }
 
-        val targetText = when (target) {
-            Target.FUNCTION -> "funktsiooni"
-            Target.CLASS -> "klassi"
-            Target.CLASS_FUNCTION -> "klassi funktsiooni"
+        val containsText = when (containsWhat) {
+            ContainsWhat.KEYWORD_NO_ARG -> "reserveeritud võtmesõna"
+            ContainsWhat.KEYWORD_WITH_PRECEDING_ARG -> "reserveeritud võtmesõna koos argumendiga $containsWhatArg"
+            ContainsWhat.PHRASE -> "sõne"
         }
-        return "$scopeText kutsub välja $targetText"
+
+        return "$scopeText otsib $containsText"
     }
 
 
     override fun copyTest(newId: Long) = copy(id = newId)
 
 }
+
+
+
+
+
+
+
+
 
 
