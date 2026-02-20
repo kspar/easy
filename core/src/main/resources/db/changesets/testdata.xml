@@ -507,6 +507,32 @@
         </sql>
     </changeSet>
 
+    <changeSet id="testdata-moodle-pending" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM student_moodle_pending_access WHERE moodle_username = 'moodle-anna'</sqlCheck>
+        </preConditions>
+        <comment>Insert Moodle pending students for testing the participants page</comment>
+        <sql>
+            <!-- Moodle pending students on course 9003 (Data Structures — Moodle-enabled) -->
+            INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
+            VALUES (9003, 'moodle-peeter', 'peeter.puu@lahendus.ut.ee', now(), 'moodle-sync-9003-peeter');
+            INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
+            VALUES (9003, 'moodle-anna', 'anna.kask@lahendus.ut.ee', now(), 'moodle-sync-9003-anna');
+            INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
+            VALUES (9003, 'moodle-juri', 'juri.tamm@lahendus.ut.ee', now(), 'moodle-sync-9003-juri');
+            INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
+            VALUES (9003, 'moodle-liis', 'liis.mets@lahendus.ut.ee', now(), 'moodle-sync-9003-liis');
+
+            <!-- Assign some moodle pending students to groups -->
+            INSERT INTO student_moodle_pending_course_group_access (moodle_username, course_id, group_id)
+            VALUES ('moodle-peeter', 9003, 9004);
+            INSERT INTO student_moodle_pending_course_group_access (moodle_username, course_id, group_id)
+            VALUES ('moodle-anna', 9003, 9004);
+            INSERT INTO student_moodle_pending_course_group_access (moodle_username, course_id, group_id)
+            VALUES ('moodle-juri', 9003, 9005);
+        </sql>
+    </changeSet>
+
     <changeSet id="testdata-mock-executor" author="kspar">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM executor WHERE id = 9001</sqlCheck>

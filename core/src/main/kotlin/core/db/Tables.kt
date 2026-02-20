@@ -161,20 +161,6 @@ object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_gr
     override val primaryKey = PrimaryKey(moodleUsername, course, courseGroup)
 }
 
-object StudentPendingAccess : Table("student_pending_access") {
-    val course = reference("course_id", Course)
-    val email = text("email")
-    val validFrom = datetime("valid_from")
-    override val primaryKey = PrimaryKey(course, email)
-}
-
-object StudentPendingCourseGroup : Table("student_pending_course_group_access") {
-    val email = reference("email", StudentPendingAccess.email)
-    val course = reference("course_id", StudentPendingAccess.course)
-    val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(email, course, courseGroup)
-}
-
 object Submission : LongIdTable("submission") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val student = reference("student_id", Account)

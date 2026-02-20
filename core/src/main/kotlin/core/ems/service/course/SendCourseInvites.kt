@@ -59,13 +59,10 @@ class SendCourseInvites(val sendMailService: SendMailService) {
 
         transaction {
             val pendingEmails = emails.filter {
-                val existsPending = StudentPendingAccess.selectAll()
-                    .where { StudentPendingAccess.email.eq(it) and StudentPendingAccess.course.eq(courseId) }
-                    .count() == 1L
                 val existsMoodlePending = StudentMoodlePendingAccess.selectAll()
                     .where { StudentMoodlePendingAccess.email.eq(it) and StudentMoodlePendingAccess.course.eq(courseId) }
                     .count() == 1L
-                existsPending || existsMoodlePending
+                existsMoodlePending
             }
             val activeEmails = emails.filter {
                 (StudentCourseAccess innerJoin Account).selectAll()
@@ -84,4 +81,3 @@ class SendCourseInvites(val sendMailService: SendMailService) {
         }
     }
 }
-

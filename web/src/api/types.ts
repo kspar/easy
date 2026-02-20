@@ -206,7 +206,35 @@ export interface TeacherParticipant {
   created_at: string | null
 }
 
+export interface MoodlePendingStudent {
+  moodle_username: string
+  email: string
+  invite_id: string
+  groups: GroupResp[]
+}
+
 export interface ParticipantsResp {
   students: StudentParticipant[] | null
   teachers: TeacherParticipant[] | null
+  students_moodle_pending: MoodlePendingStudent[] | null
+  moodle_linked: boolean
+}
+
+export interface MoodlePropsResp {
+  moodle_props: {
+    moodle_short_name: string
+    students_synced: boolean
+    sync_students_in_progress: boolean
+    grades_synced: boolean
+    sync_grades_in_progress: boolean
+  } | null
+}
+
+export interface CourseInviteResp {
+  invite_id: string
+  expires_at: string
+  created_at: string
+  allowed_uses: number
+  used_count: number
+  uses_remaining: number
 }

@@ -58,10 +58,6 @@ easy:
       grades:
         url: "<url>"
 
-    pending-access:
-      clean:
-        cron: "0 5 3 * * *"
-
     exercise-index-normalisation:
       cron: "0 5 3 * * *"
 

@@ -62,11 +62,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
                 log.debug { "Update student ${caller.id}" }
                 updateStudent(account)
             }
-            if (isChanged) {
-                log.debug { "Update student course access ${caller.id}" }
-                updateStudentCourseAccesses(account)
-                cachingService.evictAccountCache(account.username)
-            }
         }
 
         if (caller.isTeacher() && !cachingService.teacherExists(account.username)) {
@@ -185,48 +180,6 @@ private fun updateAdmin(admin: AccountData) {
     transaction {
         Account.update({ Account.id eq admin.username }) {
             it[isAdmin] = true
-        }
-    }
-}
-
-
-private fun updateStudentCourseAccesses(accountData: AccountData) {
-    log.debug { "Updating student course accesses" }
-    val now = DateTime.now()
-
-    transaction {
-        val courseIds = StudentPendingAccess
-            .select(StudentPendingAccess.course)
-            .where { StudentPendingAccess.email eq accountData.email }
-            .map { it[StudentPendingAccess.course].value }
-
-        StudentPendingAccess.deleteWhere {
-            StudentPendingAccess.email eq accountData.email
-        }
-
-        courseIds.forEach { courseId ->
-            log.debug { "Granting access for ${accountData.username} to course $courseId" }
-
-            // TODO: maybe can batchInsert
-            StudentCourseAccess.insert {
-                it[student] = accountData.username
-                it[course] = courseId
-                it[createdAt] = now
-            }
-
-            val groupIds = StudentPendingCourseGroup
-                .select(StudentPendingCourseGroup.courseGroup)
-                .where {
-                    StudentPendingCourseGroup.email.eq(accountData.email) and
-                            StudentPendingCourseGroup.course.eq(courseId)
-                }
-                .map { it[StudentPendingCourseGroup.courseGroup] }
-
-            StudentCourseGroup.batchInsert(groupIds) {
-                this[StudentCourseGroup.student] = accountData.username
-                this[StudentCourseGroup.course] = courseId
-                this[StudentCourseGroup.courseGroup] = it
-            }
         }
     }
 }

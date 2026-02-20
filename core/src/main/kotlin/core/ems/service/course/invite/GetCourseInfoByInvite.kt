@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseInviteLink
 import core.ems.service.singleOrInvalidRequest
+import core.exception.InvalidRequestException
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -35,19 +36,22 @@ class GetCourseInfoByInvite {
     }
 
     private fun selectCourseInfoByInvite(inviteId: String): Resp = transaction {
-        (CourseInviteLink innerJoin Course)
-            .select(Course.id, Course.title, Course.alias)
+        val row = (CourseInviteLink innerJoin Course)
+            .select(Course.id, Course.title, Course.alias, Course.moodleShortName)
             .where {
                 (CourseInviteLink.inviteId.upperCase() eq inviteId.uppercase()) and
                         CourseInviteLink.expiresAt.greater(DateTime.now()) and
                         CourseInviteLink.usedCount.less(CourseInviteLink.allowedUses)
-            }.map {
-                Resp(
-                    it[Course.id].value.toString(),
-                    it[Course.alias] ?: it[Course.title].toString()
-                )
-            }
-            .singleOrInvalidRequest(false)
+            }.singleOrNull() ?: throw InvalidRequestException("Invalid invite link")
+
+        if (row[Course.moodleShortName] != null) {
+            throw InvalidRequestException("Invite links are not available for Moodle-synced courses")
+        }
+
+        Resp(
+            row[Course.id].value.toString(),
+            row[Course.alias] ?: row[Course.title].toString()
+        )
     }
 }
 

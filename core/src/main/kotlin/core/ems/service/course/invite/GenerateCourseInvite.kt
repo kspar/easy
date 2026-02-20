@@ -3,12 +3,14 @@ package core.ems.service.course.invite
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
+import core.db.Course
 import core.db.CourseInviteLink
 import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.generateInviteId
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -45,7 +47,21 @@ class GenerateCourseInvite {
             teacherOnCourse(courseId)
         }
 
+        assertCourseNotMoodleLinked(courseId)
+
         return Resp(createInvite(courseId, req))
+    }
+
+    private fun assertCourseNotMoodleLinked(courseId: Long) = transaction {
+        val moodleShortName = Course
+            .select(Course.moodleShortName)
+            .where { Course.id eq courseId }
+            .singleOrNull()
+            ?.get(Course.moodleShortName)
+
+        if (moodleShortName != null) {
+            throw InvalidRequestException("Invite links are not available for Moodle-synced courses")
+        }
     }
 
     private data class CourseInviteLinkDTO(val inviteId: String, val createdAt: DateTime, val usedCount: Int)

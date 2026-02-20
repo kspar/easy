@@ -607,6 +607,11 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="200226-1" author="kspar">
+        <dropTable tableName="student_pending_course_group_access"/>
+        <dropTable tableName="student_pending_access"/>
+    </changeSet>
+
     <changeSet id="170226-2" author="kspar">
         <addColumn tableName="course">
             <column name="color" type="text">

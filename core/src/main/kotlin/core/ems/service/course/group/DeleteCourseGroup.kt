@@ -49,15 +49,13 @@ class DeleteCourseGroupController {
     private fun deleteGroup(courseId: Long, groupId: Long) {
         transaction {
             val students = StudentCourseGroup.selectAll().where { StudentCourseGroup.courseGroup eq groupId }.count()
-            val pendingStudents =
-                StudentPendingCourseGroup.selectAll().where { StudentPendingCourseGroup.courseGroup eq groupId }.count()
             val moodlePendingStudents = StudentMoodlePendingCourseGroup.selectAll()
                 .where { StudentMoodlePendingCourseGroup.courseGroup eq groupId }.count()
 
-            if (students + pendingStudents + moodlePendingStudents > 0) {
+            if (students + moodlePendingStudents > 0) {
                 throw InvalidRequestException(
-                    "Cannot delete group $groupId since there are still $students students, " +
-                            "$pendingStudents pending students and $moodlePendingStudents Moodle pending students in this group.",
+                    "Cannot delete group $groupId since there are still $students students " +
+                            "and $moodlePendingStudents Moodle pending students in this group.",
                     ReqError.GROUP_NOT_EMPTY
                 )
             }

@@ -37,13 +37,6 @@ class ReadParticipantsOnCourseController {
         @JsonProperty("created_at") val createdAt: DateTime?
     )
 
-    data class StudentPendingResp(
-        @JsonProperty("email") val email: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("valid_from") val validFrom: DateTime?,
-        @JsonProperty("groups") val groups: List<GroupResp>
-    )
-
     data class StudentMoodlePendingResp(
         @JsonProperty("moodle_username") val moodleUsername: String,
         @JsonProperty("email") val email: String,
@@ -54,8 +47,8 @@ class ReadParticipantsOnCourseController {
     data class Resp(
         @JsonProperty("students") @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
         @JsonProperty("teachers") @JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
-        @JsonProperty("students_pending") @JsonInclude(Include.NON_NULL) val studentPendingAccess: List<StudentPendingResp>?,
-        @JsonProperty("students_moodle_pending") @JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?
+        @JsonProperty("students_moodle_pending") @JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?,
+        @JsonProperty("moodle_linked") val moodleLinked: Boolean
     )
 
     enum class Role(val paramValue: String) {
@@ -80,6 +73,8 @@ class ReadParticipantsOnCourseController {
 
         caller.assertAccess { teacherOnCourse(courseId) }
 
+        val moodleLinked = isMoodleLinked(courseId)
+
         return when (roleReq?.lowercase()) {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
@@ -87,32 +82,30 @@ class ReadParticipantsOnCourseController {
                     null,
                     teachers,
                     null,
-                    null,
+                    moodleLinked,
                 )
             }
 
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId, groupId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, groupId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, groupId)
                 Resp(
                     students,
                     null,
-                    studentsPending,
-                    studentsMoodle
+                    studentsMoodle,
+                    moodleLinked,
                 )
             }
 
             Role.ALL.paramValue, null -> {
                 val students = selectStudentsOnCourse(courseId, groupId)
                 val teachers = selectTeachersOnCourse(courseId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, groupId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, groupId)
                 Resp(
                     students,
                     teachers,
-                    studentsPending,
-                    studentsMoodle
+                    studentsMoodle,
+                    moodleLinked,
                 )
             }
 
@@ -121,45 +114,13 @@ class ReadParticipantsOnCourseController {
     }
 
 
+    private fun isMoodleLinked(courseId: Long): Boolean = transaction {
+        Course.select(Course.moodleShortName)
+            .where { Course.id eq courseId }
+            .single()[Course.moodleShortName] != null
+    }
+
     data class ParticipantGroup(val id: Long, val name: String)
-
-
-    private fun selectStudentsPendingOnCourse(courseId: Long, groupId: Long?): List<StudentPendingResp> =
-        transaction {
-            data class PendingStudent(val email: String, val validFrom: DateTime)
-
-            (StudentPendingAccess leftJoin StudentPendingCourseGroup leftJoin CourseGroup)
-                .select(
-                    StudentPendingAccess.email,
-                    StudentPendingAccess.validFrom,
-                    CourseGroup.id,
-                    CourseGroup.name
-                ).where {
-                    StudentPendingAccess.course eq courseId
-                }.also {
-                    if (groupId != null) it.andWhere { CourseGroup.id eq groupId }
-                }.groupBy({
-                    PendingStudent(
-                        it[StudentPendingAccess.email],
-                        it[StudentPendingAccess.validFrom]
-                    )
-                }) {
-                    val groupId: EntityID<Long>? = it[CourseGroup.id]
-                    if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
-                }
-                .map { (student, groups) ->
-                    student to groups.filterNotNull()
-                }
-                .map { (student, groups) ->
-                    StudentPendingResp(
-                        student.email,
-                        student.validFrom,
-                        groups.map {
-                            GroupResp(it.id.toString(), it.name)
-                        }
-                    )
-                }
-        }
 
     private fun selectMoodleStudentsPendingOnCourse(courseId: Long, groupId: Long?): List<StudentMoodlePendingResp> =
         transaction {
