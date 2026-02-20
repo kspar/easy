@@ -43,8 +43,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 val args = mutableMapOf(
                     "file_name" to PyStr(fileName),
                     "contains_checks" to PyGenericChecksLong(test.genericCheck),
+
                     "scope" to PyStr(test.scope.value),
-                    "target" to PyStr(test.targetType.value),
+                    "target" to PyStr(test.target.value),
+
                     "scope_function_name" to PyStr(test.functionName),
                     "scope_class_name" to PyStr(test.className),
                 )

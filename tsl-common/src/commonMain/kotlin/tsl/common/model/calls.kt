@@ -11,7 +11,7 @@ enum class Scope(val value: String) {
 
 }
 
-enum class TargetType(val value: String) {
+enum class Target(val value: String) {
     FUNCTION("function"),
     CLASS("class"),
     CLASS_FUNCTION("class_function")
@@ -23,7 +23,7 @@ enum class TargetType(val value: String) {
 data class CallsTest(
     override val id: Long,
     val scope: Scope,
-    val targetType: TargetType,
+    val target: Target,
     val functionName: String? = null,
     val className: String? = null,
     val scopeTargetName: Scope? = null,  // Required for FUNCTION and CLASS scopes
@@ -37,10 +37,10 @@ data class CallsTest(
             Scope.CLASS -> "Klass"
         }
 
-        val targetText = when (targetType) {
-            TargetType.FUNCTION -> "funktsiooni"
-            TargetType.CLASS -> "klassi"
-            TargetType.CLASS_FUNCTION -> "klassi funktsiooni"
+        val targetText = when (target) {
+            Target.FUNCTION -> "funktsiooni"
+            Target.CLASS -> "klassi"
+            Target.CLASS_FUNCTION -> "klassi funktsiooni"
         }
         return "$scopeText kutsub välja $targetText"
     }
