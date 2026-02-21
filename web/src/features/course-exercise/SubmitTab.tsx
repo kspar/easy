@@ -4,7 +4,7 @@ import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutline
 import { useTranslation } from 'react-i18next'
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
-import { python } from '@codemirror/lang-python'
+import { languageFromFilename } from './editorLanguage.ts'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
 import { useTheme } from '@mui/material/styles'
@@ -37,6 +37,7 @@ export default forwardRef<SubmitTabHandle, {
   const queryClient = useQueryClient()
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const prevExerciseRef = useRef(courseExerciseId)
   const [snackMsg, setSnackMsg] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
@@ -44,40 +45,51 @@ export default forwardRef<SubmitTabHandle, {
   const awaitAutograde = useAwaitAutograde(courseId, courseExerciseId)
   const isSubmitting = submit.isPending || awaitAutograde.isPending
 
-  // Initialize CodeMirror (re-creates on theme change)
+  // Initialize CodeMirror (re-creates on theme or exercise change)
   useEffect(() => {
     if (!editorRef.current) return
+    let cancelled = false
 
-    const prevDoc = viewRef.current?.state.doc.toString()
+    const exerciseChanged = prevExerciseRef.current !== courseExerciseId
+    prevExerciseRef.current = courseExerciseId
+
+    // Preserve user edits on theme change; reset on exercise change
+    const prevDoc = exerciseChanged ? undefined : viewRef.current?.state.doc.toString()
     viewRef.current?.destroy()
+    viewRef.current = null
 
-    const extensions = [
-      basicSetup,
-      python(),
-      cmPlaceholder(t('submission.editorPlaceholder')),
-      EditorView.lineWrapping,
-      EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
-    ]
-    if (theme.palette.mode === 'dark') {
-      extensions.push(oneDark)
-    }
+    languageFromFilename(exercise.solution_file_name).then((lang) => {
+      if (cancelled || !editorRef.current) return
 
-    const state = EditorState.create({
-      doc: prevDoc ?? initialSolution ?? '',
-      extensions,
-    })
+      const extensions = [
+        basicSetup,
+        lang,
+        cmPlaceholder(t('submission.editorPlaceholder')),
+        EditorView.lineWrapping,
+        EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
+      ]
+      if (theme.palette.mode === 'dark') {
+        extensions.push(oneDark)
+      }
 
-    viewRef.current = new EditorView({
-      state,
-      parent: editorRef.current,
+      const state = EditorState.create({
+        doc: prevDoc ?? initialSolution ?? '',
+        extensions,
+      })
+
+      viewRef.current = new EditorView({
+        state,
+        parent: editorRef.current,
+      })
     })
 
     return () => {
+      cancelled = true
       viewRef.current?.destroy()
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.palette.mode])
+  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name])
 
   useImperativeHandle(ref, () => ({
     setSolution: (solution: string) => {
@@ -212,20 +224,22 @@ export default forwardRef<SubmitTabHandle, {
         />
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        <Button
-          variant="contained"
-          startIcon={
-            isSubmitting ? <CircularProgress size={18} /> : <SendOutlined />
-          }
-          onClick={handleSubmit}
-          disabled={!exercise.is_open || isSubmitting}
-        >
-          {exercise.grader_type === 'AUTO'
-            ? t('submission.submitAndCheck')
-            : t('submission.submit')}
-        </Button>
-      </Box>
+      {exercise.is_open && (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button
+            variant="contained"
+            startIcon={
+              isSubmitting ? <CircularProgress size={18} /> : <SendOutlined />
+            }
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {exercise.grader_type === 'AUTO'
+              ? t('submission.submitAndCheck')
+              : t('submission.submit')}
+          </Button>
+        </Box>
+      )}
 
       {submit.isError && (
         <Alert severity="error" sx={{ mt: 2 }}>

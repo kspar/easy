@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { Box, CircularProgress } from '@mui/material'
 import AppLayout from '../layouts/AppLayout.tsx'
 import RequireAuth from './RequireAuth.tsx'
 import NotFoundPage from '../features/NotFoundPage.tsx'
@@ -11,13 +12,31 @@ import SimilarityPage from '../features/similarity/SimilarityPage.tsx'
 import ExerciseLibraryPage from '../features/library/ExerciseLibraryPage.tsx'
 import ExercisePage from '../features/library/ExercisePage.tsx'
 import AboutPage from '../features/about/AboutPage.tsx'
+import LandingPage from '../features/landing/LandingPage.tsx'
+import { useAuth } from '../auth/AuthContext.tsx'
+
+function IndexRedirect() {
+  const { initialized, authenticated } = useAuth()
+  if (!initialized) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    )
+  }
+  return <Navigate to={authenticated ? '/courses' : '/landing'} replace />
+}
 
 const router = createBrowserRouter([
+  {
+    path: '/landing',
+    element: <LandingPage />,
+  },
   {
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/courses" replace /> },
+      { index: true, element: <IndexRedirect /> },
       {
         path: 'courses',
         element: (

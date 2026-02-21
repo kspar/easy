@@ -1,5 +1,6 @@
 import {
   Box,
+  Chip,
   CircularProgress,
   Alert,
   Divider,
@@ -56,9 +57,13 @@ export default function TeacherFeedback({
           </Box>
 
           {activity.grade != null && (
-            <Typography variant="body2" sx={{ mb: 1 }} color="primary">
-              {t('submission.gradedPoints', { points: activity.grade })}
-            </Typography>
+            <Chip
+              label={t('submission.gradedPoints', { points: activity.grade })}
+              size="small"
+              color="primary"
+              variant="outlined"
+              sx={{ mb: 1, fontWeight: 600 }}
+            />
           )}
 
           {activity.feedback && (

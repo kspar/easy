@@ -409,6 +409,7 @@ function StudentExerciseView() {
       <PreviousSubmissions
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
+        solutionFileName={exercise.solution_file_name}
         onRestore={(solution) => submitTabRef.current?.setSolution(solution)}
       />
     </>

@@ -15,7 +15,7 @@ import { ExpandMoreOutlined, ContentCopyOutlined } from '@mui/icons-material'
 import { useTheme } from '@mui/material/styles'
 import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
-import { python } from '@codemirror/lang-python'
+import { languageFromFilename } from './editorLanguage.ts'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
 import { useTranslation } from 'react-i18next'
@@ -27,10 +27,12 @@ import type { AutomaticAssessmentResp } from '../../api/types.ts'
 export default function PreviousSubmissions({
   courseId,
   courseExerciseId,
+  solutionFileName,
   onRestore,
 }: {
   courseId: string
   courseExerciseId: string
+  solutionFileName: string
   onRestore?: (solution: string) => void
 }) {
   const { t } = useTranslation()
@@ -67,6 +69,7 @@ export default function PreviousSubmissions({
             <SubmissionItem
               key={sub.id}
               submission={sub}
+              solutionFileName={solutionFileName}
               onRestore={onRestore}
             />
           ))}
@@ -78,6 +81,7 @@ export default function PreviousSubmissions({
 
 function SubmissionItem({
   submission,
+  solutionFileName,
   onRestore,
 }: {
   submission: {
@@ -88,6 +92,7 @@ function SubmissionItem({
     autograde_status: string
     auto_assessment: AutomaticAssessmentResp | null
   }
+  solutionFileName: string
   onRestore?: (solution: string) => void
 }) {
   const { t } = useTranslation()
@@ -130,7 +135,7 @@ function SubmissionItem({
 
       {open && (
         <>
-          <ReadOnlyEditor code={submission.solution} />
+          <ReadOnlyEditor code={submission.solution} solutionFileName={solutionFileName} />
           {onRestore && (
             <Button
               size="small"
@@ -155,31 +160,40 @@ function SubmissionItem({
   )
 }
 
-function ReadOnlyEditor({ code }: { code: string }) {
+function ReadOnlyEditor({ code, solutionFileName }: { code: string; solutionFileName: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const theme = useTheme()
 
   useEffect(() => {
     if (!ref.current) return
+    let cancelled = false
+    let view: EditorView | null = null
 
-    const extensions = [
-      basicSetup,
-      python(),
-      EditorView.editable.of(false),
-      EditorState.readOnly.of(true),
-      EditorView.lineWrapping,
-    ]
-    if (theme.palette.mode === 'dark') {
-      extensions.push(oneDark)
-    }
+    languageFromFilename(solutionFileName).then((lang) => {
+      if (cancelled || !ref.current) return
 
-    const view = new EditorView({
-      state: EditorState.create({ doc: code, extensions }),
-      parent: ref.current,
+      const extensions = [
+        basicSetup,
+        lang,
+        EditorView.editable.of(false),
+        EditorState.readOnly.of(true),
+        EditorView.lineWrapping,
+      ]
+      if (theme.palette.mode === 'dark') {
+        extensions.push(oneDark)
+      }
+
+      view = new EditorView({
+        state: EditorState.create({ doc: code, extensions }),
+        parent: ref.current,
+      })
     })
 
-    return () => view.destroy()
-  }, [code, theme.palette.mode])
+    return () => {
+      cancelled = true
+      view?.destroy()
+    }
+  }, [code, solutionFileName, theme.palette.mode])
 
   return (
     <Box

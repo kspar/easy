@@ -465,6 +465,17 @@ export default function AppLayout() {
             variant="caption"
             color="text.secondary"
             component={RouterLink}
+            to="/landing"
+            sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
+            {t('nav.landingPage')}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            component={RouterLink}
             to="/tos"
             sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
           >
