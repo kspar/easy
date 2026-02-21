@@ -197,13 +197,17 @@ export function useUpdateCourseExercise(
   })
 }
 
-export function useTeacherCourseExercises(courseId: string) {
+export function useTeacherCourseExercises(courseId: string, groupId?: string) {
   return useQuery({
-    queryKey: ['teacher', 'courses', courseId, 'exercises'],
-    queryFn: () =>
-      apiFetch<{ exercises: TeacherCourseExercise[] }>(
-        `/teacher/courses/${courseId}/exercises`,
-      ).then((r) => r.exercises),
+    queryKey: ['teacher', 'courses', courseId, 'exercises', { groupId }],
+    queryFn: () => {
+      const url = groupId
+        ? `/teacher/courses/${courseId}/exercises?group=${groupId}`
+        : `/teacher/courses/${courseId}/exercises`
+      return apiFetch<{ exercises: TeacherCourseExercise[] }>(url).then(
+        (r) => r.exercises,
+      )
+    },
   })
 }
 

@@ -269,7 +269,17 @@
     "loading": "Laen hindeid...",
     "showSubmissionCount": "Näita esituste arvu",
     "exportGrades": "Ekspordi hindetabel",
-    "emptyPlaceholder": "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)"
+    "emptyPlaceholder": "Kui sel kursusel oleks mõni ülesanne, siis näeksid siin hindetabelit :-)",
+    "sortByName": "Nimi",
+    "sortByNameAsc": "Nimi A\u2013Z",
+    "sortByNameDesc": "Nimi Z\u2013A",
+    "sortBySuccess": "Lahendatud ülesannete arv",
+    "sortBySuccessDesc": "Enim lahendatud",
+    "sortBySuccessAsc": "Vähim lahendatud",
+    "solvedExercises": "Lahendanud {{count}} ülesannet",
+    "solvedBy": "Lahendatud {{count}} õpilase poolt",
+    "totalExercises": "Kokku {{count}} ülesannet",
+    "totalStudents": "Kokku {{count}} õpilast"
   },
   "similarity": {
     "title": "Lahenduste sarnasus",

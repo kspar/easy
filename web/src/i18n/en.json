@@ -269,7 +269,17 @@
     "loading": "Loading grades...",
     "showSubmissionCount": "Show submission count",
     "exportGrades": "Export grade table",
-    "emptyPlaceholder": "If this course had any exercises, then you would see the grade table here :-)"
+    "emptyPlaceholder": "If this course had any exercises, then you would see the grade table here :-)",
+    "sortByName": "Name",
+    "sortByNameAsc": "Name A\u2013Z",
+    "sortByNameDesc": "Name Z\u2013A",
+    "sortBySuccess": "Solved count",
+    "sortBySuccessDesc": "Most solved",
+    "sortBySuccessAsc": "Least solved",
+    "solvedExercises": "Solved {{count}} exercises",
+    "solvedBy": "Solved by {{count}} students",
+    "totalExercises": "Total {{count}} exercises",
+    "totalStudents": "Total {{count}} students"
   },
   "similarity": {
     "title": "Similarity analysis",
