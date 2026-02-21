@@ -71,6 +71,7 @@ import {
   useUpdateMoodleProps,
 } from '../../api/exercises.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import DataTable from '../../components/DataTable.tsx'
 import AddParticipantsDialog from './AddStudentsDialog.tsx'
 import CreateGroupDialog from './CreateGroupDialog.tsx'
@@ -162,7 +163,7 @@ export default function ParticipantsPage() {
   const [groupSorting, setGroupSorting] = useState<SortingState>([])
 
   // Student filters
-  const [filterGroup, setFilterGroup] = useState<string>('')
+  const [filterGroup, setFilterGroup] = useSavedGroup(courseId!)
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterGroupAnchor, setFilterGroupAnchor] = useState<HTMLElement | null>(null)
   const [filterStatusAnchor, setFilterStatusAnchor] = useState<HTMLElement | null>(null)

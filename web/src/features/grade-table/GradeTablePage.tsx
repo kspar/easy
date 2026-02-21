@@ -30,6 +30,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useTeacherCourseExercises, useCourseGroups } from '../../api/exercises.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import type {
   TeacherCourseExercise,
   SubmissionRow,
@@ -118,7 +119,7 @@ export default function GradeTablePage() {
   usePageTitle(t('grades.title'))
 
   // Filter & sort state
-  const [filterGroup, setFilterGroup] = useState('')
+  const [filterGroup, setFilterGroup] = useSavedGroup(courseId!)
   const [filterGroupAnchor, setFilterGroupAnchor] = useState<Element | null>(null)
   const [showSubCount, setShowSubCount] = useState(false)
   // sortKey: 'name' | 'completion' | courseExerciseId
