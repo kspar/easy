@@ -15,18 +15,18 @@ import {
 } from '../../api/exercises.ts'
 import type { ExerciseDetails } from '../../api/types.ts'
 
-export interface SubmitTabHandle {
+export interface SolutionEditorHandle {
   setSolution: (solution: string) => void
 }
 
-export default forwardRef<SubmitTabHandle, {
+export default forwardRef<SolutionEditorHandle, {
   courseId: string
   courseExerciseId: string
   exercise: ExerciseDetails
   initialSolution?: string
   onSubmitted?: () => void
   onAutogradeStart?: () => void
-}>(function SubmitTab({
+}>(function SolutionEditor({
   courseId,
   courseExerciseId,
   exercise,

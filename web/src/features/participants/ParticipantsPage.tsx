@@ -73,7 +73,7 @@ import {
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import DataTable from '../../components/DataTable.tsx'
-import AddParticipantsDialog from './AddStudentsDialog.tsx'
+import AddParticipantsDialog from './AddParticipantsDialog.tsx'
 import CreateGroupDialog from './CreateGroupDialog.tsx'
 import ConfirmDialog from './ConfirmDialog.tsx'
 import EditInviteDialog from './EditInviteDialog.tsx'

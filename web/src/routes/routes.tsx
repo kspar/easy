@@ -5,7 +5,7 @@ import RequireAuth from './RequireAuth.tsx'
 import NotFoundPage from '../features/NotFoundPage.tsx'
 import CoursesPage from '../features/courses/CoursesPage.tsx'
 import CourseExercisesPage from '../features/course-exercises/CourseExercisesPage.tsx'
-import ExerciseSummaryPage from '../features/course-exercise/ExerciseSummaryPage.tsx'
+import CourseExercisePage from '../features/course-exercise/CourseExercisePage.tsx'
 import ParticipantsPage from '../features/participants/ParticipantsPage.tsx'
 import GradeTablePage from '../features/grade-table/GradeTablePage.tsx'
 import SimilarityPage from '../features/similarity/SimilarityPage.tsx'
@@ -57,7 +57,7 @@ const router = createBrowserRouter([
         path: 'courses/:courseId/exercises/:courseExerciseId',
         element: (
           <RequireAuth>
-            <ExerciseSummaryPage />
+            <CourseExercisePage />
           </RequireAuth>
         ),
       },

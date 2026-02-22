@@ -331,7 +331,7 @@ export function useAwaitAutograde(
       apiFetch(
         `/student/courses/${courseId}/exercises/${courseExerciseId}/submissions/latest/await`,
       ),
-    // No cache invalidation here — the caller (ExerciseSummaryPage) controls
+    // No cache invalidation here — the caller (CourseExercisePage) controls
     // when submissions + exercises queries update to coordinate with the
     // autograde reveal animation.
   })

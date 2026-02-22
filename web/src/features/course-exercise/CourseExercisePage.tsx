@@ -46,7 +46,7 @@ import type {
   SubmissionResp,
 } from '../../api/types.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
-import SubmitTab, { type SubmitTabHandle } from './SubmitTab.tsx'
+import SolutionEditor, { type SolutionEditorHandle } from './SolutionEditor.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
 import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
@@ -326,7 +326,7 @@ function SplitPane({
   )
 }
 
-export default function ExerciseSummaryPage() {
+export default function CourseExercisePage() {
   const { activeRole } = useAuth()
 
   if (activeRole === 'student') {
@@ -352,7 +352,7 @@ function StudentExerciseView() {
 
   const { data: submissions } = useSubmissions(courseId!, courseExerciseId!)
 
-  const submitTabRef = useRef<SubmitTabHandle>(null)
+  const editorRef = useRef<SolutionEditorHandle>(null)
   const queryClient = useQueryClient()
 
   // --- Autograde animation state machine ---
@@ -367,7 +367,7 @@ function StudentExerciseView() {
   //
   // GradeBanner freeze mechanism:
   //   GradeBanner and AutoTestResults both read from the same submissions query.
-  //   When autograde completes, SubmitTab refetches submissions (so AutoTestResults
+  //   When autograde completes, SolutionEditor refetches submissions (so AutoTestResults
   //   can render the results during the typewriter). But GradeBanner must NOT see
   //   the new grade yet. We solve this with a snapshot:
   //
@@ -451,8 +451,8 @@ function StudentExerciseView() {
         threshold={exercise.threshold}
       />
 
-      <SubmitTab
-        ref={submitTabRef}
+      <SolutionEditor
+        ref={editorRef}
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
         exercise={exercise}
@@ -490,7 +490,7 @@ function StudentExerciseView() {
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
         solutionFileName={exercise.solution_file_name}
-        onRestore={(solution) => submitTabRef.current?.setSolution(solution)}
+        onRestore={(solution) => editorRef.current?.setSolution(solution)}
       />
     </>
   )
