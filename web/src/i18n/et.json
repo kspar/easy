@@ -170,7 +170,15 @@
     "uploadErrorTooLarge": "Valitud fail on liiga suur",
     "uploadErrorNotText": "Valitud fail pole tekstifail",
     "exception": "Erind",
-    "actualOutput": "Väljund"
+    "actualOutput": "Väljund",
+    "autogradeCompiling": "Valmistan keskkonda ette...",
+    "autogradeTesting": "Käivitan automaatteste...",
+    "autogradeAnalyzing": "Analüüsin tulemusi...",
+    "autogradeDone": "Valmis!",
+    "autogradeRunTest": "Käivitan testi nr {{nr}}...",
+    "autogradePhaseCompile": "Ettevalmistus",
+    "autogradePhaseTest": "Testid",
+    "autogradePhaseAnalyze": "Analüüs"
   },
   "library": {
     "title": "Ülesandekogu",

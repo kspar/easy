@@ -29,6 +29,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth/AuthContext.tsx'
 import {
   useExerciseDetails,
@@ -42,6 +43,7 @@ import type {
   ExceptionGroup,
   StudentParticipant,
   GroupResp,
+  SubmissionResp,
 } from '../../api/types.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import SubmitTab, { type SubmitTabHandle } from './SubmitTab.tsx'
@@ -51,18 +53,16 @@ import PreviousSubmissions from './PreviousSubmissions.tsx'
 import RobotPlaceholder from '../../components/RobotPlaceholder.tsx'
 import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
 import { RobotIcon } from '../../components/icons.tsx'
+import AutogradeAnimation from './AutogradeAnimation.tsx'
 
 function GradeBanner({
-  courseId,
-  courseExerciseId,
+  submissions,
   threshold,
 }: {
-  courseId: string
-  courseExerciseId: string
+  submissions: SubmissionResp[] | undefined
   threshold: number
 }) {
   const { t } = useTranslation()
-  const { data: submissions } = useSubmissions(courseId, courseExerciseId)
 
   if (!submissions || submissions.length === 0) return null
 
@@ -353,6 +353,74 @@ function StudentExerciseView() {
   const { data: submissions } = useSubmissions(courseId!, courseExerciseId!)
 
   const submitTabRef = useRef<SubmitTabHandle>(null)
+  const queryClient = useQueryClient()
+
+  // --- Autograde animation state machine ---
+  //
+  // State: idle → grading → completed → revealing → idle
+  //
+  // The autograde animation plays a multi-phase visual (compile/test/analyze),
+  // then a checkmark, then typewriter-reveals each test result one by one.
+  // During this whole sequence, the GradeBanner and sidebar exercise status must
+  // NOT update prematurely — they should reflect the pre-autograde state until
+  // the reveal animation finishes, then update as the final step.
+  //
+  // GradeBanner freeze mechanism:
+  //   GradeBanner and AutoTestResults both read from the same submissions query.
+  //   When autograde completes, SubmitTab refetches submissions (so AutoTestResults
+  //   can render the results during the typewriter). But GradeBanner must NOT see
+  //   the new grade yet. We solve this with a snapshot:
+  //
+  //   - During 'grading': frozenSubmissionsRef tracks live data (so the banner
+  //     updates naturally after the post-submit refetch, e.g. showing "Not graded"
+  //     for the new submission).
+  //   - When autograde completes ('completed'): we freeze the snapshot. From this
+  //     point, GradeBanner reads stale data while AutoTestResults reads live data.
+  //   - When typewriter finishes ('idle'): we unfreeze and GradeBanner sees the
+  //     new grade.
+  //
+  // Sidebar freeze:
+  //   The exercises list query invalidation was removed from useAwaitAutograde.
+  //   It's only refetched in handleStaggerDone after the typewriter finishes.
+
+  const [autogradeStatus, setAutogradeStatus] = useState<'idle' | 'grading' | 'completed' | 'revealing'>('idle')
+  const frozenSubmissionsRef = useRef(submissions)
+  const freezeRef = useRef(false)
+
+  // While grading (before autograde result arrives), keep the snapshot in sync
+  // with live data so the banner reflects the post-submit state naturally.
+  if (autogradeStatus === 'grading' && !freezeRef.current) {
+    frozenSubmissionsRef.current = submissions
+  }
+
+  const handleAutogradeStart = useCallback(() => {
+    freezeRef.current = false
+    setAutogradeStatus('grading')
+  }, [])
+
+  const handleSubmitted = useCallback(() => {
+    if (autogradeStatus === 'grading') {
+      // Freeze now — the next submissions refetch will contain the autograde
+      // result, which GradeBanner must not show until the typewriter finishes.
+      frozenSubmissionsRef.current = submissions
+      freezeRef.current = true
+      setAutogradeStatus('completed')
+    }
+  }, [autogradeStatus, submissions])
+
+  const handleRevealReady = useCallback(() => {
+    setAutogradeStatus('revealing')
+  }, [])
+
+  const handleStaggerDone = useCallback(() => {
+    queryClient.refetchQueries({
+      queryKey: ['student', 'courses', courseId, 'exercises'],
+    })
+    setTimeout(() => {
+      freezeRef.current = false
+      setAutogradeStatus('idle')
+    }, 600)
+  }, [queryClient, courseId])
 
   usePageTitle(exercise?.effective_title)
 
@@ -379,8 +447,7 @@ function StudentExerciseView() {
   const rightPane = (
     <>
       <GradeBanner
-        courseId={courseId!}
-        courseExerciseId={courseExerciseId!}
+        submissions={autogradeStatus === 'idle' ? submissions : frozenSubmissionsRef.current}
         threshold={exercise.threshold}
       />
 
@@ -390,13 +457,26 @@ function StudentExerciseView() {
         courseExerciseId={courseExerciseId!}
         exercise={exercise}
         initialSolution={latestSubmission?.solution}
+        onSubmitted={handleSubmitted}
+        onAutogradeStart={handleAutogradeStart}
       />
 
-      {latestSubmission?.auto_assessment && (
+      {(autogradeStatus === 'grading' || autogradeStatus === 'completed') && (
+        <Box sx={{ my: 2 }}>
+          <AutogradeAnimation
+            status={autogradeStatus}
+            onRevealReady={handleRevealReady}
+          />
+        </Box>
+      )}
+
+      {latestSubmission?.auto_assessment && autogradeStatus !== 'grading' && autogradeStatus !== 'completed' && (
         <>
           <Divider sx={{ my: 3 }} />
           <AutoTestResults
             autoAssessment={latestSubmission.auto_assessment}
+            staggerReveal={autogradeStatus === 'revealing'}
+            onStaggerDone={handleStaggerDone}
           />
         </>
       )}

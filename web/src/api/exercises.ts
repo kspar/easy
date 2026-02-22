@@ -326,27 +326,14 @@ export function useAwaitAutograde(
   courseId: string,
   courseExerciseId: string,
 ) {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () =>
       apiFetch(
         `/student/courses/${courseId}/exercises/${courseExerciseId}/submissions/latest/await`,
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [
-          'student',
-          'courses',
-          courseId,
-          'exercises',
-          courseExerciseId,
-          'submissions',
-        ],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['student', 'courses', courseId, 'exercises'],
-      })
-    },
+    // No cache invalidation here — the caller (ExerciseSummaryPage) controls
+    // when submissions + exercises queries update to coordinate with the
+    // autograde reveal animation.
   })
 }
 

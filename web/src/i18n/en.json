@@ -170,7 +170,15 @@
     "uploadErrorTooLarge": "The chosen file is too large",
     "uploadErrorNotText": "The chosen file is not a text file",
     "exception": "Exception",
-    "actualOutput": "Output"
+    "actualOutput": "Output",
+    "autogradeCompiling": "Preparing the environment...",
+    "autogradeTesting": "Running automated tests...",
+    "autogradeAnalyzing": "Analyzing results...",
+    "autogradeDone": "Done!",
+    "autogradeRunTest": "Running test {{nr}}...",
+    "autogradePhaseCompile": "Prepare",
+    "autogradePhaseTest": "Test",
+    "autogradePhaseAnalyze": "Analyze"
   },
   "library": {
     "title": "Exercise library",

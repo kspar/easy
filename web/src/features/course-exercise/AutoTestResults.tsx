@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -86,10 +86,81 @@ const monoSx = {
   overflow: 'auto',
 }
 
+// --- Typewriter reveal ---
+
+const CHAR_SPEED = 25   // ms per character
+const STATUS_PAUSE = 300 // ms after title typed before status icon
+const NEXT_TEST_PAUSE = 350 // ms after status before next test starts
+const HEADER_DELAY = 100
+
+interface TypewriterState {
+  headerVisible: boolean
+  revealedCount: number  // tests fully done (title + status)
+  typingIndex: number    // currently typing this test (-1 = none)
+  typedChars: number
+  statusShown: boolean   // status icon visible for typingIndex
+}
+
+function useTypewriterReveal(tests: OkV3Test[], active: boolean): TypewriterState {
+  const [state, setState] = useState<TypewriterState>(() =>
+    active
+      ? { headerVisible: false, revealedCount: 0, typingIndex: -1, typedChars: 0, statusShown: false }
+      : { headerVisible: true, revealedCount: tests.length, typingIndex: -1, typedChars: 0, statusShown: false },
+  )
+  const testsRef = useRef(tests)
+  testsRef.current = tests
+
+  useEffect(() => {
+    if (!active) {
+      setState({ headerVisible: true, revealedCount: testsRef.current.length, typingIndex: -1, typedChars: 0, statusShown: false })
+      return
+    }
+
+    setState({ headerVisible: false, revealedCount: 0, typingIndex: -1, typedChars: 0, statusShown: false })
+    const timers: ReturnType<typeof setTimeout>[] = []
+    const schedule = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)) }
+
+    let t = HEADER_DELAY
+    schedule(t, () => setState(s => ({ ...s, headerVisible: true })))
+    t += 400
+
+    for (let i = 0; i < testsRef.current.length; i++) {
+      const title = testsRef.current[i].title
+
+      // Start typing this test
+      schedule(t, () => setState(s => ({ ...s, typingIndex: i, typedChars: 0, statusShown: false })))
+
+      // Type each char
+      for (let c = 1; c <= title.length; c++) {
+        t += CHAR_SPEED
+        const chars = c
+        schedule(t, () => setState(s => ({ ...s, typedChars: chars })))
+      }
+
+      // Reveal status icon
+      t += STATUS_PAUSE
+      schedule(t, () => setState(s => ({ ...s, statusShown: true })))
+
+      // Finish this test
+      t += NEXT_TEST_PAUSE
+      const done = i + 1
+      schedule(t, () => setState(s => ({ ...s, revealedCount: done, typingIndex: -1 })))
+    }
+
+    return () => timers.forEach(clearTimeout)
+  }, [active])
+
+  return state
+}
+
 export default function AutoTestResults({
   autoAssessment,
+  staggerReveal = false,
+  onStaggerDone,
 }: {
   autoAssessment: AutomaticAssessmentResp
+  staggerReveal?: boolean
+  onStaggerDone?: () => void
 }) {
   const { t } = useTranslation()
 
@@ -98,71 +169,149 @@ export default function AutoTestResults({
     [autoAssessment.feedback],
   )
 
+  const tests = v3?.tests ?? []
+  const tw = useTypewriterReveal(tests, staggerReveal)
+
   const firstFailIndex = useMemo(
     () => v3?.tests.findIndex(t => t.status === 'FAIL') ?? -1,
     [v3],
   )
 
   const [expanded, setExpanded] = useState<number | false>(() =>
-    firstFailIndex >= 0 ? firstFailIndex : false,
+    staggerReveal ? false : (firstFailIndex >= 0 ? firstFailIndex : false),
   )
 
+  // Auto-expand first fail after all tests have been revealed
+  const autoExpandedRef = useRef(false)
   useEffect(() => {
-    setExpanded(firstFailIndex >= 0 ? firstFailIndex : false)
-  }, [firstFailIndex])
+    if (!staggerReveal) {
+      setExpanded(firstFailIndex >= 0 ? firstFailIndex : false)
+      return
+    }
+    if (firstFailIndex >= 0 && tw.revealedCount >= tests.length && !autoExpandedRef.current) {
+      autoExpandedRef.current = true
+      const timer = setTimeout(() => setExpanded(firstFailIndex), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [firstFailIndex, staggerReveal, tw.revealedCount, tests.length])
+
+  // Notify parent when typewriter is fully done
+  const staggerDoneCalledRef = useRef(false)
+  const onStaggerDoneRef = useRef(onStaggerDone)
+  onStaggerDoneRef.current = onStaggerDone
+  useEffect(() => {
+    if (staggerReveal && tw.headerVisible && tw.revealedCount >= tests.length && !staggerDoneCalledRef.current) {
+      staggerDoneCalledRef.current = true
+      onStaggerDoneRef.current?.()
+    }
+  }, [staggerReveal, tw.headerVisible, tw.revealedCount, tests.length])
+
+  // Per-test reveal helpers
+  const isVisible = (i: number) => !staggerReveal || i < tw.revealedCount || i === tw.typingIndex
+  const isInteractive = (i: number) => !staggerReveal || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
+  const statusVisible = (i: number) => !staggerReveal || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
+  const isStatusPopping = (i: number) => staggerReveal && i === tw.typingIndex && tw.statusShown
+  const displayTitle = (i: number, full: string) => {
+    if (!staggerReveal || i < tw.revealedCount) return full
+    if (i === tw.typingIndex) return full.slice(0, tw.typedChars)
+    return ''
+  }
+
+  const headerSx = staggerReveal ? {
+    opacity: tw.headerVisible ? 1 : 0,
+    transform: tw.headerVisible ? 'translateY(0)' : 'translateY(10px)',
+    transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
+  } : {}
+
+  const allRevealed = !staggerReveal || tw.revealedCount >= tests.length
+  const gradeSx = staggerReveal ? {
+    opacity: allRevealed ? 1 : 0,
+    transform: allRevealed ? 'translateY(0)' : 'translateY(8px)',
+    transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
+  } : {}
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        {t('submission.autoTests')}
-      </Typography>
-
-      <Typography variant="body2" sx={{ mb: 2 }}>
-        {t('submission.autoGrade')}: <strong>{autoAssessment.grade} / 100</strong>
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 1, ...headerSx }}>
+        <Typography variant="h6">
+          {t('submission.autoTests')}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', ...gradeSx }}>
+          {autoAssessment.grade} / 100
+        </Typography>
+      </Box>
 
       {v3 ? (
         <>
           {v3.pre_evaluate_error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2, ...headerSx }}>
               <Box component="pre" sx={{ m: 0, fontFamily: 'monospace', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
                 {v3.pre_evaluate_error}
               </Box>
             </Alert>
           )}
 
-          {v3.tests.map((test, i) => (
-            <Accordion
-              key={i}
-              disableGutters
-              variant="outlined"
-              expanded={expanded === i}
-              onChange={(_, isExpanded) => setExpanded(isExpanded ? i : false)}
-              sx={{ '&:before': { display: 'none' } }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreOutlined />}
-                sx={{
-                  transition: 'background-color 0.15s',
-                  '&:hover': { bgcolor: 'action.hover' },
-                  '&.Mui-expanded': { bgcolor: 'action.hover' },
+          {v3.tests.map((test, i) => {
+            if (!isVisible(i)) return null
+            const interactive = isInteractive(i)
+
+            return (
+              <Accordion
+                key={i}
+                disableGutters
+                variant="outlined"
+                expanded={expanded === i}
+                onChange={(_, isExpanded) => {
+                  if (interactive) setExpanded(isExpanded ? i : false)
                 }}
+                sx={{ '&:before': { display: 'none' } }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <StatusIcon status={test.status} />
-                  <Typography variant="body2" fontWeight={expanded === i ? 600 : undefined}>{test.title}</Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails>
-                <TestDetails test={test} t={t} />
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                <AccordionSummary
+                  expandIcon={interactive ? <ExpandMoreOutlined /> : <Box sx={{ width: 24, height: 24 }} />}
+                  sx={{
+                    transition: 'background-color 0.15s',
+                    '&:hover': { bgcolor: interactive ? 'action.hover' : 'transparent' },
+                    '&.Mui-expanded': { bgcolor: 'action.hover' },
+                    ...(!interactive && { cursor: 'default', '& .MuiAccordionSummary-content': { cursor: 'default' } }),
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {statusVisible(i) ? (
+                      <Box sx={{
+                        display: 'flex',
+                        ...(isStatusPopping(i) && { animation: 'atrStatusPop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }),
+                      }}>
+                        <StatusIcon status={test.status} />
+                      </Box>
+                    ) : (
+                      <Box sx={{ width: 20, height: 20 }} />
+                    )}
+                    <Typography variant="body2" fontWeight={expanded === i ? 600 : undefined}>
+                      {displayTitle(i, test.title)}
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <TestDetails test={test} t={t} />
+                </AccordionDetails>
+              </Accordion>
+            )
+          })}
+
+          {staggerReveal && (
+            <style>{`
+              @keyframes atrStatusPop {
+                from { transform: scale(0); opacity: 0; }
+                50% { transform: scale(1.2); opacity: 1; }
+                to { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+          )}
         </>
       ) : autoAssessment.feedback ? (
         <Paper
           variant="outlined"
-          sx={{ ...monoSx, maxHeight: 'none' }}
+          sx={{ ...monoSx, maxHeight: 'none', ...headerSx }}
         >
           {autoAssessment.feedback}
         </Paper>

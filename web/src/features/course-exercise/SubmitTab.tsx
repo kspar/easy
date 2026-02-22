@@ -25,12 +25,14 @@ export default forwardRef<SubmitTabHandle, {
   exercise: ExerciseDetails
   initialSolution?: string
   onSubmitted?: () => void
+  onAutogradeStart?: () => void
 }>(function SubmitTab({
   courseId,
   courseExerciseId,
   exercise,
   initialSolution,
   onSubmitted,
+  onAutogradeStart,
 }, ref) {
   const { t } = useTranslation()
   const theme = useTheme()
@@ -164,21 +166,25 @@ export default forwardRef<SubmitTabHandle, {
         setSnackMsg(t('submission.submitSuccess'))
         refetchAfterSubmit()
         if (exercise.grader_type === 'AUTO') {
+          onAutogradeStart?.()
           awaitAutograde.mutate()
         } else {
           onSubmitted?.()
         }
       },
     })
-  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, refetchAfterSubmit])
+  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit])
 
-  // Switch to submissions tab after autograde completes
+  // When autograde completes: refetch submissions (for results data) but NOT the
+  // exercises list — the parent delays that until the reveal animation finishes.
   useEffect(() => {
     if (awaitAutograde.isSuccess) {
-      refetchAfterSubmit()
+      queryClient.refetchQueries({
+        queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'submissions'],
+      })
       onSubmitted?.()
     }
-  }, [awaitAutograde.isSuccess, onSubmitted, refetchAfterSubmit])
+  }, [awaitAutograde.isSuccess, onSubmitted, queryClient, courseId, courseExerciseId])
 
   return (
     <Box>
