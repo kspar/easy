@@ -75,7 +75,7 @@ export default forwardRef<SubmitTabHandle, {
       }
 
       const state = EditorState.create({
-        doc: prevDoc ?? initialSolution ?? '',
+        doc: prevDoc || initialSolution || '',
         extensions,
       })
 
@@ -91,7 +91,7 @@ export default forwardRef<SubmitTabHandle, {
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name])
+  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name, initialSolution])
 
   useImperativeHandle(ref, () => ({
     setSolution: (solution: string) => {
