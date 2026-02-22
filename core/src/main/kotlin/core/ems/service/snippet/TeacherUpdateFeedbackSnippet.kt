@@ -3,7 +3,7 @@ package core.ems.service.snippet
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.FeedbackSnippet
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import mu.KotlinLogging
@@ -21,10 +21,10 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherUpdateFeedbackSnippetController(val adocService: AdocService) {
+class TeacherUpdateFeedbackSnippetController(val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("snippet_adoc", required = false) @field:Size(max = 300000) val snippetAdoc: String?)
+    data class Req(@JsonProperty("snippet_md", required = false) @field:Size(max = 300000) val snippetMd: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/snippets/{snippetId}")
@@ -38,12 +38,12 @@ class TeacherUpdateFeedbackSnippetController(val adocService: AdocService) {
 
     private fun updateOrDeleteSnippet(dto: Req?, snippetId: Long, teacherId: String) = transaction {
 
-        val count = when (dto?.snippetAdoc) {
+        val count = when (dto?.snippetMd) {
             null -> FeedbackSnippet.deleteWhere { FeedbackSnippet.id eq snippetId and (teacher eq teacherId) }
             else -> {
                 FeedbackSnippet.update({ FeedbackSnippet.id eq snippetId and (FeedbackSnippet.teacher eq teacherId) }) {
-                    it[snippetAdoc] = dto.snippetAdoc
-                    it[snippetHtml] = adocService.adocToHtml(dto.snippetAdoc)
+                    it[snippetMd] = dto.snippetMd
+                    it[snippetHtml] = markdownService.mdToHtml(dto.snippetMd)
                     it[createdAt] = DateTime.now()
                 }
             }

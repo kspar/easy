@@ -29,7 +29,7 @@ class TeacherReadFeedbackSnippetsController {
 
     data class SnippetResp(
         @JsonProperty("id") val id: String,
-        @JsonProperty("snippet_adoc") val snippetAdoc: String,
+        @JsonProperty("snippet_md") val snippetMd: String,
         @JsonProperty("snippet_html") val snippetHtml: String,
         @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime
     )
@@ -51,7 +51,7 @@ class TeacherReadFeedbackSnippetsController {
             .map {
                 SnippetResp(
                     it[FeedbackSnippet.id].value.toString(),
-                    it[FeedbackSnippet.snippetAdoc],
+                    it[FeedbackSnippet.snippetMd],
                     it[FeedbackSnippet.snippetHtml],
                     it[FeedbackSnippet.createdAt],
                 )

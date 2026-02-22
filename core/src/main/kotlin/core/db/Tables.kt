@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.jodatime.datetime
+import org.jetbrains.exposed.sql.json.jsonb
 import org.joda.time.DateTime
 
 
@@ -198,8 +199,7 @@ object TeacherActivity : LongIdTable("teacher_activity") {
     val mergeWindowStart = datetime("merge_window_start")
     val editedAt = datetime("edited_at").nullable()
     val grade = integer("grade").nullable()
-    val feedbackHtml = text("feedback_html").nullable()
-    val feedbackAdoc = text("feedback_adoc").nullable()
+    val feedback = jsonb<String>("feedback", { it }, { it }).nullable()
 }
 
 object AutogradeActivity : LongIdTable("autograde_activity") {
@@ -279,7 +279,7 @@ object FeedbackSnippet : LongIdTable("feedback_snippet") {
     val teacher = reference("teacher_id", Account)
     val createdAt = datetime("created_at")
     val snippetHtml = text("snippet_html")
-    val snippetAdoc = text("snippet_adoc")
+    val snippetMd = text("snippet_md")
 }
 
 object SystemConfiguration : IdTable<String>("system_configuration") {

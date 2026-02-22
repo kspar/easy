@@ -24,17 +24,28 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherPostFeedbackController(val adocService: AdocService, val mailService: SendMailService) {
+class TeacherPostFeedbackController(val markdownService: MarkdownService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
     private lateinit var mergeWindowInSeconds: String
 
+    data class InlineCommentReq(
+        @JsonProperty("line_start", required = true) val lineStart: Int,
+        @JsonProperty("line_end", required = true) val lineEnd: Int,
+        @JsonProperty("code", required = true) val code: String,
+        @JsonProperty("text_md", required = true) @field:NotBlank val textMd: String,
+        @JsonProperty("type", required = true) val type: String,
+        @JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
+    )
+
     data class Req(
-        @JsonProperty("feedback_adoc", required = true)
+        @JsonProperty("feedback_md", required = true)
         @field:Size(max = 300000)
         @field:NotBlank
-        val feedbackAdoc: String,
+        val feedbackMd: String,
+        @JsonProperty("inline_comments", required = false)
+        val inlineComments: List<InlineCommentReq>? = null,
         @JsonProperty("notify_student", required = true)
         @field:NotNull
         val notifyStudent: Boolean
@@ -80,11 +91,18 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
             val time = DateTime.now()
 
+            val feedbackJson = buildFeedbackJson(
+                assessment.feedbackMd,
+                assessment.inlineComments?.map {
+                    InlineComment(it.lineStart, it.lineEnd, it.code, it.textMd, "", it.type, it.suggestedCode)
+                },
+                markdownService,
+            )
+
             if (previousId != null) {
                 TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[mergeWindowStart] = time
-                    it[feedbackAdoc] = assessment.feedbackAdoc
-                    it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
+                    it[feedback] = feedbackJson
                 }
             } else {
                 TeacherActivity.insert {
@@ -93,8 +111,7 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
                     it[submission] = submissionId
                     it[teacher] = teacherId
                     it[mergeWindowStart] = time
-                    it[feedbackAdoc] = assessment.feedbackAdoc
-                    it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
+                    it[feedback] = feedbackJson
                 }
             }
 
@@ -111,13 +128,13 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
                 .select(
                     TeacherActivity.id,
                     TeacherActivity.mergeWindowStart,
-                    TeacherActivity.feedbackAdoc,
+                    TeacherActivity.feedback,
                 )
                 .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
                 .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
                     val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
-                    val noFeedback = it[TeacherActivity.feedbackAdoc] == null
+                    val noFeedback = it[TeacherActivity.feedback] == null
                     if (timeIsInWindow && noFeedback) it[TeacherActivity.id].value else null
                 }
         }

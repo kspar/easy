@@ -1,7 +1,9 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonRawValue
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
@@ -13,10 +15,36 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 
-data class FeedbackResp(
-    @JsonProperty("feedback_html") val feedbackHtml: String,
-    @JsonProperty("feedback_adoc") val feedbackAdoc: String
+data class InlineComment(
+    val line_start: Int,
+    val line_end: Int,
+    val code: String,
+    val text_md: String,
+    val text_html: String,
+    val type: String,
+    val suggested_code: String? = null,
 )
+
+data class FeedbackData(
+    val general_md: String?,
+    val general_html: String?,
+    val inline: List<InlineComment>,
+)
+
+private val objectMapper = jacksonObjectMapper()
+
+fun buildFeedbackJson(
+    generalMd: String?,
+    inlineComments: List<InlineComment>?,
+    markdownService: MarkdownService,
+): String {
+    val generalHtml = generalMd?.let { markdownService.mdToHtml(it) }
+    val renderedInline = inlineComments?.map {
+        it.copy(text_html = markdownService.mdToHtml(it.text_md))
+    } ?: emptyList()
+    val data = FeedbackData(generalMd, generalHtml, renderedInline)
+    return objectMapper.writeValueAsString(data)
+}
 
 data class TeacherActivityResp(
     @JsonProperty("id") val id: String,
@@ -25,7 +53,7 @@ data class TeacherActivityResp(
     @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
     @JsonProperty("grade") val grade: Int?,
     @JsonProperty("edited_at") @JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
-    @JsonProperty("feedback") val feedback: FeedbackResp?,
+    @JsonProperty("feedback") @JsonRawValue val feedback: String?,
     @JsonProperty("teacher") val teacher: TeacherResp
 )
 
@@ -39,8 +67,7 @@ fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Act
         .select(
             TeacherActivity.id,
             TeacherActivity.submission,
-            TeacherActivity.feedbackHtml,
-            TeacherActivity.feedbackAdoc,
+            TeacherActivity.feedback,
             TeacherActivity.mergeWindowStart,
             TeacherActivity.grade,
             TeacherActivity.editedAt,
@@ -51,9 +78,6 @@ fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Act
         }
         .orderBy(TeacherActivity.mergeWindowStart, SortOrder.ASC)
         .map {
-            val html = it[TeacherActivity.feedbackHtml]
-            val adoc = it[TeacherActivity.feedbackAdoc]
-
             TeacherActivityResp(
                 it[TeacherActivity.id].value.toString(),
                 it[TeacherActivity.submission].value.toString(),
@@ -61,7 +85,7 @@ fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Act
                 it[TeacherActivity.mergeWindowStart],
                 it[TeacherActivity.grade],
                 it[TeacherActivity.editedAt],
-                if (html != null && adoc != null) FeedbackResp(html, adoc) else null,
+                it[TeacherActivity.feedback],
                 selectTeacher(it[TeacherActivity.teacher].value)
             )
         }

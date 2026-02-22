@@ -177,7 +177,7 @@ class ExportPersonalData {
     private fun lastTeacherActivity(submissionId: Long): Pair<Int?, String?>? =
         TeacherActivity.selectAll().where { TeacherActivity.submission eq submissionId }
             .orderBy(TeacherActivity.mergeWindowStart to SortOrder.DESC).limit(1)
-            .map { it[TeacherActivity.grade] to it[TeacherActivity.feedbackHtml] }.firstOrNull()
+            .map { it[TeacherActivity.grade] to it[TeacherActivity.feedback] }.firstOrNull()
 
     private data class JsonFile(val filename: String, val content: String)
 

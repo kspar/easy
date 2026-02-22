@@ -24,12 +24,22 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherEditFeedbackController(val adocService: AdocService, val mailService: SendMailService) {
+class TeacherEditFeedbackController(val markdownService: MarkdownService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
+
+    data class InlineCommentReq(
+        @JsonProperty("line_start", required = true) val lineStart: Int,
+        @JsonProperty("line_end", required = true) val lineEnd: Int,
+        @JsonProperty("code", required = true) val code: String,
+        @JsonProperty("text_md", required = true) val textMd: String,
+        @JsonProperty("type", required = true) val type: String,
+        @JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
+    )
 
     data class Req(
         @JsonProperty("teacher_activity_id", required = true) @field:Size(max = 100) val teacherActivityId: String,
-        @JsonProperty("feedback_adoc", required = false) @field:Size(max = 300000) val feedbackAdoc: String?,
+        @JsonProperty("feedback_md", required = false) @field:Size(max = 300000) val feedbackMd: String?,
+        @JsonProperty("inline_comments", required = false) val inlineComments: List<InlineCommentReq>? = null,
         @JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
     )
 
@@ -71,11 +81,20 @@ class TeacherEditFeedbackController(val adocService: AdocService, val mailServic
     private fun updateTeacherActivity(teacherId: String, submissionId: Long, req: Req) = transaction {
         val activityId = req.teacherActivityId.idToLongOrInvalidReq()
 
+        val feedbackJson = req.feedbackMd?.let { md ->
+            buildFeedbackJson(
+                md,
+                req.inlineComments?.map {
+                    InlineComment(it.lineStart, it.lineEnd, it.code, it.textMd, "", it.type, it.suggestedCode)
+                },
+                markdownService,
+            )
+        }
+
         val updated =
             TeacherActivity.update({ (TeacherActivity.id eq activityId) and (TeacherActivity.teacher eq teacherId) }) {
                 it[editedAt] = DateTime.now()
-                it[feedbackAdoc] = req.feedbackAdoc
-                it[feedbackHtml] = req.feedbackAdoc?.let { adoc -> adocService.adocToHtml(adoc) }
+                it[feedback] = feedbackJson
             }
 
         if (updated == 0) {
@@ -84,7 +103,7 @@ class TeacherEditFeedbackController(val adocService: AdocService, val mailServic
 
         // Do not leave empty assessments in the db
         TeacherActivity.deleteWhere {
-            (teacher eq teacherId) and (submission eq submissionId) and grade.isNull() and feedbackAdoc.isNull()
+            (teacher eq teacherId) and (submission eq submissionId) and grade.isNull() and feedback.isNull()
         }
     }
 }

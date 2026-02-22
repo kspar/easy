@@ -3,7 +3,7 @@ package core.ems.service.snippet
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.FeedbackSnippet
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -24,14 +24,14 @@ import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
-class TeacherCreateFeedbackSnippetController(val adocService: AdocService) {
+class TeacherCreateFeedbackSnippetController(val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("snippet_adoc", required = true)
+        @JsonProperty("snippet_md", required = true)
         @field:Size(max = 300000)
         @field:NotBlank
-        val snippetAdoc: String
+        val snippetMd: String
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -46,8 +46,8 @@ class TeacherCreateFeedbackSnippetController(val adocService: AdocService) {
     private fun insertSnippet(dto: Req, teacherId: String) = transaction {
         FeedbackSnippet.insert {
             it[teacher] = teacherId
-            it[snippetAdoc] = dto.snippetAdoc
-            it[snippetHtml] = adocService.adocToHtml(dto.snippetAdoc)
+            it[snippetMd] = dto.snippetMd
+            it[snippetHtml] = markdownService.mdToHtml(dto.snippetMd)
             it[createdAt] = DateTime.now()
         }
         // Get the count of snippets for the given teacher

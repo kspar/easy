@@ -88,9 +88,20 @@ export interface TeacherResp {
   family_name: string
 }
 
+export interface InlineComment {
+  line_start: number
+  line_end: number
+  code: string
+  text_md: string
+  text_html: string
+  type: 'comment' | 'suggestion'
+  suggested_code?: string
+}
+
 export interface FeedbackResp {
-  feedback_html: string
-  feedback_adoc: string
+  general_md: string | null
+  general_html: string | null
+  inline: InlineComment[]
 }
 
 export interface TeacherActivityResp {

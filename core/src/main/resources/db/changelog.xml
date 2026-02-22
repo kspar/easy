@@ -9,6 +9,7 @@
     <include file="changesets/initial.xml" relativeToChangelogFile="true"/>
     <include file="changesets/v2.xml" relativeToChangelogFile="true"/>
     <include file="changesets/v3.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/v4.xml" relativeToChangelogFile="true"/>
     <include file="changesets/testdata.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
