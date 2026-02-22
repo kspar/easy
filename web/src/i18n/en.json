@@ -155,6 +155,7 @@
     "noSubmissions": "No submissions yet",
     "previousSubmissions": "Previous submissions",
     "restore": "Copy to editor",
+    "showAll": "Show all ({{count}})",
     "teacherFeedback": "Teacher feedback",
     "replyPlaceholder": "Write a reply...",
     "replyComing": "Replies coming soon",

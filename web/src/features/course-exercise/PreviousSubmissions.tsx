@@ -37,6 +37,10 @@ export default function PreviousSubmissions({
 }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
+  const hasOpened = useRef(false)
+  const [showAll, setShowAll] = useState(false)
+
+  if (expanded) hasOpened.current = true
 
   const {
     data: submissions,
@@ -65,14 +69,27 @@ export default function PreviousSubmissions({
           </Typography>
         </AccordionSummary>
         <AccordionDetails sx={{ p: 0 }}>
-          {submissions.map((sub) => (
-            <SubmissionItem
-              key={sub.id}
-              submission={sub}
-              solutionFileName={solutionFileName}
-              onRestore={onRestore}
-            />
-          ))}
+          {hasOpened.current && (
+            <>
+              {(showAll ? submissions : submissions.slice(0, 10)).map((sub) => (
+                <SubmissionItem
+                  key={sub.id}
+                  submission={sub}
+                  solutionFileName={solutionFileName}
+                  onRestore={onRestore}
+                />
+              ))}
+              {!showAll && submissions.length > 10 && (
+                <Button
+                  fullWidth
+                  onClick={() => setShowAll(true)}
+                  sx={{ py: 1 }}
+                >
+                  {t('submission.showAll', { count: submissions.length })}
+                </Button>
+              )}
+            </>
+          )}
         </AccordionDetails>
       </Accordion>
     </Box>

@@ -155,6 +155,7 @@
     "noSubmissions": "Esitusi veel pole",
     "previousSubmissions": "Varasemad esitused",
     "restore": "Kopeeri redaktorisse",
+    "showAll": "Näita kõik ({{count}})",
     "teacherFeedback": "Õpetaja tagasiside",
     "replyPlaceholder": "Kirjuta vastus...",
     "replyComing": "Vastamine tuleb peagi",
