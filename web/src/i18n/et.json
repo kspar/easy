@@ -179,7 +179,11 @@
     "autogradeRunTest": "Käivitan testi nr {{nr}}...",
     "autogradePhaseCompile": "Ettevalmistus",
     "autogradePhaseTest": "Testid",
-    "autogradePhaseAnalyze": "Analüüs"
+    "autogradePhaseAnalyze": "Analüüs",
+    "suggestedChange": "Soovitatud muudatus:",
+    "showAllLines": "Näita kõik read",
+    "collapseLines": "Ahenda read",
+    "showHiddenLines": "Näita {{count}} peidetud rida"
   },
   "library": {
     "title": "Ülesandekogu",

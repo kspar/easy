@@ -385,7 +385,7 @@
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
                                     auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
             VALUES (9006, 9006, 'kspar', now() - interval '10 days',
-                    E'for i in range(1, 101):\n    print(i)',
+                    E'import sys\n\n\ndef fizzbuzz(n):\n    """Print FizzBuzz for numbers 1 to n."""\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            output = "FizzBuzz"\n        elif i % 3 == 0:\n            output = "Fizz"\n        elif i % 5 == 0:\n            output = "Buzz"\n        else:\n            output = str(i)\n        print(output)\n\n\ndef main():\n    n = 100\n    fizzbuzz(n)\n\n\nif __name__ == "__main__":\n    main()',
                     'COMPLETED', 33, true, true, true, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
@@ -448,31 +448,49 @@
 
             <!-- Exercise 9002: 3 teacher comments (grade-only, feedback-only, grade+feedback) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback_adoc, feedback_html)
+                                          merge_window_start, grade, feedback)
             VALUES (9001, 9002, 9002, 'kspar', 'dev-teacher',
-                    now() - interval '2 days 6 hours', 45, null, null);
+                    now() - interval '2 days 6 hours', 45, null);
 
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback_adoc, feedback_html)
+                                          merge_window_start, grade, feedback)
             VALUES (9002, 9002, 9002, 'kspar', 'dev-teacher',
                     now() - interval '2 days', null,
-                    'Your solution handles basic cases but fails on edge cases with zero and negative numbers. The `+1` in your second submission makes it worse — review how `input()` works and think about what the tests expect.',
-                    '&lt;p&gt;Your solution handles basic cases but fails on edge cases with zero and negative numbers. The &lt;code&gt;+1&lt;/code&gt; in your second submission makes it worse &amp;mdash; review how &lt;code&gt;input()&lt;/code&gt; works and think about what the tests expect.&lt;/p&gt;');
+                    '{"general_md":"Your solution handles basic cases but fails on edge cases with zero and negative numbers. The `+1` in your second submission makes it worse — review how `input()` works and think about what the tests expect.","general_html":"&lt;p&gt;Your solution handles basic cases but fails on edge cases with zero and negative numbers. The &lt;code&gt;+1&lt;/code&gt; in your second submission makes it worse — review how &lt;code&gt;input()&lt;/code&gt; works and think about what the tests expect.&lt;/p&gt;\n","inline":[{"line_start":3,"line_end":3,"code":"print(a + b)","text_md":"This line is correct for the basic case, but think about what happens when `a` and `b` are both 0.","text_html":"&lt;p&gt;This line is correct for the basic case, but think about what happens when &lt;code&gt;a&lt;/code&gt; and &lt;code&gt;b&lt;/code&gt; are both 0.&lt;/p&gt;\n","type":"comment"}]}');
 
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback_adoc, feedback_html)
+                                          merge_window_start, grade, feedback)
             VALUES (9003, 9003, 9002, 'kspar', 'kspar',
                     now() - interval '12 hours', 65,
-                    'Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!',
-                    '&lt;p&gt;Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!&lt;/p&gt;');
+                    '{"general_md":"Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!","general_html":"&lt;p&gt;Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!&lt;/p&gt;\n","inline":[{"line_start":3,"line_end":3,"code":"print(a + b + 1)","text_md":"The `+ 1` here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.","text_html":"&lt;p&gt;The &lt;code&gt;+ 1&lt;/code&gt; here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.&lt;/p&gt;\n","type":"suggestion","suggested_code":"print(a + b)"}]}');
+
+            <!-- Exercise 9006 / FizzBuzz: inline comments far apart to test collapsed gap -->
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback)
+            VALUES (9007, 9006, 9006, 'kspar', 'dev-teacher',
+                    now() - interval '9 days', null,
+                    '{"general_md":null,"general_html":null,"inline":[{"line_start":1,"line_end":1,"code":"import sys","text_md":"You import `sys` but never use it. Remove unused imports.","text_html":"&lt;p&gt;You import &lt;code&gt;sys&lt;/code&gt; but never use it. Remove unused imports.&lt;/p&gt;\n","type":"comment"},{"line_start":18,"line_end":20,"code":"def main():\n    n = 100\n    fizzbuzz(n)","text_md":"The exercise says to read the range from a file, but you''ve hardcoded `n = 100`. Use `open()` to read `limits.txt` instead.","text_html":"&lt;p&gt;The exercise says to read the range from a file, but you''ve hardcoded &lt;code&gt;n = 100&lt;/code&gt;. Use &lt;code&gt;open()&lt;/code&gt; to read &lt;code&gt;limits.txt&lt;/code&gt; instead.&lt;/p&gt;\n","type":"suggestion","suggested_code":"def main():\n    with open(\"limits.txt\") as f:\n        start, end = int(f.readline()), int(f.readline())\n    fizzbuzz_range(start, end)"}]}');
+
+            <!-- Exercise 9005 / Debug Challenge: inline comment praising fix + suggestion for negative inputs -->
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback)
+            VALUES (9005, 9005, 9005, 'kspar', 'dev-teacher',
+                    now() - interval '1 hour', null,
+                    '{"general_md":"Good fix! You correctly identified the bug.","general_html":"&lt;p&gt;Good fix! You correctly identified the bug.&lt;/p&gt;\n","inline":[{"line_start":2,"line_end":4,"code":"    result = 1\n    for i in range(1, n + 1):\n        result *= i","text_md":"Nice catch — changing `result = 0` to `result = 1` was exactly the fix. The multiplication identity is 1, not 0.","text_html":"&lt;p&gt;Nice catch — changing &lt;code&gt;result = 0&lt;/code&gt; to &lt;code&gt;result = 1&lt;/code&gt; was exactly the fix. The multiplication identity is 1, not 0.&lt;/p&gt;\n","type":"comment"},{"line_start":1,"line_end":1,"code":"def factorial(n):","text_md":"Consider adding a guard for negative inputs — currently the function silently returns 1 for `factorial(-3)`.","text_html":"&lt;p&gt;Consider adding a guard for negative inputs — currently the function silently returns 1 for &lt;code&gt;factorial(-3)&lt;/code&gt;.&lt;/p&gt;\n","type":"suggestion","suggested_code":"def factorial(n):\n    if n &lt; 0:\n        raise ValueError(\"n must be non-negative\")"}]}');
+
+            <!-- Exercise 9001 / Hello World: simple inline praise -->
+            INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
+                                          merge_window_start, grade, feedback)
+            VALUES (9006, 9001, 9001, 'kspar', 'dev-teacher',
+                    now() - interval '4 days', null,
+                    '{"general_md":null,"general_html":null,"inline":[{"line_start":1,"line_end":1,"code":"print(\"Hello, World!\")","text_md":"Clean and correct — well done!","text_html":"&lt;p&gt;Clean and correct — well done!&lt;/p&gt;\n","type":"comment"}]}');
 
             <!-- Exercise 9003: 1 teacher comment (grade + detailed feedback with HTML list) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback_adoc, feedback_html)
+                                          merge_window_start, grade, feedback)
             VALUES (9004, 9004, 9003, 'kspar', 'dev-teacher',
                     now() - interval '1 day 8 hours', 4,
-                    'Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.',
-                    '&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Overall well-written and clear.&lt;/p&gt;');
+                    '{"general_md":"Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.","general_html":"&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;\n&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Overall well-written and clear.&lt;/p&gt;\n","inline":[{"line_start":1,"line_end":1,"code":"Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.","text_md":"Strong opening! Consider also mentioning that it was invented by **John von Neumann** in 1945.","text_html":"&lt;p&gt;Strong opening! Consider also mentioning that it was invented by &lt;strong&gt;John von Neumann&lt;/strong&gt; in 1945.&lt;/p&gt;\n","type":"comment"},{"line_start":7,"line_end":9,"code":"I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.","text_md":"Good point about stability. You could expand this into a concrete example:","text_html":"&lt;p&gt;Good point about stability. You could expand this into a concrete example:&lt;/p&gt;\n","type":"suggestion","suggested_code":"I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order. For example, when sorting students by\ngrade, students with the same grade remain in their original alphabetical order."}]}');
         </sql>
     </changeSet>
 

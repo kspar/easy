@@ -179,7 +179,11 @@
     "autogradeRunTest": "Running test {{nr}}...",
     "autogradePhaseCompile": "Prepare",
     "autogradePhaseTest": "Test",
-    "autogradePhaseAnalyze": "Analyze"
+    "autogradePhaseAnalyze": "Analyze",
+    "suggestedChange": "Suggested change:",
+    "showAllLines": "Show all lines",
+    "collapseLines": "Collapse lines",
+    "showHiddenLines": "Show {{count}} hidden lines"
   },
   "library": {
     "title": "Exercise library",

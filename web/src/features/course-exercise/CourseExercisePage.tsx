@@ -484,6 +484,7 @@ function StudentExerciseView() {
       <TeacherFeedback
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
+        submissions={submissions}
       />
 
       <PreviousSubmissions
