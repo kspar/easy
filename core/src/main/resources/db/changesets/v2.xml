@@ -312,6 +312,10 @@
     </changeSet>
 
     <changeSet id="230919-1" author="priit">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="log_report"/></not>
+        </preConditions>
         <createTable tableName="log_report">
             <column name="id" type="bigserial">
                 <constraints primaryKey="true" nullable="false"/>
@@ -334,9 +338,6 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <createSequence sequenceName="report_log_id_seq" startValue="1" incrementBy="1"/>
-        <addDefaultValue tableName="log_report" columnName="id"
-                         defaultValueSequenceNext="report_log_id_seq"/>
     </changeSet>
 
     <changeSet id="011119-1" author="priit">
@@ -840,8 +841,12 @@
     </changeSet>
 
     <changeSet id="160320-1" author="priit">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="teacher_submission"/></not>
+        </preConditions>
         <renameTable newTableName="teacher_submission"
-                     oldTableName="testing_draft "/>
+                     oldTableName="testing_draft"/>
 
         <dropColumn tableName="teacher_submission" columnName="course_exercise_id"/>
 
@@ -1481,7 +1486,7 @@
 
 
     <changeSet id="270223-1" author="priit">
-
+        <validCheckSum>any</validCheckSum>
         <addColumn tableName="submission">
             <!-- New field submission.grade: authoritative grade, nullable, modify on assessment -->
             <column name="grade" type="integer">
@@ -1522,7 +1527,7 @@
         <!-- rename teacher_assessment.feedback -> teacher_assessment.feedback_adoc -->
         <renameColumn tableName="teacher_assessment" oldColumnName="feedback" newColumnName="feedback_adoc"/>
         <!-- teacher_assessment.created_at -> merge_window_start (return in activity log service as created_at) -->
-        <renameColumn tableName="teacher_assessment" oldColumnName="created_at " newColumnName="merge_window_start"/>
+        <renameColumn tableName="teacher_assessment" oldColumnName="created_at" newColumnName="merge_window_start"/>
 
         <!-- teacher_assessment.teacher FK to account instead of teacher -->
         <addForeignKeyConstraint baseTableName="teacher_assessment" baseColumnNames="teacher_id"
