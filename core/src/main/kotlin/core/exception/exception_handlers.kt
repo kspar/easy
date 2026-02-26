@@ -1,13 +1,12 @@
 package core.exception
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import core.aas.ExecutorOverloadException
 import core.util.SendMailService
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.boot.json.JsonParseException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
@@ -17,19 +16,20 @@ import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
+import tools.jackson.databind.exc.InvalidNullException
+import tools.jackson.databind.exc.MismatchedInputException
 import java.util.*
 
 
-private val log = KotlinLogging.logger {}
-
 @ControllerAdvice
 class EasyExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
+    private val log = KotlinLogging.logger {}
 
     @ExceptionHandler(value = [ExecutorOverloadException::class])
     fun handleExecutorOverloadException(ex: ExecutorOverloadException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.warn("ExecutorOverloadException", ex)
-        log.warn("Request info: ${request.getDescription(true)}")
+        log.warn { "ExecutorOverloadException $ex" }
+        log.warn { "Request info: ${request.getDescription(true)}" }
         mailService.sendSystemNotification(ex.stackTraceString, id)
         // TODO: also use code
         return ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE)
@@ -39,8 +39,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn("Forbidden error: ${ex.message}")
-        log.warn("Request info: ${request.getDescription(true)}")
+        log.warn { "Forbidden error: ${ex.message}" }
+        log.warn { "Request info: ${request.getDescription(true)}" }
 
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
@@ -52,8 +52,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleInvalidReqException(ex: InvalidRequestException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn("Invalid request, message: ${ex.message}, id: $id")
-        log.warn("Request info: ${request.getDescription(true)}")
+        log.warn { "Invalid request, message: ${ex.message}, id: $id" }
+        log.warn { "Request info: ${request.getDescription(true)}" }
 
         if (ex.notify) {
             mailService.sendSystemNotification(ex.stackTraceString, id)
@@ -66,8 +66,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     @ExceptionHandler(value = [Exception::class])
     fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.error("Caught a big one", ex)
-        log.error("Request info: ${request.getDescription(true)}")
+        log.error { "Caught a big one $ex" }
+        log.error { "Request info: ${request.getDescription(true)}" }
         mailService.sendSystemNotification(ex.stackTraceString, id)
         return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
     }
@@ -76,8 +76,8 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleAccessDeniedException(ex: AccessDeniedException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn("Access denied error: ${ex.message}")
-        log.warn("Request info: ${request.getDescription(true)}")
+        log.warn { "Access denied error: ${ex.message}" }
+        log.warn { "Request info: ${request.getDescription(true)}" }
 
         mailService.sendSystemNotification(ex.stackTraceString, id)
 
@@ -96,12 +96,12 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     override fun handleMethodArgumentNotValid(
         ex: MethodArgumentNotValidException,
         headers: HttpHeaders,
-        status: HttpStatus,
+        status: HttpStatusCode,
         request: WebRequest
     ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.info("MethodArgumentNotValidException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
+        log.info { "MethodArgumentNotValidException: ${ex.message}" }
+        log.info { "Request info: ${request.getDescription(true)}" }
 
         val msg = ex.bindingResult.allErrors
             .joinToString(separator = ";") { "'${(it as FieldError).field}': ${it.getDefaultMessage()};" }
@@ -114,18 +114,18 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     override fun handleHttpMessageNotReadable(
         ex: HttpMessageNotReadableException,
         headers: HttpHeaders,
-        status: HttpStatus,
+        status: HttpStatusCode,
         request: WebRequest
     ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.info("HttpMessageNotReadableException: ${ex.message}")
-        log.info("Request info: ${request.getDescription(true)}")
+        log.info { "HttpMessageNotReadableException: ${ex.message}" }
+        log.info { "Request info: ${request.getDescription(true)}" }
 
         val msg = when (ex.cause) {
-            is MissingKotlinParameterException -> {
-                val cause = ex.cause as MissingKotlinParameterException
-                "Missing parameter '${cause.parameter.name}' of type '${
-                    cause.parameter.type.toString().replace("kotlin.", "")
+            is InvalidNullException -> {
+                val cause = ex.cause as InvalidNullException
+                "Missing parameter '${cause.propertyName.simpleName}' of type '${
+                    cause.targetType.toString().replace("kotlin.", "")
                 }'"
             }
 

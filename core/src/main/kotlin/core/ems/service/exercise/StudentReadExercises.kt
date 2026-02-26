@@ -1,17 +1,17 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,18 +26,18 @@ class StudentReadExercisesController {
     private val log = KotlinLogging.logger {}
 
     data class ExerciseResp(
-        @JsonProperty("id") val courseExId: String,
-        @JsonProperty("effective_title") val title: String,
-        @JsonProperty("grader_type") val graderType: GraderType,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("deadline") val softDeadline: DateTime?,
-        @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
-        @JsonProperty("status") val status: StudentExerciseStatus,
-        @JsonProperty("grade") val grade: GradeResp?,
-        @JsonProperty("ordering_idx") val orderingIndex: Int
+        @get:JsonProperty("id") val courseExId: String,
+        @get:JsonProperty("effective_title") val title: String,
+        @get:JsonProperty("grader_type") val graderType: GraderType,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("deadline") val softDeadline: DateTime?,
+        @get:JsonProperty("is_open") val isOpenForSubmissions: Boolean,
+        @get:JsonProperty("status") val status: StudentExerciseStatus,
+        @get:JsonProperty("grade") val grade: GradeResp?,
+        @get:JsonProperty("ordering_idx") val orderingIndex: Int
     )
 
-    data class Resp(@JsonProperty("exercises") val exercises: List<ExerciseResp>)
+    data class Resp(@get:JsonProperty("exercises") val exercises: List<ExerciseResp>)
 
     @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises")

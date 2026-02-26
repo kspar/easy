@@ -1,17 +1,19 @@
 package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.db.*
 import core.ems.service.selectLatestSubmissionsForExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.exception.ResourceLockedException
 import core.util.DBBackedLock
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
 
 @Service
@@ -35,20 +38,20 @@ class MoodleGradesSyncService {
 
 
     data class MoodleReq(
-        @JsonProperty("shortname") val shortname: String,
-        @JsonProperty("exercises") val exercises: List<MoodleReqExercise>
+        @param:JsonProperty("shortname") val shortname: String,
+        @param:JsonProperty("exercises") val exercises: List<MoodleReqExercise>
     )
 
     data class MoodleReqExercise(
-        @JsonProperty("idnumber") val idnumber: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("grades") val grades: List<MoodleReqGrade>
+        @param:JsonProperty("idnumber") val idnumber: String,
+        @param:JsonProperty("title") val title: String,
+        @param:JsonProperty("grades") val grades: List<MoodleReqGrade>
     )
 
 
     data class MoodleReqGrade(
-        @JsonProperty("username") val username: String,
-        @JsonProperty("grade") val grade: Int
+        @param:JsonProperty("username") val username: String,
+        @param:JsonProperty("grade") val grade: Int
     )
 
 
@@ -126,7 +129,7 @@ class MoodleGradesSyncService {
             RestTemplate().postForEntity(moodleGradeUrl, request, String::class.java)
 
         if (responseEntity.statusCode.value() != 200) {
-            log.error { "Moodle grade syncing error ${responseEntity.statusCodeValue} with data $req" }
+            log.error { "Moodle grade syncing error ${responseEntity.statusCode.value()} with data $req" }
             throw InvalidRequestException(
                 "Grade syncing with Moodle failed due to error code in response.",
                 ReqError.MOODLE_GRADE_SYNC_ERROR,
@@ -210,7 +213,7 @@ class MoodleGradesSyncService {
     private fun selectLatestGradeForSubmission(submissionId: Long, courseId: Long): MoodleReqGrade? =
         (Submission innerJoin Account innerJoin StudentCourseAccess)
             .select(StudentCourseAccess.moodleUsername, Account.id, Submission.grade)
-            .where { (Submission.id eq submissionId) and (StudentCourseAccess.course eq courseId)}
+            .where { (Submission.id eq submissionId) and (StudentCourseAccess.course eq courseId) }
             .map {
                 val moodleUsername = it[StudentCourseAccess.moodleUsername]
                 val grade = it[Submission.grade]

@@ -6,20 +6,22 @@ import core.db.StatsSubmission
 import core.db.TeacherActivity
 import core.ems.service.*
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -31,22 +33,22 @@ class TeacherPostFeedbackController(val markdownService: MarkdownService, val ma
     private lateinit var mergeWindowInSeconds: String
 
     data class InlineCommentReq(
-        @JsonProperty("line_start", required = true) val lineStart: Int,
-        @JsonProperty("line_end", required = true) val lineEnd: Int,
-        @JsonProperty("code", required = true) val code: String,
-        @JsonProperty("text_md", required = true) @field:NotBlank val textMd: String,
-        @JsonProperty("type", required = true) val type: String,
-        @JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
+        @param:JsonProperty("line_start", required = true) val lineStart: Int,
+        @param:JsonProperty("line_end", required = true) val lineEnd: Int,
+        @param:JsonProperty("code", required = true) val code: String,
+        @param:JsonProperty("text_md", required = true) @field:NotBlank val textMd: String,
+        @param:JsonProperty("type", required = true) val type: String,
+        @param:JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
     )
 
     data class Req(
-        @JsonProperty("feedback_md", required = true)
+        @param:JsonProperty("feedback_md", required = true)
         @field:Size(max = 300000)
         @field:NotBlank
         val feedbackMd: String,
-        @JsonProperty("inline_comments", required = false)
+        @param:JsonProperty("inline_comments", required = false)
         val inlineComments: List<InlineCommentReq>? = null,
-        @JsonProperty("notify_student", required = true)
+        @param:JsonProperty("notify_student", required = true)
         @field:NotNull
         val notifyStudent: Boolean
     )

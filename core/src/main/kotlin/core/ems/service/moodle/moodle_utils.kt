@@ -3,12 +3,12 @@ package core.ems.service.moodle
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Course
 import core.exception.InvalidRequestException
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 
-data class MoodleSyncedOperationResponse(
-    @JsonProperty("status") val status: MoodleSyncStatus,
-)
+data class MoodleSyncedOperationResponse(@get:JsonProperty("status") val status: MoodleSyncStatus)
 
 enum class MoodleSyncStatus { FINISHED, IN_PROGRESS }
 

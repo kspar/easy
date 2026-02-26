@@ -1,13 +1,13 @@
 package core.conf
 
+import jakarta.annotation.PostConstruct
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.FileSystemResourceAccessor
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
-import javax.annotation.PostConstruct
 import javax.sql.DataSource
 
 
@@ -25,7 +25,7 @@ class InitTestDatabase(val dataSource: DataSource) {
     @PostConstruct
     fun init() {
         Database.connect(dataSource)
-        TransactionManager.manager.defaultRepetitionAttempts = 6
+        TransactionManager.manager.defaultMaxAttempts = 6
 
         dropAndUpdateSchema(changelogFile, JdbcConnection(dataSource.connection))
     }

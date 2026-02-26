@@ -9,12 +9,11 @@ import core.exception.ReqError
 import core.exception.ResourceLockedException
 import core.util.DBBackedLock
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -26,13 +25,12 @@ import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
 
-private val log = KotlinLogging.logger {}
-
 
 data class MoodleSyncedStudents(val syncedPendingStudents: Int)
 
 @Service
 class MoodleStudentsSyncService(val mailService: SendMailService) {
+    private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
@@ -59,20 +57,20 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
 
     private data class MoodleRespStudent(
-        @JsonProperty("username") val username: String,
-        @JsonProperty("firstname") val firstname: String,
-        @JsonProperty("lastname") val lastname: String,
-        @JsonProperty("email") val email: String,
-        @JsonProperty("groups", required = false) val groups: List<MoodleRespGroup>?
+        @get:JsonProperty("username") val username: String,
+        @get:JsonProperty("firstname") val firstname: String,
+        @get:JsonProperty("lastname") val lastname: String,
+        @get:JsonProperty("email") val email: String,
+        @get:JsonProperty("groups", required = false) val groups: List<MoodleRespGroup>?
     )
 
     private data class MoodleRespGroup(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String
     )
 
     private data class MoodleResponse(
-        @JsonProperty("students") val students: List<MoodleRespStudent>
+        @get:JsonProperty("students") val students: List<MoodleRespStudent>
     )
 
     private fun queryStudents(moodleShortName: String): MoodleResponse {
@@ -88,11 +86,11 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
         val responseEntity = RestTemplate().postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
 
         if (responseEntity.statusCode.value() != 200) {
-            log.error { "Moodle linking error ${responseEntity.statusCodeValue} with request $request" }
+            log.error { "Moodle linking error ${responseEntity.statusCode.value()} with request $request" }
             throw InvalidRequestException(
                 "Course linking with Moodle failed due to error code in response.",
                 ReqError.MOODLE_LINKING_ERROR,
-                "Moodle response" to responseEntity.statusCodeValue.toString(),
+                "Moodle response" to responseEntity.statusCode.value().toString(),
                 notify = true
             )
         }
@@ -249,7 +247,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
 
                 try {
                     syncStudents(courseId)
-                } catch (e: ResourceLockedException) {
+                } catch (_: ResourceLockedException) {
                     log.warn { "Cannot Moodle sync students on course $courseId because it's locked" }
                 }
             }

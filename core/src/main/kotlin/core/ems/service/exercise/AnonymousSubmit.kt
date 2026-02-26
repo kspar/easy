@@ -7,19 +7,21 @@ import core.ems.service.access_control.assertExerciseHasTextEditorSubmission
 import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.assertExerciseIsAutoGradable
 import core.ems.service.idToLongOrInvalidReq
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Size
 import kotlin.coroutines.EmptyCoroutineContext
 
 @RestController
@@ -32,12 +34,12 @@ class AnonymousSubmitCont(private val autoGradeScheduler: AutoGradeScheduler) {
 
     // TODO should be required = true?
     data class Req(
-        @JsonProperty("solution") @field:Size(max = 300000) val solution: String
+        @param:JsonProperty("solution") @field:Size(max = 300000) val solution: String
     )
 
     data class Resp(
-        @JsonProperty("grade") val grade: Int,
-        @JsonProperty("feedback") val feedback: String
+        @get:JsonProperty("grade") val grade: Int,
+        @get:JsonProperty("feedback") val feedback: String
     )
 
 

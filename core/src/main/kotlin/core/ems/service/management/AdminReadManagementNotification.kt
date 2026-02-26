@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.ManagementNotification
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,13 +20,13 @@ class AdminReadManagementNotificationsController {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("messages")
-        @JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>
+        @get:JsonProperty("messages")
+        @get:JsonInclude(JsonInclude.Include.NON_NULL) val messages: List<MessageResp>
     )
 
     data class MessageResp(
-        @JsonProperty("id") val messageId: String,
-        @JsonProperty("message") val message: String
+        @get:JsonProperty("id") val messageId: String,
+        @get:JsonProperty("message") val message: String
     )
 
     @Secured("ROLE_ADMIN")
@@ -39,14 +39,15 @@ class AdminReadManagementNotificationsController {
     }
 
     private fun selectMessages(): Resp = transaction {
-        Resp(ManagementNotification
-            .selectAll()
-            .orderBy(ManagementNotification.id, SortOrder.DESC)
-            .map {
-                MessageResp(
-                    it[ManagementNotification.id].value.toString(), it[ManagementNotification.message]
-                )
-            })
+        Resp(
+            ManagementNotification
+                .selectAll()
+                .orderBy(ManagementNotification.id, SortOrder.DESC)
+                .map {
+                    MessageResp(
+                        it[ManagementNotification.id].value.toString(), it[ManagementNotification.message]
+                    )
+                })
     }
 }
 

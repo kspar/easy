@@ -12,10 +12,13 @@ import core.ems.service.management.ReportLogController.ReportClientSysProp.NO_MA
 import core.ems.service.management.ReportLogController.Req
 import core.exception.InvalidRequestException
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.scheduling.annotation.Async
 import org.springframework.web.bind.annotation.PostMapping
@@ -23,9 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 private val log = KotlinLogging.logger {}
 
@@ -34,13 +34,13 @@ private val log = KotlinLogging.logger {}
 class ReportLogController(private val mailService: SendMailService) {
 
     data class Req(
-        @JsonProperty("log_level", required = true)
+        @param:JsonProperty("log_level", required = true)
         @field:NotBlank @field:Size(max = 5) val logLevel: String,
 
-        @JsonProperty("log_message", required = true)
+        @param:JsonProperty("log_message", required = true)
         @field:NotBlank @field:Size(max = 10000) val logMessage: String,
 
-        @JsonProperty("client_id", required = true)
+        @param:JsonProperty("client_id", required = true)
         @field:NotBlank @field:Size(max = 100) val clientId: String
     )
 

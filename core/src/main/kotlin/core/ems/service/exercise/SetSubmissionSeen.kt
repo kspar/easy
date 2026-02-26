@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Submission
 import core.ems.service.assertAssessmentControllerChecks
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
 
 
 @RestController
@@ -18,13 +19,11 @@ class SetSubmissionSeen {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("submissions") val submissions: List<SubmissionReq>,
-        @JsonProperty("seen") val seen: Boolean
+        @param:JsonProperty("submissions") val submissions: List<SubmissionReq>,
+        @param:JsonProperty("seen") val seen: Boolean
     )
 
-    data class SubmissionReq(
-        @JsonProperty("id") val id: String
-    )
+    data class SubmissionReq(@param:JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/seen")

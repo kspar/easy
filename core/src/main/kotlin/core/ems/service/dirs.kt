@@ -7,10 +7,12 @@ import core.exception.ReqError
 import core.util.component1
 import core.util.component2
 import core.util.maxOfOrNull
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 
 private val log = KotlinLogging.logger {}
@@ -286,9 +288,9 @@ fun getAccountDirectDirAccessLevel(userId: String, dirId: Long): DirAccessLevel?
 }
 
 fun upsertGroupDirAccess(groupId: Long, dirId: Long, level: DirAccessLevel) = transaction {
-    GroupDirAccess.insertOrUpdate(
-        listOf(GroupDirAccess.group, GroupDirAccess.dir),
-        listOf(GroupDirAccess.group, GroupDirAccess.dir)
+    GroupDirAccess.upsert(
+        GroupDirAccess.group, GroupDirAccess.dir,
+        onUpdateExclude = listOf(GroupDirAccess.group, GroupDirAccess.dir)
     ) {
         it[group] = groupId
         it[dir] = dirId

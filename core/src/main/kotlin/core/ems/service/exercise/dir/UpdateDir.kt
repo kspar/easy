@@ -10,23 +10,24 @@ import core.ems.service.assertDirExists
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Size
 
-
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
 class UpdateDir {
+    private val log = KotlinLogging.logger {}
+
     data class Req(
-        @JsonProperty("name") @field:Size(max = 100) val name: String?,
+        @param:JsonProperty("name") @field:Size(max = 100) val name: String?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

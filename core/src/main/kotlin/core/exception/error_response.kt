@@ -38,8 +38,8 @@ enum class ReqError(val errorCodeStr: String) {
 
 
 data class RequestErrorResponse(
-    @JsonProperty("id", required = true) val id: String,
-    @JsonProperty("code", required = true) val code: String?,
-    @JsonProperty("attrs", required = true) val attrs: Map<String, String>,
-    @JsonProperty("log_msg", required = true) val logMsg: String
+    @get:JsonProperty("id", required = true) val id: String,
+    @get:JsonProperty("code", required = true) val code: String?,
+    @get:JsonProperty("attrs", required = true) val attrs: Map<String, String>,
+    @get:JsonProperty("log_msg", required = true) val logMsg: String
 )

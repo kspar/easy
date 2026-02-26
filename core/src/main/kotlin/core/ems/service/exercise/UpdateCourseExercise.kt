@@ -1,7 +1,6 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.ems.service.AdocService
@@ -10,16 +9,18 @@ import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeDeserializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.Size
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
-import javax.validation.constraints.Size
+import tools.jackson.databind.annotation.JsonDeserialize
 
 
 @RestController
@@ -28,36 +29,36 @@ class UpdateCourseExercise(private val adocService: AdocService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("replace") @field:Valid
+        @param:JsonProperty("replace") @field:Valid
         val replace: ReplaceReq?,
-        @JsonProperty("delete") @field:Valid
+        @param:JsonProperty("delete") @field:Valid
         val delete: Set<DeleteFieldReq>?,
     )
 
     data class ReplaceReq(
-        @JsonProperty("title_alias") @field:Size(max = 100)
+        @param:JsonProperty("title_alias") @field:Size(max = 100)
         val titleAlias: String?,
-        @JsonProperty("instructions_adoc") @field:Size(max = 300000)
+        @param:JsonProperty("instructions_adoc") @field:Size(max = 300000)
         val instructionsAdoc: String?,
-        @JsonProperty("threshold") @field:Min(0) @field:Max(100)
+        @param:JsonProperty("threshold") @field:Min(0) @field:Max(100)
         val threshold: Int?,
-        @JsonProperty("soft_deadline")
-        @JsonDeserialize(using = DateTimeDeserializer::class)
+        @param:JsonProperty("soft_deadline")
+        @param:JsonDeserialize(using = DateTimeDeserializer::class)
         val softDeadline: DateTime?,
-        @JsonProperty("hard_deadline")
-        @JsonDeserialize(using = DateTimeDeserializer::class)
+        @param:JsonProperty("hard_deadline")
+        @param:JsonDeserialize(using = DateTimeDeserializer::class)
         val hardDeadline: DateTime?,
-        @JsonProperty("assessments_student_visible")
+        @param:JsonProperty("assessments_student_visible")
         val assessmentsStudentVisible: Boolean?,
         // Functionality duplicated by two fields, so we don't have to assume that clients know the current time
         // isStudentVisible overrides studentVisibleFrom
-        @JsonProperty("student_visible")
+        @param:JsonProperty("student_visible")
         val isStudentVisible: Boolean?,
         // null here is still interpreted as "do-not-change" rather than "hide"
-        @JsonProperty("student_visible_from")
-        @JsonDeserialize(using = DateTimeDeserializer::class)
+        @param:JsonProperty("student_visible_from")
+        @param:JsonDeserialize(using = DateTimeDeserializer::class)
         val studentVisibleFrom: DateTime?,
-        @JsonProperty("moodle_exercise_id") @field:Size(max = 100)
+        @param:JsonProperty("moodle_exercise_id") @field:Size(max = 100)
         val moodleExerciseId: String?,
     )
 
@@ -127,14 +128,18 @@ class UpdateCourseExercise(private val adocService: AdocService) {
                     when (deleteField) {
                         DeleteFieldReq.TITLE_ALIAS ->
                             it[titleAlias] = null
+
                         DeleteFieldReq.INSTRUCTIONS_ADOC -> {
                             it[instructionsAdoc] = null
                             it[instructionsHtml] = null
                         }
+
                         DeleteFieldReq.SOFT_DEADLINE ->
                             it[softDeadline] = null
+
                         DeleteFieldReq.HARD_DEADLINE ->
                             it[hardDeadline] = null
+
                         DeleteFieldReq.MOODLE_EXERCISE_ID ->
                             it[moodleExId] = null
                     }

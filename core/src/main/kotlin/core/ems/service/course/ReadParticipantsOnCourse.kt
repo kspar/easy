@@ -3,7 +3,7 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.GroupResp
@@ -14,10 +14,12 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectStudentsOnCourse
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -29,26 +31,26 @@ class ReadParticipantsOnCourseController {
     private val log = KotlinLogging.logger {}
 
     data class TeachersResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("email") val email: String,
-        @JsonProperty("given_name") val givenName: String,
-        @JsonProperty("family_name") val familyName: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime?
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("email") val email: String,
+        @get:JsonProperty("given_name") val givenName: String,
+        @get:JsonProperty("family_name") val familyName: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime?
     )
 
     data class StudentMoodlePendingResp(
-        @JsonProperty("moodle_username") val moodleUsername: String,
-        @JsonProperty("email") val email: String,
-        @JsonProperty("invite_id") val inviteId: String,
-        @JsonProperty("groups") val groups: List<GroupResp>
+        @get:JsonProperty("moodle_username") val moodleUsername: String,
+        @get:JsonProperty("email") val email: String,
+        @get:JsonProperty("invite_id") val inviteId: String,
+        @get:JsonProperty("groups") val groups: List<GroupResp>
     )
 
     data class Resp(
-        @JsonProperty("students") @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
-        @JsonProperty("teachers") @JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
-        @JsonProperty("students_moodle_pending") @JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?,
-        @JsonProperty("moodle_linked") val moodleLinked: Boolean
+        @get:JsonProperty("students") @get:JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
+        @get:JsonProperty("teachers") @get:JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
+        @get:JsonProperty("students_moodle_pending") @get:JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?,
+        @get:JsonProperty("moodle_linked") val moodleLinked: Boolean
     )
 
     enum class Role(val paramValue: String) {

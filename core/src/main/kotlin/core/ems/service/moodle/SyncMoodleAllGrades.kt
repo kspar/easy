@@ -5,7 +5,7 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.ResourceLockedException
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -34,7 +34,7 @@ class MoodleAllGradesSyncController(val moodleGradesSyncService: MoodleGradesSyn
         return try {
             moodleGradesSyncService.syncCourseGradesToMoodle(courseId)
             MoodleSyncedOperationResponse(MoodleSyncStatus.FINISHED)
-        } catch (e: ResourceLockedException) {
+        } catch (_: ResourceLockedException) {
             log.info { "Moodle sync grades already in progress for course $courseId" }
             MoodleSyncedOperationResponse(MoodleSyncStatus.IN_PROGRESS)
         }

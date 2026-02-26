@@ -1,11 +1,9 @@
 package core.ems.service.exercise.exceptions
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.CourseExerciseExceptionGroup
 import core.db.CourseExerciseExceptionStudent
-import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.canStudentAccessCourse
@@ -15,12 +13,14 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeDeserializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.upsert
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
+import tools.jackson.databind.annotation.JsonDeserialize
 
 
 @RestController
@@ -28,25 +28,25 @@ import javax.validation.Valid
 class PutCourseExerciseExceptions {
     private val log = KotlinLogging.logger {}
 
-    data class ExceptionValueReq(@JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty("value") val value: DateTime?)
+    data class ExceptionValueReq(@param:JsonDeserialize(using = DateTimeDeserializer::class) @param:JsonProperty("value") val value: DateTime?)
 
     data class ReqExceptionStudent(
-        @JsonProperty("student_id") val studentId: String,
-        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueReq?,
-        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueReq?,
-        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueReq?,
+        @param:JsonProperty("student_id") val studentId: String,
+        @param:JsonProperty("soft_deadline") val softDeadline: ExceptionValueReq?,
+        @param:JsonProperty("hard_deadline") val hardDeadline: ExceptionValueReq?,
+        @param:JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueReq?,
     )
 
     data class ReqExceptionGroup(
-        @JsonProperty("group_id") val groupId: Long,
-        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueReq?,
-        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueReq?,
-        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueReq?,
+        @param:JsonProperty("group_id") val groupId: Long,
+        @param:JsonProperty("soft_deadline") val softDeadline: ExceptionValueReq?,
+        @param:JsonProperty("hard_deadline") val hardDeadline: ExceptionValueReq?,
+        @param:JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueReq?,
     )
 
     data class Req(
-        @JsonProperty("exception_students") @field:Valid val exceptionStudents: List<ReqExceptionStudent>?,
-        @JsonProperty("exception_groups") @field:Valid val exceptionGroups: List<ReqExceptionGroup>?
+        @param:JsonProperty("exception_students") @field:Valid val exceptionStudents: List<ReqExceptionStudent>?,
+        @param:JsonProperty("exception_groups") @field:Valid val exceptionGroups: List<ReqExceptionGroup>?
     )
 
 
@@ -84,9 +84,13 @@ class PutCourseExerciseExceptions {
                         ReqError.STUDENT_NOT_ON_COURSE
                     )
 
-                CourseExerciseExceptionStudent.insertOrUpdate(
-                    listOf(CourseExerciseExceptionStudent.courseExercise, CourseExerciseExceptionStudent.student),
-                    listOf(CourseExerciseExceptionStudent.courseExercise, CourseExerciseExceptionStudent.student),
+                CourseExerciseExceptionStudent.upsert(
+                    CourseExerciseExceptionStudent.courseExercise,
+                    CourseExerciseExceptionStudent.student,
+                    onUpdateExclude = listOf(
+                        CourseExerciseExceptionStudent.courseExercise,
+                        CourseExerciseExceptionStudent.student
+                    )
                 ) {
                     it[CourseExerciseExceptionStudent.courseExercise] = courseExId
                     it[CourseExerciseExceptionStudent.student] = ex.studentId
@@ -102,9 +106,13 @@ class PutCourseExerciseExceptions {
             exceptionGroups?.forEach { ex ->
                 assertGroupExistsOnCourse(ex.groupId, courseId)
 
-                CourseExerciseExceptionGroup.insertOrUpdate(
-                    listOf(CourseExerciseExceptionGroup.courseExercise, CourseExerciseExceptionGroup.courseGroup),
-                    listOf(CourseExerciseExceptionGroup.courseExercise, CourseExerciseExceptionGroup.courseGroup),
+                CourseExerciseExceptionGroup.upsert(
+                    CourseExerciseExceptionGroup.courseExercise,
+                    CourseExerciseExceptionGroup.courseGroup,
+                    onUpdateExclude = listOf(
+                        CourseExerciseExceptionGroup.courseExercise,
+                        CourseExerciseExceptionGroup.courseGroup
+                    )
                 ) {
                     it[CourseExerciseExceptionGroup.courseExercise] = courseExId
                     it[CourseExerciseExceptionGroup.courseGroup] = ex.groupId

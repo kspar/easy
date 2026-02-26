@@ -1,7 +1,7 @@
 package core.ems.service.exercise.dir
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
@@ -11,10 +11,10 @@ import core.ems.service.getDir
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
 import core.util.maxOfOrNull
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.leftJoin
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,36 +29,36 @@ class ReadDirController {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("current_dir") val currentDir: DirResp?, // null for root dir
-        @JsonProperty("child_dirs") val childDirs: List<DirResp>,
-        @JsonProperty("child_exercises") val childExercises: List<ExerciseResp>,
+        @get:JsonProperty("current_dir") val currentDir: DirResp?, // null for root dir
+        @get:JsonProperty("child_dirs") val childDirs: List<DirResp>,
+        @get:JsonProperty("child_exercises") val childExercises: List<ExerciseResp>,
     )
 
     data class ExerciseResp(
-        @JsonProperty("exercise_id") val exerciseId: String,
-        @JsonProperty("dir_id") val implicitDirId: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-        @JsonProperty("is_shared") val isShared: Boolean,
-        @JsonProperty("grader_type") val graderType: GraderType,
-        @JsonProperty("courses_count") val coursesCount: Int,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonProperty("created_by") val createdBy: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("modified_at") val modifiedAt: DateTime,
-        @JsonProperty("modified_by") val modifiedBy: String,
+        @get:JsonProperty("exercise_id") val exerciseId: String,
+        @get:JsonProperty("dir_id") val implicitDirId: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        @get:JsonProperty("is_shared") val isShared: Boolean,
+        @get:JsonProperty("grader_type") val graderType: GraderType,
+        @get:JsonProperty("courses_count") val coursesCount: Int,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("created_by") val createdBy: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("modified_at") val modifiedAt: DateTime,
+        @get:JsonProperty("modified_by") val modifiedBy: String,
     )
 
     data class DirResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-        @JsonProperty("is_shared") val isShared: Boolean,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("modified_at") val modifiedAt: DateTime,
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String,
+        @get:JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        @get:JsonProperty("is_shared") val isShared: Boolean,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("modified_at") val modifiedAt: DateTime,
     )
 
 
@@ -204,7 +204,8 @@ class ReadDirController {
     }
 
     private fun getPotentialDirs(dirId: Long?, caller: EasyUser): List<PotentialDirAccess> {
-        return Dir.leftJoin((GroupDirAccess innerJoin Group innerJoin AccountGroup),
+        return Dir.leftJoin(
+            (GroupDirAccess innerJoin Group innerJoin AccountGroup),
             onColumn = { Dir.id },
             otherColumn = { GroupDirAccess.dir },
             additionalConstraint = { AccountGroup.account.eq(caller.id) }
@@ -246,7 +247,8 @@ class ReadDirController {
 
         // Get direct accesses (>= PR) and anyAccess for this dir in one query
         // leftJoin because there might be 0 accesses on it
-        val directAccesses = Dir.leftJoin((GroupDirAccess innerJoin Group), { Dir.id }, { GroupDirAccess.dir },
+        val directAccesses = Dir.leftJoin(
+            (GroupDirAccess innerJoin Group), { Dir.id }, { GroupDirAccess.dir },
             { GroupDirAccess.level.greaterEq(DirAccessLevel.PR) })
             .select(Dir.anyAccess, Group.isImplicit)
             .where { Dir.id.eq(dirId) }

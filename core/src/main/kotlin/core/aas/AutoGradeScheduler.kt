@@ -2,11 +2,11 @@ package core.aas
 
 import core.db.*
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.scheduling.annotation.Scheduled
@@ -60,11 +60,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     }
 
 
-    suspend fun submitAndAwait(
-        autoExerciseId: Long,
-        submission: String,
-        priority: PriorityLevel
-    ): AutoAssessment {
+    suspend fun submitAndAwait(autoExerciseId: Long, submission: String, priority: PriorityLevel): AutoAssessment {
 
         val autoExercise = getAutoExerciseDetails(autoExerciseId)
         val request = autoExercise.mapToExecutorRequest(submission)
@@ -83,25 +79,23 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
 
 
     @Synchronized
-    fun deleteExecutor(executorId: Long, force: Boolean) {
-        return transaction {
+    fun deleteExecutor(executorId: Long, force: Boolean): Unit = transaction {
 
-            // The load of the all the (priority) queues in the executor map of this executor.
-            val load = executors[executorId]?.values?.sumOf { it.size() } ?: 0
+        // The load of the all the (priority) queues in the executor map of this executor.
+        val load = executors[executorId]?.values?.sumOf { it.size() } ?: 0
 
-            // If not force removal and there is any load, deny removal
-            if (!force && load > 0) {
-                throw InvalidRequestException("Executor load != 0 (is $load). Set 'force'=true for forced removal.")
-            }
-
-            ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
-            Executor.deleteWhere { Executor.id eq executorId }
-
-            executors[executorId]?.forEach { it.value.killScheduler() }
-            executors.remove(executorId)
-
-            log.info { "Executor '$executorId' deleted" }
+        // If not force removal and there is any load, deny removal
+        if (!force && load > 0) {
+            throw InvalidRequestException("Executor load != 0 (is $load). Set 'force'=true for forced removal.")
         }
+
+        ExecutorContainerImage.deleteWhere { ExecutorContainerImage.executor eq executorId }
+        Executor.deleteWhere { Executor.id eq executorId }
+
+        executors[executorId]?.forEach { it.value.killScheduler() }
+        executors.remove(executorId)
+
+        log.info { "Executor '$executorId' deleted" }
     }
 
     @Synchronized

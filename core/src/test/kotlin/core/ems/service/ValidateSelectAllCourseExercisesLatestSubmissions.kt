@@ -5,9 +5,9 @@ import core.conf.DatabaseInit
 import core.conf.dropAll
 import core.db.*
 import liquibase.database.jvm.JdbcConnection
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,8 +18,8 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.util.*
 import javax.sql.DataSource
 import kotlin.random.Random
@@ -33,7 +33,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     private lateinit var changelogFile: String
 
     // Disable DatabaseInit and use DatabaseInitTest
-    @MockBean
+    @MockitoBean
     private val databaseInit: DatabaseInit? = null
 
     private val random = Random(0)
@@ -51,7 +51,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
     @Test
     fun `selectAllCourseExercisesLatestSubmissions should return 4 submissions from 2 students (1 null, 3 graded)`() {
         val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-        val submissions = latestSubmissions.map { it.latestSubmissions }.flatten().map { it.latestSubmission }
+        val submissions = latestSubmissions.flatMap { it.latestSubmissions }.map { it.latestSubmission }
         assertEquals(4, submissions.size)
     }
 
@@ -74,11 +74,11 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
 
         val stud1Ex1Sub = ex1Submissions.latestSubmissions.single { it.accountId == student1Id }
         assertEquals(81, stud1Ex1Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex1Sub.latestSubmission!!.grade!!.isAutograde)
+        assertEquals(false, stud1Ex1Sub.latestSubmission.grade.isAutograde)
 
         val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student1Id }
         assertEquals(99, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission!!.grade!!.isAutograde)
+        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
     }
 
 

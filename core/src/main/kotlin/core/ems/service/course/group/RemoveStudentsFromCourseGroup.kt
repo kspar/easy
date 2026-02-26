@@ -8,17 +8,18 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.assertGroupExistsOnCourse
 import core.ems.service.idToLongOrInvalidReq
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
@@ -26,20 +27,20 @@ class RemoveStudentsFromCourseGroupController {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("active_students") @field:Valid val activeStudents: List<ActiveStudentReq> = emptyList(),
-        @JsonProperty("moodle_pending_students") @field:Valid val moodlePendingStudents: List<MoodlePendingStudentReq> = emptyList(),
+        @param:JsonProperty("active_students") @field:Valid val activeStudents: List<ActiveStudentReq> = emptyList(),
+        @param:JsonProperty("moodle_pending_students") @field:Valid val moodlePendingStudents: List<MoodlePendingStudentReq> = emptyList(),
     )
 
     data class ActiveStudentReq(
-        @JsonProperty("id") @field:NotBlank @field:Size(max = 100) val id: String,
+        @param:JsonProperty("id") @field:NotBlank @field:Size(max = 100) val id: String,
     )
 
     data class MoodlePendingStudentReq(
-        @JsonProperty("moodle_username") @field:NotBlank @field:Size(max = 100) val moodleUsername: String,
+        @param:JsonProperty("moodle_username") @field:NotBlank @field:Size(max = 100) val moodleUsername: String,
     )
 
     data class Resp(
-        @JsonProperty("deleted_count") val deletedCount: Int
+        @get:JsonProperty("deleted_count") val deletedCount: Int
     )
 
 

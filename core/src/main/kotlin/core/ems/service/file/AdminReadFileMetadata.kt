@@ -1,7 +1,7 @@
 package core.ems.service.file
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.StoredFile
 import core.db.StoredFile.article
@@ -12,9 +12,9 @@ import core.db.StoredFile.owner
 import core.db.StoredFile.sizeBytes
 import core.db.StoredFile.type
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,18 +27,18 @@ import org.springframework.web.bind.annotation.RestController
 class ReadFileMetadataController {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("files") val files: List<RespFile>)
+    data class Resp(@get:JsonProperty("files") val files: List<RespFile>)
 
     data class RespFile(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("article_id") val articleId: String,
-        @JsonProperty("exercise_id") val exerciseId: String,
-        @JsonProperty("filename") val filename: String,
-        @JsonProperty("type") val type: String,
-        @JsonProperty("size_bytes") val sizeBytes: Long,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonProperty("created_by") val createdBy: String
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("article_id") val articleId: String,
+        @get:JsonProperty("exercise_id") val exerciseId: String,
+        @get:JsonProperty("filename") val filename: String,
+        @get:JsonProperty("type") val type: String,
+        @get:JsonProperty("size_bytes") val sizeBytes: Long,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("created_by") val createdBy: String
     )
 
     @Secured("ROLE_ADMIN")

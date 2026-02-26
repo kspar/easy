@@ -1,6 +1,6 @@
 package core.util
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
@@ -275,7 +275,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         }
 
         val time = Instant.now().toString()
-        log.info("Sending notification $id ($time) from $fromAddress to $toSysAddress")
+        log.info { "Sending notification $id ($time) from $fromAddress to $toSysAddress" }
 
         val bodyText = "$message\n\n$id\n$time"
 
@@ -286,6 +286,6 @@ class SendMailService(private val mailSender: JavaMailSender) {
         mailMessage.setFrom(fromAddress)
         mailSender.send(mailMessage)
 
-        log.info("Sent notification $id")
+        log.info { "Sent notification $id" }
     }
 }

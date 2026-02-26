@@ -10,12 +10,15 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
 
 
 @RestController
@@ -23,7 +26,7 @@ import javax.validation.Valid
 class SendMoodleCourseInvites(val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("students") val students: List<String>)
+    data class Req(@param:JsonProperty("students") val students: List<String>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/moodle/{courseId}/students/invite")

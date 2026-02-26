@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.AnonymousSubmission
 import core.db.DirAccessLevel
@@ -9,10 +9,11 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,15 +27,15 @@ class ReadAnonymousSubmissions {
     private val log = KotlinLogging.logger {}
 
     data class SubmissionResp(
-        @JsonProperty("id") val submissionId: String,
-        @JsonProperty("solution") val solution: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonProperty("grade") val grade: Int,
-        @JsonProperty("feedback") val feedback: String?
+        @get:JsonProperty("id") val submissionId: String,
+        @get:JsonProperty("solution") val solution: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("grade") val grade: Int,
+        @get:JsonProperty("feedback") val feedback: String?
     )
 
-    data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>)
+    data class Resp(@get:JsonProperty("submissions") val submissions: List<SubmissionResp>)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

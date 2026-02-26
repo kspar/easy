@@ -7,12 +7,13 @@ import core.db.Exercise
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
 
 
 @RestController
@@ -21,8 +22,8 @@ class UpdateExercisePatch {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean?,
-        @JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
+        @param:JsonProperty("anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean?,
+        @param:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

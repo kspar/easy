@@ -5,10 +5,13 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
@@ -54,23 +57,24 @@ class ExportPersonalCourseLatestSubmissions {
             .map { it[Course.alias] ?: it[Course.title] }
             .single()
 
-        CourseSolution(courseName, (CourseExercise innerJoin Exercise innerJoin ExerciseVer innerJoin Submission)
-            .select(
-                CourseExercise.titleAlias,
-                ExerciseVer.title,
-                Submission.solution,
-                Submission.createdAt
-            )
-            .where { CourseExercise.course eq courseId and (Submission.student eq studentId) and (ExerciseVer.validTo.isNull()) }
-            .orderBy(Submission.createdAt, SortOrder.DESC)
-            .distinctBy { it[Submission.solution] }
-            .map {
-                Solution(
-                    it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
-                    it[Submission.solution],
-                    it[Submission.createdAt]
+        CourseSolution(
+            courseName, (CourseExercise innerJoin Exercise innerJoin ExerciseVer innerJoin Submission)
+                .select(
+                    CourseExercise.titleAlias,
+                    ExerciseVer.title,
+                    Submission.solution,
+                    Submission.createdAt
                 )
-            })
+                .where { CourseExercise.course eq courseId and (Submission.student eq studentId) and (ExerciseVer.validTo.isNull()) }
+                .orderBy(Submission.createdAt, SortOrder.DESC)
+                .distinctBy { it[Submission.solution] }
+                .map {
+                    Solution(
+                        it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
+                        it[Submission.solution],
+                        it[Submission.createdAt]
+                    )
+                })
     }
 
     private fun zip(courseSolution: CourseSolution): ByteArrayResource {

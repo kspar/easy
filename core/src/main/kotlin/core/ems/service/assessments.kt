@@ -2,8 +2,6 @@ package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonRawValue
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
@@ -11,9 +9,15 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.util.DateTimeSerializer
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
+import tools.jackson.databind.annotation.JsonSerialize
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
 data class InlineComment(
     val line_start: Int,
@@ -47,19 +51,19 @@ fun buildFeedbackJson(
 }
 
 data class TeacherActivityResp(
-    @JsonProperty("id") val id: String,
-    @JsonProperty("submission_id") val submissionId: String,
-    @JsonProperty("submission_number") val submissionNumber: Int,
-    @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
-    @JsonProperty("grade") val grade: Int?,
-    @JsonProperty("edited_at") @JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
-    @JsonProperty("feedback") @JsonRawValue val feedback: String?,
-    @JsonProperty("teacher") val teacher: TeacherResp
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("submission_id") val submissionId: String,
+    @get:JsonProperty("submission_number") val submissionNumber: Int,
+    @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+    @get:JsonProperty("grade") val grade: Int?,
+    @get:JsonProperty("edited_at") @get:JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
+    @get:JsonProperty("feedback") @JsonRawValue val feedback: String?,
+    @get:JsonProperty("teacher") val teacher: TeacherResp
 )
 
 
 data class ActivityResp(
-    @JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
+    @get:JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
 )
 
 fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): ActivityResp = transaction {

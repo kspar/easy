@@ -3,18 +3,18 @@ package core.ems.service.exercise
 import com.example.demo.TSLSpecFormat
 import com.example.demo.compileTSL
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import javax.validation.Valid
-import javax.validation.constraints.Size
 
 @RestController
 @RequestMapping("/v2")
@@ -22,27 +22,27 @@ class CompileTSL {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("tsl_spec") @field:Size(max = 100_000) val tslSpec: String,
-        @JsonProperty("format") val format: TSLSpecFormat = TSLSpecFormat.JSON,
+        @param:JsonProperty("tsl_spec") @field:Size(max = 100_000) val tslSpec: String,
+        @param:JsonProperty("format") val format: TSLSpecFormat = TSLSpecFormat.JSON,
     )
 
     data class Resp(
-        @JsonProperty("scripts") val scripts: List<ScriptResp>?,
-        @JsonProperty("feedback") val feedback: String?,
-        @JsonProperty("meta") val meta: MetaResp?,
+        @get:JsonProperty("scripts") val scripts: List<ScriptResp>?,
+        @get:JsonProperty("feedback") val feedback: String?,
+        @get:JsonProperty("meta") val meta: MetaResp?,
     )
 
     data class ScriptResp(
-        @JsonProperty("name") val name: String,
-        @JsonProperty("value") val value: String,
+        @get:JsonProperty("name") val name: String,
+        @get:JsonProperty("value") val value: String,
     )
 
     data class MetaResp(
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("timestamp") val timestamp: DateTime,
-        @JsonProperty("compiler_version") val compilerVersion: String,
-        @JsonProperty("backend_id") val backendId: String,
-        @JsonProperty("backend_version") val backendVersion: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("timestamp") val timestamp: DateTime,
+        @get:JsonProperty("compiler_version") val compilerVersion: String,
+        @get:JsonProperty("backend_id") val backendId: String,
+        @get:JsonProperty("backend_version") val backendVersion: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

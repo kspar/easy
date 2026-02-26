@@ -1,7 +1,7 @@
 package core.ems.service.code
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Account
 import core.db.Course
@@ -14,18 +14,21 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
 import core.util.forEachCombination
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import me.xdrop.fuzzywuzzy.FuzzySearch
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import java.util.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 import kotlin.math.roundToInt
 
 
@@ -41,46 +44,45 @@ class TeacherCheckSimilarityController {
      * 3) exerciseId, courseId(s), submissionIds - compare over all given submissions (must be on given courses)
      */
     data class Req(
-        @JsonProperty("courses", required = false) val courses: List<ReqCourse>,
-        @JsonProperty("submissions", required = false) val submissions: List<ReqSubmission>?
+        @param:JsonProperty("courses", required = false) val courses: List<ReqCourse>,
+        @param:JsonProperty("submissions", required = false) val submissions: List<ReqSubmission>?
     )
 
     data class ReqCourse(
-        @JsonProperty("id", required = true)
+        @param:JsonProperty("id", required = true)
         @field:NotBlank
         @field:Size(max = 100)
         val id: String
     )
 
     data class ReqSubmission(
-        @JsonProperty("id", required = true)
+        @param:JsonProperty("id", required = true)
         @field:NotBlank
         @field:Size(max = 100)
         val id: String
     )
 
-
     data class Resp(
-        @JsonProperty("submissions") val submissions: List<RespSubmission>,
-        @JsonProperty("scores") val scores: List<RespScore>
+        @get:JsonProperty("submissions") val submissions: List<RespSubmission>,
+        @get:JsonProperty("scores") val scores: List<RespScore>
     )
 
     data class RespSubmission(
-        @JsonProperty("id") val id: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("id") val id: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
         // TODO: number
-        @JsonProperty("solution") val solution: String,
-        @JsonProperty("given_name") val givenName: String,
-        @JsonProperty("family_name") val familyName: String,
-        @JsonProperty("course_title") val courseTitle: String
+        @get:JsonProperty("solution") val solution: String,
+        @get:JsonProperty("given_name") val givenName: String,
+        @get:JsonProperty("family_name") val familyName: String,
+        @get:JsonProperty("course_title") val courseTitle: String
     )
 
     data class RespScore(
-        @JsonProperty("sub_1") val sub1: String,
-        @JsonProperty("sub_2") val sub2: String,
-        @JsonProperty("score_a") val scoreA: Int,
-        @JsonProperty("score_b") val scoreB: Int
+        @get:JsonProperty("sub_1") val sub1: String,
+        @get:JsonProperty("sub_2") val sub2: String,
+        @get:JsonProperty("score_a") val scoreA: Int,
+        @get:JsonProperty("score_b") val scoreB: Int
     )
 
 

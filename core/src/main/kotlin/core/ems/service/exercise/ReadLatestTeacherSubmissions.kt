@@ -1,20 +1,20 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.TeacherSubmission
 import core.ems.service.idToLongOrInvalidReq
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.servlet.http.HttpServletResponse
 
 
 @RestController
@@ -23,15 +23,15 @@ class ReadLatestTeacherSubmissions {
     private val log = KotlinLogging.logger {}
 
     data class RespSubmission(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("solution") val solution: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val submissionTime: DateTime
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("solution") val solution: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val submissionTime: DateTime
     )
 
     data class Resp(
-        @JsonProperty("count") val count: Int,
-        @JsonProperty("submissions") val submissions: List<RespSubmission>
+        @get:JsonProperty("count") val count: Int,
+        @get:JsonProperty("submissions") val submissions: List<RespSubmission>
     )
 
 
@@ -39,11 +39,10 @@ class ReadLatestTeacherSubmissions {
     @GetMapping("/exercises/{exerciseId}/testing/autoassess/submissions")
     fun controller(
         @PathVariable("exerciseId") exerciseIdStr: String,
-        response: HttpServletResponse,
         @RequestParam("offset", required = false) offsetStr: String?,
         @RequestParam("limit", required = false) limitStr: String?,
         caller: EasyUser
-    ): Resp? {
+    ): Resp {
 
         log.info { "Getting latest teacher submissions for ${caller.id} on exercise $exerciseIdStr" }
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
@@ -62,7 +61,8 @@ class ReadLatestTeacherSubmissions {
             val totalSubmissions = selectQuery.count()
 
             val submissions = selectQuery
-                .limit(limit ?: totalSubmissions.toInt(), offset ?: 0)
+                .limit(limit ?: totalSubmissions.toInt())
+                .offset(offset ?: 0)
                 .map {
                     RespSubmission(
                         it[TeacherSubmission.id].value.toString(),

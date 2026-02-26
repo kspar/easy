@@ -3,10 +3,13 @@ package core.ems.service.file
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StoredFile
-import mu.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.tika.Tika
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
@@ -15,9 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.security.MessageDigest
 import java.util.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -26,16 +26,16 @@ class UploadStoredFiledController {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("filename", required = true)
+        @param:JsonProperty("filename", required = true)
         @field:NotBlank
         @field:Size(max = 259)
         val filename: String,
         @field:NotBlank
         @field:Size(max = 134640000) // Approx 100,98 MB
-        @JsonProperty("data", required = true) val data: String
+        @param:JsonProperty("data", required = true) val data: String
     )
 
-    data class Resp(@JsonProperty("id") val id: String)
+    data class Resp(@param:JsonProperty("id") val id: String)
 
     @Secured("ROLE_ADMIN", "ROLE_TEACHER")
     @PostMapping("/files")

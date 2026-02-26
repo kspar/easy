@@ -10,9 +10,10 @@ import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 
 private val log = KotlinLogging.logger {}
@@ -52,9 +53,9 @@ fun selectStudentEmailBySubmissionId(submissionId: Long) = transaction {
 
 
 data class GradeResp(
-    @JsonProperty("grade") val grade: Int,
-    @JsonProperty("is_autograde") val isAutograde: Boolean,
-    @JsonProperty("is_graded_directly") val isGradedDirectly: Boolean
+    @get:JsonProperty("grade") val grade: Int,
+    @get:JsonProperty("is_autograde") val isAutograde: Boolean,
+    @get:JsonProperty("is_graded_directly") val isGradedDirectly: Boolean
 )
 
 
@@ -114,14 +115,14 @@ suspend fun autoAssessAsync(
             autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
         } catch (e: Exception) {
             // EZ-1214, retry autoassessment automatically once if it fails
-            log.error("Autoassessment failed, retrying once more...", e)
+            log.error { "Autoassessment failed, retrying once more... ${e.message}" }
             autoGradeScheduler.submitAndAwait(autoExerciseId, solution, PriorityLevel.AUTHENTICATED)
         }
 
         log.debug { "Finished autoassessment" }
         insertAutogradeActivity(autoAss.grade, autoAss.feedback, submissionId, caching, courseExId, studentId)
     } catch (e: Exception) {
-        log.error("Autoassessment failed", e)
+        log.error { "Autoassessment failed ${e.message}" }
         insertAutoAssFailed(submissionId, caching)
         val notification = """
                 Autoassessment failed
@@ -220,8 +221,8 @@ fun insertSubmission(
     }
 
 data class AutomaticAssessmentResp(
-    @JsonProperty("grade") val grade: Int,
-    @JsonProperty("feedback") val feedback: String?
+    @get:JsonProperty("grade") val grade: Int,
+    @get:JsonProperty("feedback") val feedback: String?
 )
 
 fun getLatestAutomaticAssessmentRespOrNull(submissionId: Long) = transaction {

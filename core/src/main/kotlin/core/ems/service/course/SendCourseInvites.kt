@@ -2,20 +2,24 @@ package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.Account
+import core.db.Course
+import core.db.StudentCourseAccess
+import core.db.StudentMoodlePendingAccess
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -23,10 +27,10 @@ import javax.validation.constraints.Size
 class SendCourseInvites(val sendMailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("emails") @field:Valid val students: List<StudentEmailReq>)
+    data class Req(@param:JsonProperty("emails") @field:Valid val students: List<StudentEmailReq>)
 
     data class StudentEmailReq(
-        @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String,
+        @param:JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String,
     )
 
 

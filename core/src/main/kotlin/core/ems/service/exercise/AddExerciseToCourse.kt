@@ -1,7 +1,6 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.AdocService
@@ -14,20 +13,25 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeDeserializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.Size
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.max
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
-import javax.validation.constraints.Size
+import tools.jackson.databind.annotation.JsonDeserialize
+
 
 @RestController
 @RequestMapping("/v2")
@@ -35,27 +39,27 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("exercise_id") @field:Size(max = 100)
+        @param:JsonProperty("exercise_id") @field:Size(max = 100)
         val exerciseId: String,
-        @JsonProperty("threshold") @field:Min(0) @field:Max(100)
+        @param:JsonProperty("threshold") @field:Min(0) @field:Max(100)
         val threshold: Int,
-        @JsonProperty("student_visible")
+        @param:JsonProperty("student_visible")
         val isStudentVisible: Boolean,
-        @JsonDeserialize(using = DateTimeDeserializer::class)
-        @JsonProperty("soft_deadline")
+        @param:JsonDeserialize(using = DateTimeDeserializer::class)
+        @param:JsonProperty("soft_deadline")
         val softDeadline: DateTime?,
-        @JsonDeserialize(using = DateTimeDeserializer::class)
-        @JsonProperty("hard_deadline")
+        @param:JsonDeserialize(using = DateTimeDeserializer::class)
+        @param:JsonProperty("hard_deadline")
         val hardDeadline: DateTime?,
-        @JsonProperty("assessments_student_visible")
+        @param:JsonProperty("assessments_student_visible")
         val assStudentVisible: Boolean,
-        @JsonProperty("instructions_adoc") @field:Size(max = 300000)
+        @param:JsonProperty("instructions_adoc") @field:Size(max = 300000)
         val instructionsAdoc: String?,
-        @JsonProperty("title_alias") @field:Size(max = 100)
+        @param:JsonProperty("title_alias") @field:Size(max = 100)
         val titleAlias: String?
     )
 
-    data class Resp(@JsonProperty("id") val id: String)
+    data class Resp(@get:JsonProperty("id") val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/teacher/courses/{courseId}/exercises")

@@ -11,9 +11,11 @@ import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -87,7 +89,7 @@ class TeacherRetryAutoassessCont(
             )
 
         } catch (e: Exception) {
-            log.error("Autoassessment failed", e)
+            log.error { "Autoassessment failed $e" }
             insertAutoAssFailed(submissionId, cachingService)
             val notification = """
                 Autoassessment retry by teacher failed

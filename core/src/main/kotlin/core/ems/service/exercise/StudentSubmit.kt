@@ -17,14 +17,15 @@ import core.ems.service.moodle.MoodleGradesSyncService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.DelicateCoroutinesApi
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -38,7 +39,7 @@ class StudentSubmitCont(
 ) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("solution", required = true) @field:Size(max = 500000) val solution: String)
+    data class Req(@param:JsonProperty("solution", required = true) @field:Size(max = 500000) val solution: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions")
@@ -58,6 +59,7 @@ class StudentSubmitCont(
         submitSolution(courseExId, solutionBody.solution, caller.id)
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun submitSolution(courseExId: Long, solution: String, studentId: String) {
         if (!isCourseExerciseOpenForSubmit(courseExId, studentId))
             throw InvalidRequestException("Exercise is not open for submissions", ReqError.COURSE_EXERCISE_CLOSED)

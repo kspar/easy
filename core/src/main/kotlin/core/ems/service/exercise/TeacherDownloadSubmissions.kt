@@ -8,17 +8,16 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.util.Zip
 import core.util.writeZipFile
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.Join
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotEmpty
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.servlet.http.HttpServletResponse
-import javax.validation.Valid
-import javax.validation.constraints.NotEmpty
 
 
 @RestController
@@ -26,11 +25,14 @@ import javax.validation.constraints.NotEmpty
 class TeacherDownloadSubmissionsController {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("courses") @field:NotEmpty val courses: List<CourseReq>)
+    data class Req(@param:JsonProperty("courses") @field:NotEmpty val courses: List<CourseReq>)
 
-    data class CourseReq(@JsonProperty("id") val id: String, @JsonProperty("groups") val groups: List<GroupReq>?)
+    data class CourseReq(
+        @param:JsonProperty("id") val id: String,
+        @param:JsonProperty("groups") val groups: List<GroupReq>?
+    )
 
-    data class GroupReq(@JsonProperty("id") val id: String)
+    data class GroupReq(@param:JsonProperty("id") val id: String)
 
     private data class Course(val id: Long, val groups: List<Long>?)
 
@@ -48,7 +50,8 @@ class TeacherDownloadSubmissionsController {
         val exerciseId = exerciseIdStr.idToLongOrInvalidReq()
 
         val courses = req.courses.map {
-            Course(it.id.idToLongOrInvalidReq(),
+            Course(
+                it.id.idToLongOrInvalidReq(),
                 it.groups?.map { group -> group.id.idToLongOrInvalidReq() }
             )
         }

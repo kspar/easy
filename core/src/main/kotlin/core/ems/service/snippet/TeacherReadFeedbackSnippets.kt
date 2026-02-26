@@ -2,14 +2,15 @@ package core.ems.service.snippet
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.FeedbackSnippet
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,15 +24,15 @@ class TeacherReadFeedbackSnippetsController {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("snippets")
-        @JsonInclude(JsonInclude.Include.NON_NULL) val snippets: List<SnippetResp>
+        @get:JsonProperty("snippets")
+        @get:JsonInclude(JsonInclude.Include.NON_NULL) val snippets: List<SnippetResp>
     )
 
     data class SnippetResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("snippet_md") val snippetMd: String,
-        @JsonProperty("snippet_html") val snippetHtml: String,
-        @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("snippet_md") val snippetMd: String,
+        @get:JsonProperty("snippet_html") val snippetHtml: String,
+        @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -44,17 +45,18 @@ class TeacherReadFeedbackSnippetsController {
     }
 
     private fun selectSnippets(teacherId: String): Resp = transaction {
-        Resp(FeedbackSnippet
-            .selectAll()
-            .where { FeedbackSnippet.teacher eq teacherId }
-            .orderBy(FeedbackSnippet.createdAt, SortOrder.DESC)
-            .map {
-                SnippetResp(
-                    it[FeedbackSnippet.id].value.toString(),
-                    it[FeedbackSnippet.snippetMd],
-                    it[FeedbackSnippet.snippetHtml],
-                    it[FeedbackSnippet.createdAt],
-                )
-            })
+        Resp(
+            FeedbackSnippet
+                .selectAll()
+                .where { FeedbackSnippet.teacher eq teacherId }
+                .orderBy(FeedbackSnippet.createdAt, SortOrder.DESC)
+                .map {
+                    SnippetResp(
+                        it[FeedbackSnippet.id].value.toString(),
+                        it[FeedbackSnippet.snippetMd],
+                        it[FeedbackSnippet.snippetHtml],
+                        it[FeedbackSnippet.createdAt],
+                    )
+                })
     }
 }

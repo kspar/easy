@@ -6,17 +6,17 @@ import core.db.FeedbackSnippet
 import core.ems.service.MarkdownService
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -24,7 +24,7 @@ import javax.validation.constraints.Size
 class TeacherUpdateFeedbackSnippetController(val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("snippet_md", required = false) @field:Size(max = 300000) val snippetMd: String?)
+    data class Req(@param:JsonProperty("snippet_md", required = false) @field:Size(max = 300000) val snippetMd: String?)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PutMapping("/snippets/{snippetId}")

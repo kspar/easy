@@ -1,19 +1,15 @@
 package core.aas
 
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.onClosed
 import kotlinx.coroutines.channels.onFailure
-import mu.KotlinLogging
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KFunction
 
-private val log = KotlinLogging.logger {}
 
 /**
  *
@@ -29,6 +25,8 @@ private val log = KotlinLogging.logger {}
  *
  */
 class FunctionScheduler<T>(private val function: KFunction<T>) {
+    private val log = KotlinLogging.logger {}
+
     private val jobs = ConcurrentLinkedQueue<EzJob<T>>()
     private val closed = AtomicBoolean(false)
 
@@ -62,6 +60,7 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
      * @param arguments to be passed to [function]
      * @return [function] output
      */
+    @OptIn(DelicateCoroutinesApi::class)
     suspend fun scheduleAndAwait(vararg arguments: Any?): T {
         val job = synchronized(this) {
             if (closed.get()) throw ExecutorException("Scheduler is killed")

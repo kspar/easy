@@ -1,13 +1,15 @@
 package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.StudentCourseAccess
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -21,18 +23,18 @@ class ReadStudentCourses {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("courses") val courses: List<CourseResp>
+        @get:JsonProperty("courses") val courses: List<CourseResp>
     )
 
     data class CourseResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("alias") val alias: String?,
-        @JsonProperty("course_code") val courseCode: String?,
-        @JsonProperty("archived") val archived: Boolean,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("last_accessed") val lastAccessed: DateTime,
-        @JsonProperty("color") val color: String,
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("alias") val alias: String?,
+        @get:JsonProperty("course_code") val courseCode: String?,
+        @get:JsonProperty("archived") val archived: Boolean,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("last_accessed") val lastAccessed: DateTime,
+        @get:JsonProperty("color") val color: String,
     )
 
     @Secured("ROLE_STUDENT")
@@ -46,7 +48,13 @@ class ReadStudentCourses {
     private fun selectCoursesForStudent(studentId: String): Resp = transaction {
         Resp(
             (StudentCourseAccess innerJoin Course).select(
-                Course.id, Course.title, Course.alias, Course.courseCode, Course.archived, Course.color, StudentCourseAccess.lastAccessed
+                Course.id,
+                Course.title,
+                Course.alias,
+                Course.courseCode,
+                Course.archived,
+                Course.color,
+                StudentCourseAccess.lastAccessed
             ).where {
                 StudentCourseAccess.student eq studentId
             }.map {

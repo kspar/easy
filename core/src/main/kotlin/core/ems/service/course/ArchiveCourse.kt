@@ -8,13 +8,14 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
 
 
 @RestController
@@ -22,7 +23,7 @@ import javax.validation.constraints.NotBlank
 class ArchiveCourse {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("archived") @field:NotBlank val archivedStr: String)
+    data class Req(@param:JsonProperty("archived") @field:NotBlank val archivedStr: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/archive")

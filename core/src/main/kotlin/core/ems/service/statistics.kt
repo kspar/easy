@@ -3,9 +3,10 @@ package core.ems.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.ems.service.cache.CachingService
+import jakarta.validation.Valid
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Service
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.ConcurrentLinkedQueue
-import javax.validation.Valid
 
 private val log = KotlinLogging.logger {}
 
@@ -31,9 +31,9 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 }
 
 data class StatResp(
-    @JsonProperty("in_auto_assessing") val inAutoAssessing: Long,
-    @JsonProperty("total_submissions") val totalSubmissions: Long,
-    @JsonProperty("total_users") val totalUsers: Long
+    @get:JsonProperty("in_auto_assessing") val inAutoAssessing: Long,
+    @get:JsonProperty("total_submissions") val totalSubmissions: Long,
+    @get:JsonProperty("total_users") val totalUsers: Long
 )
 
 

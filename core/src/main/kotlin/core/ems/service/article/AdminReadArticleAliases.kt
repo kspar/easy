@@ -2,14 +2,17 @@ package core.ems.service.article
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,22 +26,22 @@ class ReadArticleAliasesController {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @JsonProperty("articles") val articles: List<ArticleResp>
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("articles") val articles: List<ArticleResp>
     )
 
     data class ArticleResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @JsonProperty("aliases") val aliases: List<RespAlias>?
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("aliases") val aliases: List<RespAlias>?
     )
 
     data class RespAlias(
-        @JsonProperty("id") val id: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonProperty("created_by") val createdBy: String
+        @get:JsonProperty("id") val id: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("created_by") val createdBy: String
     )
 
     @Secured("ROLE_ADMIN")

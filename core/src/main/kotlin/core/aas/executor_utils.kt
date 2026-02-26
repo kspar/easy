@@ -3,10 +3,12 @@ package core.aas
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.SysConf
 import core.db.*
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.boot.web.client.RestTemplateBuilder
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.springframework.boot.restclient.RestTemplateBuilder
 import org.springframework.web.client.RestTemplate
 import java.time.Duration
 
@@ -18,22 +20,22 @@ private val log = KotlinLogging.logger {}
 
 
 data class ExecutorResponse(
-    @JsonProperty("grade") val grade: Int,
-    @JsonProperty("feedback") val feedback: String
+    @get:JsonProperty("grade") val grade: Int,
+    @get:JsonProperty("feedback") val feedback: String
 )
 
 data class ExecutorRequest(
-    @JsonProperty("submission") val submission: String,
-    @JsonProperty("grading_script") val gradingScript: String,
-    @JsonProperty("assets") val assets: List<ExecutorRequestAsset>,
-    @JsonProperty("image_name") val imageName: String,
-    @JsonProperty("max_time_sec") val maxTime: Int,
-    @JsonProperty("max_mem_mb") val maxMem: Int
+    @param:JsonProperty("submission") val submission: String,
+    @param:JsonProperty("grading_script") val gradingScript: String,
+    @param:JsonProperty("assets") val assets: List<ExecutorRequestAsset>,
+    @param:JsonProperty("image_name") val imageName: String,
+    @param:JsonProperty("max_time_sec") val maxTime: Int,
+    @param:JsonProperty("max_mem_mb") val maxMem: Int
 )
 
 data class ExecutorRequestAsset(
-    @JsonProperty("file_name") val fileName: String,
-    @JsonProperty("file_content") val fileContent: String
+    @param:JsonProperty("file_name") val fileName: String,
+    @param:JsonProperty("file_content") val fileContent: String
 )
 
 data class CapableExecutor(
@@ -57,13 +59,11 @@ internal data class AutoAssessExerciseDetails(
     val assets: List<AutoAssessExerciseAsset>
 )
 
-fun getExecutorMaxLoad(executorId: Long): Int {
-    return transaction {
-        Executor.select(Executor.maxLoad)
-            .where { Executor.id eq executorId }
-            .map { it[Executor.maxLoad] }
-            .first()
-    }
+fun getExecutorMaxLoad(executorId: Long): Int = transaction {
+    Executor.select(Executor.maxLoad)
+        .where { Executor.id eq executorId }
+        .map { it[Executor.maxLoad] }
+        .first()
 }
 
 fun getAvailableExecutorIds(): List<Long> = transaction { Executor.select(Executor.id).map { it[Executor.id].value } }
@@ -82,54 +82,50 @@ internal fun AutoAssessExerciseDetails.mapToExecutorRequest(submission: String):
         maxMem
     )
 
-internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails {
-    return transaction {
-        val assets = Asset
-            .selectAll().where { Asset.autoExercise eq autoExerciseId }
-            .map {
-                AutoAssessExerciseAsset(
-                    it[Asset.fileName],
-                    it[Asset.fileContent]
-                )
-            }
+internal fun getAutoExerciseDetails(autoExerciseId: Long): AutoAssessExerciseDetails = transaction {
+    val assets = Asset
+        .selectAll().where { Asset.autoExercise eq autoExerciseId }
+        .map {
+            AutoAssessExerciseAsset(
+                it[Asset.fileName],
+                it[Asset.fileContent]
+            )
+        }
 
-        AutoExercise.selectAll().where { AutoExercise.id eq autoExerciseId }
-            .map {
-                AutoAssessExerciseDetails(
-                    it[AutoExercise.gradingScript],
-                    it[AutoExercise.containerImage].value,
-                    it[AutoExercise.maxTime],
-                    it[AutoExercise.maxMem],
-                    assets
-                )
-            }
-            .first()
-    }
+    AutoExercise.selectAll().where { AutoExercise.id eq autoExerciseId }
+        .map {
+            AutoAssessExerciseDetails(
+                it[AutoExercise.gradingScript],
+                it[AutoExercise.containerImage].value,
+                it[AutoExercise.maxTime],
+                it[AutoExercise.maxMem],
+                assets
+            )
+        }
+        .first()
 }
 
-internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> {
-    return transaction {
-        (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
-            .selectAll().where { AutoExercise.id eq autoExerciseId }
-            .map {
-                CapableExecutor(
-                    it[Executor.id].value,
-                    it[Executor.name],
-                    it[Executor.baseUrl],
-                    it[Executor.maxLoad],
-                    it[Executor.drain]
-                )
-            }
-            .toSet()
-    }
+internal fun getCapableExecutors(autoExerciseId: Long): Set<CapableExecutor> = transaction {
+    (AutoExercise innerJoin ContainerImage innerJoin ExecutorContainerImage innerJoin Executor)
+        .selectAll().where { AutoExercise.id eq autoExerciseId }
+        .map {
+            CapableExecutor(
+                it[Executor.id].value,
+                it[Executor.name],
+                it[Executor.baseUrl],
+                it[Executor.maxLoad],
+                it[Executor.drain]
+            )
+        }
+        .toSet()
 }
 
 private fun timeoutRestTemplate(): RestTemplate {
     val timeout = SysConf.getProp(EXECUTOR_REQUEST_TIMEOUT_SECONDS_KEY)?.toLong() ?: 3600L
 
     return RestTemplateBuilder()
-        .setConnectTimeout(Duration.ofSeconds(timeout))
-        .setReadTimeout(Duration.ofSeconds(timeout))
+        .connectTimeout(Duration.ofSeconds(timeout))
+        .readTimeout(Duration.ofSeconds(timeout))
         .build()
 }
 
@@ -141,8 +137,8 @@ internal fun callExecutor(executor: CapableExecutor, request: ExecutorRequest): 
     )
 
     if (responseEntity.statusCode.isError) {
-        log.error { "Executor error ${responseEntity.statusCodeValue} with request $request" }
-        throw ExecutorException("Executor error (${responseEntity.statusCodeValue})")
+        log.error { "Executor error ${responseEntity.statusCode.value()} with request $request" }
+        throw ExecutorException("Executor error (${responseEntity.statusCode.value()})")
     }
 
     val response = responseEntity.body

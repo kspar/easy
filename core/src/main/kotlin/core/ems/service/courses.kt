@@ -1,20 +1,20 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.db.*
 import core.ems.service.exercise.getStudentExerciseStatus
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
 import core.util.notNullAndInPast
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import java.io.Serializable
 import java.security.SecureRandom
@@ -22,36 +22,36 @@ import java.security.SecureRandom
 private val log = KotlinLogging.logger {}
 
 data class SubmissionRow(
-    @JsonProperty("submission") val latestSubmission: LatestSubmissionResp?,
-    @JsonProperty("status") val status: StudentExerciseStatus,
-    @JsonProperty("student_id") val accountId: String,
-    @JsonProperty("given_name") val accountGivenName: String,
-    @JsonProperty("family_name") val accountFamilyName: String,
-    @JsonProperty("groups") val groups: List<GroupResp>
+    @get:JsonProperty("submission") val latestSubmission: LatestSubmissionResp?,
+    @get:JsonProperty("status") val status: StudentExerciseStatus,
+    @get:JsonProperty("student_id") val accountId: String,
+    @get:JsonProperty("given_name") val accountGivenName: String,
+    @get:JsonProperty("family_name") val accountFamilyName: String,
+    @get:JsonProperty("groups") val groups: List<GroupResp>
 ) : Serializable
 
 data class LatestSubmissionResp(
-    @JsonProperty("id") val submissionId: String,
-    @JsonProperty("submission_number") val submissionNumber: Int,
-    @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("time") val time: DateTime,
-    @JsonProperty("grade") val grade: GradeResp?,
-    @JsonProperty("seen") val seen: Boolean,
+    @get:JsonProperty("id") val submissionId: String,
+    @get:JsonProperty("submission_number") val submissionNumber: Int,
+    @get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("time") val time: DateTime,
+    @get:JsonProperty("grade") val grade: GradeResp?,
+    @get:JsonProperty("seen") val seen: Boolean,
 )
 
 data class GroupResp(
-    @JsonProperty("id") val id: String,
-    @JsonProperty("name") val name: String
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("name") val name: String
 )
 
 data class StudentsResp(
-    @JsonProperty("id") val id: String,
-    @JsonProperty("email") val email: String,
-    @JsonProperty("given_name") val givenName: String,
-    @JsonProperty("family_name") val familyName: String,
-    @JsonSerialize(using = DateTimeSerializer::class)
-    @JsonProperty("created_at") val createdAt: DateTime?,
-    @JsonProperty("groups") val groups: List<GroupResp>,
-    @JsonProperty("moodle_username") val moodleUsername: String?,
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("email") val email: String,
+    @get:JsonProperty("given_name") val givenName: String,
+    @get:JsonProperty("family_name") val familyName: String,
+    @get:JsonSerialize(using = DateTimeSerializer::class)
+    @get:JsonProperty("created_at") val createdAt: DateTime?,
+    @get:JsonProperty("groups") val groups: List<GroupResp>,
+    @get:JsonProperty("moodle_username") val moodleUsername: String?,
 )
 
 data class CourseDTO(
@@ -150,26 +150,26 @@ fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?)
 
 
 data class ExercisesResp(
-    @JsonProperty("course_exercise_id") val courseExerciseId: String,
-    @JsonProperty("exercise_id") val exerciseId: String,
-    @JsonProperty("library_title") val libraryTitle: String,
-    @JsonProperty("title_alias") val titleAlias: String?,
-    @JsonProperty("effective_title") val effectiveTitle: String,
-    @JsonProperty("grade_threshold") val gradeThreshold: Int,
-    @JsonProperty("student_visible") val studentVisible: Boolean,
-    @JsonSerialize(using = DateTimeSerializer::class)
-    @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
-    @JsonSerialize(using = DateTimeSerializer::class)
-    @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-    @JsonSerialize(using = DateTimeSerializer::class)
-    @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
-    @JsonProperty("grader_type") val graderType: GraderType,
-    @JsonProperty("ordering_idx") val orderingIndex: Int,
-    @JsonProperty("unstarted_count") val unstartedCount: Int,
-    @JsonProperty("ungraded_count") val ungradedCount: Int,
-    @JsonProperty("started_count") val startedCount: Int,
-    @JsonProperty("completed_count") val completedCount: Int,
-    @JsonProperty("latest_submissions") val latestSubmissions: List<SubmissionRow>,
+    @get:JsonProperty("course_exercise_id") val courseExerciseId: String,
+    @get:JsonProperty("exercise_id") val exerciseId: String,
+    @get:JsonProperty("library_title") val libraryTitle: String,
+    @get:JsonProperty("title_alias") val titleAlias: String?,
+    @get:JsonProperty("effective_title") val effectiveTitle: String,
+    @get:JsonProperty("grade_threshold") val gradeThreshold: Int,
+    @get:JsonProperty("student_visible") val studentVisible: Boolean,
+    @get:JsonSerialize(using = DateTimeSerializer::class)
+    @get:JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+    @get:JsonSerialize(using = DateTimeSerializer::class)
+    @get:JsonProperty("soft_deadline") val softDeadline: DateTime?,
+    @get:JsonSerialize(using = DateTimeSerializer::class)
+    @get:JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+    @get:JsonProperty("grader_type") val graderType: GraderType,
+    @get:JsonProperty("ordering_idx") val orderingIndex: Int,
+    @get:JsonProperty("unstarted_count") val unstartedCount: Int,
+    @get:JsonProperty("ungraded_count") val ungradedCount: Int,
+    @get:JsonProperty("started_count") val startedCount: Int,
+    @get:JsonProperty("completed_count") val completedCount: Int,
+    @get:JsonProperty("latest_submissions") val latestSubmissions: List<SubmissionRow>,
 )
 
 
@@ -523,7 +523,8 @@ private fun CourseExerciseException.extractGroups(courseExId: Long): List<GroupE
     return this.groupExceptions[courseExId]
 }
 
-private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? = this?.maxByOrNull { it.value ?: DateTime(0) }?.value
+private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? =
+    this?.maxByOrNull { it.value ?: DateTime(0) }?.value
 
 /**
  * Determines the soft deadline for a specific course exercise, prioritizing student and group exceptions
@@ -543,7 +544,8 @@ fun determineSoftDeadline(
     defaultSoftDeadline: DateTime?
 ): DateTime? {
     val studentException: ExceptionValue? = exceptions.extractStudentException(courseExId, studentId)?.softDeadline
-    val groupException: List<ExceptionValue>? = exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }?.ifEmpty { null }
+    val groupException: List<ExceptionValue>? =
+        exceptions.extractGroups(courseExId)?.mapNotNull { it.softDeadline }?.ifEmpty { null }
 
     return when {
         studentException != null -> studentException.value

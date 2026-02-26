@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
@@ -12,10 +12,13 @@ import core.ems.service.getImplicitDirFromExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.leftJoin
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.leftJoin
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,49 +33,49 @@ class ReadExercise {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("dir_id") val implicitDirId: String,
-        @JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val created_at: DateTime,
-        @JsonProperty("is_public") val public: Boolean,
-        @JsonProperty("is_anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean,
-        @JsonProperty("owner_id") val ownerUsername: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("last_modified") val lastModified: DateTime,
-        @JsonProperty("last_modified_by_id") val lastModifiedBy: String,
-        @JsonProperty("grader_type") val grader: GraderType,
-        @JsonProperty("solution_file_name") val solutionFileName: String,
-        @JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("text_html") val textHtml: String?,
-        @JsonProperty("text_adoc") val textAdoc: String?,
-        @JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
-        @JsonProperty("grading_script") val gradingScript: String?,
-        @JsonProperty("container_image") val containerImage: String?,
-        @JsonProperty("max_time_sec") val maxTime: Int?,
-        @JsonProperty("max_mem_mb") val maxMem: Int?,
-        @JsonProperty("assets") val assets: List<RespAsset>?,
-        @JsonProperty("executors") val executors: List<RespExecutor>?,
-        @JsonProperty("on_courses") val courses: List<RespCourse>,
-        @JsonProperty("on_courses_no_access") val coursesNoAccessCount: Int
+        @get:JsonProperty("dir_id") val implicitDirId: String,
+        @get:JsonProperty("effective_access") val effectiveAccess: DirAccessLevel,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val created_at: DateTime,
+        @get:JsonProperty("is_public") val public: Boolean,
+        @get:JsonProperty("is_anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean,
+        @get:JsonProperty("owner_id") val ownerUsername: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("last_modified") val lastModified: DateTime,
+        @get:JsonProperty("last_modified_by_id") val lastModifiedBy: String,
+        @get:JsonProperty("grader_type") val grader: GraderType,
+        @get:JsonProperty("solution_file_name") val solutionFileName: String,
+        @get:JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("text_html") val textHtml: String?,
+        @get:JsonProperty("text_adoc") val textAdoc: String?,
+        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
+        @get:JsonProperty("grading_script") val gradingScript: String?,
+        @get:JsonProperty("container_image") val containerImage: String?,
+        @get:JsonProperty("max_time_sec") val maxTime: Int?,
+        @get:JsonProperty("max_mem_mb") val maxMem: Int?,
+        @get:JsonProperty("assets") val assets: List<RespAsset>?,
+        @get:JsonProperty("executors") val executors: List<RespExecutor>?,
+        @get:JsonProperty("on_courses") val courses: List<RespCourse>,
+        @get:JsonProperty("on_courses_no_access") val coursesNoAccessCount: Int
     )
 
     data class RespAsset(
-        @JsonProperty("file_name") val fileName: String,
-        @JsonProperty("file_content") val fileContent: String
+        @get:JsonProperty("file_name") val fileName: String,
+        @get:JsonProperty("file_content") val fileContent: String
     )
 
     data class RespExecutor(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String
     )
 
     data class RespCourse(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("alias") val alias: String?,
-        @JsonProperty("course_exercise_id") val courseExId: String,
-        @JsonProperty("course_exercise_title_alias") val titleAlias: String?
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("alias") val alias: String?,
+        @get:JsonProperty("course_exercise_id") val courseExId: String,
+        @get:JsonProperty("course_exercise_title_alias") val titleAlias: String?
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -95,7 +98,8 @@ class ReadExercise {
         )
 
         val usedOnCourses =
-            (CourseExercise innerJoin Course).leftJoin(TeacherCourseAccess,
+            (CourseExercise innerJoin Course).leftJoin(
+                TeacherCourseAccess,
                 onColumn = { Course.id }, otherColumn = { TeacherCourseAccess.course },
                 additionalConstraint = { TeacherCourseAccess.teacher eq caller.id }).select(
                 Course.id, Course.title, Course.alias, CourseExercise.id, CourseExercise.titleAlias,
