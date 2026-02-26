@@ -13,6 +13,12 @@ class EasyUser(
     val roles: Set<EasyGrantedAuthority>,
 ) : AbstractAuthenticationToken(roles) {
 
+    // Safe to set: authentication is guaranteed by the filter logic that constructs
+    // this object only after validating required claims (username, email, roles).
+    // Required by Spring Security 7 which strictly checks isAuthenticated() == true.
+    init {
+        isAuthenticated = true
+    }
     // We have no credentials
     override fun getCredentials(): Any? = null
 
