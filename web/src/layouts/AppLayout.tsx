@@ -54,7 +54,16 @@ import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
 import type { StudentExerciseStatus } from '../api/types.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
+import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
+}
+
+function exerciseLink(id: string, title: string): string {
+  return `/library/exercise/${id}/${slugify(title)}`
+}
 
 const DRAWER_WIDTH = 260
 
@@ -78,6 +87,9 @@ export default function AppLayout() {
   const courseMatch = location.pathname.match(/^\/courses\/(\d+)/)
   const courseId = courseMatch ? courseMatch[1] : undefined
   const isTeacherOrAdmin = activeRole === 'teacher' || activeRole === 'admin'
+  const onLibrary = location.pathname.startsWith('/library')
+
+  const { recent: recentExercises } = useRecentExercises()
 
   // Student exercise sidebar
   const studentCourseId = activeRole === 'student' ? courseId : undefined
@@ -307,7 +319,7 @@ export default function AppLayout() {
         {isTeacherOrAdmin && (
           <ListItemButton
             selected={isActive('/library')}
-            onClick={() => navTo('/library')}
+            onClick={() => navTo('/library/dir/root')}
           >
             <ListItemIcon>
               <LibraryBooksOutlined
@@ -319,6 +331,53 @@ export default function AppLayout() {
               primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
             />
           </ListItemButton>
+        )}
+
+        {/* Recently viewed exercises on library pages */}
+        {isTeacherOrAdmin && onLibrary && recentExercises.length > 0 && (
+          <List disablePadding>
+            <ListSubheader
+              disableSticky
+              sx={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                lineHeight: '32px',
+                mt: 1,
+                px: 2.5,
+              }}
+            >
+              {t('library.recentlyViewed')}
+            </ListSubheader>
+            {recentExercises.map((ex) => {
+              const href = exerciseLink(ex.id, ex.title)
+              return (
+                <ListItemButton
+                  key={ex.id}
+                  component="a"
+                  href={href}
+                  selected={location.pathname.startsWith(`/library/exercise/${ex.id}`)}
+                  onClick={(e: React.MouseEvent) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                    e.preventDefault()
+                    navTo(href)
+                  }}
+                  sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+                >
+                  <ListItemText
+                    primary={ex.title}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      noWrap: true,
+                      fontSize: '0.82rem',
+                    }}
+                  />
+                </ListItemButton>
+              )
+            })}
+          </List>
         )}
 
         {/* Student: exercise list in sidebar */}
