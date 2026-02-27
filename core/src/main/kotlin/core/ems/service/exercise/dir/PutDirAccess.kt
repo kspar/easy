@@ -70,6 +70,7 @@ class PutDirAccess {
     private fun emailToImplicitGroup(email: String): Long {
         val username = getUsernameByEmail(email) ?: throw InvalidRequestException(
             "Account with email $email not found", ReqError.ENTITY_WITH_ID_NOT_FOUND, "email" to email,
+            notify = false,
         )
         return getImplicitGroupFromAccount(username)
     }
