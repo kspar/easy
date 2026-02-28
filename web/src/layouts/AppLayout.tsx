@@ -347,6 +347,7 @@ export default function AppLayout() {
                 lineHeight: '32px',
                 mt: 1,
                 px: 2.5,
+                cursor: 'default',
               }}
             >
               {t('library.recentlyViewed')}
