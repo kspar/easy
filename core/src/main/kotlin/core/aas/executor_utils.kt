@@ -25,17 +25,17 @@ data class ExecutorResponse(
 )
 
 data class ExecutorRequest(
-    @param:JsonProperty("submission") val submission: String,
-    @param:JsonProperty("grading_script") val gradingScript: String,
-    @param:JsonProperty("assets") val assets: List<ExecutorRequestAsset>,
-    @param:JsonProperty("image_name") val imageName: String,
-    @param:JsonProperty("max_time_sec") val maxTime: Int,
-    @param:JsonProperty("max_mem_mb") val maxMem: Int
+    @get:JsonProperty("submission") val submission: String,
+    @get:JsonProperty("grading_script") val gradingScript: String,
+    @get:JsonProperty("assets") val assets: List<ExecutorRequestAsset>,
+    @get:JsonProperty("image_name") val imageName: String,
+    @get:JsonProperty("max_time_sec") val maxTime: Int,
+    @get:JsonProperty("max_mem_mb") val maxMem: Int
 )
 
 data class ExecutorRequestAsset(
-    @param:JsonProperty("file_name") val fileName: String,
-    @param:JsonProperty("file_content") val fileContent: String
+    @get:JsonProperty("file_name") val fileName: String,
+    @get:JsonProperty("file_content") val fileContent: String
 )
 
 data class CapableExecutor(

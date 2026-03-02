@@ -23,14 +23,15 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
-import org.springframework.web.client.RestTemplate
+import org.springframework.boot.restclient.RestTemplateBuilder
 
 
 data class MoodleSyncedStudents(val syncedPendingStudents: Int)
 
 @Service
-class MoodleStudentsSyncService(val mailService: SendMailService) {
+class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBuilder: RestTemplateBuilder) {
     private val log = KotlinLogging.logger {}
+    private val restTemplate = restTemplateBuilder.build()
 
     @Value("\${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
@@ -83,7 +84,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService) {
         map.add("shortname", moodleShortName)
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-        val responseEntity = RestTemplate().postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
+        val responseEntity = restTemplate.postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
 
         if (responseEntity.statusCode.value() != 200) {
             log.error { "Moodle linking error ${responseEntity.statusCode.value()} with request $request" }

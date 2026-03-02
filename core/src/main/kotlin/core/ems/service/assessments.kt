@@ -57,7 +57,7 @@ data class TeacherActivityResp(
     @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
     @get:JsonProperty("grade") val grade: Int?,
     @get:JsonProperty("edited_at") @get:JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
-    @get:JsonProperty("feedback") @JsonRawValue val feedback: String?,
+    @get:JsonProperty("feedback") @get:JsonRawValue val feedback: String?,
     @get:JsonProperty("teacher") val teacher: TeacherResp
 )
 

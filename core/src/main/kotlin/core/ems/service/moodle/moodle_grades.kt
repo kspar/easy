@@ -23,13 +23,14 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
-import org.springframework.web.client.RestTemplate
+import org.springframework.boot.restclient.RestTemplateBuilder
 import tools.jackson.module.kotlin.jacksonObjectMapper
 
 
 @Service
-class MoodleGradesSyncService {
+class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
     private val log = KotlinLogging.logger {}
+    private val restTemplate = restTemplateBuilder.build()
 
     @Value("\${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
@@ -38,20 +39,20 @@ class MoodleGradesSyncService {
 
 
     data class MoodleReq(
-        @param:JsonProperty("shortname") val shortname: String,
-        @param:JsonProperty("exercises") val exercises: List<MoodleReqExercise>
+        @get:JsonProperty("shortname") val shortname: String,
+        @get:JsonProperty("exercises") val exercises: List<MoodleReqExercise>
     )
 
     data class MoodleReqExercise(
-        @param:JsonProperty("idnumber") val idnumber: String,
-        @param:JsonProperty("title") val title: String,
-        @param:JsonProperty("grades") val grades: List<MoodleReqGrade>
+        @get:JsonProperty("idnumber") val idnumber: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("grades") val grades: List<MoodleReqGrade>
     )
 
 
     data class MoodleReqGrade(
-        @param:JsonProperty("username") val username: String,
-        @param:JsonProperty("grade") val grade: Int
+        @get:JsonProperty("username") val username: String,
+        @get:JsonProperty("grade") val grade: Int
     )
 
 
@@ -126,7 +127,7 @@ class MoodleGradesSyncService {
         val request = HttpEntity(map, headers)
 
         val responseEntity: ResponseEntity<String> =
-            RestTemplate().postForEntity(moodleGradeUrl, request, String::class.java)
+            restTemplate.postForEntity(moodleGradeUrl, request, String::class.java)
 
         if (responseEntity.statusCode.value() != 200) {
             log.error { "Moodle grade syncing error ${responseEntity.statusCode.value()} with data $req" }
