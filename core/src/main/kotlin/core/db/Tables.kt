@@ -141,8 +141,8 @@ object StudentCourseAccess : Table("student_course_access") {
 }
 
 object StudentCourseGroup : Table("student_course_group_access") {
-    val student = reference("student_id", StudentCourseAccess.student)
-    val course = reference("course_id", StudentCourseAccess.course)
+    val student = reference("student_id", Account)
+    val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
     override val primaryKey = PrimaryKey(student, course, courseGroup)
 }
@@ -158,7 +158,7 @@ object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
 
 object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_group_access") {
     val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername)
-    val course = reference("course_id", StudentMoodlePendingAccess.course)
+    val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
     override val primaryKey = PrimaryKey(moodleUsername, course, courseGroup)
 }

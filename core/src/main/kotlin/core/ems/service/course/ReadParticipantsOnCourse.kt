@@ -15,6 +15,8 @@ import core.ems.service.selectStudentsOnCourse
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.andWhere
@@ -128,7 +130,13 @@ class ReadParticipantsOnCourseController {
         transaction {
             data class PendingStudent(val moodleUsername: String, val email: String, val inviteId: String)
 
-            (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
+            StudentMoodlePendingAccess
+                .join(StudentMoodlePendingCourseGroup, JoinType.LEFT,
+                    additionalConstraint = {
+                        (StudentMoodlePendingAccess.moodleUsername eq StudentMoodlePendingCourseGroup.moodleUsername) and
+                                (StudentMoodlePendingAccess.course eq StudentMoodlePendingCourseGroup.course)
+                    })
+                .join(CourseGroup, JoinType.LEFT, StudentMoodlePendingCourseGroup.courseGroup, CourseGroup.id)
                 .select(
                     StudentMoodlePendingAccess.moodleUsername,
                     StudentMoodlePendingAccess.email,

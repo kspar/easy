@@ -8,7 +8,9 @@ import core.db.StudentCourseGroup
 import core.db.TeacherCourseAccess
 import core.util.DateTimeSerializer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.alias
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
@@ -135,7 +137,12 @@ class ReadTeacherCourses {
 
     private fun selectStudentCountForCourse(courseId: Long): Long =
         // Select distinct students, ignoring their groups
-        (StudentCourseAccess leftJoin StudentCourseGroup)
+        StudentCourseAccess.join(
+            StudentCourseGroup, JoinType.LEFT,
+            additionalConstraint = {
+                (StudentCourseAccess.student eq StudentCourseGroup.student) and
+                        (StudentCourseAccess.course eq StudentCourseGroup.course)
+            })
             .select(StudentCourseAccess.student)
             .where { StudentCourseAccess.course eq courseId }
             .withDistinct()

@@ -351,7 +351,13 @@ fun selectAllCourseExercisesLatestSubmissions(
     }
 
 fun selectStudentsOnCourse(courseId: Long, groupId: Long? = null): List<StudentsResp> = transaction {
-    val query = (Account innerJoin StudentCourseAccess leftJoin StudentCourseGroup leftJoin CourseGroup)
+    val query = (Account innerJoin StudentCourseAccess)
+        .join(StudentCourseGroup, JoinType.LEFT,
+            additionalConstraint = {
+                (StudentCourseAccess.student eq StudentCourseGroup.student) and
+                        (StudentCourseAccess.course eq StudentCourseGroup.course)
+            })
+        .join(CourseGroup, JoinType.LEFT, StudentCourseGroup.courseGroup, CourseGroup.id)
         .select(
             Account.id, Account.email, Account.givenName, Account.familyName, StudentCourseAccess.moodleUsername,
             StudentCourseAccess.createdAt, CourseGroup.id, CourseGroup.name

@@ -79,10 +79,15 @@ class ExportPersonalCourseLatestSubmissions {
 
     private fun zip(courseSolution: CourseSolution): ByteArrayResource {
         val zipOutputStream = ByteArrayOutputStream()
+        val nameCount = mutableMapOf<String, Int>()
 
         ZipOutputStream(zipOutputStream).use { zipStream ->
             courseSolution.solutions.forEach {
-                val entry = ZipEntry(it.exerciseName + ".py")
+                val baseName = it.exerciseName
+                val count = nameCount.getOrDefault(baseName, 0)
+                nameCount[baseName] = count + 1
+                val fileName = if (count == 0) "$baseName.py" else "$baseName ($count).py"
+                val entry = ZipEntry(fileName)
                 entry.lastModifiedTime = FileTime.fromMillis(it.createdAt.millis)
                 zipStream.putNextEntry(entry)
                 zipStream.write(it.submission.toByteArray(Charsets.UTF_8))

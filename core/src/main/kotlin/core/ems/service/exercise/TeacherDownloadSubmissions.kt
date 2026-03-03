@@ -76,7 +76,12 @@ class TeacherDownloadSubmissionsController {
         transaction {
 
             val join1 = Submission innerJoin CourseExercise innerJoin Account
-            val join2 = StudentCourseAccess leftJoin (StudentCourseGroup innerJoin CourseGroup)
+            val join2 = StudentCourseAccess.join(
+                StudentCourseGroup.innerJoin(CourseGroup), JoinType.LEFT,
+                additionalConstraint = {
+                    (StudentCourseAccess.student eq StudentCourseGroup.student) and
+                            (StudentCourseAccess.course eq StudentCourseGroup.course)
+                })
 
             val query = Join(join1, join2, onColumn = Submission.student, otherColumn = StudentCourseAccess.student)
                 .select(
