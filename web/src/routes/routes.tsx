@@ -87,6 +87,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'library',
+        element: <Navigate to="/library/dir/root" replace />,
+      },
+      {
+        path: 'library/dir/:dirId/*',
         element: (
           <RequireAuth allowedRoles={['teacher', 'admin']}>
             <ExerciseLibraryPage />
@@ -94,7 +98,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'library/:exerciseId',
+        path: 'library/exercise/:exerciseId/*',
         element: (
           <RequireAuth allowedRoles={['teacher', 'admin']}>
             <ExercisePage />

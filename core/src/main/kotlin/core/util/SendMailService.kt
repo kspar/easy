@@ -269,8 +269,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     @Async
     fun sendSystemNotification(message: String, id: String = UUID.randomUUID().toString()) {
         if (!sysEmailEnabled) {
-            log.info { "System notifications disabled, ignoring" }
-            log.info { "Message: $message" }
+            log.info { "System notification (email disabled): ${message.lineSequence().first()}" }
             return
         }
 

@@ -88,22 +88,6 @@ export interface TeacherResp {
   family_name: string
 }
 
-export interface InlineComment {
-  line_start: number
-  line_end: number
-  code: string
-  text_md: string
-  text_html: string
-  type: 'comment' | 'suggestion'
-  suggested_code?: string
-}
-
-export interface FeedbackResp {
-  general_md: string | null
-  general_html: string | null
-  inline: InlineComment[]
-}
-
 export interface TeacherActivityResp {
   id: string
   submission_id: string
@@ -111,8 +95,25 @@ export interface TeacherActivityResp {
   created_at: string
   grade: number | null
   edited_at: string | null
-  feedback: FeedbackResp | null
+  feedback_md: string | null
+  feedback_html: string | null
   teacher: TeacherResp
+}
+
+export interface InlineCommentResp {
+  id: string
+  submission_id: string
+  submission_number: number
+  teacher: TeacherResp
+  created_at: string
+  edited_at: string | null
+  line_start: number
+  line_end: number
+  code: string
+  text_md: string
+  text_html: string
+  type: 'comment' | 'suggestion'
+  suggested_code?: string
 }
 
 // Teacher exercise types
@@ -241,6 +242,40 @@ export interface MoodlePropsResp {
   } | null
 }
 
+// Teacher submission summary (from all-submissions-by-student endpoint, no solution)
+export interface TeacherSubmissionSummaryResp {
+  id: string
+  submission_number: number
+  created_at: string
+  status: StudentExerciseStatus
+  grade: GradeResp | null
+}
+
+// Teacher submission detail (includes solution code)
+export interface TeacherSubmissionDetailResp {
+  id: string
+  submission_number: number
+  solution: string
+  created_at: string
+  seen: boolean
+  autograde_status: AutoGradeStatus
+  grade: GradeResp | null
+  auto_assessment: AutomaticAssessmentResp | null
+}
+
+// Teacher's own test submission
+export interface TeacherTestSubmissionResp {
+  id: string
+  solution: string
+  created_at: string
+}
+
+// Teacher autoassess result
+export interface TeacherAutoassessResp {
+  grade: number
+  feedback: string | null
+}
+
 export interface CourseInviteResp {
   invite_id: string
   expires_at: string
@@ -248,4 +283,84 @@ export interface CourseInviteResp {
   allowed_uses: number
   used_count: number
   uses_remaining: number
+}
+
+// Library types
+
+export type DirAccessLevel = 'P' | 'PR' | 'PRA' | 'PRAW' | 'PRAWM'
+
+export interface LibraryDir {
+  id: string
+  name: string
+  effective_access: DirAccessLevel
+  is_shared: boolean
+  created_at: string
+  modified_at: string
+}
+
+export interface LibraryExercise {
+  exercise_id: string
+  dir_id: string
+  title: string
+  effective_access: DirAccessLevel
+  is_shared: boolean
+  grader_type: GraderType
+  courses_count: number
+  created_at: string
+  created_by: string
+  modified_at: string
+  modified_by: string
+}
+
+export interface LibraryDirResp {
+  current_dir: LibraryDir | null
+  child_dirs: LibraryDir[]
+  child_exercises: LibraryExercise[]
+}
+
+export interface LibraryDirParent {
+  id: string
+  name: string
+}
+
+export interface LibraryExerciseDetail {
+  title: string
+}
+
+// Library sharing/access types
+
+export interface InheritingDirRef {
+  id: string
+  name: string
+}
+
+export interface AnyAccessResp {
+  access: DirAccessLevel
+  inherited_from?: InheritingDirRef
+}
+
+export interface AccountAccessResp {
+  username: string
+  given_name: string
+  family_name: string
+  email: string | null
+  group_id: string
+  access: DirAccessLevel
+  inherited_from?: InheritingDirRef
+}
+
+export interface GroupAccessResp {
+  id: string
+  name: string
+  access: DirAccessLevel
+  inherited_from?: InheritingDirRef
+}
+
+export interface DirAccessesResp {
+  direct_any: AnyAccessResp | null
+  direct_accounts: AccountAccessResp[]
+  direct_groups: GroupAccessResp[]
+  inherited_any: AnyAccessResp | null
+  inherited_accounts: AccountAccessResp[]
+  inherited_groups: GroupAccessResp[]
 }
