@@ -20,7 +20,7 @@ import tools.jackson.databind.exc.InvalidNullException
 import tools.jackson.databind.exc.MismatchedInputException
 import java.util.*
 
-
+// TODO: check that exception handlers do not leak system information
 @ControllerAdvice
 class EasyExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
     private val log = KotlinLogging.logger {}
@@ -135,7 +135,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
             }
 
             is JsonParseException -> "Invalid JSON format: JSON parsing failed"
-            else -> ex.message ?: "Invalid request!"
+            else -> "Request body is malformed."
         }
 
         val resp = RequestErrorResponse(id, ReqError.INVALID_PARAMETER_VALUE.errorCodeStr, emptyMap(), msg)
