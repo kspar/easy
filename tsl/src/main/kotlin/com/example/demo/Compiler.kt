@@ -45,7 +45,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     "contains_checks" to PyGenericChecksLong(test.genericCheck),
 
                     "scope" to PyStr(test.scope.value),
-                    "target" to PyStr(test.target.value),
+                    "target" to PyStr(test.targetType.value),
 
                     "scope_function_name" to PyStr(test.functionName),
                     "scope_class_name" to PyStr(test.className),

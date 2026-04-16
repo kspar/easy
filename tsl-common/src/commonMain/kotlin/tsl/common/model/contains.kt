@@ -19,7 +19,6 @@ data class ContainsTest(
     val containsWhatArg: String? = null,
     val functionName: String? = null,
     val className: String? = null,
-    val scopeTargetName: Scope? = null,  // Required for FUNCTION and CLASS scopes
     val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {

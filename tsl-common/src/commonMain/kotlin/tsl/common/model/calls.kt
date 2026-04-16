@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
-enum class Target(val value: String) {
+enum class TargetType(val value: String) {
     FUNCTION("function"),
     CLASS("class"),
     CLASS_FUNCTION("class_function")
@@ -16,10 +16,10 @@ enum class Target(val value: String) {
 data class CallsTest(
     override val id: Long,
     val scope: Scope,
-    val target: Target,
+    val targetType: TargetType,
     val functionName: String? = null,
     val className: String? = null,
-    val scopeTargetName: Scope? = null,  // Required for FUNCTION and CLASS scopes
+    val targetClassName: String? = null,
     val genericCheck: GenericCheckLong
 ) : Test() {
     override fun getDefaultName(): String {
@@ -30,12 +30,12 @@ data class CallsTest(
             Scope.CLASS -> "Klass"
         }
 
-        val targetText = when (target) {
-            Target.FUNCTION -> "funktsiooni"
-            Target.CLASS -> "klassi"
-            Target.CLASS_FUNCTION -> "klassi funktsiooni"
+        val targetTypeText = when (targetType) {
+            TargetType.FUNCTION -> "funktsiooni"
+            TargetType.CLASS -> "klassi"
+            TargetType.CLASS_FUNCTION -> "klassi funktsiooni"
         }
-        return "$scopeText kutsub välja $targetText"
+        return "$scopeText kutsub välja $targetTypeText"
     }
 
 
