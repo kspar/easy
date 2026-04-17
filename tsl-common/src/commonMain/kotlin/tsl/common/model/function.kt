@@ -8,6 +8,9 @@ enum class FunctionType {
     FUNCTION, METHOD
 }
 
+enum class FunctionProperty { PURE, RECURSIVE }
+
+
 @Serializable
 @SerialName("function_execution_test")
 data class FunctionExecutionTest(
@@ -35,43 +38,15 @@ data class FunctionExecutionTest(
 
 
 @Serializable
-@SerialName("function_is_recursive_test")
-data class FunctionIsRecursiveTest(
+@SerialName("function_is_test")
+data class FunctionIsTest(
     override val id: Long,
     val functionName: String,
-    val isRecursive: RecursiveCheck
+    val functionProperty: FunctionProperty,
 ) : Test() {
-    override fun getDefaultName(): String {
-        return "Funktsioon on rekursiivne"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
-
-@Serializable
-@SerialName("function_defines_function_test")
-data class FunctionDefinesFunctionTest(
-    override val id: Long,
-    val functionName: String,
-    val genericCheck: GenericCheckLong
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Funktsioon defineerib enda sees uue funktsiooni"
-    }
-
-    override fun copyTest(newId: Long) = copy(id = newId)
-}
-
-
-@Serializable
-@SerialName("function_is_pure_test")
-data class FunctionIsPureTest(
-    override val id: Long,
-    val functionName: String,
-    val containsLocalVars: ContainsCheck
-) : Test() {
-    override fun getDefaultName(): String {
-        return "Funktsioon kasutab vaid lokaalseid muutujaid"
+    override fun getDefaultName(): String = when (functionProperty) {
+        FunctionProperty.PURE -> "Funktsioon kasutab vaid lokaalseid muutujaid"
+        FunctionProperty.RECURSIVE -> "Funktsioon on rekursiivne"
     }
 
     override fun copyTest(newId: Long) = copy(id = newId)

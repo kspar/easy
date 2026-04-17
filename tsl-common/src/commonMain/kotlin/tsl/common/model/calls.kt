@@ -25,7 +25,7 @@ data class CallsTest(
     override fun getDefaultName(): String {
         val scopeText = when (scope) {
             Scope.PROGRAM -> "Programm"
-            Scope.MAIN_PROGRAM -> "Põhi programm"
+            Scope.MAIN_PROGRAM -> "Põhiprogramm"
             Scope.FUNCTION -> "Funktsioon"
             Scope.CLASS -> "Klass"
         }

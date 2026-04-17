@@ -183,27 +183,3 @@ data class ClassInstanceCheck(
     override val failedMessage: String
 ) : Check()
 
-
-@Serializable
-data class ContainsCheck(
-    val mustNotContain: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
-
-@Serializable
-data class RecursiveCheck(
-    val mustNotBeRecursive: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
-
-@Serializable
-data class CallsCheck(
-    val mustNotCall: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
