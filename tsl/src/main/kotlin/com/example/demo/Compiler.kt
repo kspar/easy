@@ -23,7 +23,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
             validationCode = generateValidationCode(irTree.requiredFiles)
         }
         var assCode = ""
-        this.irTree.tests.map {
+        this.irTree.tests.forEach {
             assCode += generateAssessmentCode(it, irTree.requiredFiles[0]) + "\n"
         }
 
