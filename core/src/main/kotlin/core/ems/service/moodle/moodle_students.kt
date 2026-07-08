@@ -16,6 +16,7 @@ import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.restclient.RestTemplateBuilder
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -23,7 +24,8 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
-import org.springframework.boot.restclient.RestTemplateBuilder
+import org.springframework.web.client.ResourceAccessException
+import org.springframework.web.client.RestClientException
 
 
 data class MoodleSyncedStudents(val syncedPendingStudents: Int)
@@ -33,8 +35,17 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
     private val log = KotlinLogging.logger {}
     private val restTemplate = restTemplateBuilder.build()
 
-    @Value("\${easy.core.moodle-sync.users.url}")
+    @Value($$"${easy.core.moodle-sync.users.url}")
     private lateinit var moodleSyncUrl: String
+
+    @Value($$"${easy.core.moodle-sync.moodlewsrestformat}")
+    private lateinit var moodlewsrestformat: String
+
+    @Value($$"${easy.core.moodle-sync.wstoken}")
+    private lateinit var wstoken: String
+
+    @Value($$"${easy.core.moodle-sync.users.wsfunction}")
+    private lateinit var wsfunction: String
 
     val syncStudentsLock = DBBackedLock(Course, Course.moodleSyncStudentsInProgress)
 
@@ -62,7 +73,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
         @get:JsonProperty("firstname") val firstname: String,
         @get:JsonProperty("lastname") val lastname: String,
         @get:JsonProperty("email") val email: String,
-        @get:JsonProperty("groups", required = false) val groups: List<MoodleRespGroup>?
+        @get:JsonProperty("groups", required = false) val groups: List<String>?
     )
 
     private data class MoodleRespGroup(
@@ -71,7 +82,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
     )
 
     private data class MoodleResponse(
-        @get:JsonProperty("students") val students: List<MoodleRespStudent>
+        @get:JsonProperty("students") val students: List<MoodleRespStudent>,
+        @get:JsonProperty("groups", required = false) val groups: List<MoodleRespGroup>? = null
     )
 
     private fun queryStudents(moodleShortName: String): MoodleResponse {
@@ -82,9 +94,36 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
 
         val map = LinkedMultiValueMap<String, String>()
         map.add("shortname", moodleShortName)
+        map.add("wstoken", wstoken)
+        map.add("wsfunction", wsfunction)
+        map.add("moodlewsrestformat", moodlewsrestformat)
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-        val responseEntity = restTemplate.postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
+
+
+        val responseEntity = try {
+            restTemplate.postForEntity(moodleSyncUrl, request, MoodleResponse::class.java)
+        } catch (e: ResourceAccessException) {
+            log.error { "Moodle linking error due to the I/O (connection) error on POST request. Request: $request. Error: $e" }
+            throw InvalidRequestException(
+                "Course linking with Moodle failed due to internal connection issue.",
+                ReqError.MOODLE_LINKING_ERROR,
+                notify = true
+            )
+        } catch (e: RestClientException) {
+            val debug = try {
+                restTemplate.postForEntity(moodleSyncUrl, request, String::class.java)
+            } catch (_: Exception) {
+                null
+            }
+            log.error { "Moodle linking error on POST request. Request: $request. Error: $e. ${debug ?: ""}" }
+
+            throw InvalidRequestException(
+                "Course linking with Moodle failed due to unexpected response from Moodle.",
+                ReqError.MOODLE_LINKING_ERROR,
+                notify = true
+            )
+        }
 
         if (responseEntity.statusCode.value() != 200) {
             log.error { "Moodle linking error ${responseEntity.statusCode.value()} with request $request" }
@@ -120,16 +159,11 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
             val courseTitle = getCourse(courseId)!!.let { it.alias ?: it.title }
             val time = DateTime.now()
 
-            // TODO: ask Moodle to send all groups separately
-            // TODO: then delete groups that don't exist anymore
             // Insert groups or get their IDs
-            val moodleGroups = moodleResponse.students
-                .mapNotNull { it.groups }
-                .flatten()
-                .map { it.name }
+            val moodleGroups = moodleResponse.groups.orEmpty()
 
             // Make sure all groups from Moodle are here as well or add them if needed
-            val groupNamesToIds = moodleGroups.associateWith { moodleGroupName ->
+            val groupNamesToIds = moodleGroups.map { it.name }.associateWith { moodleGroupName ->
                 val groupId =
                     CourseGroup.selectAll()
                         .where { CourseGroup.course eq courseId and (CourseGroup.name eq moodleGroupName) }
@@ -149,6 +183,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
                 .associate { it[StudentCourseAccess.moodleUsername] to it[StudentCourseAccess.student] }
 
 
+            val groupIdToName = moodleGroups.associate { it.id to it.name }
+
             // Combine students from Moodle with easy username (if they have one).
             val allStudents = moodleResponse.students.map { student ->
                 ActiveOrPendingStudent(
@@ -157,7 +193,15 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
                     // for existing active accesses (not needed) and existing pending accesses (keep the old one)
                     generateInviteId(10),
                     student.username,
-                    student.groups?.map { MoodleGroup(it.id, it.name) } ?: emptyList(),
+                    student.groups.orEmpty().mapNotNull { groupId ->
+                        val groupName = groupIdToName[groupId]
+                        if (groupName == null) {
+                            log.warn { "Student ${student.username} references Moodle group $groupId that is missing from the groups list on course $courseId" }
+                            null
+                        } else {
+                            MoodleGroup(groupId, groupName)
+                        }
+                    },
                     existingAccesses[student.username]
                 )
             }
@@ -212,6 +256,15 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
                 }
             }
 
+            // Delete groups that don't exist in Moodle anymore - group management is Moodle's on a synced course;
+            // memberships were already rebuilt above and exception rows cascade
+            val deletedGroupsCount = CourseGroup.deleteWhere {
+                (CourseGroup.course eq courseId) and CourseGroup.name.notInList(moodleGroups.map { it.name })
+            }
+            if (deletedGroupsCount > 0) {
+                log.debug { "Deleted $deletedGroupsCount groups on course $courseId that no longer exist in Moodle" }
+            }
+
             // Send invitations for only new pending accesses
             val invitationEmailRecipients = allStudents
                 // only pending students
@@ -233,7 +286,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
             MoodleSyncedStudents(allStudents.size)
         }
 
-    @Scheduled(cron = "\${easy.core.moodle-sync.users.cron}")
+    @Scheduled(cron = $$"${easy.core.moodle-sync.users.cron}")
     fun moodleSyncAllCoursesStudents() {
         log.info { "Cron checking for courses for Moodle student syncing" }
 

@@ -3,6 +3,7 @@ package core.ems.service
 import core.EasyCoreApp
 import core.conf.DatabaseInit
 import core.conf.dropAll
+import core.conf.dropAndUpdateSchema
 import core.db.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import liquibase.database.jvm.JdbcConnection
@@ -69,6 +70,9 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
 
     @BeforeAll
     fun populate() {
+        // Recreate schema as another test class sharing the same Spring context may have dropped it in its teardown
+        dropAndUpdateSchema(changelogFile, JdbcConnection(dataSource.connection))
+
         val ids = (1..numberOfStudents).map { it.toString() }
         val time = DateTime.now()
 
@@ -83,6 +87,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 it[moodleSyncGrades] = false
                 it[moodleSyncStudentsInProgress] = false
                 it[moodleSyncGradesInProgress] = false
+                it[color] = "#137EF9"
             }
 
             Account.batchInsert(ids) {

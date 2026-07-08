@@ -8,11 +8,9 @@ import org.springframework.stereotype.Component
 @Component
 class EasyUserAuthProvider : AuthenticationProvider {
     override fun authenticate(authentication: Authentication): Authentication? {
-        authentication.isAuthenticated = authentication.authorities?.isNotEmpty() ?: false
+        authentication.isAuthenticated = authentication.authorities.isNotEmpty()
         return authentication
     }
 
-    override fun supports(authentication: Class<*>): Boolean {
-        return EasyUser::class.java.isAssignableFrom(authentication)
-    }
+    override fun supports(authentication: Class<*>): Boolean = EasyUser::class.java.isAssignableFrom(authentication)
 }

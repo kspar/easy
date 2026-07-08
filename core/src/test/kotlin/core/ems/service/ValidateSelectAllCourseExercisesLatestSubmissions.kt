@@ -3,6 +3,7 @@ package core.ems.service
 import core.EasyCoreApp
 import core.conf.DatabaseInit
 import core.conf.dropAll
+import core.conf.dropAndUpdateSchema
 import core.db.*
 import liquibase.database.jvm.JdbcConnection
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
@@ -101,7 +102,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
 
         val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student2Id }
         assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission!!.grade!!.isAutograde)
+        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
     }
 
     /**
@@ -117,7 +118,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
 
         val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student2Id }
         assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission!!.grade!!.isAutograde)
+        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
     }
 
     @Test
@@ -176,6 +177,9 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
 
     @BeforeAll
     fun populate() {
+        // Recreate schema as another test class sharing the same Spring context may have dropped it in its teardown
+        dropAndUpdateSchema(changelogFile, JdbcConnection(dataSource.connection))
+
         transaction {
 
             val teacher1Id = "teacher1"
@@ -281,6 +285,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val d
                 it[moodleSyncGrades] = false
                 it[moodleSyncStudentsInProgress] = false
                 it[moodleSyncGradesInProgress] = false
+                it[color] = "#137EF9"
             }
 
             CourseExercise.insert {

@@ -32,8 +32,18 @@ class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
     private val log = KotlinLogging.logger {}
     private val restTemplate = restTemplateBuilder.build()
 
-    @Value("\${easy.core.moodle-sync.grades.url}")
+    @Value($$"${easy.core.moodle-sync.grades.url}")
     private lateinit var moodleGradeUrl: String
+
+    @Value($$"${easy.core.moodle-sync.wstoken}")
+    private lateinit var wstoken: String
+
+    @Value($$"${easy.core.moodle-sync.moodlewsrestformat}")
+    private lateinit var moodlewsrestformat: String
+
+    @Value($$"${easy.core.moodle-sync.grades.wsfunction}")
+    private lateinit var wsfunction: String
+
 
     val syncGradesLock = DBBackedLock(Course, Course.moodleSyncGradesInProgress)
 
@@ -54,7 +64,6 @@ class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
         @get:JsonProperty("username") val username: String,
         @get:JsonProperty("grade") val grade: Int
     )
-
 
     /**
      * Sync single submission grade to Moodle. If the submission has no link with the Moodle, then nothing is done. Is asynchronous.
@@ -124,6 +133,9 @@ class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         val map: MultiValueMap<String, String> = LinkedMultiValueMap()
         map.add("data", jacksonObjectMapper().writeValueAsString(req))
+        map.add("wstoken", wstoken)
+        map.add("wsfunction", wsfunction)
+        map.add("moodlewsrestformat", moodlewsrestformat)
         val request = HttpEntity(map, headers)
 
         val responseEntity: ResponseEntity<String> =

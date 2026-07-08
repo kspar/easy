@@ -3,7 +3,7 @@ package core.conf
 import jakarta.annotation.PostConstruct
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.FileSystemResourceAccessor
+import liquibase.resource.ClassLoaderResourceAccessor
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.springframework.beans.factory.annotation.Value
@@ -32,11 +32,11 @@ class InitTestDatabase(val dataSource: DataSource) {
 }
 
 fun dropAll(changelogFile: String, connection: JdbcConnection) {
-    Liquibase(changelogFile, FileSystemResourceAccessor(), connection).dropAll()
+    Liquibase(changelogFile, ClassLoaderResourceAccessor(), connection).dropAll()
 }
 
 fun dropAndUpdateSchema(changelogFile: String, connection: JdbcConnection) {
-    val lb = Liquibase(changelogFile, FileSystemResourceAccessor(), connection)
+    val lb = Liquibase(changelogFile, ClassLoaderResourceAccessor(), connection)
     lb.dropAll()
     lb.update("")
 }

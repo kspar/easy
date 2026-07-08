@@ -10,7 +10,7 @@ buildscript {
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '2.3.10'
     id 'org.jetbrains.kotlin.plugin.spring' version '2.3.10'
-    id 'org.springframework.boot' version '4.0.3'
+    id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.liquibase.gradle' version '3.1.0'
 }
@@ -57,11 +57,11 @@ dependencies {
     implementation 'io.github.oshai:kotlin-logging:8.0.01'
 
     // Database
-    implementation("org.jetbrains.exposed:exposed-core:1.1.0")
-    implementation("org.jetbrains.exposed:exposed-jdbc:1.1.0")
-    implementation("org.jetbrains.exposed:exposed-dao:1.1.0")
-    implementation("org.jetbrains.exposed:exposed-jodatime:1.1.0")
-    implementation("org.jetbrains.exposed:exposed-json:1.1.0")
+    implementation("org.jetbrains.exposed:exposed-core:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-jdbc:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-dao:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-jodatime:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-json:1.3.1")
 
 
     implementation 'org.postgresql:postgresql'
