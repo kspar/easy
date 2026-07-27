@@ -29,11 +29,13 @@ export default function PreviousSubmissions({
   courseExerciseId,
   solutionFileName,
   onRestore,
+  highlightSubmissionNumber,
 }: {
   courseId: string
   courseExerciseId: string
   solutionFileName: string
   onRestore?: (solution: string) => void
+  highlightSubmissionNumber?: number
 }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
@@ -47,6 +49,18 @@ export default function PreviousSubmissions({
     isLoading,
     error,
   } = useSubmissions(courseId, courseExerciseId)
+
+  // Auto-expand when a submission number is highlighted
+  const prevHighlight = useRef<number | undefined>()
+  useEffect(() => {
+    if (highlightSubmissionNumber != null && highlightSubmissionNumber !== prevHighlight.current && submissions) {
+      prevHighlight.current = highlightSubmissionNumber
+      setExpanded(true)
+      hasOpened.current = true
+      const idx = submissions.findIndex((s) => s.number === highlightSubmissionNumber)
+      if (idx >= 10) setShowAll(true)
+    }
+  }, [highlightSubmissionNumber, submissions])
 
   if (isLoading) return <CircularProgress size={24} />
   if (error)
@@ -77,6 +91,7 @@ export default function PreviousSubmissions({
                   submission={sub}
                   solutionFileName={solutionFileName}
                   onRestore={onRestore}
+                  autoOpen={sub.number === highlightSubmissionNumber}
                 />
               ))}
               {!showAll && submissions.length > 10 && (
@@ -100,6 +115,7 @@ function SubmissionItem({
   submission,
   solutionFileName,
   onRestore,
+  autoOpen,
 }: {
   submission: {
     id: string
@@ -111,12 +127,21 @@ function SubmissionItem({
   }
   solutionFileName: string
   onRestore?: (solution: string) => void
+  autoOpen?: boolean
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const itemRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (autoOpen) {
+      setOpen(true)
+      setTimeout(() => itemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+    }
+  }, [autoOpen])
 
   return (
-    <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
+    <Box ref={itemRef} sx={{ borderTop: 1, borderColor: 'divider' }}>
       <Box
         onClick={() => setOpen(!open)}
         sx={{
