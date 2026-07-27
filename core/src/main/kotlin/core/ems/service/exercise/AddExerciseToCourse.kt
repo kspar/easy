@@ -7,12 +7,10 @@ import core.db.*
 import core.ems.service.AdocService
 import core.ems.service.IDX_STEP
 import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.isExerciseOnCourse
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
-import core.exception.ReqError
 import core.util.DateTimeDeserializer
 import mu.KotlinLogging
 import org.jetbrains.exposed.dao.id.EntityID
@@ -76,13 +74,6 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
 
         if (!isCoursePresent(courseId)) {
             throw InvalidRequestException("Course $courseId does not exist")
-        }
-
-        if (isExerciseOnCourse(exerciseId, courseId)) {
-            throw InvalidRequestException(
-                "Exercise $exerciseId is already on course $courseId",
-                ReqError.EXERCISE_ALREADY_ON_COURSE, notify = false
-            )
         }
 
         val id = when (body.instructionsAdoc) {
