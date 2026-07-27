@@ -43,7 +43,9 @@ export default function CreateGroupDialog({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth
+      TransitionProps={{ onEntered: (node) => { (node as HTMLElement).querySelector('input')?.focus() } }}
+    >
       <DialogTitle>{t('participants.createGroup')}</DialogTitle>
       <DialogContent sx={{ pt: '8px !important' }}>
         <TextField
@@ -53,7 +55,7 @@ export default function CreateGroupDialog({
           onChange={(e) => setName(e.target.value)}
           autoFocus
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && name.trim()) handleCreate()
+            if (e.key === 'Enter' && name.trim() && !createGroup.isPending) handleCreate()
           }}
         />
       </DialogContent>

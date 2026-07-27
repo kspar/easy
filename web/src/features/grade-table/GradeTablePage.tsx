@@ -295,12 +295,11 @@ export default function GradeTablePage() {
                 <Chip
                   label={filterGroup
                     ? groups.find((g) => g.id === filterGroup)?.name
-                    : t('participants.allGroups')
+                    : t('participants.groups')
                   }
                   deleteIcon={<ArrowDropDownOutlined />}
                   onDelete={(e) => setFilterGroupAnchor(e.currentTarget.closest('div'))}
                   onClick={(e) => setFilterGroupAnchor(e.currentTarget)}
-                  size="small"
                   variant={filterGroup ? 'filled' : 'outlined'}
                   color={filterGroup ? 'primary' : 'default'}
                 />
@@ -338,7 +337,6 @@ export default function GradeTablePage() {
             <Chip
               icon={showSubCount ? <DoneOutlined /> : undefined}
               label={t('grades.showSubmissionCount')}
-              size="small"
               variant={showSubCount ? 'filled' : 'outlined'}
               color={showSubCount ? 'primary' : 'default'}
               onClick={() => setShowSubCount((v) => !v)}
@@ -353,6 +351,7 @@ export default function GradeTablePage() {
               size="small"
               startIcon={<FileDownloadOutlined />}
               onClick={handleExport}
+              sx={{ height: 32 }}
             >
               {t('grades.exportGrades')}
             </Button>

@@ -946,7 +946,7 @@ export default function ParticipantsPage() {
                     variant="outlined"
                     expanded={inviteExpanded}
                     onChange={(_, expanded) => setInviteExpanded(expanded)}
-                    sx={{ mb: 2, '&::before': { display: 'none' } }}
+                    sx={{ mb: 1, '&::before': { display: 'none' } }}
                   >
                     <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ minHeight: 0, '&.Mui-expanded': { minHeight: 0 }, '& .MuiAccordionSummary-content': { my: 1.25 }, '& .MuiAccordionSummary-content.Mui-expanded': { my: 1.25 } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1026,78 +1026,64 @@ export default function ParticipantsPage() {
                       </Box>
                     </AccordionDetails>
                   </Accordion>
-                ) : (
-                  <Box sx={{ mb: 2 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<LinkOutlined />}
-                      onClick={handleCreateInvite}
-                      disabled={createInvite.isPending}
-                    >
-                      {t('participants.createInviteLink')}
-                    </Button>
-                  </Box>
-                )
+                ) : null
               ) : null}
 
-              {(groups && groups.length > 0 || allStudents.some((s) => s.isPending)) && (
-                <Box sx={{ display: 'flex', gap: 0.75, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {groups && groups.length > 0 && (
-                    <>
-                      <Chip
-                        label={filterGroup
-                          ? groups.find((g) => g.id === filterGroup)?.name
-                          : t('participants.allGroups')
-                        }
-                        deleteIcon={<ArrowDropDownOutlined />}
-                        onDelete={(e) => setFilterGroupAnchor(e.currentTarget.closest('div'))}
-                        onClick={(e) => setFilterGroupAnchor(e.currentTarget)}
-                        size="small"
-                        variant={filterGroup ? 'filled' : 'outlined'}
-                        color={filterGroup ? 'primary' : 'default'}
-                      />
-                      <Menu
-                        anchorEl={filterGroupAnchor}
-                        open={!!filterGroupAnchor}
-                        onClose={() => setFilterGroupAnchor(null)}
+              <Box sx={{ display: 'flex', gap: 0.75, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                {groups && groups.length > 0 && (
+                  <>
+                    <Chip
+                      label={filterGroup
+                        ? groups.find((g) => g.id === filterGroup)?.name
+                        : t('participants.groups')
+                      }
+                      deleteIcon={<ArrowDropDownOutlined />}
+                      onDelete={(e) => setFilterGroupAnchor(e.currentTarget.closest('div'))}
+                      onClick={(e) => setFilterGroupAnchor(e.currentTarget)}
+                      variant={filterGroup ? 'filled' : 'outlined'}
+                      color={filterGroup ? 'primary' : 'default'}
+                    />
+                    <Menu
+                      anchorEl={filterGroupAnchor}
+                      open={!!filterGroupAnchor}
+                      onClose={() => setFilterGroupAnchor(null)}
+                    >
+                      <MenuItem
+                        selected={!filterGroup}
+                        onClick={() => {
+                          setFilterGroup('')
+                          setStudentSelection({})
+                          setFilterGroupAnchor(null)
+                        }}
                       >
+                        {t('participants.allGroups')}
+                      </MenuItem>
+                      {groups.map((g) => (
                         <MenuItem
-                          selected={!filterGroup}
+                          key={g.id}
+                          selected={filterGroup === g.id}
                           onClick={() => {
-                            setFilterGroup('')
+                            setFilterGroup(g.id)
                             setStudentSelection({})
                             setFilterGroupAnchor(null)
                           }}
                         >
-                          {t('participants.allGroups')}
+                          {g.name}
                         </MenuItem>
-                        {groups.map((g) => (
-                          <MenuItem
-                            key={g.id}
-                            selected={filterGroup === g.id}
-                            onClick={() => {
-                              setFilterGroup(g.id)
-                              setStudentSelection({})
-                              setFilterGroupAnchor(null)
-                            }}
-                          >
-                            {g.name}
-                          </MenuItem>
-                        ))}
-                      </Menu>
-                    </>
-                  )}
-                  {allStudents.some((s) => s.isPending) && (
+                      ))}
+                    </Menu>
+                  </>
+                )}
+                {allStudents.some((s) => s.isPending) && (
                     <>
                       <Chip
                         label={filterStatus
                           ? filterStatus === 'active' ? t('participants.active') : t('participants.pending')
-                          : t('participants.allStatuses')
+                          : t('participants.status')
                         }
                         deleteIcon={<ArrowDropDownOutlined />}
                         onDelete={(e) => setFilterStatusAnchor(e.currentTarget.closest('div'))}
                         onClick={(e) => setFilterStatusAnchor(e.currentTarget)}
-                        size="small"
                         variant={filterStatus ? 'filled' : 'outlined'}
                         color={filterStatus ? 'primary' : 'default'}
                       />
@@ -1139,8 +1125,25 @@ export default function ParticipantsPage() {
                       </Menu>
                     </>
                   )}
+
+                  {!data.moodle_linked && !inviteLoading && !invite && (
+                    <>
+                      {(groups && groups.length > 0 || allStudents.some((s) => s.isPending)) && (
+                        <Box sx={{ flex: 1 }} />
+                      )}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<LinkOutlined />}
+                        onClick={handleCreateInvite}
+                        disabled={createInvite.isPending}
+                        sx={{ textTransform: 'none', height: 32 }}
+                      >
+                        {t('participants.createInviteLink')}
+                      </Button>
+                    </>
+                  )}
                 </Box>
-              )}
 
               <DataTable
                 columns={studentColumns}
@@ -1175,9 +1178,11 @@ export default function ParticipantsPage() {
               ) : (
                 <Box sx={{ mb: 2 }}>
                   <Button
+                    size="small"
                     variant="outlined"
                     startIcon={<AddOutlined />}
                     onClick={() => setAddTeachersOpen(true)}
+                    sx={{ textTransform: 'none', height: 32 }}
                   >
                     {t('participants.addTeachers')}
                   </Button>
@@ -1217,9 +1222,11 @@ export default function ParticipantsPage() {
               ) : (
                 <Box sx={{ mb: 2 }}>
                   <Button
+                    size="small"
                     variant="outlined"
                     startIcon={<AddOutlined />}
                     onClick={() => setCreateGroupOpen(true)}
+                    sx={{ textTransform: 'none', height: 32 }}
                   >
                     {t('participants.createGroup')}
                   </Button>
@@ -1424,6 +1431,9 @@ export default function ParticipantsPage() {
         onClose={() => setLinkMoodleOpen(false)}
         maxWidth="xs"
         fullWidth
+        TransitionProps={{
+          onEntered: (node) => { (node as HTMLElement).querySelector('input')?.focus() },
+        }}
       >
         <DialogTitle>{t('participants.linkMoodle')}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
@@ -1436,6 +1446,23 @@ export default function ParticipantsPage() {
             value={moodleShortNameDraft}
             onChange={(e) => setMoodleShortNameDraft(e.target.value)}
             autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && moodleShortNameDraft.trim() && !updateMoodleProps.isPending) {
+                updateMoodleProps.mutate({
+                  moodle_props: {
+                    moodle_short_name: moodleShortNameDraft.trim(),
+                    sync_students: false,
+                    sync_grades: false,
+                  },
+                }, {
+                  onSuccess: () => {
+                    setLinkMoodleOpen(false)
+                    setMoodleShortNameDraft('')
+                    setSnackMsg(t('general.saved'))
+                  },
+                })
+              }
+            }}
           />
         </DialogContent>
         <DialogActions>
