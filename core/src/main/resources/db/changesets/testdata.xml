@@ -446,51 +446,158 @@
                 =============================================
             -->
 
-            <!-- Exercise 9002: 3 teacher comments (grade-only, feedback-only, grade+feedback) -->
+            <!-- Exercise 9002: 3 teacher activities (grade-only, feedback-only, grade+feedback) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9001, 9002, 9002, 'kspar', 'dev-teacher',
-                    now() - interval '2 days 6 hours', 45, null);
+                    now() - interval '2 days 6 hours', 45, null, null);
 
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9002, 9002, 9002, 'kspar', 'dev-teacher',
                     now() - interval '2 days', null,
-                    '{"general_md":"Your solution handles basic cases but fails on edge cases with zero and negative numbers. The `+1` in your second submission makes it worse — review how `input()` works and think about what the tests expect.","general_html":"&lt;p&gt;Your solution handles basic cases but fails on edge cases with zero and negative numbers. The &lt;code&gt;+1&lt;/code&gt; in your second submission makes it worse — review how &lt;code&gt;input()&lt;/code&gt; works and think about what the tests expect.&lt;/p&gt;\n","inline":[{"line_start":3,"line_end":3,"code":"print(a + b)","text_md":"This line is correct for the basic case, but think about what happens when `a` and `b` are both 0.","text_html":"&lt;p&gt;This line is correct for the basic case, but think about what happens when &lt;code&gt;a&lt;/code&gt; and &lt;code&gt;b&lt;/code&gt; are both 0.&lt;/p&gt;\n","type":"comment"}]}');
+                    'Your solution handles basic cases but fails on edge cases with zero and negative numbers. The `+1` in your second submission makes it worse — review how `input()` works and think about what the tests expect.',
+                    '&lt;p&gt;Your solution handles basic cases but fails on edge cases with zero and negative numbers. The &lt;code&gt;+1&lt;/code&gt; in your second submission makes it worse — review how &lt;code&gt;input()&lt;/code&gt; works and think about what the tests expect.&lt;/p&gt;');
 
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9003, 9003, 9002, 'kspar', 'kspar',
                     now() - interval '12 hours', 65,
-                    '{"general_md":"Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!","general_html":"&lt;p&gt;Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!&lt;/p&gt;\n","inline":[{"line_start":3,"line_end":3,"code":"print(a + b + 1)","text_md":"The `+ 1` here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.","text_html":"&lt;p&gt;The &lt;code&gt;+ 1&lt;/code&gt; here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.&lt;/p&gt;\n","type":"suggestion","suggested_code":"print(a + b)"}]}');
+                    'Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!',
+                    '&lt;p&gt;Bumping your grade slightly since you showed improvement between submissions. Keep working on the edge cases!&lt;/p&gt;');
 
-            <!-- Exercise 9006 / FizzBuzz: inline comments far apart to test collapsed gap -->
+            <!-- Exercise 9006 / FizzBuzz: activity with no general feedback (inline comments in separate table) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9007, 9006, 9006, 'kspar', 'dev-teacher',
-                    now() - interval '9 days', null,
-                    '{"general_md":null,"general_html":null,"inline":[{"line_start":1,"line_end":1,"code":"import sys","text_md":"You import `sys` but never use it. Remove unused imports.","text_html":"&lt;p&gt;You import &lt;code&gt;sys&lt;/code&gt; but never use it. Remove unused imports.&lt;/p&gt;\n","type":"comment"},{"line_start":18,"line_end":20,"code":"def main():\n    n = 100\n    fizzbuzz(n)","text_md":"The exercise says to read the range from a file, but you''ve hardcoded `n = 100`. Use `open()` to read `limits.txt` instead.","text_html":"&lt;p&gt;The exercise says to read the range from a file, but you''ve hardcoded &lt;code&gt;n = 100&lt;/code&gt;. Use &lt;code&gt;open()&lt;/code&gt; to read &lt;code&gt;limits.txt&lt;/code&gt; instead.&lt;/p&gt;\n","type":"suggestion","suggested_code":"def main():\n    with open(\"limits.txt\") as f:\n        start, end = int(f.readline()), int(f.readline())\n    fizzbuzz_range(start, end)"}]}');
+                    now() - interval '9 days', null, null, null);
 
-            <!-- Exercise 9005 / Debug Challenge: inline comment praising fix + suggestion for negative inputs -->
+            <!-- Exercise 9005 / Debug Challenge: general feedback (inline comments in separate table) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9005, 9005, 9005, 'kspar', 'dev-teacher',
                     now() - interval '1 hour', null,
-                    '{"general_md":"Good fix! You correctly identified the bug.","general_html":"&lt;p&gt;Good fix! You correctly identified the bug.&lt;/p&gt;\n","inline":[{"line_start":2,"line_end":4,"code":"    result = 1\n    for i in range(1, n + 1):\n        result *= i","text_md":"Nice catch — changing `result = 0` to `result = 1` was exactly the fix. The multiplication identity is 1, not 0.","text_html":"&lt;p&gt;Nice catch — changing &lt;code&gt;result = 0&lt;/code&gt; to &lt;code&gt;result = 1&lt;/code&gt; was exactly the fix. The multiplication identity is 1, not 0.&lt;/p&gt;\n","type":"comment"},{"line_start":1,"line_end":1,"code":"def factorial(n):","text_md":"Consider adding a guard for negative inputs — currently the function silently returns 1 for `factorial(-3)`.","text_html":"&lt;p&gt;Consider adding a guard for negative inputs — currently the function silently returns 1 for &lt;code&gt;factorial(-3)&lt;/code&gt;.&lt;/p&gt;\n","type":"suggestion","suggested_code":"def factorial(n):\n    if n &lt; 0:\n        raise ValueError(\"n must be non-negative\")"}]}');
+                    'Good fix! You correctly identified the bug.',
+                    '&lt;p&gt;Good fix! You correctly identified the bug.&lt;/p&gt;');
 
-            <!-- Exercise 9001 / Hello World: simple inline praise -->
+            <!-- Exercise 9001 / Hello World: activity with no general feedback (inline comment in separate table) -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9006, 9001, 9001, 'kspar', 'dev-teacher',
-                    now() - interval '4 days', null,
-                    '{"general_md":null,"general_html":null,"inline":[{"line_start":1,"line_end":1,"code":"print(\"Hello, World!\")","text_md":"Clean and correct — well done!","text_html":"&lt;p&gt;Clean and correct — well done!&lt;/p&gt;\n","type":"comment"}]}');
+                    now() - interval '4 days', null, null, null);
 
-            <!-- Exercise 9003: 1 teacher comment (grade + detailed feedback with HTML list) -->
+            <!-- Exercise 9003 / Essay: grade + detailed feedback with HTML list -->
             INSERT INTO teacher_activity (id, submission_id, course_exercise_id, student_id, teacher_id,
-                                          merge_window_start, grade, feedback)
+                                          merge_window_start, grade, feedback_md, feedback_html)
             VALUES (9004, 9004, 9003, 'kspar', 'dev-teacher',
                     now() - interval '1 day 8 hours', 4,
-                    '{"general_md":"Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.","general_html":"&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;\n&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Overall well-written and clear.&lt;/p&gt;\n","inline":[{"line_start":1,"line_end":1,"code":"Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.","text_md":"Strong opening! Consider also mentioning that it was invented by **John von Neumann** in 1945.","text_html":"&lt;p&gt;Strong opening! Consider also mentioning that it was invented by &lt;strong&gt;John von Neumann&lt;/strong&gt; in 1945.&lt;/p&gt;\n","type":"comment"},{"line_start":7,"line_end":9,"code":"I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.","text_md":"Good point about stability. You could expand this into a concrete example:","text_html":"&lt;p&gt;Good point about stability. You could expand this into a concrete example:&lt;/p&gt;\n","type":"suggestion","suggested_code":"I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order. For example, when sorting students by\ngrade, students with the same grade remain in their original alphabetical order."}]}');
+                    E'Good essay! You covered the key aspects of merge sort well. A couple of suggestions:\n\n* You could mention the space complexity O(n) as a trade-off\n* Comparing with quicksort would have strengthened your argument\n\nOverall well-written and clear.',
+                    E'&lt;p&gt;Good essay! You covered the key aspects of merge sort well. A couple of suggestions:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;You could mention the space complexity O(n) as a trade-off&lt;/li&gt;\n&lt;li&gt;Comparing with quicksort would have strengthened your argument&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Overall well-written and clear.&lt;/p&gt;');
+
+            <!--
+                =============================================
+                Inline comments (standalone, linked to submissions)
+                =============================================
+            -->
+
+            <!-- CE 9002 / Sum of Two Numbers, sub 9002, by dev-teacher -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9001, 9002, 9002, 'dev-teacher',
+                    now() - interval '2 days', 3, 3,
+                    'print(a + b)',
+                    'This line is correct for the basic case, but think about what happens when `a` and `b` are both 0.',
+                    '&lt;p&gt;This line is correct for the basic case, but think about what happens when &lt;code&gt;a&lt;/code&gt; and &lt;code&gt;b&lt;/code&gt; are both 0.&lt;/p&gt;',
+                    'comment', null);
+
+            <!-- CE 9002 / Sum of Two Numbers, sub 9003, by kspar -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9002, 9002, 9003, 'kspar',
+                    now() - interval '12 hours', 3, 3,
+                    'print(a + b + 1)',
+                    'The `+ 1` here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.',
+                    '&lt;p&gt;The &lt;code&gt;+ 1&lt;/code&gt; here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.&lt;/p&gt;',
+                    'suggestion', 'print(a + b)');
+
+            <!-- CE 9006 / FizzBuzz, sub 9006, by dev-teacher: 2 inline comments far apart -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9003, 9006, 9006, 'dev-teacher',
+                    now() - interval '9 days', 1, 1,
+                    'import sys',
+                    'You import `sys` but never use it. Remove unused imports.',
+                    '&lt;p&gt;You import &lt;code&gt;sys&lt;/code&gt; but never use it. Remove unused imports.&lt;/p&gt;',
+                    'comment', null);
+
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9004, 9006, 9006, 'dev-teacher',
+                    now() - interval '9 days', 18, 20,
+                    E'def main():\n    n = 100\n    fizzbuzz(n)',
+                    'The exercise says to read the range from a file, but you''ve hardcoded `n = 100`. Use `open()` to read `limits.txt` instead.',
+                    '&lt;p&gt;The exercise says to read the range from a file, but you''ve hardcoded &lt;code&gt;n = 100&lt;/code&gt;. Use &lt;code&gt;open()&lt;/code&gt; to read &lt;code&gt;limits.txt&lt;/code&gt; instead.&lt;/p&gt;',
+                    'suggestion',
+                    E'def main():\n    with open("limits.txt") as f:\n        start, end = int(f.readline()), int(f.readline())\n    fizzbuzz_range(start, end)');
+
+            <!-- CE 9005 / Debug Challenge, sub 9005, by dev-teacher -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9005, 9005, 9005, 'dev-teacher',
+                    now() - interval '1 hour', 2, 4,
+                    E'    result = 1\n    for i in range(1, n + 1):\n        result *= i',
+                    'Nice catch — changing `result = 0` to `result = 1` was exactly the fix. The multiplication identity is 1, not 0.',
+                    '&lt;p&gt;Nice catch — changing &lt;code&gt;result = 0&lt;/code&gt; to &lt;code&gt;result = 1&lt;/code&gt; was exactly the fix. The multiplication identity is 1, not 0.&lt;/p&gt;',
+                    'comment', null);
+
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9006, 9005, 9005, 'dev-teacher',
+                    now() - interval '1 hour', 1, 1,
+                    'def factorial(n):',
+                    'Consider adding a guard for negative inputs — currently the function silently returns 1 for `factorial(-3)`.',
+                    '&lt;p&gt;Consider adding a guard for negative inputs — currently the function silently returns 1 for &lt;code&gt;factorial(-3)&lt;/code&gt;.&lt;/p&gt;',
+                    'suggestion',
+                    E'def factorial(n):\n    if n &lt; 0:\n        raise ValueError("n must be non-negative")');
+
+            <!-- CE 9001 / Hello World, sub 9001, by dev-teacher -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9007, 9001, 9001, 'dev-teacher',
+                    now() - interval '4 days', 1, 1,
+                    'print("Hello, World!")',
+                    'Clean and correct — well done!',
+                    '&lt;p&gt;Clean and correct — well done!&lt;/p&gt;',
+                    'comment', null);
+
+            <!-- CE 9003 / Essay, sub 9004, by dev-teacher -->
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9008, 9003, 9004, 'dev-teacher',
+                    now() - interval '1 day 8 hours', 1, 1,
+                    'Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.',
+                    'Strong opening! Consider also mentioning that it was invented by **John von Neumann** in 1945.',
+                    '&lt;p&gt;Strong opening! Consider also mentioning that it was invented by &lt;strong&gt;John von Neumann&lt;/strong&gt; in 1945.&lt;/p&gt;',
+                    'comment', null);
+
+            INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
+                                                 created_at, line_start, line_end, code,
+                                                 text_md, text_html, type, suggested_code)
+            VALUES (9009, 9003, 9004, 'dev-teacher',
+                    now() - interval '1 day 8 hours', 7, 9,
+                    E'I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.',
+                    'Good point about stability. You could expand this into a concrete example:',
+                    '&lt;p&gt;Good point about stability. You could expand this into a concrete example:&lt;/p&gt;',
+                    'suggestion',
+                    E'I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order. For example, when sorting students by\ngrade, students with the same grade remain in their original alphabetical order.');
         </sql>
     </changeSet>
 
@@ -548,6 +655,93 @@
             VALUES ('moodle-anna', 9003, 9004);
             INSERT INTO student_moodle_pending_course_group_access (moodle_username, course_id, group_id)
             VALUES ('moodle-juri', 9003, 9005);
+        </sql>
+    </changeSet>
+
+    <!--
+        Library directory structure with sharing:
+
+        root/
+          Python Basics (dir 9101, kspar=PRAWM, dev-teacher=PRAW)
+            ├── Variables 101 (ex 9101, implicit dir 9110)
+            ├── Loops and Iteration (ex 9102, implicit dir 9111)
+            └── Advanced Topics (dir 9102, kspar=PRAWM, inherited dev-teacher=PRAW)
+                  └── List Comprehensions (ex 9103, implicit dir 9112)
+          Data Structures (dir 9103, kspar=PRAWM, any_access=PR)
+            └── Linked Lists (ex 9104, implicit dir 9113, dev-student=PR direct on implicit dir)
+    -->
+    <changeSet id="testdata-library-dirs" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM exercise_dir WHERE id = 9101</sqlCheck>
+        </preConditions>
+        <comment>Insert library directories, exercises, and sharing permissions</comment>
+        <sql>
+            <!-- Explicit dirs -->
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9101, 'Python Basics', false, null, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9102, 'Advanced Topics', false, 9101, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, parent, any_account_access_level, created_at, modified_at)
+            VALUES (9103, 'Data Structures', false, null, 1, now(), now());
+
+            <!-- Implicit dirs for exercises (parent = their explicit dir) -->
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9110, '9101', true, 9101, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9111, '9102', true, 9101, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9112, '9103', true, 9102, now(), now());
+            INSERT INTO exercise_dir (id, name, implicit, parent, created_at, modified_at)
+            VALUES (9113, '9104', true, 9103, now(), now());
+
+            <!-- kspar (group 9001) gets PRAWM on all explicit dirs -->
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9101, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9102, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9103, 4, now());
+
+            <!-- kspar gets PRAWM on all implicit dirs (exercise owner) -->
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9110, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9111, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9112, 4, now());
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9001, 9113, 4, now());
+
+            <!-- dev-teacher (group 9003) gets PRAW on Python Basics — inherits to children -->
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9003, 9101, 3, now());
+
+            <!-- dev-student (group 9002) gets PR directly on Linked Lists exercise implicit dir -->
+            INSERT INTO group_exercise_dir_access (group_id, dir_id, access_level, created_at) VALUES (9002, 9113, 1, now());
+
+            <!-- Exercises (each points to its implicit dir) -->
+            INSERT INTO exercise (id, dir_id, owned_by_id, created_at, public, anonymous_autoassess_enabled)
+            VALUES (9101, 9110, 'kspar', now(), false, false);
+            INSERT INTO exercise (id, dir_id, owned_by_id, created_at, public, anonymous_autoassess_enabled)
+            VALUES (9102, 9111, 'kspar', now(), false, false);
+            INSERT INTO exercise (id, dir_id, owned_by_id, created_at, public, anonymous_autoassess_enabled)
+            VALUES (9103, 9112, 'kspar', now(), false, false);
+            INSERT INTO exercise (id, dir_id, owned_by_id, created_at, public, anonymous_autoassess_enabled)
+            VALUES (9104, 9113, 'kspar', now(), false, false);
+
+            <!-- Exercise versions -->
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9101, 9101, 'kspar', now(), 'TEACHER', 'Variables 101',
+                    '&lt;p&gt;Explain the difference between mutable and immutable variables in Python.&lt;/p&gt;',
+                    'solution.py', 0);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9102, 9102, 'kspar', now(), 'AUTO', 'Loops and Iteration',
+                    '&lt;p&gt;Write a program that prints the first 10 Fibonacci numbers using a loop.&lt;/p&gt;',
+                    'solution.py', 0, 9001);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type, auto_exercise_id)
+            VALUES (9103, 9103, 'kspar', now(), 'AUTO', 'List Comprehensions',
+                    '&lt;p&gt;Rewrite the following loop as a list comprehension: &lt;code&gt;[x**2 for x in range(10) if x % 2 == 0]&lt;/code&gt;&lt;/p&gt;',
+                    'solution.py', 0, 9002);
+            INSERT INTO exercise_version (id, exercise_id, author_id, valid_from, grader_type, title,
+                                          text_html, solution_file_name, solution_file_type)
+            VALUES (9104, 9104, 'kspar', now(), 'TEACHER', 'Linked Lists',
+                    '&lt;p&gt;Implement a singly linked list with &lt;code&gt;insert&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, and &lt;code&gt;search&lt;/code&gt; operations.&lt;/p&gt;',
+                    'solution.py', 0);
         </sql>
     </changeSet>
 

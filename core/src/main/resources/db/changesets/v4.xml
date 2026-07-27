@@ -35,4 +35,66 @@
                       oldColumnName="snippet_adoc" newColumnName="snippet_md"/>
     </changeSet>
 
+    <changeSet id="260225-1" author="kspar">
+        <!-- Revert JSONB feedback column back to separate text columns (JSONB was never deployed to prod) -->
+        <dropColumn tableName="teacher_activity" columnName="feedback"/>
+        <addColumn tableName="teacher_activity">
+            <column name="feedback_md" type="text"><constraints nullable="true"/></column>
+            <column name="feedback_html" type="text"><constraints nullable="true"/></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="260225-2" author="kspar">
+        <!-- Standalone inline comments table — comments are independent of teacher_activity -->
+        <createTable tableName="teacher_inline_comment">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="course_exercise_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_inline_comment_course_exercise" references="course_exercise(id)"/>
+            </column>
+            <column name="submission_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_inline_comment_submission" references="submission(id)"/>
+            </column>
+            <column name="teacher_id" type="text">
+                <constraints nullable="false" foreignKeyName="fk_inline_comment_teacher" references="account(username)"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="edited_at" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="line_start" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="line_end" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="text_md" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="text_html" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="suggested_code" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="teacher_inline_comment" indexName="idx_inline_comment_submission">
+            <column name="submission_id"/>
+        </createIndex>
+        <createIndex tableName="teacher_inline_comment" indexName="idx_inline_comment_ce_teacher">
+            <column name="course_exercise_id"/>
+            <column name="teacher_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

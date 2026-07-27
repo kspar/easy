@@ -199,7 +199,23 @@ object TeacherActivity : LongIdTable("teacher_activity") {
     val mergeWindowStart = datetime("merge_window_start")
     val editedAt = datetime("edited_at").nullable()
     val grade = integer("grade").nullable()
-    val feedback = jsonb<String>("feedback", { it }, { it }).nullable()
+    val feedbackMd = text("feedback_md").nullable()
+    val feedbackHtml = text("feedback_html").nullable()
+}
+
+object TeacherInlineComment : LongIdTable("teacher_inline_comment") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val submission = reference("submission_id", Submission)
+    val teacher = reference("teacher_id", Account)
+    val createdAt = datetime("created_at")
+    val editedAt = datetime("edited_at").nullable()
+    val lineStart = integer("line_start")
+    val lineEnd = integer("line_end")
+    val code = text("code")
+    val textMd = text("text_md")
+    val textHtml = text("text_html")
+    val type = text("type")
+    val suggestedCode = text("suggested_code").nullable()
 }
 
 object AutogradeActivity : LongIdTable("autograde_activity") {

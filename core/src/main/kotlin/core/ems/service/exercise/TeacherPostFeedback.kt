@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
-import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
@@ -30,22 +29,10 @@ class TeacherPostFeedbackController(val markdownService: MarkdownService, val ma
     @Value("\${easy.core.activity.merge-window.s}")
     private lateinit var mergeWindowInSeconds: String
 
-    data class InlineCommentReq(
-        @JsonProperty("line_start", required = true) val lineStart: Int,
-        @JsonProperty("line_end", required = true) val lineEnd: Int,
-        @JsonProperty("code", required = true) val code: String,
-        @JsonProperty("text_md", required = true) @field:NotBlank val textMd: String,
-        @JsonProperty("type", required = true) val type: String,
-        @JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
-    )
-
     data class Req(
-        @JsonProperty("feedback_md", required = true)
+        @JsonProperty("feedback_md", required = false)
         @field:Size(max = 300000)
-        @field:NotBlank
-        val feedbackMd: String,
-        @JsonProperty("inline_comments", required = false)
-        val inlineComments: List<InlineCommentReq>? = null,
+        val feedbackMd: String? = null,
         @JsonProperty("notify_student", required = true)
         @field:NotNull
         val notifyStudent: Boolean
@@ -91,18 +78,13 @@ class TeacherPostFeedbackController(val markdownService: MarkdownService, val ma
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
             val time = DateTime.now()
 
-            val feedbackJson = buildFeedbackJson(
-                assessment.feedbackMd,
-                assessment.inlineComments?.map {
-                    InlineComment(it.lineStart, it.lineEnd, it.code, it.textMd, "", it.type, it.suggestedCode)
-                },
-                markdownService,
-            )
+            val feedbackHtml = assessment.feedbackMd?.let { markdownService.mdToHtml(it) }
 
             if (previousId != null) {
                 TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[mergeWindowStart] = time
-                    it[feedback] = feedbackJson
+                    it[feedbackMd] = assessment.feedbackMd
+                    it[TeacherActivity.feedbackHtml] = feedbackHtml
                 }
             } else {
                 TeacherActivity.insert {
@@ -111,7 +93,8 @@ class TeacherPostFeedbackController(val markdownService: MarkdownService, val ma
                     it[submission] = submissionId
                     it[teacher] = teacherId
                     it[mergeWindowStart] = time
-                    it[feedback] = feedbackJson
+                    it[feedbackMd] = assessment.feedbackMd
+                    it[TeacherActivity.feedbackHtml] = feedbackHtml
                 }
             }
 
@@ -128,13 +111,13 @@ class TeacherPostFeedbackController(val markdownService: MarkdownService, val ma
                 .select(
                     TeacherActivity.id,
                     TeacherActivity.mergeWindowStart,
-                    TeacherActivity.feedback,
+                    TeacherActivity.feedbackMd,
                 )
                 .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
                 .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
                     val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
-                    val noFeedback = it[TeacherActivity.feedback] == null
+                    val noFeedback = it[TeacherActivity.feedbackMd] == null
                     if (timeIsInWindow && noFeedback) it[TeacherActivity.id].value else null
                 }
         }

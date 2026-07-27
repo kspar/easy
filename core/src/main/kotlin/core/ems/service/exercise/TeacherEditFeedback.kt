@@ -27,19 +27,9 @@ import javax.validation.constraints.Size
 class TeacherEditFeedbackController(val markdownService: MarkdownService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
-    data class InlineCommentReq(
-        @JsonProperty("line_start", required = true) val lineStart: Int,
-        @JsonProperty("line_end", required = true) val lineEnd: Int,
-        @JsonProperty("code", required = true) val code: String,
-        @JsonProperty("text_md", required = true) val textMd: String,
-        @JsonProperty("type", required = true) val type: String,
-        @JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
-    )
-
     data class Req(
         @JsonProperty("teacher_activity_id", required = true) @field:Size(max = 100) val teacherActivityId: String,
         @JsonProperty("feedback_md", required = false) @field:Size(max = 300000) val feedbackMd: String?,
-        @JsonProperty("inline_comments", required = false) val inlineComments: List<InlineCommentReq>? = null,
         @JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
     )
 
@@ -81,20 +71,13 @@ class TeacherEditFeedbackController(val markdownService: MarkdownService, val ma
     private fun updateTeacherActivity(teacherId: String, submissionId: Long, req: Req) = transaction {
         val activityId = req.teacherActivityId.idToLongOrInvalidReq()
 
-        val feedbackJson = req.feedbackMd?.let { md ->
-            buildFeedbackJson(
-                md,
-                req.inlineComments?.map {
-                    InlineComment(it.lineStart, it.lineEnd, it.code, it.textMd, "", it.type, it.suggestedCode)
-                },
-                markdownService,
-            )
-        }
+        val feedbackHtml = req.feedbackMd?.let { markdownService.mdToHtml(it) }
 
         val updated =
             TeacherActivity.update({ (TeacherActivity.id eq activityId) and (TeacherActivity.teacher eq teacherId) }) {
                 it[editedAt] = DateTime.now()
-                it[feedback] = feedbackJson
+                it[feedbackMd] = req.feedbackMd
+                it[TeacherActivity.feedbackHtml] = feedbackHtml
             }
 
         if (updated == 0) {
@@ -103,7 +86,7 @@ class TeacherEditFeedbackController(val markdownService: MarkdownService, val ma
 
         // Do not leave empty assessments in the db
         TeacherActivity.deleteWhere {
-            (teacher eq teacherId) and (submission eq submissionId) and grade.isNull() and feedback.isNull()
+            (teacher eq teacherId) and (submission eq submissionId) and grade.isNull() and feedbackMd.isNull()
         }
     }
 }
