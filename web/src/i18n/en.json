@@ -205,6 +205,7 @@
     "inlineCommentCount_one": "{{count}} inline comment",
     "inlineCommentCount_other": "{{count}} inline comments",
     "feedbackPlaceholder": "Write feedback...",
+    "preview": "Preview",
     "activity": "Feedback",
     "noActivity": "No previous activity",
     "assessmentPlaceholder": "Auto-assessment configuration will appear here.",
@@ -220,7 +221,8 @@
     "flagForReview": "Flag for review",
     "unflag": "Remove flag",
     "commentSaved": "Comment saved",
-    "commentDeleted": "Comment deleted"
+    "commentDeleted": "Comment deleted",
+    "confirmDeleteComment": "Delete this comment?"
   },
   "library": {
     "title": "Exercise library",

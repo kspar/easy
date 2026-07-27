@@ -5,6 +5,7 @@ import {
   AccordionSummary,
   Alert,
   Box,
+  Collapse,
   Paper,
   Typography,
 } from '@mui/material'
@@ -157,10 +158,14 @@ export default function AutoTestResults({
   autoAssessment,
   staggerReveal = false,
   onStaggerDone,
+  collapsible = false,
+  defaultExpanded = true,
 }: {
   autoAssessment: AutomaticAssessmentResp
   staggerReveal?: boolean
   onStaggerDone?: () => void
+  collapsible?: boolean
+  defaultExpanded?: boolean
 }) {
   const { t } = useTranslation()
 
@@ -230,17 +235,83 @@ export default function AutoTestResults({
     transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
   } : {}
 
+  const STORAGE_KEY = 'autoTestResultsExpanded'
+  const [sectionOpen, setSectionOpen] = useState(() => {
+    if (!collapsible) return defaultExpanded
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored !== null) return stored === '1'
+    } catch { /* ignore */ }
+    return defaultExpanded
+  })
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 1, ...headerSx }}>
-        <Typography variant="h6">
+      <Box
+        onClick={collapsible ? () => setSectionOpen((v) => {
+          const next = !v
+          try { localStorage.setItem(STORAGE_KEY, next ? '1' : '0') } catch { /* ignore */ }
+          return next
+        }) : undefined}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: sectionOpen ? 1 : 0,
+          ...headerSx,
+          ...(collapsible && {
+            cursor: 'pointer',
+            userSelect: 'none',
+          }),
+        }}
+      >
+        {collapsible && (
+          <ExpandMoreOutlined
+            sx={{
+              fontSize: 18,
+              color: 'text.secondary',
+              mr: 0.5,
+              transform: sectionOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+              transition: 'transform 0.2s',
+            }}
+          />
+        )}
+        <Typography variant="h6" sx={{ flexShrink: 0 }}>
           {t('submission.autoTests')}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', ...gradeSx }}>
-          {autoAssessment.grade} / 100
-        </Typography>
+
+        {collapsible && tests.length > 0 ? (
+          <>
+            {/* Segmented test bar */}
+            <Box sx={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', ml: 2, gap: '2px' }}>
+              {tests.map((test, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 12,
+                    bgcolor: test.status === 'PASS' ? 'success.main'
+                      : test.status === 'FAIL' ? 'error.main'
+                        : 'action.disabled',
+                  }}
+                />
+              ))}
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, ml: 1.5 }}>
+              {tests.filter(t => t.status === 'PASS').length}/{tests.length}
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', ...gradeSx }}>
+            {autoAssessment.grade} / 100
+          </Typography>
+        )}
       </Box>
 
+      <Collapse in={!collapsible || sectionOpen}>
+      {collapsible && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {t('general.points')}: {autoAssessment.grade} / 100
+        </Typography>
+      )}
       {v3 ? (
         <>
           {v3.pre_evaluate_error && (
@@ -291,7 +362,14 @@ export default function AutoTestResults({
                     </Typography>
                   </Box>
                 </AccordionSummary>
-                <AccordionDetails>
+                <AccordionDetails
+                  sx={{
+                    bgcolor: (th) =>
+                      th.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.02)'
+                        : 'rgba(0,0,0,0.02)',
+                  }}
+                >
                   <TestDetails test={test} t={t} />
                 </AccordionDetails>
               </Accordion>
@@ -316,6 +394,7 @@ export default function AutoTestResults({
           {autoAssessment.feedback}
         </Paper>
       ) : null}
+      </Collapse>
     </Box>
   )
 }

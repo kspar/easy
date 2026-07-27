@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
 import type {
@@ -6,12 +7,18 @@ import type {
   DraftResp,
   ExerciseDetails,
   GroupResp,
+  InlineCommentResp,
   MoodlePropsResp,
   ParticipantsResp,
   SubmissionResp,
+  SubmissionRow,
   TeacherActivityResp,
+  TeacherAutoassessResp,
   TeacherCourseExercise,
   TeacherExerciseDetails,
+  TeacherSubmissionDetailResp,
+  TeacherSubmissionSummaryResp,
+  TeacherTestSubmissionResp,
 } from './types.ts'
 
 export function useCourseExercises(courseId: string | undefined) {
@@ -197,7 +204,7 @@ export function useUpdateCourseExercise(
   })
 }
 
-export function useTeacherCourseExercises(courseId: string, groupId?: string) {
+export function useTeacherCourseExercises(courseId: string | undefined, groupId?: string) {
   return useQuery({
     queryKey: ['teacher', 'courses', courseId, 'exercises', { groupId }],
     queryFn: () => {
@@ -208,6 +215,7 @@ export function useTeacherCourseExercises(courseId: string, groupId?: string) {
         (r) => r.exercises,
       )
     },
+    enabled: !!courseId,
   })
 }
 
@@ -334,6 +342,284 @@ export function useAwaitAutograde(
     // No cache invalidation here — the caller (CourseExercisePage) controls
     // when submissions + exercises queries update to coordinate with the
     // autograde reveal animation.
+  })
+}
+
+// Teacher grading hooks
+
+export function useTeacherSubmissionSummaries(
+  courseId: string,
+  courseExerciseId: string,
+  groupId?: string,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'submissions', 'latest', { groupId }],
+    queryFn: () => {
+      const url = groupId
+        ? `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/latest/students?group=${groupId}`
+        : `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/latest/students`
+      return apiFetch<{ latest_submissions: SubmissionRow[] }>(url).then((r) => r.latest_submissions)
+    },
+  })
+}
+
+export function useTeacherSubmissionDetails(
+  courseId: string,
+  courseExerciseId: string,
+  submissionId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'submissions', submissionId],
+    queryFn: () =>
+      apiFetch<TeacherSubmissionDetailResp>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}`,
+      ),
+    enabled: !!submissionId,
+  })
+}
+
+export function useTeacherStudentSubmissions(
+  courseId: string,
+  courseExerciseId: string,
+  studentId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'submissions', 'all', 'students', studentId],
+    queryFn: () =>
+      apiFetch<{ submissions: TeacherSubmissionSummaryResp[] }>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/all/students/${studentId}`,
+      ).then((r) => r.submissions),
+    enabled: !!studentId,
+  })
+}
+
+export function useTeacherStudentActivities(
+  courseId: string,
+  courseExerciseId: string,
+  studentId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'students', studentId, 'activities'],
+    queryFn: () =>
+      apiFetch<{ teacher_activities: TeacherActivityResp[] }>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/students/${studentId}/activities`,
+      ).then((r) => r.teacher_activities),
+    enabled: !!studentId,
+  })
+}
+
+export function usePostGrade(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, grade, notifyStudent }: { submissionId: string; grade: number; notifyStudent: boolean }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/grade`,
+        { method: 'POST', body: { grade, notify_student: notifyStudent } },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+export function usePostFeedback(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, feedbackMd, notifyStudent }: {
+      submissionId: string
+      feedbackMd: string | null
+      notifyStudent: boolean
+    }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/feedback`,
+        { method: 'POST', body: { feedback_md: feedbackMd, notify_student: notifyStudent } },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+export function useEditFeedback(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, teacherActivityId, feedbackMd, notifyStudent }: {
+      submissionId: string
+      teacherActivityId: string
+      feedbackMd: string | null
+      notifyStudent: boolean
+    }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/feedback`,
+        { method: 'PUT', body: { teacher_activity_id: teacherActivityId, feedback_md: feedbackMd, notify_student: notifyStudent } },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+// Inline comment hooks
+
+export function useTeacherStudentInlineComments(
+  courseId: string,
+  courseExerciseId: string,
+  studentId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'students', studentId, 'inline-comments'],
+    queryFn: () =>
+      apiFetch<{ inline_comments: InlineCommentResp[] }>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/students/${studentId}/inline-comments`,
+      ).then((r) => r.inline_comments),
+    enabled: !!studentId,
+  })
+}
+
+export function useStudentInlineComments(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  return useQuery({
+    queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'inline-comments'],
+    queryFn: () =>
+      apiFetch<{ inline_comments: InlineCommentResp[] }>(
+        `/student/courses/${courseId}/exercises/${courseExerciseId}/inline-comments`,
+      ).then((r) => r.inline_comments),
+  })
+}
+
+export function useCreateInlineComment(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, ...body }: {
+      submissionId: string
+      line_start: number
+      line_end: number
+      code: string
+      text_md: string
+      type: string
+      suggested_code?: string
+      notify_student?: boolean
+    }) =>
+      apiFetch<InlineCommentResp>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/inline-comments`,
+        { method: 'POST', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        predicate: (query) => query.queryKey.includes('inline-comments'),
+      })
+    },
+  })
+}
+
+export function useUpdateInlineComment(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, commentId, ...body }: {
+      submissionId: string
+      commentId: string
+      line_start: number
+      line_end: number
+      code: string
+      text_md: string
+      type: string
+      suggested_code?: string
+      notify_student?: boolean
+    }) =>
+      apiFetch<InlineCommentResp>(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/inline-comments/${commentId}`,
+        { method: 'PUT', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        predicate: (query) => query.queryKey.includes('inline-comments'),
+      })
+    },
+  })
+}
+
+export function useDeleteInlineComment(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, commentId }: { submissionId: string; commentId: string }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/inline-comments/${commentId}`,
+        { method: 'DELETE' },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        predicate: (query) => query.queryKey.includes('inline-comments'),
+      })
+    },
+  })
+}
+
+export function useMarkSubmissionsSeen(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { submissions: { id: string }[]; seen: boolean }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/seen`,
+        { method: 'POST', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+export function useTeacherAutoassess(exerciseId: string) {
+  return useMutation({
+    mutationFn: (solution: string) =>
+      apiFetch<TeacherAutoassessResp>(
+        `/exercises/${exerciseId}/testing/autoassess`,
+        { method: 'POST', body: { solution } },
+      ),
+  })
+}
+
+export function useTeacherTestSubmissions(exerciseId: string | undefined) {
+  return useQuery({
+    queryKey: ['exercises', exerciseId, 'testing', 'autoassess', 'submissions'],
+    queryFn: () =>
+      apiFetch<{ submissions: TeacherTestSubmissionResp[] }>(
+        `/exercises/${exerciseId}/testing/autoassess/submissions`,
+      ).then((r) => r.submissions),
+    enabled: !!exerciseId,
   })
 }
 
@@ -583,4 +869,37 @@ export function useUpdateMoodleProps(courseId: string) {
       })
     },
   })
+}
+
+// Debounced markdown preview using the backend renderer
+export function useMarkdownPreview(markdownText: string, debounceMs = 400): string {
+  const [html, setHtml] = useState('')
+  const lastRequestRef = useRef(0)
+
+  useEffect(() => {
+    const trimmed = markdownText.trim()
+    if (!trimmed) {
+      setHtml('')
+      return
+    }
+
+    const requestId = ++lastRequestRef.current
+    const timer = setTimeout(async () => {
+      try {
+        const resp = await apiFetch<{ content: string }>('/preview/markdown', {
+          method: 'POST',
+          body: { content: trimmed },
+        })
+        if (lastRequestRef.current === requestId) {
+          setHtml(resp.content)
+        }
+      } catch {
+        // ignore preview errors
+      }
+    }, debounceMs)
+
+    return () => clearTimeout(timer)
+  }, [markdownText, debounceMs])
+
+  return html
 }

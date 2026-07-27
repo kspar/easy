@@ -205,6 +205,7 @@
     "inlineCommentCount_one": "{{count}} reasisene kommentaar",
     "inlineCommentCount_other": "{{count}} reasisest kommentaari",
     "feedbackPlaceholder": "Kirjuta tagasiside...",
+    "preview": "Eelvaade",
     "activity": "Tagasiside",
     "noActivity": "Varasem tegevus puudub",
     "assessmentPlaceholder": "Automaathindamise seadistus ilmub siia.",
@@ -220,7 +221,8 @@
     "flagForReview": "Märgi ülevaatamiseks",
     "unflag": "Eemalda märge",
     "commentSaved": "Kommentaar salvestatud",
-    "commentDeleted": "Kommentaar kustutatud"
+    "commentDeleted": "Kommentaar kustutatud",
+    "confirmDeleteComment": "Kustutada see kommentaar?"
   },
   "library": {
     "title": "Ülesandekogu",

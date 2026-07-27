@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Typography,
   CircularProgress,
@@ -8,6 +8,8 @@ import {
   Collapse,
   Divider,
   IconButton,
+  Tab,
+  Tabs,
   Tooltip,
   useMediaQuery,
 } from '@mui/material'
@@ -25,7 +27,7 @@ import {
   LibraryBooksOutlined,
   SettingsOutlined,
 } from '@mui/icons-material'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
@@ -44,16 +46,19 @@ import type {
   StudentParticipant,
   GroupResp,
   SubmissionResp,
+  TeacherExerciseDetails as TeacherExerciseDetailsType,
 } from '../../api/types.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import SolutionEditor, { type SolutionEditorHandle } from './SolutionEditor.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
 import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
-import RobotPlaceholder from '../../components/RobotPlaceholder.tsx'
 import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
 import { RobotIcon } from '../../components/icons.tsx'
 import AutogradeAnimation from './AutogradeAnimation.tsx'
+import SubmissionsList from './SubmissionsList.tsx'
+import StudentGradingView from './StudentGradingView.tsx'
+import TeacherTestingTab from './TeacherTestingTab.tsx'
 
 function GradeBanner({
   submissions,
@@ -355,6 +360,9 @@ function StudentExerciseView() {
   const editorRef = useRef<SolutionEditorHandle>(null)
   const queryClient = useQueryClient()
 
+  // Highlight a specific submission when clicking "submission #X" in TeacherFeedback
+  const [highlightSubNumber, setHighlightSubNumber] = useState<number | undefined>()
+
   // --- Autograde animation state machine ---
   //
   // State: idle → grading → completed → revealing → idle
@@ -485,6 +493,8 @@ function StudentExerciseView() {
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
         submissions={submissions}
+        solutionFileName={exercise.solution_file_name}
+        onSelectSubmissionNumber={setHighlightSubNumber}
       />
 
       <PreviousSubmissions
@@ -492,6 +502,7 @@ function StudentExerciseView() {
         courseExerciseId={courseExerciseId!}
         solutionFileName={exercise.solution_file_name}
         onRestore={(solution) => editorRef.current?.setSolution(solution)}
+        highlightSubmissionNumber={highlightSubNumber}
       />
     </>
   )
@@ -669,6 +680,104 @@ function ExceptionsSummary({
   )
 }
 
+function TeacherRightPane({
+  courseId,
+  courseExerciseId,
+  exercise,
+}: {
+  courseId: string
+  courseExerciseId: string
+  exercise: TeacherExerciseDetailsType
+}) {
+  const { t } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedStudentId = searchParams.get('student') || undefined
+
+  // Tab state: 0=Students, 1=Testing, 2=Assessment
+  const [tabIndex, setTabIndex] = useState(0)
+
+  // When student param is set, auto-switch to Students tab
+  useEffect(() => {
+    if (selectedStudentId) {
+      setTabIndex(0)
+    }
+  }, [selectedStudentId])
+
+  const handleSelectStudent = useCallback((studentId: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('student', studentId)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const handleBackToList = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('student')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  return (
+    <Box>
+      <Tabs
+        value={tabIndex}
+        onChange={(_, v) => setTabIndex(v)}
+        sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, textTransform: 'none' } }}
+      >
+        <Tab label={t('submission.tabStudents')} />
+        <Tab label={t('submission.tabTesting')} />
+        <Tab label={t('submission.tabAssessment')} />
+      </Tabs>
+
+      {/* Students tab */}
+      {tabIndex === 0 && (
+        selectedStudentId ? (
+          <StudentGradingView
+            courseId={courseId}
+            courseExerciseId={courseExerciseId}
+            exercise={exercise}
+            studentId={selectedStudentId}
+            onBack={handleBackToList}
+            onSelectStudent={handleSelectStudent}
+          />
+        ) : (
+          <SubmissionsList
+            courseId={courseId}
+            courseExerciseId={courseExerciseId}
+            onSelectStudent={handleSelectStudent}
+          />
+        )
+      )}
+
+      {/* Testing tab */}
+      {tabIndex === 1 && (
+        <TeacherTestingTab
+          exerciseId={exercise.exercise_id}
+          solutionFileName={exercise.solution_file_name}
+          graderType={exercise.grader_type}
+        />
+      )}
+
+      {/* Assessment tab */}
+      {tabIndex === 2 && (
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography color="text.secondary">
+            {t('submission.assessmentPlaceholder')}
+          </Typography>
+          {exercise.grader_type === 'AUTO' && (
+            <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Chip label={`${t('exercises.gradedAutomatically')}`} size="small" variant="outlined" />
+              <Chip label={exercise.solution_file_name} size="small" variant="outlined" />
+            </Box>
+          )}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
 function TeacherExerciseView() {
   const { courseId, courseExerciseId } = useParams<{
     courseId: string
@@ -717,7 +826,11 @@ function TeacherExerciseView() {
   )
 
   const rightPane = (
-    <RobotPlaceholder message={t('submission.noSubmissions')} />
+    <TeacherRightPane
+      courseId={courseId!}
+      courseExerciseId={courseExerciseId!}
+      exercise={exercise}
+    />
   )
 
   return (
