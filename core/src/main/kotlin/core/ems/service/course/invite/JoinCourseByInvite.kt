@@ -5,11 +5,13 @@ import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseInviteLink
 import core.db.StudentCourseAccess
-import core.ems.service.singleOrInvalidRequest
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
@@ -24,7 +26,7 @@ class JoinCourseByInvite {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("course_id") val courseId: String
+        @get:JsonProperty("course_id") val courseId: String
     )
 
     @Secured("ROLE_STUDENT")
@@ -60,9 +62,7 @@ class JoinCourseByInvite {
 
         if (accessesAdded > 0) {
             CourseInviteLink.update({ CourseInviteLink.course eq courseId }) {
-                with(SqlExpressionBuilder) {
-                    it.update(usedCount, usedCount + 1)
-                }
+                it.update(usedCount, usedCount + 1)
             }
         }
 

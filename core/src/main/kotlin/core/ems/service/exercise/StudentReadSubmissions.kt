@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
 import core.db.CourseExercise
@@ -13,10 +13,12 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.web.bind.annotation.*
 
@@ -27,20 +29,18 @@ class StudentReadSubmissionsController {
     private val log = KotlinLogging.logger {}
 
     data class SubmissionResp(
-        @JsonProperty("id") val submissionId: String,
-        @JsonProperty("number") val number: Int,
-        @JsonProperty("solution") val solution: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("submission_time") val submissionTime: DateTime,
-        @JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
-        @JsonProperty("grade") val grade: GradeResp?,
-        @JsonProperty("submission_status") val status: StudentExerciseStatus,
-        @JsonProperty("auto_assessment") val autoAssessments: AutomaticAssessmentResp?
+        @get:JsonProperty("id") val submissionId: String,
+        @get:JsonProperty("number") val number: Int,
+        @get:JsonProperty("solution") val solution: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("submission_time") val submissionTime: DateTime,
+        @get:JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
+        @get:JsonProperty("grade") val grade: GradeResp?,
+        @get:JsonProperty("submission_status") val status: StudentExerciseStatus,
+        @get:JsonProperty("auto_assessment") val autoAssessments: AutomaticAssessmentResp?
     )
 
-    data class Resp(
-        @JsonProperty("submissions") val submissions: List<SubmissionResp>,
-    )
+    data class Resp(@get:JsonProperty("submissions") val submissions: List<SubmissionResp>)
 
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all")
     fun controller(
@@ -91,8 +91,9 @@ class StudentReadSubmissionsController {
                         (Submission.student eq studentId)
             }
             .orderBy(Submission.createdAt to SortOrder.DESC)
-            .limit(limit ?: Int.MAX_VALUE, offset ?: 0)
-            .mapIndexed { i, it ->
+            .limit(limit ?: Int.MAX_VALUE)
+            .offset(offset ?: 0)
+            .mapIndexed { _, it ->
                 val submissionId = it[Submission.id].value
 
                 SubmissionResp(

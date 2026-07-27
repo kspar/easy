@@ -9,7 +9,5 @@ import org.springframework.stereotype.Component
 @Component
 class ExerciseIndexNormalisationCron {
     @Scheduled(cron = "\${easy.core.exercise-index-normalisation.cron}")
-    fun cron() {
-        normaliseAllCourseExIndices()
-    }
+    fun cron() = normaliseAllCourseExIndices()
 }

@@ -3,23 +3,23 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.TeacherActivity
-import core.db.isNull
 import core.ems.service.*
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -28,9 +28,12 @@ class TeacherEditFeedbackController(val markdownService: MarkdownService, val ma
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("teacher_activity_id", required = true) @field:Size(max = 100) val teacherActivityId: String,
-        @JsonProperty("feedback_md", required = false) @field:Size(max = 300000) val feedbackMd: String?,
-        @JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
+        @param:JsonProperty(
+            "teacher_activity_id",
+            required = true
+        ) @field:Size(max = 100) val teacherActivityId: String,
+        @param:JsonProperty("feedback_md", required = false) @field:Size(max = 300000) val feedbackMd: String?,
+        @param:JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

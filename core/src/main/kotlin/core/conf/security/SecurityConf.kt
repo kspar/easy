@@ -1,67 +1,66 @@
 package core.conf.security
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.firewall.HttpFirewall
 import org.springframework.security.web.firewall.StrictHttpFirewall
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(securedEnabled = true)
-class SecurityConf : WebSecurityConfigurerAdapter() {
+@EnableMethodSecurity(securedEnabled = true)
+class SecurityConf {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.auth-enabled}")
     private var authEnabled: Boolean = true
 
-    override fun configure(http: HttpSecurity) {
-        http.authorizeRequests()
-            .antMatchers(
-                // Allow unauthenticated access to anonymous auto-assess services
-                "/*/unauth/exercises/*/anonymous/autoassess",
-                "/*/unauth/exercises/*/anonymous/details"
-            ).permitAll()
-            // All other services require auth == any role by default
-            .anyRequest().authenticated()
+    @Bean
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
+        http
+            .authorizeHttpRequests {
+                it.requestMatchers(
+                    // Allow unauthenticated access to anonymous auto-assess services
+                    "/*/unauth/exercises/*/anonymous/autoassess",
+                    "/*/unauth/exercises/*/anonymous/details"
+                ).permitAll()
+                    // All other services require auth == any role by default
+                    .anyRequest().authenticated()
+            }.addFilterAfter(
+                if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
+                RequestHeaderAuthenticationFilter::class.java
+            ).exceptionHandling {
+                it.accessDeniedHandler { request, response, _ ->
+                    log.info { "Forbidden for ${makeRequestLogMsg(request)}" }
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN)
+                }
+                it.authenticationEntryPoint { request, response, _ ->
+                    log.info { "Unauthorized for ${makeRequestLogMsg(request)}" }
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                }
+            }.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .cors { it.configurationSource(getCorsConfiguration()) }
+            .csrf { it.disable() }.build()
 
-        http.addFilterAfter(
-            if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
-            RequestHeaderAuthenticationFilter::class.java
-        )
-
-        http.exceptionHandling()
-            .accessDeniedHandler { request, response, _ ->
-                log.info { "Forbidden for ${makeRequestLogMsg(request)}" }
-                response.sendError(HttpServletResponse.SC_FORBIDDEN)
-            }
-            .authenticationEntryPoint { request, response, _ ->
-                log.info { "Unauthorized for ${makeRequestLogMsg(request)}" }
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
-            }
-
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-
-        http.cors().configurationSource(getCorsConfiguration())
-        http.csrf().disable()
-    }
-
-    override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.authenticationProvider(EasyUserAuthProvider())
+    @Bean
+    @Throws(Exception::class)
+    fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager? {
+        return authenticationConfiguration.getAuthenticationManager()
     }
 
     // Temporary workaround for EZ-1434

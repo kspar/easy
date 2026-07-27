@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.*
@@ -10,9 +10,12 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,16 +30,16 @@ class StudentReadExerciseDetailsController {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("effective_title") val title: String,
-        @JsonProperty("text_html") val textHtml: String?,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("deadline") val softDeadline: DateTime?,
-        @JsonProperty("grader_type") val graderType: GraderType,
-        @JsonProperty("threshold") val threshold: Int,
-        @JsonProperty("instructions_html") val instructionsHtml: String?,
-        @JsonProperty("is_open") val isOpenForSubmissions: Boolean,
-        @JsonProperty("solution_file_name") val solutionFileName: String,
-        @JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
+        @get:JsonProperty("effective_title") val title: String,
+        @get:JsonProperty("text_html") val textHtml: String?,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("deadline") val softDeadline: DateTime?,
+        @get:JsonProperty("grader_type") val graderType: GraderType,
+        @get:JsonProperty("threshold") val threshold: Int,
+        @get:JsonProperty("instructions_html") val instructionsHtml: String?,
+        @get:JsonProperty("is_open") val isOpenForSubmissions: Boolean,
+        @get:JsonProperty("solution_file_name") val solutionFileName: String,
+        @get:JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
     )
 
     @Secured("ROLE_STUDENT")
@@ -45,7 +48,7 @@ class StudentReadExerciseDetailsController {
         @PathVariable("courseId") courseIdStr: String,
         @PathVariable("courseExerciseId") courseExIdStr: String,
         caller: EasyUser
-    ): Resp? {
+    ): Resp {
 
         log.info { "Getting exercise details for student ${caller.id} on course exercise $courseExIdStr" }
         val courseId = courseIdStr.idToLongOrInvalidReq()

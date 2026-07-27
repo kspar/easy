@@ -1,14 +1,14 @@
 package core.conf
 
 import liquibase.integration.spring.SpringLiquibase
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.DependsOn
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import javax.sql.DataSource
 
 @Configuration
@@ -34,6 +34,6 @@ class DatabaseInit(val dataSource: DataSource) {
     @PostConstruct
     fun init() {
         Database.connect(dataSource)
-        TransactionManager.manager.defaultRepetitionAttempts = 6
+        TransactionManager.manager.defaultMaxAttempts = 6
     }
 }

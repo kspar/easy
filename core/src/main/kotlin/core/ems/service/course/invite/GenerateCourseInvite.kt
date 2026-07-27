@@ -1,25 +1,27 @@
 package core.ems.service.course.invite
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseInviteLink
-import core.db.insertOrUpdate
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.generateInviteId
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.util.DateTimeDeserializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.upsert
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
+import tools.jackson.databind.annotation.JsonDeserialize
 
 
 @RestController
@@ -27,11 +29,11 @@ import javax.validation.constraints.Min
 class GenerateCourseInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("invite_id") val inviteId: String)
+    data class Resp(@get:JsonProperty("invite_id") val inviteId: String)
 
     data class Req(
-        @JsonDeserialize(using = DateTimeDeserializer::class) @JsonProperty("expires_at") val expiresAt: DateTime,
-        @JsonProperty("allowed_uses") @field:Min(0) @field:Max(1000000) val allowedUses: Int
+        @param:JsonDeserialize(using = DateTimeDeserializer::class) @param:JsonProperty("expires_at") val expiresAt: DateTime,
+        @param:JsonProperty("allowed_uses") @field:Min(0) @field:Max(1000000) val allowedUses: Int
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -86,7 +88,10 @@ class GenerateCourseInvite {
                 0
             )
 
-        CourseInviteLink.insertOrUpdate(listOf(CourseInviteLink.course), listOf(CourseInviteLink.course)) {
+        CourseInviteLink.upsert(
+            CourseInviteLink.course,
+            onUpdateExclude = listOf(CourseInviteLink.course)
+        ) {
             it[course] = courseId
             it[createdAt] = d.createdAt
             it[expiresAt] = req.expiresAt
@@ -94,6 +99,7 @@ class GenerateCourseInvite {
             it[inviteId] = d.inviteId
             it[usedCount] = d.usedCount
         }
+
         log.debug { "Invite '${d.inviteId}' created for course $courseId with expiry date of ${req.expiresAt} and ${req.allowedUses} uses." }
 
         d.inviteId

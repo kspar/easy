@@ -8,9 +8,12 @@ import core.ems.service.access_control.assertExerciseHasTextEditorSubmission
 import core.ems.service.access_control.assertUnauthAccessToExercise
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -22,10 +25,10 @@ class AnonymousReadExerciseDetails {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("title") val title: String,
-        @JsonProperty("text_html") val textHtml: String?,
-        @JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
-        @JsonProperty("submit_allowed") val allowSubmit: Boolean,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("text_html") val textHtml: String?,
+        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
+        @get:JsonProperty("submit_allowed") val allowSubmit: Boolean,
     )
 
     @GetMapping("/unauth/exercises/{exerciseId}/anonymous/details")

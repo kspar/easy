@@ -23,3 +23,6 @@ aae/gunicorn-conf.py
 *.log
 *.dylib
 .gradle/
+
+# Kotlin 2.x build metadata
+.kotlin/

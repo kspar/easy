@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.CourseInviteLink
-import core.ems.service.singleOrInvalidRequest
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,8 +23,8 @@ class GetCourseInfoByInvite {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("course_id") val courseId: String,
-        @JsonProperty("course_title") val courseTitle: String,
+        @get:JsonProperty("course_id") val courseId: String,
+        @get:JsonProperty("course_title") val courseTitle: String,
     )
 
     @Secured("ROLE_STUDENT")
@@ -50,7 +50,7 @@ class GetCourseInfoByInvite {
 
         Resp(
             row[Course.id].value.toString(),
-            row[Course.alias] ?: row[Course.title].toString()
+            row[Course.alias] ?: row[Course.title]
         )
     }
 }

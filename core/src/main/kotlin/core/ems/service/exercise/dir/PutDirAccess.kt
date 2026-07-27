@@ -9,10 +9,10 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
+import jakarta.validation.Valid
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
 
 
 @RestController
@@ -21,10 +21,10 @@ class PutDirAccess {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("group_id") val groupId: String? = null,
-        @JsonProperty("email") val email: String? = null,
-        @JsonProperty("any_access") val anyAccess: Boolean = false,
-        @JsonProperty("access_level") val level: DirAccessLevel?,
+        @param:JsonProperty("group_id") val groupId: String? = null,
+        @param:JsonProperty("email") val email: String? = null,
+        @param:JsonProperty("any_access") val anyAccess: Boolean = false,
+        @param:JsonProperty("access_level") val level: DirAccessLevel?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

@@ -1,7 +1,6 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.access_control.assertAccess
@@ -9,41 +8,46 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countSubmissionsInAutoAssessmentCache
 import core.util.DateTimeSerializer
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
+import tools.jackson.databind.annotation.JsonSerialize
 
 data class TeacherActivityResp(
-    @JsonProperty("id") val id: String,
-    @JsonProperty("submission_id") val submissionId: String,
-    @JsonProperty("submission_number") val submissionNumber: Int,
-    @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
-    @JsonProperty("grade") val grade: Int?,
-    @JsonProperty("edited_at") @JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
-    @JsonProperty("feedback_md") val feedbackMd: String?,
-    @JsonProperty("feedback_html") val feedbackHtml: String?,
-    @JsonProperty("teacher") val teacher: TeacherResp
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("submission_id") val submissionId: String,
+    @get:JsonProperty("submission_number") val submissionNumber: Int,
+    @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+    @get:JsonProperty("grade") val grade: Int?,
+    @get:JsonProperty("edited_at") @get:JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
+    @get:JsonProperty("feedback_md") val feedbackMd: String?,
+    @get:JsonProperty("feedback_html") val feedbackHtml: String?,
+    @get:JsonProperty("teacher") val teacher: TeacherResp
 )
 
 data class InlineCommentResp(
-    @JsonProperty("id") val id: String,
-    @JsonProperty("submission_id") val submissionId: String,
-    @JsonProperty("submission_number") val submissionNumber: Int,
-    @JsonProperty("teacher") val teacher: TeacherResp,
-    @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
-    @JsonProperty("edited_at") @JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
-    @JsonProperty("line_start") val lineStart: Int,
-    @JsonProperty("line_end") val lineEnd: Int,
-    @JsonProperty("code") val code: String,
-    @JsonProperty("text_md") val textMd: String,
-    @JsonProperty("text_html") val textHtml: String,
-    @JsonProperty("type") val type: String,
-    @JsonProperty("suggested_code") val suggestedCode: String?,
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("submission_id") val submissionId: String,
+    @get:JsonProperty("submission_number") val submissionNumber: Int,
+    @get:JsonProperty("teacher") val teacher: TeacherResp,
+    @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+    @get:JsonProperty("edited_at") @get:JsonSerialize(using = DateTimeSerializer::class) val editedAt: DateTime?,
+    @get:JsonProperty("line_start") val lineStart: Int,
+    @get:JsonProperty("line_end") val lineEnd: Int,
+    @get:JsonProperty("code") val code: String,
+    @get:JsonProperty("text_md") val textMd: String,
+    @get:JsonProperty("text_html") val textHtml: String,
+    @get:JsonProperty("type") val type: String,
+    @get:JsonProperty("suggested_code") val suggestedCode: String?,
 )
 
 
 data class ActivityResp(
-    @JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
+    @get:JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
 )
 
 fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): ActivityResp = transaction {

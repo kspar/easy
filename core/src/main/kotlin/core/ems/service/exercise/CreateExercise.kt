@@ -10,21 +10,24 @@ import core.ems.service.access_control.libraryDir
 import core.ems.service.getImplicitGroupFromAccount
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.upsertGroupDirAccess
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -33,28 +36,28 @@ class CreateExercise(private val adocService: AdocService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
-        @JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-        @JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
-        @JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
-        @JsonProperty("public", required = true) val public: Boolean,
-        @JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
-        @JsonProperty("grader_type", required = true) val graderType: GraderType,
-        @JsonProperty("solution_file_name", required = true) val solutionFileName: String,
-        @JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
-        @JsonProperty("grading_script", required = false) val gradingScript: String?,
-        @JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
-        @JsonProperty("max_time_sec", required = false) val maxTime: Int?,
-        @JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
-        @JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
+        @param:JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
+        @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
+        @param:JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
+        @param:JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @param:JsonProperty("public", required = true) val public: Boolean,
+        @param:JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
+        @param:JsonProperty("grader_type", required = true) val graderType: GraderType,
+        @param:JsonProperty("solution_file_name", required = true) val solutionFileName: String,
+        @param:JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
+        @param:JsonProperty("grading_script", required = false) val gradingScript: String?,
+        @param:JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
+        @param:JsonProperty("max_time_sec", required = false) val maxTime: Int?,
+        @param:JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
+        @param:JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
     )
 
     data class ReqAsset(
-        @JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
-        @JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String
+        @param:JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
+        @param:JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String
     )
 
-    data class Resp(@JsonProperty("id") val id: String)
+    data class Resp(@get:JsonProperty("id") val id: String)
 
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -82,7 +85,8 @@ class CreateExercise(private val adocService: AdocService) {
 
         val newAutoExerciseId =
             if (req.graderType == GraderType.AUTO) {
-                insertAutoExercise(req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
+                insertAutoExercise(
+                    req.gradingScript, req.containerImage, req.maxTime, req.maxMem,
                     req.assets?.map { it.fileName to it.fileContent })
 
             } else null

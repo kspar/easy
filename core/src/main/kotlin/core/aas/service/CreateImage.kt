@@ -5,26 +5,27 @@ import core.conf.security.EasyUser
 import core.db.ContainerImage
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
 
 @RestController
 @RequestMapping("/v2")
 class CreateImageController {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("id", required = true) @field:NotBlank val id: String)
+    data class Req(@param:JsonProperty("id", required = true) @field:NotBlank val id: String)
 
-    data class Resp(@JsonProperty("id") val id: String)
+    data class Resp(@get:JsonProperty("id") val id: String)
 
     @Secured("ROLE_ADMIN")
     @PostMapping("/container-images")
@@ -46,6 +47,5 @@ class CreateImageController {
             )
         }
     }
-
 }
 

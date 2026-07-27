@@ -12,7 +12,6 @@ version = mvnVersion
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {

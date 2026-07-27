@@ -2,10 +2,12 @@ package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.Account
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 
 
 fun getUsernameByEmail(email: String): String? = transaction {
@@ -21,11 +23,11 @@ fun teacherExists(username: String): Boolean = transaction {
 }
 
 data class TeacherResp(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: String,
-    @JsonProperty("given_name")
+    @get:JsonProperty("given_name")
     val givenName: String,
-    @JsonProperty("family_name")
+    @get:JsonProperty("family_name")
     val familyName: String
 )
 
@@ -36,11 +38,6 @@ fun selectTeacher(teacherId: String) = transaction {
         .where { Account.id eq teacherId and Account.isTeacher }
         .map { TeacherResp(it[Account.id].value, it[Account.givenName], it[Account.familyName]) }
         .singleOrInvalidRequest()
-}
-
-
-fun accountExists(username: String): Boolean = transaction {
-    Account.selectAll().where { Account.id eq username }.count() > 0
 }
 
 fun selectPseudonym(username: String): String = transaction {

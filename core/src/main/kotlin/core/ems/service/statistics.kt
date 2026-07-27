@@ -3,9 +3,10 @@ package core.ems.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.ems.service.cache.CachingService
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Service
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.ConcurrentLinkedQueue
-import javax.validation.Valid
 
 private val log = KotlinLogging.logger {}
 
@@ -22,6 +22,7 @@ private val log = KotlinLogging.logger {}
 @RequestMapping("/v2")
 class StatisticsController(private val statisticsService: StatisticsService) {
 
+    // TODO: does this controller really need dto as parameter? Postman test currently fails for it as this controller expects request body.
     @Secured("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_STUDENT")
     @PostMapping("/statistics/common")
     fun controller(@Valid @RequestBody dto: StatResp?, caller: EasyUser): StatResp {
@@ -31,9 +32,9 @@ class StatisticsController(private val statisticsService: StatisticsService) {
 }
 
 data class StatResp(
-    @JsonProperty("in_auto_assessing") val inAutoAssessing: Long,
-    @JsonProperty("total_submissions") val totalSubmissions: Long,
-    @JsonProperty("total_users") val totalUsers: Long
+    @get:JsonProperty("in_auto_assessing") val inAutoAssessing: Long,
+    @get:JsonProperty("total_submissions") val totalSubmissions: Long,
+    @get:JsonProperty("total_users") val totalUsers: Long
 )
 
 

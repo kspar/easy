@@ -10,7 +10,7 @@ import core.ems.service.assertDirExists
 import core.ems.service.getAccountFromImplicitGroup
 import core.ems.service.getDirectGroupDirAccesses
 import core.ems.service.idToLongOrInvalidReq
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -26,44 +26,44 @@ class ReadDirAccesses {
 
     // Include all direct accesses and only effective inherited accesses
     data class Resp(
-        @JsonProperty("direct_any") val directAnyAccess: AnyAccessResp?,
-        @JsonProperty("direct_accounts") val directAccountAccesses: List<AccountAccessResp>,
-        @JsonProperty("direct_groups") val directGroupAccesses: List<GroupAccessResp>,
-        @JsonProperty("inherited_any") val inheritedAnyAccess: AnyAccessResp?,
-        @JsonProperty("inherited_accounts") val inheritedAccountAccesses: List<AccountAccessResp>,
-        @JsonProperty("inherited_groups") val inheritedGroupAccesses: List<GroupAccessResp>,
+        @get:JsonProperty("direct_any") val directAnyAccess: AnyAccessResp?,
+        @get:JsonProperty("direct_accounts") val directAccountAccesses: List<AccountAccessResp>,
+        @get:JsonProperty("direct_groups") val directGroupAccesses: List<GroupAccessResp>,
+        @get:JsonProperty("inherited_any") val inheritedAnyAccess: AnyAccessResp?,
+        @get:JsonProperty("inherited_accounts") val inheritedAccountAccesses: List<AccountAccessResp>,
+        @get:JsonProperty("inherited_groups") val inheritedGroupAccesses: List<GroupAccessResp>,
     )
 
     data class AnyAccessResp(
-        @JsonProperty("access") val access: DirAccessLevel,
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
+        @get:JsonProperty("access") val access: DirAccessLevel,
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
     )
 
     data class AccountAccessResp(
-        @JsonProperty("username") val username: String,
-        @JsonProperty("given_name") val givenName: String,
-        @JsonProperty("family_name") val familyName: String,
-        @JsonProperty("email") val email: String?,
-        @JsonProperty("group_id") val implicitGroupId: String,
-        @JsonProperty("access") val access: DirAccessLevel,
+        @get:JsonProperty("username") val username: String,
+        @get:JsonProperty("given_name") val givenName: String,
+        @get:JsonProperty("family_name") val familyName: String,
+        @get:JsonProperty("email") val email: String?,
+        @get:JsonProperty("group_id") val implicitGroupId: String,
+        @get:JsonProperty("access") val access: DirAccessLevel,
         // TODO: modified_at
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
     )
 
     data class GroupAccessResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("access") val access: DirAccessLevel,
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String,
+        @get:JsonProperty("access") val access: DirAccessLevel,
         // TODO: modified_at
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("inherited_from") val inheritedFrom: InheritingDirResp?,
     )
 
     data class InheritingDirResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String,
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

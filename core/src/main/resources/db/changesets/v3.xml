@@ -175,11 +175,16 @@
 
 
     <changeSet id="010324-2" author="priit">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="stats_anonymous_submission"/></not>
+        </preConditions>
+
         <createTable tableName="stats_anonymous_submission">
             <column name="id" type="bigserial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="exercise_id" type="bigserial">
+            <column name="exercise_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="created_at" type="timestamp">
@@ -189,18 +194,15 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <createSequence sequenceName="statistic_anonymous_submission_id_seq" startValue="1" incrementBy="1"/>
-        <addDefaultValue tableName="stats_anonymous_submission" columnName="id"
-                         defaultValueSequenceNext="statistic_anonymous_submission_id_seq"/>
 
         <createTable tableName="stats_submission">
-            <column name="submission_id" type="bigserial">
+            <column name="submission_id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="course_exercise_id" type="bigserial">
+            <column name="course_exercise_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="exercise_id" type="bigserial">
+            <column name="exercise_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="created_at" type="timestamp">

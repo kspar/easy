@@ -4,13 +4,15 @@ package core.ems.cron
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertIgnoreAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
 import org.springframework.scheduling.annotation.Scheduled
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component
 import org.springframework.util.LinkedMultiValueMap
 import java.time.Duration
 import java.util.*
-
+import org.springframework.boot.restclient.RestTemplateBuilder
 
 @Component
 class DeleteInactiveUsers(val sendMailService: SendMailService) {
@@ -43,11 +45,11 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
     private var ignoreMissingKeycloakUsers: Boolean = false
 
     private data class TokenResponse(
-        @JsonProperty("access_token") val accessToken: String,
+        @param:JsonProperty("access_token") val accessToken: String,
     )
 
     private data class KeycloakUser(
-        @JsonProperty("id") val id: String,
+        @param:JsonProperty("id") val id: String,
     )
 
     @Scheduled(cron = "\${easy.core.keycloak.cron}")
@@ -273,7 +275,7 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
     }
 
     private fun restTemplate() = RestTemplateBuilder()
-        .setConnectTimeout(Duration.ofSeconds(60))
-        .setReadTimeout(Duration.ofSeconds(60))
+        .connectTimeout(Duration.ofSeconds(60))
+        .readTimeout(Duration.ofSeconds(60))
         .build()
 }

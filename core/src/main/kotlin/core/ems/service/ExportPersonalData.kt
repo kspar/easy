@@ -1,15 +1,15 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import core.conf.security.EasyUser
 import core.db.*
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
@@ -18,6 +18,8 @@ import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import tools.jackson.databind.annotation.JsonSerialize
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -48,11 +50,11 @@ class ExportPersonalData {
 
     private fun selectAccountJSON(userId: String): String {
         data class AccountDataJSON(
-            @JsonProperty("id") val username: String,
-            @JsonProperty("created_at") @JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
-            @JsonProperty("email") val email: String,
-            @JsonProperty("given_name") val givenName: String,
-            @JsonProperty("family_name") val familyName: String
+            @get:JsonProperty("id") val username: String,
+            @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+            @get:JsonProperty("email") val email: String,
+            @get:JsonProperty("given_name") val givenName: String,
+            @get:JsonProperty("family_name") val familyName: String
         )
 
         return transaction {
@@ -79,11 +81,11 @@ class ExportPersonalData {
 
     private fun selectLogReportsJSON(userId: String): String {
         data class LogReportDataJSON(
-            @JsonProperty("id") val id: Long,
-            @JsonProperty("log_time") @JsonSerialize(using = DateTimeSerializer::class) val logTime: DateTime,
-            @JsonProperty("level") val level: String,
-            @JsonProperty("message") val message: String,
-            @JsonProperty("client_id") val clientId: String
+            @get:JsonProperty("id") val id: Long,
+            @get:JsonProperty("log_time") @get:JsonSerialize(using = DateTimeSerializer::class) val logTime: DateTime,
+            @get:JsonProperty("level") val level: String,
+            @get:JsonProperty("message") val message: String,
+            @get:JsonProperty("client_id") val clientId: String
         )
 
         return transaction {
@@ -109,13 +111,13 @@ class ExportPersonalData {
 
     private fun selectSubmissionsJSON(studentId: String): String {
         data class SubmissionDataJSON(
-            @JsonProperty("id") val submissionId: String,
-            @JsonProperty("solution") val solution: String,
-            @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("created_at") val createdAt: DateTime,
-            @JsonProperty("grade_auto") val gradeAuto: Int?,
-            @JsonProperty("feedback_auto") val feedbackAuto: String?,
-            @JsonProperty("grade_teacher") val gradeTeacher: Int?,
-            @JsonProperty("feedback_teacher") val feedbackTeacher: String?
+            @get:JsonProperty("id") val submissionId: String,
+            @get:JsonProperty("solution") val solution: String,
+            @get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("created_at") val createdAt: DateTime,
+            @get:JsonProperty("grade_auto") val gradeAuto: Int?,
+            @get:JsonProperty("feedback_auto") val feedbackAuto: String?,
+            @get:JsonProperty("grade_teacher") val gradeTeacher: Int?,
+            @get:JsonProperty("feedback_teacher") val feedbackTeacher: String?
         )
 
         return transaction {
@@ -145,9 +147,9 @@ class ExportPersonalData {
 
     private fun selectSubmissionsDraftJSON(studentId: String): String {
         data class SubmissionDraftJSON(
-            @JsonProperty("course_exercise_id") val courseExerciseId: Long,
-            @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("created_at") val createdAt: DateTime,
-            @JsonProperty("draft") val draft: String
+            @get:JsonProperty("course_exercise_id") val courseExerciseId: Long,
+            @get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("created_at") val createdAt: DateTime,
+            @get:JsonProperty("draft") val draft: String
         )
 
         return transaction {
