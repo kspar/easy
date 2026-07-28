@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Grading View — POC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  :root {
+    /* Surface palette — warm stone */
+    --bg-app: #f5f3f0;
+    --bg-panel: #ffffff;
+    --bg-panel-hover: #faf9f7;
+    --bg-header: #ffffff;
+    --border: #e5e2dd;
+    --border-light: #eceae6;
+    --border-focus: #8b83f5;
+
+    /* Code palette — cool dark */
+    --code-bg: #1e1f2b;
+    --code-surface: #262737;
+    --code-gutter: #2a2b3d;
+    --code-gutter-text: #5c5d7a;
+    --code-gutter-hover: #353650;
+    --code-text: #c8c8d4;
+    --code-keyword: #c792ea;
+    --code-function: #82aaff;
+    --code-string: #c3e88d;
+    --code-number: #f78c6c;
+    --code-comment: #636580;
+    --code-class: #ffcb6b;
+    --code-param: #e8b882;
+    --code-builtin: #89ddff;
+    --code-self: #ff5370;
+    --code-decorator: #c792ea;
+    --code-operator: #89ddff;
+
+    /* Accent */
+    --accent: #6c63ff;
+    --accent-soft: #eeedff;
+    --accent-hover: #5a52e0;
+    --accent-text: #4f46e5;
+
+    /* Status */
+    --pass: #22c55e;
+    --pass-bg: #f0fdf4;
+    --pass-border: #bbf7d0;
+    --fail: #ef4444;
+    --fail-bg: #fef2f2;
+    --fail-border: #fecaca;
+    --warn: #f59e0b;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --skip: #94a3b8;
+
+    /* Text */
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b7085;
+    --text-muted: #9ca3af;
+
+    /* Annotation */
+    --annotation-bg: #fefce8;
+    --annotation-border: #fde047;
+    --annotation-line: rgba(254, 240, 138, 0.15);
+    --suggestion-bg: #f0fdf4;
+    --suggestion-border: #86efac;
+
+    /* Sizing */
+    --header-h: 52px;
+    --left-w: 260px;
+    --right-w: 340px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+    font-size: 13.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ——— HEADER ——— */
+  .header {
+    height: var(--header-h);
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    position: relative;
+    z-index: 100;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .header-back:hover { background: var(--bg-app); color: var(--text-primary); }
+
+  .header-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header-breadcrumb a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .header-breadcrumb a:hover { color: var(--accent-text); }
+  .header-breadcrumb .sep { font-size: 10px; }
+
+  .header-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .header-grader-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+
+  .header-spacer { flex: 1; }
+
+  .header-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .progress-bar-wrap {
+    width: 80px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn-icon {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    border: none; background: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    font-size: 18px;
+  }
+  .btn-icon:hover { background: var(--bg-app); color: var(--text-primary); }
+  .btn-icon .material-icons-outlined { font-size: 20px; }
+
+  .btn-publish {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-publish:hover { border-color: var(--accent); color: var(--accent-text); }
+  .btn-publish .material-icons-outlined { font-size: 16px; }
+
+  .kbd-hint {
+    display: inline-flex;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--bg-app);
+    border: 1px solid var(--border);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ——— LAYOUT ——— */
+  .main-layout {
+    display: flex;
+    height: calc(100vh - var(--header-h));
+  }
+
+  /* ——— LEFT PANEL: Student Navigator ——— */
+  .left-panel {
+    width: var(--left-w);
+    min-width: var(--left-w);
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .left-panel-header {
+    padding: 12px 12px 8px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .left-filter-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .search-input {
+    flex: 1;
+    height: 30px;
+    padding: 0 8px 0 30px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text-primary);
+    background: var(--bg-app);
+    outline: none;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .search-input:focus { border-color: var(--border-focus); }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+  }
+  .search-wrap .material-icons-outlined {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .group-select {
+    height: 30px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    background: var(--bg-app);
+    cursor: pointer;
+    outline: none;
+    min-width: 72px;
+  }
+  .group-select:focus { border-color: var(--border-focus); }
+
+  .graded-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .graded-count .progress-mini {
+    width: 40px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .graded-count .progress-mini-fill {
+    height: 100%;
+    background: var(--pass);
+    border-radius: 2px;
+  }
+
+  .student-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .student-list::-webkit-scrollbar { width: 4px; }
+  .student-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .student-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .student-item:hover { background: var(--bg-panel-hover); }
+  .student-item.active {
+    background: var(--accent-soft);
+  }
+  .student-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--accent);
+  }
+
+  .student-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .student-avatar.graded { background: var(--pass-bg); color: #16a34a; }
+  .student-avatar.ungraded { background: var(--warn-bg); color: #d97706; }
+  .student-avatar.none { background: var(--bg-app); color: var(--text-muted); }
+
+  .student-status-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-panel);
+  }
+  .student-status-dot.graded { background: var(--pass); }
+  .student-status-dot.ungraded { background: var(--warn); }
+  .student-status-dot.none { background: var(--border); }
+
+  .active .student-status-dot { border-color: var(--accent-soft); }
+
+  .student-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .student-name {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .student-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+  }
+
+  .student-score {
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .student-score.pass { color: var(--pass); }
+  .student-score.fail { color: var(--fail); }
+  .student-score.pending { color: var(--text-muted); }
+
+  .student-nav-hint {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ——— CENTER PANEL: Code Viewer ——— */
+  .center-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--code-bg);
+  }
+  .code-toolbar {
+    height: 38px;
+    background: var(--code-surface);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 2px;
+  }
+  .file-tab {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--code-gutter-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+  }
+  .file-tab:hover { color: var(--code-text); background: rgba(255,255,255,0.04); }
+  .file-tab.active {
+    color: var(--code-text);
+    background: rgba(255,255,255,0.08);
+  }
+  .file-tab .material-icons-outlined { font-size: 14px; }
+
+  .code-toolbar-spacer { flex: 1; }
+
+  .submission-selector {
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: var(--code-text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    outline: none;
+  }
+  .submission-selector:hover { border-color: rgba(255,255,255,0.2); }
+  .submission-selector option { background: var(--code-surface); }
+
+  .diff-toggle {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: var(--code-gutter-text);
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .diff-toggle:hover { border-color: rgba(255,255,255,0.2); color: var(--code-text); }
+  .diff-toggle.active { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.1); }
+  .diff-toggle .material-icons-outlined { font-size: 14px; }
+
+  .code-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .code-area::-webkit-scrollbar { width: 8px; }
+  .code-area::-webkit-scrollbar-track { background: transparent; }
+  .code-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+  .code-line {
+    display: flex;
+    min-height: 22px;
+    line-height: 22px;
+    position: relative;
+  }
+  .code-line:hover .line-gutter { background: var(--code-gutter-hover); }
+  .code-line:hover .line-add-btn { opacity: 1; }
+  .code-line.annotated .line-content { background: var(--annotation-line); }
+
+  .line-gutter {
+    width: 56px;
+    min-width: 56px;
+    text-align: right;
+    padding-right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--code-gutter-text);
+    user-select: none;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .line-add-btn {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .line-add-btn:hover { background: var(--accent-hover); }
+
+  .line-content {
+    flex: 1;
+    padding-left: 16px;
+    padding-right: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--code-text);
+    white-space: pre;
+    tab-size: 4;
+  }
+
+  /* Inline annotation block */
+  .annotation-block {
+    margin: 4px 0 4px 56px;
+    border-left: 3px solid var(--annotation-border);
+    background: var(--annotation-bg);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    position: relative;
+  }
+  .annotation-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .annotation-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .annotation-author {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .annotation-time {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .annotation-text {
+    font-size: 12.5px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+  .annotation-text code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .annotation-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .annotation-action-btn {
+    height: 24px;
+    padding: 0 8px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .annotation-action-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-secondary); }
+  .annotation-action-btn .material-icons-outlined { font-size: 14px; }
+
+  /* Suggested fix block */
+  .suggestion-block {
+    margin: 4px 0 4px 56px;
+    border-left: 3px solid var(--suggestion-border);
+    background: var(--suggestion-bg);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    position: relative;
+  }
+  .suggestion-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #16a34a;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .suggestion-label .material-icons-outlined { font-size: 14px; }
+  .suggestion-diff {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .suggestion-diff .removed {
+    color: var(--fail);
+    background: var(--fail-bg);
+    padding: 1px 4px;
+    border-radius: 2px;
+    text-decoration: line-through;
+  }
+  .suggestion-diff .added {
+    color: #16a34a;
+    background: #dcfce7;
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  /* Comment input (appears when line gutter is clicked) */
+  .comment-input-block {
+    margin: 4px 0 4px 56px;
+    border-left: 3px solid var(--accent);
+    background: white;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: none;
+  }
+  .comment-input-block.visible { display: block; }
+  .comment-textarea {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .comment-textarea:focus { border-color: var(--border-focus); }
+  .comment-textarea::placeholder { color: var(--text-muted); }
+  .comment-input-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .btn-comment-submit {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 5px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-comment-submit:hover { background: var(--accent-hover); }
+  .btn-comment-cancel {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 5px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .btn-comment-cancel:hover { color: var(--text-primary); }
+  .snippet-hint {
+    flex: 1;
+    text-align: right;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ——— RIGHT PANEL: Grading ——— */
+  .right-panel {
+    width: var(--right-w);
+    min-width: var(--right-w);
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .right-panel-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .right-panel-scroll::-webkit-scrollbar { width: 4px; }
+  .right-panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Right panel sections */
+  .rp-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .rp-section:last-child { border-bottom: none; }
+
+  .rp-section-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .rp-section-title .material-icons-outlined { font-size: 15px; }
+
+  /* Grade overview strip */
+  .grade-overview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f8f7ff 0%, #f0f0ff 100%);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .grade-big {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-text);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .grade-big small {
+    font-size: 16px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .grade-breakdown {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .grade-breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+  .grade-breakdown-row .material-icons-outlined { font-size: 14px; }
+  .grade-breakdown-val {
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+    font-size: 12px;
+  }
+
+  /* Auto-test results */
+  .test-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .test-summary-count {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .test-summary-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+  }
+  .test-summary-bar .pass { background: var(--pass); }
+  .test-summary-bar .fail { background: var(--fail); }
+  .test-summary-bar .skip { background: var(--skip); }
+
+  .test-item {
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .test-item:hover { border-color: var(--border); }
+  .test-item.expanded { border-color: var(--border); }
+
+  .test-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .test-item-header:hover { background: var(--bg-panel-hover); }
+
+  .test-status-icon {
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .test-status-icon .material-icons-outlined { font-size: 17px; }
+  .test-status-icon.pass .material-icons-outlined { color: var(--pass); }
+  .test-status-icon.fail .material-icons-outlined { color: var(--fail); }
+  .test-status-icon.skip .material-icons-outlined { color: var(--skip); }
+
+  .test-title {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  .test-item.expanded .test-title { font-weight: 600; }
+
+  .test-expand-icon {
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    font-size: 18px;
+  }
+  .test-item.expanded .test-expand-icon { transform: rotate(180deg); }
+
+  .test-item-details {
+    display: none;
+    padding: 0 10px 10px;
+    font-size: 12px;
+  }
+  .test-item.expanded .test-item-details { display: block; }
+
+  .test-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+  .test-check .material-icons-outlined { font-size: 13px; margin-top: 1px; }
+  .test-check.pass .material-icons-outlined { color: var(--pass); }
+  .test-check.fail .material-icons-outlined { color: var(--fail); }
+
+  .test-output-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .test-output {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    background: var(--bg-app);
+    border-radius: 4px;
+    padding: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    color: var(--text-secondary);
+  }
+
+  /* Rubric */
+  .rubric-category {
+    background: var(--bg-app);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .rubric-category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .rubric-category-name {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .rubric-category-max {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .rubric-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .rubric-stepper-btn {
+    width: 30px; height: 28px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .rubric-stepper-btn:hover { background: var(--bg-app); color: var(--text-primary); }
+  .rubric-stepper-btn:first-child { border-right: 1px solid var(--border); }
+  .rubric-stepper-btn:last-child { border-left: 1px solid var(--border); }
+  .rubric-stepper-value {
+    min-width: 38px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .rubric-description {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Feedback area */
+  .feedback-editor-wrap {
+    position: relative;
+  }
+  .feedback-editor {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+  }
+  .feedback-editor:focus { border-color: var(--border-focus); }
+  .feedback-editor::placeholder { color: var(--text-muted); }
+
+  /* Snippet autocomplete dropdown */
+  .snippet-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+    margin-bottom: 4px;
+    z-index: 50;
+    display: none;
+    overflow: hidden;
+  }
+  .snippet-dropdown.visible { display: block; }
+  .snippet-dropdown-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 8px 12px 4px;
+  }
+  .snippet-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .snippet-item:hover, .snippet-item.active { background: var(--accent-soft); }
+  .snippet-trigger {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent-text);
+    background: var(--accent-soft);
+    padding: 1px 6px;
+    border-radius: 3px;
+    min-width: 65px;
+  }
+  .snippet-preview {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Bottom actions */
+  .right-panel-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-panel);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-save-draft {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-save-draft:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+  .btn-submit-grade {
+    height: 34px;
+    padding: 0 20px;
+    border-radius: 7px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-submit-grade:hover { background: var(--accent-hover); }
+  .btn-submit-grade .material-icons-outlined { font-size: 16px; }
+
+  .footer-hint {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  /* Syntax highlight helpers */
+  .kw { color: var(--code-keyword); }
+  .fn { color: var(--code-function); }
+  .str { color: var(--code-string); }
+  .num { color: var(--code-number); }
+  .cm { color: var(--code-comment); font-style: italic; }
+  .cls { color: var(--code-class); }
+  .par { color: var(--code-param); }
+  .bi { color: var(--code-builtin); }
+  .sf { color: var(--code-self); }
+  .dec { color: var(--code-decorator); }
+  .op { color: var(--code-operator); }
+
+  /* Tooltip */
+  [data-tooltip] {
+    position: relative;
+  }
+  [data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--text-primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 400;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Resize handle between left and center */
+  .resize-handle-left {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 10;
+  }
+  .resize-handle-left:hover,
+  .resize-handle-left.dragging {
+    background: var(--accent);
+  }
+  .resize-handle-left::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -4px; right: -4px;
+  }
+
+  /* Resize handle between center and right */
+  .resize-handle-right {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 10;
+  }
+  .resize-handle-right:hover,
+  .resize-handle-right.dragging {
+    background: var(--accent);
+  }
+  .resize-handle-right::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -4px; right: -4px;
+  }
+
+  /* Optional feature badges */
+  .optional-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  /* Submission history mini timeline */
+  .submission-timeline {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  .timeline-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .timeline-dot.pass { background: var(--pass); }
+  .timeline-dot.fail { background: var(--fail); }
+  .timeline-dot.current {
+    width: 9px; height: 9px;
+    box-shadow: 0 0 0 2px var(--bg-panel), 0 0 0 4px var(--accent);
+  }
+  .timeline-dot:hover { transform: scale(1.4); }
+  .timeline-connector {
+    width: 6px; height: 1px;
+    background: var(--border);
+  }
+
+  /* Animations */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-in {
+    animation: slideIn 0.2s ease-out;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <div class="header-back" data-tooltip="Back to exercises">
+    <span class="material-icons-outlined">arrow_back</span>
+  </div>
+
+  <div class="header-breadcrumb">
+    <a href="#">Prog I 2026</a>
+    <span class="sep">›</span>
+    <a href="#">Exercises</a>
+    <span class="sep">›</span>
+  </div>
+
+  <span class="header-title">Fibonacci Sequence Implementation</span>
+
+  <span class="header-grader-badge">
+    <span class="material-icons-outlined" style="font-size:13px">smart_toy</span>
+    Auto + manual
+  </span>
+
+  <div class="header-spacer"></div>
+
+  <div class="header-progress">
+    <span>12 / 45 graded</span>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" style="width: 26.7%"></div>
+    </div>
+  </div>
+
+  <button class="btn-publish">
+    <span class="material-icons-outlined">publish</span>
+    Publish all
+  </button>
+
+  <div class="header-actions">
+    <button class="btn-icon" data-tooltip="Keyboard shortcuts">
+      <span class="material-icons-outlined">keyboard</span>
+    </button>
+    <button class="btn-icon" data-tooltip="Settings">
+      <span class="material-icons-outlined">settings</span>
+    </button>
+  </div>
+</header>
+
+<!-- ===== MAIN LAYOUT ===== -->
+<div class="main-layout">
+
+  <!-- LEFT PANEL: Student Navigator -->
+  <div class="left-panel">
+    <div class="left-panel-header">
+      <div class="left-filter-row">
+        <div class="search-wrap">
+          <span class="material-icons-outlined">search</span>
+          <input type="text" class="search-input" placeholder="Search students...">
+        </div>
+        <select class="group-select">
+          <option>All</option>
+          <option>Group 1</option>
+          <option>Group 2</option>
+          <option selected>Group 3</option>
+        </select>
+      </div>
+      <div class="graded-count">
+        <div class="progress-mini">
+          <div class="progress-mini-fill" style="width: 53%"></div>
+        </div>
+        8 / 15 graded
+      </div>
+    </div>
+
+    <div class="student-list">
+      <div class="student-item">
+        <div class="student-avatar graded">AK<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Anna Kask</div>
+          <div class="student-meta">Sub #2 · 2h ago</div>
+        </div>
+        <span class="student-score pass">92</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">JL<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Jaan Lepp</div>
+          <div class="student-meta">Sub #1 · 5h ago</div>
+        </div>
+        <span class="student-score pass">78</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">KR<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Kati Rebane</div>
+          <div class="student-meta">Sub #4 · 1d ago</div>
+        </div>
+        <span class="student-score pass">100</span>
+      </div>
+
+      <div class="student-item active">
+        <div class="student-avatar ungraded">MT<div class="student-status-dot ungraded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Maria Tamm</div>
+          <div class="student-meta">Sub #3 · 45m ago</div>
+        </div>
+        <span class="student-score fail">75</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar ungraded">PK<div class="student-status-dot ungraded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Peeter Kuusk</div>
+          <div class="student-meta">Sub #2 · 3h ago</div>
+        </div>
+        <span class="student-score fail">40</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar ungraded">LM<div class="student-status-dot ungraded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Liis Mägi</div>
+          <div class="student-meta">Sub #1 · 6h ago</div>
+        </div>
+        <span class="student-score pending">55</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">TN<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Tõnu Nurk</div>
+          <div class="student-meta">Sub #3 · 1d ago</div>
+        </div>
+        <span class="student-score pass">85</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">MV<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Maris Vaher</div>
+          <div class="student-meta">Sub #2 · 1d ago</div>
+        </div>
+        <span class="student-score pass">95</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar ungraded">RP<div class="student-status-dot ungraded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Raivo Pärn</div>
+          <div class="student-meta">Sub #1 · 2d ago</div>
+        </div>
+        <span class="student-score fail">30</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar ungraded">KS<div class="student-status-dot ungraded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Kadri Saar</div>
+          <div class="student-meta">Sub #2 · 2d ago</div>
+        </div>
+        <span class="student-score pending">60</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">JK<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Jaanus Kivi</div>
+          <div class="student-meta">Sub #1 · 3d ago</div>
+        </div>
+        <span class="student-score pass">88</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">AS<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Anneli Sepp</div>
+          <div class="student-meta">Sub #3 · 3d ago</div>
+        </div>
+        <span class="student-score pass">100</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar graded">ML<div class="student-status-dot graded"></div></div>
+        <div class="student-info">
+          <div class="student-name">Mart Laas</div>
+          <div class="student-meta">Sub #1 · 4d ago</div>
+        </div>
+        <span class="student-score pass">82</span>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar none">TE<div class="student-status-dot none"></div></div>
+        <div class="student-info">
+          <div class="student-name">Triin Esko</div>
+          <div class="student-meta" style="color: var(--text-muted);">No submission</div>
+        </div>
+      </div>
+
+      <div class="student-item">
+        <div class="student-avatar none">HR<div class="student-status-dot none"></div></div>
+        <div class="student-info">
+          <div class="student-name">Henri Rand</div>
+          <div class="student-meta" style="color: var(--text-muted);">No submission</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="student-nav-hint">
+      <kbd class="kbd-hint">↑</kbd>
+      <kbd class="kbd-hint">↓</kbd>
+      navigate
+      <span style="flex:1"></span>
+      <kbd class="kbd-hint">Enter</kbd>
+      open
+    </div>
+  </div>
+
+  <div class="resize-handle-left" id="resizeLeft"></div>
+
+  <!-- CENTER PANEL: Code Viewer -->
+  <div class="center-panel">
+    <div class="code-toolbar">
+      <button class="file-tab active">
+        <span class="material-icons-outlined">description</span>
+        solution.py
+      </button>
+      <button class="file-tab">
+        <span class="material-icons-outlined">description</span>
+        test_helper.py
+      </button>
+
+      <div class="code-toolbar-spacer"></div>
+
+      <div class="submission-timeline" data-tooltip="Submission history" style="margin-right: 12px;">
+        <div class="timeline-dot fail"></div>
+        <div class="timeline-connector"></div>
+        <div class="timeline-dot fail"></div>
+        <div class="timeline-connector"></div>
+        <div class="timeline-dot fail current"></div>
+      </div>
+
+      <select class="submission-selector">
+        <option>Sub #3 (latest)</option>
+        <option>Sub #2</option>
+        <option>Sub #1</option>
+      </select>
+
+      <button class="diff-toggle" style="margin-left: 6px;" onclick="this.classList.toggle('active')">
+        <span class="material-icons-outlined">difference</span>
+        Diff
+      </button>
+    </div>
+
+    <div class="code-area">
+      <!-- Line 1 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>1</div>
+        <div class="line-content"><span class="cm"># Fibonacci Sequence Implementation</span></div>
+      </div>
+      <!-- Line 2 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>2</div>
+        <div class="line-content"><span class="cm"># Author: Maria Tamm</span></div>
+      </div>
+      <!-- Line 3 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>3</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 4 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>4</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 5 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>5</div>
+        <div class="line-content"><span class="kw">def</span> <span class="fn">fibonacci</span>(<span class="par">n</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">list</span>:</div>
+      </div>
+      <!-- Line 6 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>6</div>
+        <div class="line-content">    <span class="str">"""Return the first n Fibonacci numbers."""</span></div>
+      </div>
+      <!-- Line 7 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>7</div>
+        <div class="line-content">    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">0</span>:</div>
+      </div>
+      <!-- Line 8 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>8</div>
+        <div class="line-content">        <span class="kw">return</span> []</div>
+      </div>
+
+      <!-- Existing annotation on lines 7-8 -->
+      <div class="annotation-block animate-in">
+        <div class="annotation-header">
+          <div class="annotation-avatar">KP</div>
+          <span class="annotation-author">Kaspar Papli</span>
+          <span class="annotation-time">just now</span>
+        </div>
+        <div class="annotation-text">
+          Good edge case handling! But consider also raising a <code>ValueError</code> for negative inputs — returning an empty list silently hides the error.
+        </div>
+        <div class="annotation-actions">
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">edit</span> Edit
+          </button>
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">delete_outline</span> Delete
+          </button>
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">reply</span> Reply
+          </button>
+        </div>
+      </div>
+
+      <!-- Line 9 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>9</div>
+        <div class="line-content">    <span class="kw">if</span> n <span class="op">==</span> <span class="num">1</span>:</div>
+      </div>
+      <!-- Line 10 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>10</div>
+        <div class="line-content">        <span class="kw">return</span> [<span class="num">0</span>]</div>
+      </div>
+      <!-- Line 11 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>11</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 12 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>12</div>
+        <div class="line-content">    result <span class="op">=</span> [<span class="num">0</span>, <span class="num">1</span>]</div>
+      </div>
+      <!-- Line 13 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>13</div>
+        <div class="line-content">    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n):</div>
+      </div>
+      <!-- Line 14 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>14</div>
+        <div class="line-content">        next_val <span class="op">=</span> result[i<span class="op">-</span><span class="num">1</span>] <span class="op">+</span> result[i<span class="op">-</span><span class="num">2</span>]</div>
+      </div>
+      <!-- Line 15 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>15</div>
+        <div class="line-content">        result.append(next_val)</div>
+      </div>
+
+      <!-- Suggested fix annotation -->
+      <div class="suggestion-block animate-in">
+        <div class="annotation-header">
+          <div class="annotation-avatar">KP</div>
+          <span class="annotation-author">Kaspar Papli</span>
+          <span class="annotation-time">just now</span>
+        </div>
+        <div class="suggestion-label">
+          <span class="material-icons-outlined">auto_fix_high</span>
+          Suggested improvement
+        </div>
+        <div class="annotation-text" style="margin-bottom: 8px;">
+          Using index-based access works, but you can make it cleaner by just tracking the last two values. This avoids repeated list indexing:
+        </div>
+        <div class="suggestion-diff">
+<span class="removed">    for i in range(2, n):</span>
+<span class="removed">        next_val = result[i-1] + result[i-2]</span>
+<span class="removed">        result.append(next_val)</span>
+
+<span class="added">    for _ in range(2, n):</span>
+<span class="added">        a, b = result[-2], result[-1]</span>
+<span class="added">        result.append(a + b)</span>
+        </div>
+        <div class="annotation-actions">
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">edit</span> Edit
+          </button>
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">delete_outline</span> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Line 16 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>16</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 17 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>17</div>
+        <div class="line-content">    <span class="kw">return</span> result</div>
+      </div>
+      <!-- Line 18 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>18</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 19 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>19</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 20 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>20</div>
+        <div class="line-content"><span class="kw">def</span> <span class="fn">fibonacci_recursive</span>(<span class="par">n</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">int</span>:</div>
+      </div>
+      <!-- Line 21 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>21</div>
+        <div class="line-content">    <span class="str">"""Return the nth Fibonacci number using recursion."""</span></div>
+      </div>
+      <!-- Line 22 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>22</div>
+        <div class="line-content">    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">0</span>:</div>
+      </div>
+      <!-- Line 23 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>23</div>
+        <div class="line-content">        <span class="kw">return</span> <span class="num">0</span></div>
+      </div>
+      <!-- Line 24 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>24</div>
+        <div class="line-content">    <span class="kw">if</span> n <span class="op">==</span> <span class="num">1</span>:</div>
+      </div>
+      <!-- Line 25 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>25</div>
+        <div class="line-content">        <span class="kw">return</span> <span class="num">1</span></div>
+      </div>
+      <!-- Line 26 -->
+      <div class="code-line annotated">
+        <div class="line-gutter"><span class="line-add-btn">+</span>26</div>
+        <div class="line-content">    <span class="kw">return</span> fibonacci_recursive(n <span class="op">-</span> <span class="num">1</span>) <span class="op">+</span> fibonacci_recursive(n <span class="op">-</span> <span class="num">2</span>)</div>
+      </div>
+
+      <!-- Annotation on line 26 -->
+      <div class="annotation-block animate-in">
+        <div class="annotation-header">
+          <div class="annotation-avatar">KP</div>
+          <span class="annotation-author">Kaspar Papli</span>
+          <span class="annotation-time">just now</span>
+        </div>
+        <div class="annotation-text">
+          This naive recursion has O(2ⁿ) time complexity — it will be extremely slow for large <code>n</code>. Consider using <code>@functools.lru_cache</code> or converting to an iterative approach. This is why tests 9 and 10 time out.
+        </div>
+        <div class="annotation-actions">
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">edit</span> Edit
+          </button>
+          <button class="annotation-action-btn">
+            <span class="material-icons-outlined">delete_outline</span> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Line 27 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>27</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 28 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>28</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 29 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>29</div>
+        <div class="line-content"><span class="kw">def</span> <span class="fn">is_fibonacci</span>(<span class="par">num</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">bool</span>:</div>
+      </div>
+      <!-- Line 30 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>30</div>
+        <div class="line-content">    <span class="str">"""Check if a number is in the Fibonacci sequence."""</span></div>
+      </div>
+      <!-- Line 31 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>31</div>
+        <div class="line-content">    <span class="kw">if</span> num <span class="op">&lt;</span> <span class="num">0</span>:</div>
+      </div>
+      <!-- Line 32 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>32</div>
+        <div class="line-content">        <span class="kw">return</span> <span class="bi">False</span></div>
+      </div>
+      <!-- Line 33 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>33</div>
+        <div class="line-content">    a, b <span class="op">=</span> <span class="num">0</span>, <span class="num">1</span></div>
+      </div>
+      <!-- Line 34 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>34</div>
+        <div class="line-content">    <span class="kw">while</span> a <span class="op">&lt;</span> num:</div>
+      </div>
+      <!-- Line 35 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>35</div>
+        <div class="line-content">        a, b <span class="op">=</span> b, a <span class="op">+</span> b</div>
+      </div>
+      <!-- Line 36 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>36</div>
+        <div class="line-content">    <span class="kw">return</span> a <span class="op">==</span> num</div>
+      </div>
+      <!-- Line 37 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>37</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 38 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>38</div>
+        <div class="line-content"></div>
+      </div>
+      <!-- Line 39 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>39</div>
+        <div class="line-content"><span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:</div>
+      </div>
+      <!-- Line 40 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>40</div>
+        <div class="line-content">    <span class="bi">print</span>(fibonacci(<span class="num">10</span>))</div>
+      </div>
+      <!-- Line 41 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>41</div>
+        <div class="line-content">    <span class="bi">print</span>(fibonacci_recursive(<span class="num">10</span>))</div>
+      </div>
+      <!-- Line 42 -->
+      <div class="code-line">
+        <div class="line-gutter"><span class="line-add-btn">+</span>42</div>
+        <div class="line-content">    <span class="bi">print</span>(is_fibonacci(<span class="num">13</span>))</div>
+      </div>
+
+      <!-- New comment input (hidden by default, shown on line click) -->
+      <div class="comment-input-block" id="newCommentInput">
+        <textarea class="comment-textarea" placeholder="Write a comment... (type / for snippets)" rows="3"></textarea>
+        <div class="comment-input-actions">
+          <button class="btn-comment-submit" onclick="document.getElementById('newCommentInput').classList.remove('visible')">
+            <span class="material-icons-outlined" style="font-size:14px">send</span>
+            Comment
+          </button>
+          <button class="btn-comment-submit" style="background: #16a34a;" onclick="document.getElementById('newCommentInput').classList.remove('visible')">
+            <span class="material-icons-outlined" style="font-size:14px">auto_fix_high</span>
+            Suggest fix
+          </button>
+          <button class="btn-comment-cancel" onclick="document.getElementById('newCommentInput').classList.remove('visible')">Cancel</button>
+          <span class="snippet-hint">
+            <kbd class="kbd-hint" style="background: var(--code-surface); border-color: rgba(255,255,255,0.1); color: var(--code-gutter-text);">/</kbd>
+            snippets
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="resize-handle-right" id="resizeRight"></div>
+
+  <!-- RIGHT PANEL: Grading -->
+  <div class="right-panel">
+
+    <!-- Grade overview -->
+    <div class="grade-overview">
+      <div>
+        <div class="grade-big">82<small> / 100</small></div>
+      </div>
+      <div class="grade-breakdown">
+        <div class="grade-breakdown-row">
+          <span class="material-icons-outlined" style="color: var(--accent-text)">smart_toy</span>
+          Auto tests
+          <span style="flex:1"></span>
+          <span class="grade-breakdown-val">75</span>
+        </div>
+        <div class="grade-breakdown-row">
+          <span class="material-icons-outlined" style="color: var(--accent-text)">face</span>
+          Manual
+          <span style="flex:1"></span>
+          <span class="grade-breakdown-val">+7</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel-scroll">
+
+      <!-- Auto test results section -->
+      <div class="rp-section">
+        <div class="rp-section-title">
+          <span class="material-icons-outlined">science</span>
+          Automated Tests
+          <span style="flex:1"></span>
+          <button class="btn-icon" style="width:24px; height:24px; margin: -4px -4px -4px 0;" data-tooltip="Re-run tests">
+            <span class="material-icons-outlined" style="font-size:16px">refresh</span>
+          </button>
+        </div>
+
+        <div class="test-summary">
+          <span class="test-summary-count">8 / 10</span>
+          <div class="test-summary-bar">
+            <div class="pass" style="width: 80%"></div>
+            <div class="fail" style="width: 20%"></div>
+          </div>
+        </div>
+
+        <!-- Test items -->
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci(0) returns empty list</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Returns []</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci(1) returns [0]</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Returns [0]</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci(5) correct sequence</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Returns [0, 1, 1, 2, 3]</div>
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Length is 5</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci(10) correct values</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Returns correct sequence</div>
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Last element is 34</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">is_fibonacci() identifies Fib numbers</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(0) → True</div>
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(13) → True</div>
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(4) → False</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">is_fibonacci() handles negatives</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(-1) → False</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci_recursive() base cases</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> fibonacci_recursive(0) → 0</div>
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> fibonacci_recursive(1) → 1</div>
+          </div>
+        </div>
+
+        <div class="test-item" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon pass"><span class="material-icons-outlined">check_circle</span></div>
+            <span class="test-title">fibonacci_recursive(10) correct</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check pass"><span class="material-icons-outlined">check_circle</span> Returns 55</div>
+          </div>
+        </div>
+
+        <!-- FAILING test -->
+        <div class="test-item expanded" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon fail"><span class="material-icons-outlined">cancel</span></div>
+            <span class="test-title">fibonacci_recursive(35) performance</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check fail"><span class="material-icons-outlined">cancel</span> Execution exceeded 5s time limit</div>
+            <div class="test-output-label">Exception</div>
+            <div class="test-output">TimeoutError: Function execution exceeded the 5-second time limit.
+The recursive approach without memoization has exponential time complexity O(2^n).
+Consider using @functools.lru_cache or converting to an iterative approach.</div>
+          </div>
+        </div>
+
+        <!-- FAILING test 2 -->
+        <div class="test-item expanded" onclick="this.classList.toggle('expanded')">
+          <div class="test-item-header">
+            <div class="test-status-icon fail"><span class="material-icons-outlined">cancel</span></div>
+            <span class="test-title">fibonacci_recursive(50) large input</span>
+            <span class="material-icons-outlined test-expand-icon">expand_more</span>
+          </div>
+          <div class="test-item-details">
+            <div class="test-check fail"><span class="material-icons-outlined">cancel</span> Execution exceeded 5s time limit</div>
+            <div class="test-output-label">Expected output</div>
+            <div class="test-output">12586269025</div>
+            <div class="test-output-label">Actual output</div>
+            <div class="test-output" style="color: var(--fail);">&lt;no output — timed out&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual rubric section -->
+      <div class="rp-section">
+        <div class="rp-section-title">
+          <span class="material-icons-outlined">grading</span>
+          Manual Assessment
+        </div>
+
+        <div class="rubric-category">
+          <div class="rubric-category-header">
+            <span class="rubric-category-name">Code quality</span>
+            <span class="rubric-category-max">/ 5</span>
+          </div>
+          <div class="rubric-stepper">
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, -1)">−</button>
+            <span class="rubric-stepper-value">3</span>
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, 1)">+</button>
+          </div>
+          <div class="rubric-description">Readability, naming conventions, code structure, comments</div>
+        </div>
+
+        <div class="rubric-category">
+          <div class="rubric-category-header">
+            <span class="rubric-category-name">Algorithm design</span>
+            <span class="rubric-category-max">/ 5</span>
+          </div>
+          <div class="rubric-stepper">
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, -1)">−</button>
+            <span class="rubric-stepper-value">2</span>
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, 1)">+</button>
+          </div>
+          <div class="rubric-description">Efficiency, appropriate data structures, complexity awareness</div>
+        </div>
+
+        <div class="rubric-category">
+          <div class="rubric-category-header">
+            <span class="rubric-category-name">Edge cases & error handling</span>
+            <span class="rubric-category-max">/ 5</span>
+          </div>
+          <div class="rubric-stepper">
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, -1)">−</button>
+            <span class="rubric-stepper-value">2</span>
+            <button class="rubric-stepper-btn" onclick="stepRubric(this, 1)">+</button>
+          </div>
+          <div class="rubric-description">Input validation, boundary conditions, defensive programming</div>
+        </div>
+      </div>
+
+      <!-- Feedback section -->
+      <div class="rp-section">
+        <div class="rp-section-title">
+          <span class="material-icons-outlined">chat_bubble_outline</span>
+          General Feedback
+        </div>
+
+        <div class="feedback-editor-wrap">
+          <div class="snippet-dropdown" id="snippetDropdown">
+            <div class="snippet-dropdown-title">Reusable Snippets</div>
+            <div class="snippet-item active">
+              <span class="snippet-trigger">/naming</span>
+              <span class="snippet-preview">Use more descriptive variable names throughout</span>
+            </div>
+            <div class="snippet-item">
+              <span class="snippet-trigger">/complexity</span>
+              <span class="snippet-preview">Consider the time complexity of your approach</span>
+            </div>
+            <div class="snippet-item">
+              <span class="snippet-trigger">/docstring</span>
+              <span class="snippet-preview">Good use of docstrings — keep it up!</span>
+            </div>
+            <div class="snippet-item">
+              <span class="snippet-trigger">/memoize</span>
+              <span class="snippet-preview">Use @functools.lru_cache to memoize recursive calls</span>
+            </div>
+            <div class="snippet-item">
+              <span class="snippet-trigger">/edge</span>
+              <span class="snippet-preview">Remember to handle edge cases (negative, zero, very large inputs)</span>
+            </div>
+          </div>
+          <textarea class="feedback-editor" id="feedbackEditor" placeholder="Write general feedback... (type / for snippets)">Good work overall on the iterative fibonacci function — clean and correct. The recursive version needs memoization to pass the performance tests. See inline comments for specific suggestions.</textarea>
+        </div>
+      </div>
+
+      <!-- Previous feedback history -->
+      <div class="rp-section">
+        <div class="rp-section-title">
+          <span class="material-icons-outlined">history</span>
+          Grading History
+          <span class="optional-badge">optional</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 4px 0;">
+            <span style="font-weight: 600; color: var(--text-secondary);">Sub #2</span>
+            <span>Auto: 60 — No manual grade</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 4px 0;">
+            <span style="font-weight: 600; color: var(--text-secondary);">Sub #1</span>
+            <span>Auto: 40 — No manual grade</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="right-panel-footer">
+      <div class="footer-row">
+        <button class="btn-save-draft">
+          <span class="material-icons-outlined" style="font-size:15px">save</span>
+          Save draft
+        </button>
+        <button class="btn-submit-grade">
+          <span class="material-icons-outlined">send</span>
+          Submit grade
+        </button>
+      </div>
+      <div class="footer-hint">
+        <kbd class="kbd-hint">Ctrl</kbd>+<kbd class="kbd-hint">Enter</kbd> submit
+        <span style="margin: 0 6px; color: var(--border);">·</span>
+        <kbd class="kbd-hint">Ctrl</kbd>+<kbd class="kbd-hint">→</kbd> next student
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Rubric stepper
+  function stepRubric(btn, delta) {
+    const stepper = btn.closest('.rubric-stepper');
+    const valueEl = stepper.querySelector('.rubric-stepper-value');
+    const max = parseInt(stepper.closest('.rubric-category').querySelector('.rubric-category-max').textContent.replace('/ ', ''));
+    let val = parseInt(valueEl.textContent) + delta;
+    val = Math.max(0, Math.min(max, val));
+    valueEl.textContent = val;
+    updateTotalGrade();
+    // Prevent the click from bubbling
+    event.stopPropagation();
+  }
+
+  function updateTotalGrade() {
+    const values = document.querySelectorAll('.rubric-stepper-value');
+    let manual = 0;
+    values.forEach(v => manual += parseInt(v.textContent));
+    const autoGrade = 75;
+    const total = autoGrade + manual;
+    document.querySelector('.grade-big').innerHTML = total + '<small> / 100</small>';
+    document.querySelector('.grade-breakdown-val:last-child') || null;
+    const breakdownVals = document.querySelectorAll('.grade-breakdown-val');
+    if (breakdownVals[1]) breakdownVals[1].textContent = '+' + manual;
+  }
+
+  // Comment input on gutter click
+  document.querySelectorAll('.line-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const line = btn.closest('.code-line');
+      const input = document.getElementById('newCommentInput');
+
+      // Move the input after this line
+      line.parentNode.insertBefore(input, line.nextSibling);
+      input.classList.add('visible');
+      input.querySelector('textarea').focus();
+    });
+  });
+
+  // Snippet dropdown
+  const feedbackEditor = document.getElementById('feedbackEditor');
+  const snippetDropdown = document.getElementById('snippetDropdown');
+
+  feedbackEditor.addEventListener('input', function() {
+    const val = this.value;
+    const lastSlash = val.lastIndexOf('/');
+    if (lastSlash >= 0 && (lastSlash === 0 || val[lastSlash - 1] === ' ' || val[lastSlash - 1] === '\n')) {
+      const query = val.substring(lastSlash + 1);
+      if (query.length <= 12 && !query.includes(' ')) {
+        snippetDropdown.classList.add('visible');
+        // Filter snippets
+        const items = snippetDropdown.querySelectorAll('.snippet-item');
+        let anyVisible = false;
+        items.forEach(item => {
+          const trigger = item.querySelector('.snippet-trigger').textContent.substring(1);
+          if (trigger.startsWith(query) || query === '') {
+            item.style.display = '';
+            anyVisible = true;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+        if (!anyVisible) snippetDropdown.classList.remove('visible');
+        return;
+      }
+    }
+    snippetDropdown.classList.remove('visible');
+  });
+
+  // Click snippet to insert
+  snippetDropdown.querySelectorAll('.snippet-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const preview = item.querySelector('.snippet-preview').textContent;
+      const val = feedbackEditor.value;
+      const lastSlash = val.lastIndexOf('/');
+      feedbackEditor.value = val.substring(0, lastSlash) + preview;
+      snippetDropdown.classList.remove('visible');
+      feedbackEditor.focus();
+    });
+  });
+
+  // Hide snippet dropdown on blur (delayed)
+  feedbackEditor.addEventListener('blur', () => {
+    setTimeout(() => snippetDropdown.classList.remove('visible'), 200);
+  });
+
+  // Resize handles
+  function setupResize(handleId, leftSelector, rightSelector, direction) {
+    const handle = document.getElementById(handleId);
+    const layout = document.querySelector('.main-layout');
+    let dragging = false;
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      dragging = true;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const leftEl = document.querySelector(leftSelector);
+      const rightEl = document.querySelector(rightSelector);
+
+      const onMouseMove = (ev) => {
+        if (!dragging) return;
+        const layoutRect = layout.getBoundingClientRect();
+
+        if (direction === 'left') {
+          const newWidth = ev.clientX - layoutRect.left;
+          const minW = 200;
+          const maxW = layoutRect.width * 0.35;
+          leftEl.style.width = Math.max(minW, Math.min(maxW, newWidth)) + 'px';
+          leftEl.style.minWidth = leftEl.style.width;
+        } else {
+          const newWidth = layoutRect.right - ev.clientX;
+          const minW = 280;
+          const maxW = layoutRect.width * 0.45;
+          rightEl.style.width = Math.max(minW, Math.min(maxW, newWidth)) + 'px';
+          rightEl.style.minWidth = rightEl.style.width;
+        }
+      };
+
+      const onMouseUp = () => {
+        dragging = false;
+        handle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  setupResize('resizeLeft', '.left-panel', null, 'left');
+  setupResize('resizeRight', null, '.right-panel', 'right');
+
+  // Keyboard nav for student list
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+
+    const items = Array.from(document.querySelectorAll('.student-item'));
+    const activeIdx = items.findIndex(i => i.classList.contains('active'));
+
+    if (e.key === 'ArrowDown' && activeIdx < items.length - 1) {
+      e.preventDefault();
+      items[activeIdx]?.classList.remove('active');
+      items[activeIdx + 1]?.classList.add('active');
+      items[activeIdx + 1]?.scrollIntoView({ block: 'nearest' });
+    }
+    if (e.key === 'ArrowUp' && activeIdx > 0) {
+      e.preventDefault();
+      items[activeIdx]?.classList.remove('active');
+      items[activeIdx - 1]?.classList.add('active');
+      items[activeIdx - 1]?.scrollIntoView({ block: 'nearest' });
+    }
+  });
+
+  // Click student items
+  document.querySelectorAll('.student-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.student-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
