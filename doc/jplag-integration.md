@@ -2,7 +2,8 @@
 
 Replace the current naive similarity check with [JPlag](https://github.com/jplag/jplag), a proper source code plagiarism detection tool. JPlag uses token-based comparison and is language-aware (understands syntax, not just text similarity).
 
-**Prerequisite:** Java 11 → 25 migration (or at minimum Java 17) — see `doc/java-25-migration.md`.
+**Prerequisite: satisfied.** This needed JDK 17+; the Java 11 → 25 migration landed in July 2026
+(see `doc/java-25-migration.md`), so nothing blocks this now.
 
 ## Current state
 

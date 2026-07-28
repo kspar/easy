@@ -1,85 +1,78 @@
 # Java 11 → 25 Migration
 
-Prerequisite for JPlag integration (requires JDK 17+). Moving straight to 25 since that's what's installed locally and avoids another migration later.
+**Status: done.** Merged to master in July 2026 (EZ-1615, branch `java25`, by priit). This
+document was the plan; it is now the record. If you are looking for what the stack *is*, read
+the first two sections and stop.
 
-**This is a cascade upgrade** — Java 25 forces upgrades across the entire stack. Recommended order:
+## Where we landed
 
-## Phase 1: Kotlin unification + upgrade
+| | Before | After |
+|---|---|---|
+| Java | 11 | **25** (toolchain `JavaLanguageVersion.of(25)`) |
+| Kotlin | 1.5.31 / 1.7.20 / 1.8.0 / 1.8.22 across modules | **2.3.10**, unified |
+| Spring Boot | 2.7.17 | **4.1.0** |
+| Exposed | 0.48.0 | **1.3.1** |
+| Jackson | 2.x (`com.fasterxml`) | **3.x** (`tools.jackson`) |
+| Gradle | 7.6.3 | **9.6.1** |
+| Liquibase | 3.6.3 | **4.31.1** |
+| kotlin-logging | 1.7.10 (`io.github.microutils`) | **8.0.01** (`io.github.oshai`) |
+| AsciidoctorJ | 2.4.3 | 3.0.1 |
+| Apache Tika | 1.25 | 3.2.3 |
 
-The project currently has 4 different Kotlin versions across modules:
-- `core`: 1.8.22 (from `core/gradle.properties`)
-- `tsl-common`: 1.8.0 multiplatform (from root `build.gradle.kts`)
-- `tsl`: 1.5.31 JVM (from root `build.gradle.kts`)
-- `wui`/`ezspa`: 1.7.20 JS (from root `build.gradle.kts`)
+## Idioms that changed — read this before writing backend code
 
-The Kotlin/JS modules (`wui`, `ezspa`) are legacy — the new React frontend replaces them. They can be excluded from the build or removed entirely, which simplifies this significantly.
+These are repo-wide. Getting them wrong produces errors that look like missing dependencies
+rather than renamed packages, which is slow to diagnose. Copy the import block from a
+recently-touched service rather than working from memory.
 
-**Target: Kotlin 2.3.0** (first version with JDK 25 bytecode support). Key changes:
-- K2 compiler enabled by default (stricter type checking — may surface compile errors)
-- `kotlinOptions {}` DSL deprecated → use `compilerOptions {}`
-- `kotlin-stdlib-jdk8` merged into `kotlin-stdlib` (remove explicit dep in `core/build.gradle`)
-- Upgrade `kotlinx-serialization-json` from 1.5.0 to 1.10.x (in `tsl`, `tsl-common`)
+- **Validation**: `javax.validation.*` → `jakarta.validation.*`.
+  (`javax.sql.DataSource` stays — it's JDK, not Jakarta EE.)
+- **Logging**: `mu.KotlinLogging` → `io.github.oshai.kotlinlogging.KotlinLogging`.
+- **Exposed** split into two artifacts, and you need imports from both:
+  - `org.jetbrains.exposed.v1.core.*` — `Table`, `Column`, `SortOrder`, `and`, `eq`, `dao.id.*`
+  - `org.jetbrains.exposed.v1.jdbc.*` — `select`, `selectAll`, `insert`, `insertAndGetId`,
+    `update`, `deleteWhere`, `transactions.transaction`
+  - Joda columns: `org.jetbrains.exposed.v1.jodatime.datetime`
+- **Jackson 3**: annotations stay at `com.fasterxml.jackson.annotation.*`, everything else
+  moves to `tools.jackson.*` (e.g. `tools.jackson.databind.annotation.JsonSerialize`).
+  Annotation targets now matter on Kotlin data classes:
+  - request DTOs → **`@param:JsonProperty`**
+  - response DTOs → **`@get:JsonProperty`**
 
-## Phase 2: Spring Boot 2.7.17 → 3.5.x
+  Bare `@JsonProperty` is not reliable under Jackson 3 + Kotlin.
+- **Spring Security 6**: `WebSecurityConfigurerAdapter` is gone; config is a
+  `@Bean SecurityFilterChain`. `antMatchers()` → `requestMatchers()`,
+  `authorizeRequests()` → `authorizeHttpRequests()`, `@EnableGlobalMethodSecurity` →
+  `@EnableMethodSecurity`.
 
-Spring Boot 2.7 only supports Java 8/11/17 and is EOL.
+## Liquibase
 
-**Jakarta namespace migration** (`javax.*` → `jakarta.*`):
-- ~66 files, ~157 import statements — mechanical find-and-replace
-- Affects: `javax.servlet.*`, `javax.validation.*`, `javax.annotation.PostConstruct`
-- **Exception**: `javax.sql.DataSource` stays (it's part of the JDK, not Jakarta EE)
+Several historical changesets in `v2.xml` and `v3.xml` had checksum drift and trailing-whitespace
+problems that Liquibase 4 refuses to tolerate. They now carry `<validCheckSum>any</validCheckSum>`
+plus `MARK_RAN` preconditions, so existing databases migrate forward and fresh ones build clean.
 
-**Spring Security 6 rewrite** (`core/src/main/kotlin/core/conf/security/SecurityConf.kt`):
-- `WebSecurityConfigurerAdapter` removed — rewrite as `@Bean SecurityFilterChain`
-- `@EnableGlobalMethodSecurity` → `@EnableMethodSecurity`
-- `antMatchers()` → `requestMatchers()`
-- `http.authorizeRequests()` → `http.authorizeHttpRequests()`
+**Do not "fix" a checksum mismatch by editing an old changeset.** Add a new one.
 
-**Other Spring Boot 3 changes**:
-- Trailing slash matching disabled by default (may affect existing clients)
-- Various `spring.*` property renames (use `spring-boot-properties-migrator` to detect)
+## Where the plan was wrong
 
-## Phase 3: Exposed ORM 0.48.0 → 0.54.0+
+Kept for calibration on the next cascade upgrade:
 
-Exposed 0.48 won't compile with Kotlin 2.x. Version 0.54.0 is the first Kotlin 2.0-compatible release with minimal API changes. (1.0.0 exists but has massive package renames — do as a separate step if desired.)
+- The plan targeted **Spring Boot 3.5.x**; we went to **4.1.0**. Jackson 3 came along with it,
+  which the plan did not anticipate at all — that was the single largest source of churn,
+  touching every request and response DTO in the codebase.
+- The plan targeted **Exposed 0.54.0**, explicitly deferring 1.0 because of "massive package
+  renames". We took the renames anyway and went to **1.3.1**. Deferring would have meant doing
+  it twice.
+- The plan wanted Gradle **8.14.4 as an intermediate step** before 9.x. That didn't happen;
+  the wrapper went straight to 9.6.1.
+- Effort was estimated at **10–15 days**. Actual elapsed span of the branch was roughly five
+  months of intermittent work (late February to early July 2026), though not full-time.
 
-## Phase 4: Other dependency upgrades
+The lesson that generalises: when a dependency upgrade is forced by a language-version bump,
+the transitive blast radius is consistently underestimated, and "defer the big rename to a
+separate step" tends to be false economy.
 
-| Dependency | Current | Target | Why |
-|-----------|---------|--------|-----|
-| `kotlin-logging` | 1.7.10 (`io.github.microutils`) | 7.0.x (`io.github.oshai:kotlin-logging`) | Package renamed |
-| AsciidoctorJ | 2.4.3 | 2.5.13+ | JRuby reflective access blocked by JDK 17+ |
-| HikariCP | 3.4.5 (explicit) | Remove explicit dep | Spring Boot manages 4.0.3 |
-| Liquibase Core | 3.6.3 | 4.x+ | |
-| Liquibase Gradle Plugin | 2.0.4 | 3.1.0+ | Gradle 9 compat |
-| Apache Tika | 1.25 | 2.x+ | Very old |
-| Caffeine | 3.0.1 | Latest 3.x | |
-| PostgreSQL driver | 42.6.0 | Latest 42.7.x | |
+## Follow-on work this unblocked
 
-## Phase 5: Gradle 7.6.3 → 9.3.1
-
-Gradle 8.x cannot run on JDK 25 (Groovy DSL incompatibility, won't be backported). Gradle 9.1+ is the first version with JDK 25 daemon support.
-
-Key breaks:
-- Minimum JVM 17 to run Gradle itself
-- `jcenter()` repository removed (used in `ezspa/build.gradle.kts` — remove or exclude module)
-- Numerous deprecated APIs removed from 7.x/8.x
-
-Recommended: upgrade to 8.14.4 first as intermediate step, fix deprecation warnings, then go to 9.3.1.
-
-## Phase 6: JDK switch
-
-- Update `sourceCompatibility` and `jvmTarget` to `"25"` (or `"17"` if no Java 25 language features needed)
-- Update `JAVA_HOME` references in docs/MEMORY
-- Full integration test — especially AsciidoctorJ (exercised at runtime, not compile time)
-
-## Build files to change
-
-- `core/build.gradle` — sourceCompatibility, jvmTarget, dependency versions
-- `tsl/build.gradle.kts` — `JavaVersion.VERSION_11` → `VERSION_25`
-- `tsl-common/build.gradle.kts` — kotlinx-serialization version
-- `build.gradle.kts` — Kotlin plugin versions
-- `core/gradle.properties` — `kotlinVersion`
-- `gradle/wrapper/gradle-wrapper.properties` — Gradle distribution URL
-
-## Rough effort estimate: ~10–15 days
+- **JPlag integration** (`doc/jplag-integration.md`) needed JDK 17+ and was the original
+  motivation for the whole migration. No longer blocked.

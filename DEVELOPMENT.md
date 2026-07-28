@@ -1,5 +1,16 @@
 # Local Development
 
+## 0. Prerequisites
+
+- **JDK 25** — the backend will not build on anything older. Gradle itself also needs 17+.
+- Node 20+ and Docker for the frontend and database.
+
+If your default `JAVA_HOME` points somewhere else, prefix the Gradle commands below:
+
+```sh
+JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew bootRun
+```
+
 ## 1. Database
 
 Start PostgreSQL:
@@ -22,6 +33,10 @@ docker compose up db
 ```
 
 Runs on port 8080 by default. Liquibase migrations run automatically on startup.
+
+Stack: Spring Boot 4.1, Kotlin 2.3, Exposed 1.3, Jackson 3, on JDK 25. If you're
+writing backend code, the package names moved during the Java 25 migration — see
+`doc/java-25-migration.md`.
 
 ## 3. Frontend
 
