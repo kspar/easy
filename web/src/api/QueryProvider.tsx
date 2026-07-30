@@ -13,9 +13,16 @@ const queryClient = new QueryClient({
 })
 
 export function QueryProvider({ children }: { children: ReactNode }) {
-  const { keycloak } = useAuth()
+  const { keycloak, checkedIn } = useAuth()
   const keycloakRef = useRef(keycloak)
   keycloakRef.current = keycloak
+
+  // Queries outside RequireAuth can fire before the account has been checked in, refresh those
+  useEffect(() => {
+    if (checkedIn) {
+      queryClient.invalidateQueries()
+    }
+  }, [checkedIn])
 
   useEffect(() => {
     setTokenProvider(async () => {

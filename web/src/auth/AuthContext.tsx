@@ -9,6 +9,7 @@ import {
 } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
+import { apiFetch } from '../api/client.ts'
 
 export type Role = 'student' | 'teacher' | 'admin'
 
@@ -22,6 +23,9 @@ interface AuthState {
   username: string | undefined
   activeRole: Role
   availableRoles: Role[]
+  /** Whether the account has been checked in to core, see checkin(). */
+  checkedIn: boolean
+  checkinFailed: boolean
 }
 
 interface AuthContextType extends AuthState {
@@ -51,6 +55,23 @@ function getMainRole(roles: Role[]): Role {
   throw new Error('No valid roles found')
 }
 
+/**
+ * Push the account's personal data to core. This is also the only place where an account row is
+ * created, so it must succeed before any other request for a user who's logging in for the first time.
+ */
+async function checkin(keycloak: Keycloak) {
+  const firstName = keycloak.tokenParsed?.given_name as string | undefined
+  const lastName = keycloak.tokenParsed?.family_name as string | undefined
+  if (!firstName || !lastName) {
+    throw new Error('Token is missing given_name or family_name')
+  }
+  await apiFetch('/account/checkin', {
+    method: 'POST',
+    body: { first_name: firstName, last_name: lastName },
+    headers: { Authorization: `Bearer ${keycloak.token}` },
+  })
+}
+
 function getPersistedRole(roles: Role[]): Role | null {
   const stored = localStorage.getItem(ROLE_STORAGE_KEY)
   if (!stored) return null
@@ -72,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: undefined,
     activeRole: 'student',
     availableRoles: [],
+    checkedIn: false,
+    checkinFailed: false,
   })
 
   const initCalled = useRef(false)
@@ -101,7 +124,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: keycloak.tokenParsed?.preferred_username as string | undefined,
             activeRole,
             availableRoles: roles,
+            checkedIn: false,
+            checkinFailed: false,
           })
+
+          checkin(keycloak)
+            .then(() => setState((prev) => ({ ...prev, checkedIn: true })))
+            .catch((err) => {
+              console.error('Account checkin failed', err)
+              setState((prev) => ({ ...prev, checkinFailed: true }))
+            })
         } else {
           setState((prev) => ({ ...prev, initialized: true }))
         }
