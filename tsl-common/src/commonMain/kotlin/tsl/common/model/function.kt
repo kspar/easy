@@ -43,6 +43,7 @@ data class FunctionIsTest(
     override val id: Long,
     val functionName: String,
     val functionProperty: FunctionProperty,
+    val propertyCheck: FunctionPropertyCheck,
 ) : Test() {
     override fun getDefaultName(): String = when (functionProperty) {
         FunctionProperty.PURE -> "Funktsioon kasutab vaid lokaalseid muutujaid"

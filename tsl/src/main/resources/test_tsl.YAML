@@ -372,19 +372,6 @@ tests:
       failedMessage: Klass ei kutsu välja teist klassi.
     pointsWeight: 10
 
-  - type: class_function_calls_function_test
-    id: 23
-    className: Jutustus
-    classFunctionName: add_book
-    genericCheck:
-      checkType: ALL_OF_THESE
-      expectedValue:
-        - print
-      beforeMessage: Kontrollib, kas klassi funktsioon kutsub välja funktsiooni.
-      passedMessage: Klassi funktsioon kutsub välja funktsiooni.
-      failedMessage: Klassi funktsioon ei kutsu välja funktsiooni.
-    pointsWeight: 10
-
   - type: program_defines_class_test
     id: 24
     genericCheck:

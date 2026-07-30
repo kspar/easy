@@ -222,7 +222,6 @@ class TSLTestComp(
         is ProgramImportsModuleTest -> TestType.NOT_IMPLEMENTED
         is ClassCallsClassTest -> TestType.NOT_IMPLEMENTED
         is ClassDefinesFunctionTest -> TestType.NOT_IMPLEMENTED
-        is ClassFunctionCallsFunctionTest -> TestType.NOT_IMPLEMENTED
         is ClassImportsModuleTest -> TestType.NOT_IMPLEMENTED
         is ClassInstanceTest -> TestType.NOT_IMPLEMENTED
         is ProgramCallsClassFunctionTest -> TestType.NOT_IMPLEMENTED

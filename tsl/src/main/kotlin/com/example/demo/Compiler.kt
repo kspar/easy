@@ -77,7 +77,23 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 mapOf(
                     "file_name" to PyStr(fileName),
                     "function_name" to PyStr(test.functionName),
-                    "function_property" to PyStr(test.functionProperty.name)
+                    "function_property" to PyStr(test.functionProperty.name),
+
+                    // Ilma selleta jõuab tiivadeni test ilma ühegi checkita ja õnnestub alati.
+                    // 'expected_value' on päris boolean (mitte list), et see kattuks sellega,
+                    // mida analüsaatori is_pure() / is_recursive() tagastab.
+                    "generic_checks" to PyList(
+                        listOf(
+                            PyDict(
+                                mapOf(
+                                    "'expected_value'" to PyBool(test.propertyCheck.mustHaveProperty),
+                                    "'before_message'" to PyStr(test.propertyCheck.beforeMessage),
+                                    "'passed_message'" to PyStr(test.propertyCheck.passedMessage),
+                                    "'failed_message'" to PyStr(test.propertyCheck.failedMessage)
+                                )
+                            )
+                        )
+                    )
                 )
             ).generatePyString()
 
@@ -88,11 +104,16 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 "definition_test",
                 mapOf(
                     "file_name" to PyStr(fileName),
-                    "function_name" to PyStr(test.functionName),
-                    "class_name" to PyStr(test.className),
+                    "contains_checks" to PyGenericChecksLong(test.genericCheck),
+
+                    "scope" to PyStr(test.scopeType.value),
+                    "definition_check_type" to PyStr(test.definitionCheckType.name),
+
+                    "scope_function_name" to PyStr(test.functionName),
+                    "scope_class_name" to PyStr(test.className),
+
                     "definition_check_value" to PyStr(test.definitionCheckValue),
                     "super_class_name" to PyStr(test.superClassName),
-                    "definition_check_type" to PyStr(test.definitionCheckType.name)
                 )
             ).generatePyString()
 
@@ -187,19 +208,6 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     "standard_output_checks" to PyGenericChecks(test.genericChecks),
                     "output_file_checks" to PyOutputTests(test.outputFileChecks),
                     "exception_check" to exceptionCheck
-                )
-            ).generatePyString()
-        }
-
-        is ClassFunctionCallsFunctionTest -> {
-            PyExecuteTest(
-                test,
-                "class_function_calls_function_test",
-                mapOf(
-                    "file_name" to PyStr(fileName),
-                    "class_name" to PyStr(test.className),
-                    "class_function_name" to PyStr(test.classFunctionName),
-                    "contains_checks" to PyGenericChecksLong(test.genericCheck)
                 )
             ).generatePyString()
         }
