@@ -2,6 +2,18 @@
 
 When a new version is released, update the "In release" version bundle in YouTrack.
 
+## Setting "In release" on an issue
+
+Whenever an issue moves to **Resolved**, set **In release** at the same time — it records the
+version the issue was resolved, the feature shipped, or the bug was fixed in. Always choose the
+version carrying the **`- next`** suffix; there is exactly one, and it is the upcoming release.
+
+That's what makes the rename below work: stripping the suffix at release time stamps every issue
+resolved during the cycle with the real version number, so nothing has to be revisited
+issue-by-issue.
+
+Issues resolved long ago may have the field empty. That's history, not the convention.
+
 ## Steps
 
 ### 1. Rename the current "- next" version (remove suffix + reset color)
