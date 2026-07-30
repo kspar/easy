@@ -9,6 +9,7 @@ import {
   ListItemText,
   ListItemIcon,
   IconButton,
+  Snackbar,
 } from '@mui/material'
 import {
   CheckCircle,
@@ -18,8 +19,8 @@ import {
   ArrowBackOutlined,
 } from '@mui/icons-material'
 import RobotPlaceholder from '../../components/RobotPlaceholder.tsx'
-import { useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, isPast, differenceInHours } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
@@ -86,10 +87,31 @@ export default function CourseExercisesPage() {
   const updateAccess = useUpdateLastAccess(activeRole!, courseId!)
   useEffect(() => { updateAccess.mutate() }, [courseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (activeRole === 'student') {
-    return <StudentExercises />
-  }
-  return <TeacherExercises />
+  // Set by the join-by-link page when the student has just joined this course
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [welcome, setWelcome] = useState(
+    !!(location.state as { joinedCourse?: boolean } | null)?.joinedCourse,
+  )
+
+  // Drop the history state, or the welcome would come back on every reload of this page
+  useEffect(() => {
+    if (welcome) {
+      navigate(location.pathname, { replace: true })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <>
+      {activeRole === 'student' ? <StudentExercises /> : <TeacherExercises />}
+      <Snackbar
+        open={welcome}
+        autoHideDuration={4000}
+        onClose={() => setWelcome(false)}
+        message={t('join.welcome')}
+      />
+    </>
+  )
 }
 
 function StudentExercises() {

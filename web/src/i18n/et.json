@@ -48,6 +48,18 @@
     "failed": "Autentimine ebaõnnestus",
     "refreshFailed": "Sessiooni uuendamine ebaõnnestus. Jätkamiseks tuleb uuesti sisse logida."
   },
+  "join": {
+    "eyebrow": "Sind on kutsutud liituma",
+    "inviteCode": "Kutsekood",
+    "join": "Liitu",
+    "joining": "Liitun...",
+    "joined": "Liitunud",
+    "welcome": "Tere tulemast kursusele!",
+    "invalidLink": "Kehtetu link",
+    "invalidLinkMsg": "See link on vale või oma kehtivuse kaotanud. ¯\\_(ツ)_/¯",
+    "studentsOnly": "Ainult õpilastele",
+    "studentsOnlyMsg": "Kursusega liitumise linki saab kasutada ainult õpilase kontoga."
+  },
   "nav": {
     "roleAdmin": "Admin",
     "roleTeacher": "Õpetaja",

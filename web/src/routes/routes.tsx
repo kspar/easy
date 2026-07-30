@@ -13,6 +13,7 @@ import ExerciseLibraryPage from '../features/library/ExerciseLibraryPage.tsx'
 import ExercisePage from '../features/library/ExercisePage.tsx'
 import AboutPage from '../features/about/AboutPage.tsx'
 import LandingPage from '../features/landing/LandingPage.tsx'
+import JoinByLinkPage from '../features/join/JoinByLinkPage.tsx'
 import { useAuth } from '../auth/AuthContext.tsx'
 
 function IndexRedirect() {
@@ -102,6 +103,22 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth allowedRoles={['teacher', 'admin']}>
             <ExercisePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'link/:inviteId',
+        element: (
+          <RequireAuth>
+            <JoinByLinkPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'moodle/link/:inviteId',
+        element: (
+          <RequireAuth>
+            <JoinByLinkPage isMoodle />
           </RequireAuth>
         ),
       },

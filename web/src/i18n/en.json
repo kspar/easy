@@ -48,6 +48,18 @@
     "failed": "Authentication failed",
     "refreshFailed": "Refreshing your session failed, log in to continue"
   },
+  "join": {
+    "eyebrow": "You've been invited to join",
+    "inviteCode": "Invite code",
+    "join": "Join",
+    "joining": "Joining...",
+    "joined": "Joined",
+    "welcome": "Welcome to the course!",
+    "invalidLink": "Link expired",
+    "invalidLinkMsg": "This link is expired or invalid. ¯\\_(ツ)_/¯",
+    "studentsOnly": "Only for students",
+    "studentsOnlyMsg": "Course join links can only be used with a student account."
+  },
   "nav": {
     "roleAdmin": "Admin",
     "roleTeacher": "Teacher",
