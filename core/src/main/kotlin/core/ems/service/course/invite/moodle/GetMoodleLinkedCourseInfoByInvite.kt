@@ -7,6 +7,7 @@ import core.db.StudentMoodlePendingAccess
 import core.ems.service.singleOrInvalidRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.upperCase
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
@@ -38,7 +39,7 @@ class GetMoodleLinkedCourseInfoByInvite {
         (StudentMoodlePendingAccess innerJoin Course)
             .select(Course.id, Course.title, Course.alias)
             .where {
-                (StudentMoodlePendingAccess.inviteId eq inviteId)
+                (StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase())
             }.map {
                 Resp(
                     it[Course.id].value.toString(),

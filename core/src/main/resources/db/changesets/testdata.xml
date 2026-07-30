@@ -633,20 +633,23 @@
     </changeSet>
 
     <changeSet id="testdata-moodle-pending" author="kspar">
+        <!-- Invite ids were reformatted to the M- prefixed shape; accept the older checksum -->
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM student_moodle_pending_access WHERE moodle_username = 'moodle-anna'</sqlCheck>
         </preConditions>
         <comment>Insert Moodle pending students for testing the participants page</comment>
         <sql>
-            <!-- Moodle pending students on course 9003 (Data Structures — Moodle-enabled) -->
+            <!-- Moodle pending students on course 9003 (Data Structures — Moodle-enabled).
+                 Invite ids follow generateMoodleInviteId(): "M-" + 10 uppercase letters. -->
             INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
-            VALUES (9003, 'moodle-peeter', 'peeter.puu@lahendus.ut.ee', now(), 'moodle-sync-9003-peeter');
+            VALUES (9003, 'moodle-peeter', 'peeter.puu@lahendus.ut.ee', now(), 'M-MOODLEPEET');
             INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
-            VALUES (9003, 'moodle-anna', 'anna.kask@lahendus.ut.ee', now(), 'moodle-sync-9003-anna');
+            VALUES (9003, 'moodle-anna', 'anna.kask@lahendus.ut.ee', now(), 'M-MOODLEANNA');
             INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
-            VALUES (9003, 'moodle-juri', 'juri.tamm@lahendus.ut.ee', now(), 'moodle-sync-9003-juri');
+            VALUES (9003, 'moodle-juri', 'juri.tamm@lahendus.ut.ee', now(), 'M-MOODLEJURI');
             INSERT INTO student_moodle_pending_access (course_id, moodle_username, email, created_at, invite_id)
-            VALUES (9003, 'moodle-liis', 'liis.mets@lahendus.ut.ee', now(), 'moodle-sync-9003-liis');
+            VALUES (9003, 'moodle-liis', 'liis.mets@lahendus.ut.ee', now(), 'M-MOODLELIIS');
 
             <!-- Assign some moodle pending students to groups -->
             INSERT INTO student_moodle_pending_course_group_access (moodle_username, course_id, group_id)
@@ -742,6 +745,81 @@
             VALUES (9104, 9104, 'kspar', now(), 'TEACHER', 'Linked Lists',
                     '&lt;p&gt;Implement a singly linked list with &lt;code&gt;insert&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, and &lt;code&gt;search&lt;/code&gt; operations.&lt;/p&gt;',
                     'solution.py', 0);
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-moodle-pending-prefix-ids" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM student_moodle_pending_access WHERE invite_id LIKE 'M-%'</sqlCheck>
+        </preConditions>
+        <comment>Reformat already-seeded Moodle invite ids, for databases that predate the M- prefix</comment>
+        <sql>
+            UPDATE student_moodle_pending_access SET invite_id = 'M-MOODLEPEET'
+            WHERE course_id = 9003 AND moodle_username = 'moodle-peeter';
+            UPDATE student_moodle_pending_access SET invite_id = 'M-MOODLEANNA'
+            WHERE course_id = 9003 AND moodle_username = 'moodle-anna';
+            UPDATE student_moodle_pending_access SET invite_id = 'M-MOODLEJURI'
+            WHERE course_id = 9003 AND moodle_username = 'moodle-juri';
+            UPDATE student_moodle_pending_access SET invite_id = 'M-MOODLELIIS'
+            WHERE course_id = 9003 AND moodle_username = 'moodle-liis';
+        </sql>
+    </changeSet>
+
+    <changeSet id="testdata-empty-courses" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9006</sqlCheck>
+        </preConditions>
+        <comment>Insert courses with no students, for testing empty states and the join-by-link flow</comment>
+        <sql>
+            <!-- 9006: joinable — valid invite link + exercises, so there's something to see after joining -->
+            INSERT INTO course (id, created_at, title, alias, course_code, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9006, now() - interval '7 days', 'Introduction to Cybersecurity', 'sec1', 'SEC-1', '#f06292', false, false, false, false, false);
+
+            <!-- 9007: no invite link at all — the "create invite link" empty state -->
+            INSERT INTO course (id, created_at, title, alias, course_code, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9007, now() - interval '2 days', 'Discrete Mathematics', null, 'MATH-2', '#64b5f6', false, false, false, false, false);
+
+            <!-- 9008: expired invite link -->
+            INSERT INTO course (id, created_at, title, alias, course_code, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9008, now() - interval '90 days', 'Compiler Construction', null, null, '#aed581', false, false, false, false, false);
+
+            <!-- 9009: invite link that has run out of uses -->
+            INSERT INTO course (id, created_at, title, alias, course_code, color, moodle_sync_students, moodle_sync_grades,
+                                moodle_sync_students_in_progress, moodle_sync_grades_in_progress, archived)
+            VALUES (9009, now() - interval '30 days', 'Robotics Seminar', 'rob', null, '#ffd54f', false, false, false, false, false);
+
+            <!-- kspar teaches all of them, but is deliberately not a student on any -->
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9006, now() - interval '7 days', now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9007, now() - interval '2 days', now());
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9008, now() - interval '90 days', now() - interval '60 days');
+            INSERT INTO teacher_course_access (teacher_id, course_id, created_at, last_accessed)
+            VALUES ('kspar', 9009, now() - interval '30 days', now() - interval '10 days');
+
+            <!-- Invite ids are generated as 6 uppercase letters, keep the same shape here -->
+            INSERT INTO course_invite_link (course_id, invite_id, created_at, expires_at, allowed_uses, used_count)
+            VALUES (9006, 'JOINME', now() - interval '7 days', now() + interval '30 days', 50, 0);
+            INSERT INTO course_invite_link (course_id, invite_id, created_at, expires_at, allowed_uses, used_count)
+            VALUES (9008, 'EXPIRD', now() - interval '90 days', now() - interval '2 days', 50, 4);
+            INSERT INTO course_invite_link (course_id, invite_id, created_at, expires_at, allowed_uses, used_count)
+            VALUES (9009, 'USEDUP', now() - interval '30 days', now() + interval '30 days', 3, 3);
+
+            <!-- A couple of exercises on 9006 so a freshly joined student isn't greeted by an empty course -->
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from, soft_deadline)
+            VALUES (9013, 9006, 9001, now() - interval '7 days', now() - interval '7 days', 50, 0, true,
+                    now() - interval '7 days', now() + interval '14 days');
+            INSERT INTO course_exercise (id, course_id, exercise_id, created_at, modified_at,
+                                         grade_threshold, ordering_index, assessments_student_visible,
+                                         student_visible_from)
+            VALUES (9014, 9006, 9005, now() - interval '7 days', now() - interval '7 days', 50, 1, true,
+                    now() - interval '7 days');
         </sql>
     </changeSet>
 

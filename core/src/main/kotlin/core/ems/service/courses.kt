@@ -83,6 +83,14 @@ fun generateInviteId(length: Int): String {
     return (1..length).map { alphabet.elementAt(secureRandom.nextInt(alphabet.count())) }.joinToString("")
 }
 
+/**
+ * Personal invite id for a Moodle-synced course. Prefixed so a link or a log line says at a
+ * glance which enrolment flow it belongs to: course invites are bare letters (LNWFTX), these
+ * are M-KDJEIWBXQA. Nothing parses the prefix — lookups are plain case-insensitive matches, so
+ * ids handed out before this existed keep working.
+ */
+fun generateMoodleInviteId(): String = "M-" + generateInviteId(10)
+
 
 fun getCourse(courseId: Long): CourseDTO? = transaction {
     Course.selectAll().where { Course.id.eq(courseId) }.map {

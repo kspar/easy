@@ -7,6 +7,7 @@ import core.ems.service.singleOrInvalidRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.upperCase
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
@@ -39,7 +40,7 @@ class JoinMoodleLinkedCourseByInvite {
         val (courseId, moodleUsername) = (StudentMoodlePendingAccess innerJoin Course)
             .select(Course.id, StudentMoodlePendingAccess.moodleUsername)
             .where {
-                StudentMoodlePendingAccess.inviteId eq inviteId
+                StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
             }.map { it[Course.id] to it[StudentMoodlePendingAccess.moodleUsername] }
             .singleOrInvalidRequest(false)
 
@@ -62,7 +63,10 @@ class JoinMoodleLinkedCourseByInvite {
                 }
             }
 
-        StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.inviteId eq inviteId }
+        // Must match the lookup above, or the pending access outlives the join
+        StudentMoodlePendingAccess.deleteWhere {
+            StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
+        }
 
         log.debug { "$studentId joined Moodle linked course $courseId by invite $inviteId" }
         Resp(courseId.toString())

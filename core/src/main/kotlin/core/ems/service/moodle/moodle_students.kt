@@ -2,7 +2,7 @@ package core.ems.service.moodle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
-import core.ems.service.generateInviteId
+import core.ems.service.generateMoodleInviteId
 import core.ems.service.getCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -191,7 +191,7 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
                     student.email.lowercase(),
                     // generate inviteId for all students, but do not use this
                     // for existing active accesses (not needed) and existing pending accesses (keep the old one)
-                    generateInviteId(10),
+                    generateMoodleInviteId(),
                     student.username,
                     student.groups.orEmpty().mapNotNull { groupId ->
                         val groupName = groupIdToName[groupId]
