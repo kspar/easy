@@ -78,5 +78,6 @@ easy:
       ignore-missing-keycloak-users: false
 
 
-  wui:
+  # Public base URL of the web UI, used to build links in outgoing emails.
+  web:
     base-url: "https://easy.example"

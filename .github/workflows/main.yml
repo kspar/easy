@@ -1,22 +1,48 @@
-name: Qodana
+name: CI
 on:
   workflow_dispatch:
   pull_request:
   push:
     branches:
-      - main
+      - master
       - 'releases/*'
 
 jobs:
-  qodana:
+  backend:
+    name: Backend (Gradle)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
         with:
-          fetch-depth: 0
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@main
-        env: 
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      # Tests are excluded: they need a PostgreSQL instance plus core/src/test/resources/
+      # application.yaml, which is gitignored (see DEVELOPMENT.md). Wiring a postgres
+      # service container and generating that config would let this become a plain
+      # `./gradlew build` — worth doing, but it is its own change. See EZ-1715.
+      - name: Build
+        run: ./gradlew build -x test --no-daemon
 
-
+  web:
+    name: Web (TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      # No lint step yet — `npm run lint` currently reports 54 errors, so it would only add
+      # noise. Add it once those are cleared. See EZ-1714.
+      # Runs `tsc -b && vite build`. Nothing typechecked web/ before this job existed,
+      # which is how 18 type errors accumulated unnoticed — `npm run dev` skips tsc.
+      - name: Typecheck and build
+        run: npm run build

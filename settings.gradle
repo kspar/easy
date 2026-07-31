@@ -1,9 +1,0 @@
-rootProject.name = 'easy'
-
-include 'wui',
-        'core',
-        'aae',
-        'ezspa',
-        'tsl',
-        'tsl-common'
-

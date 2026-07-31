@@ -1,0 +1,14 @@
+{
+  "name": "web-dev-harness",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Browser harness for driving web/ pages with a faked IdP and backend. Kept out of web/package.json so app deps stay clean.",
+  "scripts": {
+    "serve": "cd .. && vite --config vite.stub.config.ts --port 5199 --strictPort",
+    "course-exercises": "node scripts/course-exercises.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

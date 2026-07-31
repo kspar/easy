@@ -1,6 +1,17 @@
+// Shared TSL model classes, consumed by :tsl and through it by :core.
+// Was a Kotlin Multiplatform module while :wui existed — the JS target served the
+// Kotlin/JS UI only, so it went away with it. JVM-only now.
+
 plugins {
-    kotlin("multiplatform")
+    kotlin("jvm")
     kotlin("plugin.serialization")
+}
+
+group = "ee.urgas"
+version = "1"
+
+kotlin {
+    jvmToolchain(25)
 }
 
 repositories {
@@ -8,12 +19,5 @@ repositories {
 }
 
 dependencies {
-    commonMainImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
-}
-
-kotlin {
-    jvm()
-    js(IR) {
-        browser()
-    }
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
