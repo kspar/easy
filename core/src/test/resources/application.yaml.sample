@@ -55,6 +55,10 @@ easy:
       # Classpath-relative (ClassLoaderResourceAccessor), not a filesystem path.
       changelog: "db/changelog.xml"
     auth-enabled: true
+
+    cors:
+      # Empty is fine for tests: nothing here makes cross-origin requests.
+      allowed-origins: ""
     mail:
       from: "<from-address>"
       sys:

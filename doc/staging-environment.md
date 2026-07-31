@@ -168,12 +168,23 @@ not have the test source set on it at all, which the artifact-based deploy in §
 
 ### 4.1 Web vhost — `dev.lahendus.ut.ee`
 
-Plain static hosting of the built `dist/`, plus an SPA fallback so deep links work:
+Plain static hosting of the built `dist/`, plus an SPA fallback so deep links work — and one
+required header:
 
 ```apache
 DocumentRoot /srv/easy/web/current
 FallbackResource /index.html
+
+# config.json carries this environment's backend and realm (EZ-1726). It MUST NOT be cached:
+# the app requests it with `cache: 'no-store'`, but a caching layer in front would hand a
+# freshly deployed dist the previous environment's backend URL. That failure presents as
+# "staging is talking to production", which is not where anyone looks first.
+<Files "config.json">
+    Header set Cache-Control "no-store"
+</Files>
 ```
+
+`mod_headers` has to be enabled for that (`a2enmod headers`).
 
 No auth on this vhost. The SPA does the OIDC dance itself via keycloak-js and holds the token.
 
@@ -200,9 +211,22 @@ this being a dumb proxy, both good:
 
 ### 4.3 CORS
 
-`https://dev.lahendus.ut.ee` is already in the allowlist at
-`core/src/main/kotlin/core/conf/security/SecurityConf.kt`, so this needs no change. It *is*
-hardcoded, under a `// TODO: from conf` — tracked as EZ-1727.
+Web and API are on different origins here, so core has to allow the web origin. Since EZ-1727 that
+is config rather than a hardcoded list, so staging's `application.yaml` needs:
+
+```yaml
+easy:
+  core:
+    cors:
+      allowed-origins: "https://dev.lahendus.ut.ee"
+```
+
+The key is required — the context will not start without it. Core logs the list it parsed at
+startup, which is worth knowing because the failure mode otherwise is a browser-side CORS error
+with nothing at all in the server log.
+
+If you later decide to serve web and API from one origin, empty is the tighter setting: browsers
+send no preflight, and nothing needs allowing.
 
 ---
 

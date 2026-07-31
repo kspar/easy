@@ -11,10 +11,16 @@ placeholder — the context won't start — so a missed entry here is a failed d
 subtle bug. Add a row whenever a property changes; delete rows once every environment is past
 that release.
 
+Since EZ-1726 the same applies to the **frontend**: the web dist reads `config.json` at boot, so
+each environment has a second piece of out-of-repo config. Unlike the backend it fails at runtime
+rather than at startup, with a "Configuration error" page.
+
 | Since | Change | Action |
 | --- | --- | --- |
 | v4.0 (unreleased) | `easy.wui.base-url` renamed to `easy.web.base-url` | Rename the key in every environment's `application.yaml`. Used by `SendMailService` to build links in outgoing email. |
 | v4.0 (unreleased) | Core refuses to start when `easy.core.auth-enabled: false` and `server.address` is not loopback (EZ-1724) | No action for a normal deployed environment, which has auth enabled. Only bites an environment that had auth turned off — in which case starting was the bug, not the failure. Local dev needs `server.address: 127.0.0.1`; see DEVELOPMENT.md §4. |
+| v4.0 (unreleased) | `easy.core.cors.allowed-origins` added (EZ-1727) | **Required on every environment**, or the context won't start. Comma-separated origins allowed to call the API cross-origin — previously a hardcoded list in `SecurityConf` that gave every environment all four origins. Production wants `https://lahendus.ut.ee`; an environment where one proxy fronts both web and API on the same origin wants it empty. Getting this wrong shows up only in a browser, as a CORS error with nothing in the server log, so core logs the configured list at startup. |
+| v4.0 (unreleased) | Web reads `config.json` at boot instead of baked-in `VITE_*` (EZ-1726) | **Required on every environment.** Write a `config.json` next to the deployed `index.html` with `emsRoot` and `keycloak.url` / `.realm` / `.clientId` for that environment — the values previously compiled into the bundle. Without it the app shows a "Configuration error" page. **Also serve it with `Cache-Control: no-store`**: the app requests it that way, but a caching layer in front will happily hand a fresh deploy the previous environment's backend URL, and that failure looks like anything but a caching problem. Apache: `<Files "config.json"> Header set Cache-Control "no-store" </Files>`. See `web/README.md`. |
 | v4.0 (unreleased) | `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` and `.issuer-uri` added (EZ-1724) | **Required on any environment with `easy.core.auth-enabled: true`** — core now verifies Keycloak tokens itself instead of trusting the Apache OIDC proxy's `oidc_claim_*` headers. Add both keys pointing at that environment's realm; see the sample for why both and not just `issuer-uri`. The matching change on the webserver is to remove the mod_auth_openidc config from the API vhost, leaving a plain `ProxyPass` — do it in the same window, since a vhost that still authenticates will 401 cross-origin preflight `OPTIONS` requests. |
 
 To check an environment before deploying:

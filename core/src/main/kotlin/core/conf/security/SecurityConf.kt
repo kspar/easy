@@ -54,6 +54,16 @@ class SecurityConf {
     private var serverAddress: String = ""
 
     /**
+     * Origins allowed to call the API cross-origin — the web app's origin, essentially.
+     *
+     * Comma-separated rather than a YAML list because `@Value` cannot bind one, and the rest of
+     * this config is `@Value`. An empty value means no cross-origin access at all, which is the
+     * right answer for a deployment where one reverse proxy fronts both web and API.
+     */
+    @Value("\${easy.core.cors.allowed-origins}")
+    private lateinit var allowedOrigins: List<String>
+
+    /**
      * Refuses to start a core that both disables auth and listens beyond loopback.
      *
      * With `auth-enabled: false`, [DummyZeroAuthFilter] trusts `oidc_claim_*` headers verbatim,
@@ -148,14 +158,15 @@ class SecurityConf {
     }
 
     private fun getCorsConfiguration(): CorsConfigurationSource {
+        // Logged because a missing origin here presents as a browser-side CORS error with no
+        // trace in the server log — so the one place to look should say what was configured.
+        if (allowedOrigins.isEmpty())
+            log.info { "CORS: no allowed origins configured, cross-origin requests will be rejected" }
+        else
+            log.info { "CORS: allowing origins $allowedOrigins" }
+
         val conf = CorsConfiguration()
-        // TODO: from conf
-        conf.allowedOrigins = listOf(
-            "http://local.lahendus.ut.ee:8090",
-            "http://localhost:63341",
-            "https://lahendus.ut.ee",
-            "https://dev.lahendus.ut.ee"
-        )
+        conf.allowedOrigins = allowedOrigins
         conf.allowedMethods = listOf("GET", "POST", "DELETE", "PUT", "PATCH")
         conf.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
         conf.exposedHeaders = listOf("Content-Disposition")
