@@ -798,6 +798,12 @@ function TeacherExerciseView() {
 
   usePageTitle(exercise ? (exercise.title_alias || exercise.title) : undefined)
 
+  // Captured once at mount rather than read inline below: calling Date.now() during render is
+  // impure, so the same state could render differently on a re-render. Only decides whether
+  // the "becomes visible at" chip shows, and a page isn't open long enough for the clock to
+  // drift past the threshold. Has to sit above the early returns that follow.
+  const [now] = useState(() => Date.now())
+
   if (isLoading) return <CircularProgress />
   if (error)
     return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
@@ -807,9 +813,9 @@ function TeacherExerciseView() {
   const students = participantsData?.students ?? []
   const groups = groupsData ?? []
 
-  // Visibility chip
+  // Visibility chip — `now` is captured at mount, see above.
   const visibleFromDate = exercise.student_visible_from ? new Date(exercise.student_visible_from) : null
-  const isScheduled = !exercise.student_visible && visibleFromDate && visibleFromDate.getTime() > Date.now()
+  const isScheduled = !exercise.student_visible && visibleFromDate && visibleFromDate.getTime() > now
 
   const leftPane = (
     <>

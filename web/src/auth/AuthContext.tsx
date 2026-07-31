@@ -50,10 +50,13 @@ function getPersistedRole(roles: Role[]): Role | null {
   return roles.includes(role) ? role : null
 }
 
+// One instance per page load, at module scope rather than in useState. AuthProvider mutates
+// it — init() writes to it, and onTokenExpired is assigned below — and React forbids mutating
+// a value returned from useState. The constructor only builds an object; nothing touches the
+// network until init(), so creating it at import time is safe.
+const keycloak = new Keycloak(config.keycloak)
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [keycloak] = useState(
-    () => new Keycloak(config.keycloak),
-  )
   const [state, setState] = useState<AuthState>({
     initialized: false,
     authenticated: false,
@@ -119,7 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn('Token refresh failed')
       })
     }
-  }, [keycloak])
+    // keycloak is a module-level constant now, so it is not a valid dependency.
+  }, [])
 
   const switchRole = useCallback(
     (role: Role) => {
@@ -137,12 +141,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (locale?: string) => {
       keycloak.login({ locale: locale ?? 'et' })
     },
-    [keycloak],
+    [],
   )
 
   const logout = useCallback(() => {
     keycloak.logout()
-  }, [keycloak])
+  }, [])
 
   const refreshToken = useCallback(async () => {
     try {
@@ -155,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Token refresh failed')
       return false
     }
-  }, [keycloak])
+  }, [])
 
   return (
     <AuthContext.Provider
