@@ -40,8 +40,10 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install
         run: npm ci
-      # No lint step yet — `npm run lint` currently reports 54 errors, so it would only add
-      # noise. Add it once those are cleared. See EZ-1714.
+      # Fails on errors only. There is a known backlog of react-hooks findings kept at warning
+      # level so it doesn't block the gate — see the comments in eslint.config.js and EZ-1722.
+      - name: Lint
+        run: npm run lint
       # Runs `tsc -b && vite build`. Nothing typechecked web/ before this job existed,
       # which is how 18 type errors accumulated unnoticed — `npm run dev` skips tsc.
       - name: Typecheck and build
