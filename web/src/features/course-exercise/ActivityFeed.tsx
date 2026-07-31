@@ -216,7 +216,7 @@ export default function ActivityFeed({
   }
   const feedbackRef = useRef(readDraft())
   const [feedback, setFeedback] = useState(feedbackRef.current)
-  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const setFeedbackDebounced = useCallback((text: string) => {
     feedbackRef.current = text
     clearTimeout(feedbackTimerRef.current)
@@ -625,7 +625,7 @@ function EditCommentEditor({
   const viewRef = useRef<EditorView | null>(null)
   const [text, setText] = useState(initialText)
   const textRef = useRef(initialText)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const previewHtml = useMarkdownPreview(text, 150)
   const [notify, setNotify] = useState(() => {
     try { return localStorage.getItem(EDIT_NOTIFY_KEY) !== 'false' } catch { return true }

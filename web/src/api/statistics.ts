@@ -57,7 +57,7 @@ export function useStatistics(): UseStatisticsResult {
           setStats(newStats)
           setIsLoading(false)
           currentStats = newStats
-        } catch (e) {
+        } catch {
           if (cancelled) return
           // On error, wait before retrying
           await new Promise((r) => setTimeout(r, 5000))

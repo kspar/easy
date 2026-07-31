@@ -51,7 +51,7 @@ export default function PreviousSubmissions({
   } = useSubmissions(courseId, courseExerciseId)
 
   // Auto-expand when a submission number is highlighted
-  const prevHighlight = useRef<number | undefined>()
+  const prevHighlight = useRef<number | undefined>(undefined)
   useEffect(() => {
     if (highlightSubmissionNumber != null && highlightSubmissionNumber !== prevHighlight.current && submissions) {
       prevHighlight.current = highlightSubmissionNumber

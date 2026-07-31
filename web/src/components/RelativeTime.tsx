@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Tooltip } from '@mui/material'
 import { format, isToday, isYesterday, isTomorrow } from 'date-fns'
+import type { Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 function formatRelative(
   date: Date,
-  t: (key: string) => string,
+  // TFunction rather than (key: string) => string — the relative-time strings below
+  // interpolate a { count }, which a single-argument signature can't express.
+  t: TFunction,
   locale: Locale,
 ): string {
   const now = new Date()

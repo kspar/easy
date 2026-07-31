@@ -8,11 +8,15 @@ export interface ApiError {
 }
 
 export class ApiResponseError extends Error {
-  constructor(
-    public status: number,
-    public errorBody: ApiError | null,
-  ) {
+  // Declared and assigned explicitly rather than as constructor parameter properties:
+  // those are TS-only syntax, which `erasableSyntaxOnly` forbids.
+  readonly status: number
+  readonly errorBody: ApiError | null
+
+  constructor(status: number, errorBody: ApiError | null) {
     super(errorBody?.log_msg ?? `HTTP ${status}`)
+    this.status = status
+    this.errorBody = errorBody
   }
 }
 

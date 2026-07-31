@@ -126,11 +126,15 @@ interface PortalStore {
 const setAnnotationsEffect = StateEffect.define<AnnotationSnapshot>()
 
 class BlockWidget extends WidgetType {
-  constructor(
-    readonly key: string,
-    readonly store: PortalStore,
-  ) {
+  // Fields declared and assigned explicitly — constructor parameter properties are
+  // TS-only syntax, which `erasableSyntaxOnly` forbids.
+  readonly key: string
+  readonly store: PortalStore
+
+  constructor(key: string, store: PortalStore) {
     super()
+    this.key = key
+    this.store = store
   }
 
   toDOM() {
@@ -226,8 +230,10 @@ const addMarker = new AddCommentMarker()
 function lineHoverPlugin() {
   return ViewPlugin.fromClass(class {
     private lastHovered: HTMLElement | null = null
+    readonly view: EditorView
 
-    constructor(readonly view: EditorView) {
+    constructor(view: EditorView) {
+      this.view = view
       view.dom.addEventListener('mousemove', this.onMove as EventListener)
       view.dom.addEventListener('mouseleave', this.onLeave as EventListener)
     }
@@ -727,7 +733,7 @@ function CommentEditor({
   const innerViewRef = useRef<EditorView | null>(null)
   const [text, setText] = useState(draft.textMd)
   const textRef = useRef(draft.textMd)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const previewHtml = useMarkdownPreview(text, 150)
   const [notify, setNotify] = useState(draft.notifyStudent)
 

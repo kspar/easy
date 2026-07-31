@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { decodeJwt } from './src/utils/jwt-proxy.ts'
+import { decodeJwt } from './vite-jwt-proxy.ts'
 
 export default defineConfig({
   plugins: [react()],

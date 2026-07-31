@@ -166,7 +166,9 @@ export default function AppLayout() {
           queryFn: () =>
             apiFetch<{ courses: StudentCourse[] }>('/student/courses').then((r) => r.courses),
         }))
-      return courses.some((c) => c.id === id)
+      // fetchQuery's return type admits undefined; previously that threw and was swallowed
+      // by the catch below, which returned false — same result, minus the exception.
+      return courses?.some((c) => c.id === id) ?? false
     } catch {
       return false
     }
@@ -181,7 +183,7 @@ export default function AppLayout() {
           queryFn: () =>
             apiFetch<{ courses: TeacherCourse[] }>('/teacher/courses').then((r) => r.courses),
         }))
-      return courses.some((c) => c.id === id)
+      return courses?.some((c) => c.id === id) ?? false
     } catch {
       return false
     }

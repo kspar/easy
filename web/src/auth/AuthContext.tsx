@@ -32,7 +32,9 @@ interface AuthContextType extends AuthState {
   keycloak: Keycloak | null
   switchRole: (role: Role) => void
   login: (locale?: string) => void
-  logout: (locale?: string) => void
+  // No locale parameter: KeycloakLogoutOptions has no `locale` field (only login does),
+  // so the value passed here was always discarded. No caller supplied one either.
+  logout: () => void
   refreshToken: () => Promise<boolean>
 }
 
@@ -169,12 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [keycloak],
   )
 
-  const logout = useCallback(
-    (locale?: string) => {
-      keycloak.logout({ locale: locale ?? 'et' })
-    },
-    [keycloak],
-  )
+  const logout = useCallback(() => {
+    keycloak.logout()
+  }, [keycloak])
 
   const refreshToken = useCallback(async () => {
     try {

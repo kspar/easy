@@ -91,12 +91,24 @@ interface StudentRow {
   inviteId?: string
 }
 
+interface GroupWithCount extends GroupResp {
+  studentCount: number
+}
+
 interface ConfirmState {
   message: React.ReactNode
   label?: string
   color?: 'error' | 'primary' | 'warning'
   action: () => void
 }
+
+// Module scope on purpose. createColumnHelper() is a stateless factory, but calling it
+// during render produced a fresh object every time, so each column useMemo below closed
+// over a dependency that never kept its identity — which is what React Compiler's
+// preserve-manual-memoization rule was reporting.
+const studentColumnHelper = createColumnHelper<StudentRow>()
+const teacherColumnHelper = createColumnHelper<TeacherParticipant>()
+const groupColumnHelper = createColumnHelper<GroupWithCount>()
 
 export default function ParticipantsPage() {
   const { activeRole } = useAuth()
@@ -660,10 +672,9 @@ export default function ParticipantsPage() {
 
   // --- Column definitions ---
 
-  const studentColumnHelper = createColumnHelper<StudentRow>()
   const studentColumns = useMemo(
     () => {
-      const cols: ColumnDef<StudentRow, any>[] = [
+      const cols: ColumnDef<StudentRow, unknown>[] = [
         studentColumnHelper.accessor('name', {
           header: t('general.name'),
           cell: ({ row }) => {
@@ -775,7 +786,6 @@ export default function ParticipantsPage() {
     [t, groups, isMoodleLinked],
   )
 
-  const teacherColumnHelper = createColumnHelper<TeacherParticipant>()
   const teacherColumns = useMemo(
     () => [
       teacherColumnHelper.accessor(
@@ -799,20 +809,15 @@ export default function ParticipantsPage() {
           </IconButton>
         ),
       }),
-    ] as ColumnDef<TeacherParticipant, any>[],
+    ] as ColumnDef<TeacherParticipant, unknown>[],
     [t],
   )
-
-  interface GroupWithCount extends GroupResp {
-    studentCount: number
-  }
 
   const groupsWithCounts: GroupWithCount[] = useMemo(
     () => (groups ?? []).map((g) => ({ ...g, studentCount: groupStudentCount(g.id) })),
     [groups, data?.students, data?.students_moodle_pending],
   )
 
-  const groupColumnHelper = createColumnHelper<GroupWithCount>()
   const groupColumns = useMemo(
     () => [
       groupColumnHelper.accessor('name', { header: t('general.name') }),
@@ -835,7 +840,7 @@ export default function ParticipantsPage() {
           </IconButton>
         ),
       }),
-    ] as ColumnDef<GroupWithCount, any>[],
+    ] as ColumnDef<GroupWithCount, unknown>[],
     [t],
   )
 

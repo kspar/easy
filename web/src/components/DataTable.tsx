@@ -20,7 +20,7 @@ import {
 } from '@mui/material'
 
 interface DataTableProps<T> {
-  columns: ColumnDef<T, any>[]
+  columns: ColumnDef<T, unknown>[]
   data: T[]
   getRowId: (row: T) => string
   rowSelection?: RowSelectionState
