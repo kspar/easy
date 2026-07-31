@@ -85,13 +85,10 @@ dependencies {
     // Testing
     testImplementation(libs.spring.boot.starter.test)
 
-    // Asciidoc
-    implementation(libs.asciidoctorj)
-
     // Markdown (CommonMark with GFM extensions)
     implementation(libs.bundles.commonmark)
 
-    // Jsoup for Asciidoctor HTML output customisation
+    // Jsoup for post-processing rendered Markdown (see MarkdownService)
     implementation(libs.jsoup)
 
     // StoredFile type detection

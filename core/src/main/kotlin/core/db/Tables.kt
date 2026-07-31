@@ -48,6 +48,10 @@ object ExerciseVer : LongIdTable("exercise_version") {
     val aasId = text("aas_id").nullable()
     val title = text("title")
     val textHtml = text("text_html").nullable()
+    val textMd = text("text_md").nullable()
+
+    // Source format before EZ-1729. Read-only: still the only copy of the source for anything
+    // authored in adoc, but nothing writes it and nothing renders it any more.
     val textAdoc = text("text_adoc").nullable()
     val solutionFileName = text("solution_file_name")
     val solutionFileType = enumeration("solution_file_type", SolutionFileType::class)
@@ -98,6 +102,9 @@ object CourseExercise : LongIdTable("course_exercise") {
     val orderIdx = integer("ordering_index")
     val assessmentsStudentVisible = bool("assessments_student_visible")
     val instructionsHtml = text("instructions_html").nullable()
+    val instructionsMd = text("instructions_md").nullable()
+
+    // See the note on ExerciseVer.textAdoc — read-only since EZ-1729.
     val instructionsAdoc = text("instructions_adoc").nullable()
     val titleAlias = text("title_alias").nullable()
     val moodleExId = text("moodle_exercise_id").nullable()
@@ -327,6 +334,9 @@ object ArticleVersion : LongIdTable("article_version") {
     val validTo = datetime("valid_to").nullable()
     val title = text("title")
     val textHtml = text("text_html").nullable()
+    val textMd = text("text_md").nullable()
+
+    // See the note on ExerciseVer.textAdoc — read-only since EZ-1729.
     val textAdoc = text("text_adoc").nullable()
 }
 

@@ -31,7 +31,7 @@ class ReadArticleDetailsController(private val cachingService: CachingService) {
         @get:JsonProperty("owner") val owner: RespUser,
         @get:JsonProperty("author") val author: RespUser,
         @get:JsonProperty("text_html") val textHtml: String?,
-        @get:JsonProperty("text_adoc") val textAdoc: String?,
+        @get:JsonProperty("text_md") val textMd: String?,
         @get:JsonInclude(JsonInclude.Include.NON_NULL)
         @get:JsonProperty("public") val public: Boolean?,
         @get:JsonInclude(JsonInclude.Include.NON_NULL)

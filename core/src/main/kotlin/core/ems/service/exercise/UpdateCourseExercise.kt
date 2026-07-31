@@ -3,7 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseExercise
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
@@ -25,7 +25,7 @@ import tools.jackson.databind.annotation.JsonDeserialize
 
 @RestController
 @RequestMapping("/v2")
-class UpdateCourseExercise(private val adocService: AdocService) {
+class UpdateCourseExercise(private val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
@@ -38,8 +38,8 @@ class UpdateCourseExercise(private val adocService: AdocService) {
     data class ReplaceReq(
         @param:JsonProperty("title_alias") @field:Size(max = 100)
         val titleAlias: String?,
-        @param:JsonProperty("instructions_adoc") @field:Size(max = 300000)
-        val instructionsAdoc: String?,
+        @param:JsonProperty("instructions_md") @field:Size(max = 300000)
+        val instructionsMd: String?,
         @param:JsonProperty("threshold") @field:Min(0) @field:Max(100)
         val threshold: Int?,
         @param:JsonProperty("soft_deadline")
@@ -64,7 +64,7 @@ class UpdateCourseExercise(private val adocService: AdocService) {
 
     enum class DeleteFieldReq {
         TITLE_ALIAS,
-        INSTRUCTIONS_ADOC,
+        INSTRUCTIONS_MD,
         SOFT_DEADLINE,
         HARD_DEADLINE,
         MOODLE_EXERCISE_ID,
@@ -100,9 +100,9 @@ class UpdateCourseExercise(private val adocService: AdocService) {
 
                 if (replace?.titleAlias != null)
                     it[titleAlias] = replace.titleAlias
-                if (replace?.instructionsAdoc != null) {
-                    it[instructionsAdoc] = replace.instructionsAdoc
-                    it[instructionsHtml] = adocService.adocToHtml(replace.instructionsAdoc)
+                if (replace?.instructionsMd != null) {
+                    it[instructionsMd] = replace.instructionsMd
+                    it[instructionsHtml] = markdownService.mdToHtml(replace.instructionsMd)
                 }
                 if (replace?.threshold != null)
                     it[gradeThreshold] = replace.threshold
@@ -129,8 +129,8 @@ class UpdateCourseExercise(private val adocService: AdocService) {
                         DeleteFieldReq.TITLE_ALIAS ->
                             it[titleAlias] = null
 
-                        DeleteFieldReq.INSTRUCTIONS_ADOC -> {
-                            it[instructionsAdoc] = null
+                        DeleteFieldReq.INSTRUCTIONS_MD -> {
+                            it[instructionsMd] = null
                             it[instructionsHtml] = null
                         }
 

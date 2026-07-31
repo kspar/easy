@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getImplicitGroupFromAccount
@@ -32,14 +32,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
-class CreateExercise(private val adocService: AdocService) {
+class CreateExercise(private val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
         @param:JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-        @param:JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
-        @param:JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         @param:JsonProperty("public", required = true) val public: Boolean,
         @param:JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @param:JsonProperty("grader_type", required = true) val graderType: GraderType,
@@ -73,10 +72,9 @@ class CreateExercise(private val adocService: AdocService) {
             }
         }
 
-        return when (dto.textAdoc) {
-            null -> Resp(insertExercise(caller, dto, dto.textHtml, parentDirId).toString())
-            else -> Resp(insertExercise(caller, dto, adocService.adocToHtml(dto.textAdoc), parentDirId).toString())
-        }
+        val html = dto.textMd?.let { markdownService.mdToHtml(it) }
+
+        return Resp(insertExercise(caller, dto, html, parentDirId).toString())
     }
 
     private fun insertExercise(caller: EasyUser, req: Req, html: String?, parentDirId: Long?): Long = transaction {
@@ -126,7 +124,7 @@ class CreateExercise(private val adocService: AdocService) {
             it[solutionFileType] = req.solutionFileType
             it[title] = req.title
             it[textHtml] = html
-            it[textAdoc] = req.textAdoc
+            it[textMd] = req.textMd
             it[autoExerciseId] = newAutoExerciseId
         }
 

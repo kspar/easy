@@ -71,7 +71,7 @@ class CachingService(val cacheManager: CacheManager) {
                     Article.owner,
                     ArticleVersion.author,
                     ArticleVersion.textHtml,
-                    ArticleVersion.textAdoc,
+                    ArticleVersion.textMd,
                     Article.public,
                     Account.id,
                     Account.givenName,
@@ -99,7 +99,7 @@ class CachingService(val cacheManager: CacheManager) {
                             it[authorAlias[Account.familyName]]
                         ),
                         it[ArticleVersion.textHtml],
-                        it[ArticleVersion.textAdoc],
+                        it[ArticleVersion.textMd],
                         if (isAdmin) it[Article.public] else null,
                         if (isAdmin) selectArticleAliases(it[Article.id].value) else null
                     )

@@ -6,7 +6,7 @@ import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
@@ -32,12 +32,12 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/v2")
-class UpdateArticleController(private val adocService: AdocService, private val cachingService: CachingService) {
+class UpdateArticleController(private val markdownService: MarkdownService, private val cachingService: CachingService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-        @param:JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         @param:JsonProperty("public", required = true) val public: Boolean
     )
 
@@ -51,7 +51,7 @@ class UpdateArticleController(private val adocService: AdocService, private val 
 
         assertArticleExists(articleId)
 
-        val html = req.textAdoc?.let { adocService.adocToHtml(it) }
+        val html = req.textMd?.let { markdownService.mdToHtml(it) }
         updateArticle(caller.id, articleId, req, html)
         cachingService.invalidate(articleCache)
     }
@@ -74,7 +74,7 @@ class UpdateArticleController(private val adocService: AdocService, private val 
 
         ArticleVersion.insert {
             it[title] = req.title
-            it[textAdoc] = req.textAdoc
+            it[textMd] = req.textMd
             it[textHtml] = html
             it[previous] = EntityID(lastVersionId, ArticleVersion)
             it[validFrom] = time

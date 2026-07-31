@@ -3,7 +3,7 @@ package core.ems.service.exercise
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.IDX_STEP
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
@@ -33,7 +33,7 @@ import tools.jackson.databind.annotation.JsonDeserialize
 
 @RestController
 @RequestMapping("/v2")
-class AddExerciseToCourseCont(private val adocService: AdocService) {
+class AddExerciseToCourseCont(private val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
@@ -51,8 +51,8 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
         val hardDeadline: DateTime?,
         @param:JsonProperty("assessments_student_visible")
         val assStudentVisible: Boolean,
-        @param:JsonProperty("instructions_adoc") @field:Size(max = 300000)
-        val instructionsAdoc: String?,
+        @param:JsonProperty("instructions_md") @field:Size(max = 300000)
+        val instructionsMd: String?,
         @param:JsonProperty("title_alias") @field:Size(max = 100)
         val titleAlias: String?
     )
@@ -80,10 +80,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
             throw InvalidRequestException("Course $courseId does not exist")
         }
 
-        val id = when (body.instructionsAdoc) {
-            null -> insertCourseExercise(courseId, body, null)
-            else -> insertCourseExercise(courseId, body, adocService.adocToHtml(body.instructionsAdoc))
-        }
+        val id = insertCourseExercise(courseId, body, body.instructionsMd?.let { markdownService.mdToHtml(it) })
         return Resp(id.toString())
     }
 
@@ -120,7 +117,7 @@ class AddExerciseToCourseCont(private val adocService: AdocService) {
                 it[studentVisibleFrom] = studentVisibleFromTime
                 it[assessmentsStudentVisible] = body.assStudentVisible
                 it[instructionsHtml] = html
-                it[instructionsAdoc] = body.instructionsAdoc
+                it[instructionsMd] = body.instructionsMd
                 it[titleAlias] = body.titleAlias
             }
 

@@ -323,18 +323,10 @@ building on the server.
 Two systemd units: `easy-core.service` (`java -jar`, `Restart=on-failure`, config path via
 `--spring.config.location`) and `easy-executor.service` (gunicorn as the non-root user from §6).
 
-One wrinkle the deploy script has to handle: **the bootJar does not currently start** with a plain
-`java -jar` — JRuby cannot find the asciidoctor gems inside Boot's nested jar layout, so
-`AdocService` fails to instantiate and the context never refreshes. This is not new and not
-staging-specific (reproduced on master), and is filed as EZ-1729. Step 3 above therefore extracts
-before launching:
-
-```sh
-java -Djarmode=tools -jar core-1.jar extract --destination .
-```
-
-which puts dependencies on a real classpath. Verified to start. If EZ-1729 is fixed by removing
-asciidoctor outright, this step can go away — and the artifact loses ~88 MB of JRuby.
+A plain `java -jar` is all this needs. Worth knowing that it wasn't always: until EZ-1729 the
+bootJar could not start at all, because JRuby could not find the asciidoctor gems inside Boot's
+nested jar layout, and the deploy script would have needed a `-Djarmode=tools ... extract` step to
+work around it. Removing asciidoctor fixed that and took the artifact from ~84 MB to ~50 MB.
 
 Migrations are forward-only through the `SpringLiquibase` bean in `core/conf/DatabaseConf.kt`, which
 applies pending changesets and never drops. A rollback of the jar does **not** roll back the schema —

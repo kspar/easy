@@ -97,4 +97,29 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="310726-1" author="kspar">
+        <comment>
+            Markdown source columns for exercise text, course exercise instructions and article
+            text, finishing the migration that already covers feedback (EZ-1729). The matching
+            *_adoc columns are deliberately left in place: their content is the only copy of the
+            source for anything authored before this, and the rendered *_html is what gets served.
+            Dropping them needs a backfill decision first.
+        </comment>
+        <addColumn tableName="exercise_version">
+            <column name="text_md" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="course_exercise">
+            <column name="instructions_md" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="article_version">
+            <column name="text_md" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

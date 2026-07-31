@@ -5,7 +5,7 @@ import core.conf.security.EasyUser
 import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
 import jakarta.validation.Valid
@@ -29,12 +29,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/v2")
-class CreateArticleController(private val adocService: AdocService, private val cachingService: CachingService) {
+class CreateArticleController(private val markdownService: MarkdownService, private val cachingService: CachingService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-        @param:JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         @param:JsonProperty("public", required = true) val public: Boolean
     )
 
@@ -45,7 +45,7 @@ class CreateArticleController(private val adocService: AdocService, private val 
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
         log.info { "${caller.id} is creating article '${dto.title}'" }
-        val html = dto.textAdoc?.let { adocService.adocToHtml(it) }
+        val html = dto.textMd?.let { markdownService.mdToHtml(it) }
 
         val articleId = insertArticle(caller.id, dto, html).toString()
         cachingService.invalidate(articleCache)
@@ -67,7 +67,7 @@ class CreateArticleController(private val adocService: AdocService, private val 
             it[validFrom] = time
             it[title] = req.title
             it[textHtml] = html
-            it[textAdoc] = req.textAdoc
+            it[textMd] = req.textMd
         }
 
         if (html != null) {

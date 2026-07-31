@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
-import core.ems.service.AdocService
+import core.ems.service.MarkdownService
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
@@ -30,13 +30,12 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/v2")
-class UpdateExercise(private val adocService: AdocService) {
+class UpdateExercise(private val markdownService: MarkdownService) {
     private val log = KotlinLogging.logger {}
 
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
-        @param:JsonProperty("text_html", required = false) @field:Size(max = 300000) val textHtml: String?,
-        @param:JsonProperty("text_adoc", required = false) @field:Size(max = 300000) val textAdoc: String?,
+        @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         @param:JsonProperty("grader_type", required = true) val graderType: GraderType,
         @param:JsonProperty("solution_file_name", required = true) val solutionFileName: String,
         @param:JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
@@ -62,7 +61,7 @@ class UpdateExercise(private val adocService: AdocService) {
 
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }
 
-        val html = req.textAdoc?.let { adocService.adocToHtml(it) } ?: req.textHtml
+        val html = req.textMd?.let { markdownService.mdToHtml(it) }
 
         val tslContainerName = "tiivad:tsl-compose"
         val tslSpecFilename = "tsl.json"
@@ -121,7 +120,7 @@ class UpdateExercise(private val adocService: AdocService) {
             it[solutionFileType] = req.solutionFileType
             it[title] = req.title
             it[textHtml] = html
-            it[textAdoc] = req.textAdoc
+            it[textMd] = req.textMd
             it[autoExerciseId] = newAutoExerciseId
         }
 
