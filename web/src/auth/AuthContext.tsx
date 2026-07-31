@@ -2,9 +2,12 @@ import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
 import { AuthContext, type Role, type AuthState } from './auth-context.ts'
-// Type-only re-export: erased at runtime, so it does not count as a non-component export.
-export type { Role } from './auth-context.ts'
 import { apiFetch } from '../api/client.ts'
+
+// Type-only re-export, so the many existing `import { type Role } from './AuthContext.tsx'`
+// call sites keep working. Erased at runtime, so it doesn't count as a non-component export
+// and Fast Refresh stays happy.
+export type { Role } from './auth-context.ts'
 
 const ROLE_STORAGE_KEY = 'activeRole'
 const ALL_ROLES: Role[] = ['admin', 'teacher', 'student']
