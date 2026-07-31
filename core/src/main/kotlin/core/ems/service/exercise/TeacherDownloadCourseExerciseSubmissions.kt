@@ -8,16 +8,16 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.singleOrInvalidRequest
 import core.util.Zip
 import core.util.writeZipFile
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.servlet.http.HttpServletResponse
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotEmpty
 
 
 @RestController
@@ -25,9 +25,9 @@ import javax.validation.constraints.NotEmpty
 class TeacherDownloadCourseExerciseSubmissionsController {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("submissions") @field:NotEmpty val submissions: Set<SubmissionReq>)
+    data class Req(@param:JsonProperty("submissions") @field:NotEmpty val submissions: Set<SubmissionReq>)
 
-    data class SubmissionReq(@JsonProperty("id") @field:NotBlank val id: String)
+    data class SubmissionReq(@param:JsonProperty("id") @field:NotBlank val id: String)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/export/courses/{courseId}/exercises/{courseExerciseId}/submissions")

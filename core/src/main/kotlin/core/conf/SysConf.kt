@@ -1,9 +1,10 @@
 package core.conf
 
 import core.db.SystemConfiguration
-import core.db.insertOrUpdate
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.upsert
 
 object SysConf {
 
@@ -14,8 +15,9 @@ object SysConf {
         }.firstOrNull()
     }
 
+
     fun putProp(key: String, value: String) = transaction {
-        SystemConfiguration.insertOrUpdate(SystemConfiguration.id, listOf(SystemConfiguration.id)) {
+        SystemConfiguration.upsert(SystemConfiguration.id) {
             it[SystemConfiguration.id] = key
             it[SystemConfiguration.value] = value
         }

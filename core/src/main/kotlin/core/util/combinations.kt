@@ -11,7 +11,7 @@ fun <T : Collection<U>, U> T.combinations(combinationSize: Int): Set<Set<U>> {
 
 fun <T : Collection<U>, U> T.forEachCombination(combinationSize: Int, callback: (Set<U>) -> Unit) {
     when {
-        combinationSize < 2 -> IllegalArgumentException("combinationSize must be at least 2, actual value: $combinationSize")
+        combinationSize < 2 -> throw IllegalArgumentException("combinationSize must be at least 2, actual value: $combinationSize")
         this.size <= combinationSize -> callback(this.toSet())
     }
 

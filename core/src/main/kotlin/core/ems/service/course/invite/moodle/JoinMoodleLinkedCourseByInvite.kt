@@ -4,13 +4,15 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.singleOrInvalidRequest
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.upperCase
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PathVariable
@@ -24,9 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 class JoinMoodleLinkedCourseByInvite {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(
-        @JsonProperty("course_id") val courseId: String
-    )
+    data class Resp(@get:JsonProperty("course_id") val courseId: String)
 
     @Secured("ROLE_STUDENT")
     @PostMapping("/courses/moodle/join/{inviteId}")
@@ -40,7 +40,7 @@ class JoinMoodleLinkedCourseByInvite {
         val (courseId, moodleUsername) = (StudentMoodlePendingAccess innerJoin Course)
             .select(Course.id, StudentMoodlePendingAccess.moodleUsername)
             .where {
-                StudentMoodlePendingAccess.inviteId eq inviteId
+                StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
             }.map { it[Course.id] to it[StudentMoodlePendingAccess.moodleUsername] }
             .singleOrInvalidRequest(false)
 
@@ -63,7 +63,10 @@ class JoinMoodleLinkedCourseByInvite {
                 }
             }
 
-        StudentMoodlePendingAccess.deleteWhere { StudentMoodlePendingAccess.inviteId eq inviteId }
+        // Must match the lookup above, or the pending access outlives the join
+        StudentMoodlePendingAccess.deleteWhere {
+            StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
+        }
 
         log.debug { "$studentId joined Moodle linked course $courseId by invite $inviteId" }
         Resp(courseId.toString())

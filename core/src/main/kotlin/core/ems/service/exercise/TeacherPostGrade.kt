@@ -8,20 +8,22 @@ import core.db.TeacherActivity
 import core.ems.service.*
 import core.ems.service.moodle.MoodleGradesSyncService
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotNull
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
-import javax.validation.constraints.NotNull
 
 
 @RestController
@@ -33,8 +35,8 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
     private lateinit var mergeWindowInSeconds: String
 
     data class Req(
-        @JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
-        @JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
+        @param:JsonProperty("grade", required = true) @field:Min(0) @field:Max(100) val grade: Int,
+        @param:JsonProperty("notify_student", required = true) @field:NotNull val notifyStudent: Boolean
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

@@ -1,22 +1,26 @@
 package core.ems.service.course
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.Course
 import core.db.StudentCourseAccess
 import core.db.StudentCourseGroup
 import core.db.TeacherCourseAccess
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.alias
-import org.jetbrains.exposed.sql.count
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.alias
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.count
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import tools.jackson.databind.annotation.JsonSerialize
 
 
 @RestController
@@ -24,18 +28,21 @@ import org.springframework.web.bind.annotation.RestController
 class ReadTeacherCourses {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(
-        @JsonProperty("courses") val courses: List<CourseResp>
-    )
+    data class Resp(@get:JsonProperty("courses") val courses: List<CourseResp>)
 
     data class CourseResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("alias") val alias: String?,
-        @JsonProperty("archived") val archived: Boolean,
-        @JsonProperty("student_count") val studentCount: Long,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("last_accessed") val lastAccessed: DateTime
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("alias") val alias: String?,
+        @get:JsonProperty("course_code") val courseCode: String?,
+        @get:JsonProperty("archived") val archived: Boolean,
+        @get:JsonProperty("student_count") val studentCount: Long,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("last_accessed") val lastAccessed: DateTime,
+        @get:JsonProperty("moodle_short_name") val moodleShortName: String?,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("last_submission_at") val lastSubmissionAt: DateTime?,
+        @get:JsonProperty("color") val color: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -59,16 +66,39 @@ class ReadTeacherCourses {
 
         val studentCount = StudentCourseAccess.student.count().alias("student_count")
         (Course leftJoin StudentCourseAccess)
-            .select(Course.id, Course.title, Course.alias, Course.archived, studentCount)
-            .groupBy(Course.id, Course.title, Course.alias, Course.archived)
+            .select(
+                Course.id,
+                Course.title,
+                Course.alias,
+                Course.courseCode,
+                Course.archived,
+                Course.moodleShortName,
+                Course.lastSubmissionAt,
+                Course.color,
+                studentCount
+            )
+            .groupBy(
+                Course.id,
+                Course.title,
+                Course.alias,
+                Course.courseCode,
+                Course.archived,
+                Course.moodleShortName,
+                Course.lastSubmissionAt,
+                Course.color
+            )
             .map {
                 CourseResp(
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.courseCode],
                     it[Course.archived],
                     it[studentCount],
-                    currentTime
+                    currentTime,
+                    it[Course.moodleShortName],
+                    it[Course.lastSubmissionAt],
+                    it[Course.color],
                 )
             }
     }
@@ -76,7 +106,17 @@ class ReadTeacherCourses {
     private fun selectCoursesForTeacher(teacherId: String): List<CourseResp> = transaction {
         // get teacher course accesses with groups
         (Course innerJoin TeacherCourseAccess)
-            .select(Course.id, Course.title, Course.alias, Course.archived, TeacherCourseAccess.lastAccessed)
+            .select(
+                Course.id,
+                Course.title,
+                Course.alias,
+                Course.courseCode,
+                Course.archived,
+                Course.moodleShortName,
+                Course.lastSubmissionAt,
+                Course.color,
+                TeacherCourseAccess.lastAccessed
+            )
             .where { TeacherCourseAccess.teacher eq teacherId }
             .map {
                 // Get student count for each course
@@ -84,16 +124,25 @@ class ReadTeacherCourses {
                     it[Course.id].value.toString(),
                     it[Course.title],
                     it[Course.alias],
+                    it[Course.courseCode],
                     it[Course.archived],
                     selectStudentCountForCourse(it[Course.id].value),
-                    it[TeacherCourseAccess.lastAccessed]
+                    it[TeacherCourseAccess.lastAccessed],
+                    it[Course.moodleShortName],
+                    it[Course.lastSubmissionAt],
+                    it[Course.color],
                 )
             }
     }
 
     private fun selectStudentCountForCourse(courseId: Long): Long =
         // Select distinct students, ignoring their groups
-        (StudentCourseAccess leftJoin StudentCourseGroup)
+        StudentCourseAccess.join(
+            StudentCourseGroup, JoinType.LEFT,
+            additionalConstraint = {
+                (StudentCourseAccess.student eq StudentCourseGroup.student) and
+                        (StudentCourseAccess.course eq StudentCourseGroup.course)
+            })
             .select(StudentCourseAccess.student)
             .where { StudentCourseAccess.course eq courseId }
             .withDistinct()

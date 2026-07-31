@@ -52,15 +52,15 @@ easy:
         ms: "1000"
 
     moodle-sync:
+      wstoken: "<token>"
+      moodlewsrestformat: "json"
       users:
         url: "<url>"
         cron: "0 5 4 * * *"
+        wsfunction: "local_ut_custom_get_course_groups_users"
       grades:
         url: "<url>"
-
-    pending-access:
-      clean:
-        cron: "0 5 3 * * *"
+        wsfunction: "local_ut_custom_update_manual_grades"
 
     exercise-index-normalisation:
       cron: "0 5 3 * * *"

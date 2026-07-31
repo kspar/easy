@@ -1,11 +1,13 @@
 package core.db
 
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IdTable
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.jodatime.datetime
+
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.IdTable
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.jodatime.datetime
+import org.jetbrains.exposed.v1.json.jsonb
 import org.joda.time.DateTime
 
 
@@ -61,6 +63,9 @@ object Course : LongIdTable("course") {
     val moodleSyncGrades = bool("moodle_sync_grades")
     val moodleSyncGradesInProgress = bool("moodle_sync_grades_in_progress")
     val archived = bool("archived")
+    val lastSubmissionAt = datetime("last_submission_at").nullable()
+    val color = text("color")
+    val courseCode = text("course_code").nullable()
 }
 
 object CourseGroup : LongIdTable("course_group") {
@@ -136,8 +141,8 @@ object StudentCourseAccess : Table("student_course_access") {
 }
 
 object StudentCourseGroup : Table("student_course_group_access") {
-    val student = reference("student_id", StudentCourseAccess.student)
-    val course = reference("course_id", StudentCourseAccess.course)
+    val student = reference("student_id", Account)
+    val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
     override val primaryKey = PrimaryKey(student, course, courseGroup)
 }
@@ -153,23 +158,9 @@ object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
 
 object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_group_access") {
     val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername)
-    val course = reference("course_id", StudentMoodlePendingAccess.course)
+    val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
     override val primaryKey = PrimaryKey(moodleUsername, course, courseGroup)
-}
-
-object StudentPendingAccess : Table("student_pending_access") {
-    val course = reference("course_id", Course)
-    val email = text("email")
-    val validFrom = datetime("valid_from")
-    override val primaryKey = PrimaryKey(course, email)
-}
-
-object StudentPendingCourseGroup : Table("student_pending_course_group_access") {
-    val email = reference("email", StudentPendingAccess.email)
-    val course = reference("course_id", StudentPendingAccess.course)
-    val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(email, course, courseGroup)
 }
 
 object Submission : LongIdTable("submission") {
@@ -209,8 +200,23 @@ object TeacherActivity : LongIdTable("teacher_activity") {
     val mergeWindowStart = datetime("merge_window_start")
     val editedAt = datetime("edited_at").nullable()
     val grade = integer("grade").nullable()
+    val feedbackMd = text("feedback_md").nullable()
     val feedbackHtml = text("feedback_html").nullable()
-    val feedbackAdoc = text("feedback_adoc").nullable()
+}
+
+object TeacherInlineComment : LongIdTable("teacher_inline_comment") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val submission = reference("submission_id", Submission)
+    val teacher = reference("teacher_id", Account)
+    val createdAt = datetime("created_at")
+    val editedAt = datetime("edited_at").nullable()
+    val lineStart = integer("line_start")
+    val lineEnd = integer("line_end")
+    val code = text("code")
+    val textMd = text("text_md")
+    val textHtml = text("text_html")
+    val type = text("type")
+    val suggestedCode = text("suggested_code").nullable()
 }
 
 object AutogradeActivity : LongIdTable("autograde_activity") {
@@ -290,7 +296,7 @@ object FeedbackSnippet : LongIdTable("feedback_snippet") {
     val teacher = reference("teacher_id", Account)
     val createdAt = datetime("created_at")
     val snippetHtml = text("snippet_html")
-    val snippetAdoc = text("snippet_adoc")
+    val snippetMd = text("snippet_md")
 }
 
 object SystemConfiguration : IdTable<String>("system_configuration") {

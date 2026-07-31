@@ -6,36 +6,36 @@ import core.db.StatsSubmission
 import core.db.TeacherActivity
 import core.ems.service.*
 import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
 
 
 @RestController
 @RequestMapping("/v2")
-class TeacherPostFeedbackController(val adocService: AdocService, val mailService: SendMailService) {
+class TeacherPostFeedbackController(val markdownService: MarkdownService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     @Value("\${easy.core.activity.merge-window.s}")
     private lateinit var mergeWindowInSeconds: String
 
     data class Req(
-        @JsonProperty("feedback_adoc", required = true)
+        @param:JsonProperty("feedback_md", required = false)
         @field:Size(max = 300000)
-        @field:NotBlank
-        val feedbackAdoc: String,
-        @JsonProperty("notify_student", required = true)
+        val feedbackMd: String? = null,
+        @param:JsonProperty("notify_student", required = true)
         @field:NotNull
         val notifyStudent: Boolean
     )
@@ -80,11 +80,13 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
             val time = DateTime.now()
 
+            val feedbackHtml = assessment.feedbackMd?.let { markdownService.mdToHtml(it) }
+
             if (previousId != null) {
                 TeacherActivity.update({ TeacherActivity.id eq previousId }) {
                     it[mergeWindowStart] = time
-                    it[feedbackAdoc] = assessment.feedbackAdoc
-                    it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
+                    it[feedbackMd] = assessment.feedbackMd
+                    it[TeacherActivity.feedbackHtml] = feedbackHtml
                 }
             } else {
                 TeacherActivity.insert {
@@ -93,8 +95,8 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
                     it[submission] = submissionId
                     it[teacher] = teacherId
                     it[mergeWindowStart] = time
-                    it[feedbackAdoc] = assessment.feedbackAdoc
-                    it[feedbackHtml] = adocService.adocToHtml(assessment.feedbackAdoc)
+                    it[feedbackMd] = assessment.feedbackMd
+                    it[TeacherActivity.feedbackHtml] = feedbackHtml
                 }
             }
 
@@ -111,13 +113,13 @@ class TeacherPostFeedbackController(val adocService: AdocService, val mailServic
                 .select(
                     TeacherActivity.id,
                     TeacherActivity.mergeWindowStart,
-                    TeacherActivity.feedbackAdoc,
+                    TeacherActivity.feedbackMd,
                 )
                 .where { TeacherActivity.submission eq submissionId and (TeacherActivity.teacher eq teacherId) }
                 .orderBy(TeacherActivity.mergeWindowStart, SortOrder.DESC)
                 .firstNotNullOfOrNull {
                     val timeIsInWindow = !it[TeacherActivity.mergeWindowStart].hasSecondsPassed(mergeWindow)
-                    val noFeedback = it[TeacherActivity.feedbackAdoc] == null
+                    val noFeedback = it[TeacherActivity.feedbackMd] == null
                     if (timeIsInWindow && noFeedback) it[TeacherActivity.id].value else null
                 }
         }

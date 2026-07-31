@@ -9,15 +9,15 @@ import core.ems.service.access_control.canTeacherAccessCourse
 import core.ems.service.access_control.teacherOnCourse
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -26,20 +26,20 @@ class AddTeachersToCourse {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
+        @param:JsonProperty("teachers") @field:Valid val teachers: List<TeacherReq>
     )
 
     data class TeacherReq(
-        @JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String,
-        @JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList()
+        @param:JsonProperty("email") @field:NotBlank @field:Size(max = 100) val email: String,
+        @param:JsonProperty("groups") @field:Valid val groups: List<GroupReq> = emptyList()
     )
 
     data class GroupReq(
-        @JsonProperty("id") @field:NotBlank @field:Size(max = 100) val groupId: String
+        @param:JsonProperty("id") @field:NotBlank @field:Size(max = 100) val groupId: String
     )
 
     data class Resp(
-        @JsonProperty("accesses_added") val accessesAdded: Int
+        @get:JsonProperty("accesses_added") val accessesAdded: Int
     )
 
     private data class TeacherNewAccess(val id: String, val email: String, val groups: Set<Long>)

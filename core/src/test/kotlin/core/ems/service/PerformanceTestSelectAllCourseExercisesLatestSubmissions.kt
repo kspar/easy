@@ -3,21 +3,22 @@ package core.ems.service
 import core.EasyCoreApp
 import core.conf.DatabaseInit
 import core.conf.dropAll
+import core.conf.dropAndUpdateSchema
 import core.db.*
+import io.github.oshai.kotlinlogging.KotlinLogging
 import liquibase.database.jvm.JdbcConnection
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Duration
 import java.util.*
 import javax.sql.DataSource
@@ -40,7 +41,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
 
 
     // Disable DatabaseInit and use DatabaseInitTest
-    @MockBean
+    @MockitoBean
     private val databaseInit: DatabaseInit? = null
 
     @Test
@@ -69,6 +70,9 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
 
     @BeforeAll
     fun populate() {
+        // Recreate schema as another test class sharing the same Spring context may have dropped it in its teardown
+        dropAndUpdateSchema(changelogFile, JdbcConnection(dataSource.connection))
+
         val ids = (1..numberOfStudents).map { it.toString() }
         val time = DateTime.now()
 
@@ -83,6 +87,7 @@ class PerformanceTestSelectAllCourseExercisesLatestSubmissions(@Autowired privat
                 it[moodleSyncGrades] = false
                 it[moodleSyncStudentsInProgress] = false
                 it[moodleSyncGradesInProgress] = false
+                it[color] = "#137EF9"
             }
 
             Account.batchInsert(ids) {

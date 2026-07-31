@@ -2,17 +2,19 @@ package core.conf.security
 
 import com.auth0.jwt.JWT
 import core.ems.service.getOptionalHeader
-import mu.KotlinLogging
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository
+import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.web.filter.OncePerRequestFilter
-import javax.servlet.FilterChain
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 private val log = KotlinLogging.logger {}
 
 
-class PreAuthHeaderFilter : OncePerRequestFilter() {
+class PreAuthHeaderFilter(private val securityContextRepository: SecurityContextRepository = RequestAttributeSecurityContextRepository()) : OncePerRequestFilter() {
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -57,15 +59,17 @@ class PreAuthHeaderFilter : OncePerRequestFilter() {
                 oldId
             }
 
-            SecurityContextHolder.getContext().authentication = EasyUser(
+            val context = SecurityContextHolder.createEmptyContext()
+            context.authentication = EasyUser(
                 oldId, id, newEmail, newGivenName, newFamilyName, newRoles
             )
+            SecurityContextHolder.setContext(context)
+            securityContextRepository.saveContext(context, request, response)
         }
 
         filterChain.doFilter(request, response)
     }
 }
-
 fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
     mapRoleStringsToRoles(rolesHeader.split(","))
 

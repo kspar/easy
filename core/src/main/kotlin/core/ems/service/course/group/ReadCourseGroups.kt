@@ -6,9 +6,10 @@ import core.db.CourseGroup
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,10 +22,10 @@ import org.springframework.web.bind.annotation.RestController
 class ReadCourseGroupsController {
     private val log = KotlinLogging.logger {}
 
-    data class Resp(@JsonProperty("groups") val groups: List<GroupResp>)
+    data class Resp(@get:JsonProperty("groups") val groups: List<GroupResp>)
 
     data class GroupResp(
-        @JsonProperty("id") val id: String, @JsonProperty("name") val name: String
+        @get:JsonProperty("id") val id: String, @get:JsonProperty("name") val name: String
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")

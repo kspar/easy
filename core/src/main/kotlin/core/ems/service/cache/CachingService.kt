@@ -5,12 +5,11 @@ import core.ems.service.article.ReadArticleDetailsController
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectArticleAliases
 import core.ems.service.singleOrInvalidRequest
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.alias
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.innerJoin
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable

@@ -1,7 +1,6 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.StudentExerciseStatus
@@ -12,16 +11,19 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.toGradeRespOrNull
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import tools.jackson.databind.annotation.JsonSerialize
 
 
 @RestController
@@ -30,14 +32,14 @@ class ReadAllSubmissionsByStudent {
     private val log = KotlinLogging.logger {}
 
     data class SubmissionResp(
-        @JsonProperty("id") val submissionId: String,
-        @JsonProperty("submission_number") val submissionNumber: Int,
-        @JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("created_at") val createdAt: DateTime,
-        @JsonProperty("status") val status: StudentExerciseStatus,
-        @JsonProperty("grade") val grade: GradeResp?
+        @get:JsonProperty("id") val submissionId: String,
+        @get:JsonProperty("submission_number") val submissionNumber: Int,
+        @get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("created_at") val createdAt: DateTime,
+        @get:JsonProperty("status") val status: StudentExerciseStatus,
+        @get:JsonProperty("grade") val grade: GradeResp?
     )
 
-    data class Resp(@JsonProperty("submissions") val submissions: List<SubmissionResp>)
+    data class Resp(@get:JsonProperty("submissions") val submissions: List<SubmissionResp>)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @GetMapping("/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId}")

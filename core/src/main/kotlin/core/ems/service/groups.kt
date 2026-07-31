@@ -4,10 +4,12 @@ import core.conf.security.EasyUser
 import core.db.Account
 import core.db.AccountGroup
 import core.db.Group
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 
 
@@ -39,7 +41,12 @@ fun getImplicitGroupFromAccount(accountId: String): Long = transaction {
 }
 
 data class AccountFromImplicitGroup(
-    val id: String, val givenName: String, val familyName: String, val email: String, val createdAt: DateTime, val lastSeen: DateTime,
+    val id: String,
+    val givenName: String,
+    val familyName: String,
+    val email: String,
+    val createdAt: DateTime,
+    val lastSeen: DateTime,
 )
 
 fun getAccountFromImplicitGroup(implicitGroupId: Long): AccountFromImplicitGroup = transaction {

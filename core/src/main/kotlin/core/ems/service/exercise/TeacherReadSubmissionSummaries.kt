@@ -7,7 +7,7 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectAllCourseExercisesLatestSubmissions
 import core.ems.service.singleOrInvalidRequest
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 

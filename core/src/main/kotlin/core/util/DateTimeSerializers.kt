@@ -1,27 +1,28 @@
 package core.util
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializerProvider
+
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.ISODateTimeFormat
+import tools.jackson.core.JsonGenerator
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.SerializationContext
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.ValueSerializer
 
 
 private val ENCODE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
 private val DECODE_FORMATTER = ISODateTimeFormat.dateTimeParser().withZoneUTC()
 
-class DateTimeSerializer : JsonSerializer<DateTime>() {
-    override fun serialize(value: DateTime, gen: JsonGenerator, serializerProvider: SerializerProvider) {
+class DateTimeSerializer : ValueSerializer<DateTime>() {
+    override fun serialize(value: DateTime, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeString(ENCODE_FORMATTER.print(value))
     }
 }
 
-class DateTimeDeserializer : JsonDeserializer<DateTime>() {
-    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext?): DateTime {
-        return DECODE_FORMATTER.parseDateTime(parser.text)
+class DateTimeDeserializer : ValueDeserializer<DateTime>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): DateTime {
+        return DECODE_FORMATTER.parseDateTime(p.getString())
     }
 }

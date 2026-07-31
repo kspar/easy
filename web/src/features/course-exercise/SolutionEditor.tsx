@@ -1,0 +1,264 @@
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
+import { Alert, Box, Button, CircularProgress, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Snackbar, Tooltip, Typography } from '@mui/material'
+import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutlined } from '@mui/icons-material'
+import { useTranslation } from 'react-i18next'
+import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
+import { EditorState } from '@codemirror/state'
+import { languageFromFilename } from './editorLanguage.ts'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { basicSetup } from 'codemirror'
+import { useTheme } from '@mui/material/styles'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useSubmitSolution,
+  useAwaitAutograde,
+} from '../../api/exercises.ts'
+import type { ExerciseDetails } from '../../api/types.ts'
+
+export interface SolutionEditorHandle {
+  setSolution: (solution: string) => void
+}
+
+export default forwardRef<SolutionEditorHandle, {
+  courseId: string
+  courseExerciseId: string
+  exercise: ExerciseDetails
+  initialSolution?: string
+  onSubmitted?: () => void
+  onAutogradeStart?: () => void
+}>(function SolutionEditor({
+  courseId,
+  courseExerciseId,
+  exercise,
+  initialSolution,
+  onSubmitted,
+  onAutogradeStart,
+}, ref) {
+  const { t } = useTranslation()
+  const theme = useTheme()
+  const queryClient = useQueryClient()
+  const editorRef = useRef<HTMLDivElement>(null)
+  const viewRef = useRef<EditorView | null>(null)
+  const prevExerciseRef = useRef(courseExerciseId)
+  const [snackMsg, setSnackMsg] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+
+  const submit = useSubmitSolution(courseId, courseExerciseId)
+  const awaitAutograde = useAwaitAutograde(courseId, courseExerciseId)
+  const isSubmitting = submit.isPending || awaitAutograde.isPending
+
+  // Initialize CodeMirror (re-creates on theme or exercise change)
+  useEffect(() => {
+    if (!editorRef.current) return
+    let cancelled = false
+
+    const exerciseChanged = prevExerciseRef.current !== courseExerciseId
+    prevExerciseRef.current = courseExerciseId
+
+    // Preserve user edits on theme change; reset on exercise change
+    const prevDoc = exerciseChanged ? undefined : viewRef.current?.state.doc.toString()
+    viewRef.current?.destroy()
+    viewRef.current = null
+
+    languageFromFilename(exercise.solution_file_name).then((lang) => {
+      if (cancelled || !editorRef.current) return
+
+      const extensions = [
+        basicSetup,
+        lang,
+        cmPlaceholder(t('submission.editorPlaceholder')),
+        EditorView.lineWrapping,
+        EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
+      ]
+      if (theme.palette.mode === 'dark') {
+        extensions.push(oneDark)
+      }
+
+      const state = EditorState.create({
+        doc: prevDoc || initialSolution || '',
+        extensions,
+      })
+
+      viewRef.current = new EditorView({
+        state,
+        parent: editorRef.current,
+      })
+    })
+
+    return () => {
+      cancelled = true
+      viewRef.current?.destroy()
+      viewRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name, initialSolution])
+
+  useImperativeHandle(ref, () => ({
+    setSolution: (solution: string) => {
+      const view = viewRef.current
+      if (view) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: solution },
+        })
+      }
+    },
+  }))
+
+  const getSolution = useCallback(() => {
+    return viewRef.current?.state.doc.toString() ?? ''
+  }, [])
+
+  const handleDownload = useCallback(() => {
+    const solution = getSolution()
+    const blob = new Blob([solution], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${courseExerciseId}_${Date.now()}_${exercise.solution_file_name}`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [getSolution, courseExerciseId, exercise.solution_file_name])
+
+  const handleUpload = useCallback(() => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      if (file.size > 300_000) {
+        setSnackMsg(t('submission.uploadErrorTooLarge'))
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(reader.result as ArrayBuffer)
+          const view = viewRef.current
+          if (view) {
+            view.dispatch({
+              changes: { from: 0, to: view.state.doc.length, insert: text },
+            })
+          }
+        } catch {
+          setSnackMsg(t('submission.uploadErrorNotText'))
+        }
+      }
+      reader.readAsArrayBuffer(file)
+    }
+    input.click()
+  }, [t])
+
+  const refetchAfterSubmit = useCallback(() => {
+    queryClient.refetchQueries({
+      queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'submissions'],
+    })
+    queryClient.refetchQueries({
+      queryKey: ['student', 'courses', courseId, 'exercises'],
+    })
+  }, [queryClient, courseId, courseExerciseId])
+
+  const handleSubmit = useCallback(() => {
+    const solution = getSolution()
+    if (!solution.trim()) return
+
+    submit.mutate(solution, {
+      onSuccess: () => {
+        setSnackMsg(t('submission.submitSuccess'))
+        refetchAfterSubmit()
+        if (exercise.grader_type === 'AUTO') {
+          onAutogradeStart?.()
+          awaitAutograde.mutate()
+        } else {
+          onSubmitted?.()
+        }
+      },
+    })
+  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit])
+
+  // When autograde completes: refetch submissions (for results data) but NOT the
+  // exercises list — the parent delays that until the reveal animation finishes.
+  useEffect(() => {
+    if (awaitAutograde.isSuccess) {
+      queryClient.refetchQueries({
+        queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'submissions'],
+      })
+      onSubmitted?.()
+    }
+  }, [awaitAutograde.isSuccess, onSubmitted, queryClient, courseId, courseExerciseId])
+
+  return (
+    <Box>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', mb: 2 }}>
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          px: 1.5,
+          py: 0.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          bgcolor: theme.palette.mode === 'dark' ? '#282c34' : '#f5f5f5',
+        }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+            {exercise.solution_file_name}
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Tooltip title={t('general.moreOptions')}>
+            <IconButton size="small" onClick={e => setMenuAnchor(e.currentTarget)}>
+              <MoreVertOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+            {exercise.is_open && (
+              <MenuItem onClick={() => { setMenuAnchor(null); handleUpload() }}>
+                <ListItemIcon><FileUploadOutlined fontSize="small" /></ListItemIcon>
+                <ListItemText>{t('submission.uploadFile')}</ListItemText>
+              </MenuItem>
+            )}
+            <MenuItem onClick={() => { setMenuAnchor(null); handleDownload() }}>
+              <ListItemIcon><FileDownloadOutlined fontSize="small" /></ListItemIcon>
+              <ListItemText>{t('submission.saveAsFile')}</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Box>
+        <Box
+          ref={editorRef}
+          sx={{
+            '& .cm-editor': { minHeight: 200, cursor: 'text' },
+            '& .cm-focused': { outline: 'none' },
+            '& .cm-scroller': { cursor: 'text' },
+          }}
+        />
+      </Box>
+
+      {exercise.is_open && (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button
+            variant="contained"
+            startIcon={
+              isSubmitting ? <CircularProgress size={18} /> : <SendOutlined />
+            }
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {exercise.grader_type === 'AUTO'
+              ? t('submission.submitAndCheck')
+              : t('submission.submit')}
+          </Button>
+        </Box>
+      )}
+
+      {submit.isError && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {t('general.somethingWentWrong')}
+        </Alert>
+      )}
+
+      <Snackbar
+        open={snackMsg !== null}
+        autoHideDuration={3000}
+        onClose={() => setSnackMsg(null)}
+        message={snackMsg}
+      />
+    </Box>
+  )
+})

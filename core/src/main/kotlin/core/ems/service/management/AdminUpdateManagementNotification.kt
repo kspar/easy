@@ -5,15 +5,16 @@ import core.conf.security.EasyUser
 import core.db.ManagementNotification
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -22,7 +23,7 @@ class AdminUpdateManagementNotificationsController {
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("message", required = true)
+        @param:JsonProperty("message", required = true)
         @field:NotBlank @field:Size(max = 1000) val message: String
     )
 
@@ -40,7 +41,7 @@ class AdminUpdateManagementNotificationsController {
         updateMessage(dto, notificationId)
     }
 
-    private fun updateMessage(dto: AdminUpdateManagementNotificationsController.Req, notificationId: Long) {
+    private fun updateMessage(dto: Req, notificationId: Long) {
         transaction {
 
             val messageExists =

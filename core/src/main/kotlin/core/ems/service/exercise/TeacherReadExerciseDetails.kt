@@ -1,7 +1,7 @@
 package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.aas.selectAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
@@ -10,9 +10,12 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.util.DateTimeSerializer
 import core.util.notNullAndInPast
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,62 +30,62 @@ class TeacherReadExDetailsCont {
     private val log = KotlinLogging.logger {}
 
     data class Resp(
-        @JsonProperty("exercise_id") val exerciseId: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("title_alias") val titleAlias: String?,
-        @JsonProperty("instructions_html") val instructionsHtml: String?,
-        @JsonProperty("instructions_adoc") val instructionsAdoc: String?,
-        @JsonProperty("text_html") val textHtml: String?,
-        @JsonProperty("text_adoc") val textAdoc: String?,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("soft_deadline") val softDeadline: DateTime?,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("hard_deadline") val hardDeadline: DateTime?,
-        @JsonProperty("grader_type") val grader: GraderType,
-        @JsonProperty("solution_file_name") val solutionFileName: String,
-        @JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
-        @JsonProperty("threshold") val threshold: Int,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("last_modified") val lastModified: DateTime,
-        @JsonProperty("student_visible") val studentVisible: Boolean,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
-        @JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
-        @JsonProperty("grading_script") val gradingScript: String?,
-        @JsonProperty("container_image") val containerImage: String?,
-        @JsonProperty("max_time_sec") val maxTime: Int?,
-        @JsonProperty("max_mem_mb") val maxMem: Int?,
-        @JsonProperty("assets") val assets: List<RespAsset>?,
-        @JsonProperty("executors") val executors: List<RespExecutor>?,
-        @JsonProperty("has_lib_access") val hasLibAccess: Boolean,
-        @JsonProperty("exception_students") val exceptionStudents: List<RespExceptionStudent>?,
-        @JsonProperty("exception_groups") val exceptionGroups: List<RespExceptionGroup>?,
+        @get:JsonProperty("exercise_id") val exerciseId: String,
+        @get:JsonProperty("title") val title: String,
+        @get:JsonProperty("title_alias") val titleAlias: String?,
+        @get:JsonProperty("instructions_html") val instructionsHtml: String?,
+        @get:JsonProperty("instructions_adoc") val instructionsAdoc: String?,
+        @get:JsonProperty("text_html") val textHtml: String?,
+        @get:JsonProperty("text_adoc") val textAdoc: String?,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("soft_deadline") val softDeadline: DateTime?,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("hard_deadline") val hardDeadline: DateTime?,
+        @get:JsonProperty("grader_type") val grader: GraderType,
+        @get:JsonProperty("solution_file_name") val solutionFileName: String,
+        @get:JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
+        @get:JsonProperty("threshold") val threshold: Int,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("last_modified") val lastModified: DateTime,
+        @get:JsonProperty("student_visible") val studentVisible: Boolean,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("student_visible_from") val studentVisibleFrom: DateTime?,
+        @get:JsonProperty("assessments_student_visible") val assStudentVisible: Boolean,
+        @get:JsonProperty("grading_script") val gradingScript: String?,
+        @get:JsonProperty("container_image") val containerImage: String?,
+        @get:JsonProperty("max_time_sec") val maxTime: Int?,
+        @get:JsonProperty("max_mem_mb") val maxMem: Int?,
+        @get:JsonProperty("assets") val assets: List<RespAsset>?,
+        @get:JsonProperty("executors") val executors: List<RespExecutor>?,
+        @get:JsonProperty("has_lib_access") val hasLibAccess: Boolean,
+        @get:JsonProperty("exception_students") val exceptionStudents: List<RespExceptionStudent>?,
+        @get:JsonProperty("exception_groups") val exceptionGroups: List<RespExceptionGroup>?,
     )
 
     data class RespAsset(
-        @JsonProperty("file_name") val fileName: String,
-        @JsonProperty("file_content") val fileContent: String
+        @get:JsonProperty("file_name") val fileName: String,
+        @get:JsonProperty("file_content") val fileContent: String
     )
 
     data class RespExecutor(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("name") val name: String
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("name") val name: String
     )
 
-    data class ExceptionValueResp(@JsonSerialize(using = DateTimeSerializer::class) @JsonProperty("value") val value: DateTime?)
+    data class ExceptionValueResp(@get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("value") val value: DateTime?)
 
     data class RespExceptionStudent(
-        @JsonProperty("student_id") val studentId: String,
-        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
-        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
-        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
+        @get:JsonProperty("student_id") val studentId: String,
+        @get:JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
+        @get:JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
+        @get:JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
     )
 
     data class RespExceptionGroup(
-        @JsonProperty("group_id") val groupId: Long,
-        @JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
-        @JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
-        @JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
+        @get:JsonProperty("group_id") val groupId: Long,
+        @get:JsonProperty("soft_deadline") val softDeadline: ExceptionValueResp?,
+        @get:JsonProperty("hard_deadline") val hardDeadline: ExceptionValueResp?,
+        @get:JsonProperty("student_visible_from") val studentVisibleFrom: ExceptionValueResp?,
     )
 
 

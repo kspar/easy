@@ -2,7 +2,7 @@ package core.ems.service
 
 import core.exception.InvalidRequestException
 import core.exception.ReqError
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 
 fun String.idToLongOrInvalidReq(): Long = this.toLongOrNull() ?: throw InvalidRequestException(

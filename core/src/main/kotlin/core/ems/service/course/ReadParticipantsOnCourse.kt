@@ -3,7 +3,7 @@ package core.ems.service.course
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.GroupResp
@@ -14,10 +14,14 @@ import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectStudentsOnCourse
 import core.exception.InvalidRequestException
 import core.util.DateTimeSerializer
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.transactions.transaction
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -29,33 +33,26 @@ class ReadParticipantsOnCourseController {
     private val log = KotlinLogging.logger {}
 
     data class TeachersResp(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("email") val email: String,
-        @JsonProperty("given_name") val givenName: String,
-        @JsonProperty("family_name") val familyName: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("created_at") val createdAt: DateTime?
-    )
-
-    data class StudentPendingResp(
-        @JsonProperty("email") val email: String,
-        @JsonSerialize(using = DateTimeSerializer::class)
-        @JsonProperty("valid_from") val validFrom: DateTime?,
-        @JsonProperty("groups") val groups: List<GroupResp>
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("email") val email: String,
+        @get:JsonProperty("given_name") val givenName: String,
+        @get:JsonProperty("family_name") val familyName: String,
+        @get:JsonSerialize(using = DateTimeSerializer::class)
+        @get:JsonProperty("created_at") val createdAt: DateTime?
     )
 
     data class StudentMoodlePendingResp(
-        @JsonProperty("moodle_username") val moodleUsername: String,
-        @JsonProperty("email") val email: String,
-        @JsonProperty("invite_id") val inviteId: String,
-        @JsonProperty("groups") val groups: List<GroupResp>
+        @get:JsonProperty("moodle_username") val moodleUsername: String,
+        @get:JsonProperty("email") val email: String,
+        @get:JsonProperty("invite_id") val inviteId: String,
+        @get:JsonProperty("groups") val groups: List<GroupResp>
     )
 
     data class Resp(
-        @JsonProperty("students") @JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
-        @JsonProperty("teachers") @JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
-        @JsonProperty("students_pending") @JsonInclude(Include.NON_NULL) val studentPendingAccess: List<StudentPendingResp>?,
-        @JsonProperty("students_moodle_pending") @JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?
+        @get:JsonProperty("students") @get:JsonInclude(Include.NON_NULL) val students: List<StudentsResp>?,
+        @get:JsonProperty("teachers") @get:JsonInclude(Include.NON_NULL) val teachers: List<TeachersResp>?,
+        @get:JsonProperty("students_moodle_pending") @get:JsonInclude(Include.NON_NULL) val studentMoodlePendingAccess: List<StudentMoodlePendingResp>?,
+        @get:JsonProperty("moodle_linked") val moodleLinked: Boolean
     )
 
     enum class Role(val paramValue: String) {
@@ -80,6 +77,8 @@ class ReadParticipantsOnCourseController {
 
         caller.assertAccess { teacherOnCourse(courseId) }
 
+        val moodleLinked = isMoodleLinked(courseId)
+
         return when (roleReq?.lowercase()) {
             Role.TEACHER.paramValue -> {
                 val teachers = selectTeachersOnCourse(courseId)
@@ -87,32 +86,30 @@ class ReadParticipantsOnCourseController {
                     null,
                     teachers,
                     null,
-                    null,
+                    moodleLinked,
                 )
             }
 
             Role.STUDENT.paramValue -> {
                 val students = selectStudentsOnCourse(courseId, groupId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, groupId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, groupId)
                 Resp(
                     students,
                     null,
-                    studentsPending,
-                    studentsMoodle
+                    studentsMoodle,
+                    moodleLinked,
                 )
             }
 
             Role.ALL.paramValue, null -> {
                 val students = selectStudentsOnCourse(courseId, groupId)
                 val teachers = selectTeachersOnCourse(courseId)
-                val studentsPending = selectStudentsPendingOnCourse(courseId, groupId)
                 val studentsMoodle = selectMoodleStudentsPendingOnCourse(courseId, groupId)
                 Resp(
                     students,
                     teachers,
-                    studentsPending,
-                    studentsMoodle
+                    studentsMoodle,
+                    moodleLinked,
                 )
             }
 
@@ -121,51 +118,25 @@ class ReadParticipantsOnCourseController {
     }
 
 
+    private fun isMoodleLinked(courseId: Long): Boolean = transaction {
+        Course.select(Course.moodleShortName)
+            .where { Course.id eq courseId }
+            .single()[Course.moodleShortName] != null
+    }
+
     data class ParticipantGroup(val id: Long, val name: String)
-
-
-    private fun selectStudentsPendingOnCourse(courseId: Long, groupId: Long?): List<StudentPendingResp> =
-        transaction {
-            data class PendingStudent(val email: String, val validFrom: DateTime)
-
-            (StudentPendingAccess leftJoin StudentPendingCourseGroup leftJoin CourseGroup)
-                .select(
-                    StudentPendingAccess.email,
-                    StudentPendingAccess.validFrom,
-                    CourseGroup.id,
-                    CourseGroup.name
-                ).where {
-                    StudentPendingAccess.course eq courseId
-                }.also {
-                    if (groupId != null) it.andWhere { CourseGroup.id eq groupId }
-                }.groupBy({
-                    PendingStudent(
-                        it[StudentPendingAccess.email],
-                        it[StudentPendingAccess.validFrom]
-                    )
-                }) {
-                    val groupId: EntityID<Long>? = it[CourseGroup.id]
-                    if (groupId != null) ParticipantGroup(groupId.value, it[CourseGroup.name]) else null
-                }
-                .map { (student, groups) ->
-                    student to groups.filterNotNull()
-                }
-                .map { (student, groups) ->
-                    StudentPendingResp(
-                        student.email,
-                        student.validFrom,
-                        groups.map {
-                            GroupResp(it.id.toString(), it.name)
-                        }
-                    )
-                }
-        }
 
     private fun selectMoodleStudentsPendingOnCourse(courseId: Long, groupId: Long?): List<StudentMoodlePendingResp> =
         transaction {
             data class PendingStudent(val moodleUsername: String, val email: String, val inviteId: String)
 
-            (StudentMoodlePendingAccess leftJoin StudentMoodlePendingCourseGroup leftJoin CourseGroup)
+            StudentMoodlePendingAccess
+                .join(StudentMoodlePendingCourseGroup, JoinType.LEFT,
+                    additionalConstraint = {
+                        (StudentMoodlePendingAccess.moodleUsername eq StudentMoodlePendingCourseGroup.moodleUsername) and
+                                (StudentMoodlePendingAccess.course eq StudentMoodlePendingCourseGroup.course)
+                    })
+                .join(CourseGroup, JoinType.LEFT, StudentMoodlePendingCourseGroup.courseGroup, CourseGroup.id)
                 .select(
                     StudentMoodlePendingAccess.moodleUsername,
                     StudentMoodlePendingAccess.email,

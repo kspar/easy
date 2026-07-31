@@ -1,6 +1,6 @@
 package core.ems.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
@@ -16,20 +16,20 @@ private val log = KotlinLogging.logger {}
 @Service
 class AdocService {
     private val doctor = Asciidoctor.Factory.create()
-    private val options = Options()
+    private val options: Options
 
     init {
-        val attributes = Attributes()
-        attributes.setSourceHighlighter("highlightjs")
-
         // TODO: remove after all exercises have migrated to EasyCode
-        attributes.setAttribute("run", "<span class=\"codehl run\">")
-        attributes.setAttribute("nur", "</span>")
-        attributes.setAttribute("in", "<span class=\"codehl input\">")
-        attributes.setAttribute("ni", "</span>")
-        attributes.setAttribute("nohl", "<span class=\"codehl nohl\">")
-        attributes.setAttribute("lhon", "</span>")
-        options.setAttributes(attributes)
+        val attributes = Attributes.builder().sourceHighlighter("highlightjs")
+            .attribute("run", "<span class=\"codehl run\">")
+            .attribute("nur", "</span>")
+            .attribute("in", "<span class=\"codehl input\">")
+            .attribute("ni", "</span>")
+            .attribute("nohl", "<span class=\"codehl nohl\">")
+            .attribute("lhon", "</span>")
+            .build()
+
+        options = Options.builder().attributes(attributes).build()
 
         doctor.javaExtensionRegistry()
             .postprocessor(LinkExternaliserProcessor())
@@ -42,7 +42,7 @@ class AdocService {
 }
 
 class LinkExternaliserProcessor : Postprocessor() {
-    override fun process(document: Document?, output: String?): String {
+    override fun process(document: Document?, output: String): String {
         val jdoc = Jsoup.parse(output, "UTF-8")
         jdoc.getElementsByTag("a").forEach {
             it.attr("target", "_blank")
@@ -62,7 +62,7 @@ class EasyCodeProcessor : Postprocessor() {
     private val regex: Regex;
 
     init {
-        val attrStr = CodeAttr.values().joinToString("|") { it.id }
+        val attrStr = CodeAttr.entries.joinToString("|") { it.id }
         regex = Regex("\\\$($attrStr)\\[(.+?)(?<!\\\\)]", RegexOption.DOT_MATCHES_ALL)
     }
 
@@ -71,7 +71,7 @@ class EasyCodeProcessor : Postprocessor() {
             val attrTag = it.groupValues[1]
             val value = it.groupValues[2].replace("\\]", "]")
 
-            val attr = CodeAttr.values().find { it.id == attrTag }
+            val attr = CodeAttr.entries.find { it.id == attrTag }
 
             if (attr == null) {
                 log.error { "No attribute found for tag $attrTag" }

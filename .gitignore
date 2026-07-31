@@ -8,10 +8,21 @@ out/
 build/
 
 core/db/database.properties
+core/src/main/resources/db/database.properties
 core/src/main/resources/application.yaml
 core/src/test/resources/application.yaml
 
 wui/gradle.properties
 wui/src/main/kotlin/AppProperties.kt
 
+web/.env.local
+
 aae/gunicorn-conf.py
+
+# Runtime artifacts
+*.log
+*.dylib
+.gradle/
+
+# Kotlin 2.x build metadata
+.kotlin/

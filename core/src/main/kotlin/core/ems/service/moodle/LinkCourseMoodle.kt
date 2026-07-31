@@ -8,14 +8,15 @@ import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.exception.ResourceLockedException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 
 @RestController
@@ -27,14 +28,14 @@ class MoodleLinkCourseController(
     private val log = KotlinLogging.logger {}
 
     data class Req(
-        @JsonProperty("moodle_props") val moodleProps: MoodleReq?,
-        @JsonProperty("force") val force: Boolean = false,
+        @param:JsonProperty("moodle_props") val moodleProps: MoodleReq?,
+        @param:JsonProperty("force") val force: Boolean = false,
     )
 
     data class MoodleReq(
-        @JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
-        @JsonProperty("sync_students") val syncStudents: Boolean,
-        @JsonProperty("sync_grades") val syncGrades: Boolean,
+        @param:JsonProperty("moodle_short_name") @field:NotBlank @field:Size(max = 500) val moodleShortName: String,
+        @param:JsonProperty("sync_students") val syncStudents: Boolean,
+        @param:JsonProperty("sync_grades") val syncGrades: Boolean,
     )
 
     @Secured("ROLE_ADMIN")
@@ -69,7 +70,7 @@ class MoodleLinkCourseController(
                         linkCourse(courseId, body.moodleProps)
                     }
                 }
-            } catch (e: ResourceLockedException) {
+            } catch (_: ResourceLockedException) {
                 log.info { "Cannot change Moodle link, sync is in progress for course $courseId" }
                 throw InvalidRequestException(
                     "Moodle sync is in progress", ReqError.MOODLE_SYNC_IN_PROGRESS, notify = false

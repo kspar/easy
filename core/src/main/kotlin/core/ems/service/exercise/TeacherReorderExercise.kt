@@ -9,13 +9,15 @@ import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.normaliseCourseExIndices
 import core.exception.InvalidRequestException
-import mu.KotlinLogging
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import jakarta.validation.Valid
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -26,7 +28,7 @@ import kotlin.math.min
 class TeacherReorderExerciseController {
     private val log = KotlinLogging.logger {}
 
-    data class Req(@JsonProperty("new_index", required = true) val newIndex: Int)
+    data class Req(@param:JsonProperty("new_index", required = true) val newIndex: Int)
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/exercises/{courseExerciseId}/reorder")

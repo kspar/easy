@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Grading — Lightweight</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf9;
+    --bg-panel: #ffffff;
+    --bg-hover: #f5f5f3;
+    --border: #e8e6e1;
+    --border-light: #f0eeea;
+    --border-focus: #7c74f2;
+
+    --code-bg: #1c1d2b;
+    --code-surface: #232435;
+    --code-gutter-text: #4e5069;
+    --code-gutter-hover: #2d2e44;
+    --code-text: #c5c6d4;
+    --code-keyword: #c792ea;
+    --code-function: #82aaff;
+    --code-string: #c3e88d;
+    --code-number: #f78c6c;
+    --code-comment: #5e6080;
+    --code-builtin: #89ddff;
+    --code-self: #ff5370;
+    --code-operator: #89ddff;
+    --code-param: #e0a96c;
+
+    --accent: #6c63ff;
+    --accent-soft: #eeedff;
+    --accent-hover: #5a52e0;
+    --accent-text: #4f46e5;
+
+    --pass: #22c55e;
+    --pass-bg: #f0fdf4;
+    --fail: #ef4444;
+    --fail-bg: #fef2f2;
+    --skip: #94a3b8;
+
+    --text: #1a1a2e;
+    --text-2: #6b7085;
+    --text-3: #9ca3af;
+
+    --annotation-bg: #fefce8;
+    --annotation-border: #fde047;
+    --annotation-line: rgba(254, 240, 138, 0.12);
+    --suggestion-bg: #f0fdf4;
+    --suggestion-border: #86efac;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ——— TOP BAR ——— */
+  .topbar {
+    height: 46px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    z-index: 100;
+    position: relative;
+  }
+  .btn-icon {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: none; background: none;
+    cursor: pointer; color: var(--text-2);
+    transition: all 0.12s;
+  }
+  .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .btn-icon .material-icons-outlined { font-size: 19px; }
+
+  .topbar-title {
+    font-weight: 600; font-size: 14px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 10.5px; font-weight: 500;
+    background: var(--accent-soft); color: var(--accent-text);
+    white-space: nowrap;
+  }
+  .topbar-badge .material-icons-outlined { font-size: 12px; }
+  .topbar-spacer { flex: 1; }
+
+  /* Student nav strip */
+  .student-nav {
+    display: flex; align-items: center; gap: 2px;
+    background: var(--bg); border-radius: 8px;
+    padding: 3px;
+    height: 34px;
+  }
+  .student-nav-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: none; background: none;
+    cursor: pointer; color: var(--text-3);
+    transition: all 0.12s;
+  }
+  .student-nav-btn:hover { background: var(--bg-panel); color: var(--text); }
+  .student-nav-btn .material-icons-outlined { font-size: 18px; }
+
+  .student-nav-current {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 10px; cursor: pointer; border-radius: 6px;
+    transition: background 0.12s; height: 28px;
+    position: relative;
+  }
+  .student-nav-current:hover { background: var(--bg-panel); }
+  .student-nav-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fef3c7; color: #a16207;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8.5px; font-weight: 700;
+  }
+  .student-nav-name {
+    font-size: 12.5px; font-weight: 500; color: var(--text);
+    max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .student-nav-sub {
+    font-size: 11px; color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .student-nav-arrow {
+    color: var(--text-3); font-size: 16px;
+  }
+
+  /* Dropdown panel for student list */
+  .student-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
+    width: 280px;
+    max-height: 380px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    z-index: 200;
+    display: none;
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .student-dropdown.open { display: flex; }
+  .student-dropdown-header {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex; gap: 6px;
+  }
+  .sd-search {
+    flex: 1; height: 28px; padding: 0 8px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: inherit; font-size: 12px; color: var(--text);
+    background: var(--bg); outline: none;
+  }
+  .sd-search:focus { border-color: var(--border-focus); }
+  .sd-group {
+    height: 28px; padding: 0 6px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: inherit; font-size: 11px; color: var(--text-2);
+    background: var(--bg); cursor: pointer; outline: none;
+  }
+  .student-dropdown-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .student-dropdown-list::-webkit-scrollbar { width: 3px; }
+  .student-dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .sd-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px; cursor: pointer;
+    transition: background 0.08s;
+  }
+  .sd-item:hover { background: var(--bg-hover); }
+  .sd-item.active { background: var(--accent-soft); }
+  .sd-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; flex-shrink: 0;
+  }
+  .sd-avatar.graded { background: var(--pass-bg); color: #16a34a; }
+  .sd-avatar.ungraded { background: #fef3c7; color: #a16207; }
+  .sd-avatar.none { background: var(--bg); color: var(--text-3); }
+  .sd-info { flex: 1; min-width: 0; }
+  .sd-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sd-meta { font-size: 10.5px; color: var(--text-3); }
+  .sd-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+  }
+  .sd-score.pass { color: var(--pass); }
+  .sd-score.fail { color: var(--fail); }
+  .sd-score.pending { color: var(--text-3); }
+  .sd-footer {
+    padding: 6px 10px; border-top: 1px solid var(--border-light);
+    font-size: 10.5px; color: var(--text-3);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sd-progress { width: 36px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .sd-progress-fill { height: 100%; background: var(--pass); border-radius: 2px; }
+
+  .topbar-progress {
+    font-size: 11px; color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .kbd {
+    display: inline-flex; padding: 1px 4px; border-radius: 3px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-3); line-height: 1.4;
+  }
+
+  /* ——— MAIN TWO-COLUMN ——— */
+  .main {
+    display: flex;
+    height: calc(100vh - 46px);
+  }
+
+  /* ——— CODE PANEL ——— */
+  .code-panel {
+    flex: 1;
+    min-width: 0;
+    background: var(--code-bg);
+    display: flex;
+    flex-direction: column;
+  }
+  .code-bar {
+    height: 34px;
+    background: var(--code-surface);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 2px;
+  }
+  .file-tab {
+    height: 26px; padding: 0 10px; border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--code-gutter-text); background: none; border: none;
+    cursor: pointer; transition: all 0.12s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .file-tab:hover { color: var(--code-text); background: rgba(255,255,255,0.04); }
+  .file-tab.active { color: var(--code-text); background: rgba(255,255,255,0.08); }
+  .file-tab .material-icons-outlined { font-size: 13px; }
+  .code-bar-spacer { flex: 1; }
+  .submission-select {
+    height: 24px; padding: 0 6px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: var(--code-text);
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    cursor: pointer; outline: none;
+  }
+  .submission-select option { background: var(--code-surface); }
+  .code-bar-btn {
+    height: 24px; padding: 0 8px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: var(--code-gutter-text);
+    font-family: inherit; font-size: 10.5px;
+    cursor: pointer; transition: all 0.12s;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .code-bar-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--code-text); }
+  .code-bar-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.1); }
+  .code-bar-btn .material-icons-outlined { font-size: 13px; }
+
+  .code-scroll {
+    flex: 1; overflow-y: auto; padding: 6px 0;
+  }
+  .code-scroll::-webkit-scrollbar { width: 6px; }
+  .code-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+  .code-line {
+    display: flex; min-height: 21px; line-height: 21px;
+  }
+  .code-line:hover .gutter { background: var(--code-gutter-hover); }
+  .code-line:hover .line-plus { opacity: 1; }
+  .code-line.has-ann .line-content { background: var(--annotation-line); }
+
+  .gutter {
+    width: 48px; min-width: 48px; text-align: right; padding-right: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--code-gutter-text); user-select: none; cursor: pointer;
+    position: relative; transition: background 0.08s;
+  }
+  .line-plus {
+    position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; opacity: 0; transition: opacity 0.1s;
+    cursor: pointer; line-height: 1;
+  }
+  .line-content {
+    flex: 1; padding-left: 12px; padding-right: 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    color: var(--code-text); white-space: pre; tab-size: 4;
+  }
+
+  /* Inline annotations */
+  .ann {
+    margin: 3px 0 3px 48px;
+    border-left: 3px solid var(--annotation-border);
+    background: var(--annotation-bg);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+  }
+  .ann-head {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  }
+  .ann-avatar {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700;
+  }
+  .ann-author { font-size: 11px; font-weight: 600; }
+  .ann-time { font-size: 10px; color: var(--text-3); }
+  .ann-body {
+    font-size: 12px; color: var(--text); line-height: 1.5;
+  }
+  .ann-body code {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px;
+  }
+  .ann-actions {
+    display: flex; gap: 2px; margin-top: 6px;
+  }
+  .ann-btn {
+    height: 22px; padding: 0 6px; border: none; background: none;
+    color: var(--text-3); font-family: inherit; font-size: 10.5px;
+    cursor: pointer; border-radius: 3px; transition: all 0.12s;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .ann-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-2); }
+  .ann-btn .material-icons-outlined { font-size: 13px; }
+
+  /* Suggested fix */
+  .ann.suggestion { border-left-color: var(--suggestion-border); background: var(--suggestion-bg); }
+  .ann-suggestion-label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700; color: #16a34a;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .ann-suggestion-label .material-icons-outlined { font-size: 13px; }
+  .ann-diff {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.6;
+  }
+  .ann-diff .rm { color: var(--fail); text-decoration: line-through; opacity: 0.7; }
+  .ann-diff .add { color: #16a34a; background: #dcfce7; padding: 0 3px; border-radius: 2px; }
+
+  /* New comment input */
+  .new-comment {
+    margin: 3px 0 3px 48px;
+    border-left: 3px solid var(--accent);
+    background: white;
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: none;
+  }
+  .new-comment.open { display: block; }
+  .new-comment textarea {
+    width: 100%; min-height: 48px; border: 1px solid var(--border);
+    border-radius: 5px; padding: 6px 8px;
+    font-family: inherit; font-size: 12px; color: var(--text);
+    outline: none; resize: vertical; line-height: 1.5;
+  }
+  .new-comment textarea:focus { border-color: var(--border-focus); }
+  .new-comment textarea::placeholder { color: var(--text-3); }
+  .new-comment-actions {
+    display: flex; align-items: center; gap: 4px; margin-top: 6px;
+  }
+  .nc-btn {
+    height: 26px; padding: 0 10px; border-radius: 5px; border: none;
+    font-family: inherit; font-size: 11.5px; font-weight: 500;
+    cursor: pointer; transition: all 0.12s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .nc-btn.primary { background: var(--accent); color: white; }
+  .nc-btn.primary:hover { background: var(--accent-hover); }
+  .nc-btn.suggest { background: #dcfce7; color: #16a34a; }
+  .nc-btn.suggest:hover { background: #bbf7d0; }
+  .nc-btn.ghost { background: none; color: var(--text-3); }
+  .nc-btn.ghost:hover { color: var(--text); }
+  .nc-btn .material-icons-outlined { font-size: 14px; }
+  .nc-spacer { flex: 1; }
+  .nc-hint { font-size: 10px; color: var(--text-3); }
+
+  /* ——— GRADING RAIL ——— */
+  .grade-rail {
+    width: 320px; min-width: 320px;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .rail-scroll {
+    flex: 1; overflow-y: auto; padding: 0;
+  }
+  .rail-scroll::-webkit-scrollbar { width: 3px; }
+  .rail-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .rail-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .rail-section:last-child { border-bottom: none; }
+  .rail-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-3);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .rail-label .material-icons-outlined { font-size: 14px; }
+
+  /* Test summary — compact */
+  .tests-compact {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tests-count {
+    font-size: 12.5px; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tests-bar {
+    flex: 1; height: 5px; background: var(--border-light);
+    border-radius: 3px; overflow: hidden; display: flex;
+  }
+  .tests-bar .p { background: var(--pass); }
+  .tests-bar .f { background: var(--fail); }
+  .tests-expand-btn {
+    font-size: 10.5px; color: var(--accent-text); background: none;
+    border: none; cursor: pointer; font-family: inherit;
+    padding: 2px 6px; border-radius: 4px;
+    transition: background 0.12s;
+  }
+  .tests-expand-btn:hover { background: var(--accent-soft); }
+
+  /* Collapsed test list */
+  .tests-list { display: none; margin-top: 8px; }
+  .tests-list.open { display: block; }
+  .t-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0; cursor: pointer;
+  }
+  .t-item:hover .t-name { color: var(--text); }
+  .t-icon { font-size: 15px; }
+  .t-icon.pass { color: var(--pass); }
+  .t-icon.fail { color: var(--fail); }
+  .t-name { font-size: 11.5px; color: var(--text-2); transition: color 0.1s; flex: 1; }
+  .t-expand { font-size: 16px; color: var(--text-3); transition: transform 0.15s; }
+  .t-item.expanded .t-expand { transform: rotate(180deg); }
+  .t-detail {
+    display: none; padding: 4px 0 8px 22px;
+  }
+  .t-item.expanded + .t-detail { display: block; }
+  .t-check {
+    display: flex; align-items: flex-start; gap: 4px;
+    font-size: 11px; color: var(--text-2); padding: 2px 0;
+  }
+  .t-check .material-icons-outlined { font-size: 12px; margin-top: 1px; }
+  .t-check.pass .material-icons-outlined { color: var(--pass); }
+  .t-check.fail .material-icons-outlined { color: var(--fail); }
+  .t-output-label {
+    font-size: 9.5px; font-weight: 600; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    margin-top: 6px; margin-bottom: 2px;
+  }
+  .t-output {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    line-height: 1.5; background: var(--bg); border-radius: 4px;
+    padding: 6px 8px; max-height: 80px; overflow-y: auto;
+    white-space: pre-wrap; color: var(--text-2);
+  }
+
+  /* Grade input — the big one */
+  .grade-input-area {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .grade-input-wrap {
+    display: flex; align-items: baseline; gap: 2px;
+  }
+  .grade-input {
+    width: 52px; height: 38px;
+    border: 2px solid var(--border);
+    border-radius: 8px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: var(--accent-text); outline: none;
+    transition: border-color 0.15s;
+  }
+  .grade-input:focus { border-color: var(--accent); }
+  .grade-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .grade-input[type=number] { -moz-appearance: textfield; }
+  .grade-max { font-size: 14px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+
+  .grade-auto-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px; border-radius: 5px;
+    background: var(--bg); font-size: 11px; color: var(--text-2);
+  }
+  .grade-auto-chip .material-icons-outlined { font-size: 13px; color: var(--accent-text); }
+  .grade-auto-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; color: var(--text);
+  }
+  .grade-apply-auto {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent-text); font-family: inherit;
+    font-size: 10.5px; padding: 2px 4px; border-radius: 3px;
+    transition: background 0.12s;
+  }
+  .grade-apply-auto:hover { background: var(--accent-soft); }
+
+  /* Feedback area */
+  .feedback-wrap { position: relative; }
+  .feedback-ta {
+    width: 100%; min-height: 64px;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; font-family: inherit;
+    font-size: 12px; color: var(--text); outline: none;
+    resize: vertical; line-height: 1.5;
+    transition: border-color 0.15s;
+  }
+  .feedback-ta:focus { border-color: var(--border-focus); }
+  .feedback-ta::placeholder { color: var(--text-3); }
+
+  .snippet-popup {
+    position: absolute; bottom: 100%; left: 0; right: 0;
+    margin-bottom: 4px; background: var(--bg-panel);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+    display: none; overflow: hidden; z-index: 50;
+  }
+  .snippet-popup.open { display: block; }
+  .snippet-popup-title {
+    font-size: 9.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-3);
+    padding: 6px 10px 3px;
+  }
+  .snip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; cursor: pointer; transition: background 0.08s;
+  }
+  .snip:hover, .snip.active { background: var(--accent-soft); }
+  .snip-trigger {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    font-weight: 500; color: var(--accent-text);
+    background: var(--accent-soft); padding: 1px 5px; border-radius: 3px;
+    min-width: 55px;
+  }
+  .snip-text {
+    font-size: 11px; color: var(--text-2);
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Footer */
+  .rail-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .footer-btns {
+    display: flex; gap: 6px;
+  }
+  .btn-draft {
+    flex: 1; height: 32px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg-panel);
+    color: var(--text-2); font-family: inherit; font-size: 12px;
+    font-weight: 500; cursor: pointer; transition: all 0.12s;
+  }
+  .btn-draft:hover { border-color: var(--text-3); color: var(--text); }
+  .btn-grade {
+    flex: 2; height: 32px; border-radius: 6px;
+    border: none; background: var(--accent); color: white;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-grade:hover { background: var(--accent-hover); }
+  .btn-grade .material-icons-outlined { font-size: 15px; }
+  .footer-keys {
+    font-size: 10px; color: var(--text-3); text-align: center;
+    display: flex; justify-content: center; align-items: center; gap: 3px;
+  }
+
+  /* ——— EXERCISE TEXT DRAWER ——— */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.2);
+    z-index: 300; display: none;
+    transition: opacity 0.2s;
+    opacity: 0;
+  }
+  .drawer-overlay.open { display: block; opacity: 1; }
+  .drawer {
+    position: fixed; top: 0; right: 0;
+    width: 440px; max-width: 90vw;
+    height: 100vh; background: var(--bg-panel);
+    box-shadow: -8px 0 30px rgba(0,0,0,0.1);
+    z-index: 301;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    height: 46px; padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .drawer-title {
+    font-size: 13px; font-weight: 600; flex: 1;
+  }
+  .drawer-body {
+    flex: 1; overflow-y: auto; padding: 20px;
+    font-size: 13.5px; line-height: 1.7; color: var(--text);
+  }
+  .drawer-body h3 {
+    font-size: 15px; font-weight: 600; margin-bottom: 10px;
+    color: var(--text);
+  }
+  .drawer-body p { margin-bottom: 12px; }
+  .drawer-body code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: var(--bg); padding: 2px 5px; border-radius: 3px;
+  }
+  .drawer-body pre {
+    background: var(--code-bg); color: var(--code-text);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    padding: 12px 14px; border-radius: 8px;
+    margin-bottom: 12px; overflow-x: auto; line-height: 1.6;
+  }
+  .drawer-body ul {
+    margin-bottom: 12px; padding-left: 20px;
+  }
+  .drawer-body li { margin-bottom: 4px; }
+
+  /* Syntax helpers */
+  .kw { color: var(--code-keyword); }
+  .fn { color: var(--code-function); }
+  .str { color: var(--code-string); }
+  .num { color: var(--code-number); }
+  .cm { color: var(--code-comment); font-style: italic; }
+  .bi { color: var(--code-builtin); }
+  .op { color: var(--code-operator); }
+  .par { color: var(--code-param); }
+</style>
+</head>
+<body>
+
+<!-- ——— TOP BAR ——— -->
+<div class="topbar">
+  <button class="btn-icon" title="Back to exercises" onclick="window.history.back()">
+    <span class="material-icons-outlined">arrow_back</span>
+  </button>
+  <span class="topbar-title">Fibonacci Sequence</span>
+  <span class="topbar-badge">
+    <span class="material-icons-outlined">smart_toy</span> Auto
+  </span>
+
+  <button class="btn-icon" title="View exercise text" onclick="toggleDrawer()">
+    <span class="material-icons-outlined">article</span>
+  </button>
+
+  <div class="topbar-spacer"></div>
+
+  <!-- Student nav -->
+  <div class="student-nav">
+    <button class="student-nav-btn" title="Previous student (Ctrl+←)">
+      <span class="material-icons-outlined">chevron_left</span>
+    </button>
+
+    <div class="student-nav-current" id="studentNavToggle" onclick="toggleStudentDropdown()">
+      <div class="student-nav-avatar">MT</div>
+      <span class="student-nav-name">Maria Tamm</span>
+      <span class="student-nav-sub">#3</span>
+      <span class="material-icons-outlined student-nav-arrow">expand_more</span>
+
+      <!-- Dropdown -->
+      <div class="student-dropdown" id="studentDropdown">
+        <div class="student-dropdown-header">
+          <input type="text" class="sd-search" placeholder="Search..." onclick="event.stopPropagation()">
+          <select class="sd-group" onclick="event.stopPropagation()">
+            <option>All</option>
+            <option>Group 1</option>
+            <option>Group 2</option>
+            <option selected>Group 3</option>
+          </select>
+        </div>
+        <div class="student-dropdown-list">
+          <div class="sd-item"><div class="sd-avatar graded">AK</div><div class="sd-info"><div class="sd-name">Anna Kask</div><div class="sd-meta">#2 · 2h ago</div></div><span class="sd-score pass">92</span></div>
+          <div class="sd-item"><div class="sd-avatar graded">JL</div><div class="sd-info"><div class="sd-name">Jaan Lepp</div><div class="sd-meta">#1 · 5h ago</div></div><span class="sd-score pass">78</span></div>
+          <div class="sd-item"><div class="sd-avatar graded">KR</div><div class="sd-info"><div class="sd-name">Kati Rebane</div><div class="sd-meta">#4 · 1d ago</div></div><span class="sd-score pass">100</span></div>
+          <div class="sd-item active"><div class="sd-avatar ungraded">MT</div><div class="sd-info"><div class="sd-name">Maria Tamm</div><div class="sd-meta">#3 · 45m ago</div></div><span class="sd-score fail">75</span></div>
+          <div class="sd-item"><div class="sd-avatar ungraded">PK</div><div class="sd-info"><div class="sd-name">Peeter Kuusk</div><div class="sd-meta">#2 · 3h ago</div></div><span class="sd-score fail">40</span></div>
+          <div class="sd-item"><div class="sd-avatar ungraded">LM</div><div class="sd-info"><div class="sd-name">Liis Mägi</div><div class="sd-meta">#1 · 6h ago</div></div><span class="sd-score pending">55</span></div>
+          <div class="sd-item"><div class="sd-avatar graded">TN</div><div class="sd-info"><div class="sd-name">Tõnu Nurk</div><div class="sd-meta">#3 · 1d ago</div></div><span class="sd-score pass">85</span></div>
+          <div class="sd-item"><div class="sd-avatar graded">MV</div><div class="sd-info"><div class="sd-name">Maris Vaher</div><div class="sd-meta">#2 · 1d ago</div></div><span class="sd-score pass">95</span></div>
+          <div class="sd-item"><div class="sd-avatar ungraded">RP</div><div class="sd-info"><div class="sd-name">Raivo Pärn</div><div class="sd-meta">#1 · 2d ago</div></div><span class="sd-score fail">30</span></div>
+          <div class="sd-item"><div class="sd-avatar none">TE</div><div class="sd-info"><div class="sd-name">Triin Esko</div><div class="sd-meta">No submission</div></div></div>
+          <div class="sd-item"><div class="sd-avatar none">HR</div><div class="sd-info"><div class="sd-name">Henri Rand</div><div class="sd-meta">No submission</div></div></div>
+        </div>
+        <div class="sd-footer">
+          <div class="sd-progress"><div class="sd-progress-fill" style="width:53%"></div></div>
+          8 / 15 graded
+        </div>
+      </div>
+    </div>
+
+    <button class="student-nav-btn" title="Next student (Ctrl+→)">
+      <span class="material-icons-outlined">chevron_right</span>
+    </button>
+  </div>
+
+  <span class="topbar-progress">4 / 15</span>
+
+  <button class="btn-icon" title="Keyboard shortcuts">
+    <span class="material-icons-outlined">keyboard</span>
+  </button>
+</div>
+
+<!-- ——— MAIN ——— -->
+<div class="main">
+
+  <!-- CODE PANEL -->
+  <div class="code-panel">
+    <div class="code-bar">
+      <button class="file-tab active">
+        <span class="material-icons-outlined">description</span> solution.py
+      </button>
+      <div class="code-bar-spacer"></div>
+      <select class="submission-select">
+        <option>Sub #3 (latest)</option>
+        <option>Sub #2</option>
+        <option>Sub #1</option>
+      </select>
+      <button class="code-bar-btn" style="margin-left:4px;" onclick="this.classList.toggle('on')">
+        <span class="material-icons-outlined">difference</span> Diff
+      </button>
+    </div>
+
+    <div class="code-scroll">
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>1</div><div class="line-content"><span class="cm"># Fibonacci Sequence Implementation</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>2</div><div class="line-content"><span class="cm"># Author: Maria Tamm</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>3</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>4</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>5</div><div class="line-content"><span class="kw">def</span> <span class="fn">fibonacci</span>(<span class="par">n</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">list</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>6</div><div class="line-content">    <span class="str">"""Return the first n Fibonacci numbers."""</span></div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>7</div><div class="line-content">    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">0</span>:</div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>8</div><div class="line-content">        <span class="kw">return</span> []</div></div>
+
+      <!-- Annotation -->
+      <div class="ann">
+        <div class="ann-head">
+          <div class="ann-avatar">KP</div>
+          <span class="ann-author">Kaspar Papli</span>
+          <span class="ann-time">just now</span>
+        </div>
+        <div class="ann-body">Consider raising <code>ValueError</code> for negative inputs instead of silently returning an empty list.</div>
+        <div class="ann-actions">
+          <button class="ann-btn"><span class="material-icons-outlined">edit</span>Edit</button>
+          <button class="ann-btn"><span class="material-icons-outlined">delete_outline</span>Delete</button>
+        </div>
+      </div>
+
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>9</div><div class="line-content">    <span class="kw">if</span> n <span class="op">==</span> <span class="num">1</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>10</div><div class="line-content">        <span class="kw">return</span> [<span class="num">0</span>]</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>11</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>12</div><div class="line-content">    result <span class="op">=</span> [<span class="num">0</span>, <span class="num">1</span>]</div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>13</div><div class="line-content">    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n):</div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>14</div><div class="line-content">        next_val <span class="op">=</span> result[i<span class="op">-</span><span class="num">1</span>] <span class="op">+</span> result[i<span class="op">-</span><span class="num">2</span>]</div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>15</div><div class="line-content">        result.append(next_val)</div></div>
+
+      <!-- Suggested fix -->
+      <div class="ann suggestion">
+        <div class="ann-head">
+          <div class="ann-avatar">KP</div>
+          <span class="ann-author">Kaspar Papli</span>
+          <span class="ann-time">just now</span>
+        </div>
+        <div class="ann-suggestion-label">
+          <span class="material-icons-outlined">auto_fix_high</span> Suggested fix
+        </div>
+        <div class="ann-body" style="margin-bottom:6px;">Cleaner with tuple unpacking:</div>
+        <div class="ann-diff">
+<span class="rm">    for i in range(2, n):</span>
+<span class="rm">        next_val = result[i-1] + result[i-2]</span>
+
+<span class="add">    for _ in range(2, n):</span>
+<span class="add">        a, b = result[-2], result[-1]</span>
+<span class="add">        result.append(a + b)</span>
+        </div>
+        <div class="ann-actions">
+          <button class="ann-btn"><span class="material-icons-outlined">edit</span>Edit</button>
+          <button class="ann-btn"><span class="material-icons-outlined">delete_outline</span>Delete</button>
+        </div>
+      </div>
+
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>16</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>17</div><div class="line-content">    <span class="kw">return</span> result</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>18</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>19</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>20</div><div class="line-content"><span class="kw">def</span> <span class="fn">fibonacci_recursive</span>(<span class="par">n</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">int</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>21</div><div class="line-content">    <span class="str">"""Return the nth Fibonacci number using recursion."""</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>22</div><div class="line-content">    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">0</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>23</div><div class="line-content">        <span class="kw">return</span> <span class="num">0</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>24</div><div class="line-content">    <span class="kw">if</span> n <span class="op">==</span> <span class="num">1</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>25</div><div class="line-content">        <span class="kw">return</span> <span class="num">1</span></div></div>
+      <div class="code-line has-ann"><div class="gutter"><span class="line-plus">+</span>26</div><div class="line-content">    <span class="kw">return</span> fibonacci_recursive(n <span class="op">-</span> <span class="num">1</span>) <span class="op">+</span> fibonacci_recursive(n <span class="op">-</span> <span class="num">2</span>)</div></div>
+
+      <div class="ann">
+        <div class="ann-head">
+          <div class="ann-avatar">KP</div>
+          <span class="ann-author">Kaspar Papli</span>
+          <span class="ann-time">just now</span>
+        </div>
+        <div class="ann-body">O(2&#x207F;) complexity — this is why tests 9 & 10 time out. Use <code>@functools.lru_cache</code> or rewrite iteratively.</div>
+        <div class="ann-actions">
+          <button class="ann-btn"><span class="material-icons-outlined">edit</span>Edit</button>
+          <button class="ann-btn"><span class="material-icons-outlined">delete_outline</span>Delete</button>
+        </div>
+      </div>
+
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>27</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>28</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>29</div><div class="line-content"><span class="kw">def</span> <span class="fn">is_fibonacci</span>(<span class="par">num</span>: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">bool</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>30</div><div class="line-content">    <span class="str">"""Check if a number is in the Fibonacci sequence."""</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>31</div><div class="line-content">    <span class="kw">if</span> num <span class="op">&lt;</span> <span class="num">0</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>32</div><div class="line-content">        <span class="kw">return</span> <span class="bi">False</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>33</div><div class="line-content">    a, b <span class="op">=</span> <span class="num">0</span>, <span class="num">1</span></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>34</div><div class="line-content">    <span class="kw">while</span> a <span class="op">&lt;</span> num:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>35</div><div class="line-content">        a, b <span class="op">=</span> b, a <span class="op">+</span> b</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>36</div><div class="line-content">    <span class="kw">return</span> a <span class="op">==</span> num</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>37</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>38</div><div class="line-content"></div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>39</div><div class="line-content"><span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>40</div><div class="line-content">    <span class="bi">print</span>(fibonacci(<span class="num">10</span>))</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>41</div><div class="line-content">    <span class="bi">print</span>(fibonacci_recursive(<span class="num">10</span>))</div></div>
+      <div class="code-line"><div class="gutter"><span class="line-plus">+</span>42</div><div class="line-content">    <span class="bi">print</span>(is_fibonacci(<span class="num">13</span>))</div></div>
+
+      <!-- Hidden new-comment input -->
+      <div class="new-comment" id="newComment">
+        <textarea placeholder="Write a comment... (/ for snippets)" rows="2"></textarea>
+        <div class="new-comment-actions">
+          <button class="nc-btn primary" onclick="closeComment()"><span class="material-icons-outlined">send</span>Comment</button>
+          <button class="nc-btn suggest" onclick="closeComment()"><span class="material-icons-outlined">auto_fix_high</span>Suggest</button>
+          <button class="nc-btn ghost" onclick="closeComment()">Cancel</button>
+          <div class="nc-spacer"></div>
+          <span class="nc-hint"><kbd class="kbd" style="font-size:9px;background:var(--code-surface);border-color:rgba(255,255,255,0.1);color:var(--code-gutter-text);">/</kbd> snippets</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRADING RAIL -->
+  <div class="grade-rail">
+    <div class="rail-scroll">
+
+      <!-- Tests -->
+      <div class="rail-section">
+        <div class="rail-label">
+          <span class="material-icons-outlined">science</span> Tests
+        </div>
+        <div class="tests-compact">
+          <span class="tests-count" style="color:var(--pass);">8</span>
+          <div class="tests-bar"><div class="p" style="width:80%"></div><div class="f" style="width:20%"></div></div>
+          <span class="tests-count" style="color:var(--fail);">2</span>
+          <button class="tests-expand-btn" onclick="toggleTests()">Details</button>
+        </div>
+
+        <div class="tests-list" id="testsList">
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci(0) → empty list</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> Returns []</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci(1) → [0]</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> Returns [0]</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci(5) correct</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> Returns [0, 1, 1, 2, 3]</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci(10) correct</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> Last element is 34</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">is_fibonacci() identifies fibs</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(13) → True</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">is_fibonacci() negatives</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> is_fibonacci(-1) → False</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci_recursive() base cases</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> fib_rec(0) → 0, fib_rec(1) → 1</div></div>
+
+          <div class="t-item" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon pass">check_circle</span><span class="t-name">fibonacci_recursive(10) → 55</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail"><div class="t-check pass"><span class="material-icons-outlined">check_circle</span> Returns 55</div></div>
+
+          <!-- Failing tests -->
+          <div class="t-item expanded" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon fail">cancel</span><span class="t-name" style="color:var(--text);">fib_recursive(35) performance</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail" style="display:block;">
+            <div class="t-check fail"><span class="material-icons-outlined">cancel</span> Exceeded 5s time limit</div>
+            <div class="t-output-label">Exception</div>
+            <div class="t-output" style="color:var(--fail);">TimeoutError: Execution exceeded 5s limit.
+Recursive approach has O(2^n) complexity.</div>
+          </div>
+
+          <div class="t-item expanded" onclick="this.classList.toggle('expanded')"><span class="material-icons-outlined t-icon fail">cancel</span><span class="t-name" style="color:var(--text);">fib_recursive(50) large input</span><span class="material-icons-outlined t-expand">expand_more</span></div>
+          <div class="t-detail" style="display:block;">
+            <div class="t-check fail"><span class="material-icons-outlined">cancel</span> Exceeded 5s time limit</div>
+            <div class="t-output-label">Expected</div>
+            <div class="t-output">12586269025</div>
+            <div class="t-output-label">Actual</div>
+            <div class="t-output" style="color:var(--fail);">&lt;timed out&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade -->
+      <div class="rail-section">
+        <div class="rail-label">
+          <span class="material-icons-outlined">star_outline</span> Grade
+        </div>
+        <div class="grade-input-area">
+          <div class="grade-input-wrap">
+            <input type="number" class="grade-input" id="gradeInput" value="82" min="0" max="100">
+            <span class="grade-max">/ 100</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div class="grade-auto-chip">
+              <span class="material-icons-outlined">smart_toy</span>
+              Auto: <span class="grade-auto-val">75</span>
+            </div>
+            <button class="grade-apply-auto" onclick="document.getElementById('gradeInput').value=75">Use auto grade</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="rail-section">
+        <div class="rail-label">
+          <span class="material-icons-outlined">chat_bubble_outline</span> Feedback
+        </div>
+        <div class="feedback-wrap">
+          <div class="snippet-popup" id="snippetPopup">
+            <div class="snippet-popup-title">Snippets</div>
+            <div class="snip active"><span class="snip-trigger">/naming</span><span class="snip-text">Use more descriptive variable names</span></div>
+            <div class="snip"><span class="snip-trigger">/complexity</span><span class="snip-text">Consider the time complexity of your approach</span></div>
+            <div class="snip"><span class="snip-trigger">/docstring</span><span class="snip-text">Good use of docstrings — keep it up!</span></div>
+            <div class="snip"><span class="snip-trigger">/memoize</span><span class="snip-text">Use @functools.lru_cache for memoization</span></div>
+            <div class="snip"><span class="snip-trigger">/edge</span><span class="snip-text">Handle edge cases: negative, zero, large inputs</span></div>
+          </div>
+          <textarea class="feedback-ta" id="feedbackTa" placeholder="Feedback... (type / for snippets)">Good iterative solution. The recursive version needs memoization — see inline comments.</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="rail-footer">
+      <div class="footer-btns">
+        <button class="btn-draft">Save draft</button>
+        <button class="btn-grade">
+          <span class="material-icons-outlined">send</span>
+          Submit & next
+        </button>
+      </div>
+      <div class="footer-keys">
+        <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">Enter</kbd> submit
+        <span style="margin:0 4px;color:var(--border);">·</span>
+        <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">→</kbd> next
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ——— EXERCISE TEXT DRAWER ——— -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="material-icons-outlined" style="font-size:18px; color:var(--text-2);">article</span>
+    <span class="drawer-title">Exercise Description</span>
+    <div style="flex:1;"></div>
+    <button class="btn-icon" onclick="toggleDrawer()">
+      <span class="material-icons-outlined">close</span>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <h3>Fibonacci Sequence Implementation</h3>
+    <p>Implement three functions that work with the Fibonacci sequence:</p>
+
+    <p><strong>1. <code>fibonacci(n)</code></strong></p>
+    <p>Return a list of the first <code>n</code> Fibonacci numbers, starting from 0. If <code>n &lt;= 0</code>, return an empty list.</p>
+    <pre>>>> fibonacci(7)
+[0, 1, 1, 2, 3, 5, 8]</pre>
+
+    <p><strong>2. <code>fibonacci_recursive(n)</code></strong></p>
+    <p>Return the <code>n</code>-th Fibonacci number using recursion. Your solution must handle inputs up to <code>n = 50</code> within 5 seconds.</p>
+    <pre>>>> fibonacci_recursive(10)
+55</pre>
+
+    <p><strong>3. <code>is_fibonacci(num)</code></strong></p>
+    <p>Return <code>True</code> if the given number appears in the Fibonacci sequence, <code>False</code> otherwise.</p>
+    <pre>>>> is_fibonacci(13)
+True
+>>> is_fibonacci(4)
+False</pre>
+
+    <p><strong>Requirements:</strong></p>
+    <ul>
+      <li>All functions must handle edge cases (negative numbers, zero)</li>
+      <li>The recursive solution must be efficient enough for large inputs</li>
+      <li>Include proper type hints</li>
+    </ul>
+
+    <p><strong>Hints:</strong></p>
+    <ul>
+      <li>Look into Python's <code>functools</code> module for optimising recursion</li>
+      <li>A number is a Fibonacci number if and only if one of <code>5n&sup2; + 4</code> or <code>5n&sup2; - 4</code> is a perfect square</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Student dropdown
+  function toggleStudentDropdown() {
+    document.getElementById('studentDropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#studentNavToggle')) {
+      document.getElementById('studentDropdown').classList.remove('open');
+    }
+  });
+  // Click student in dropdown
+  document.querySelectorAll('.sd-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.sd-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('studentDropdown').classList.remove('open');
+    });
+  });
+
+  // Toggle test details
+  function toggleTests() {
+    const list = document.getElementById('testsList');
+    list.classList.toggle('open');
+    const btn = list.previousElementSibling.querySelector('.tests-expand-btn');
+    btn.textContent = list.classList.contains('open') ? 'Hide' : 'Details';
+  }
+
+  // Add comment on gutter click
+  document.querySelectorAll('.line-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const line = btn.closest('.code-line');
+      const input = document.getElementById('newComment');
+      line.parentNode.insertBefore(input, line.nextSibling);
+      input.classList.add('open');
+      input.querySelector('textarea').focus();
+    });
+  });
+  function closeComment() {
+    document.getElementById('newComment').classList.remove('open');
+  }
+
+  // Snippet popup in feedback
+  const feedbackTa = document.getElementById('feedbackTa');
+  const snippetPopup = document.getElementById('snippetPopup');
+
+  feedbackTa.addEventListener('input', function() {
+    const val = this.value;
+    const lastSlash = val.lastIndexOf('/');
+    if (lastSlash >= 0 && (lastSlash === 0 || val[lastSlash-1] === ' ' || val[lastSlash-1] === '\n')) {
+      const q = val.substring(lastSlash + 1);
+      if (q.length <= 12 && !q.includes(' ')) {
+        let any = false;
+        document.querySelectorAll('#snippetPopup .snip').forEach(s => {
+          const trigger = s.querySelector('.snip-trigger').textContent.substring(1);
+          if (trigger.startsWith(q) || q === '') { s.style.display = ''; any = true; }
+          else { s.style.display = 'none'; }
+        });
+        if (any) { snippetPopup.classList.add('open'); return; }
+      }
+    }
+    snippetPopup.classList.remove('open');
+  });
+
+  document.querySelectorAll('#snippetPopup .snip').forEach(s => {
+    s.addEventListener('click', () => {
+      const text = s.querySelector('.snip-text').textContent;
+      const val = feedbackTa.value;
+      const lastSlash = val.lastIndexOf('/');
+      feedbackTa.value = val.substring(0, lastSlash) + text;
+      snippetPopup.classList.remove('open');
+      feedbackTa.focus();
+    });
+  });
+  feedbackTa.addEventListener('blur', () => {
+    setTimeout(() => snippetPopup.classList.remove('open'), 150);
+  });
+
+  // Exercise text drawer
+  function toggleDrawer() {
+    document.getElementById('drawer').classList.toggle('open');
+    document.getElementById('drawerOverlay').classList.toggle('open');
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    if (e.key === 'Escape') {
+      closeComment();
+      if (document.getElementById('drawer').classList.contains('open')) toggleDrawer();
+    }
+  });
+</script>
+</body>
+</html>

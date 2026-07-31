@@ -18,7 +18,6 @@ enum class ReqError(val errorCodeStr: String) {
     NO_GROUP_ACCESS("NO_GROUP_ACCESS"),
     EXERCISE_NOT_AUTOASSESSABLE("EXERCISE_NOT_AUTOASSESSABLE"),
     NO_EXERCISE_ACCESS("NO_EXERCISE_ACCESS"),
-    EXERCISE_ALREADY_ON_COURSE("EXERCISE_ALREADY_ON_COURSE"),
     GROUP_NOT_EMPTY("GROUP_NOT_EMPTY"),
     NO_DIR_ACCESS("NO_DIR_ACCESS"),
     DIR_NOT_EMPTY("DIR_NOT_EMPTY"),
@@ -38,8 +37,8 @@ enum class ReqError(val errorCodeStr: String) {
 
 
 data class RequestErrorResponse(
-    @JsonProperty("id", required = true) val id: String,
-    @JsonProperty("code", required = true) val code: String?,
-    @JsonProperty("attrs", required = true) val attrs: Map<String, String>,
-    @JsonProperty("log_msg", required = true) val logMsg: String
+    @get:JsonProperty("id", required = true) val id: String,
+    @get:JsonProperty("code", required = true) val code: String?,
+    @get:JsonProperty("attrs", required = true) val attrs: Map<String, String>,
+    @get:JsonProperty("log_msg", required = true) val logMsg: String
 )

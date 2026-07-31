@@ -2,17 +2,21 @@ package core.ems.service.register
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.*
+import core.db.Account
+import core.db.AccountGroup
+import core.db.Group
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.countTotalUsersCache
-import core.exception.InvalidRequestException
-import core.exception.ReqError
-import core.util.SendMailService
-import mu.KotlinLogging
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
@@ -20,20 +24,17 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.*
-import javax.validation.Valid
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
-private val log = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/v2")
-class UpdateAccountController(val cachingService: CachingService, private val mailService: SendMailService) {
+class UpdateAccountController(val cachingService: CachingService) {
+    private val log = KotlinLogging.logger {}
 
     data class PersonalDataBody(
-        @JsonProperty("first_name", required = true)
+        @param:JsonProperty("first_name", required = true)
         @field:NotBlank @field:Size(max = 100) val firstName: String,
-        @JsonProperty("last_name", required = true)
+        @param:JsonProperty("last_name", required = true)
         @field:NotBlank @field:Size(max = 100) val lastName: String
     )
 
@@ -61,11 +62,6 @@ class UpdateAccountController(val cachingService: CachingService, private val ma
             if (!cachingService.studentExists(account.username)) {
                 log.debug { "Update student ${caller.id}" }
                 updateStudent(account)
-            }
-            if (isChanged) {
-                log.debug { "Update student course access ${caller.id}" }
-                updateStudentCourseAccesses(account)
-                cachingService.evictAccountCache(account.username)
             }
         }
 
@@ -185,48 +181,6 @@ private fun updateAdmin(admin: AccountData) {
     transaction {
         Account.update({ Account.id eq admin.username }) {
             it[isAdmin] = true
-        }
-    }
-}
-
-
-private fun updateStudentCourseAccesses(accountData: AccountData) {
-    log.debug { "Updating student course accesses" }
-    val now = DateTime.now()
-
-    transaction {
-        val courseIds = StudentPendingAccess
-            .select(StudentPendingAccess.course)
-            .where { StudentPendingAccess.email eq accountData.email }
-            .map { it[StudentPendingAccess.course].value }
-
-        StudentPendingAccess.deleteWhere {
-            StudentPendingAccess.email eq accountData.email
-        }
-
-        courseIds.forEach { courseId ->
-            log.debug { "Granting access for ${accountData.username} to course $courseId" }
-
-            // TODO: maybe can batchInsert
-            StudentCourseAccess.insert {
-                it[student] = accountData.username
-                it[course] = courseId
-                it[createdAt] = now
-            }
-
-            val groupIds = StudentPendingCourseGroup
-                .select(StudentPendingCourseGroup.courseGroup)
-                .where {
-                    StudentPendingCourseGroup.email.eq(accountData.email) and
-                            StudentPendingCourseGroup.course.eq(courseId)
-                }
-                .map { it[StudentPendingCourseGroup.courseGroup] }
-
-            StudentCourseGroup.batchInsert(groupIds) {
-                this[StudentCourseGroup.student] = accountData.username
-                this[StudentCourseGroup.course] = courseId
-                this[StudentCourseGroup.courseGroup] = it
-            }
         }
     }
 }
