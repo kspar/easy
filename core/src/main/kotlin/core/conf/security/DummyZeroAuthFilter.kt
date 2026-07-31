@@ -10,6 +10,11 @@ import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.web.filter.OncePerRequestFilter
 
 
+/**
+ * Trusts `oidc_claim_*` request headers verbatim, so anything that can reach core can be any
+ * user. Installed only when `easy.core.auth-enabled` is false — local dev and curl-based API
+ * testing (doc/core/api-testing.md). Production verifies JWTs instead; see [EasyUserJwtConverter].
+ */
 class DummyZeroAuthFilter(private val securityContextRepository: SecurityContextRepository = RequestAttributeSecurityContextRepository()) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -26,7 +31,7 @@ class DummyZeroAuthFilter(private val securityContextRepository: SecurityContext
         if (username != null && email != null && roles != null) {
             val context = SecurityContextHolder.createEmptyContext()
             context.authentication = EasyUser(
-                username, username, email, givenName, familyName, mapHeaderToRoles(roles)
+                username, email, givenName, familyName, mapHeaderToRoles(roles)
             )
             SecurityContextHolder.setContext(context)
             securityContextRepository.saveContext(context, request, response)

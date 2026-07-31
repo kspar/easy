@@ -7,7 +7,12 @@
  * by tsconfig.app.json too, which has no Node types.
  */
 
-/** The claims the dev proxy forwards as oidc_claim_* headers. */
+/**
+ * The claims the dev proxy forwards as oidc_claim_* headers.
+ *
+ * Not verified, and not meant to be: these headers only ever reach a local core running with
+ * auth-enabled=false, which trusts them by design. Production verifies signatures in core.
+ */
 export interface JwtClaims {
   preferred_username?: string
   given_name?: string

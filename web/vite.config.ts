@@ -10,8 +10,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         configure: (proxy) => {
-          // Mimic Apache OIDC reverse proxy: extract JWT claims from
-          // Authorization header and set them as oidc_claim_* headers
+          // Translate the SPA's bearer token into the oidc_claim_* headers that a core
+          // running with easy.core.auth-enabled=false expects, so browser-based local dev
+          // needs no IdP at all. Deployed environments no longer work this way: core
+          // verifies the JWT itself (see core/conf/security/EasyUserJwtConverter.kt), and
+          // Apache in front of it is a plain reverse proxy that passes Authorization
+          // through untouched. Point a local core at an IdP with auth-enabled=true and
+          // this translation becomes unnecessary.
           proxy.on('proxyReq', (proxyReq, req) => {
             // Remove Origin header so backend CORS filter doesn't reject
             // requests from the Vite dev server (localhost:5173)

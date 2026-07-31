@@ -8,7 +8,7 @@ For the frontend equivalent, see `doc/web/browser-testing.md`.
 ## Authenticating without Keycloak
 
 `application.yaml` ships with `easy.core.auth-enabled: false`, and `SecurityConf` reads that
-to install `DummyZeroAuthFilter` in place of `PreAuthHeaderFilter`. That filter builds an
+to install `DummyZeroAuthFilter` instead of building a JWT resource server. That filter builds an
 `EasyUser` straight from request headers, so locally you can be anyone with curl:
 
 ```sh
@@ -24,9 +24,16 @@ skips authentication entirely and you get a 401. `oidc_claim_given_name` and
 `oidc_claim_family_name` are optional. `easy_role` is comma-separated for multiple roles
 (`teacher,admin`).
 
-These are the same headers the Apache OIDC reverse proxy sets in production, which is why
-`web/vite.config.ts` fabricates them from the JWT when proxying `/v2` — that file is where
-to look if the header names ever drift.
+`web/vite.config.ts` fabricates these same headers from the SPA's bearer token when proxying
+`/v2`, so browser-based local dev works against an auth-disabled core with no IdP — that file is
+where to look if the header names ever drift.
+
+These headers are a **local-dev mechanism only**. Deployed environments set
+`easy.core.auth-enabled: true`, and core then verifies the Keycloak access token itself against
+the realm's JWKS (`core/conf/security/EasyUserJwtConverter.kt`), ignoring these headers entirely.
+Apache in front of core is a plain reverse proxy. Core used to trust `oidc_claim_*` headers set by
+mod_auth_openidc in production too, which is why this file previously described them as the
+production mechanism — see EZ-1724.
 
 Test accounts from the test data: `dev-student` (student), `dev-teacher` (teacher), `kspar`
 (all three roles).
@@ -88,5 +95,5 @@ left is the one under test.
 
 ## What this doesn't cover
 
-Nothing here exercises real Keycloak, the Apache proxy, or `PreAuthHeaderFilter` — the
+Nothing here exercises real Keycloak or token verification (`EasyUserJwtConverter`) — the
 production auth path is entirely bypassed. It validates service and query behaviour.

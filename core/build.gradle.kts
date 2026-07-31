@@ -52,6 +52,8 @@ dependencies {
     // Spring Boot
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.security)
+    // Core verifies Keycloak JWTs itself — see SecurityConf and doc/core/api-testing.md
+    implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.cache)
     // restTemplate:
@@ -97,9 +99,6 @@ dependencies {
 
     // Source code similarity
     implementation(libs.fuzzywuzzy)
-
-    // Temporary JWT parsing for username migration
-    implementation(libs.java.jwt)
 
     // TSL
     implementation(project(":tsl"))

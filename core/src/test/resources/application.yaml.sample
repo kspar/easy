@@ -37,6 +37,16 @@ spring:
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # easy.core.auth-enabled is true below, so SecurityConf builds a resource server and
+          # Boot needs these to create a JwtDecoder. The URL is never contacted: jwk-set-uri
+          # fetches lazily on the first token, and no test presents one. Keeping auth enabled
+          # here means the test context is wired the way production is.
+          jwk-set-uri: "http://localhost:1/realms/test/protocol/openid-connect/certs"
+          issuer-uri: "http://localhost:1/realms/test"
 
 
 easy:

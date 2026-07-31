@@ -14,6 +14,7 @@ that release.
 | Since | Change | Action |
 | --- | --- | --- |
 | v4.0 (unreleased) | `easy.wui.base-url` renamed to `easy.web.base-url` | Rename the key in every environment's `application.yaml`. Used by `SendMailService` to build links in outgoing email. |
+| v4.0 (unreleased) | `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` and `.issuer-uri` added (EZ-1724) | **Required on any environment with `easy.core.auth-enabled: true`** — core now verifies Keycloak tokens itself instead of trusting the Apache OIDC proxy's `oidc_claim_*` headers. Add both keys pointing at that environment's realm; see the sample for why both and not just `issuer-uri`. The matching change on the webserver is to remove the mod_auth_openidc config from the API vhost, leaving a plain `ProxyPass` — do it in the same window, since a vhost that still authenticates will 401 cross-origin preflight `OPTIONS` requests. |
 
 To check an environment before deploying:
 

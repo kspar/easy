@@ -28,10 +28,23 @@ spring:
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Required whenever easy.core.auth-enabled is true: core verifies access tokens
+          # itself against the realm's JWKS. Set both keys — jwk-set-uri makes the key fetch
+          # lazy (core starts even if the IdP is briefly unreachable), and issuer-uri adds
+          # issuer validation on top. Setting issuer-uri alone makes startup fetch the IdP's
+          # metadata, coupling core's boot to the IdP being up.
+          jwk-set-uri: "<idp-base-url>/realms/<realm>/protocol/openid-connect/certs"
+          issuer-uri: "<idp-base-url>/realms/<realm>"
 
 
 easy:
   core:
+    # Never true on a deployed environment: false installs DummyZeroAuthFilter, which trusts
+    # oidc_claim_* request headers verbatim. See doc/core/api-testing.md.
     auth-enabled: true
     mail:
       from: "<from-address>"

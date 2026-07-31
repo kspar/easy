@@ -19,7 +19,6 @@ commonmark = "0.24.0"
 commonsLang3 = "3.20.0"
 exposed = "1.3.1"
 fuzzywuzzy = "1.2.0"
-javaJwt = "3.18.3"
 jsoup = "1.22.1"
 kaml = "0.52.0"
 kotlinLogging = "8.0.01"
@@ -40,6 +39,7 @@ liquibase = { id = "org.liquibase.gradle", version.ref = "liquibaseGradle" }
 # --- Versionless: resolved by the Spring Boot BOM (io.spring.dependency-management) ---
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
 spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
 spring-boot-starter-restclient = { module = "org.springframework.boot:spring-boot-starter-restclient" }
@@ -66,7 +66,6 @@ exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "e
 exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 fuzzywuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzywuzzy" }
-java-jwt = { module = "com.auth0:java-jwt", version.ref = "javaJwt" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlinLogging" }

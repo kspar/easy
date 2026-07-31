@@ -5,7 +5,6 @@ import org.springframework.security.core.GrantedAuthority
 
 
 class EasyUser(
-    val oldId: String,
     val id: String,
     val email: String,
     val givenName: String?,
@@ -13,8 +12,9 @@ class EasyUser(
     val roles: Set<EasyGrantedAuthority>,
 ) : AbstractAuthenticationToken(roles) {
 
-    // Safe to set: authentication is guaranteed by the filter logic that constructs
-    // this object only after validating required claims (username, email, roles).
+    // Safe to set: this object is only constructed after the required claims have been
+    // validated — from a signature-verified JWT in production (EasyUserJwtConverter), or
+    // from request headers when auth is disabled for local dev (DummyZeroAuthFilter).
     // Required by Spring Security 7 which strictly checks isAuthenticated() == true.
     init {
         isAuthenticated = true
@@ -53,3 +53,24 @@ enum class EasyRole(val roleWithPrefix: String) {
     TEACHER("ROLE_TEACHER"),
     ADMIN("ROLE_ADMIN")
 }
+
+/**
+ * Roles arrive as a JSON array in the `easy_role` JWT claim, but as a comma-separated string
+ * in the `oidc_claim_easy_role` header the auth-disabled dev path uses.
+ */
+fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
+    mapRoleStringsToRoles(rolesHeader.split(","))
+
+/**
+ * Throws on an unrecognised role rather than dropping it: a role we cannot map is a Keycloak
+ * configuration problem, and silently ignoring it would quietly change what a user can do.
+ */
+fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
+    roleStrings.map {
+        when (it) {
+            "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
+            "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
+            "admin" -> EasyGrantedAuthority(EasyRole.ADMIN)
+            else -> throw RuntimeException("Unmapped role $it")
+        }
+    }.toSet()

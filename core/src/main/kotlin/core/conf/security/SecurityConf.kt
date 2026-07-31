@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.firewall.HttpFirewall
@@ -41,14 +42,23 @@ class SecurityConf {
                 ).permitAll()
                     // All other services require auth == any role by default
                     .anyRequest().authenticated()
-            }.addFilterAfter(
-                if (authEnabled) PreAuthHeaderFilter() else DummyZeroAuthFilter(),
-                RequestHeaderAuthenticationFilter::class.java
-            ).exceptionHandling {
+            }.let {
+                // Production verifies JWTs itself. The auth-disabled path builds an EasyUser
+                // straight from request headers so local dev and curl need no IdP — see
+                // doc/core/api-testing.md. It must never be enabled on a deployed environment.
+                if (authEnabled)
+                    it.oauth2ResourceServer { rs ->
+                        rs.jwt { jwt -> jwt.jwtAuthenticationConverter(EasyUserJwtConverter()) }
+                    }
+                else
+                    it.addFilterAfter(DummyZeroAuthFilter(), RequestHeaderAuthenticationFilter::class.java)
+            }.exceptionHandling {
                 it.accessDeniedHandler { request, response, _ ->
                     log.info { "Forbidden for ${makeRequestLogMsg(request)}" }
                     response.sendError(HttpServletResponse.SC_FORBIDDEN)
                 }
+                // Set explicitly, so it wins over the resource server's Bearer entry point —
+                // we keep the logging, and give up the WWW-Authenticate header the SPA ignores.
                 it.authenticationEntryPoint { request, response, _ ->
                     log.info { "Unauthorized for ${makeRequestLogMsg(request)}" }
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
@@ -72,8 +82,12 @@ class SecurityConf {
     }
 
     private fun makeRequestLogMsg(req: HttpServletRequest): String {
-        val username = req.getHeader("oidc_claim_preferred_username")
-        val role = req.getHeader("oidc_claim_easy_role")
+        // Read from the security context rather than the request: there are no oidc_claim_*
+        // headers to read since core started verifying tokens itself. A 403 has an authenticated
+        // user here; a 401 usually does not, and unidentified is the honest answer then.
+        val user = SecurityContextHolder.getContext().authentication as? EasyUser
+        val username = user?.id ?: "unauthenticated"
+        val role = user?.roles?.joinToString(",") { it.authority } ?: "-"
         val ip = req.remoteAddr
         val method = req.method
         val url = req.requestURL
