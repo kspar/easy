@@ -281,25 +281,26 @@ pass, publish:
 
 - `core-<sha>.jar` — from `./gradlew bootJar`. Environment-agnostic: all config is the external
   `application.yaml`.
-- `web-staging-<sha>.tar.gz` — from `npm run build` with staging env baked in.
+- `web-<sha>.tar.gz` — from `npm run build`. Also environment-agnostic since EZ-1726.
 
-**The web dist is not environment-agnostic**, and this is worth being explicit about because it
-undercuts one of the usual arguments for artifact-based deploys. `web/src/config.ts` reads
-`import.meta.env.VITE_*` at **build** time, so a dist is pinned to one API URL and one realm:
+Both artifacts are now genuinely environment-neutral, which is the property that makes
+artifact-based deploys worth the trouble: the build staging exercised is the same build that later
+goes to production, byte for byte.
 
-```
-VITE_EMS_ROOT=https://dev.core.lahendus.ut.ee/v2
-VITE_KEYCLOAK_URL=https://dev.idp.lahendus.ut.ee/auth/
-VITE_KEYCLOAK_REALM=<dev realm>
-VITE_KEYCLOAK_CLIENT_ID=<dev client>
-```
+That was not true when this plan was written. `web/src/config.ts` read `import.meta.env.VITE_*` at
+**build** time, so a dist was pinned to one API URL and one realm, and CI would have needed a matrix
+producing one dist per environment. The SPA now fetches `/config.json` at boot instead.
 
-The jar promotes from staging to prod unchanged; the dist does not — it must be rebuilt per
-environment. Short term: a CI matrix producing one dist per environment. Better: make the SPA fetch
-a small `/config.json` at boot instead, so one dist serves both. Worth a YouTrack issue; not a
-blocker.
+Two consequences for the deploy:
 
-(`config.emsRoot` is used as a plain prefix in `fetch()` calls — `web/src/api/client.ts:52` — so an
+- Step 4 below writes the environment's `config.json` into the unpacked dist. That file — four keys,
+  `emsRoot` plus the three keycloak values — is the only environment-specific artefact on the web
+  side. See `web/README.md`.
+- Apache must serve `config.json` with `Cache-Control: no-store`. The app already fetches it that
+  way, but a caching layer in front is the one thing that can defeat the whole scheme: a stale
+  `config.json` silently points a fresh deploy at the previous backend.
+
+(`config.emsRoot` is used as a plain prefix in `fetch()` calls — `web/src/api/client.ts` — so an
 absolute cross-origin URL works with no code change.)
 
 For storage, GitHub Actions artifacts plus `gh run download` needs no new infrastructure and reuses
@@ -316,7 +317,8 @@ building on the server.
 1  resolve <sha> → CI run, fail loudly if that run wasn't green
 2  gh run download → jar + dist tarball
 3  scp to /srv/easy/releases/<sha>/
-4  ssh: unpack dist, symlink /srv/easy/web/current → releases/<sha>/web
+4  ssh: unpack dist, write this environment's config.json into it (see §8.1),
+      symlink /srv/easy/web/current → releases/<sha>/web
 5  ssh: systemctl restart easy-core        # Liquibase migrates on startup
 6  poll until core answers, then print the deployed sha
 7  keep the last N releases; symlink flip means rollback is step 4 with an older sha

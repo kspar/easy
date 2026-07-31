@@ -74,7 +74,8 @@ omitted it, add it, or you'll get an `IllegalStateException` naming this exact f
 
 Since EZ-1724 core verifies Keycloak access tokens itself, so a local core can run the production
 auth path with no extra infrastructure — the SPA already logs into a real IdP by default
-(`web/.env`). Set in `application.yaml`:
+(`web/public/config.json`, overridable per-developer via `VITE_*` in `web/.env.local`; see
+`web/README.md`). Set in `application.yaml`:
 
 ```yaml
 easy:

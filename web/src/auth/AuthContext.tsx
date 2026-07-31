@@ -54,6 +54,11 @@ function getPersistedRole(roles: Role[]): Role | null {
 // it — init() writes to it, and onTokenExpired is assigned below — and React forbids mutating
 // a value returned from useState. The constructor only builds an object; nothing touches the
 // network until init(), so creating it at import time is safe.
+//
+// It does, however, read config at import time, and config is now fetched at runtime
+// (EZ-1726). `main.tsx` therefore awaits loadConfig() and imports the app dynamically, so this
+// module is evaluated only after config.json has been applied. Don't add a static import of
+// App.tsx (or of this file) to main.tsx — that would evaluate this line with an empty realm.
 const keycloak = new Keycloak(config.keycloak)
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -1,0 +1,8 @@
+{
+  "emsRoot": "/v2",
+  "keycloak": {
+    "url": "https://idp.lahendus.ut.ee/auth/",
+    "realm": "master",
+    "clientId": "lahendus.ut.ee"
+  }
+}

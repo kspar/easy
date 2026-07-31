@@ -29,7 +29,9 @@ web/dev-harness/
   keycloak-stub.js               fake IdP; role comes from localStorage.stubRole
   harness.mjs                    launch() / fakeApi() / json() / checker()
   package.json                   playwright, kept out of web/package.json
-  scripts/*.mjs                  one script per page under test
+  scripts/*.mjs                  one script per page under test, plus
+                                 runtime-config.mjs which covers boot-time
+                                 config loading and its failure screens
   screenshots/                   output (gitignored)
 ```
 

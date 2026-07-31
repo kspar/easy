@@ -1,73 +1,59 @@
-# React + TypeScript + Vite
+# web — the Lahendus frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite + MUI. Replaced the old Kotlin/JS `wui`, which was deleted 2026-07-31.
 
-Currently, two official plugins are available:
+For running the whole stack locally (database, core, auth modes) see `../DEVELOPMENT.md`. For
+driving pages in a real browser with Keycloak and the backend faked, see
+`../doc/web/browser-testing.md`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm install
+npm run dev        # http://localhost:5173, proxies /v2 to core on :8080
+npm run lint       # fails on errors; there is a known warning backlog (EZ-1722)
+npm run build      # tsc -b && vite build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Runtime configuration
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Environment-specific settings are fetched from **`/config.json` at boot**, not baked in at build
+time (EZ-1726). One built dist therefore serves every environment, and the artifact CI tested is
+the one that gets deployed.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+`public/config.json` holds the defaults and is what ends up in `dist/`:
+
+```json
+{
+  "emsRoot": "/v2",
+  "keycloak": {
+    "url": "https://idp.lahendus.ut.ee/auth/",
+    "realm": "master",
+    "clientId": "lahendus.ut.ee"
+  }
+}
 ```
+
+- `emsRoot` — base URL for core. A same-origin path (`/v2`) when one reverse proxy fronts both, or
+  an absolute URL (`https://dev.core.lahendus.ut.ee/v2`) when the API is on another host. Core's
+  CORS allowlist has to contain the web origin in that case — see `SecurityConf.kt`.
+- `keycloak.*` — passed straight to keycloak-js.
+
+**Deploying** means writing that environment's `config.json` next to `index.html`. Serve it with
+`Cache-Control: no-store`: the app already fetches it with `cache: 'no-store'`, but a caching proxy
+in front is the one thing that can defeat this whole approach — a stale config.json points a fresh
+deploy at the wrong backend.
+
+All four keys are required. If `config.json` is missing, unparseable, or incomplete, the app renders
+a plain "Configuration error" page naming the problem instead of white-screening. That path is
+covered by `dev-harness/scripts/runtime-config.mjs`.
+
+### Local overrides
+
+`VITE_*` variables in `.env.local` still override `config.json`, but **only under `npm run dev`** —
+`import.meta.env.DEV` guards it, so a production build cannot be pinned to one environment again.
+See `.env` for the list.
+
+### Why config loads before the app
+
+`main.tsx` awaits `loadConfig()` and then imports `App.tsx` **dynamically**. `AuthContext.tsx`
+constructs its Keycloak instance at module scope, so a static import would evaluate it with an empty
+realm. Don't turn that dynamic import into a static one.
