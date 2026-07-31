@@ -1,0 +1,80 @@
+# Single source of truth for dependency and plugin versions.
+#
+# Plugin versions are declared once in the root build.gradle.kts (all `apply false`);
+# subprojects then apply them without a version. Keep it that way — repeating a version in a
+# subproject is what this file exists to prevent.
+#
+# One version escapes this file: core's `buildscript { classpath("org.liquibase:liquibase-core") }`.
+# Version catalog accessors are not available inside a `buildscript` block, so that literal has
+# to be kept in sync with `liquibase` below by hand. It is commented at the call site.
+
+[versions]
+kotlin = "2.3.10"
+springBoot = "4.1.0"
+springDependencyManagement = "1.1.7"
+liquibaseGradle = "3.1.0"
+
+asciidoctorj = "3.0.1"
+commonmark = "0.24.0"
+commonsLang3 = "3.20.0"
+exposed = "1.3.1"
+fuzzywuzzy = "1.2.0"
+javaJwt = "3.18.3"
+jsoup = "1.22.1"
+kaml = "0.52.0"
+kotlinLogging = "8.0.01"
+kotlinxSerializationJson = "1.5.0"
+liquibase = "4.31.1"
+picocli = "4.7.6"
+tika = "3.2.3"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
+springDependencyManagement = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+liquibase = { id = "org.liquibase.gradle", version.ref = "liquibaseGradle" }
+
+[libraries]
+# --- Versionless: resolved by the Spring Boot BOM (io.spring.dependency-management) ---
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
+spring-boot-starter-restclient = { module = "org.springframework.boot:spring-boot-starter-restclient" }
+spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
+postgresql = { module = "org.postgresql:postgresql" }
+jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+
+# --- Versionless: aligned by the Kotlin plugin's BOM ---
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
+
+# --- Versioned ---
+asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
+commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
+exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
+fuzzywuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzywuzzy" }
+java-jwt = { module = "com.auth0:java-jwt", version.ref = "javaJwt" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlinLogging" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liquibase" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
+
+[bundles]
+exposed = ["exposed-core", "exposed-jdbc", "exposed-dao", "exposed-jodatime", "exposed-json"]
+commonmark = ["commonmark", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough"]

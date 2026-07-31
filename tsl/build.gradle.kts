@@ -1,4 +1,4 @@
-
+// Versions come from the root build.gradle.kts / gradle/libs.versions.toml.
 plugins {
 	kotlin("jvm")
 	kotlin("plugin.serialization")
@@ -17,8 +17,8 @@ repositories {
 
 dependencies {
 	implementation(project(":tsl-common"))
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
-	implementation("com.charleskorn.kaml:kaml:0.52.0")
+	implementation(libs.kotlin.reflect)
+	implementation(libs.kotlin.stdlib.jdk8)
+	implementation(libs.kotlinx.serialization.json)
+	implementation(libs.kaml)
 }
