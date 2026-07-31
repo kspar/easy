@@ -1,7 +1,9 @@
-rootProject.name = 'easy'
+rootProject.name = "easy"
 
 // The Gradle build covers the JVM side only. The React web UI lives in web/ (npm),
 // the auto-assessment service in aae/ (Python) — neither is a Gradle project.
-include 'core',
-        'tsl',
-        'tsl-common'
+include(
+    "core",
+    "tsl",
+    "tsl-common",
+)
