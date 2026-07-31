@@ -50,7 +50,7 @@ If your staging database genuinely has another name, prefer renaming it. The esc
 
 | Data | Treatment |
 | --- | --- |
-| `account.given_name`, `family_name` | Estonian colour + bird, e.g. `Kollane Aara` |
+| `account.given_name`, `family_name` | Estonian colour + bird, e.g. `Kollane Aara`. Unique at any account count — see below |
 | `account.email` | `colour.bird.N@ez.ez`, diacritics folded, `N` guarantees uniqueness at any account count |
 | `account.pseudonym` | Regenerated as 32 hex chars, the format `account_checkin.kt` uses |
 | `account.moodle_username` | Nulled. A real Moodle identifier, and not even mapped in `Tables.kt` any more — which is how it went unnoticed |
@@ -60,6 +60,18 @@ If your staging database genuinely has another name, prefer renaming it. The esc
 | `student_moodle_pending_access` (+ course group child) | Deleted. Invitations to people who never registered: pure PII, no account to pseudonymise, nothing of testing value |
 | `course_invite_link` | Deleted. Live tokens; a tester can make a new invite in one click |
 | `log_report` | Deleted. Client error reports, free text tied to a user id |
+
+#### Name uniqueness
+
+The wordlists give `11 colours × 290 birds` = 3190 distinct names. Past that the pair space is
+exhausted, so from the second cycle onward the family name carries a number: `Hall Aara`, then
+`Hall Aara 2`, `Hall Aara 3`. Display names therefore stay unique however large the import is, and
+the first 3190 accounts get an unadorned name.
+
+This matters more than it sounds. Without it a 50k-account import produces 3190 names used about 16
+times each, and a grade table or participants search showing sixteen identical students is worse
+than an obviously synthetic `Hall Aara 2`. The script asserts `duplicate display names 0` in its
+summary.
 
 `account.username` is **preserved deliberately**. Imported accounts are unreachable because the dev
 IdP has registration disabled, and an admin creating a dev-realm user whose username matches an
@@ -104,7 +116,9 @@ Each script ends with a summary. Rows labelled "should be 0" are assertions — 
 means something did not apply. `anonymise.sql` also reports how much remains for the two optional
 passes, so it is obvious what has not been dealt with.
 
-Tested against a restored dev dump padded to **5003 accounts**, which is past the old script's
-ceiling: 0 non-`@ez.ez` emails, 0 duplicate emails, 0 orphaned pseudonyms in `stats_submission`.
-All three scripts were confirmed to refuse a database named `easyems_guardtest` without modifying
-a row.
+Tested against a restored dev dump padded to **50,003 accounts**, an order of magnitude past the
+old script's 3190 ceiling. It completes in about a second, and all the assertions hold: 50,003
+distinct display names, 0 duplicate emails, 0 non-`@ez.ez` emails, 0 orphaned pseudonyms in
+`stats_submission`, and 0 rows still carrying an original name. Grades survive the feedback strip.
+All three scripts were confirmed to refuse a database named `easyems_guardtest` without modifying a
+row, and `-v ALLOW_ANY_DATABASE=true` to warn and proceed.

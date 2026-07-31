@@ -90,7 +90,9 @@ SELECT
     md5(random()::text || numbered.username) AS new_pseudonym,
     numbered.i,
     c.w AS colour,
-    b.w AS bird
+    b.w AS bird,
+    -- How many times the colour x bird space has been exhausted before this account.
+    (numbered.i - 1) / (n.colours * n.birds) AS cycle
 FROM numbered
 CROSS JOIN n
 JOIN colour c ON c.idx = 1 + ((numbered.i - 1) % n.colours)
@@ -110,7 +112,11 @@ $$ LANGUAGE sql IMMUTABLE;
 
 UPDATE account a
 SET given_name = initcap(m.colour),
-    family_name = initcap(m.bird),
+    -- Numbered from the second cycle onwards, so display names stay unique however many accounts
+    -- there are. Without it a 50k-account import gets 3190 distinct names used ~16 times each,
+    -- and a grade table with sixteen identical students is worse than an obviously synthetic
+    -- "Hall Emu 2". The first 3190 accounts get a bare name.
+    family_name = initcap(m.bird) || CASE WHEN m.cycle > 0 THEN ' ' || (m.cycle + 1) ELSE '' END,
     email = pg_temp.fold(m.colour) || '.' || pg_temp.fold(m.bird) || '.' || m.i || '@ez.ez',
     -- Regenerated in the format account_checkin.kt uses: uuid hex, no dashes.
     pseudonym = m.new_pseudonym,
@@ -166,6 +172,9 @@ UNION ALL SELECT 'accounts with a non-@ez.ez email (should be 0)',
     count(*)::text FROM account WHERE email NOT LIKE '%@ez.ez'
 UNION ALL SELECT 'duplicate emails (should be 0)',
     count(*)::text FROM (SELECT email FROM account GROUP BY email HAVING count(*) > 1) d
+UNION ALL SELECT 'duplicate display names (should be 0)',
+    (SELECT count(*) FROM (SELECT given_name, family_name FROM account
+                           GROUP BY given_name, family_name HAVING count(*) > 1) n)::text
 UNION ALL SELECT 'moodle usernames left (should be 0)',
     (SELECT count(*) FROM account WHERE moodle_username IS NOT NULL)::text
 UNION ALL SELECT 'pending invitations left (should be 0)',
