@@ -1,24 +1,37 @@
+# Template for core/src/test/resources/application.yaml, which is gitignored and required —
+# `./gradlew test` cannot start its Spring context without it. Copy this file, then fill in
+# the placeholders. See DEVELOPMENT.md.
+#
+# DANGER: InitTestDatabase (core/src/test/kotlin/core/conf/TestDatabaseConf.kt) runs Liquibase
+# dropAll() against this datasource on startup. The database configured below is WIPED on
+# every test run — point it at a throwaway database, never at your dev DB (easyems).
+#
+# Every ${easy.*} placeholder used in core/src/main/kotlin must appear here or the context
+# fails with "Could not resolve placeholder ...". Keep this file in sync when adding new ones.
 
 server:
-  port: 8080
+  # Tests use @SpringBootTest's default MOCK web environment, so this port is never bound.
+  # Avoid 8080 anyway — a dev core usually holds it.
+  port: 8098
 
 spring:
   datasource:
-    jdbc-url: "<url>"
+    jdbc-url: "jdbc:postgresql://localhost:5432/easyems_test"
     username: "<username>"
     password: "<password>"
   mail:
-    host: "<mailhost>"
+    # Mail is disabled below; this only needs to satisfy the JavaMailSender bean.
+    host: "localhost"
     properties:
       mail:
         transport:
           protocol: "smtp"
         smtp:
-          auth: true
+          auth: false
           port: 587
           starttls:
-            enable: true
-            required: true
+            enable: false
+            required: false
     username: "<username>"
     password: "<password>"
   jackson:
@@ -29,39 +42,58 @@ spring:
 easy:
   core:
     liquibase:
-        changelog: "<path-to-changelog.xml>"
+      # Classpath-relative (ClassLoaderResourceAccessor), not a filesystem path.
+      changelog: "db/changelog.xml"
     auth-enabled: true
     mail:
       from: "<from-address>"
       sys:
-        enabled: true
+        enabled: false
         to: "<to-address>"
       user:
-        enabled: true
+        enabled: false
 
     auto-assess:
-        fixed-delay:
-          ms: "3000"
-        fixed-delay-observer-clear:
-          ms: "3000"
-        anonymous-submissions-to-keep: "50"
+      fixed-delay:
+        ms: "3000"
+      fixed-delay-observer-clear:
+        ms: "3000"
+      anonymous-submissions-to-keep: "50"
     statistics:
       fixed-delay:
         ms: "1000"
 
+    # Crons are pinned to February 31st — a date that never occurs — so no scheduled job
+    # fires mid-test. The main config uses the same trick for the destructive ones.
     moodle-sync:
+      wstoken: "<token>"
+      moodlewsrestformat: "json"
       users:
         url: "<url>"
-        cron: "0 5 4 * * *"
+        cron: "0 0 5 31 2 ?"
+        wsfunction: "local_ut_custom_get_course_groups_users"
       grades:
         url: "<url>"
+        wsfunction: "local_ut_custom_update_manual_grades"
 
     pending-access:
       clean:
-        cron: "0 5 3 * * *"
+        cron: "0 0 5 31 2 ?"
 
     exercise-index-normalisation:
-      cron: "0 5 3 * * *"
+      cron: "0 0 5 31 2 ?"
+
+    activity:
+      merge-window:
+        s: "30"
+
+    keycloak:
+      cron: "0 0 5 31 2 ?"
+      base-url: "<base-url>"
+      realm: "<realm>"
+      client-id: "<client-id>"
+      client-secret: "<client-secret>"
+      ignore-missing-keycloak-users: true
 
   web:
     base-url: "https://easy.example"
