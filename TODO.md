@@ -13,13 +13,14 @@ file has been filed there (EZ-1676 … EZ-1707).
 ## Audit icon usage and write down what each icon means
 
 Prompted by a real collision: the teacher course-exercise list used a clock
-(`ScheduleOutlined`) for "becomes visible at", but a clock face is our **deadline** icon
-(WUI `Icons.pending`). Fixed on the list by moving to `VisibilityOutlined`, but nothing stops
-the next page from re-overloading it — there's no written convention to check against.
+(`ScheduleOutlined`) for "becomes visible at", but a clock face was our **deadline** icon in
+the old WUI (`Icons.pending`). Fixed on the list by moving to `VisibilityOutlined`, but nothing
+stops the next page from re-overloading it — there's no written convention to check against.
 
 To do:
-- Sweep every `@mui/icons-material` import across `web/src` (and the WUI `Icons.kt` set, while
-  it's still the live UI) and list which icon is used for what.
+- Sweep every `@mui/icons-material` import across `web/src` and list which icon is used for
+  what. (The WUI `Icons.kt` set is gone with the module — no longer a source to reconcile
+  against, only whatever precedent survives in `web/`.)
 - Flag the collisions and the synonyms — same meaning drawn with different icons is as
   confusing as one icon meaning two things.
 - Write the result up as a short table in `doc/web/` — icon → meaning → don't-use-for. Enough
