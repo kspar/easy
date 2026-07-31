@@ -38,8 +38,9 @@ Five clusters:
   server, not the browser, so it wants `@types/node` plus `"node"` in the right tsconfig's
   `types` — worth checking it's scoped to `tsconfig.node.json` and not leaked to app code.
 
-Once green, worth deciding how to keep it green — `tsc -b` isn't in CI (`.github/workflows`
-only runs Qodana), which is how 18 errors accumulated.
+Nothing was running `tsc -b`, which is how 18 errors accumulated. CI now does (the `web` job
+in `.github/workflows/main.yml`), so this is what's keeping master red — the build won't go
+green until these are cleared.
 
 ## Audit icon usage and write down what each icon means
 
