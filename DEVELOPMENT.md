@@ -48,7 +48,57 @@ npm run dev
 
 Runs on http://localhost:5173.
 
-## 4. Tests
+## 4. Auth: which of the two modes you're in
+
+Core has two ways to learn who is calling, and it's worth knowing which one you're running.
+
+### Headers, no IdP (the default for local dev)
+
+`easy.core.auth-enabled: false` installs `DummyZeroAuthFilter`, which reads `oidc_claim_*` request
+headers and believes them. That's what makes curl-as-anyone work (`doc/core/api-testing.md`), and
+the Vite dev proxy fabricates the same headers from the SPA's token so the browser works too. No
+network, no IdP, no token expiry.
+
+It also means anything that can reach the port is any user it likes, admin included. Core therefore
+**refuses to start** in this mode unless `server.address` is a loopback address — so keep
+
+```yaml
+server:
+  address: 127.0.0.1
+```
+
+in your `application.yaml`. The sample has it. If you're upgrading an older local config that
+omitted it, add it, or you'll get an `IllegalStateException` naming this exact fix on next start.
+
+### Real tokens, real IdP (what deployed environments do)
+
+Since EZ-1724 core verifies Keycloak access tokens itself, so a local core can run the production
+auth path with no extra infrastructure — the SPA already logs into a real IdP by default
+(`web/.env`). Set in `application.yaml`:
+
+```yaml
+easy:
+  core:
+    auth-enabled: true
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: "https://idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/certs"
+          issuer-uri: "https://idp.lahendus.ut.ee/auth/realms/master"
+```
+
+Then the Vite proxy's header translation becomes redundant — harmless, since core ignores those
+headers in this mode — and you are logged in as your real self, with whatever roles the IdP gives
+you. Worth doing when touching anything auth-shaped, since it's the only local setup that catches
+claim-mapping and realm problems. Needs network access to the IdP.
+
+To test verification *failures* — expired tokens, bad signatures, unmapped roles — use the fake IdP
+in `core/dev-idp/`, which mints deliberately broken tokens on demand.
+
+## 5. Tests
 
 `./gradlew test` needs a config file that is **not** in the repo — copy the sample and fill it in:
 
@@ -98,7 +148,7 @@ Layer 2 exists because layer 3 used to be the only thing protecting the dev data
 `easy.core.liquibase.changelog`. Adding that one key would have been enough to make
 `./gradlew test` wipe the dev database.
 
-## 5. Mock Executor
+## 6. Mock Executor
 
 A lightweight Node server that pretends to be an auto-assessment executor. No dependencies required.
 

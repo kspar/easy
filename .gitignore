@@ -14,6 +14,9 @@ core/src/test/resources/application.yaml
 
 web/.env.local
 
+# Minted fresh on every fake-idp run; see core/dev-idp/README.md
+core/dev-idp/tokens.json
+
 aae/gunicorn-conf.py
 
 # Runtime artifacts

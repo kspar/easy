@@ -24,6 +24,13 @@ jobs:
       # `./gradlew build` — worth doing, but it is its own change. See EZ-1715.
       - name: Build
         run: ./gradlew build -x test --no-daemon
+      # The suite as a whole is excluded above, but the security tests hold no Spring context,
+      # so they need neither PostgreSQL nor the gitignored config file and can run here today.
+      # Verified by running them with core/src/test/resources/application.yaml moved aside.
+      # The package filter is the weak point — a new context-free test elsewhere won't be picked
+      # up. Once EZ-1715 gives the suite a database this whole step folds into `./gradlew build`.
+      - name: Security tests
+        run: ./gradlew :core:test --tests 'core.conf.security.*' --no-daemon
 
   web:
     name: Web (TypeScript)

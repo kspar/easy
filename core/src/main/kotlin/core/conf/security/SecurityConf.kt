@@ -1,7 +1,10 @@
 package core.conf.security
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
 import jakarta.servlet.http.HttpServletRequest
+import java.net.InetAddress
+import java.net.UnknownHostException
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -22,6 +25,22 @@ import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 
+/**
+ * Whether a `server.address` value binds to loopback only.
+ *
+ * Fails closed on both edges: a blank value means Tomcat binds every interface, and an address
+ * that will not resolve is assumed to be routable. Top-level rather than private so the
+ * decision can be unit tested without standing up a Spring context.
+ */
+internal fun isLoopbackAddress(address: String): Boolean {
+    if (address.isBlank()) return false
+    return try {
+        InetAddress.getByName(address).isLoopbackAddress
+    } catch (_: UnknownHostException) {
+        false
+    }
+}
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
@@ -30,6 +49,40 @@ class SecurityConf {
 
     @Value("\${easy.core.auth-enabled}")
     private var authEnabled: Boolean = true
+
+    @Value("\${server.address:}")
+    private var serverAddress: String = ""
+
+    /**
+     * Refuses to start a core that both disables auth and listens beyond loopback.
+     *
+     * With `auth-enabled: false`, [DummyZeroAuthFilter] trusts `oidc_claim_*` headers verbatim,
+     * so anything that can reach the port is any user it likes, admin included. That is fine
+     * bound to 127.0.0.1 and catastrophic bound to 0.0.0.0 — including on a laptop sharing a
+     * café network. Documenting the footgun in three places did not stop it from being a
+     * footgun, so this fails closed instead, in the same spirit as the test suite's
+     * `assertDisposableDatabase()`.
+     *
+     * Note that an unset `server.address` means "all interfaces", so a blank value is a
+     * failure, not a default. Any address we cannot resolve is treated as non-loopback.
+     */
+    @PostConstruct
+    fun assertAuthDisabledOnlyOnLoopback() {
+        if (authEnabled) return
+
+        val address = serverAddress.trim()
+        if (!isLoopbackAddress(address)) throw IllegalStateException(
+            """
+            Refusing to start: easy.core.auth-enabled is false, but server.address is
+            '${address.ifBlank { "<unset, meaning all interfaces>" }}'. Auth-disabled core trusts
+            oidc_claim_* request headers, so on a non-loopback address anyone who can reach the
+            port can act as any user, including admin.
+
+            Local dev: add `server.address: 127.0.0.1` to application.yaml (the sample has it).
+            Deployed environments: set easy.core.auth-enabled to true.
+            """.trimIndent()
+        )
+    }
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =

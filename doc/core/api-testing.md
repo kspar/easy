@@ -41,6 +41,10 @@ Test accounts from the test data: `dev-student` (student), `dev-teacher` (teache
 > Because this is a header, anything that can reach a core running with `auth-enabled: false`
 > can impersonate any user. It's a local-dev-only setting — never expose such an instance,
 > and never set it on a deployed environment.
+>
+> Core enforces this rather than trusting the warning: with auth disabled it refuses to start
+> unless `server.address` is a loopback address. If you get an `IllegalStateException` on
+> startup saying so, add `server.address: 127.0.0.1` to your `application.yaml`.
 
 ## A/B-ing old code against new
 
