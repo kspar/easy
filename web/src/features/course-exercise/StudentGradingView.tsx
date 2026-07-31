@@ -36,7 +36,7 @@ import {
   useTeacherStudentActivities,
   useUpdateInlineComment,
 } from '../../api/exercises.ts'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import AutoTestResults from './AutoTestResults.tsx'
 import ActivityFeed from './ActivityFeed.tsx'

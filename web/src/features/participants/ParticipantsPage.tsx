@@ -77,7 +77,7 @@ import AddParticipantsDialog from './AddParticipantsDialog.tsx'
 import CreateGroupDialog from './CreateGroupDialog.tsx'
 import ConfirmDialog from './ConfirmDialog.tsx'
 import EditInviteDialog from './EditInviteDialog.tsx'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import type { TeacherParticipant, GroupResp } from '../../api/types.ts'
 import logoSvg from '../../assets/logo.svg'
 

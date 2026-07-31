@@ -11,9 +11,9 @@ import {
   Snackbar,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import { useCourse, useUpdateCourse } from '../../api/courses.ts'
-import { COLOR_PALETTE } from '../courses/CoursesPage.tsx'
+import { COLOR_PALETTE } from '../courses/course-colors.ts'
 
 export default function EditCourseDialog({
   courseId,

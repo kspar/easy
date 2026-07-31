@@ -40,7 +40,7 @@ import {
   useEditFeedback,
   useMarkdownPreview,
 } from '../../api/exercises.ts'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
 import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import type { InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'

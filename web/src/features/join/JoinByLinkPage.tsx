@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import {
   useCourseByInvite,
   useJoinByInvite,

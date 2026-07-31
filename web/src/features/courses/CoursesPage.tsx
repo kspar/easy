@@ -20,36 +20,11 @@ import {
 import { GridViewOutlined, ViewListOutlined, LinkOutlined, AddOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import { useStudentCourses, useTeacherCourses, useCreateCourse } from '../../api/courses.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import { COLOR_PALETTE, randomColor } from './course-colors.ts'
 
-export const COLOR_PALETTE = [
-  '#e57373', // red
-  '#f06292', // pink
-  '#9575cd', // purple
-  '#7986cb', // indigo
-  '#4fc3f7', // blue
-  '#4db6ac', // teal
-  '#aed581', // green
-  '#dce775', // lime
-  '#ffd54f', // amber
-  '#ff8a65', // orange
-  '#a1887f', // brown
-  '#90a4ae', // grey
-]
-
-function randomColor() {
-  return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]
-}
-
-export function stringToColor(str: string): string {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length]
-}
 
 type ViewMode = 'grid' | 'list'
 

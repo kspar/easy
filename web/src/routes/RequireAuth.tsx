@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAuth, type Role } from '../auth/AuthContext.tsx'
+import { useAuth } from '../auth/useAuth.ts'
+import type { Role } from '../auth/auth-context.ts'
 import { Navigate } from 'react-router-dom'
 import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 

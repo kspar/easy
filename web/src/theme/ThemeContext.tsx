@@ -1,24 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useMemo,
-  useCallback,
-  type ReactNode,
-} from 'react'
+import { useState, useMemo, useCallback, type ReactNode } from 'react'
 import { ThemeProvider as MuiThemeProvider, type PaletteMode } from '@mui/material/styles'
 import { CssBaseline } from '@mui/material'
 import { createAppTheme } from './theme.ts'
-
-interface ThemeContextType {
-  mode: PaletteMode
-  toggleMode: () => void
-}
-
-const ThemeContext = createContext<ThemeContextType>({
-  mode: 'light',
-  toggleMode: () => {},
-})
+import { ThemeContext } from './theme-context.ts'
 
 const THEME_KEY = 'themeMode'
 
@@ -49,8 +33,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       </MuiThemeProvider>
     </ThemeContext.Provider>
   )
-}
-
-export function useThemeMode() {
-  return useContext(ThemeContext)
 }

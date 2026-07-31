@@ -1,44 +1,10 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  type ReactNode,
-} from 'react'
+import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
+import { AuthContext, type Role, type AuthState } from './auth-context.ts'
+// Type-only re-export: erased at runtime, so it does not count as a non-component export.
+export type { Role } from './auth-context.ts'
 import { apiFetch } from '../api/client.ts'
-
-export type Role = 'student' | 'teacher' | 'admin'
-
-interface AuthState {
-  initialized: boolean
-  authenticated: boolean
-  token: string | undefined
-  firstName: string | undefined
-  lastName: string | undefined
-  email: string | undefined
-  username: string | undefined
-  activeRole: Role
-  availableRoles: Role[]
-  /** Whether the account has been checked in to core, see checkin(). */
-  checkedIn: boolean
-  checkinFailed: boolean
-}
-
-interface AuthContextType extends AuthState {
-  keycloak: Keycloak | null
-  switchRole: (role: Role) => void
-  login: (locale?: string) => void
-  // No locale parameter: KeycloakLogoutOptions has no `locale` field (only login does),
-  // so the value passed here was always discarded. No caller supplied one either.
-  logout: () => void
-  refreshToken: () => Promise<boolean>
-}
-
-const AuthContext = createContext<AuthContextType | null>(null)
 
 const ROLE_STORAGE_KEY = 'activeRole'
 const ALL_ROLES: Role[] = ['admin', 'teacher', 'student']
@@ -197,8 +163,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth(): AuthContextType {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
-}

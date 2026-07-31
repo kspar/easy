@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { setTokenProvider } from './client.ts'
-import { useAuth } from '../auth/AuthContext.tsx'
+import { useAuth } from '../auth/useAuth.ts'
 
 const queryClient = new QueryClient({
   defaultOptions: {

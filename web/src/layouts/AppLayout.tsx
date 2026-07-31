@@ -7,7 +7,8 @@ import {
 } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useAuth, type Role } from '../auth/AuthContext.tsx'
+import { useAuth } from '../auth/useAuth.ts'
+import type { Role } from '../auth/auth-context.ts'
 import { apiFetch } from '../api/client.ts'
 import type { StudentCourse, TeacherCourse } from '../api/types.ts'
 import {
@@ -49,7 +50,7 @@ import {
   CompareArrowsOutlined,
   SettingsOutlined,
 } from '@mui/icons-material'
-import { useThemeMode } from '../theme/ThemeContext.tsx'
+import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
 import type { StudentExerciseStatus } from '../api/types.ts'

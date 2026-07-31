@@ -16,7 +16,7 @@ import {
   GitHub,
   ArrowForwardOutlined,
 } from '@mui/icons-material'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import { useStatistics } from '../../api/statistics.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import logoSvg from '../../assets/logo.svg'

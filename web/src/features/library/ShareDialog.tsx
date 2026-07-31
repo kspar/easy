@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material'
 import { useDirAccesses, usePutDirAccess } from '../../api/library.ts'
 import { ApiResponseError } from '../../api/client.ts'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import type {
   DirAccessLevel,
 } from '../../api/types.ts'

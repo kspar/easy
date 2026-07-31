@@ -32,7 +32,7 @@ import { useTranslation } from 'react-i18next'
 import { format, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '../../auth/AuthContext.tsx'
+import { useAuth } from '../../auth/useAuth.ts'
 import {
   useExerciseDetails,
   useTeacherExerciseDetails,
