@@ -17,12 +17,19 @@ Nothing here describes the current UI. Kept for the record.
 - `design/old-design/*.png` — screenshots of the pre-v3 UI.
 - `design/bg_old.svg`, `design/lahendus_logo_old.svg` — superseded artwork.
 
-## Still-live source artwork
+## Original design files for marks still in use
 
-These are the source SVGs for marks the React UI still draws (as
-`web/src/assets/logo.svg` and inline icon components). Edit these if the marks ever change:
+These are the designers' originals for marks the React UI still shows. **Nothing builds from
+them** — the live assets are independent, hand-optimised redraws:
 
-- `design/new_logo_final.svg`
-- `design/auto_icon_final.svg` — the robot / auto-grading mark
-- `design/missing_feedback_icon_final.svg`
-- `design/bg_new_final.svg`
+| design file | what renders today |
+| --- | --- |
+| `design/new_logo_final.svg` | `web/src/assets/logo.svg` — a separate, much smaller file |
+| `design/auto_icon_final.svg` (robot / auto-grading) | `RobotIcon` in `web/src/components/icons.tsx` — one inline `<path>` |
+| `design/missing_feedback_icon_final.svg` | no direct equivalent found in `web/` |
+| `design/bg_new_final.svg` | not referenced by `web/` |
+
+Checked rather than assumed: `auto_icon_final.svg` is drawn with `<g>`/`<circle>`/`<rect>`
+and shares no path data with `RobotIcon`. So editing anything here changes nothing that
+ships — treat these as provenance and as the starting point if a mark is ever reworked, and
+expect to re-optimise by hand afterwards.

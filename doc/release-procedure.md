@@ -1,4 +1,27 @@
-# Release Procedure: YouTrack "In release" Field
+# Release Procedure
+
+Two parts: config changes each environment needs before the new build starts, and the YouTrack
+"In release" bookkeeping.
+
+## Config changes to apply before deploying
+
+Each environment keeps its own `application.yaml` outside the repo, so a renamed or added
+property will not travel with the build. Spring fails fast on an unresolved `@Value`
+placeholder — the context won't start — so a missed entry here is a failed deploy, not a
+subtle bug. Add a row whenever a property changes; delete rows once every environment is past
+that release.
+
+| Since | Change | Action |
+| --- | --- | --- |
+| v4.0 (unreleased) | `easy.wui.base-url` renamed to `easy.web.base-url` | Rename the key in every environment's `application.yaml`. Used by `SendMailService` to build links in outgoing email. |
+
+To check an environment before deploying:
+
+```sh
+grep -n "wui\|web:" /path/to/application.yaml
+```
+
+## YouTrack "In release" field
 
 When a new version is released, update the "In release" version bundle in YouTrack.
 
