@@ -63,5 +63,5 @@ easy:
     exercise-index-normalisation:
       cron: "0 5 3 * * *"
 
-  wui:
+  web:
     base-url: "https://easy.example"

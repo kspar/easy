@@ -27,8 +27,8 @@ class SendMailService(private val mailSender: JavaMailSender) {
     @Value("\${easy.core.mail.sys.to}")
     private lateinit var toSysAddress: String
 
-    @Value("\${easy.wui.base-url}")
-    private lateinit var wuiBaseUrl: String
+    @Value("\${easy.web.base-url}")
+    private lateinit var webBaseUrl: String
 
     @Async
     fun sendStudentAddedToCourseActive(courseTitle: String, recipientEmail: String) {
@@ -39,7 +39,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |Sind lisati meiliaadressiga $recipientEmail kursusele "$courseTitle" Lahenduse keskkonnas.
             |
-            |Kursusele ligi pääsemiseks mine $wuiBaseUrl ja logi sisse meiliaadressiga $recipientEmail.
+            |Kursusele ligi pääsemiseks mine $webBaseUrl ja logi sisse meiliaadressiga $recipientEmail.
             |
             |Kui sul on parool meelest läinud, siis proovi "Unustasid parooli?" funktsionaalsust sisselogimise lehel.
             | 
@@ -55,7 +55,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |You were added to the course $courseTitle in Lahendus by your email address $recipientEmail.
             |
-            |To access the course, go to $wuiBaseUrl and log in using the email address $recipientEmail.
+            |To access the course, go to $webBaseUrl and log in using the email address $recipientEmail.
             |
             |If you've forgotten your password, then feel free to use the Forgot password? feature on the login page.
             |
@@ -73,7 +73,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         val subject =
             """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
         val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
-        val registerLink = "$wuiBaseUrl/register?email=$encodedEmail"
+        val registerLink = "$webBaseUrl/register?email=$encodedEmail"
         val text = """
             |Tere!
             |
@@ -117,7 +117,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     ) {
         val subject =
             """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
-        val registerLink = "$wuiBaseUrl/moodle/link/$inviteId"
+        val registerLink = "$webBaseUrl/moodle/link/$inviteId"
         val text = """
             |Tere!
             |
@@ -159,7 +159,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         recipientEmail: String
     ) {
         val subject = """Uus kommentaar / New feedback comment ($exerciseTitle)"""
-        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val exerciseLink = "$webBaseUrl/courses/$courseId/exercises/$courseExId/"
         val text = """
             |Tere!
             |
@@ -191,7 +191,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
         recipientEmail: String
     ) {
         val subject = """Muudetud kommentaar / Edited feedback comment ($exerciseTitle)"""
-        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val exerciseLink = "$webBaseUrl/courses/$courseId/exercises/$courseExId/"
         val text = """
             |Tere!
             |
@@ -224,7 +224,7 @@ class SendMailService(private val mailSender: JavaMailSender) {
     ) {
         val subject =
             """Uus hinne / New grade ($exerciseTitle)"""
-        val exerciseLink = "$wuiBaseUrl/courses/$courseId/exercises/$courseExId/"
+        val exerciseLink = "$webBaseUrl/courses/$courseId/exercises/$courseExId/"
         val text = """
             |Tere!
             |
