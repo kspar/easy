@@ -172,23 +172,25 @@ export function useTeacherExerciseDetails(
   })
 }
 
+export interface CourseExercisePatch {
+  replace?: {
+    title_alias?: string
+    threshold?: number
+    soft_deadline?: string
+    hard_deadline?: string
+    student_visible?: boolean
+    student_visible_from?: string
+  }
+  delete?: string[]
+}
+
 export function useUpdateCourseExercise(
   courseId: string,
   courseExerciseId: string,
 ) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: {
-      replace?: {
-        title_alias?: string
-        threshold?: number
-        soft_deadline?: string
-        hard_deadline?: string
-        student_visible?: boolean
-        student_visible_from?: string
-      }
-      delete?: string[]
-    }) =>
+    mutationFn: (body: CourseExercisePatch) =>
       apiFetch(`/courses/${courseId}/exercises/${courseExerciseId}`, {
         method: 'PATCH',
         body,
@@ -199,6 +201,70 @@ export function useUpdateCourseExercise(
       })
       queryClient.invalidateQueries({
         queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+/** Same patch as useUpdateCourseExercise, but applied to several exercises at once. */
+export function useUpdateCourseExercises(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      courseExerciseIds,
+      ...body
+    }: CourseExercisePatch & { courseExerciseIds: string[] }) =>
+      Promise.all(
+        courseExerciseIds.map((id) =>
+          apiFetch(`/courses/${courseId}/exercises/${id}`, {
+            method: 'PATCH',
+            body,
+          }),
+        ),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
+      })
+    },
+  })
+}
+
+export function useRemoveExercisesFromCourse(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (courseExerciseIds: string[]) =>
+      Promise.all(
+        courseExerciseIds.map((id) =>
+          apiFetch(`/courses/${courseId}/exercises/${id}`, { method: 'DELETE' }),
+        ),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
+      })
+    },
+  })
+}
+
+export function useReorderCourseExercise(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    // newIndex is a position in the ordered list, matching ordering_idx
+    mutationFn: ({
+      courseExerciseId,
+      newIndex,
+    }: {
+      courseExerciseId: string
+      newIndex: number
+    }) =>
+      apiFetch(`/courses/${courseId}/exercises/${courseExerciseId}/reorder`, {
+        method: 'POST',
+        body: { new_index: newIndex },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
