@@ -91,45 +91,47 @@ A single `pg_dump` of prod, anonymised, restored into the staging postgres once 
 that staging is its own world: testers' courses and submissions accumulate and are never
 overwritten by a refresh.
 
-### 3.2 The existing anonymisation script does not currently work
+### 3.2 How the anonymisation runs
 
-`doc/core/anonymise-db/anonymise-dump.py` was written against an older schema and will fail or
-mis-scrub on a current dump. Concretely:
+Three SQL scripts in `doc/core/anonymise-db/`, run against the restored copy — see the README
+there for the runbook and the full per-table table. In short: `anonymise.sql` is required,
+`strip-teacher-feedback.sql` is recommended, `strip-submissions.sql` is optional.
 
-- It locates the account section by matching an **exact** COPY header line:
-  `COPY public.account (username, created_at, email, given_name, family_name, moodle_username)`.
-  Today's `Account` table (`core/src/main/kotlin/core/db/Tables.kt:14`) has no `moodle_username`
-  and has gained `last_seen`, `id_migration_done`, `pre_migration_id`, `is_teacher`, `is_student`,
-  `is_admin`, `pseudonym`. `dump_lines.index(...)` raises `ValueError` on a header that no longer
-  exists.
-- Its regex `(.+?\t.+?\t).+?\t.+?\t.+?(\t.*)` assumes email/given/family are columns 3–5. With
-  `last_seen` now third, it would overwrite the wrong columns if the header were patched naively.
-- `PSEUDO_PAIRS = 3190` is a hardcoded ceiling and raises if prod has more accounts than that.
+They replaced `anonymise-dump.py` (EZ-1725), which rewrote dump *text* and located the account
+rows by matching an exact `COPY public.account (...)` header. That header listed six columns and
+`account` now has thirteen, so it raised `ValueError` before touching anything — confirmed against
+a real `pg_dump`. It also had a hard ceiling of exactly 3190 accounts, `PSEUDO_PAIRS` being set to
+the whole `11 colours × 290 birds` product with no slack.
 
-So step one is a rewrite, not a run. Prefer rewriting it to operate on the **restored database via
-SQL `UPDATE`s** rather than on dump text — column order stops mattering, it is reviewable, and it
-can be re-run idempotently. Anonymise after restore, into the staging DB, and only then let anyone
-near the box.
+Operating on the database instead means column order cannot break it, and each pass ends with
+assertions that print `0` when they hold.
 
-### 3.3 What must be scrubbed, beyond names and emails
+Each script **refuses to run** unless the database name contains `staging`, `stage` or `anon`.
+Pointed at production, `anonymise.sql` would rename every real user and delete every live
+invitation, so that guard is the difference between a scripted mistake and a catastrophe.
 
-The current script only touches `account.email`, `given_name`, `family_name`. A real pass needs a
-decision per table. From `Tables.kt`, the ones holding personal or sensitive data:
+Anonymise after restore and before anything but your own session can reach the database.
 
-| Table / column | Contains | Suggested treatment |
-| --- | --- | --- |
-| `account.username` (PK) | real UT usernames | See §3.4 — this is the interesting one |
-| `account.pre_migration_id`, `pseudonym` | old identifiers | Regenerate |
-| `student_moodle_pending_access.email`, `moodle_username` | invited students not yet registered | Scrub — currently untouched |
-| `submission.solution` | student code; comments and headers often contain real names | Keep (needed for realistic testing), accept the residual risk, or truncate for old courses |
-| `teacher_activity`, `teacher_inline_comment` | teacher feedback *about* named students | Highest sensitivity in the DB. Recommend dropping rows outright unless grading UI testing needs them |
-| `course_invite_link` | invite tokens | Regenerate or drop |
-| `stored_file` | uploaded files | Review — unbounded content |
-| `log_report` | client error reports with `user_id` | Drop |
-| `feedback_snippet` | teacher-authored text | Usually fine, review |
+### 3.3 The decision that needs a human
 
-Because the import happens once, this review happens once — which is an argument for doing it
-properly rather than quickly.
+Most of the per-table calls are obvious and are made in `anonymise.sql`: Moodle usernames nulled,
+pending invitations and live invite tokens deleted, client error reports dropped, pseudonyms
+regenerated and remapped through `stats_submission` (which stores pseudonyms rather than account
+ids, so it goes stale otherwise).
+
+Two are trade-offs rather than clear calls, which is why they are separate scripts:
+
+- **Teacher feedback** (`teacher_activity`, `teacher_inline_comment`) is the most sensitive content
+  in the database, and pseudonymising the account it points at does not anonymise it: "you have
+  failed this three times now, come see me" is about a real person and identifiable to anyone who
+  knows the course and the dates. Against that, teacher grading UI is exactly what wants realistic
+  feedback threads. `strip-teacher-feedback.sql` keeps the grades and drops only the prose.
+- **Student submissions** carry name headers and comments. Keeping them is what makes grading,
+  plagiarism comparison and auto-assessment worth testing on staging; `strip-submissions.sql` is
+  there if the host ends up shared more widely than the team.
+
+Because the import happens once and then drifts, both are decided once. Decide before the data
+lands.
 
 ### 3.4 Usernames, and how testers get in
 
