@@ -16,15 +16,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import {
-  CodeOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  FormatBoldOutlined,
-  FormatItalicOutlined,
-  FormatListBulletedOutlined,
-  FormatListNumberedOutlined,
-} from '@mui/icons-material'
+import { DeleteOutlined, EditOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import {
   EditorView,
@@ -50,34 +42,11 @@ import { languageFromFilename } from './editorLanguage.ts'
 import { useMarkdownPreview } from '../../api/exercises.ts'
 import type { InlineCommentResp } from '../../api/types.ts'
 import ConfirmDialog from '../participants/ConfirmDialog.tsx'
-
-/* ───────── Markdown formatting helpers ───────── */
-
-function applyFormat(view: EditorView, before: string, after: string, placeholder: string) {
-  const { from, to } = view.state.selection.main
-  const selected = view.state.sliceDoc(from, to)
-  const insert = selected ? `${before}${selected}${after}` : `${before}${placeholder}${after}`
-  view.dispatch({
-    changes: { from, to, insert },
-    selection: selected
-      ? { anchor: from, head: from + insert.length }
-      : { anchor: from + before.length, head: from + before.length + placeholder.length },
-  })
-  view.focus()
-}
-
-function applyLinePrefix(view: EditorView, prefix: string) {
-  const { from, to } = view.state.selection.main
-  const startLine = view.state.doc.lineAt(from)
-  const endLine = view.state.doc.lineAt(to)
-  const changes: { from: number; to: number; insert: string }[] = []
-  for (let n = startLine.number; n <= endLine.number; n++) {
-    const line = view.state.doc.line(n)
-    changes.push({ from: line.from, to: line.from, insert: prefix })
-  }
-  view.dispatch({ changes })
-  view.focus()
-}
+// Shared with the exercise text editor, which shows a superset of these buttons. Keeping one
+// implementation is what stops the two editors formatting the same document differently.
+import MarkdownToolbar from '../../components/markdown/MarkdownToolbar.tsx'
+import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
+import { applyFormat } from '../../components/markdown/markdownActions.ts'
 
 /* ───────── Types ───────── */
 
@@ -731,6 +700,9 @@ function CommentEditor({
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const innerViewRef = useRef<EditorView | null>(null)
+  // The toolbar is a child component, so it needs the view as a prop — and a ref assignment does
+  // not re-render, which would leave every button permanently disabled.
+  const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
   const [text, setText] = useState(draft.textMd)
   const textRef = useRef(draft.textMd)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -788,6 +760,7 @@ function CommentEditor({
       parent: containerRef.current,
     })
     innerViewRef.current = view
+    setToolbarView(view)
 
     view.focus()
     view.dispatch({ selection: { anchor: view.state.doc.length } })
@@ -795,16 +768,10 @@ function CommentEditor({
     return () => {
       view.destroy()
       innerViewRef.current = null
+      setToolbarView(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme.palette.mode])
-
-  const tbSx = {
-    p: '5px',
-    borderRadius: '6px',
-    color: 'text.secondary',
-    '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-  }
 
   return (
     <Box
@@ -818,34 +785,8 @@ function CommentEditor({
         borderColor: 'primary.main',
       }}
     >
-      {/* Toolbar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', px: 0.75, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Tooltip title="Bold">
-          <IconButton size="small" sx={tbSx} onClick={() => innerViewRef.current && applyFormat(innerViewRef.current, '**', '**', 'bold')}>
-            <FormatBoldOutlined sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Italic">
-          <IconButton size="small" sx={tbSx} onClick={() => innerViewRef.current && applyFormat(innerViewRef.current, '_', '_', 'italic')}>
-            <FormatItalicOutlined sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Code">
-          <IconButton size="small" sx={tbSx} onClick={() => innerViewRef.current && applyFormat(innerViewRef.current, '`', '`', 'code')}>
-            <CodeOutlined sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
-        <Box sx={{ width: 8 }} />
-        <Tooltip title="Bullet list">
-          <IconButton size="small" sx={tbSx} onClick={() => innerViewRef.current && applyLinePrefix(innerViewRef.current, '- ')}>
-            <FormatListBulletedOutlined sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Numbered list">
-          <IconButton size="small" sx={tbSx} onClick={() => innerViewRef.current && applyLinePrefix(innerViewRef.current, '1. ')}>
-            <FormatListNumberedOutlined sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
+      <Box sx={{ px: 0.75, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+        <MarkdownToolbar view={toolbarView} tools={COMPACT_TOOLS} />
       </Box>
 
       {/* CodeMirror editor */}

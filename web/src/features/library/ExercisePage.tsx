@@ -153,8 +153,24 @@ export default function ExercisePage() {
 
   const canWrite = exercise != null && hasAccess(exercise.effective_access, 'PRAW')
   const canManage = exercise != null && hasAccess(exercise.effective_access, 'PRAWM')
+
+  /**
+   * Rendered text, but no Markdown source — everything authored before EZ-1731's migration is
+   * still in this state. The editor can only show an empty box, because there is nothing to load
+   * into it.
+   */
+  const legacyNoMarkdown =
+    exercise != null && exercise.text_md == null && (exercise.text_html ?? '') !== ''
+
   const isValid =
-    draft != null && isExerciseTextValid(draft.title) && isAutoAssessValid(draft) && tslValid
+    draft != null &&
+    isExerciseTextValid(draft.title) &&
+    isAutoAssessValid(draft) &&
+    tslValid &&
+    // A save writes text_html from text_md, so saving one of these with the box still empty
+    // deletes the exercise text — and renaming the exercise was enough to do it, since nothing
+    // else here depends on the text being touched. Refuse instead.
+    !(legacyNoMarkdown && draft.textMd.trim() === '')
 
   // Live preview while editing; the server-rendered HTML otherwise. The preview is debounced, so
   // until the first one lands the saved HTML stands in — otherwise the pane blanks for a beat
@@ -357,6 +373,7 @@ export default function ExercisePage() {
               title={draft.title}
               textMd={draft.textMd}
               editing={editing}
+              legacyNoMarkdown={legacyNoMarkdown}
               onTitleChange={(title) => setDraft({ ...draft, title })}
               onTextChange={(textMd) => setDraft({ ...draft, textMd })}
             />

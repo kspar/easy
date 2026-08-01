@@ -24,6 +24,9 @@ export default function CodeEditor({
   minHeight = '15rem',
   maxHeight,
   lineNumbers = true,
+  // Aliased: the local `extensions` array below is what actually gets handed to CodeMirror.
+  extensions: extra,
+  onViewReady,
 }: {
   value: string
   onChange?: (value: string) => void
@@ -34,6 +37,17 @@ export default function CodeEditor({
   minHeight?: string
   maxHeight?: string
   lineNumbers?: boolean
+  /**
+   * Extra extensions — keymaps, mostly. **Must be referentially stable**: it sits in the effect's
+   * dependency list, so a fresh array each render rebuilds the editor on every keystroke and
+   * throws away the cursor with it. Define it at module scope or memoise it.
+   */
+  extensions?: Extension[]
+  /**
+   * Handed the view on mount and null on teardown, for callers that need to dispatch into the
+   * editor themselves — the markdown toolbar being the reason this exists.
+   */
+  onViewReady?: (view: EditorView | null) => void
 }) {
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -44,6 +58,11 @@ export default function CodeEditor({
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
+
+  const onViewReadyRef = useRef(onViewReady)
+  useEffect(() => {
+    onViewReadyRef.current = onViewReady
+  }, [onViewReady])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -66,20 +85,24 @@ export default function CodeEditor({
     if (language) extensions.push(language)
     if (placeholder) extensions.push(cmPlaceholder(placeholder))
     if (theme.palette.mode === 'dark') extensions.push(oneDark)
+    // Last, so a caller's keymap is consulted before basicSetup's defaults.
+    if (extra) extensions.push(...extra)
 
     const view = new EditorView({
       state: EditorState.create({ doc: value, extensions }),
       parent: containerRef.current,
     })
     viewRef.current = view
+    onViewReadyRef.current?.(view)
 
     return () => {
+      onViewReadyRef.current?.(null)
       view.destroy()
       viewRef.current = null
     }
     // `value` is intentionally absent — it seeds the doc, the effect below syncs it afterwards.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language, readOnly, placeholder, minHeight, maxHeight, lineNumbers, theme.palette.mode])
+  }, [language, readOnly, placeholder, minHeight, maxHeight, lineNumbers, theme.palette.mode, extra])
 
   useEffect(() => {
     const view = viewRef.current

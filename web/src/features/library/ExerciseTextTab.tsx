@@ -1,40 +1,28 @@
-import { useEffect, useState } from 'react'
-import { Box, TextField } from '@mui/material'
+import { Alert, Box, TextField } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import type { Extension } from '@codemirror/state'
-import CodeEditor from '../../components/CodeEditor.tsx'
+import MarkdownEditor from '../../components/markdown/MarkdownEditor.tsx'
 import { TITLE_MAX_LENGTH } from './exerciseDraft.ts'
-
-/** Loaded once and reused — creating it per render would rebuild the editor on every keystroke. */
-let markdownExtension: Extension | undefined
 
 export default function ExerciseTextTab({
   title,
   textMd,
   editing,
+  legacyNoMarkdown = false,
   onTitleChange,
   onTextChange,
 }: {
   title: string
   textMd: string
   editing: boolean
+  /**
+   * The exercise has rendered text but no Markdown source — the shape everything authored before
+   * the AsciiDoc migration is still in. See the alert below.
+   */
+  legacyNoMarkdown?: boolean
   onTitleChange: (title: string) => void
   onTextChange: (textMd: string) => void
 }) {
   const { t } = useTranslation()
-  const [lang, setLang] = useState<Extension | undefined>(markdownExtension)
-
-  useEffect(() => {
-    if (markdownExtension) return
-    let cancelled = false
-    import('@codemirror/lang-markdown').then((m) => {
-      markdownExtension = m.markdown()
-      if (!cancelled) setLang(markdownExtension)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   const titleTooLong = title.length > TITLE_MAX_LENGTH
   const titleEmpty = title.trim().length === 0
@@ -57,10 +45,20 @@ export default function ExerciseTextTab({
               : ' '
         }
       />
-      <CodeEditor
+
+      {/*
+        Saving derives text_html from text_md, so an empty box here does not mean "leave the text
+        alone" — it means "delete the text". For an exercise that never got a Markdown source that
+        is a silent data loss triggered by editing the title, which is why the page refuses to save
+        until something is typed.
+      */}
+      {legacyNoMarkdown && editing && (
+        <Alert severity="warning">{t('library.noMarkdownSource')}</Alert>
+      )}
+
+      <MarkdownEditor
         value={textMd}
         onChange={onTextChange}
-        language={lang}
         readOnly={!editing}
         placeholder={t('library.exerciseTextPlaceholder')}
         minHeight="30rem"
@@ -68,4 +66,3 @@ export default function ExerciseTextTab({
     </Box>
   )
 }
-

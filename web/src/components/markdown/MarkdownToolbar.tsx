@@ -1,0 +1,169 @@
+import { useState, type MouseEvent, type ReactNode } from 'react'
+import { Box, IconButton, Menu, MenuItem, Tooltip } from '@mui/material'
+import {
+  CodeOutlined,
+  DataObjectOutlined,
+  FormatBoldOutlined,
+  FormatItalicOutlined,
+  FormatListBulletedOutlined,
+  FormatListNumberedOutlined,
+  FormatQuoteOutlined,
+  HorizontalRuleOutlined,
+  ImageOutlined,
+  LinkOutlined,
+  StrikethroughSOutlined,
+  TableChartOutlined,
+  TitleOutlined,
+} from '@mui/icons-material'
+import { useTranslation } from 'react-i18next'
+import type { EditorView } from '@codemirror/view'
+import type { MarkdownTool } from './markdownTools.ts'
+import {
+  applyFormat,
+  insertCodeBlock,
+  insertImage,
+  insertLink,
+  insertRule,
+  insertTable,
+  setHeading,
+  toggleLinePrefix,
+  toggleOrderedList,
+} from './markdownActions.ts'
+
+/**
+ * Formatting bar for the Markdown editors.
+ *
+ * Which buttons appear is the caller's choice, because the two places that need one have very
+ * different room: the inline feedback editor is a box wedged between two lines of code, and the
+ * exercise editor owns a whole tab. Both drive the same commands. The presets live in
+ * `markdownTools.ts`.
+ */
+export default function MarkdownToolbar({
+  view,
+  tools,
+  disabled = false,
+}: {
+  /** Null until CodeMirror has mounted; every button no-ops until then. */
+  view: EditorView | null
+  tools: MarkdownTool[]
+  disabled?: boolean
+}) {
+  const { t } = useTranslation()
+  const [headingAnchor, setHeadingAnchor] = useState<HTMLElement | null>(null)
+
+  const btnSx = {
+    p: '5px',
+    borderRadius: '6px',
+    color: 'text.secondary',
+    '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+  }
+  const iconSx = { fontSize: 17 }
+
+  function run(fn: (v: EditorView) => void) {
+    return () => {
+      if (view && !disabled) fn(view)
+    }
+  }
+
+  function button(
+    key: string,
+    label: string,
+    icon: ReactNode,
+    onClick: (e: MouseEvent<HTMLElement>) => void,
+  ) {
+    return (
+      <Tooltip key={key} title={label}>
+        {/* span: a disabled IconButton fires no events, so Tooltip needs a live child to bind to */}
+        <span>
+          <IconButton size="small" sx={btnSx} onClick={onClick} disabled={disabled} aria-label={label}>
+            {icon}
+          </IconButton>
+        </span>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <Box
+      sx={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}
+      role="toolbar"
+      aria-label={t('markdown.toolbar')}
+    >
+      {tools.map((tool, i) => {
+        switch (tool) {
+          case 'divider':
+            return <Box key={`d${i}`} sx={{ width: 8 }} />
+          case 'heading':
+            return (
+              <span key="heading">
+                {button('heading', t('markdown.heading'), <TitleOutlined sx={iconSx} />, (e) =>
+                  setHeadingAnchor(e.currentTarget),
+                )}
+                <Menu
+                  anchorEl={headingAnchor}
+                  open={Boolean(headingAnchor)}
+                  onClose={() => setHeadingAnchor(null)}
+                  // Closing a Menu returns focus to whatever opened it, which happens after
+                  // setHeading has already focused the editor — so the caret ended up on the
+                  // toolbar button and looked like it had disappeared. Suppressing the restore
+                  // alone just moved it to <body>: the focus trap releases focus as it unmounts,
+                  // still after our call. Re-focusing once the transition has finished is the
+                  // only point at which nothing else is about to move it.
+                  disableRestoreFocus
+                  TransitionProps={{ onExited: () => view?.focus() }}
+                >
+                  {([1, 2, 3] as const).map((level) => (
+                    <MenuItem
+                      key={level}
+                      onClick={() => {
+                        setHeadingAnchor(null)
+                        if (view) setHeading(view, level)
+                      }}
+                    >
+                      {t(`markdown.h${level}`)}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </span>
+            )
+          case 'bold':
+            return button('bold', t('markdown.bold'), <FormatBoldOutlined sx={iconSx} />,
+              run((v) => applyFormat(v, '**', '**', t('markdown.boldText'))))
+          case 'italic':
+            return button('italic', t('markdown.italic'), <FormatItalicOutlined sx={iconSx} />,
+              run((v) => applyFormat(v, '_', '_', t('markdown.italicText'))))
+          case 'strikethrough':
+            return button('strikethrough', t('markdown.strikethrough'), <StrikethroughSOutlined sx={iconSx} />,
+              run((v) => applyFormat(v, '~~', '~~', t('markdown.strikethroughText'))))
+          case 'code':
+            return button('code', t('markdown.code'), <CodeOutlined sx={iconSx} />,
+              run((v) => applyFormat(v, '`', '`', t('markdown.codeText'))))
+          case 'bulletList':
+            return button('bulletList', t('markdown.bulletList'), <FormatListBulletedOutlined sx={iconSx} />,
+              run((v) => toggleLinePrefix(v, '- ')))
+          case 'numberedList':
+            return button('numberedList', t('markdown.numberedList'), <FormatListNumberedOutlined sx={iconSx} />,
+              run(toggleOrderedList))
+          case 'quote':
+            return button('quote', t('markdown.quote'), <FormatQuoteOutlined sx={iconSx} />,
+              run((v) => toggleLinePrefix(v, '> ')))
+          case 'link':
+            return button('link', t('markdown.link'), <LinkOutlined sx={iconSx} />,
+              run((v) => insertLink(v, t('markdown.linkUrl'), t('markdown.linkText'))))
+          case 'image':
+            return button('image', t('markdown.image'), <ImageOutlined sx={iconSx} />,
+              run((v) => insertImage(v, t('markdown.linkUrl'), t('markdown.imageAlt'))))
+          case 'codeBlock':
+            return button('codeBlock', t('markdown.codeBlock'), <DataObjectOutlined sx={iconSx} />,
+              run((v) => insertCodeBlock(v)))
+          case 'table':
+            return button('table', t('markdown.table'), <TableChartOutlined sx={iconSx} />,
+              run((v) => insertTable(v, t('markdown.tableHeader'), t('markdown.tableCell'))))
+          case 'rule':
+            return button('rule', t('markdown.rule'), <HorizontalRuleOutlined sx={iconSx} />,
+              run(insertRule))
+        }
+      })}
+    </Box>
+  )
+}
