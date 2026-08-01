@@ -7,6 +7,7 @@ import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
@@ -38,6 +39,8 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
+        @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
         @param:JsonProperty("public", required = true) val public: Boolean
     )
 
@@ -51,6 +54,7 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
 
         assertArticleExists(articleId)
 
+        rejectLegacyContentFields("text_md", "text_adoc" to req.legacyTextAdoc)
         val html = req.textMd?.let { markdownService.mdToHtml(it) }
         updateArticle(caller.id, articleId, req, html)
         cachingService.invalidate(articleCache)

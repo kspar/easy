@@ -44,7 +44,20 @@ repositories {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // CI runs `-PexcludeTags=db`, which skips the tests needing a PostgreSQL instance and the
+        // gitignored core/src/test/resources/application.yaml, and runs everything else. With no
+        // property set — i.e. locally — the whole suite runs exactly as before.
+        //
+        // This replaced a hardcoded `--tests` package filter in CI, which silently skipped any
+        // context-free test written outside that one package. Fold it away once EZ-1715 gives the
+        // suite a database.
+        (project.findProperty("excludeTags") as String?)
+            ?.split(",")
+            ?.map(String::trim)
+            ?.filter(String::isNotEmpty)
+            ?.forEach { excludeTags(it) }
+    }
 }
 
 dependencies {

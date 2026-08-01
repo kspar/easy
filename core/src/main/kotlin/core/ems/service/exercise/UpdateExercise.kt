@@ -6,6 +6,7 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
@@ -36,6 +37,9 @@ class UpdateExercise(private val markdownService: MarkdownService) {
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
+        @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
+        @param:JsonProperty("text_html", required = false) val legacyTextHtml: String? = null,
         @param:JsonProperty("grader_type", required = true) val graderType: GraderType,
         @param:JsonProperty("solution_file_name", required = true) val solutionFileName: String,
         @param:JsonProperty("solution_file_type", required = true) val solutionFileType: SolutionFileType,
@@ -60,6 +64,8 @@ class UpdateExercise(private val markdownService: MarkdownService) {
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }
+
+        rejectLegacyContentFields("text_md", "text_adoc" to req.legacyTextAdoc, "text_html" to req.legacyTextHtml)
 
         val html = req.textMd?.let { markdownService.mdToHtml(it) }
 

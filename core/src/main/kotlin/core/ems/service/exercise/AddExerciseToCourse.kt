@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.IDX_STEP
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
@@ -53,6 +54,8 @@ class AddExerciseToCourseCont(private val markdownService: MarkdownService) {
         val assStudentVisible: Boolean,
         @param:JsonProperty("instructions_md") @field:Size(max = 300000)
         val instructionsMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
+        @param:JsonProperty("instructions_adoc") val legacyInstructionsAdoc: String? = null,
         @param:JsonProperty("title_alias") @field:Size(max = 100)
         val titleAlias: String?
     )
@@ -79,6 +82,8 @@ class AddExerciseToCourseCont(private val markdownService: MarkdownService) {
         if (!isCoursePresent(courseId)) {
             throw InvalidRequestException("Course $courseId does not exist")
         }
+
+        rejectLegacyContentFields("instructions_md", "instructions_adoc" to body.legacyInstructionsAdoc)
 
         val id = insertCourseExercise(courseId, body, body.instructionsMd?.let { markdownService.mdToHtml(it) })
         return Resp(id.toString())

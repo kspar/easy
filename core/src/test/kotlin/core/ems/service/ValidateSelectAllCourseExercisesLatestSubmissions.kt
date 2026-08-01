@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,6 +27,9 @@ import javax.sql.DataSource
 import kotlin.random.Random
 
 
+// Needs a PostgreSQL instance and the gitignored core/src/test/resources/application.yaml,
+// so CI excludes it with -PexcludeTags=db until EZ-1715 gives the suite a database.
+@Tag("db")
 @SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
 @TestPropertySource(properties = ["logging.level.root=WARN"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // Use PER_CLASS as all tests are read-only, setup and tear-down db once.

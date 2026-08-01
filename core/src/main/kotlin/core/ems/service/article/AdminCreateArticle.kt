@@ -6,6 +6,7 @@ import core.db.Article
 import core.db.ArticleVersion
 import core.db.StoredFile
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
 import jakarta.validation.Valid
@@ -35,6 +36,8 @@ class CreateArticleController(private val markdownService: MarkdownService, priv
     data class Req(
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
+        @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
         @param:JsonProperty("public", required = true) val public: Boolean
     )
 
@@ -45,6 +48,7 @@ class CreateArticleController(private val markdownService: MarkdownService, priv
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser): Resp {
 
         log.info { "${caller.id} is creating article '${dto.title}'" }
+        rejectLegacyContentFields("text_md", "text_adoc" to dto.legacyTextAdoc)
         val html = dto.textMd?.let { markdownService.mdToHtml(it) }
 
         val articleId = insertArticle(caller.id, dto, html).toString()

@@ -5,6 +5,7 @@ import core.aas.insertAutoExercise
 import core.conf.security.EasyUser
 import core.db.*
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryDir
 import core.ems.service.getImplicitGroupFromAccount
@@ -39,6 +40,9 @@ class CreateExercise(private val markdownService: MarkdownService) {
         @param:JsonProperty("parent_dir_id", required = false) @field:Size(max = 100) val parentDirIdStr: String?,
         @param:JsonProperty("title", required = true) @field:NotBlank @field:Size(max = 100) val title: String,
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
+        @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
+        @param:JsonProperty("text_html", required = false) val legacyTextHtml: String? = null,
         @param:JsonProperty("public", required = true) val public: Boolean,
         @param:JsonProperty("anonymous_autoassess_enabled", required = true) val anonymousAutoassessEnabled: Boolean,
         @param:JsonProperty("grader_type", required = true) val graderType: GraderType,
@@ -71,6 +75,8 @@ class CreateExercise(private val markdownService: MarkdownService) {
                 libraryDir(parentDirId, DirAccessLevel.PRA)
             }
         }
+
+        rejectLegacyContentFields("text_md", "text_adoc" to dto.legacyTextAdoc, "text_html" to dto.legacyTextHtml)
 
         val html = dto.textMd?.let { markdownService.mdToHtml(it) }
 

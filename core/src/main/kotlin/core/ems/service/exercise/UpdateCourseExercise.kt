@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.ems.service.MarkdownService
+import core.ems.service.rejectLegacyContentFields
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
@@ -40,6 +41,10 @@ class UpdateCourseExercise(private val markdownService: MarkdownService) {
         val titleAlias: String?,
         @param:JsonProperty("instructions_md") @field:Size(max = 300000)
         val instructionsMd: String?,
+        // Rejected, never read — see rejectLegacyContentFields (EZ-1730). The matching
+        // DeleteFieldReq value already 400s on its own, since Jackson cannot deserialise a
+        // removed enum constant.
+        @param:JsonProperty("instructions_adoc") val legacyInstructionsAdoc: String? = null,
         @param:JsonProperty("threshold") @field:Min(0) @field:Max(100)
         val threshold: Int?,
         @param:JsonProperty("soft_deadline")
@@ -84,6 +89,8 @@ class UpdateCourseExercise(private val markdownService: MarkdownService) {
 
         caller.assertAccess { teacherOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
+
+        rejectLegacyContentFields("instructions_md", "instructions_adoc" to req.replace?.legacyInstructionsAdoc)
 
         updateCourseExercise(courseExId, req)
     }

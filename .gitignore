@@ -31,5 +31,6 @@ aae/gunicorn-conf.py
 __pycache__/
 *.pyc
 
-# Rotated logback archives next to the app (*.log is already ignored above)
-*.log.gz
+# Rotated logback archives next to the app. The rotation pattern is easy.log.2026-07.gz, which
+# neither *.log nor *.log.gz matches — the date sits between the .log and the extension.
+*.log.*
