@@ -1,4 +1,6 @@
-# AsciiDoc → Markdown migration (EZ-1731)
+# AsciiDoc → Markdown migration
+
+EZ-1731 (Migrate exercise text from AsciiDoc to Markdown (~1000 exercises))
 
 Backfilling `exercise_version.text_md` for the exercises whose source is still AsciiDoc. Nothing
 is visibly broken today — `text_html` is what gets served — but an editor loading a null `text_md`
@@ -76,14 +78,14 @@ mangled exercise is not.
 
 Math (`stem:` / `latexmath:`) flags by design. It has no Markdown representation, `MarkdownService`
 has no math extension, and there is no MathJax or KaTeX in `web/` any more — so those exercises
-already fail to render math in production. That is **EZ-1732**, not something this migration can
-fix.
+already fail to render math in production. That is **EZ-1732 (Math in exercise text no longer renders: no MathJax or KaTeX in web/)** —
+not something this migration can fix.
 
 ## Current state (2026-08-01)
 
 The dry run has been executed against the full production corpus — 1081 exercises, 83 seconds,
 nothing written to any database. The converter is settled; **no write has happened, and the write
-will be done against staging** (EZ-1723).
+will be done against staging** — EZ-1723 (Set up a staging environment at dev.lahendus.ut.ee).
 
 | Outcome | Exercises |
 | --- | --- |
@@ -132,7 +134,7 @@ Not built yet, deliberately — the dry run should be reviewed first. When it is
 - leave `text_adoc` and `text_html` alone, so readers see no difference and rollback is
   `UPDATE exercise_version SET text_md = NULL`
 - rehearse on staging (EZ-1723) before production
-- production needs v4.0 deployed first — the `text_md` column arrives with EZ-1729
+- production needs v4.0 deployed first — the `text_md` column arrives with EZ-1729 (core: bootJar cannot start — asciidoctorj JRuby gems do not resolve from a nested jar)
 
 ## Other files here
 
