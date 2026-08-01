@@ -27,7 +27,11 @@ export async function launch({
 } = {}) {
   mkdirSync(SHOTS_DIR, { recursive: true })
 
-  const browser = await chromium.launch({ channel: 'chrome' })
+  // Locally this drives the Chrome that's already installed, so there's no 130MB download.
+  // CI sets HARNESS_BROWSER_CHANNEL='' to use Playwright's own chromium instead, which pins the
+  // browser to the playwright dependency rather than to whatever the runner image ships.
+  const channel = process.env.HARNESS_BROWSER_CHANNEL ?? 'chrome'
+  const browser = await chromium.launch(channel ? { channel } : {})
   const ctx = await browser.newContext({
     viewport,
     deviceScaleFactor: 2, // legible screenshots
@@ -128,4 +132,21 @@ export function checker() {
     return failed.length === 0
   }
   return check
+}
+
+/**
+ * Poll `predicate` until it returns truthy or the timeout expires; resolves to the final result.
+ *
+ * Prefer this over `waitForTimeout` + assert for anything behind a debounce. A fixed sleep that
+ * is comfortable on a laptop is a coin flip on a loaded CI runner, and when it loses the failure
+ * reads like a product bug rather than a slow machine.
+ */
+export async function waitUntil(predicate, { timeout = 8000, interval = 100 } = {}) {
+  const deadline = Date.now() + timeout
+  for (;;) {
+    const result = await predicate()
+    if (result) return result
+    if (Date.now() >= deadline) return result
+    await new Promise((r) => setTimeout(r, interval))
+  }
 }

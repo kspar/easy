@@ -3,10 +3,10 @@
 For the backend equivalent — calling core with curl and A/B-ing two builds — see
 `doc/core/api-testing.md`.
 
-There are no automated tests for `web/` yet (EZ-1705). Until there are, this is how to
-actually exercise a page end to end — real router, real components, real MUI, real
-react-query — with Keycloak and every API response faked. It has caught bugs that reading
-the code did not:
+This is how to exercise a page end to end — real router, real components, real MUI, real
+react-query — with Keycloak and every API response faked. Some of these scripts now run in
+CI (see "Running" below); the rest are manual tools. It has caught bugs that reading the
+code did not:
 
 - an SVG that silently never rendered, because `sx={{ stroke: 'primary.main' }}` is not a
   resolvable theme token and produced no stroke at all
@@ -15,6 +15,10 @@ the code did not:
 - a selection checkbox that never toggled, because `preventDefault()` (needed to stop the
   row's `<a>` from navigating) also cancels the checkbox's own state change, so `onChange`
   never fired
+- a `<button>` nested inside MUI's `AccordionSummary` (itself a button) — invalid HTML that
+  only announces itself as a runtime console error
+- three `Select`s with no accessible name at all, because MUI only wires `InputLabel` to
+  `Select` when both carry ids
 
 All three were invisible in the source and obvious in a screenshot or a timing number.
 
@@ -46,20 +50,47 @@ there's no 130MB browser download.
 
 ## Running
 
-Two terminals. The dev server:
+The whole backend-free suite, which starts and stops its own dev server:
 
 ```sh
-cd web && npx vite --config vite.stub.config.ts --port 5199 --strictPort
+cd web/dev-harness && npm test        # -> node run-suite.mjs
 ```
 
-and the script:
+That is what CI runs, as a step in the `web` job. `run-suite.mjs` holds the list of scripts
+that are safe without a backend — add new ones there, or they run nowhere but your laptop.
+
+For a single script, run the dev server in one terminal:
 
 ```sh
-cd web/dev-harness && node scripts/course-exercises.mjs
+cd web/dev-harness && npm run serve
 ```
 
-It prints a `✅`/`❌` line per check, a `📷` line per screenshot, and exits non-zero if
-anything failed.
+and the script in another, by its alias in `dev-harness/package.json`:
+
+```sh
+cd web/dev-harness && npm run library-exercise-ui
+```
+
+Either way it prints a `✅`/`❌` line per check, a `📷` line per screenshot, and exits
+non-zero if anything failed.
+
+### Scripts that need a real backend
+
+`library-exercise-tsl-live.mjs` relays `/v2/tsl/compile` to a core on :8080 to prove the TSL
+JSON the visual editor produces actually decodes on the Kotlin side — kotlinx.serialization
+runs with `ignoreUnknownKeys = false`, so a stub cannot answer that question. It needs
+`easy.core.auth-enabled: false` and the `tiivad:tsl-compose` container image registered and
+attached to an executor (`POST /v2/container-images`, then `PUT /v2/executors/{id}`).
+It is excluded from `run-suite.mjs` and from CI for exactly that reason.
+
+### In CI
+
+The browser is Playwright's own chromium rather than the runner's Chrome, so the version is
+pinned by the `playwright` dependency: CI sets `HARNESS_BROWSER_CHANNEL=''` and runs
+`npx playwright install --with-deps chromium`. Locally the variable is unset and the harness
+drives the Chrome you already have, so there is still no 130MB download. Screenshots are
+uploaded as an artifact when the step fails — usually the fastest way to tell a real
+regression from a slow runner.
 
 ## Why the app can't just be pointed at a fake IdP
 
@@ -128,6 +159,11 @@ stdout, which is how you notice a broken query without asserting on it.
   is what proves the row action sends the right thing.
 - **Run the check against the unfixed code first.** If it doesn't fail, it isn't testing
   what you think it is.
+- **Poll, don't sleep.** `waitUntil(() => ...)` from `harness.mjs` replaces
+  `waitForTimeout` + assert. A sleep tuned on a laptop is a coin flip on a loaded runner,
+  and when it loses the failure reads like a product bug. The one legitimate use of a fixed
+  sleep is asserting that something *doesn't* happen — and even then, settle to quiescence
+  before starting the clock, or you'll count work that was already in flight.
 - **`/v2` is same-origin** in dev (Vite proxies it), so match `**/v2/**`, not a backend host.
 
 ## Screenshots are the point

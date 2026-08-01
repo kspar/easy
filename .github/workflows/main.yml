@@ -82,7 +82,9 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            web/dev-harness/package-lock.json
       - name: Install
         run: npm ci
       # Fails on errors only. There is a known backlog of react-hooks findings kept at warning
@@ -93,6 +95,33 @@ jobs:
       # which is how 18 type errors accumulated unnoticed — `npm run dev` skips tsc.
       - name: Typecheck and build
         run: npm run build
+
+      # Browser tests: real Chromium, real router and components, backend faked by Playwright
+      # route interception. See doc/web/browser-testing.md. Only the backend-free scripts run
+      # here — run-suite.mjs holds the list, and starts/stops the stub dev server itself.
+      # `cd` rather than a step-level working-directory: this job already sets
+      # defaults.run.working-directory, and stacking an override on it is a path ambiguity that
+      # would only surface as a red build.
+      - name: Install browser harness
+        run: cd dev-harness && npm ci
+      # Playwright's own chromium rather than the runner image's Chrome, so the browser version
+      # is pinned by the playwright dependency and can't drift underneath us.
+      - name: Install Chromium
+        run: cd dev-harness && npx playwright install --with-deps chromium
+      - name: Browser tests
+        env:
+          HARNESS_BROWSER_CHANNEL: ''
+        run: npm run test:browser
+      # The screenshots are the only way to tell a layout regression from a timing flake once
+      # the runner is gone.
+      - name: Publish failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-screenshots-${{ github.sha }}
+          path: web/dev-harness/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
 
       # The dist has been environment-agnostic since EZ-1726 — config.json is read at boot rather
       # than baked in — so one tarball serves staging and production both. See §8.1.
