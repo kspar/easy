@@ -54,6 +54,14 @@ GH_ALERT = re.compile(r"^>\s*\[!(\w+)\]\s*\n>\s*", re.M)
 # to parse. Escapes bare ampersands — one that is already part of an entity is left alone.
 BARE_AMP = re.compile(r"&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)")
 
+# Asciidoctor auto-numbers block captions — "Figure 1.", "Tabel 1." — above titled tables,
+# figures and examples. Pandoc keeps the caption text and drops the generated label. kspar has
+# said the labels are not wanted, so they are removed from BOTH sides before comparing: an
+# exercise whose only difference is a missing label has converted correctly. Stripping both sides
+# rather than just production also means the words "Tabel 1." occurring in ordinary prose cannot
+# turn into a spurious mismatch.
+CAPTION_LABEL = re.compile(r"\b(?:Figure|Table|Example|Joonis|Tabel|Näide|Näited)\s+\d+\.\s*")
+
 CODEHL_SPAN = re.compile(r'<span class="codehl[^"]*">(.*?)</span>', re.S)
 TAG = re.compile(r"<[^>]+>")
 ADMONITION_LABEL = re.compile(r"\b(Note|Tip|Warning|Important|Caution):")
@@ -79,6 +87,7 @@ def visible_text(html: str) -> str:
                          ("&#39;", "'"), ("&nbsp;", " ")):
         text = text.replace(entity, char)
     text = ADMONITION_LABEL.sub(r"\1", text)  # the blockquote rewrite adds a colon
+    text = CAPTION_LABEL.sub("", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
