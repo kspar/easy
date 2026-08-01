@@ -323,8 +323,57 @@ export interface LibraryDirParent {
   name: string
 }
 
-export interface LibraryExerciseDetail {
+export interface LibraryExerciseAsset {
+  file_name: string
+  file_content: string
+}
+
+export interface LibraryExerciseCourse {
+  id: string
   title: string
+  alias: string | null
+  course_exercise_id: string
+  course_exercise_title_alias: string | null
+}
+
+export interface LibraryExerciseDetail {
+  dir_id: string
+  effective_access: DirAccessLevel
+  created_at: string
+  is_public: boolean
+  is_anonymous_autoassess_enabled: boolean
+  owner_id: string
+  last_modified: string
+  last_modified_by_id: string
+  grader_type: GraderType
+  solution_file_name: string
+  solution_file_type: SolutionFileType
+  title: string
+  text_html: string | null
+  text_md: string | null
+  anonymous_autoassess_template: string | null
+  grading_script: string | null
+  container_image: string | null
+  max_time_sec: number | null
+  max_mem_mb: number | null
+  assets: LibraryExerciseAsset[] | null
+  executors: { id: string; name: string }[] | null
+  on_courses: LibraryExerciseCourse[]
+  on_courses_no_access: number
+}
+
+/** Body of PUT /exercises/{id} — the whole exercise, not a patch. */
+export interface LibraryExerciseUpdate {
+  title: string
+  text_md: string | null
+  grader_type: GraderType
+  solution_file_name: string
+  solution_file_type: SolutionFileType
+  grading_script: string | null
+  container_image: string | null
+  max_time_sec: number | null
+  max_mem_mb: number | null
+  assets: LibraryExerciseAsset[] | null
 }
 
 // Library sharing/access types

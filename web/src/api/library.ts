@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
-import type { LibraryDirResp, LibraryDirParent, LibraryExerciseDetail, DirAccessesResp, DirAccessLevel } from './types.ts'
+import type {
+  LibraryDirResp,
+  LibraryDirParent,
+  LibraryExerciseDetail,
+  LibraryExerciseUpdate,
+  DirAccessesResp,
+  DirAccessLevel,
+} from './types.ts'
 
 export function useLibraryDir(dirId: string) {
   return useQuery({
@@ -23,6 +30,41 @@ export function useLibraryExercise(exerciseId: string | undefined) {
     queryKey: ['library', 'exercise', exerciseId],
     queryFn: () => apiFetch<LibraryExerciseDetail>(`/exercises/${exerciseId}`),
     enabled: !!exerciseId,
+  })
+}
+
+/**
+ * Fetch the exercise outside React Query's cache. Used by the save path to re-read the
+ * server's current version right before writing, so a concurrent edit by someone else can be
+ * detected instead of silently overwritten.
+ */
+export function fetchLibraryExercise(exerciseId: string) {
+  return apiFetch<LibraryExerciseDetail>(`/exercises/${exerciseId}`)
+}
+
+export function useUpdateLibraryExercise(exerciseId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: LibraryExerciseUpdate) =>
+      apiFetch(`/exercises/${exerciseId}`, { method: 'PUT', body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library', 'exercise', exerciseId] })
+      queryClient.invalidateQueries({ queryKey: ['library', 'dir'] })
+    },
+  })
+}
+
+export function useSetExerciseEmbed(exerciseId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiFetch(`/exercises/${exerciseId}`, {
+        method: 'PATCH',
+        body: { anonymous_autoassess_enabled: enabled },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library', 'exercise', exerciseId] })
+    },
   })
 }
 
