@@ -58,6 +58,25 @@ tasks.test {
             ?.filter(String::isNotEmpty)
             ?.forEach { excludeTags(it) }
     }
+
+    // Gradle prints nothing when tests pass, so "3 passed" and "0 matched the filter" look
+    // identical in CI. With the exclusion above driven by a property, a typo would silently run
+    // nothing and still go green, so report the count and fail on zero.
+    var executed = 0L
+    afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
+        if (desc.parent == null) {
+            executed = result.testCount
+            logger.lifecycle(
+                "Tests: ${result.testCount} completed, ${result.failedTestCount} failed, " +
+                        "${result.skippedTestCount} skipped"
+            )
+        }
+    }))
+    doLast {
+        if (executed == 0L) throw GradleException(
+            "No tests were executed. Check the -PexcludeTags value and the @Tag annotations."
+        )
+    }
 }
 
 dependencies {
