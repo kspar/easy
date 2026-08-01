@@ -55,3 +55,25 @@ jobs:
       # which is how 18 type errors accumulated unnoticed — `npm run dev` skips tsc.
       - name: Typecheck and build
         run: npm run build
+
+  # Without this, GitHub knows nothing about the JVM dependencies: the dependency graph held
+  # only npm packages, so no Dependabot alert could ever fire for core, tsl or their transitive
+  # dependencies. `.github/dependabot.yml` gets us version-update PRs for Gradle, but security
+  # alerts need the graph to be populated, and Gradle is not parsed automatically the way
+  # package-lock.json is. This submits a resolved snapshot instead.
+  dependency-graph:
+    name: Submit dependency graph (Gradle)
+    # Default branch only. The snapshot describes what master depends on, and a PR build would
+    # otherwise overwrite that with the PR's view.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to write the snapshot through the Dependency Submission API.
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/dependency-submission@v6

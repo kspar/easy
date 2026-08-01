@@ -1,0 +1,109 @@
+# Dependabot configuration.
+#
+# Added after six security PRs sat open from February to April 2026 and rotted: the advisories
+# behind them were fixed another way (EZ-1720 regenerated web/package-lock.json wholesale), so
+# every one was proposing a version already in the lockfile by the time anyone looked. Untracked
+# noise is why they went unread, so the shape here is deliberately low-volume.
+#
+# Two things worth knowing about how this behaves:
+#
+# 1. Grouping applies to scheduled VERSION updates. Dependabot's SECURITY updates are separate,
+#    are on regardless of this file, and arrive as individual PRs — they should, since they are
+#    the ones worth interrupting for.
+# 2. Minor and patch updates are grouped into one PR per ecosystem per week, meant to be reviewed
+#    as a batch. Majors are deliberately left ungrouped: they get their own PR because they need
+#    reading, not just a green CI run.
+#
+# Dependabot PRs cannot carry a YouTrack id, so they will not match the usual
+# "EZ-1234 component: ..." commit convention. That is expected; squash-merging with a corrected
+# message is fine if the id matters for a given change.
+
+version: 2
+updates:
+  # --- Frontend -------------------------------------------------------------------------------
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "deps(web)"
+    # No ignores. react-router is deliberately held at v7 — the v8 RSC advisory does not apply to
+    # a client-only SPA (see EZ-1720) — but that is a decision to re-make when a PR appears, not
+    # one to bury here where nobody would find it.
+
+  # The Playwright browser-testing harness. Committed but not shipped, so it moves on its own
+  # schedule and never needs to be urgent.
+  - package-ecosystem: npm
+    directory: /web/dev-harness
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      dev-harness:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "deps(dev-harness)"
+
+  # --- Executor -------------------------------------------------------------------------------
+  # These pins reached 2019 untouched and stopped being installable (EZ-1720). Weekly grouping is
+  # cheap insurance against that happening again.
+  - package-ecosystem: pip
+    directory: /aae
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      executor-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "deps(executor)"
+
+  # --- Backend --------------------------------------------------------------------------------
+  # Covers gradle/libs.versions.toml, which is where every JVM version lives, plus the
+  # build.gradle.kts files. Spring Boot and Kotlin majors will arrive as their own PRs, which is
+  # the right amount of ceremony for them.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      core-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "deps(core)"
+
+  # --- CI -------------------------------------------------------------------------------------
+  # Pinned by major tag (actions/checkout@v7 and friends), so this is quiet by design and only
+  # speaks up when a major lands.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "deps(ci)"
