@@ -322,7 +322,15 @@ Real executor: `aae/server.py` under gunicorn, grading in Docker containers on t
 
 ## 7. Dev Keycloak realm
 
-Changes on the existing `dev.idp.lahendus.ut.ee`:
+**First check whether there is still a realm to change.** As of 2026-08-01
+`dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, and that proxy answers
+`tlsv1 unrecognized name` — the dev IdP is not being served at that name. The `easy-dev-idp`
+instance is up with only SSH open, so the realm may well still be on disk, but "exists; only realm
+config changes" is an assumption until someone logs in and looks. If the realm is gone this stops
+being a config task and becomes "stand up Keycloak", which is a different size of job and probably
+the critical path for the whole environment.
+
+Changes on `dev.idp.lahendus.ut.ee`:
 
 - **Registration disabled**, admin-created accounts only (as decided). Removes the "anyone with a
   UT account wanders into staging" problem entirely.
@@ -341,12 +349,27 @@ Changes on the existing `dev.idp.lahendus.ut.ee`:
 
 ### 8.1 Artifacts from CI
 
-Extend `.github/workflows/main.yml`. On master (and `workflow_dispatch`), after the existing gates
-pass, publish:
+**Done.** `.github/workflows/main.yml` publishes, on master, `releases/*` and `workflow_dispatch`:
 
-- `core-<sha>.jar` — from `./gradlew bootJar`. Environment-agnostic: all config is the external
-  `application.yaml`.
+- `core-<sha>.jar` — the Boot jar `./gradlew build` already produces. Environment-agnostic: all
+  config is the external `application.yaml`.
 - `web-<sha>.tar.gz` — from `npm run build`. Also environment-agnostic since EZ-1726.
+
+Each job publishes after its own gates, so a jar can exist for a run whose web job failed. The
+deploy script gates on the **run's** conclusion rather than on an artifact existing, which is the
+check that matters.
+
+Two details worth knowing:
+
+- The jar is found by pattern and the `-plain` one excluded. The Boot plugin emits both; the plain
+  jar holds classes without dependencies and dies with "no main manifest attribute" on the server.
+  Matching by pattern also keeps `version` in `core/build.gradle.kts` something CI has no opinion
+  about.
+- **`config.json` is deleted from the dist before packing.** `web/public/config.json` holds the
+  *production* IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
+  step away from staging quietly talking to production — the §4.1 failure, and not one anybody
+  debugs quickly. Without the file the app renders its "Configuration error" page instead, and the
+  deploy writes the environment's own copy.
 
 Both artifacts are now genuinely environment-neutral, which is the property that makes
 artifact-based deploys worth the trouble: the build staging exercised is the same build that later
@@ -374,23 +397,33 @@ outlive that or become prod-promotable, switch to prereleases tagged `staging-<s
 
 ### 8.2 The deploy script
 
-`deploy/deploy-staging.sh <sha|latest>` in this repo, run by any team member from their laptop.
-Requires only `gh` auth and SSH to the host — no local JDK or Node, which is the main win over
-building on the server.
+**Written.** `deploy/deploy-staging.sh <sha|latest>`, run by any team member from their laptop;
+`deploy/README.md` is the operating manual and lists what the host must already have. Requires only
+`gh` auth and SSH — no local JDK or Node, which is the main win over building on the server. It does
+the seven steps above, plus:
 
-```
-1  resolve <sha> → CI run, fail loudly if that run wasn't green
-2  gh run download → jar + dist tarball
-3  scp to /srv/easy/releases/<sha>/
-4  ssh: unpack dist, write this environment's config.json into it (see §8.1),
-      symlink /srv/easy/web/current → releases/<sha>/web
-5  ssh: systemctl restart easy-core        # Liquibase migrates on startup
-6  poll until core answers, then print the deployed sha
-7  keep the last N releases; symlink flip means rollback is step 4 with an older sha
-```
+- **Refuses a run that isn't green**, and says which conclusion it saw.
+- **Skips the download when the host already has that release**, which is what makes rollback work
+  after the 90-day artifact expiry.
+- **Validates `config.json` after writing it** — all four keys, parsed — before flipping anything.
+- **Renames the symlinks into place** rather than `ln -sfn`, which unlinks first; a request landing
+  in that window 404s.
+- **Waits for an HTTP 401** from the public API. Core has no unauthenticated health endpoint — the
+  only `permitAll()` routes need a real exercise id — so 401 is what a live filter chain returns,
+  and it proves Apache, core and Spring Security all at once. That reads as a bug unless you know
+  it, hence the comment at the poll. `systemctl is-active` covers the case where Apache itself
+  produced the 401.
+- Everything is checked **before** the symlink flip, so a bad artifact or a bad config leaves the
+  previous release serving. Verified against a Linux container: missing `application.yaml` and an
+  incomplete `config.json` both abort with `current` untouched.
 
-Two systemd units: `easy-core.service` (`java -jar`, `Restart=on-failure`, config path via
-`--spring.config.location`) and `easy-executor.service` (gunicorn as the non-root user from §6).
+Two systemd units the host needs: `easy-core.service` (`java -jar`, `Restart=on-failure`, config
+path via `--spring.config.location`) and `easy-executor.service` (gunicorn as the non-root user from
+§6). Deploy also needs passwordless `sudo systemctl restart easy-core`.
+
+The environment's own files live in `deploy/staging/` — `config.json` and `staging.env`. Neither is
+secret; the secrets stay in `/srv/easy/conf/application.yaml`, which no deploy touches. `SSH_TARGET`
+ships as a placeholder and the script refuses to run until the VM is picked.
 
 A plain `java -jar` is all this needs. Worth knowing that it wasn't always: until EZ-1729 the
 bootJar could not start at all, because JRuby could not find the asciidoctor gems inside Boot's
@@ -435,8 +468,11 @@ Greenfield, so this is a small amount of setup done once:
 
 ## 10. Open questions
 
-1. **TLS certs** — UT-issued certs, or is outbound ACME allowed for Let's Encrypt? Affects renewal
-   automation.
+1. ~~**TLS certs** — UT-issued certs, or is outbound ACME allowed for Let's Encrypt?~~ **Answered
+   (2026-08-01): ACME works on this network.** The old dev host serves a Let's Encrypt cert issued
+   6 Jul 2026, SANs `dev.lahendus`, `dev.ems.lahendus`, `dev.aas.lahendus` — so certbot renews from
+   inside UT's network today, and nothing needs requesting from UT IT. `dev.core.lahendus.ut.ee`
+   still has no A record.
 2. **How much of `teacher_inline_comment` / `teacher_activity` survives anonymisation?** Grading-UI
    testing wants it; it's the most sensitive content in the DB. This is the one anonymisation call
    that needs a human decision, and it's easier to make once than to revisit (§3.3).
@@ -456,7 +492,7 @@ Greenfield, so this is a small amount of setup done once:
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
 | 4 | Executor + base images; auto-assessment verified on a real imported exercise |
-| 5 | `deploy/deploy-staging.sh` documented; whole team can deploy |
+| 5 | `deploy/deploy-staging.sh` documented; whole team can deploy. **Script and CI artifacts done ahead of phase 1** — untested against a real host, and `SSH_TARGET` is still a placeholder |
 | 6 | Automatic deploy on green master; staging added to `doc/release-procedure.md` |
 
 Phase 2 before phase 3 is the point worth keeping: the environment that can't yet leak anything is
