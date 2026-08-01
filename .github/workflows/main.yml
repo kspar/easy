@@ -32,6 +32,44 @@ jobs:
       - name: Unit tests
         run: ./gradlew :core:test -PexcludeTags=db --no-daemon
 
+      # Staging fetches this instead of building on the host — deploy/deploy-staging.sh,
+      # doc/staging-environment.md §8. The jar is environment-agnostic: every setting lives in the
+      # external application.yaml, so the artifact staging exercises is byte-for-byte the one that
+      # can later go to production.
+      #
+      # Steps are sequential, so a failing build or test above publishes nothing. The web job is
+      # independent though, and a green backend with a red web job still leaves a jar behind —
+      # which is why the deploy script gates on the *run's* conclusion rather than on an artifact
+      # merely existing.
+      - name: Package core jar
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        run: |
+          # Found by pattern rather than named core-1.jar, so that `version` in
+          # core/build.gradle.kts stays something CI has no opinion about. The exclusion matters:
+          # the Boot plugin also emits a `-plain` jar holding classes without dependencies, which
+          # looks identical here and dies with "no main manifest attribute" on the server.
+          shopt -s nullglob
+          boot=()
+          for jar in core/build/libs/*.jar; do
+            [[ "$jar" == *-plain.jar ]] || boot+=("$jar")
+          done
+          if [[ ${#boot[@]} -ne 1 ]]; then
+            echo "::error::Expected exactly one Boot jar in core/build/libs, found: ${boot[*]:-none}"
+            exit 1
+          fi
+          cp "${boot[0]}" "core-${{ github.sha }}.jar"
+
+      - name: Publish core jar
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-${{ github.sha }}
+          path: core-${{ github.sha }}.jar
+          if-no-files-found: error
+          retention-days: 90
+          # A jar is already a zip. Recompressing it buys nothing and costs upload time.
+          compression-level: 0
+
   web:
     name: Web (TypeScript)
     runs-on: ubuntu-latest
@@ -55,6 +93,33 @@ jobs:
       # which is how 18 type errors accumulated unnoticed — `npm run dev` skips tsc.
       - name: Typecheck and build
         run: npm run build
+
+      # The dist has been environment-agnostic since EZ-1726 — config.json is read at boot rather
+      # than baked in — so one tarball serves staging and production both. See §8.1.
+      - name: Package web dist
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        run: |
+          # config.json is deliberately NOT shipped. web/public/config.json holds the *production*
+          # IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
+          # step away from staging quietly talking to production — the failure §4.1 is written
+          # around, and not one anybody debugs quickly. Without the file the app renders a
+          # "Configuration error" page naming the problem, and deploy-staging.sh writes the real
+          # one from deploy/<env>/config.json.
+          rm -f dist/config.json
+          tar -czf "../web-${{ github.sha }}.tar.gz" -C dist .
+
+      - name: Publish web dist
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-${{ github.sha }}
+          # Workspace-relative: `defaults.run.working-directory` applies to `run` steps, not to
+          # action inputs, so this is the repo root rather than web/.
+          path: web-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 90
+          # Already gzipped.
+          compression-level: 0
 
   # Without this, GitHub knows nothing about the JVM dependencies: the dependency graph held
   # only npm packages, so no Dependabot alert could ever fire for core, tsl or their transitive
