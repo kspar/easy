@@ -96,6 +96,12 @@ jobs:
       - name: Typecheck and build
         run: npm run build
 
+      # Pure functions, no browser, no framework — Node imports the TypeScript directly. Runs
+      # before the browser suite because it needs neither Chromium nor the stub server, so when
+      # the markdown commands break this is the job that says so in seconds.
+      - name: Unit tests
+        run: npm run test:unit
+
       # Browser tests: real Chromium, real router and components, backend faked by Playwright
       # route interception. See doc/web/browser-testing.md. Only the backend-free scripts run
       # here — run-suite.mjs holds the list, and starts/stops the stub dev server itself.

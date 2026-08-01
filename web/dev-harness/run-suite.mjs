@@ -28,6 +28,7 @@ const SCRIPTS = [
   'runtime-config.mjs',
   'library-exercise-tsl.mjs',
   'library-exercise-ui.mjs',
+  'library-exercise-markdown.mjs',
 ]
 
 function log(msg) {
