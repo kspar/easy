@@ -49,6 +49,11 @@ EASY_ATTRS = ["run", "nur", "in", "ni", "nohl", "lhon"]
 # commonmark-java has no GitHub-alert support, so `> [!NOTE]` would reach students literally.
 GH_ALERT = re.compile(r"^>\s*\[!(\w+)\]\s*\n>\s*", re.M)
 
+# Asciidoctor writes image URLs into docbook attributes without escaping `&`, so an image whose
+# src has a query string (`?action=download&upname=…`) produces XML that pandoc correctly refuses
+# to parse. Escapes bare ampersands — one that is already part of an entity is left alone.
+BARE_AMP = re.compile(r"&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)")
+
 CODEHL_SPAN = re.compile(r'<span class="codehl[^"]*">(.*?)</span>', re.S)
 TAG = re.compile(r"<[^>]+>")
 ADMONITION_LABEL = re.compile(r"\b(Note|Tip|Warning|Important|Caution):")
@@ -75,6 +80,26 @@ def visible_text(html: str) -> str:
         text = text.replace(entity, char)
     text = ADMONITION_LABEL.sub(r"\1", text)  # the blockquote rewrite adds a colon
     return re.sub(r"\s+", " ", text).strip()
+
+
+MATH_DELIM = re.compile(r"(\\\(|\\\)|\\\[|\\\]|\$)")
+
+
+def math_delimiters_only(before: str, after: str) -> bool:
+    """True when two texts differ solely in how math is delimited.
+
+    Asciidoctor emits MathJax delimiters (`\\(x\\)`); pandoc emits `$x$`. The formula itself
+    survives, so this is a known and uninteresting class of difference — worth separating from
+    failures nobody has explained yet. Neither form renders today (EZ-1732).
+    """
+    def strip(s: str) -> str:
+        s = MATH_DELIM.sub("", s)
+        s = re.sub(r"\s+", " ", s)
+        # Removing a delimiter can leave the space that sat around it, so `…16$.` becomes
+        # `16 .`. Only affects which label a flagged exercise gets, never whether it flags.
+        return re.sub(r"\s+([.,;:!?])", r"\1", s).strip()
+
+    return strip(before) == strip(after)
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -104,6 +129,16 @@ def convert_all(rows: list[dict], work: pathlib.Path) -> dict[int, dict]:
              'echo "FAILED $f" >> docbook/errors.log; done'])
     if r.returncode != 0:
         print(f"  asciidoctor container failed: {r.stderr[:400]}", file=sys.stderr)
+
+    repaired = 0
+    for xml in db_dir.glob("*.xml"):
+        text = xml.read_text(encoding="utf-8", errors="replace")
+        fixed = BARE_AMP.sub("&amp;", text)
+        if fixed != text:
+            xml.write_text(fixed, encoding="utf-8")
+            repaired += 1
+    if repaired:
+        print(f"  escaped bare ampersands in {repaired} docbook file(s)", flush=True)
 
     print(f"  pandoc: docbook -> gfm", flush=True)
     r = run(["docker", "run", "--rm", "-v", f"{work}:/data", "--entrypoint", "sh", PANDOC_IMAGE,
@@ -191,7 +226,10 @@ def main() -> int:
                 if want == got:
                     entry |= {"status": "ok", "reason": None}
                 else:
-                    entry |= {"status": "flagged", "reason": "text differs after round-trip",
+                    reason = ("math delimiters only (EZ-1732)"
+                              if math_delimiters_only(want, got)
+                              else "text differs after round-trip")
+                    entry |= {"status": "flagged", "reason": reason,
                               "chars_before": len(want), "chars_after": len(got)}
                     (out / "flagged" / f"{ex}.diff").write_text(
                         f"--- production html (visible text)\n{want}\n\n"
