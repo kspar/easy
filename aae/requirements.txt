@@ -1,3 +1,15 @@
-
-docker==4.0.2
-flask==1.1.1
+# Direct dependencies only; pip resolves the rest. Dependabot watches this file.
+#
+# Last raised in EZ-1720. Both pins had been untouched since 2019, and the file had stopped
+# being installable at all: flask 1.1.1 declares only a lower bound on Jinja2, so a fresh
+# install paired it with Jinja2 3.x and died on `from jinja2 import escape`, while
+# docker 4.0.2 imports distutils, which Python 3.12 removed. Existing deployments kept working
+# on their old resolved dependency sets; only new installs broke.
+#
+# Do not lower flask below 3.1.3 — it is the first release free of GHSA-m2qf-hxjv-5gpq
+# (high, response caching) and GHSA-68rp-wp8r-4726 (low).
+#
+# NOTE: flask 3.1 needs Python >= 3.9. Check `python3 --version` on the host before deploying
+# this; Ubuntu 20.04 ships 3.8, where the install fails outright rather than misbehaving subtly.
+docker==7.2.0
+flask==3.1.3

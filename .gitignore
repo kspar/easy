@@ -26,3 +26,10 @@ aae/gunicorn-conf.py
 
 # Kotlin 2.x build metadata
 .kotlin/
+
+# Python bytecode (aae/)
+__pycache__/
+*.pyc
+
+# Rotated logback archives next to the app (*.log is already ignored above)
+*.log.gz

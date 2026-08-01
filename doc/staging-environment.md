@@ -258,6 +258,11 @@ so email links point at staging.
 
 Real executor: `aae/server.py` under gunicorn, grading in Docker containers on the same host.
 
+- **Needs Python >= 3.9.** `aae/requirements.txt` was unusable on a fresh install until EZ-1720 —
+  flask 1.1.1 resolved against a modern Jinja2 and failed to import, and docker 4.0.2 imports the
+  `distutils` module Python 3.12 removed. It now pins flask 3.1.3 and docker 7.2.0, which need
+  3.9+. A greenfield Ubuntu is fine; check `python3 --version` before assuming.
+
 - **Base images must exist locally.** `containers.py` builds `FROM {base_image_name}` and notes the
   image "must already exist" — it does not pull. Exercises reference `container_image` rows that
   came in with the import, so mirror prod's image list onto this host or auto-assessment fails on
