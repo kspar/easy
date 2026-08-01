@@ -14,6 +14,42 @@ Apache config would otherwise have to get right — see §2.
 
 ---
 
+## 0. Rules
+
+**If you are changing something on staging and reading nothing else, read this.** Each line is
+the whole rule; the linked section has the reasoning.
+
+Two are enforced — the code stops you:
+
+- **Auth stays on.** `easy.core.auth-enabled: false` makes core trust `oidc_claim_*` headers, i.e.
+  anyone is admin. Core refuses to start with it false on a non-loopback address. (§2)
+- **Anonymisation only runs on a staging-named database.** The scripts refuse anything not matching
+  `staging`/`stage`/`anon`. Aimed at prod they would rename every user. (§3.2)
+
+The rest are on you:
+
+- **Never run `./gradlew test` on the host, and never put `core/src/test/resources/application.yaml`
+  there.** It runs Liquibase `dropAll()`. (§3.5)
+- **Nightly `pg_dump`.** The data drifts and cannot be regenerated from prod. (§3.5)
+- **Moodle sync must not reach real Moodle.** Dead URLs *and* pinned crons — grade sync also has a
+  manual endpoint a tester can click. (§5)
+- **`keycloak.cron` pinned to the never-date, and staging's Keycloak service account has no
+  user-delete permission.** Otherwise the first run deletes a slice of the import, in the DB and
+  the IdP. (§5)
+- **`keycloak.base-url` is the dev IdP.** Pasting prod's value here is the worst mistake available
+  on this host. (§5)
+- **Mail goes to a local catch-all**, so it stays testable and cannot escape. (§5)
+- **Dev realm: registration disabled, accounts admin-created, `easy_role` mapped.** (§7)
+- **Core, postgres and the executor bind loopback only; the executor runs non-root.** (§2, §6)
+- **Apache serves `config.json` with `Cache-Control: no-store`.** A cached one points a fresh
+  deploy at the previous environment's backend. (§4.1)
+
+Not a rule but the usual first stumble: staging needs **its own `application.yaml`** (four keys are
+new in v4.0 — see `doc/release-procedure.md`) **and its own `config.json`**. Every environment
+keeps its own config outside the repo; the prohibition above is about *test* config specifically.
+
+---
+
 ## 1. Topology
 
 One new VM, plus the existing IDP elsewhere:
