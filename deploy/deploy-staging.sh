@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+#
+# Deploy a CI-built Lahendus release to the staging host.
+#
+#   deploy/deploy-staging.sh latest              # newest green CI run on master
+#   deploy/deploy-staging.sh 1a2b3c4             # a specific commit, full or short sha
+#   deploy/deploy-staging.sh 1a2b3c4 --dry-run   # resolve and download, touch nothing remote
+#
+# Needs gh (authenticated), jq, and SSH to the staging host. Deliberately no JDK and no Node: the
+# artifacts come from the CI run that gated the commit, so what staging exercises is byte-for-byte
+# what can later go to production. SSH access is therefore the real deploy permission.
+# See doc/staging-environment.md §8.
+#
+# Rollback is this same command with an older sha. Releases stay on the host, so rolling back to
+# one still in $REMOTE_ROOT/releases needs neither a download nor a surviving CI run — which
+# matters, since GitHub expires artifacts after 90 days. A rollback across a Liquibase migration
+# does NOT roll the schema back; that needs the nightly dump (§3.5).
+
+set -euo pipefail
+
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ENV_NAME="staging"
+readonly ENV_DIR="$SCRIPT_DIR/$ENV_NAME"
+
+# shellcheck source=staging/staging.env
+source "$ENV_DIR/staging.env"
+
+: "${GH_REPO:=kspar/easy}"
+export GH_REPO
+
+readonly WORKFLOW="CI"
+readonly HEALTH_TIMEOUT_S=120
+
+die() { echo "error: $*" >&2; exit 1; }
+step() { echo; echo "==> $*"; }
+
+usage() {
+    sed -n '3,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit "${1:-1}"
+}
+
+# --- arguments -------------------------------------------------------------------------------
+
+REF=""
+DRY_RUN=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) usage 0 ;;
+        --dry-run) DRY_RUN=true ;;
+        -*) die "unknown option: $1" ;;
+        *) [ -z "$REF" ] || die "expected one sha, got '$REF' and '$1'"; REF="$1" ;;
+    esac
+    shift
+done
+[ -n "$REF" ] || usage 1
+
+# --- preflight -------------------------------------------------------------------------------
+
+step "Preflight"
+
+for cmd in gh jq ssh scp curl tar; do
+    command -v "$cmd" >/dev/null || die "$cmd is not installed"
+done
+gh auth status >/dev/null 2>&1 || die "gh is not authenticated — run 'gh auth login'"
+
+[ -f "$ENV_DIR/config.json" ] || die "missing $ENV_DIR/config.json"
+
+# A dry run resolves and downloads and stops there, so it must work with no host at all — that is
+# what makes it useful before the staging VM exists.
+if [ "$DRY_RUN" = false ]; then
+    # The staging VM is not chosen yet (the three old dev instances are still being triaged), so
+    # this ships with a placeholder rather than a wrong hostname that looks right.
+    case "$SSH_TARGET" in
+        ""|*TODO*) die "SSH_TARGET is still a placeholder — set it in $ENV_DIR/staging.env" ;;
+    esac
+
+    ssh -o BatchMode=yes -o ConnectTimeout=10 "$SSH_TARGET" true \
+        || die "cannot SSH to $SSH_TARGET (needs key-based auth, no password prompt)"
+fi
+
+# --- resolve the commit to a green CI run ------------------------------------------------------
+
+step "Resolving $REF"
+
+# `gh run list --commit` matches full shas only, so the filtering happens in jq: a short sha is
+# what anyone actually types, and `git rev-parse` cannot help for a commit the laptop hasn't
+# fetched. 100 runs is a few weeks of master.
+runs="$(gh run list --workflow "$WORKFLOW" --limit 100 \
+    --json databaseId,headSha,headBranch,status,conclusion,url,createdAt)"
+
+if [ "$REF" = "latest" ]; then
+    run="$(jq -c --arg branch "$DEPLOY_BRANCH" '
+        [ .[] | select(.headBranch == $branch and .status == "completed" and .conclusion == "success") ]
+        | sort_by(.createdAt) | last // empty' <<<"$runs")"
+    [ -n "$run" ] || die "no green $WORKFLOW run found on $DEPLOY_BRANCH in the last 100 runs"
+else
+    # Newest first, so a re-run of the same commit wins over the original.
+    run="$(jq -c --arg sha "$REF" '
+        [ .[] | select(.headSha | startswith($sha)) ]
+        | sort_by(.createdAt) | last // empty' <<<"$runs")"
+    [ -n "$run" ] || die "no $WORKFLOW run found for '$REF' in the last 100 runs"
+fi
+
+SHA="$(jq -r .headSha <<<"$run")"
+RUN_ID="$(jq -r .databaseId <<<"$run")"
+RUN_URL="$(jq -r .url <<<"$run")"
+RUN_STATUS="$(jq -r .status <<<"$run")"
+RUN_CONCLUSION="$(jq -r .conclusion <<<"$run")"
+RUN_BRANCH="$(jq -r .headBranch <<<"$run")"
+
+echo "  commit  $SHA ($RUN_BRANCH)"
+echo "  run     $RUN_URL"
+
+# The gate. Artifacts are published per-job, so a jar can exist for a run whose web job failed —
+# only the run's own conclusion says the whole thing was green.
+[ "$RUN_STATUS" = "completed" ] \
+    || die "run is '$RUN_STATUS', not finished yet — $RUN_URL"
+[ "$RUN_CONCLUSION" = "success" ] \
+    || die "run concluded '$RUN_CONCLUSION', refusing to deploy it — $RUN_URL"
+
+# --- does the host already have this release? --------------------------------------------------
+
+REMOTE_RELEASE="$REMOTE_ROOT/releases/$SHA"
+
+if [ "$DRY_RUN" = true ]; then
+    NEED_UPLOAD=true
+elif ssh "$SSH_TARGET" "test -f '$REMOTE_RELEASE/core.jar' && test -d '$REMOTE_RELEASE/web'"; then
+    echo "  host already has this release, skipping download and upload (rollback path)"
+    NEED_UPLOAD=false
+else
+    NEED_UPLOAD=true
+fi
+
+# --- fetch artifacts ---------------------------------------------------------------------------
+
+if [ "$NEED_UPLOAD" = true ]; then
+    step "Downloading artifacts from run $RUN_ID"
+
+    TMP="$(mktemp -d)"
+    trap 'rm -rf "$TMP"' EXIT
+
+    gh run download "$RUN_ID" -n "core-$SHA" -n "web-$SHA" -D "$TMP" \
+        || die "artifacts missing from $RUN_URL — only master and release branches publish them, and they expire after 90 days"
+
+    # Globbed rather than assumed: whether gh lands a single-file artifact at the root or inside a
+    # directory named after it has changed between versions, and either layout is fine here.
+    jar="$(find "$TMP" -name "core-$SHA.jar" -type f -print -quit)"
+    tgz="$(find "$TMP" -name "web-$SHA.tar.gz" -type f -print -quit)"
+    [ -n "$jar" ] || die "core-$SHA.jar not found in the downloaded artifact"
+    [ -n "$tgz" ] || die "web-$SHA.tar.gz not found in the downloaded artifact"
+
+    echo "  core  $(du -h "$jar" | cut -f1)"
+    echo "  web   $(du -h "$tgz" | cut -f1)"
+fi
+
+if [ "$DRY_RUN" = true ]; then
+    step "Dry run — stopping before touching $SSH_TARGET"
+    exit 0
+fi
+
+# --- upload --------------------------------------------------------------------------------
+
+if [ "$NEED_UPLOAD" = true ]; then
+    step "Uploading to $SSH_TARGET:$REMOTE_RELEASE"
+    ssh "$SSH_TARGET" "mkdir -p '$REMOTE_RELEASE'"
+    # Names are normalised on the way over; the sha is already in the directory name.
+    scp -q "$jar" "$SSH_TARGET:$REMOTE_RELEASE/core.jar"
+    scp -q "$tgz" "$SSH_TARGET:$REMOTE_RELEASE/web.tar.gz"
+fi
+
+# Re-copied on every deploy, including rollbacks: this file is the environment's, not the
+# release's, so a rollback should keep today's config rather than resurrect the old one.
+scp -q "$ENV_DIR/config.json" "$SSH_TARGET:$REMOTE_RELEASE/config.json"
+
+# --- install and restart -----------------------------------------------------------------------
+
+step "Installing and restarting $CORE_SERVICE"
+
+ssh "$SSH_TARGET" bash -s -- \
+    "$SHA" "$REMOTE_ROOT" "$CORE_SERVICE" "$KEEP_RELEASES" <<'REMOTE'
+set -euo pipefail
+sha="$1"; root="$2"; service="$3"; keep="$4"
+rel="$root/releases/$sha"
+
+# Core reads this through --spring.config.location and dies on an unresolved @Value placeholder,
+# so a release that adds a config key takes the environment down on restart. That is by design —
+# staging is where that gets caught instead of production (§8.4) — but a missing file entirely is
+# a first-deploy mistake worth naming before the service goes down for it.
+[ -f "$root/conf/application.yaml" ] \
+    || { echo "error: $root/conf/application.yaml does not exist" >&2; exit 1; }
+
+# Unpack the dist. Fresh directory each time so a file deleted between releases does not linger.
+rm -rf "$rel/web"
+mkdir -p "$rel/web"
+tar -xzf "$rel/web.tar.gz" -C "$rel/web"
+mv "$rel/config.json" "$rel/web/config.json"
+
+# CI strips config.json from the dist, so without this the app would render its "Configuration
+# error" page. Verified rather than assumed: a truncated scp is otherwise found by a tester.
+python3 - "$rel/web/config.json" <<'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    c = json.load(f)
+missing = [k for k in ("emsRoot",) if not c.get(k)]
+missing += ["keycloak." + k for k in ("url", "realm", "clientId")
+            if not c.get("keycloak", {}).get(k)]
+if missing:
+    sys.exit("config.json is missing: " + ", ".join(missing))
+print("  config.json -> %s, realm %s at %s" % (
+    c["emsRoot"], c["keycloak"]["realm"], c["keycloak"]["url"]))
+PY
+
+[ -f "$rel/web/index.html" ] || { echo "error: no index.html in the unpacked dist" >&2; exit 1; }
+
+# Flip both symlinks. `ln -sfn` on an existing symlink is not atomic — it unlinks first, and a
+# request landing in that window gets a 404 — so build the new link beside it and rename over.
+mkdir -p "$root/web" "$root/core"
+ln -sfn "$rel/web" "$root/web/.current.new"
+mv -Tf "$root/web/.current.new" "$root/web/current"
+ln -sfn "$rel/core.jar" "$root/core/.current.new"
+mv -Tf "$root/core/.current.new" "$root/core/current.jar"
+
+sudo systemctl restart "$service"
+date -Iseconds > "$rel/DEPLOYED"
+echo "$sha" > "$root/current-sha"
+
+# Prune old releases, newest first, never the one just deployed.
+n=0
+for d in $(ls -1dt "$root"/releases/*/ 2>/dev/null); do
+    n=$((n + 1))
+    [ "$n" -le "$keep" ] && continue
+    [ "$(basename "$d")" = "$sha" ] && continue
+    echo "  pruning $(basename "$d")"
+    rm -rf "$d"
+done
+REMOTE
+
+# --- wait for core -------------------------------------------------------------------------
+
+step "Waiting for core"
+
+# 401 is the success condition, not a failure. Core has no unauthenticated health endpoint — the
+# only permitAll() routes are the two anonymous-autoassess ones, which need a real exercise id —
+# and Spring Security answers everything else with 401 before routing. So a 401 through the public
+# vhost proves the whole chain: Apache is proxying, core is up, and its filter chain is built.
+# It relies on the API vhost being the dumb proxy §4.2 describes; an Apache that authenticated
+# would return 401 by itself and this check would pass over a dead core. `systemctl is-active`
+# below is what covers that.
+deadline=$((SECONDS + HEALTH_TIMEOUT_S))
+code=""
+while [ "$SECONDS" -lt "$deadline" ]; do
+    code="$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$HEALTH_URL" || true)"
+    case "$code" in
+        401|200) break ;;
+    esac
+    sleep 2
+    code=""
+done
+
+if [ -z "$code" ]; then
+    echo "  no answer from $HEALTH_URL after ${HEALTH_TIMEOUT_S}s — last 40 log lines:" >&2
+    ssh "$SSH_TARGET" "sudo journalctl -u '$CORE_SERVICE' -n 40 --no-pager" >&2 || true
+    die "deploy finished but core is not answering"
+fi
+
+ssh "$SSH_TARGET" "systemctl is-active --quiet '$CORE_SERVICE'" \
+    || die "$HEALTH_URL answered $code but $CORE_SERVICE is not active — is something else on that vhost?"
+
+# Read back rather than echoing what we set, so this reports the host's state and not our intent.
+step "Deployed $(ssh "$SSH_TARGET" "cat '$REMOTE_ROOT/current-sha'")"
+echo "  web   $WEB_URL"
+echo "  api   $HEALTH_URL"
+echo "  from  $RUN_URL"
