@@ -1,3 +1,12 @@
+-- ============================================================================
+--  OUTPUT IS PRODUCTION DATA. DO NOT PASTE IT ANYWHERE PUBLIC.
+--
+--  This query returns exercise ids and titles from the live database. YouTrack
+--  (easy.youtrack.cloud) is public with guest access, and github.com/kspar/easy
+--  is a public repo — neither is a place for any of this output, including in
+--  an issue comment or a commit message. Keep results local.
+-- ============================================================================
+
 -- EZ-1731 follow-up: how many exercises are safe to convert in bulk?
 --
 -- The construct profile counts each construct separately, so overlaps hide the real answer:
