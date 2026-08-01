@@ -79,6 +79,49 @@ has no math extension, and there is no MathJax or KaTeX in `web/` any more — s
 already fail to render math in production. That is **EZ-1732**, not something this migration can
 fix.
 
+## Current state (2026-08-01)
+
+The dry run has been executed against the full production corpus — 1081 exercises, 83 seconds,
+nothing written to any database. The converter is settled; **no write has happened, and the write
+will be done against staging** (EZ-1723).
+
+| Outcome | Exercises |
+| --- | --- |
+| convert cleanly | **996** (92.1%) |
+| maths — delimiters differ, blocked on EZ-1732 | 48 |
+| cosmetic differences (punctuation, whitespace, added text) | 31 |
+| lose a block title — want a human | 5 |
+| malformed Asciidoctor output — wants its source fixed | 1 |
+
+Two fixes came out of running it against real data, neither of which a synthetic corpus would have
+produced:
+
+- **Bare `&` in image URLs.** Asciidoctor writes image URLs into docbook attributes without
+  escaping the ampersand, and the course server serves images as `?action=download&upname=…`, so
+  the XML was invalid and pandoc refused it. **97 of 1081** needed the repair — it would have been
+  the largest failure category by far. It first appeared as 2 failures in a 50-exercise sample and
+  looked like a curiosity.
+- **Maths classified separately.** Asciidoctor emits `\(x\)` and pandoc emits `$x$`; the formula
+  survives intact and only the delimiter changes. Lumped together that is 85 unexplained failures;
+  separated it is 48 known and 36 worth reading.
+
+Decisions taken:
+
+- **Auto-numbered captions** (`Figure 1.`, `Tabel 1.`) are not wanted, so they no longer count as a
+  difference. Removed from both sides of the comparison, not just production.
+- **`codehl` highlighting** is dropped — nothing in `web/` has styled it since the WUI went.
+- **Maths** is EZ-1732's problem, not this one.
+
+## When staging exists
+
+1. Restore an anonymised copy (`../anonymise-db/`), with v4.0 deployed so `text_md` exists.
+2. Re-run the dry run against staging and confirm the numbers still land near 92%.
+3. Work through the flagged list by hand — 5 block-title losses and 1 malformed source are the
+   only ones carrying real content risk; the other 31 are cosmetic.
+4. Decide on the 48 maths exercises: hold for EZ-1732, or migrate and accept `$…$`, which is what
+   both KaTeX and MathJax expect anyway.
+5. Then write, per below.
+
 ## Then the write
 
 Not built yet, deliberately — the dry run should be reviewed first. When it is:
