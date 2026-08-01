@@ -837,4 +837,330 @@
         </sql>
     </changeSet>
 
+    <changeSet id="testdata-exercise-markdown" author="kspar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM exercise_version WHERE id = 9001 AND text_md IS NOT NULL</sqlCheck>
+        </preConditions>
+        <comment>Give the seeded exercises a Markdown source, since the editor binds to text_md</comment>
+        <sql>
+            <![CDATA[
+            -- The original inserts set text_html only. The exercise editor binds to text_md,
+            -- so every seeded exercise opened as an empty box, and saving it wrote that emptiness
+            -- back over the rendered text: UpdateExercise derives text_html from text_md and
+            -- nulls both when the source is null. Editing only the title was enough to trigger it.
+            --
+            -- text_html here is not hand-written. Each of these was rendered by core's own
+            -- MarkdownService through /v2/preview/markdown, so the pair is exactly as consistent
+            -- as a real save would leave it. Hand-writing the HTML is how they drifted in the
+            -- first place.
+
+            UPDATE exercise_version SET text_md = 'Write a program that prints `Hello, World!`.
+
+## Expected output
+
+```
+Hello, World!
+```
+
+The output must match **exactly**, including the comma and the exclamation mark.
+',
+                                        text_html = '<p>Write a program that prints <code>Hello, World!</code>.</p>
+<h2>Expected output</h2>
+<pre><code>Hello, World!
+</code></pre>
+<p>The output must match <strong>exactly</strong>, including the comma and the exclamation mark.</p>'
+            WHERE id = 9001;
+
+            UPDATE exercise_version SET text_md = 'Read two integers, each on its own line, and print their sum.
+
+| Input | Output |
+| --- | --- |
+| `2`, `3` | `5` |
+| `-1`, `1` | `0` |
+| `0`, `0` | `0` |
+
+> Both numbers fit comfortably in a 64-bit integer, so you do not need to worry about overflow.
+',
+                                        text_html = '<p>Read two integers, each on its own line, and print their sum.</p>
+<table>
+ <thead>
+  <tr>
+   <th>Input</th>
+   <th>Output</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><code>2</code>, <code>3</code></td>
+   <td><code>5</code></td>
+  </tr>
+  <tr>
+   <td><code>-1</code>, <code>1</code></td>
+   <td><code>0</code></td>
+  </tr>
+  <tr>
+   <td><code>0</code>, <code>0</code></td>
+   <td><code>0</code></td>
+  </tr>
+ </tbody>
+</table>
+<blockquote>
+ <p>Both numbers fit comfortably in a 64-bit integer, so you do not need to worry about overflow.</p>
+</blockquote>'
+            WHERE id = 9002;
+
+            UPDATE exercise_version SET text_md = 'Write a short essay about your favourite sorting algorithm.
+
+## What to cover
+
+1. Its **time complexity**, in the best and the worst case
+2. The situations where it is genuinely the right choice
+3. Why *you* find it interesting
+
+Around 300 words is plenty. There is no automatic grading here — a teacher reads it.
+',
+                                        text_html = '<p>Write a short essay about your favourite sorting algorithm.</p>
+<h2>What to cover</h2>
+<ol>
+ <li>Its <strong>time complexity</strong>, in the best and the worst case</li>
+ <li>The situations where it is genuinely the right choice</li>
+ <li>Why <em>you</em> find it interesting</li>
+</ol>
+<p>Around 300 words is plenty. There is no automatic grading here — a teacher reads it.</p>'
+            WHERE id = 9003;
+
+            UPDATE exercise_version SET text_md = 'The function below is supposed to return the factorial of `n`, but it has a bug.
+Find it and fix it.
+
+```python
+def factorial(n):
+    result = 0
+    for i in range(1, n + 1):
+        result *= i
+    return result
+```
+
+> **Hint:** think about what `result` starts out as, and what multiplying by it does.
+',
+                                        text_html = '<p>The function below is supposed to return the factorial of <code>n</code>, but it has a bug. Find it and fix it.</p>
+<pre><code class="language-python">def factorial(n):
+    result = 0
+    for i in range(1, n + 1):
+        result *= i
+    return result
+</code></pre>
+<blockquote>
+ <p><strong>Hint:</strong> think about what <code>result</code> starts out as, and what multiplying by it does.</p>
+</blockquote>'
+            WHERE id = 9004;
+
+            UPDATE exercise_version SET text_md = 'Print the numbers from 1 to 100, one per line, with two exceptions:
+
+- multiples of **three** print `Fizz` instead of the number
+- multiples of **five** print `Buzz` instead of the number
+- multiples of *both* print `FizzBuzz`
+
+The first few lines are `1`, `2`, `Fizz`, `4`, `Buzz`.
+',
+                                        text_html = '<p>Print the numbers from 1 to 100, one per line, with two exceptions:</p>
+<ul>
+ <li>multiples of <strong>three</strong> print <code>Fizz</code> instead of the number</li>
+ <li>multiples of <strong>five</strong> print <code>Buzz</code> instead of the number</li>
+ <li>multiples of <em>both</em> print <code>FizzBuzz</code></li>
+</ul>
+<p>The first few lines are <code>1</code>, <code>2</code>, <code>Fizz</code>, <code>4</code>, <code>Buzz</code>.</p>'
+            WHERE id = 9005;
+
+            UPDATE exercise_version SET text_md = 'Write a function `factorial(n)` that returns n!.
+
+## Edge cases
+
+| `n` | Result |
+| --- | --- |
+| `0` | `1` |
+| `1` | `1` |
+| negative | raise `ValueError` |
+
+Do not use `math.factorial` — the point is to write the loop or the recursion yourself.
+',
+                                        text_html = '<p>Write a function <code>factorial(n)</code> that returns n!.</p>
+<h2>Edge cases</h2>
+<table>
+ <thead>
+  <tr>
+   <th><code>n</code></th>
+   <th>Result</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><code>0</code></td>
+   <td><code>1</code></td>
+  </tr>
+  <tr>
+   <td><code>1</code></td>
+   <td><code>1</code></td>
+  </tr>
+  <tr>
+   <td>negative</td>
+   <td>raise <code>ValueError</code></td>
+  </tr>
+ </tbody>
+</table>
+<p>Do not use <code>math.factorial</code> — the point is to write the loop or the recursion yourself.</p>'
+            WHERE id = 9006;
+
+            UPDATE exercise_version SET text_md = 'Write a function `is_palindrome(s)` that returns `True` when the string reads the
+same forwards and backwards.
+
+- `"racecar"` -> `True`
+- `"Hello"` -> `False`
+- `""` -> `True`
+
+Comparison is **case-sensitive** and spaces count as characters.
+',
+                                        text_html = '<p>Write a function <code>is_palindrome(s)</code> that returns <code>True</code> when the string reads the same forwards and backwards.</p>
+<ul>
+ <li><code>"racecar"</code> -&gt; <code>True</code></li>
+ <li><code>"Hello"</code> -&gt; <code>False</code></li>
+ <li><code>""</code> -&gt; <code>True</code></li>
+</ul>
+<p>Comparison is <strong>case-sensitive</strong> and spaces count as characters.</p>'
+            WHERE id = 9007;
+
+            UPDATE exercise_version SET text_md = 'Implement `binary_search(arr, target)`.
+
+It returns the index of `target` in the sorted list `arr`, or `-1` when the value is not
+present.
+
+```python
+binary_search([1, 3, 5, 7, 9], 7)   # -> 3
+binary_search([1, 3, 5, 7, 9], 4)   # -> -1
+```
+
+Your solution must run in **O(log n)** — a linear scan will not pass, even though it returns
+the right answers.
+',
+                                        text_html = '<p>Implement <code>binary_search(arr, target)</code>.</p>
+<p>It returns the index of <code>target</code> in the sorted list <code>arr</code>, or <code>-1</code> when the value is not present.</p>
+<pre><code class="language-python">binary_search([1, 3, 5, 7, 9], 7)   # -&gt; 3
+binary_search([1, 3, 5, 7, 9], 4)   # -&gt; -1
+</code></pre>
+<p>Your solution must run in <strong>O(log n)</strong> — a linear scan will not pass, even though it returns the right answers.</p>'
+            WHERE id = 9008;
+
+            UPDATE exercise_version SET text_md = 'Write a recursive function `sum_list(lst)` that returns the sum of all integers in
+a list.
+
+Not allowed:
+
+- loops of any kind (`for`, `while`)
+- the built-in `sum()`
+
+~~Recursion depth~~ is not something you need to worry about; the tests use short lists.
+',
+                                        text_html = '<p>Write a recursive function <code>sum_list(lst)</code> that returns the sum of all integers in a list.</p>
+<p>Not allowed:</p>
+<ul>
+ <li>loops of any kind (<code>for</code>, <code>while</code>)</li>
+ <li>the built-in <code>sum()</code></li>
+</ul>
+<p>
+ <del>Recursion depth</del>
+ is not something you need to worry about; the tests use short lists.
+</p>'
+            WHERE id = 9009;
+
+            UPDATE exercise_version SET text_md = 'Write a program that prints the first 10 Fibonacci numbers using a loop.
+
+The sequence starts `0, 1, 1, 2, 3, 5, ...` — each number is the sum of the two before it.
+
+Print one number per line.
+',
+                                        text_html = '<p>Write a program that prints the first 10 Fibonacci numbers using a loop.</p>
+<p>The sequence starts <code>0, 1, 1, 2, 3, 5, ...</code> — each number is the sum of the two before it.</p>
+<p>Print one number per line.</p>'
+            WHERE id = 9102;
+
+            UPDATE exercise_version SET text_md = 'Rewrite the following loop as a single list comprehension.
+
+```python
+squares = []
+for x in range(10):
+    if x % 2 == 0:
+        squares.append(x ** 2)
+```
+
+The result should be `[0, 4, 16, 36, 64]`.
+
+See the [list comprehension docs](https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions)
+if you need a refresher.
+',
+                                        text_html = '<p>Rewrite the following loop as a single list comprehension.</p>
+<pre><code class="language-python">squares = []
+for x in range(10):
+    if x % 2 == 0:
+        squares.append(x ** 2)
+</code></pre>
+<p>The result should be <code>[0, 4, 16, 36, 64]</code>.</p>
+<p>See the <a href="https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions" target="_blank" rel="noopener noreferrer">list comprehension docs</a> if you need a refresher.</p>'
+            WHERE id = 9103;
+
+            UPDATE exercise_version SET text_md = 'Implement a singly linked list.
+
+## Required operations
+
+| Method | Behaviour |
+| --- | --- |
+| `insert(value)` | append to the end |
+| `delete(value)` | remove the first match, return `True`/`False` |
+| `search(value)` | return the index, or `-1` |
+
+---
+
+A teacher reviews this one, so favour clear code over clever code.
+',
+                                        text_html = '<p>Implement a singly linked list.</p>
+<h2>Required operations</h2>
+<table>
+ <thead>
+  <tr>
+   <th>Method</th>
+   <th>Behaviour</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><code>insert(value)</code></td>
+   <td>append to the end</td>
+  </tr>
+  <tr>
+   <td><code>delete(value)</code></td>
+   <td>remove the first match, return <code>True</code>/<code>False</code></td>
+  </tr>
+  <tr>
+   <td><code>search(value)</code></td>
+   <td>return the index, or <code>-1</code></td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<p>A teacher reviews this one, so favour clear code over clever code.</p>'
+            WHERE id = 9104;
+
+            -- 9101 keeps the shape production is still in for ~1000 exercises (EZ-1731): a
+            -- rendered text_html, an AsciiDoc source nothing reads any more, and no text_md.
+            -- Without one of these in the test data, the case the editor has to survive is the
+            -- only one that never gets exercised locally.
+            UPDATE exercise_version SET text_adoc = 'Explain the difference between mutable and immutable variables in Python.
+
+Give at least one example of each, and describe what happens when you pass one of each to a
+function that tries to modify it.
+',
+                                        text_md = NULL
+            WHERE id = 9101;
+            ]]>
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
