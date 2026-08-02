@@ -27,7 +27,7 @@ class AnonymousReadExerciseDetails {
     data class Resp(
         @get:JsonProperty("title") val title: String,
         @get:JsonProperty("text_html") val textHtml: String?,
-        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
+        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String,
         @get:JsonProperty("submit_allowed") val allowSubmit: Boolean,
     )
 

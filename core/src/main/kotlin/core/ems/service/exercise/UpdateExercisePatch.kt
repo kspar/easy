@@ -21,6 +21,13 @@ import org.springframework.web.bind.annotation.*
 class UpdateExercisePatch {
     private val log = KotlinLogging.logger {}
 
+    /**
+     * A patch: null means "leave this alone", which is why every field is nullable.
+     *
+     * The template is therefore cleared by sending `""`, not `null` — the column is non-nullable
+     * since changeset 020826-1 precisely so that "no template" has one spelling and is reachable
+     * from any state.
+     */
     data class Req(
         @param:JsonProperty("anonymous_autoassess_enabled") val anonymousAutoassessEnabled: Boolean?,
         @param:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,

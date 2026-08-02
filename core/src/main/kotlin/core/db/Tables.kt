@@ -34,7 +34,9 @@ object Exercise : LongIdTable("exercise") {
     val createdAt = datetime("created_at")
     val public = bool("public")
     val anonymousAutoassessEnabled = bool("anonymous_autoassess_enabled")
-    val anonymousAutoassessTemplate = text("anonymous_autoassess_template").nullable()
+    // Empty string, not null, when there is no template — see changeset 020826-1. Nullable meant
+    // "no template" had two spellings and the PATCH that writes it could never restore the first.
+    val anonymousAutoassessTemplate = text("anonymous_autoassess_template").default("")
 }
 
 object ExerciseVer : LongIdTable("exercise_version") {

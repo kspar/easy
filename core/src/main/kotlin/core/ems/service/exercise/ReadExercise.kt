@@ -49,7 +49,7 @@ class ReadExercise {
         @get:JsonProperty("title") val title: String,
         @get:JsonProperty("text_html") val textHtml: String?,
         @get:JsonProperty("text_md") val textMd: String?,
-        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String?,
+        @get:JsonProperty("anonymous_autoassess_template") val anonymousAutoassessTemplate: String,
         @get:JsonProperty("grading_script") val gradingScript: String?,
         @get:JsonProperty("container_image") val containerImage: String?,
         @get:JsonProperty("max_time_sec") val maxTime: Int?,

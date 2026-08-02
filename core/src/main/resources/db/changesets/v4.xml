@@ -122,4 +122,24 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="020826-1" author="kspar">
+        <comment>
+            Make anonymous_autoassess_template non-nullable, defaulting to the empty string.
+
+            It was nullable with no default, and the PATCH that writes it treats an absent value as
+            "leave unchanged" — so once a template was set there was no way to unset it, and "no
+            template" had two representations depending on whether one had ever been saved. One
+            empty-string spelling removes both problems: absent still means unchanged, and ""
+            clears.
+        </comment>
+        <addNotNullConstraint tableName="exercise"
+                              columnName="anonymous_autoassess_template"
+                              columnDataType="text"
+                              defaultNullValue=""/>
+        <addDefaultValue tableName="exercise"
+                         columnName="anonymous_autoassess_template"
+                         columnDataType="text"
+                         defaultValue=""/>
+    </changeSet>
+
 </databaseChangeLog>
