@@ -425,11 +425,12 @@ export default function ExercisePage() {
       />
 
       <EmbedDialog
+        // Keyed by exercise: the dialog stays mounted when closed, so its exercise-specific state
+        // — the title override, the course link — would otherwise survive a move to a different
+        // exercise if the router reuses this page instance. Snippet options are meant to carry
+        // over and do so through localStorage instead.
+        key={exerciseId}
         exerciseId={exerciseId}
-        exerciseTitle={exercise.title}
-        embedEnabled={exercise.is_anonymous_autoassess_enabled}
-        canEdit={canWrite}
-        isAutoAssessable={isAutoAssessable}
         open={embedOpen}
         onClose={() => setEmbedOpen(false)}
       />

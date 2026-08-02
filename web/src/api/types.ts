@@ -351,7 +351,8 @@ export interface LibraryExerciseDetail {
   title: string
   text_html: string | null
   text_md: string | null
-  anonymous_autoassess_template: string | null
+  /** Empty string when there is no template; the column is non-nullable. */
+  anonymous_autoassess_template: string
   grading_script: string | null
   container_image: string | null
   max_time_sec: number | null

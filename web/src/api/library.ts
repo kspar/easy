@@ -68,6 +68,27 @@ export function useSetExerciseEmbed(exerciseId: string | undefined) {
   })
 }
 
+/**
+ * The starting code an embedded exercise drops into its editor.
+ *
+ * Same PATCH endpoint as the embed toggle. Note the backend treats null as "leave unchanged"
+ * (`req.anonymousAutoassessTemplate?.let`), so there is no way to clear a template back to null —
+ * an empty string is as blank as it gets.
+ */
+export function useSetExerciseTemplate(exerciseId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (template: string) =>
+      apiFetch(`/exercises/${exerciseId}`, {
+        method: 'PATCH',
+        body: { anonymous_autoassess_template: template },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library', 'exercise', exerciseId] })
+    },
+  })
+}
+
 export function useCreateDir() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -25,6 +25,7 @@ import {
   LastPageOutlined,
   VerticalSplitOutlined,
   LibraryBooksOutlined,
+  CodeOutlined,
   SettingsOutlined,
 } from '@mui/icons-material'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -54,6 +55,7 @@ import AutoTestResults from './AutoTestResults.tsx'
 import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
 import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
+import EmbedDialog from '../library/EmbedDialog.tsx'
 import { RobotIcon } from '../../components/icons.tsx'
 import AutogradeAnimation from './AutogradeAnimation.tsx'
 import SubmissionsList from './SubmissionsList.tsx'
@@ -787,6 +789,7 @@ function TeacherExerciseView() {
   const { t, i18n } = useTranslation()
   const dateFnsLocale = i18n.language === 'et' ? et : enGB
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [embedOpen, setEmbedOpen] = useState(false)
 
   const {
     data: exercise,
@@ -866,11 +869,30 @@ function TeacherExerciseView() {
             </IconButton>
           </Tooltip>
         )}
+        {/*
+          Same gate as the library shortcut above: the embed dialog reads the *library* exercise
+          (the course exercise response carries neither the embed flag nor the starting code), so
+          without library access there is nothing it could show or change.
+        */}
+        {exercise.has_lib_access && (
+          <Tooltip title={t('library.embedding')}>
+            <IconButton size="small" onClick={() => setEmbedOpen(true)}>
+              <CodeOutlined />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title={t('exercises.exerciseSettings')}>
           <IconButton size="small" onClick={() => setSettingsOpen(true)}>
             <SettingsOutlined />
           </IconButton>
         </Tooltip>
+        <EmbedDialog
+          exerciseId={exercise.exercise_id}
+          currentCourseId={courseId}
+          currentCourseExerciseId={courseExerciseId}
+          open={embedOpen}
+          onClose={() => setEmbedOpen(false)}
+        />
         <ExerciseSettingsDialog
           courseId={courseId!}
           courseExerciseId={courseExerciseId!}

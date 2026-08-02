@@ -42,7 +42,8 @@
     "tryAgain": "Proovi uuesti",
     "logIn": "Logi sisse",
     "exercise": "Ülesanne",
-    "moreOptions": "Rohkem valikuid"
+    "moreOptions": "Rohkem valikuid",
+    "close": "Sulge"
   },
   "auth": {
     "failed": "Autentimine ebaõnnestus",
@@ -330,7 +331,7 @@
     "emailNotFound": "Selle emailiga kontot ei leitud",
     "you": "sina",
     "recentlyViewed": "Hiljuti vaadatud",
-    "noMarkdownSource": "See \u00fclesanne on kirjutatud enne Markdowni ja sellel puudub l\u00e4htetekst \u2014 allolev kast on t\u00fchi. K\u00f5ik, mille sisestad, asendab \u00fclesande teksti t\u00e4ielikult, seet\u00f5ttu on salvestamine blokeeritud kuni midagi sisestad.",
+    "noMarkdownSource": "See ülesanne on kirjutatud enne Markdowni ja sellel puudub lähtetekst — allolev kast on tühi. Kõik, mille sisestad, asendab ülesande teksti täielikult, seetõttu on salvestamine blokeeritud kuni midagi sisestad.",
     "exerciseTextPlaceholder": "Ülesande tekst Markdownis...",
     "tabExercise": "Ülesanne",
     "tabAutoAssess": "Automaatkontroll",
@@ -359,9 +360,27 @@
     "testingWhileEditing": "Testimine käib salvestatud versiooni, mitte sinu salvestamata muudatuste vastu.",
     "embedding": "Manustamine",
     "embedAllowTesting": "Luba esitamine ja testimine",
+    "embedShowTitle": "Pealkiri",
+    "embedShowBorder": "Ääris",
+    "embedShowTemplate": "Algne kood",
+    "embedPreview": "Eelvaade",
     "embedHint": "Kleebi see lõik oma lehele.",
     "embedNoEditAccess": "Manustamise lubamiseks on vaja kirjutaõigust.",
-    "embedToggle": "Luba manustamine"
+    "embedToggle": "Luba manustamine",
+    "embedTitleAlias": "Pealkirja asendus",
+    "embedTitleAliasHint": "Valikuline — kuvatakse ülesande pealkirja asemel",
+    "embedLinkCourse": "Link kursusele",
+    "embedLinkCourseHint": "Lisab lingi hinnatavale versioonile",
+    "embedNoLink": "Linki pole",
+    "embedNotOnCourses": "See ülesanne pole ühelgi kursusel, mida näed",
+    "embedTemplate": "Algne kood",
+    "embedTemplateHint": "Asetatakse külastaja redaktorisse. Salvestatakse ülesandele, seega kehtib kõigile selle manustustele.",
+    "embedTemplatePlaceholder": "nt funktsiooni signatuur, mille õpilane täidab...",
+    "embedTemplateSaveFailed": "Algse koodi salvestamine ebaõnnestus.",
+    "embedSnippetOptions": "Koodijupi valikud",
+    "embedThisCourse": "(see kursus)",
+    "embedTemplateSharedWarning": "See algne kood kuulub ülesandele, mitte sellele kursusele — selle muutmine muudab kõiki selle manustusi kõigil kursustel.",
+    "embedCourse": "Kursus"
   },
   "markdown": {
     "toolbar": "Vormindus",
@@ -502,6 +521,16 @@
     "statsSubmissions": "Lahendust",
     "statsAccounts": "Kasutajat",
     "sponsors": "Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
+  },
+  "embed": {
+    "loadFailed": "Ülesande laadimine ebaõnnestus.",
+    "noAutograde": "Seda ülesannet hindab õpetaja, seega siin testida ei saa.",
+    "solutionPlaceholder": "Kirjuta oma lahendus siia...",
+    "submit": "Esita",
+    "submitFailed": "Esitamine ebaõnnestus. Palun proovi uuesti.",
+    "testTooltip": "Testi oma lahendust — midagi ei salvestata",
+    "themeDark": "Lülita tumedaks",
+    "themeLight": "Lülita heledaks"
   },
   "validation": {
     "required": "on kohustuslik",

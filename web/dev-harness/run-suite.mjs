@@ -29,6 +29,8 @@ const SCRIPTS = [
   'library-exercise-tsl.mjs',
   'library-exercise-ui.mjs',
   'library-exercise-markdown.mjs',
+  'embed-exercise.mjs',
+  'course-exercise-embed.mjs',
 ]
 
 function log(msg) {

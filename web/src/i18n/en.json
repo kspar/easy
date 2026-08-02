@@ -42,7 +42,8 @@
     "tryAgain": "Try again",
     "logIn": "Log in",
     "exercise": "Exercise",
-    "moreOptions": "More options"
+    "moreOptions": "More options",
+    "close": "Close"
   },
   "auth": {
     "failed": "Authentication failed",
@@ -330,7 +331,7 @@
     "emailNotFound": "No account found with this email",
     "you": "you",
     "recentlyViewed": "Recently viewed",
-    "noMarkdownSource": "This exercise was written before Markdown and has no source text to load \u2014 the box below starts empty. Whatever you type replaces the exercise text entirely, so saving is blocked until you enter something.",
+    "noMarkdownSource": "This exercise was written before Markdown and has no source text to load — the box below starts empty. Whatever you type replaces the exercise text entirely, so saving is blocked until you enter something.",
     "exerciseTextPlaceholder": "Exercise text in Markdown...",
     "tabExercise": "Exercise",
     "tabAutoAssess": "Auto-assessment",
@@ -359,9 +360,27 @@
     "testingWhileEditing": "Testing runs against the saved version, not your unsaved changes.",
     "embedding": "Embedding",
     "embedAllowTesting": "Allow submitting and testing",
+    "embedShowTitle": "Title",
+    "embedShowBorder": "Border",
+    "embedShowTemplate": "Starting code",
+    "embedPreview": "Preview",
     "embedHint": "Paste this snippet into your page.",
     "embedNoEditAccess": "You need write access to enable embedding.",
-    "embedToggle": "Allow embedding"
+    "embedToggle": "Allow embedding",
+    "embedTitleAlias": "Title override",
+    "embedTitleAliasHint": "Optional — shown instead of the exercise title",
+    "embedLinkCourse": "Link to course",
+    "embedLinkCourseHint": "Adds a link through to the graded version",
+    "embedNoLink": "No link",
+    "embedNotOnCourses": "This exercise is not on any course you can see",
+    "embedTemplate": "Starting code",
+    "embedTemplateHint": "Pre-filled into the visitor's editor. Saved on the exercise, so it applies to every embed of it.",
+    "embedTemplatePlaceholder": "e.g. a function signature for students to fill in...",
+    "embedTemplateSaveFailed": "Could not save the starting code.",
+    "embedSnippetOptions": "Snippet options",
+    "embedThisCourse": "(this course)",
+    "embedTemplateSharedWarning": "This starting code belongs to the exercise, not to this course — changing it changes every embed of it, on every course.",
+    "embedCourse": "Course"
   },
   "markdown": {
     "toolbar": "Formatting",
@@ -502,6 +521,16 @@
     "statsSubmissions": "Submissions",
     "statsAccounts": "Accounts",
     "sponsors": "The development of Lahendus and easy, and creating some of the exercises has been supported by"
+  },
+  "embed": {
+    "loadFailed": "Could not load this exercise.",
+    "noAutograde": "This exercise is graded by a teacher, so it cannot be tested here.",
+    "solutionPlaceholder": "Write your solution here...",
+    "submit": "Submit",
+    "submitFailed": "Submitting failed. Please try again.",
+    "testTooltip": "Test your solution — nothing is saved",
+    "themeDark": "Switch to dark",
+    "themeLight": "Switch to light"
   },
   "validation": {
     "required": "is required",
