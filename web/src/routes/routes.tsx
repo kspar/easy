@@ -14,11 +14,19 @@ import AboutPage from '../features/about/AboutPage.tsx'
 import LandingPage from '../features/landing/LandingPage.tsx'
 import JoinByLinkPage from '../features/join/JoinByLinkPage.tsx'
 import IndexRedirect from './IndexRedirect.tsx'
+import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
 
 const router = createBrowserRouter([
   {
     path: '/landing',
     element: <LandingPage />,
+  },
+  {
+    // Outside AppLayout on purpose: no nav, no sidebar, no auth. `exercises` is plural and the
+    // trailing `*` swallows the title slug because that is the URL wui minted, and embeds carrying
+    // it are published on pages nobody here can edit. See EmbedExercisePage.
+    path: '/embed/exercises/:exerciseId/*',
+    element: <EmbedExercisePage />,
   },
   {
     path: '/',

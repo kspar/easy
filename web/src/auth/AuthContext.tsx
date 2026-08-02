@@ -82,6 +82,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (initCalled.current) return
     initCalled.current = true
 
+    // An embedded exercise runs inside someone else's page and has no user. `check-sso` would
+    // still open a hidden iframe against the IdP from that third-party context — a cross-site
+    // request the host page never asked for, blocked by most browsers' third-party cookie rules
+    // anyway, and pure latency in front of content that needs no login. Report "initialised, not
+    // authenticated" and never contact Keycloak at all.
+    //
+    // Matched on the path rather than a prop because AuthProvider sits above the router in
+    // App.tsx and so cannot be told which route it is about to render.
+    if (window.location.pathname.startsWith('/embed/')) {
+      setState((s) => ({ ...s, initialized: true, authenticated: false }))
+      return
+    }
+
     keycloak
       .init({
         onLoad: 'check-sso',
