@@ -28,3 +28,4 @@
     # password out of it on the host to set the database role's password to match.
     - core_config
     - postgres
+    - core_service

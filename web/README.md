@@ -33,7 +33,7 @@ the one that gets deployed.
 ```
 
 - `emsRoot` — base URL for core. A same-origin path (`/v2`) when one reverse proxy fronts both, or
-  an absolute URL (`https://dev.core.lahendus.ut.ee/v2`) when the API is on another host. Core's
+  an absolute URL (`https://dev.ems.lahendus.ut.ee/v2`) when the API is on another host. Core's
   CORS allowlist has to contain the web origin in that case — see `SecurityConf.kt`.
 - `keycloak.*` — passed straight to keycloak-js.
 

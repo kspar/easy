@@ -261,6 +261,23 @@
   when: (ansible_facts.services[item ~ '.service'] | default(none)) is none
   loop: "{{ smoke_optional_units }}"
 
+- name: Look for a deployed core release
+  # Distinguishes two states that look identical from the unit's point of view and are not remotely
+  # the same thing: a unit enabled and waiting for its first deploy, and a unit that had a release
+  # and fell over. Without this the check is red from the moment the unit is installed until the
+  # first deploy, and a check that is permanently red is one nobody reads.
+  ansible.builtin.stat:
+    path: /srv/easy/core/current.jar
+  register: smoke_core_jar
+  check_mode: false
+
+- name: Note that core has no release yet
+  ansible.builtin.set_fact:
+    smoke_absent: "{{ smoke_absent + ['easy-core: installed and enabled, but no release deployed'] }}"
+  when:
+    - (ansible_facts.services['easy-core.service'] | default(none)) is not none
+    - not smoke_core_jar.stat.exists
+
 - name: Note any deployed service that is not running
   ansible.builtin.set_fact:
     smoke_fail: >-
@@ -269,6 +286,8 @@
   when:
     - (ansible_facts.services[item ~ '.service'] | default(none)) is not none
     - ansible_facts.services[item ~ '.service'].state != 'running'
+    # A core with no jar is covered above; anything else stopped is a real problem.
+    - not (item == 'easy-core' and not smoke_core_jar.stat.exists)
   loop: "{{ smoke_optional_units }}"
 
 # --- report ----------------------------------------------------------------------------------------

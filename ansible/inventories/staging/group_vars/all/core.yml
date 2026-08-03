@@ -22,7 +22,7 @@ easy_core_db_user: easyems
 # --- URLs -------------------------------------------------------------------------------------------
 easy_core_web_base_url: https://dev.lahendus.ut.ee
 
-# Web and API are on separate origins here (dev.lahendus vs dev.core.lahendus), so the web origin has
+# Web and API are on separate origins here (dev.lahendus vs dev.ems.lahendus), so the web origin has
 # to be allowed explicitly. Since EZ-1727 this is config rather than a hardcoded list, and the key is
 # required — the context will not start without it. Worth knowing that the failure mode if this is
 # wrong is a browser-side CORS error with nothing in the server log; core logs the list it parsed at
@@ -77,3 +77,10 @@ easy_core_mail_user_enabled: false
 easy_core_mail_sys_enabled: false
 easy_core_mail_from: noreply@dev.lahendus.ut.ee
 easy_core_mail_sys_to: root@localhost
+
+# --- who may deploy -----------------------------------------------------------------------------------
+# SSH access is the real deploy permission (§10.5 is still an open question), so this list should track
+# whoever is in hardening_ssh_users and actually deploys — not everyone who can log in. The grant is a
+# single command: restart core, nothing else.
+easy_core_deploy_users:
+  - kspar

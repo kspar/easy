@@ -1,0 +1,56 @@
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+
+[Unit]
+Description=Easy core — the Lahendus API
+Documentation=https://github.com/kspar/easy
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+# Wants rather than Requires on postgres: core failing because the database is down should be a
+# restart loop that recovers on its own, not a unit systemd stops and leaves stopped.
+
+[Service]
+Type=exec
+User={{ easy_core_user }}
+Group={{ easy_core_group }}
+
+# Not cosmetic: logback writes a rolling log file at a path relative to the working directory.
+WorkingDirectory={{ easy_core_log_dir }}
+
+ExecStart={{ easy_core_java }} {{ easy_core_java_opts }} -jar {{ easy_core_jar }} \
+    --spring.config.location=file:{{ easy_core_config_path }}
+
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+# Spring Boot exits 143 on SIGTERM (128 + 15). Without this, every ordinary stop is recorded as a
+# failure, which makes `systemctl status` misleading and any future alerting on it useless.
+SuccessExitStatus=143
+
+# --- confinement ---------------------------------------------------------------------------------
+# Core is internet-reachable through a proxy and runs code that parses untrusted input, so it gets
+# the standard restrictions. Everything here has been chosen to be compatible with a JVM.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# ProtectSystem=strict makes everything read-only except these.
+ReadWritePaths={{ easy_core_log_dir }}
+
+# Deliberately NOT set: MemoryDenyWriteExecute. The JIT compiler writes machine code and then
+# executes it, so that flag stops the JVM from starting at all. It appears in most systemd hardening
+# guides, which is exactly why it is worth writing down why it is missing.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+#
+# The one privilege a deploy needs. deploy/deploy-staging.sh restarts core after flipping the
+# release symlinks; everything else it does — unpacking, writing config.json, pruning old releases —
+# happens as the deploy account's own user under /srv/easy.
+#
+# Scoped to a single exact command on purpose. `systemctl` with a free argument would be equivalent
+# to root, since it can start a unit the caller is able to write.
+{% for user in easy_core_deploy_users %}
+{{ user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ easy_core_service_name }}
+{% endfor %}

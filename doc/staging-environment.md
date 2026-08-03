@@ -61,7 +61,7 @@ One new VM, plus the existing IDP elsewhere:
    dev.lahendus     │   Apache :443                                │
        .ut.ee ──────┼──►  vhost 1: static web dist (docroot)       │
                     │     vhost 2: OAuth2 resource server          │
-   dev.core.lahendus┼──►             └─► 127.0.0.1:8080  core      │
+   dev.ems.lahendus ┼──►             └─► 127.0.0.1:8080  core      │
        .ut.ee       │                        │                     │
                     │                        ├─► 127.0.0.1:5432    │
                     │                        │      postgres       │
@@ -79,16 +79,23 @@ One new VM, plus the existing IDP elsewhere:
 | Host | Serves | Notes |
 | --- | --- | --- |
 | `dev.lahendus.ut.ee` | web dist | Already in core's CORS allowlist — see §4.3 |
-| `dev.core.lahendus.ut.ee` | core API | Replaces `dev.ems.lahendus.ut.ee` |
-| `dev.idp.lahendus.ut.ee` | Keycloak | Exists; only realm config changes |
+| `dev.ems.lahendus.ut.ee` | core API | Already resolves to the VM |
+| `dev.idp.lahendus.ut.ee` | Keycloak | CNAME to a proxy that does not serve it — see §7 |
 
-`dev.ems.lahendus.ut.ee` is the historic name ("ems" was the pre-rename backend). Recommendation:
-point the new name at the new VM and keep `dev.ems` as a 301 to `dev.core` for a release or two
-rather than deleting the record — anything with a stale bookmark or hardcoded URL then fails loudly
-in one place instead of mysteriously.
+**Decided 2026-08-03: keep `dev.ems`, drop the planned `dev.core`.** This document previously
+recommended renaming to `dev.core.lahendus.ut.ee`, on the grounds that "ems" is the pre-rename
+backend name. Three facts argue the other way:
 
-Needs from UT IT: two A records and TLS certs for both names (or ACME allowed outbound — confirm
-which UT prefers, see §10).
+- `dev.ems.lahendus.ut.ee` **already resolves to 193.40.11.202**, and `dev.core` has no A record at
+  all. Using the existing name removes a dependency on UT IT from the critical path.
+- **Production still serves `ems.lahendus.ut.ee`** (a CNAME to `lahendus.ut.ee`). Staging is meant
+  to be the release gate, so it should mirror production's names rather than invent a third
+  convention that exists nowhere else.
+- Renaming is not blocked by this. If `ems` → `core` is worth doing, it is worth doing in both
+  environments at once, as its own piece of work — and doing it on staging first would only prove
+  that a name production does not use works.
+
+So: no new A records needed, and TLS for two names that already point here.
 
 ---
 
@@ -224,7 +231,7 @@ FallbackResource /index.html
 
 No auth on this vhost. The SPA does the OIDC dance itself via keycloak-js and holds the token.
 
-### 4.2 API vhost — `dev.core.lahendus.ut.ee`
+### 4.2 API vhost — `dev.ems.lahendus.ut.ee`
 
 No mod_auth_openidc, no `AuthType`, no claim-header plumbing. Core does the verifying:
 
@@ -471,8 +478,10 @@ Greenfield, so this is a small amount of setup done once:
 1. ~~**TLS certs** — UT-issued certs, or is outbound ACME allowed for Let's Encrypt?~~ **Answered
    (2026-08-01): ACME works on this network.** The old dev host serves a Let's Encrypt cert issued
    6 Jul 2026, SANs `dev.lahendus`, `dev.ems.lahendus`, `dev.aas.lahendus` — so certbot renews from
-   inside UT's network today, and nothing needs requesting from UT IT. `dev.core.lahendus.ut.ee`
-   still has no A record.
+   inside UT's network today, and nothing needs requesting from UT IT. Those SANs are also the two
+   names staging now uses, which is part of why the `dev.core` rename was dropped (§1): the
+   certificate story for `dev.lahendus` + `dev.ems.lahendus` is already a solved problem, and a new
+   name would have needed both an A record and a fresh SAN.
 2. **How much of `teacher_inline_comment` / `teacher_activity` survives anonymisation?** Grading-UI
    testing wants it; it's the most sensitive content in the DB. This is the one anonymisation call
    that needs a human decision, and it's easier to make once than to revisit (§3.3).

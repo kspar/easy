@@ -73,7 +73,7 @@ could not be inspected. Check all three before the first login attempt:
 - **`keycloak.clientId`** — needs a public client with PKCE whose redirect URIs and web origins
   cover `https://dev.lahendus.ut.ee` (§7).
 
-`emsRoot` is an absolute cross-origin URL, which requires `dev.core.lahendus.ut.ee` to exist (it has
+`emsRoot` is an absolute cross-origin URL, which requires `dev.ems.lahendus.ut.ee` to exist (it has
 no A record yet) and requires `easy.core.cors.allowed-origins` on the host to contain
 `https://dev.lahendus.ut.ee` (§4.3).
 

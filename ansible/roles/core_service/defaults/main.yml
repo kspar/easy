@@ -1,0 +1,39 @@
+---
+# The systemd unit that runs core, plus the directory layout the deploy script expects to find.
+#
+# This role does not put a jar on the host — `deploy/deploy-staging.sh` does that, from a CI
+# artifact. So a freshly converged host has a unit that is enabled and correct and has nothing to
+# run yet, which is the intended intermediate state.
+
+easy_core_service_name: easy-core
+
+# Ubuntu 24.04 has openjdk-25 in the archive, which matters because core targets 25
+# (`languageVersion = JavaLanguageVersion.of(25)` in core/build.gradle.kts). A 21 runtime would fail
+# with UnsupportedClassVersionError at startup, and that error names bytecode versions rather than
+# Java releases, so it is worth not having to decode it.
+easy_core_jre_package: openjdk-25-jre-headless
+easy_core_java: /usr/bin/java
+
+# The layout deploy/README.md documents as a precondition.
+easy_core_root: /srv/easy
+easy_core_jar: "{{ easy_core_root }}/core/current.jar"
+
+# Core's logback config writes a rolling file as well as stdout, and the path it uses is *relative*
+# (`<property name="LOG_PATH" value="easy.log"/>`), so it lands in whatever the working directory is.
+# Rather than depend on a system property overriding a value the config sets for itself, the working
+# directory is set to somewhere sensible and writable. Journald still gets everything via stdout.
+#
+# (Worth a small core change one day: `${LOG_PATH:-easy.log}` would make the path configurable
+# without this indirection.)
+easy_core_log_dir: /var/log/easy
+
+# Extra JVM flags. Empty by default — the JVM's own default maximum heap is a quarter of RAM, which
+# is a reasonable starting point, and picking a number without measuring is how you end up with one
+# that is wrong in both directions.
+easy_core_java_opts: ""
+
+# Accounts allowed to restart core without a password. Empty by default, because this is a sudo
+# grant: on a host where deploys happen it wants the deploy account, and nowhere else. The grant is
+# scoped to exactly one command — deploy/README.md §"Before the first deploy" asks for
+# `NOPASSWD: /usr/bin/systemctl restart easy-core` and nothing wider.
+easy_core_deploy_users: []

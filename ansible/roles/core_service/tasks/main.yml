@@ -1,0 +1,122 @@
+---
+# The unit, the runtime it needs, and the directories a deploy expects to already exist.
+#
+# Depends on core_config having run: the account, the group and the config file all come from there,
+# and this role only refers to them.
+
+- name: Install a Java runtime core can actually run on
+  ansible.builtin.apt:
+    name: "{{ easy_core_jre_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Find out whether a runtime exists yet
+  # In a dry run against a host without Java the install above was only simulated, so asking the
+  # binary for its version would fail on a file that is not there and abort the run.
+  ansible.builtin.stat:
+    path: "{{ easy_core_java }}"
+  register: easy_core_java_stat
+  check_mode: false
+
+- name: Check the runtime is new enough for the bytecode core ships
+  # Cheaper to find here than as an UnsupportedClassVersionError at boot, which reports class file
+  # versions (69.0) rather than Java releases (25) and sends people looking in the wrong place.
+  ansible.builtin.command: "{{ easy_core_java }} -version"
+  register: easy_core_java_version
+  changed_when: false
+  check_mode: false
+  when: easy_core_java_stat.stat.exists
+
+- name: Refuse a runtime older than the target
+  ansible.builtin.assert:
+    that: easy_core_java_version.stderr is search('version "2[5-9]|version "[3-9][0-9]')
+    fail_msg: >-
+      {{ easy_core_java }} reports "{{ easy_core_java_version.stderr_lines | first | default('?') }}"
+      but core targets Java 25. Install {{ easy_core_jre_package }} and make it the default, or point
+      easy_core_java at it.
+    quiet: true
+  when: easy_core_java_stat.stat.exists
+
+- name: Create the directories a deploy lands in
+  # deploy/deploy-staging.sh unpacks into releases/ and flips the two symlinks; it does not create the
+  # tree. Owned by the service account because core reads the jar and Apache/nginx reads the web
+  # bundle, and neither needs write access to the tree itself.
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ easy_core_user }}"
+    group: "{{ easy_core_group }}"
+    mode: "0755"
+  loop:
+    - "{{ easy_core_root }}"
+    - "{{ easy_core_root }}/releases"
+    - "{{ easy_core_root }}/core"
+    - "{{ easy_core_root }}/web"
+
+- name: Create the log directory
+  ansible.builtin.file:
+    path: "{{ easy_core_log_dir }}"
+    state: directory
+    owner: "{{ easy_core_user }}"
+    group: "{{ easy_core_group }}"
+    mode: "0750"
+
+- name: Install the unit
+  ansible.builtin.template:
+    src: easy-core.service.j2
+    dest: "/etc/systemd/system/{{ easy_core_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    # systemd parses it before it is ever loaded, so a typo fails here rather than on the next
+    # `systemctl daemon-reload` — which would otherwise leave a broken unit in place and a
+    # successful-looking playbook run behind it.
+    validate: "systemd-analyze verify %s"
+  notify: Restart core service
+
+- name: Let the deploy account restart core without a password
+  # The single grant deploy/deploy-staging.sh needs. Scoped to one exact command: a deploy should be
+  # able to restart core and do nothing else with root.
+  ansible.builtin.template:
+    src: sudoers-deploy.j2
+    dest: /etc/sudoers.d/easy-core-deploy
+    owner: root
+    group: root
+    mode: "0440"
+    # A malformed sudoers file can lock everyone out of sudo entirely, so it is checked before it is
+    # allowed to exist. -c checks, -f names the file to check.
+    validate: "visudo -cf %s"
+  when: easy_core_deploy_users | length > 0
+
+- name: Remove the grant when nobody should have it
+  ansible.builtin.file:
+    path: /etc/sudoers.d/easy-core-deploy
+    state: absent
+  when: easy_core_deploy_users | length == 0
+
+# --- starting it, if there is anything to start ------------------------------------------------------
+
+- name: Look for a deployed jar
+  ansible.builtin.stat:
+    path: "{{ easy_core_jar }}"
+  register: easy_core_jar_stat
+  check_mode: false
+
+- name: Enable core, and start it if a release is present
+  # Enabled either way, so a reboot brings it up once a jar exists. Started only when there is
+  # something to run — a unit that cannot possibly succeed should not be put into a restart loop, and
+  # `systemctl start` on a missing jar would fail the play for a reason that is not a fault.
+  ansible.builtin.systemd_service:
+    name: "{{ easy_core_service_name }}"
+    enabled: true
+    state: "{{ 'started' if easy_core_jar_stat.stat.exists else omit }}"
+    daemon_reload: true
+
+- name: Say that there is nothing to run yet
+  ansible.builtin.debug:
+    msg: >-
+      {{ easy_core_service_name }} is installed and enabled but not started: {{ easy_core_jar }} does
+      not exist yet. Deploy a release with deploy/deploy-staging.sh and it will come up — and stay up
+      across reboots.
+  when: not easy_core_jar_stat.stat.exists
