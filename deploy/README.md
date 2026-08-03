@@ -36,27 +36,37 @@ instead, and the deploy writes the environment's own copy from `deploy/staging/c
 
 ## Before the first deploy
 
-The script assumes a host the plan's phase 1 has already built. It needs:
+**`ansible/` builds all of this.** `./run.sh site.yml` against the staging inventory produces a host
+this script can deploy to; there is nothing here to do by hand. The list below is what it sets up, so
+that a deploy failing on a missing precondition is diagnosable rather than mysterious.
 
 ```
-/srv/easy/conf/application.yaml      core's config — out of repo, never touched by a deploy
-/srv/easy/releases/                  one directory per deployed commit
-/srv/easy/core/current.jar           symlink the systemd unit runs
-/srv/easy/web/current                symlink Apache's DocumentRoot points at
+/srv/easy/conf/application.yaml   core's config — written by Ansible, never touched by a deploy
+/srv/easy/conf/secrets.yaml       credentials — created on the host, Ansible never reads them
+/srv/easy/releases/               one directory per deployed commit
+/srv/easy/core/current.jar        symlink the systemd unit runs
+/srv/easy/web/current             symlink nginx's root points at
 ```
 
-- **`/srv/easy/conf/application.yaml`** — start from `core/src/main/resources/application.yaml.sample`
-  and work through §5 of the plan, which lists everything that has to be neutered before a tester
-  logs in. `doc/release-procedure.md` lists the keys v4.0 added. The script checks the file exists
-  and stops before restarting if it doesn't, but it cannot check the contents.
-- **`easy-core.service`** — `java -jar /srv/easy/core/current.jar
-  --spring.config.location=/srv/easy/conf/application.yaml`, `Restart=on-failure`.
-- **`easy-executor.service`** — gunicorn as a non-root `easy-executor` user in the `docker` group
-  (§6; this replaces the `sudo gunicorn3` in `aae/start-executor.sh`).
-- **Passwordless `sudo systemctl restart easy-core`** for whoever deploys — the only sudo the script
-  uses, besides `journalctl` when a deploy fails.
-- **Apache** serving `/srv/easy/web/current` with `FallbackResource /index.html`, and `config.json`
-  with `Cache-Control: no-store` (§4.1).
+- **The config** comes from `roles/core_config`, which also refuses to write a dangerous one — §5 of
+  the plan lists five ways a correctly deployed host can damage real systems, and each is an
+  assertion in that role. The deploy script checks only that the file exists.
+- **`easy-core.service`** and the directory tree come from `roles/core_service`.
+- **nginx and TLS** come from `roles/nginx` (§4).
+- **postgres** comes from `roles/postgres`, which also tells the database the password the host
+  generated for itself.
+- **`easy-executor.service`** — still to write; gunicorn as a non-root `easy-executor` user in the
+  `docker` group (§6, replacing the `sudo gunicorn3` in `aae/start-executor.sh`).
+
+**Who can deploy.** Two things, both from `roles/core_service`: membership of the `easy-deploy` group,
+which owns write access to the release tree, and a passwordless `sudo` grant for exactly two commands
+— restarting core, and reading its log when a deploy fails. Both are driven by
+`easy_core_deploy_users` in the environment's inventory. SSH access is the real permission, so adding
+someone means adding them to `hardening_ssh_users` as well.
+
+Worth knowing about the split: core *reads* the jar, a deploy *replaces* it, and those are separate
+privileges on purpose. The deploy account cannot read `secrets.yaml`, and the service account cannot
+write the release tree.
 
 Then set `SSH_TARGET` in `deploy/staging/staging.env`. It ships as a placeholder and the script
 refuses to run until it is real.

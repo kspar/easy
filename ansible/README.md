@@ -4,10 +4,13 @@ Configuration for the staging host, so that "what did we configure on that box" 
 answer. `doc/staging-environment.md` §9 asks for this from the start — not because staging needs
 Ansible, but because it makes production's eventual rebuild a known quantity.
 
-Only the `hardening` role exists so far. Its reasoning, host by host, is in
-`doc/staging-hardening.md` — **which is deliberately not in this repo** (see `.gitignore`), because
-it is specific about one internet-facing machine in a way this role is not. Ask kspar for it. The
-role's own comments carry the parts that generalise, and are worth reading before a first run.
+As of 2026-08-04 this builds a staging host that serves a real release: hardening, postgres, core's
+config and systemd unit, and nginx with TLS. What is missing is the executor and mailpit.
+
+The hardening role's reasoning, host by host, is in `doc/staging-hardening.md` — **which is
+deliberately not in this repo** (see `.gitignore`), because it is specific about one internet-facing
+machine in a way the role is not. Ask kspar for it. The roles' own comments carry the parts that
+generalise, and are worth reading before a first run.
 
 ## Running it
 
@@ -82,9 +85,9 @@ matters most — and each environment loosens what it needs to in its own `group
 the reason beside the override. Written the other way round, staging's conveniences would be what a
 new production host silently inherits. Safe by omission; every relaxation deliberate.
 
-`inventories/staging/group_vars/all.yml` is the worked example: agent forwarding on because
-everything is co-located behind loopback there, a longer fail2ban leash because verifying the host
-means failing auth at it, unattended reboots because there is nothing to interrupt.
+`inventories/staging/group_vars/all/` is the worked example: agent forwarding on because everything
+is co-located behind loopback there, a longer fail2ban leash because verifying the host means failing
+auth at it, unattended reboots because there is nothing to interrupt.
 
 **Nothing has been run against production.** `inventories/production/hosts.example.yml` records the
 intended shape and the order to approach it in — the first useful run is `--check --diff` as an
@@ -126,8 +129,8 @@ Three things this deliberately is not:
   secret committed to it is a liability rather than a convenience.
 - **Not `NOPASSWD` sudo.** Removing the password from the host is the real fix for *automated*
   runs, but it is a weaker host, and the deliberate posture here keeps sudo behind a password. The
-  one exception already planned is the single scoped grant the deploy script needs (see "Adding the
-  rest" below).
+  only exception is the deploy account, which gets two exact commands — restart core, and read its
+  log — and nothing wider.
 
 Worth being clear-eyed about the trade: anything that can read that keychain item can become root
 on the staging host. That is the point of storing it, and it is why the item is scoped to staging —
@@ -155,9 +158,15 @@ failure this is insurance against. Tear it down with `-O exit` when the run is v
 
 ```
 ansible.cfg                  no default inventory, yaml output, ssh multiplexing
-site.yml                     the play; further roles get added here
+site.yml                     the plays: hardening everywhere, services by group
+smoke.yml                    read-only health check, safe against production
 run.sh                       staging only, sudo password from the keychain
 roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
+roles/core_config/           core's config, its secrets file, and the guards on both
+roles/postgres/              cluster on loopback, role, database
+roles/core_service/          the systemd unit, the release tree, the deploy grant
+roles/nginx/                 TLS, the SPA vhost, the API proxy
+roles/smoke/                 what smoke.yml runs
 inventories/
   staging/
     hosts.example.yml        the committed template
@@ -188,19 +197,31 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 
 ## Adding the rest
 
-The remaining phase-1 work from the staging plan — Apache vhosts, postgres, Docker, the
-`easy-core` and `easy-executor` units, mailpit, the backup cron — becomes further roles here.
+Still to write: the **executor** (Docker, base images, `easy-executor.service` as a non-root user in
+the `docker` group — §6), **mailpit** as a local catch-all so mail stays testable and cannot escape
+(§5), and the **backup timer with a verified restore** (EZ-1114, EZ-1738).
 
 **Write them as service roles applied to groups, not as "the staging box".** Production separates
 onto three hosts (core, IdP, executor) what staging keeps on one, so a role that assumes postgres or
 the executor is on `127.0.0.1` is already wrong for production. Those addresses want to be variables
 from the first role that touches them; retrofitting them later is the expensive version. `site.yml`
-gets a play per group at that point, and `serial: 1` before anything targets more than one host.
+already has a play per group, and wants `serial: 1` before anything targets more than one host.
 
-Three things worth carrying over when you write them:
+Four things learned building the existing roles, each of which cost a debugging round:
 
-- The deploy script needs exactly one sudo grant: `NOPASSWD: /usr/bin/systemctl restart easy-core`.
-  Scope it to that command; do not give the deploy account general sudo.
-- Docker's iptables rules bypass ufw, so a published container port is internet-reachable even when
-  `ufw status` says otherwise. This is not a bug anyone intends to fix. Publish container ports as
-  `127.0.0.1:host:container`, or filter in the `DOCKER-USER` chain.
+- **Guard on what exists, not on `ansible_check_mode`.** A dry run against a host that lacks the
+  package simulates the install, so every task after it fails on something that is not there and
+  aborts the run before the interesting output. `stat` the binary and key the rest on that: dry runs
+  against an *installed* host then still check everything, which is the case that matters later.
+  postgres, the Java runtime and nginx all needed this.
+- **`set_fact` through a folded scalar gives you a string.** `"False"` is perfectly truthy in Jinja,
+  so `{% if some_fact %}` takes the wrong branch and the symptom is a config that ignores your
+  variable. Use `| bool` at the point of use.
+- **Validate before reload, and roll back if it fails.** nginx and sshd can only validate a whole
+  configuration, so a bad fragment is already on disk when you find out. Both roles restore the
+  previous file and refuse to reload. nginx's rejected its own generated config on the first real
+  run, which is exactly when you want that to work.
+- **Docker's iptables rules bypass ufw**, so a published container port is internet-reachable even
+  when `ufw status` says otherwise. This is not a bug anyone intends to fix. Publish container ports
+  as `127.0.0.1:host:container`, or filter in the `DOCKER-USER` chain — and note that `smoke.yml`
+  checks for exactly this.

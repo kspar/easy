@@ -4,8 +4,15 @@
 # release symlinks; everything else it does — unpacking, writing config.json, pruning old releases —
 # happens as the deploy account's own user under /srv/easy.
 #
-# Scoped to a single exact command on purpose. `systemctl` with a free argument would be equivalent
-# to root, since it can start a unit the caller is able to write.
+# Two exact commands, no wildcards. `systemctl` with a free argument would be equivalent to root,
+# since it can start a unit the caller is able to write, and `journalctl` with a free argument reads
+# every log on the host. Spelling out the exact invocations the script uses costs nothing and means
+# neither is a general grant.
+#
+# The journalctl line exists because the script fetches core's log when a deploy fails. Without the
+# grant that prompts for a password, the prompt cannot be answered non-interactively, and the error
+# is swallowed — so a failed deploy would print no diagnostics at exactly the moment they matter.
 {% for user in easy_core_deploy_users %}
 {{ user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ easy_core_service_name }}
+{{ user }} ALL=(root) NOPASSWD: /usr/bin/journalctl -u {{ easy_core_service_name }} -n 40 --no-pager
 {% endfor %}

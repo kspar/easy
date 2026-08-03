@@ -366,13 +366,22 @@ Real executor: `aae/server.py` under gunicorn, grading in Docker containers on t
 
 ## 7. Dev Keycloak realm
 
-**First check whether there is still a realm to change.** As of 2026-08-01
-`dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, and that proxy answers
-`tlsv1 unrecognized name` — the dev IdP is not being served at that name. The `easy-dev-idp`
-instance is up with only SSH open, so the realm may well still be on disk, but "exists; only realm
-config changes" is an assumption until someone logs in and looks. If the realm is gone this stops
-being a config task and becomes "stand up Keycloak", which is a different size of job and probably
-the critical path for the whole environment.
+**This is now the critical path, and it is probably not a config task.** Checked again on
+2026-08-03, from the VM itself rather than from DNS:
+
+- `dev.idp.lahendus.ut.ee` is still a CNAME to `proxy.hpc.ut.ee` (193.40.46.68/69) — not to the IdP
+  VM at all.
+- The IdP VM (`easyidpdev`, 193.40.11.153) is reachable over SSH and **listens on nothing else**. No
+  443, no 8080, no 8443. Keycloak is not running there in any form.
+
+So the earlier hope that "the realm may well still be on disk" is looking thin. Whether the realm
+data survives on that host is still unknown — nobody has looked inside — but the work is at least
+"start Keycloak, point DNS at it, restore or rebuild the realm", not "change some realm settings".
+
+**Everything else in phase 2 is already done and works without this.** Core is deployed and serving,
+because JWT verification fetches the realm's JWKS lazily (§2) — core starts, answers 401, and only
+fails when someone actually tries to log in. So this is the single thing between staging and a
+tester using it.
 
 Changes on `dev.idp.lahendus.ut.ee`:
 
@@ -535,10 +544,10 @@ Greenfield, so this is a small amount of setup done once:
 | Phase | Outcome |
 | --- | --- |
 | 1 | VM provisioned via Ansible; DNS + TLS; nginx with both vhosts; postgres. Nothing deployed. **Done 2026-08-04**, except the executor and mailpit |
-| 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists |
+| 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists. **Half done 2026-08-04**: deployed, serving, 42 tables migrated on first start — login blocked on §7, there is no IdP to log in to |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
 | 4 | Executor + base images; auto-assessment verified on a real imported exercise |
-| 5 | `deploy/deploy-staging.sh` documented; whole team can deploy. **Script and CI artifacts done ahead of phase 1** — untested against a real host, and `SSH_TARGET` is still a placeholder |
+| 5 | `deploy/deploy-staging.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
 | 6 | Automatic deploy on green master; staging added to `doc/release-procedure.md` |
 
 Phase 2 before phase 3 is the point worth keeping: the environment that can't yet leak anything is

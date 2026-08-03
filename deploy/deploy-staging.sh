@@ -259,6 +259,10 @@ done
 
 if [ -z "$code" ]; then
     echo "  no answer from $HEALTH_URL after ${HEALTH_TIMEOUT_S}s — last 40 log lines:" >&2
+    # The sudoers grant for this is an *exact* command match (ansible/roles/core_service/templates/
+    # sudoers-deploy.j2), so changing these arguments — `-n 40`, `--no-pager` — silently stops it
+    # matching. It fails into a password prompt nobody can answer, and `|| true` swallows that, so
+    # the symptom is a failed deploy printing no logs at all. Change both together.
     ssh "$SSH_TARGET" "sudo journalctl -u '$CORE_SERVICE' -n 40 --no-pager" >&2 || true
     die "deploy finished but core is not answering"
 fi
