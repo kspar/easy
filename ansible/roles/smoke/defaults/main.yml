@@ -32,8 +32,12 @@ smoke_expected_sshd:
 # Units checked only if they exist. Absent means "not deployed yet" and is reported as such — never
 # as a pass, because a smoke check that goes green on a host with nothing installed is worse than no
 # smoke check at all.
+# postgresql is deliberately absent from this list. On Debian and Ubuntu `postgresql.service` is a
+# wrapper that starts the real per-cluster unit (`postgresql@16-main.service`) and then exits, so its
+# state reads "stopped" while the database is serving perfectly well — this check reported exactly
+# that false alarm the first time postgres was installed. It gets its own check below, against the
+# thing that actually matters: whether it accepts connections.
 smoke_optional_units:
   - easy-core
   - easy-executor
-  - postgresql
   - apache2

@@ -1,0 +1,26 @@
+---
+# The database core connects to. Schema is not this role's business: core applies Liquibase
+# changesets itself at startup through the SpringLiquibase bean in core/conf/DatabaseConf.kt, so this
+# role stops at a cluster, a role and an empty database.
+
+# The name and owner are derived from core's config rather than repeated, because they are the same
+# fact: if they ever disagree, core cannot connect and the error says nothing useful about why. The
+# defaults only apply when this role is run without core_config in the same play.
+postgres_db_name: "{{ easy_core_db_name | default('easyems_staging') }}"
+postgres_db_user: "{{ easy_core_db_user | default('easyems') }}"
+
+# Where the password comes from. Ansible never reads this file — a task on the host reads it and
+# tells postgres, so the value stays on the machine that has to hold it anyway. See core_config.
+postgres_secrets_path: "{{ easy_core_secrets_path | default('/srv/easy/conf/secrets.yaml') }}"
+
+# Loopback only, and this is load-bearing rather than tidy: postgres authenticates with a password
+# that lives in a file on this host, and the staging database will hold an anonymised copy of real
+# student data. ufw covers the port too, but ufw does not cover ports Docker publishes, so the bind
+# address is the setting that actually holds.
+postgres_listen_addresses: localhost
+postgres_port: 5432
+
+# UTF-8, explicitly. A cluster initialised under a C locale sorts and upper-cases Estonian wrongly,
+# and finding that out later means a dump-and-restore rather than a setting change.
+postgres_encoding: UTF-8
+postgres_locale: en_US.UTF-8

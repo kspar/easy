@@ -1,0 +1,7 @@
+---
+# listen_addresses is not reloadable — it is fixed when the postmaster starts — so this is a restart
+# rather than a reload. Cheap while the cluster is empty; worth remembering once it is not.
+- name: Restart postgres
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: restarted

@@ -9,8 +9,15 @@
 
 # --- database, co-located on this VM ------------------------------------------------------------------
 easy_core_db_host: 127.0.0.1
-easy_core_db_name: easy
-easy_core_db_user: easy
+
+# The name matters more than it looks. Every script in `doc/core/anonymise-db/` refuses to run unless
+# `current_database()` matches `(staging|stage|anon)`, because pointed at production they would rename
+# every account and delete every invitation. A staging database called something else does not fail
+# at setup — it fails during the phase 3 import, where the quickest way out is
+# `-v ALLOW_ANY_DATABASE=true`, i.e. disarming the guard rather than satisfying it. The runbook in
+# that directory uses this exact name.
+easy_core_db_name: easyems_staging
+easy_core_db_user: easyems
 
 # --- URLs -------------------------------------------------------------------------------------------
 easy_core_web_base_url: https://dev.lahendus.ut.ee

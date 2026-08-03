@@ -24,4 +24,7 @@
   hosts: core
   become: true
   roles:
+    # core_config first: it is what creates the secrets file, and the postgres role reads the
+    # password out of it on the host to set the database role's password to match.
     - core_config
+    - postgres

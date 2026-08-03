@@ -116,6 +116,16 @@
   ansible.builtin.service_facts:
   check_mode: false
 
+- name: Ask postgres whether it is accepting connections
+  # `pg_isready` rather than the unit state, because Debian's postgresql.service is a wrapper that
+  # exits once the real per-cluster unit is up. rc 0 means serving, 1 means rejecting, 2 means no
+  # response, 127 means it is not installed at all.
+  ansible.builtin.command: pg_isready -q -h 127.0.0.1
+  register: smoke_pg
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
 # --- the SSH posture --------------------------------------------------------------------------------
 
 - name: Note any sshd setting that has drifted
@@ -232,6 +242,18 @@
     label: "{{ item.item.path | default('') }}"
 
 # --- the application, once it exists ---------------------------------------------------------------
+
+- name: Note that postgres is not installed
+  ansible.builtin.set_fact:
+    smoke_absent: "{{ smoke_absent + ['postgresql: not installed'] }}"
+  when: smoke_pg.rc == 127
+
+- name: Note if postgres is not accepting connections
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['postgres is installed but not accepting connections (pg_isready rc='
+         ~ smoke_pg.rc ~ ') — core cannot start without it'] }}
+  when: smoke_pg.rc | int not in [0, 127]
 
 - name: Note which services are not deployed yet
   ansible.builtin.set_fact:
