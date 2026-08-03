@@ -56,6 +56,7 @@ import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
 import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
 import EmbedDialog from '../library/EmbedDialog.tsx'
+import { exerciseLink, spaLinkProps } from '../library/links.ts'
 import { RobotIcon } from '../../components/icons.tsx'
 import AutogradeAnimation from './AutogradeAnimation.tsx'
 import SubmissionsList from './SubmissionsList.tsx'
@@ -859,10 +860,17 @@ function TeacherExerciseView() {
           }
         </Tooltip>
         <Box sx={{ flex: 1 }} />
+          {/*
+          Was `/library/<id>`, which matches no route: the library exercise lives at
+          `/library/exercise/<id>/<slug>`, so this landed on NotFoundPage. Built from the
+          shared helper now, so it cannot drift from the route table again — and as a real
+          anchor, so ctrl/cmd-click opens it in a tab like every other library link.
+          */}
         {exercise.has_lib_access && (
           <Tooltip title={t('exercises.openInLib')}>
             <IconButton
-              onClick={() => navigate(`/library/${exercise.exercise_id}`)}
+              component="a"
+              {...spaLinkProps(exerciseLink(exercise.exercise_id, effectiveTitle), navigate)}
               size="small"
             >
               <LibraryBooksOutlined />

@@ -78,6 +78,7 @@ await fakeApi(page, [
     submit_allowed: true,
   })],
   [`/exercises/${EX}`, () => libraryExercise],
+  [`/lib/dirs/${libraryExercise.dir_id}/parents`, () => ({ parents: [] })],
   ['/participants', () => ({ students: [], teachers: [], students_pending: [], students_moodle_pending: [] })],
   ['/groups', () => ({ groups: [] })],
   ['/submissions', () => ({ submissions: [], count: 0 })],
@@ -159,6 +160,25 @@ check(
   'no embedding action without library access',
   (await page.getByRole('button', { name: 'Embedding' }).count()) === 0,
 )
+
+// --- the shortcut through to the library exercise -------------------------------------------------
+// It pointed at /library/<id>, which matches no route, so it silently landed on NotFoundPage. The
+// assertion follows the link rather than checking the href, because a URL that looks right and
+// resolves to nothing is exactly the failure that shipped.
+courseExercise = { ...courseExercise, has_lib_access: true }
+await openPage()
+const libLink = page.getByRole('link', { name: "Open in exercise library" })
+check('the library shortcut is a real link', (await libLink.count()) === 1)
+check(
+  'and it addresses the library exercise route',
+  (await libLink.getAttribute('href')) === `/library/exercise/${EX}/sum-of-two-numbers`,
+)
+await libLink.click()
+check(
+  'following it opens the exercise, not the not-found page',
+  await waitUntil(() => page.getByRole('tab', { name: 'Exercise' }).isVisible()),
+)
+check('and the url is the library exercise', page.url().includes(`/library/exercise/${EX}/`))
 
 await browser.close()
 process.exit(check.summary() ? 0 : 1)
