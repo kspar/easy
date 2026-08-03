@@ -25,6 +25,7 @@ const BASE_URL = `http://localhost:${PORT}`
  */
 const SCRIPTS = [
   'course-exercises.mjs',
+  'library-page.mjs',
   'runtime-config.mjs',
   'library-exercise-tsl.mjs',
   'library-exercise-ui.mjs',

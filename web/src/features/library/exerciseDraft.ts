@@ -50,3 +50,19 @@ export function assetsForSave(draft: AutoAssessDraft): LibraryExerciseAsset[] | 
   }
   return draft.assets
 }
+
+/**
+ * Three-way merge of one field: if only one side moved, take that side; if both moved to the
+ * same value there is no conflict either. Only genuinely divergent edits are reported.
+ *
+ * Exported for the unit tests. It decides, silently and per field, what a save actually writes
+ * when two people edited the same exercise — worth pinning down by example rather than reasoning
+ * about at the point of a merge conflict prompt.
+ */
+export function mergeField<T>(local: T, remote: T, initial: T): [T, boolean] {
+  const eq = (a: T, b: T) => JSON.stringify(a) === JSON.stringify(b)
+  if (eq(local, initial)) return [remote, false]
+  if (eq(remote, initial)) return [local, false]
+  if (eq(local, remote)) return [local, false]
+  return [local, true]
+}

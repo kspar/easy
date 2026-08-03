@@ -47,6 +47,7 @@ import {
   assetsForSave,
   isAutoAssessValid,
   isExerciseTextValid,
+  mergeField,
   type AutoAssessDraft,
 } from './exerciseDraft.ts'
 import TeacherTestingTab from '../course-exercise/TeacherTestingTab.tsx'
@@ -73,17 +74,6 @@ function draftFrom(ex: LibraryExerciseDetail): Draft {
   }
 }
 
-/**
- * Three-way merge of one field: if only one side moved, take that side; if both moved to the
- * same value there is no conflict either. Only genuinely divergent edits are reported.
- */
-function mergeField<T>(local: T, remote: T, initial: T): [T, boolean] {
-  const eq = (a: T, b: T) => JSON.stringify(a) === JSON.stringify(b)
-  if (eq(local, initial)) return [remote, false]
-  if (eq(remote, initial)) return [local, false]
-  if (eq(local, remote)) return [local, false]
-  return [local, true]
-}
 
 function toUpdate(d: Draft): LibraryExerciseUpdate {
   const hasAuto = d.containerImage !== null

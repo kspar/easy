@@ -197,7 +197,13 @@ check(
   'a concurrent change blocks entering edit mode',
   await waitUntil(() => page.getByText(/Someone else has changed this exercise/).isVisible()),
 )
-check('and the page shows the newer version', await page.getByText('Changed by a colleague').first().isVisible())
+// Polled, not asserted on the next tick: the snackbar appears as soon as the comparison fails,
+// but the newer title only lands once the refetch behind it resolves. Asserting immediately made
+// this pass or fail on how quickly the stubbed request came back.
+check(
+  'and the page shows the newer version',
+  await waitUntil(() => page.getByText('Changed by a colleague').first().isVisible()),
+)
 await shot('03-concurrent-change')
 
 // --- action dialogs --------------------------------------------------------------------------------
