@@ -1,0 +1,17 @@
+---
+# Read-only health check. Nothing here writes, so it is safe against production and is the intended
+# first thing to run against a host this repo has never managed.
+#
+#   ./run.sh smoke.yml                                            # staging
+#   ansible-playbook -i inventories/production smoke.yml --ask-become-pass
+#
+# It reads the same inventory as site.yml on purpose: "who may log in" is one of the things being
+# checked, and the answer has to come from the same place the converge run gets it from, or the check
+# is only asserting that the host agrees with itself.
+- name: Smoke check
+  hosts: all
+  # Needed for `sshd -T`, `ufw status` and `fail2ban-client` — all reads, none of which a normal user
+  # can perform.
+  become: true
+  roles:
+    - smoke

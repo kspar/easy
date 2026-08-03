@@ -1,0 +1,39 @@
+---
+# What the smoke check expects to be true. Everything here is read-only: this role asserts, it never
+# converges. Safe to run against production, which is most of the point of having it.
+
+# Ports that are allowed to listen on a non-loopback address. Everything else being loopback-only is
+# a load-bearing property rather than a preference: core, postgres and the executor all authenticate
+# nothing (or not enough) at their own port, and the executor in particular is called with no
+# credentials at all. A stray public bind is therefore the single most consequential thing that can
+# quietly become true on these hosts, and Docker will do exactly that without touching ufw.
+smoke_public_ports:
+  - 22
+  - 80
+  - 443
+
+# Root filesystem usage above which grading starts failing in ways that look like application bugs:
+# the executor builds a container image per run and postgres has nowhere to put WAL.
+smoke_disk_max_percent: 80
+
+# Refuse to be reassured by a certificate about to expire. certbot renews at 30 days, so anything
+# under 21 means renewal is not working rather than not due.
+smoke_cert_min_days: 21
+
+# sshd settings that must still be in effect. Drift here is somebody editing the host by hand, which
+# is exactly what a check should catch and a converge run would silently repair without telling you.
+smoke_expected_sshd:
+  passwordauthentication: "no"
+  kbdinteractiveauthentication: "no"
+  permitrootlogin: "no"
+  permitemptypasswords: "no"
+  authenticationmethods: publickey
+
+# Units checked only if they exist. Absent means "not deployed yet" and is reported as such — never
+# as a pass, because a smoke check that goes green on a host with nothing installed is worse than no
+# smoke check at all.
+smoke_optional_units:
+  - easy-core
+  - easy-executor
+  - postgresql
+  - apache2

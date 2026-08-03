@@ -31,6 +31,25 @@ log in, which is the one thing in this directory worth keeping off a public repo
 depend on being unreadable. The role has no default list of users and asserts a non-empty one, so a
 missing inventory fails with an explanation rather than writing `AllowGroups` for an empty group.
 
+### Checking a host without changing it
+
+```sh
+./run.sh smoke.yml                                              # staging
+ansible-playbook -i inventories/production smoke.yml --ask-become-pass
+```
+
+`smoke.yml` only reads, so it is safe against production and is the right first thing to point at a
+host this repo has never managed. It verifies the sshd posture is still in effect, that the SSH group
+matches the inventory, that ufw and the fail2ban jail are up, that the clock is NTP-synchronised
+(JWT expiry and every assignment deadline depend on it), that no certificate is near expiry, that
+disk is under 80%, and — the check most likely to earn its keep — that **nothing is listening on a
+public address except 22, 80 and 443**. That last one is the only way the Docker-bypasses-ufw problem
+becomes visible, because `ufw status` will happily report deny for a port Docker published.
+
+It exits non-zero on a problem, prints every finding rather than stopping at the first, and reports
+anything it could *not* check as absent rather than counting it as a pass — a green report on a host
+where nothing is installed would otherwise be the most dangerous output it could produce.
+
 ### Environments
 
 `roles/hardening/defaults/main.yml` holds the **strict** values — the answer for the host that

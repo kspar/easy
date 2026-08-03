@@ -1,0 +1,275 @@
+---
+# Read-only health check. Every task here either reads or asserts; nothing writes, so this is safe to
+# point at production and is the intended first thing to run against a host nobody has managed before.
+#
+# Two rules it is built around:
+#
+# - **Absent is reported, never passed.** Most of this host does not exist yet. A check that skips a
+#   missing service and reports success is the vacuous-pass failure mode, so anything not installed
+#   lands in a separate "not checked" list that the summary prints.
+# - **Collect everything, then fail once.** Ansible fails a host at the first failed task, which would
+#   hide every finding after the first. So findings accumulate and the assert is last.
+
+- name: Start with no findings
+  ansible.builtin.set_fact:
+    smoke_fail: []
+    smoke_warn: []
+    smoke_absent: []
+
+# --- gather -----------------------------------------------------------------------------------------
+# All of these are reads: changed_when false so they never report changes, failed_when false so a
+# missing binary becomes a finding rather than an aborted run, and check_mode false so `--check` is a
+# real check rather than a no-op.
+
+- name: Ask sshd what is actually in effect
+  ansible.builtin.command: sshd -T
+  register: smoke_sshd
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the SSH access group
+  ansible.builtin.getent:
+    database: group
+    key: "{{ hardening_ssh_group | default('ssh-users') }}"
+    fail_key: false
+  register: smoke_group
+  changed_when: false
+  check_mode: false
+
+- name: Find out what is listening on a non-loopback address
+  # Ports bound to 0.0.0.0, [::] or *, which is what the internet can reach. Loopback binds are the
+  # intended state for everything except SSH and Apache and so are filtered out here.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      ss -Hltn | awk '{print $4}' | grep -vE '^(127\.|\[::1\])' | sed 's/.*://' | sort -un
+    executable: /bin/bash
+  register: smoke_listening
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check the firewall is up
+  ansible.builtin.command: ufw status
+  register: smoke_ufw
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check the sshd jail is up
+  ansible.builtin.command: fail2ban-client status sshd
+  register: smoke_jail
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Measure disk usage
+  ansible.builtin.shell:
+    cmd: "set -o pipefail; df --output=pcent / | tail -1 | tr -dc '0-9'"
+    executable: /bin/bash
+  register: smoke_disk
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Ask whether the clock is synchronised
+  # Not housekeeping: JWT `exp` verification and every assignment deadline in the application are
+  # decided by this clock. Skew shows up as unexplained auth failures and as students being late.
+  ansible.builtin.command: timedatectl show -p NTPSynchronized --value
+  register: smoke_ntp
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Look for a pending reboot
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: smoke_reboot
+  check_mode: false
+
+- name: Look for TLS certificates
+  ansible.builtin.find:
+    paths: /etc/letsencrypt/live
+    patterns: cert.pem
+    recurse: true
+    file_type: any
+  register: smoke_certs
+  check_mode: false
+
+- name: Read how long each certificate has left
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      end=$(openssl x509 -enddate -noout -in {{ item.path | quote }} | cut -d= -f2);
+      echo $(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+    executable: /bin/bash
+  loop: "{{ smoke_certs.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: smoke_cert_days
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Collect the state of every service unit
+  ansible.builtin.service_facts:
+  check_mode: false
+
+# --- the SSH posture --------------------------------------------------------------------------------
+
+- name: Note any sshd setting that has drifted
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['sshd ' ~ item.key ~ ' is not ' ~ item.value ~ ' — the host has been edited
+         by hand, or the hardening role has never run here'] }}
+  when: >-
+    smoke_sshd.rc == 0
+    and (item.key ~ ' ' ~ item.value) not in smoke_sshd.stdout_lines
+  loop: "{{ smoke_expected_sshd | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Note if sshd could not be asked at all
+  ansible.builtin.set_fact:
+    smoke_fail: "{{ smoke_fail + ['could not run `sshd -T`, so the SSH posture is unverified'] }}"
+  when: smoke_sshd.rc != 0
+
+- name: Note if the SSH grant list does not match the inventory
+  # The role makes this list exclusive, so a mismatch means either somebody was added by hand or a
+  # converge run has not happened since the inventory changed. Both are worth knowing about; on an
+  # unmanaged host this is the check that tells you who can log in that nobody remembers granting.
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['members of ' ~ (hardening_ssh_group | default('ssh-users')) ~ ' are ' ~
+         (smoke_group_members | join(',') | default('none', true)) ~ ' but the inventory says ' ~
+         (hardening_ssh_users | join(','))] }}
+  vars:
+    smoke_group_members: >-
+      {{ (smoke_group.ansible_facts.getent_group[hardening_ssh_group | default('ssh-users')][2]
+          | default('') | split(',')) | select | list }}
+  when:
+    - hardening_ssh_users | default([]) | length > 0
+    - smoke_group_members | sort != hardening_ssh_users | sort
+
+# --- what the internet can reach --------------------------------------------------------------------
+
+- name: Note anything listening publicly that should not be
+  # The check most likely to catch a real problem, and the one ufw cannot: Docker inserts its own
+  # iptables rules ahead of ufw's chain, so a published container port is reachable from the internet
+  # while `ufw status` still says deny. Comparing actual listeners against the allowlist is the only
+  # way that shows up.
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['port ' ~ item ~ ' is listening on a public address and is not in
+         smoke_public_ports — if this is a Docker published port, note that ufw does not filter it'] }}
+  when: (item | int) not in (smoke_public_ports | map('int') | list)
+  loop: "{{ smoke_listening.stdout_lines | default([]) }}"
+
+# --- the rest of the baseline -----------------------------------------------------------------------
+
+- name: Note if the firewall is not active
+  ansible.builtin.set_fact:
+    smoke_fail: "{{ smoke_fail + ['ufw is not active'] }}"
+  when: "smoke_ufw.rc != 0 or 'Status: active' not in smoke_ufw.stdout"
+
+- name: Note if the sshd jail is not running
+  ansible.builtin.set_fact:
+    smoke_fail: "{{ smoke_fail + ['the fail2ban sshd jail is not running'] }}"
+  when: smoke_jail.rc != 0
+
+- name: Note if the jail is watching nothing
+  # A jail can be up, report itself healthy and ban nobody, because the stock journalmatch finds no
+  # sshd logs on a socket-activated host. This is that failure, made visible.
+  ansible.builtin.set_fact:
+    smoke_warn: >-
+      {{ smoke_warn + ['the fail2ban sshd jail has never banned anything — on an internet-facing host
+         that usually means its journalmatch matches nothing, not that nobody has tried'] }}
+  when:
+    - smoke_jail.rc == 0
+    - "'Total banned:\t0' in smoke_jail.stdout"
+
+- name: Note if the disk is filling up
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['root filesystem is ' ~ smoke_disk.stdout ~ '% full (limit
+         ' ~ smoke_disk_max_percent ~ '%) — the executor builds an image per grading run'] }}
+  when:
+    - smoke_disk.rc == 0
+    - smoke_disk.stdout | int >= smoke_disk_max_percent | int
+
+- name: Note if the clock is not synchronised
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['the clock is not NTP-synchronised, which breaks JWT expiry checks and every
+         assignment deadline'] }}
+  when: smoke_ntp.rc == 0 and smoke_ntp.stdout | trim != 'yes'
+
+- name: Note a pending reboot
+  ansible.builtin.set_fact:
+    smoke_warn: >-
+      {{ smoke_warn + ['a reboot is pending, so a kernel or library fix is installed but not
+         running'] }}
+  when: smoke_reboot.stat.exists
+
+# --- TLS -------------------------------------------------------------------------------------------
+
+- name: Note if there are no certificates yet
+  ansible.builtin.set_fact:
+    smoke_absent: "{{ smoke_absent + ['TLS: no certificates under /etc/letsencrypt/live'] }}"
+  when: smoke_certs.files | default([]) | length == 0
+
+- name: Note any certificate close to expiry
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + [item.item.path ~ ' expires in ' ~ item.stdout ~ ' days — certbot renews at 30,
+         so this means renewal is failing rather than pending'] }}
+  when:
+    - item.rc | default(1) == 0
+    - item.stdout | int < smoke_cert_min_days | int
+  loop: "{{ smoke_cert_days.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path | default('') }}"
+
+# --- the application, once it exists ---------------------------------------------------------------
+
+- name: Note which services are not deployed yet
+  ansible.builtin.set_fact:
+    smoke_absent: "{{ smoke_absent + [item ~ ': not installed'] }}"
+  when: (ansible_facts.services[item ~ '.service'] | default(none)) is none
+  loop: "{{ smoke_optional_units }}"
+
+- name: Note any deployed service that is not running
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + [item ~ ' is installed but ' ~
+         ansible_facts.services[item ~ '.service'].state] }}
+  when:
+    - (ansible_facts.services[item ~ '.service'] | default(none)) is not none
+    - ansible_facts.services[item ~ '.service'].state != 'running'
+  loop: "{{ smoke_optional_units }}"
+
+# --- report ----------------------------------------------------------------------------------------
+
+- name: The report
+  ansible.builtin.debug:
+    msg: >-
+      {{ {
+        'host': inventory_hostname,
+        'problems': smoke_fail | default([]),
+        'worth_knowing': smoke_warn | default([]),
+        'not_checked_because_absent': smoke_absent | default([]),
+        'public_listeners': smoke_listening.stdout_lines | default([]),
+        'disk_percent': smoke_disk.stdout | default('?'),
+      } }}
+
+- name: Fail if anything is actually wrong
+  ansible.builtin.assert:
+    that: smoke_fail | default([]) | length == 0
+    fail_msg: |-
+      {{ smoke_fail | length }} problem(s):
+      {{ smoke_fail | map('regex_replace', '^', '  - ') | join('\n') }}
+    success_msg: >-
+      {{ 'nothing wrong. ' ~ (smoke_absent | length) ~ ' thing(s) were not checked because they are
+         not installed yet — see not_checked_because_absent above, and do not read this as
+         "everything works".' }}
