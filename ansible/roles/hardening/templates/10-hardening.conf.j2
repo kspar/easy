@@ -1,0 +1,45 @@
+## Managed by Ansible (roles/hardening) — local edits are overwritten.
+##
+## Numbered 10 so it is read BEFORE the cloud image's 60-cloudimg-settings.conf. sshd takes the
+## FIRST value it obtains for a keyword and Include sits at the top of sshd_config, so inside
+## sshd_config.d a LOWER number wins. That is the opposite of most drop-in directories, and it is
+## the reason a 99- file here would lose to anything the image ships.
+
+## Keys only.
+##
+## The cloud image ships this exact setting as `#PasswordAuthentication no` — commented out — so
+## the effective value was sshd's built-in default of `yes`. No account on this host has a
+## password, so nothing could actually have authenticated that way, but it was one `passwd` away
+## from being untrue on a host with port 22 open to the internet.
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+PubkeyAuthentication yes
+
+## Stricter than the three above together: nothing but a public key is even offered, regardless of
+## what PAM would otherwise be willing to try.
+AuthenticationMethods publickey
+
+PermitRootLogin no
+
+## Membership is the grant. Adding a Unix account no longer implies SSH access, which is what makes
+## the executor's future service account safe to create.
+AllowGroups {{ hardening_ssh_group }}
+
+MaxAuthTries {{ hardening_ssh_max_auth_tries }}
+LoginGraceTime {{ hardening_ssh_login_grace_time }}
+
+## Logs the fingerprint of the key that authenticated. That is what makes "who deployed that"
+## answerable after the fact, and it is what fail2ban counts.
+LogLevel VERBOSE
+
+X11Forwarding no
+
+## Left on deliberately. Postgres, core and the executor all bind 127.0.0.1, so an SSH tunnel is
+## the intended way to reach them from a laptop. It grants an authenticated user nothing they could
+## not already do by running a command on the host.
+AllowTcpForwarding yes
+
+## Drop sessions whose network has gone away rather than holding them open.
+ClientAliveInterval 300
+ClientAliveCountMax 2

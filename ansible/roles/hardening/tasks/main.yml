@@ -1,0 +1,306 @@
+---
+# Baseline hardening for an internet-facing Ubuntu 24.04 host. The per-host reasoning lives in
+# doc/staging-hardening.md, which is kept out of this public repo (see .gitignore); the reasoning
+# that generalises is in the comments here and in defaults/main.yml.
+#
+# Ordering is a safety property, not a style choice. Group membership is granted before AllowGroups
+# starts enforcing it, and ufw allows SSH before it is switched on. Getting either backwards locks
+# everyone out of a box whose console cannot log in.
+
+- name: Confirm this is the OS the role was written for
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == "Ubuntu"
+      - ansible_facts.distribution_major_version is version("24", ">=")
+    fail_msg: >-
+      This role targets Ubuntu 24.04+. Found
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+      The socket-activated sshd and journald-only logging it assumes are both 24.04 behaviours.
+    quiet: true
+
+# --- lockout guards ----------------------------------------------------------------------------
+# Everything below is checked before anything is changed. Once AllowGroups and
+# `PasswordAuthentication no` are live, a missing key is not recoverable over the network.
+
+- name: Refuse to continue without a list of who may log in
+  ansible.builtin.assert:
+    that: hardening_ssh_users | length > 0
+    fail_msg: >-
+      hardening_ssh_users is empty. It has no default on purpose — the list lives in the inventory,
+      which is not in this repo. Copy inventory.example.yml to inventory.yml and fill it in.
+      Continuing would write `AllowGroups {{ hardening_ssh_group }}` with nobody in that group,
+      which is a lockout on a host with no console rescue.
+    quiet: true
+
+- name: Look up the accounts that will be allowed to log in
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ item }}"
+    fail_key: false
+  loop: "{{ hardening_ssh_users }}"
+  register: hardening_user_lookup
+  changed_when: false
+
+- name: Refuse to continue if an allowed user does not exist
+  ansible.builtin.assert:
+    that: item.ansible_facts.getent_passwd[item.item] is not none
+    fail_msg: >-
+      '{{ item.item }}' is in hardening_ssh_users but has no account on this host. Create it (with
+      its key) before running this role — AllowGroups would otherwise lock it out.
+    quiet: true
+  loop: "{{ hardening_user_lookup.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Read each allowed user's authorized_keys
+  ansible.builtin.slurp:
+    src: "~{{ item }}/.ssh/authorized_keys"
+  loop: "{{ hardening_ssh_users }}"
+  register: hardening_keys
+  failed_when: false
+  changed_when: false
+
+- name: Refuse to continue if the connecting user would not be allowed back in
+  ansible.builtin.assert:
+    that: hardening_connecting_user in hardening_ssh_users
+    fail_msg: >-
+      You are connected as '{{ hardening_connecting_user }}', which is not in hardening_ssh_users
+      {{ hardening_ssh_users }}. AllowGroups would lock you out on the very next connection.
+    quiet: true
+
+- name: Refuse to continue unless the connecting user has a usable key
+  ansible.builtin.assert:
+    that:
+      - hardening_connecting_user_keys | length > 0
+      - hardening_connecting_user_keys is search("^(ssh|ecdsa|sk-)")
+    fail_msg: >-
+      {{ hardening_connecting_user }} has no readable authorized_keys on this host, so disabling
+      password authentication would end in a locked-out box with no console rescue. Fix that first.
+    quiet: true
+  vars:
+    hardening_connecting_user_keys: >-
+      {{ (hardening_keys.results
+          | selectattr('item', 'equalto', hardening_connecting_user)
+          | map(attribute='content') | first | default('') | b64decode).strip() }}
+
+- name: Warn about allowed users with no key of their own
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.item }} is allowed to SSH in but has no authorized_keys — after this role it cannot
+      log in at all. That is fine if intended; it is not a break-glass account if it is not.
+  when: (item.content | default('') | b64decode).strip() | length == 0
+  loop: "{{ hardening_keys.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+# --- who may log in ------------------------------------------------------------------------------
+
+- name: Create the SSH access group
+  ansible.builtin.group:
+    name: "{{ hardening_ssh_group }}"
+    state: present
+
+- name: Put the allowed users in it
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ hardening_ssh_group }}"
+    append: true
+  loop: "{{ hardening_ssh_users }}"
+  # Skipped during a dry run because the group above was only simulated, so the module would fail
+  # with "Group ssh-users does not exist" and stop the run before the sshd diff — the part of a
+  # dry run actually worth reading. The preceding task reporting `changed` conveys the same intent.
+  when: not ansible_check_mode
+
+# --- firewall ------------------------------------------------------------------------------------
+# Rules first, `enabled` last. ufw applies the default-deny the moment it comes up.
+
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Allow SSH
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+    from_ip: "{{ hardening_ssh_allow_from }}"
+    comment: SSH — the only way onto this host
+
+- name: Allow the web ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    comment: Apache (TLS termination, ACME)
+  loop: "{{ hardening_open_tcp_ports }}"
+
+- name: Default deny inbound, allow outbound
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+  notify: Reload ufw
+
+# Core (8080), postgres (5432) and the executor (5111) are not listed above on purpose: they bind
+# 127.0.0.1, so the firewall is their second line rather than their first.
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+
+# --- sshd ------------------------------------------------------------------------------------
+
+- name: Harden sshd
+  ansible.builtin.template:
+    src: 10-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+    # sshd -t rejects a config with no host key, and a drop-in read on its own has none — so hand
+    # it one. Without -h this validation fails on every run and the role never gets past here.
+    validate: /usr/sbin/sshd -t -f %s -h /etc/ssh/ssh_host_ed25519_key
+  register: hardening_sshd_conf
+  notify: Restart ssh
+
+- name: Verify the whole config still parses with the drop-in in place
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+  register: hardening_sshd_full_check
+  failed_when: false
+  # Read-only, so run it during a dry run too rather than letting Ansible skip it. A skipped
+  # command registers no `rc` at all, which turns the rollback condition below into an undefined
+  # attribute rather than the false it looks like.
+  check_mode: false
+
+# The template's own validation only sees the new file. This catches a conflict with another
+# drop-in, which is the failure that would otherwise reach sshd itself. Restoring the backup is
+# worth the ugliness: under socket activation every new connection spawns a fresh sshd, so a
+# broken config locks the host out on the next connection with no restart required.
+- name: Roll the drop-in back if the combined config is broken
+  when: hardening_sshd_full_check.rc | default(0) != 0
+  block:
+    - name: Restore the previous drop-in
+      ansible.builtin.copy:
+        src: "{{ hardening_sshd_conf.backup_file }}"
+        dest: /etc/ssh/sshd_config.d/10-hardening.conf
+        remote_src: true
+        mode: "0644"
+      when: hardening_sshd_conf.backup_file is defined
+
+    - name: Remove the drop-in if there was nothing to restore
+      ansible.builtin.file:
+        path: /etc/ssh/sshd_config.d/10-hardening.conf
+        state: absent
+      when: hardening_sshd_conf.backup_file is not defined
+
+    - name: Fail with what sshd said
+      ansible.builtin.fail:
+        msg: "sshd rejected the combined config, so it was rolled back: {{ hardening_sshd_full_check.stderr }}"
+
+- name: Report the settings that are actually in effect
+  ansible.builtin.shell:
+    cmd: >-
+      /usr/sbin/sshd -T | grep -iE
+      '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication|permitemptypasswords|pubkeyauthentication|authenticationmethods|allowgroups|maxauthtries|logingracetime|loglevel|x11forwarding)\b'
+  changed_when: false
+  register: hardening_sshd_effective
+  # Also read-only. During a dry run this prints the state as it stands, which is the useful
+  # before-picture rather than a prediction.
+  check_mode: false
+
+- name: Show them
+  ansible.builtin.debug:
+    var: hardening_sshd_effective.stdout_lines
+
+# --- fail2ban ------------------------------------------------------------------------------------
+
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+
+# Both skipped during a dry run for the same reason as the group membership above: the install was
+# only simulated, so /etc/fail2ban does not exist to diff against and the unit does not exist to
+# enable. Neither failure would say anything about this configuration.
+- name: Configure the sshd jail
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ansible_check_mode
+  notify: Restart fail2ban
+
+- name: Enable fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban
+    enabled: true
+    state: started
+  when: not ansible_check_mode
+
+# --- unattended upgrades ---------------------------------------------------------------------
+
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Turn on the periodic update and upgrade jobs
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      // Managed by Ansible (roles/hardening).
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+# Read after the stock 50unattended-upgrades, which is what lets it override.
+- name: Set the reboot policy
+  ansible.builtin.template:
+    src: 52staging.j2
+    dest: /etc/apt/apt.conf.d/52staging
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check the unattended-upgrades config parses
+  ansible.builtin.command: unattended-upgrades --dry-run --debug
+  changed_when: false
+  register: hardening_uu_check
+  # Left to skip during a dry run, unlike the read-only checks above: on a host where the package
+  # was only simulated as installed this is "command not found", i.e. a failure about check mode
+  # rather than about the config. default(0) is what makes the skip harmless.
+  failed_when: hardening_uu_check.rc | default(0) != 0
+
+# --- flush, then prove it from the outside -----------------------------------------------------
+
+- name: Apply pending restarts before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Collect the post-hardening state
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      echo "ufw: $(ufw status | head -1)"
+      echo "listening: $(ss -tlnH '! src 127.0.0.0/8 and ! src [::1]' | awk '{print $4}' | paste -sd' ' -)"
+      echo "fail2ban: $(fail2ban-client status sshd 2>&1 | tr '\n' ' ' | sed 's/  */ /g')"
+      echo "reboot-required: $(test -f /var/run/reboot-required && echo yes || echo no)"
+    executable: /bin/bash
+  changed_when: false
+  register: hardening_summary
+  # Read-only, and worth having in a dry run as the before-picture. Each lookup swallows its own
+  # errors, so a not-yet-installed fail2ban reports as a message rather than failing the run.
+  check_mode: false
+
+- name: Summary
+  ansible.builtin.debug:
+    var: hardening_summary.stdout_lines

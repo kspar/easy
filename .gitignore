@@ -34,3 +34,17 @@ __pycache__/
 # Rotated logback archives next to the app. The rotation pattern is easy.log.2026-07.gz, which
 # neither *.log nor *.log.gz matches — the date sits between the .log and the extension.
 *.log.*
+
+# Staging host security posture — deliberately not in a public repo.
+#
+# Not because any of it is a secret in the Kerckhoffs sense (key-only auth, ufw and fail2ban are
+# standard practice and saying so weakens nothing), but because this document is specific: which
+# accounts can log in, that keys are the only credential in existence, that there is no console
+# rescue path, and what to do when locked out. That is a reconnaissance packet for one named host.
+# The reusable *reasoning* lives in ansible/roles/hardening/ instead.
+doc/staging-hardening.md
+
+# The real inventory: host addresses and, more to the point, the complete list of accounts that can
+# log in. `ansible/inventory.example.yml` is the committed template. The hardening role itself stays
+# in the repo — it is the reusable half, and the reason prod's eventual rebuild is a known quantity.
+ansible/inventory.yml

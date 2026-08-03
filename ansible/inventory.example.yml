@@ -1,0 +1,24 @@
+# Copy to inventory.yml and fill in. `inventory.yml` is gitignored: this repo is public, and which
+# accounts can log in to a named internet-facing host is the one fact in this directory worth
+# keeping off the internet. Everything else — the sshd directives, the firewall rules, the fail2ban
+# thresholds — is standard practice that loses nothing by being readable, so it lives in the role.
+#
+# Hosts are named by their `~/.ssh/config` alias, so the address, user and key live in one place and
+# `ssh <alias>` and `ansible-playbook` cannot drift apart. The flip side, hit on 2026-08-03: rename
+# the alias and Ansible stops resolving the host, with an "unreachable" that reads like a network
+# fault rather than a typo. `grep -i '^Host' ~/.ssh/config` is the check.
+staging:
+  hosts:
+    your-ssh-config-alias:
+      ansible_user: your-login
+  vars:
+    # Everyone who may SSH in to this host. Each must already exist, with a key — the role asserts
+    # both before it touches sshd, because on a host with no console a lockout is a rebuild.
+    #
+    # Include a second account that can actually get in. On a cloud image with no passwords set, a
+    # second working key is the only insurance against an sshd change locking out the first; the
+    # image's default account is the usual choice. See the notes on this variable in
+    # roles/hardening/defaults/main.yml.
+    hardening_ssh_users:
+      - your-login
+      - the-break-glass-account

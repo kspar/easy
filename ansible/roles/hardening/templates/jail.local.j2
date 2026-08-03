@@ -1,0 +1,21 @@
+# Managed by Ansible (roles/hardening) — local edits are overwritten.
+
+[DEFAULT]
+# Ubuntu 24.04 ships no rsyslog guarantee and journald is always present, so read the journal
+# rather than a log file that may or may not be written.
+backend  = systemd
+bantime  = {{ hardening_fail2ban_bantime }}
+findtime = {{ hardening_fail2ban_findtime }}
+maxretry = {{ hardening_fail2ban_maxretry }}
+{% if hardening_fail2ban_ignoreip %}
+ignoreip = {{ hardening_fail2ban_ignoreip | join(' ') }}
+{% endif %}
+
+[sshd]
+enabled = true
+# fail2ban's stock match for this jail is `_SYSTEMD_UNIT=sshd.service + _COMM=sshd`, which on this
+# host matches nothing at all: sshd is socket-activated, so each connection logs from its own
+# `ssh@N-...service` and each established session from a `session-N.scope`. The jail would load,
+# report itself healthy, and never ban a thing. Verified against the journal on this box.
+# Matching the command name alone catches every one of those units.
+journalmatch = _COMM=sshd

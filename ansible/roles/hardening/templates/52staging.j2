@@ -1,0 +1,20 @@
+// Managed by Ansible (roles/hardening) — local edits are overwritten.
+//
+// Read after the stock 50unattended-upgrades, which is what lets these override it: apt reads
+// apt.conf.d in lexical order and the last value assigned to a key wins.
+
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+{% if hardening_unattended_reboot %}
+// A reboot mid-grading kills running containers. Submissions in flight fail rather than corrupt
+// and the scheduler retries them, so a nightly window is an acceptable trade for staying patched
+// without anyone remembering to. Keep it out of working hours.
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ hardening_unattended_reboot_time }}";
+// Reboots even if someone is logged in. The alternative is a forgotten SSH session postponing
+// security reboots indefinitely, which is the worse failure on an unattended host.
+Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+{% else %}
+Unattended-Upgrade::Automatic-Reboot "false";
+{% endif %}

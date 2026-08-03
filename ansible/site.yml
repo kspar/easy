@@ -1,0 +1,9 @@
+---
+# The staging host, top to bottom. Only hardening exists so far; the rest of what
+# doc/staging-environment.md §9 asks for — Apache vhosts, postgres, Docker, the two systemd units,
+# mailpit, the backup cron — becomes further roles in this same play.
+- name: Staging host
+  hosts: staging
+  become: true
+  roles:
+    - hardening

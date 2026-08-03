@@ -1,0 +1,19 @@
+---
+# Ubuntu 24.04 runs sshd under socket activation: ssh.socket listens, and every connection spawns
+# its own sshd that reads the config fresh. Config changes are therefore live for the next
+# connection whether or not anything is restarted — which is exactly why the validation in
+# tasks/main.yml runs before the file is written, and why this handler is a formality rather than
+# the thing that applies the change. Restarting the socket does not disturb established sessions.
+- name: Restart ssh
+  ansible.builtin.systemd_service:
+    name: ssh.socket
+    state: restarted
+
+- name: Restart fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban
+    state: restarted
+
+- name: Reload ufw
+  community.general.ufw:
+    state: reloaded

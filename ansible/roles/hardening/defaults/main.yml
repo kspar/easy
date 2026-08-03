@@ -1,0 +1,74 @@
+---
+# Only members of this group may log in over SSH at all, so creating a user account is not the
+# same thing as granting access.
+hardening_ssh_group: ssh-users
+
+# Everyone who may SSH in. Each must already exist as an account — the role asserts rather than
+# creates, because silently inventing a login on a public host is not a thing a playbook should do.
+#
+# **Empty on purpose. Set it per host in the inventory**, which is not in this repo — see
+# `inventory.example.yml` and the README. Which accounts can reach a named internet-facing host is
+# the one part of this role worth not publishing; everything else here is standard practice that
+# loses nothing by being readable.
+#
+# Empty is safe rather than dangerous: `AllowGroups` with an empty group would be a lockout, so the
+# role asserts a non-empty list and asserts the connecting user is in it, both before it writes
+# anything.
+#
+# Two rules for whatever list a host ends up with:
+#
+# - **Keep a second account that can get in.** On a cloud image with no passwords set, the console
+#   is not a rescue path, so a second working key is the only insurance against an sshd change
+#   locking out the first. The image's default account is the obvious candidate — keep it for that
+#   reason rather than deleting it for tidiness.
+# - **A listed account with no `authorized_keys` is not break-glass.** The role warns about this; it
+#   is worth reading, because such an account can no longer log in at all once passwords are off.
+hardening_ssh_users: []
+
+# Whoever is running the playbook — the account whose key must survive the lockdown.
+#
+# Deliberately NOT the user_id fact: this play runs with `become: true`, so facts are gathered as
+# root and that fact reads "root". The guard would then look for root's key, not find it, and fail
+# with a message about the wrong account. ansible_user is a connection variable from the inventory
+# — not a fact — and is the one that means what we want; SUDO_USER is the fallback if someone runs
+# this without one set.
+#
+# Read out of ansible_facts rather than as top-level ansible_* variables: INJECT_FACTS_AS_VARS is
+# deprecated and goes away in ansible-core 2.24, which would silently turn both fallbacks into
+# undefined and leave the whole guard resolving to an empty string.
+hardening_connecting_user: >-
+  {{ ansible_user
+     | default(ansible_facts.get('env', {}).get('SUDO_USER', ''), true)
+     | default(ansible_facts.get('user_id', ''), true) }}
+
+hardening_ssh_max_auth_tries: 3
+hardening_ssh_login_grace_time: 20
+
+# Source addresses allowed to reach port 22. `any` is a deliberate choice: authentication is
+# key-only, so brute force cannot succeed, and the team should not need a VPN to deploy. Narrow it
+# to a list of CIDRs (e.g. ['193.40.0.0/16']) if that changes.
+hardening_ssh_allow_from: any
+
+# Apache terminates TLS for both vhosts and certbot needs 80 reachable for ACME.
+hardening_open_tcp_ports:
+  - 80
+  - 443
+
+# fail2ban here is noise reduction, not defence — key-only auth is the defence. That is why the ban
+# is short: a mistyped key from a laptop counts as a failure like any other, and locking the admin
+# out of their own staging box for an hour is a worse outcome than a scanner retrying sooner.
+hardening_fail2ban_bantime: 15m
+hardening_fail2ban_findtime: 10m
+# 10 rather than the usual 5, for the same reason the ban is short. Verifying the host's own config
+# means deliberately failing auth, and a *single* refused root login logs two failures, not one — so
+# a handful of legitimate checks from one address gets close to 5 faster than anyone expects. Since
+# the thing being counted cannot succeed anyway, the cost of a higher threshold is a scanner getting
+# a few more doomed attempts; the cost of a lower one is locking out the person holding the keys.
+hardening_fail2ban_maxretry: 10
+hardening_fail2ban_ignoreip: []
+
+# Security updates apply themselves; this is when the box may reboot to finish one. Nightly is fine
+# — a reboot mid-grading kills running containers, but submissions in flight fail rather than
+# corrupt and the scheduler retries. Do not move this into working hours.
+hardening_unattended_reboot: true
+hardening_unattended_reboot_time: "04:30"
