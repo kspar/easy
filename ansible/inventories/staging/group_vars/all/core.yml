@@ -1,0 +1,72 @@
+---
+# Core's configuration for staging — the non-secret half. Secrets are in `secrets.yml` beside this
+# file, which is not in git.
+#
+# Most of this file is §5 of `doc/staging-environment.md` made executable: staging runs the same code
+# as production, so it has the same outbound reach into real systems, and a separate database is only
+# the easy half of keeping it harmless. The `core_config` role asserts these values rather than
+# trusting them, because every item on that list is a value in this file being wrong.
+
+# --- database, co-located on this VM ------------------------------------------------------------------
+easy_core_db_host: 127.0.0.1
+easy_core_db_name: easy
+easy_core_db_user: easy
+
+# --- URLs -------------------------------------------------------------------------------------------
+easy_core_web_base_url: https://dev.lahendus.ut.ee
+
+# Web and API are on separate origins here (dev.lahendus vs dev.core.lahendus), so the web origin has
+# to be allowed explicitly. Since EZ-1727 this is config rather than a hardcoded list, and the key is
+# required — the context will not start without it. Worth knowing that the failure mode if this is
+# wrong is a browser-side CORS error with nothing in the server log; core logs the list it parsed at
+# startup, which is the thing to check.
+easy_core_cors_allowed_origins: https://dev.lahendus.ut.ee
+
+# --- identity ---------------------------------------------------------------------------------------
+# None of this is verified, because there is currently nothing to verify it against: as of 2026-08-03
+# `dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, and the easyidpdev VM (193.40.11.153)
+# serves nothing but SSH — no Keycloak on 443, 8080 or 8443. See §7 and EZ-1723; if the realm is gone
+# this stops being configuration and becomes "stand up Keycloak", which is the critical path for the
+# whole environment.
+#
+# The `/auth` suffix is not decoration: `deploy/staging/config.json` and `web/public/config.json` both
+# point the SPA at `https://dev.idp.lahendus.ut.ee/auth/`, the pre-Quarkus Keycloak path prefix. Core
+# builds `{base}/realms/{realm}/...` from this, so it needs the same prefix or every JWKS fetch 404s.
+easy_core_idp_base_url: https://dev.idp.lahendus.ut.ee/auth
+
+# From the same two config files, which are the closest thing to evidence available while the IdP is
+# down.
+easy_core_keycloak_realm: master
+
+# NOT the SPA's client (`lahendus.ut.ee`, public, PKCE). Core needs the *confidential* client for its
+# admin-API work — user sync and deletion — and §7 lists creating it as outstanding work, so there is
+# no real value to put here yet. Left as a marked placeholder: core starts and logins work without it,
+# because JWT verification uses the realm's JWKS rather than this client, and only the admin
+# operations fail. The role says so on every run, and refuses placeholders outright in any environment
+# configured to reach real systems.
+easy_core_keycloak_client_id: CHANGEME-confidential-client-not-created-yet
+
+# --- the outbound safety catch, left ON -------------------------------------------------------------
+# Deliberately not overridden here. Staging must not reach real systems, so the role's refusal to
+# write a config that could stays in force. The three settings below are what it checks.
+# easy_core_allow_real_outbound: false   <- inherited from the role, on purpose
+
+# Port 9 is discard, and it is on loopback, so a request goes nowhere at all. A hostname that merely
+# looks like staging would not do: the "sync grades" endpoint is reachable by hand, so a tester
+# clicking it must not reach a gradebook that exists.
+easy_core_moodle_users_url: http://127.0.0.1:9/moodle-disabled-on-staging
+easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-staging
+# The Moodle token is not here: it is a real credential in an environment with a real Moodle, so it
+# lives in the host's secrets file with the others rather than moving between the two depending on
+# which environment is being configured. On staging it stays a placeholder, which is harmless — the
+# URLs above go to a discard port, so there is nothing for a token to authenticate against.
+
+# --- mail: off until there is a catch-all ------------------------------------------------------------
+# §5 wants mailpit here so mail stays testable but cannot escape. Until that role exists, off is the
+# honest setting: pointing core at a local SMTP port with nothing behind it would mean every send
+# fails at runtime, which reads as an application bug. Flip both to true, host 127.0.0.1 port 1025,
+# when mailpit lands.
+easy_core_mail_user_enabled: false
+easy_core_mail_sys_enabled: false
+easy_core_mail_from: noreply@dev.lahendus.ut.ee
+easy_core_mail_sys_to: root@localhost

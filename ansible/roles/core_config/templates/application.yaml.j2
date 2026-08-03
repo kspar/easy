@@ -1,0 +1,129 @@
+## Managed by Ansible (roles/core_config) — local edits are overwritten.
+##
+## Core reads this via --spring.config.location in easy-core.service.
+##
+## THIS FILE CONTAINS NO SECRETS, deliberately. The database password and the Keycloak client secret
+## live in the file imported below, which Ansible never writes and never reads — it only checks that
+## it exists, is owned correctly, and has the keys core needs. That way the only copy of a credential
+## is the one on the server that has to exist anyway, rather than that copy plus another one on
+## whichever laptop last ran the playbook.
+##
+## The two files hold disjoint keys, so their relative precedence never matters.
+##
+## If you are looking for the web bundle's config, that is config.json and the deploy script writes
+## it; it holds no secrets either.
+
+server:
+  ## Loopback only. Apache terminates TLS and proxies to here.
+  address: {{ easy_core_bind_address }}
+  port: {{ easy_core_port }}
+
+spring:
+  config:
+    ## Not `optional:` — core should refuse to start rather than come up with no database password
+    ## and fail later in a way that looks like a database outage.
+    import: "file:{{ easy_core_secrets_path }}"
+  datasource:
+    ## No `password:` here. It comes from the imported file above, which is the only place on this
+    ## host a credential is written, and the only copy of it anywhere.
+    jdbc-url: "jdbc:postgresql://{{ easy_core_db_host }}:{{ easy_core_db_port }}/{{ easy_core_db_name }}"
+    username: "{{ easy_core_db_user }}"
+    hikari:
+      maximum-pool-size: {{ easy_core_db_pool_max }}
+      minimum-idle: {{ easy_core_db_pool_min_idle }}
+  mail:
+    host: "{{ easy_core_mail_host }}"
+    port: {{ easy_core_mail_port }}
+    properties:
+      mail:
+        transport:
+          protocol: "smtp"
+        smtp:
+          auth: {{ easy_core_mail_auth | bool | lower }}
+          starttls:
+            enable: {{ easy_core_mail_starttls | bool | lower }}
+            required: {{ easy_core_mail_starttls | bool | lower }}
+{% if easy_core_mail_auth | bool %}
+    ## Omitted deliberately when SMTP needs no authentication, and when it does these belong in the
+    ## imported secrets file rather than here — same rule as the database password. Spring treats
+    ## both as optional, so their absence means "no auth" rather than "empty credentials".
+{% endif %}
+  jackson:
+    deserialization:
+      FAIL_ON_NULL_FOR_PRIMITIVES: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          ## Both keys on purpose: jwk-set-uri keeps the key fetch lazy, so core starts even when the
+          ## IdP is briefly unreachable, and issuer-uri adds issuer validation on top. issuer-uri
+          ## alone makes startup fetch the IdP's metadata and couples core's boot to the IdP.
+          jwk-set-uri: "{{ easy_core_idp_base_url }}/realms/{{ easy_core_keycloak_realm }}/protocol/openid-connect/certs"
+          issuer-uri: "{{ easy_core_idp_base_url }}/realms/{{ easy_core_keycloak_realm }}"
+
+easy:
+  core:
+    ## Must be true anywhere reachable: false installs DummyZeroAuthFilter, which trusts
+    ## oidc_claim_* request headers verbatim. The role asserts this.
+    auth-enabled: {{ easy_core_auth_enabled | bool | lower }}
+
+    cors:
+      ## Empty is the tighter setting, and correct when one proxy fronts both web and API on the same
+      ## origin — the browser sends no preflight at all in that case.
+      allowed-origins: "{{ easy_core_cors_allowed_origins }}"
+
+    mail:
+      from: "{{ easy_core_mail_from }}"
+      sys:
+        enabled: {{ easy_core_mail_sys_enabled | bool | lower }}
+        to: "{{ easy_core_mail_sys_to }}"
+      user:
+        enabled: {{ easy_core_mail_user_enabled | bool | lower }}
+
+    auto-assess:
+      fixed-delay:
+        ms: "{{ easy_core_autoassess_delay_ms }}"
+      fixed-delay-observer-clear:
+        ms: "{{ easy_core_autoassess_observer_clear_ms }}"
+      anonymous-submissions-to-keep: "{{ easy_core_anonymous_submissions_to_keep }}"
+    statistics:
+      fixed-delay:
+        ms: "{{ easy_core_statistics_delay_ms }}"
+
+    moodle-sync:
+      ## No `wstoken:` — imported from the secrets file. A dummy on an environment whose Moodle URL
+      ## points at a discard port, a real credential on one whose does not, so it lives with the
+      ## other credentials rather than in whichever category it happens to be in today.
+      moodlewsrestformat: "{{ easy_core_moodle_format }}"
+      users:
+        url: "{{ easy_core_moodle_users_url }}"
+        cron: "{{ easy_core_moodle_users_cron }}"
+        wsfunction: "{{ easy_core_moodle_users_wsfunction }}"
+      grades:
+        ## Reachable from a manual endpoint as well as a cron, so this URL is the thing that decides
+        ## whether "sync grades" can write into a real gradebook.
+        url: "{{ easy_core_moodle_grades_url }}"
+        wsfunction: "{{ easy_core_moodle_grades_wsfunction }}"
+
+    exercise-index-normalisation:
+      cron: "{{ easy_core_exercise_index_cron }}"
+
+    activity:
+      merge-window:
+        s: "{{ easy_core_activity_merge_window_s }}"
+
+    keycloak:
+      ## This cron drives DeleteInactiveUsers, which deletes idle accounts from the database *and*
+      ## from this Keycloak. On an environment holding imported data with historical last_seen
+      ## values, an unpinned run deletes a large slice of it.
+      cron: "{{ easy_core_keycloak_cron }}"
+      base-url: "{{ easy_core_idp_base_url }}"
+      realm: "{{ easy_core_keycloak_realm }}"
+      client-id: "{{ easy_core_keycloak_client_id }}"
+      ## No `client-secret:` here either — imported, same reason as the database password.
+      ignore-missing-keycloak-users: {{ easy_core_keycloak_ignore_missing_users | bool | lower }}
+
+  ## Public base URL of the web UI, used to build links in outgoing email — so a wrong value here
+  ## sends real people to the wrong environment.
+  web:
+    base-url: "{{ easy_core_web_base_url }}"

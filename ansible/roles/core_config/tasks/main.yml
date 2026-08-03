@@ -1,0 +1,355 @@
+---
+# Places core's server-side config, and refuses to place a dangerous one.
+#
+# The guards are the substance of this role, not the file write. §5 of doc/staging-environment.md is a
+# list of five ways a correctly-deployed staging host can damage real systems — mail to real students,
+# grades into the real Moodle gradebook, mass deletion of accounts from the real identity provider —
+# and every one of them is a value in this file being wrong. A template alone would place those
+# mistakes just as faithfully as it places the correct values.
+#
+# Same shape as the hardening role: assert first, write second, validate third.
+
+# --- what must be true before anything is written ---------------------------------------------------
+
+- name: Find out whether core is installed yet
+  # The restart handler needs this to decide whether there is anything to restart. Without it the
+  # handler's condition would read an undefined fact, default to false, and silently never fire — so
+  # a config change would land and core would keep running the old one until someone noticed.
+  ansible.builtin.service_facts:
+  check_mode: false
+
+- name: Refuse to continue without the values that have no safe default
+  ansible.builtin.assert:
+    that: vars[item] is defined and (vars[item] | string | length > 0)
+    fail_msg: >-
+      {{ item }} is not set. It has no default on purpose: it either names an external system this
+      host would then talk to, or it is a credential. Set it in the environment's group_vars, and
+      keep secrets out of the ones that are in git — see ansible/README.md.
+    quiet: true
+  loop:
+    - easy_core_idp_base_url
+    - easy_core_keycloak_realm
+    - easy_core_keycloak_client_id
+    - easy_core_moodle_users_url
+    - easy_core_moodle_grades_url
+    - easy_core_web_base_url
+
+- name: Refuse to disable authentication
+  # auth-enabled false installs DummyZeroAuthFilter, which trusts oidc_claim_* headers verbatim: any
+  # request could claim to be an admin. It is a local-development affordance and there is no
+  # legitimate reason for a playbook to write it onto a host.
+  ansible.builtin.assert:
+    that: easy_core_auth_enabled | bool
+    fail_msg: >-
+      easy_core_auth_enabled is false, which installs DummyZeroAuthFilter and lets any caller assert
+      any role via request headers. This role will not write that onto a host.
+    quiet: true
+
+- name: Refuse to let core listen anywhere but loopback
+  ansible.builtin.assert:
+    that: easy_core_bind_address in ['127.0.0.1', '::1', 'localhost']
+    fail_msg: >-
+      easy_core_bind_address is '{{ easy_core_bind_address }}'. Apache terminates TLS and proxies to
+      core; a directly reachable core bypasses that, and ufw does not cover ports Docker publishes.
+    quiet: true
+
+# --- the outbound safety catch ----------------------------------------------------------------------
+# Skipped only where someone has explicitly said this environment may talk to real systems.
+
+- name: Refuse a Moodle URL that is not obviously dead
+  # Dead means loopback. A hostname that merely *looks* like staging is not enough: the manual
+  # "sync grades" endpoint would still POST to whatever resolves.
+  ansible.builtin.assert:
+    that: item is search('://(127\.0\.0\.1|localhost|\[::1\])(:|/|$)')
+    fail_msg: >-
+      {{ item }} is not a loopback address, and easy_core_allow_real_outbound is false. Pinning the
+      cron is not enough — SyncMoodleAllGrades is reachable from a manual endpoint, so a tester
+      clicking "sync grades" would reach this URL.
+    quiet: true
+  loop:
+    - "{{ easy_core_moodle_users_url }}"
+    - "{{ easy_core_moodle_grades_url }}"
+  when: not easy_core_allow_real_outbound | bool
+
+- name: Refuse an unpinned account-deletion cron
+  ansible.builtin.assert:
+    that: easy_core_keycloak_cron == easy_core_never_cron
+    fail_msg: >-
+      easy_core_keycloak_cron is '{{ easy_core_keycloak_cron }}' rather than the never-date
+      '{{ easy_core_never_cron }}', and easy_core_allow_real_outbound is false. That cron drives
+      DeleteInactiveUsers, which deletes idle accounts from the database and from the configured
+      Keycloak — and imported last_seen values are historical, so the first run deletes a lot.
+    quiet: true
+  when: not easy_core_allow_real_outbound | bool
+
+- name: Refuse a mail host that could deliver
+  ansible.builtin.assert:
+    that: >-
+      (not easy_core_mail_user_enabled | bool and not easy_core_mail_sys_enabled | bool)
+      or easy_core_mail_host in ['127.0.0.1', 'localhost', '::1']
+    fail_msg: >-
+      mail is enabled and pointed at '{{ easy_core_mail_host }}', which is not this host, while
+      easy_core_allow_real_outbound is false. Point it at a local catch-all so mail stays testable
+      but cannot escape, or turn both mail.user.enabled and mail.sys.enabled off.
+    quiet: true
+  when: not easy_core_allow_real_outbound | bool
+
+# --- the account, the directory, the file -----------------------------------------------------------
+
+- name: Create the group core runs as
+  ansible.builtin.group:
+    name: "{{ easy_core_group }}"
+    system: true
+    state: present
+
+- name: Create the account core runs as
+  # No shell, no home, no password. It cannot log in over SSH either: the hardening role's
+  # `AllowGroups ssh-users` means a Unix account is not an SSH grant, which is what makes creating
+  # service accounts on this host uneventful.
+  ansible.builtin.user:
+    name: "{{ easy_core_user }}"
+    group: "{{ easy_core_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    password: '!'
+    state: present
+
+- name: Create the config directory
+  ansible.builtin.file:
+    path: "{{ easy_core_config_dir }}"
+    state: directory
+    owner: root
+    group: "{{ easy_core_group }}"
+    # Traversable by the service account, not by everyone: the file inside holds credentials.
+    mode: "0750"
+
+# --- the secrets, which stay on the server ------------------------------------------------------------
+# Ansible writes the config but never the credentials. The server needs them in plaintext regardless —
+# Spring reads them at startup — so the only question was whether a *second* copy also lives wherever
+# the playbook is run from. It does not: this role creates the file if it is missing, generates the
+# database password on the host itself, and afterwards only ever checks the file's shape.
+#
+# What that buys: no credential on a laptop, nothing to encrypt, nothing to gitignore, nothing to hand
+# to a colleague. What it costs: rebuilding this host from nothing needs the secrets from somewhere
+# else, and Ansible cannot rotate what it cannot read. Back the file up; it is two lines.
+
+- name: Make sure the secrets file has every key core needs
+  # Adds keys that are missing; never touches a value that is already there. Both halves matter — the
+  # second because re-rolling the database password would leave core holding a credential postgres no
+  # longer accepts, and the first because this set grows: `wstoken` was added after the file already
+  # existed on this host, and a create-if-missing task would have silently left it out.
+  #
+  # The whole thing runs on the target. The generated password never crosses the network and never
+  # reaches the controller, which is the entire point of doing it here rather than in a variable.
+  # Values that cannot be generated get a CHANGEME sentinel and are reported on every run until a
+  # human replaces them.
+  ansible.builtin.command:
+    cmd: python3 - {{ easy_core_secrets_path | quote }} {{ easy_core_group | quote }}
+  args:
+    stdin: |
+      import os, pathlib, secrets, sys, yaml
+
+      path, group = pathlib.Path(sys.argv[1]), sys.argv[2]
+      HEADER = (
+          "# Managed by Ansible (roles/core_config), which adds missing keys and never reads or\n"
+          "# changes existing values. This is the only copy of these credentials — back it up.\n"
+      )
+      # (key path, how to fill it when absent)
+      WANTED = [
+          (("spring", "datasource", "password"), lambda: secrets.token_urlsafe(33)),
+          (("easy", "core", "keycloak", "client-secret"), lambda: "CHANGEME-no-realm-yet"),
+          (("easy", "core", "moodle-sync", "wstoken"), lambda: "CHANGEME-no-moodle-token"),
+      ]
+
+      doc = yaml.safe_load(path.read_text()) if path.exists() else {}
+      doc = doc if isinstance(doc, dict) else {}
+
+      added = []
+      for keys, make in WANTED:
+          node = doc
+          for k in keys[:-1]:
+              node = node.setdefault(k, {})
+          if keys[-1] not in node:
+              node[keys[-1]] = make()
+              added.append(".".join(keys))
+
+      if added:
+          old = os.umask(0o027)
+          try:
+              path.write_text(HEADER + yaml.safe_dump(doc, default_flow_style=False))
+          finally:
+              os.umask(old)
+      os.chown(path, 0, __import__("grp").getgrnam(group).gr_gid)
+      os.chmod(path, 0o640)
+      print("added: " + ", ".join(added) if added else "already complete")
+  register: easy_core_secrets_ensure
+  changed_when: "'added:' in easy_core_secrets_ensure.stdout"
+  when: not ansible_check_mode
+
+- name: Check the secrets file without reading it
+  # Greps for the shape, not the values, and returns only key names — so nothing secret reaches the
+  # controller, the log, or this run's output.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      grep -oE '^[[:space:]]*(password|client-secret|wstoken):' {{ easy_core_secrets_path | quote }}
+      | tr -d ' :' | sort -u
+    # Without this the module runs under dash, which has no `set -o pipefail`, so the whole command
+    # errors and — with failed_when off — hands back empty output that reads as "no keys found".
+    executable: /bin/bash
+  register: easy_core_secret_keys
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Look for placeholders in the secrets file
+  ansible.builtin.command:
+    cmd: grep -c CHANGEME {{ easy_core_secrets_path | quote }}
+  register: easy_core_secret_placeholders
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Look for placeholders in the values about to be written
+  # Checks the variables rather than the rendered file, because the file does not exist yet on a first
+  # run and would otherwise be the *previous* render on later ones — so a placeholder introduced today
+  # would not be noticed until tomorrow.
+  #
+  # One sentinel covers both kinds of gap. Some of what is missing is secret (the Keycloak client
+  # secret) and some is not (the client id of a confidential client nobody has created yet), but the
+  # consequence is identical, so they are marked the same way and found the same way.
+  ansible.builtin.set_fact:
+    easy_core_placeholder_vars: >-
+      {{ vars | dict2items
+         | selectattr('key', 'match', '^easy_core_')
+         | selectattr('value', 'string')
+         | selectattr('value', 'search', 'CHANGEME')
+         | map(attribute='key') | list }}
+
+- name: Count everything still unset
+  ansible.builtin.set_fact:
+    easy_core_placeholders: >-
+      {{ (easy_core_secret_placeholders.stdout | default('0') | int)
+         + (easy_core_placeholder_vars | length) }}
+
+- name: Refuse to continue if the secrets file is not the right shape
+  ansible.builtin.assert:
+    that:
+      - "'password' in easy_core_secret_keys.stdout_lines"
+      - "'client-secret' in easy_core_secret_keys.stdout_lines"
+      - "'wstoken' in easy_core_secret_keys.stdout_lines"
+    fail_msg: >-
+      {{ easy_core_secrets_path }} is missing keys core needs — found
+      {{ easy_core_secret_keys.stdout_lines | default([]) | join(', ') | default('nothing', true) }}.
+      It must set spring.datasource.password and easy.core.keycloak.client-secret. Ansible does not
+      write this file, so fix it on the host.
+    quiet: true
+  when: not ansible_check_mode
+
+- name: Say plainly that a credential is still a placeholder
+  # Not fatal on an environment that is mid-setup. Core does not need the Keycloak *client secret* to
+  # verify logins — JWTs are checked against the realm's JWKS — so it boots and authenticates without
+  # it, and only the admin-API operations (user sync, deletion) fail. Blocking the whole role on a
+  # value that cannot exist yet would stop the config being placed at all.
+  ansible.builtin.debug:
+    msg: >-
+      {{ easy_core_secrets_path }} still contains a CHANGEME placeholder. Core will start and logins
+      will work — JWT verification uses the realm's JWKS, not this secret — but Keycloak admin
+      operations will not. This is expected until the dev realm exists (EZ-1723 §7).
+  when:
+    - not ansible_check_mode
+    - easy_core_placeholders | int > 0
+
+- name: Refuse a placeholder where real credentials are expected
+  ansible.builtin.assert:
+    that: easy_core_placeholders | int == 0
+    fail_msg: >-
+      {{ easy_core_secrets_path }} contains a CHANGEME placeholder, and this environment has
+      easy_core_allow_real_outbound set — meaning it is expected to be fully wired to real systems.
+      Put the real values in that file on the host.
+    quiet: true
+  when:
+    - not ansible_check_mode
+    - easy_core_allow_real_outbound | bool
+
+- name: Refuse to leave the secrets readable by everyone
+  ansible.builtin.stat:
+    path: "{{ easy_core_secrets_path }}"
+  register: easy_core_secrets_stat
+  when: not ansible_check_mode
+
+- name: Check the secrets file's permissions
+  ansible.builtin.assert:
+    that:
+      - easy_core_secrets_stat.stat.mode is match('06[04]0')
+      - easy_core_secrets_stat.stat.pw_name == 'root'
+    fail_msg: >-
+      {{ easy_core_secrets_path }} is {{ easy_core_secrets_stat.stat.mode }} owned by
+      {{ easy_core_secrets_stat.stat.pw_name }}. It holds the only copy of this host's credentials.
+    quiet: true
+  when: not ansible_check_mode
+
+- name: Write core's configuration
+  ansible.builtin.template:
+    src: application.yaml.j2
+    dest: "{{ easy_core_config_path }}"
+    owner: root
+    group: "{{ easy_core_group }}"
+    mode: "{{ easy_core_config_mode }}"
+    backup: true
+  # No diff: every version of this file contains the database password and the Keycloak client
+  # secret, and --diff would print both to whatever is capturing the run's output.
+  no_log: false
+  diff: false
+  notify: Restart core
+
+# --- verify what was written ------------------------------------------------------------------------
+
+- name: Check the config is valid YAML
+  # A template that renders to something Spring cannot parse fails at *core's* next start, which on a
+  # deploy means a rolled-back-looking outage with an unrelated error message. Cheaper to find here.
+  ansible.builtin.command:
+    cmd: python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1]))" {{ easy_core_config_path | quote }}
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Count credential-shaped keys in the managed config
+  # The design says the managed file holds no credentials. That is worth checking rather than
+  # believing: an empty `spring.mail.password: ""` was sitting in it until this check was written, and
+  # the next person to add an integration will reach for the template first, because that is where
+  # every other setting lives.
+  ansible.builtin.command:
+    cmd: grep -cE '^[[:space:]]*[a-z-]*(password|secret|token):' {{ easy_core_config_path | quote }}
+  register: easy_core_config_creds
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Refuse to leave a credential in the managed config
+  ansible.builtin.assert:
+    that: easy_core_config_creds.stdout | default('0') | int == 0
+    fail_msg: >-
+      {{ easy_core_config_path }} contains {{ easy_core_config_creds.stdout }} credential-shaped
+      key(s). Credentials belong in {{ easy_core_secrets_path }}, which Ansible never reads and which
+      therefore has no copy anywhere else. Putting one here would put it in this repo's variables too.
+    quiet: true
+  when: not ansible_check_mode
+
+- name: Confirm the secrets are not world-readable
+  ansible.builtin.stat:
+    path: "{{ easy_core_config_path }}"
+  register: easy_core_config_stat
+  when: not ansible_check_mode
+
+- name: Refuse to leave the config readable by everyone
+  ansible.builtin.assert:
+    that:
+      - easy_core_config_stat.stat.mode is match('06[04]0')
+      - easy_core_config_stat.stat.pw_name == 'root'
+    fail_msg: >-
+      {{ easy_core_config_path }} ended up as {{ easy_core_config_stat.stat.mode }} owned by
+      {{ easy_core_config_stat.stat.pw_name }}. It holds the database password and the Keycloak
+      client secret; root should own it and only {{ easy_core_group }} should be able to read it.
+    quiet: true
+  when: not ansible_check_mode

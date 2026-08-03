@@ -31,6 +31,31 @@ log in, which is the one thing in this directory worth keeping off a public repo
 depend on being unreadable. The role has no default list of users and asserts a non-empty one, so a
 missing inventory fails with an explanation rather than writing `AllowGroups` for an empty group.
 
+### Where credentials live
+
+**Nowhere in this repo, and nowhere on your laptop.**
+
+Core's config is two files on the server. `application.yaml` is written by the `core_config` role
+every run and contains no credentials at all — the role greps the result and fails if one appears.
+`secrets.yaml` next to it holds the database password, the Keycloak client secret and the Moodle
+token, and Ansible only ever checks its *shape*: which keys exist, what mode it has. It never reads a
+value.
+
+The database password is generated **on the host** with `creates:`-style protection, so it never
+crosses the network, never reaches the controller, and is never re-rolled by a later run (which would
+leave core holding a credential postgres no longer accepts).
+
+This started as a question about how to store secrets on the controller — vault, encrypted, gitignored
+— and the better answer was to notice the controller never needs them. The server has to hold them in
+plaintext regardless, because Spring reads them at startup; the only real choice was whether a
+*second* copy existed too. There is no second copy, so there is nothing to encrypt, nothing to
+gitignore, and nothing to hand to a colleague. Production benefits more than staging: its credentials
+never touch anyone's machine.
+
+The trade: rebuilding a host from nothing needs the secrets from somewhere else, and Ansible cannot
+rotate what it cannot read. **Back `secrets.yaml` up** — it is a handful of lines and it is the only
+copy.
+
 ### Checking a host without changing it
 
 ```sh

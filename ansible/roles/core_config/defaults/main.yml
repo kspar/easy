@@ -1,0 +1,128 @@
+---
+# Core's server-side configuration — `/srv/easy/conf/application.yaml`, the file the `easy-core` unit
+# points `--spring.config.location` at, and the only place database and Keycloak credentials live.
+#
+# Same convention as the hardening role: **these defaults are the strict ones.** Anything that can
+# reach a real external system has no default at all, so a host that has not been told what to do
+# cannot quietly inherit somebody else's Moodle or somebody else's identity provider. §5 of
+# doc/staging-environment.md calls a copy-pasted production IdP URL "the worst single mistake
+# available on this host", and the way to make a mistake unavailable is to refuse to guess.
+
+easy_core_config_dir: /srv/easy/conf
+easy_core_config_path: "{{ easy_core_config_dir }}/application.yaml"
+
+# The credentials, kept out of the managed file and out of this repo's reach entirely.
+#
+# The server has to hold these in plaintext whatever we do — Spring reads them at startup. The only
+# real choice was whether a *second* copy also lives wherever the playbook runs from, and the answer
+# is no: this file is created once on the host, its database password is generated there, and Ansible
+# never reads it afterwards. So there is no copy to encrypt, gitignore, or hand to a colleague, and
+# production credentials never touch anyone's laptop.
+#
+# Ansible checks its shape and permissions, never its values. Back it up — it is the only copy.
+easy_core_secrets_path: "{{ easy_core_config_dir }}/secrets.yaml"
+
+# The account the unit will run as. Created here because the config file's ownership needs it to
+# exist; the systemd-unit role will reuse it rather than making its own.
+#
+# Safe to create precisely because of the hardening role: `AllowGroups ssh-users` means a Unix
+# account is not an SSH grant, so a service account cannot log in.
+easy_core_user: easy-core
+easy_core_group: easy-core
+
+# root owns it, the service account only reads it. The staging plan guessed `0600 root:root`, which
+# cannot work: Spring reads this file as its own user, so root-only would mean core cannot start.
+# Group-read is the version of that intent which actually runs.
+easy_core_config_mode: "0640"
+
+# --- the listener -----------------------------------------------------------------------------------
+# Loopback, always. Apache terminates TLS and proxies; core has no business being reachable directly,
+# and §2 keeps this as defence in depth now that core verifies JWTs itself rather than trusting
+# headers from the proxy.
+easy_core_bind_address: 127.0.0.1
+easy_core_port: 8080
+
+# --- database ---------------------------------------------------------------------------------------
+easy_core_db_host: 127.0.0.1
+easy_core_db_port: 5432
+easy_core_db_name: easy
+easy_core_db_user: easy
+# The password is not here and not anywhere else in this repo — see easy_core_secrets_path.
+easy_core_db_pool_max: 90
+easy_core_db_pool_min_idle: 10
+
+# --- authentication ---------------------------------------------------------------------------------
+# NEVER false on a deployed host. `false` installs DummyZeroAuthFilter, which trusts `oidc_claim_*`
+# request headers verbatim — anyone could assert `oidc_claim_easy_role: admin`. It exists for local
+# dev and curl-based API testing (doc/core/api-testing.md); on a reachable host it is an open door.
+# The role asserts this is true rather than trusting the default to survive an override.
+easy_core_auth_enabled: true
+
+# easy_core_idp_base_url, easy_core_keycloak_realm, easy_core_keycloak_client_id — no defaults.
+# Asserted. Getting the IdP wrong is the mistake §5 singles out, and a default here is how that
+# mistake would happen. The client *secret* is not among them: it lives on the host, like the
+# database password.
+
+# Both keys are set in the template rather than issuer-uri alone: jwk-set-uri makes the key fetch
+# lazy so core starts even if the IdP is briefly unreachable, and issuer-uri adds issuer validation
+# on top. issuer-uri alone couples core's boot to the IdP being up.
+
+# --- the outbound safety catch ----------------------------------------------------------------------
+# False by default: the role refuses to write a config that can reach real external systems.
+#
+# This is the executable form of §5. When false, the role asserts that Moodle points somewhere dead,
+# the Keycloak user-deletion cron is pinned to a date that never comes, and mail cannot leave the
+# host. Production sets it true, having decided that on purpose.
+#
+# Why it matters more than it looks: `DeleteInactiveUsers` removes students idle 2y and teachers 5y
+# from the database *and* from Keycloak. On staging, `last_seen` values come from a production dump
+# and are historical, so the first unpinned run would delete a large slice of the imported data and
+# do it against whichever Keycloak it was pointed at.
+easy_core_allow_real_outbound: false
+
+# February 31st. Used by core's own test config for the same purpose.
+easy_core_never_cron: "0 0 5 31 2 ?"
+
+easy_core_keycloak_cron: "{{ easy_core_never_cron }}"
+easy_core_keycloak_ignore_missing_users: false
+
+# --- mail -------------------------------------------------------------------------------------------
+# Off by default. An environment that should send mail says so; one that has not been configured
+# sends nothing rather than sending the wrong thing to real students.
+easy_core_mail_user_enabled: false
+easy_core_mail_sys_enabled: false
+easy_core_mail_host: 127.0.0.1
+easy_core_mail_port: 1025
+easy_core_mail_auth: false
+easy_core_mail_starttls: false
+# No SMTP username/password here. If a relay ever needs authentication, those go in the secrets file
+# on the host with the others — the managed config is supposed to hold no credentials at all, and the
+# role checks that it does not.
+easy_core_mail_from: "noreply@localhost"
+easy_core_mail_sys_to: "root@localhost"
+
+# --- Moodle -----------------------------------------------------------------------------------------
+# No default for the URLs or the token. `moodle-sync.grades.url` is reachable from a *manual*
+# endpoint (`SyncMoodleAllGrades.kt`) as well as a cron, so pinning the cron alone does not stop a
+# tester clicking "sync grades" and writing into a real gradebook.
+easy_core_moodle_users_cron: "{{ easy_core_never_cron }}"
+easy_core_moodle_users_wsfunction: local_ut_custom_get_course_groups_users
+easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
+easy_core_moodle_format: json
+
+# --- internal timers, left alone ---------------------------------------------------------------------
+# Deliberately on everywhere, including staging: these touch nothing outside the host, and staging is
+# the right place to find out they misbehave.
+easy_core_autoassess_delay_ms: 3000
+easy_core_autoassess_observer_clear_ms: 3000
+easy_core_anonymous_submissions_to_keep: 50
+easy_core_statistics_delay_ms: 1000
+easy_core_exercise_index_cron: "0 5 3 * * *"
+easy_core_activity_merge_window_s: 300
+
+# --- URLs the application prints ---------------------------------------------------------------------
+# easy_core_web_base_url — no default; it ends up in links inside outgoing email, so a wrong value
+# sends people to the wrong environment.
+# CORS: empty is the tighter setting and correct when one reverse proxy fronts web and API on the same
+# origin, because the browser sends no preflight at all.
+easy_core_cors_allowed_origins: ""

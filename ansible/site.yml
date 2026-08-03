@@ -16,3 +16,12 @@
   become: true
   roles:
     - hardening
+
+# Service roles target groups, not hosts, because staging keeps core, the IdP and the executor on one
+# VM while production splits them across three. `core` has one member in staging and will have one in
+# production; what changes is which other groups that same host is also in.
+- name: Core
+  hosts: core
+  become: true
+  roles:
+    - core_config
