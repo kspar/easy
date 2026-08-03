@@ -37,3 +37,7 @@ easy_core_java_opts: ""
 # scoped to exactly one command — deploy/README.md §"Before the first deploy" asks for
 # `NOPASSWD: /usr/bin/systemctl restart easy-core` and nothing wider.
 easy_core_deploy_users: []
+
+# The group that owns write access to the release tree. Separate from the service account on purpose:
+# core needs to read the jar, deployers need to replace it, and those are different privileges.
+easy_core_deploy_group: easy-deploy

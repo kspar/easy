@@ -38,16 +38,55 @@
     quiet: true
   when: easy_core_java_stat.stat.exists
 
+- name: Create the group that may write releases
+  # Deploying means unpacking into releases/, flipping two symlinks, rewriting current-sha and
+  # pruning old releases — all writes, none of which core or nginx need. They only read: core reads
+  # the jar, nginx reads the web bundle. So write access is a group of its own rather than "own the
+  # tree as the service account", which would either lock deployers out or hand them the service
+  # account.
+  ansible.builtin.group:
+    name: "{{ easy_core_deploy_group }}"
+    system: true
+    state: present
+
+- name: Put the deploy accounts in it
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ easy_core_deploy_group }}"
+    append: true
+  loop: "{{ easy_core_deploy_users }}"
+  when: not ansible_check_mode
+
+- name: Find out who is in the deploy group now
+  ansible.builtin.getent:
+    database: group
+    key: "{{ easy_core_deploy_group }}"
+    fail_key: false
+  register: easy_core_deploy_group_now
+  changed_when: false
+  check_mode: false
+
+- name: Take deploy access away from anyone no longer listed
+  # Same lesson as the SSH grant list: `append: true` on its own makes a group a high-water mark, so
+  # removing a name from the inventory would report success and change nothing. Being able to write
+  # the release tree is being able to replace the jar core runs, so it is worth revoking properly.
+  ansible.builtin.command:
+    cmd: gpasswd -d {{ item | quote }} {{ easy_core_deploy_group | quote }}
+  loop: >-
+    {{ (easy_core_deploy_group_now.ansible_facts.getent_group[easy_core_deploy_group][2]
+        | default('') | split(',')) | select | difference(easy_core_deploy_users) }}
+  changed_when: true
+  when: not ansible_check_mode
+
 - name: Create the directories a deploy lands in
-  # deploy/deploy-staging.sh unpacks into releases/ and flips the two symlinks; it does not create the
-  # tree. Owned by the service account because core reads the jar and Apache/nginx reads the web
-  # bundle, and neither needs write access to the tree itself.
+  # setgid, so a release unpacked by one deployer stays writable by the next one rather than only by
+  # whoever happened to run that deploy.
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: "{{ easy_core_user }}"
-    group: "{{ easy_core_group }}"
-    mode: "0755"
+    group: "{{ easy_core_deploy_group }}"
+    mode: "2775"
   loop:
     - "{{ easy_core_root }}"
     - "{{ easy_core_root }}/releases"

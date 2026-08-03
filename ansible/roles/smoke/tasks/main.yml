@@ -39,11 +39,16 @@
 
 - name: Find out what is listening on a non-loopback address
   # Ports bound to 0.0.0.0, [::] or *, which is what the internet can reach. Loopback binds are the
-  # intended state for everything except SSH and Apache and so are filtered out here.
+  # intended state for everything except SSH and the proxy, so they are filtered out.
+  #
+  # `[::ffff:127.0.0.1]` is in that filter because a JVM listening on 127.0.0.1 reports itself that
+  # way — an IPv4-mapped IPv6 address, which is loopback despite looking nothing like it. Without it
+  # this check called core's bind public, which was alarming and wrong.
   ansible.builtin.shell:
     cmd: >-
       set -o pipefail;
-      ss -Hltn | awk '{print $4}' | grep -vE '^(127\.|\[::1\])' | sed 's/.*://' | sort -un
+      ss -Hltn | awk '{print $4}'
+      | grep -vE '^(127\.|\[::1\]|\[::ffff:127\.)' | sed 's/.*://' | sort -un
     executable: /bin/bash
   register: smoke_listening
   changed_when: false

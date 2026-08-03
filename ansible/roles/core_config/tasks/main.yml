@@ -121,8 +121,12 @@
     state: directory
     owner: root
     group: "{{ easy_core_group }}"
-    # Traversable by the service account, not by everyone: the file inside holds credentials.
-    mode: "0750"
+    # Traversable by everyone, deliberately. It was 0750, and that broke the deploy script: it checks
+    # the config exists before touching anything, and a deploy account unable to traverse the
+    # directory gets "does not exist" rather than "not allowed" — a precondition failure reported as a
+    # missing file. Confidentiality lives in the two files' own 0640, not in hiding the directory:
+    # seeing that a file is there is not reading it.
+    mode: "0755"
 
 # --- the secrets, which stay on the server ------------------------------------------------------------
 # Ansible writes the config but never the credentials. The server needs them in plaintext regardless —
