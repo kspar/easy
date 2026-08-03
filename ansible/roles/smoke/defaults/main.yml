@@ -40,4 +40,4 @@ smoke_expected_sshd:
 smoke_optional_units:
   - easy-core
   - easy-executor
-  - apache2
+  - nginx

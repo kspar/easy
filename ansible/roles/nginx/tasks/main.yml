@@ -1,0 +1,169 @@
+---
+# nginx, a Let's Encrypt certificate, and the two vhosts.
+#
+# There is a chicken-and-egg here that the structure below exists to solve: the HTTPS server blocks
+# cannot be written before a certificate exists, and the certificate cannot be obtained over HTTP-01
+# before nginx is serving the challenge path. So the config is written twice — once without TLS to
+# get the challenge answered, once with it — and a converged host simply skips the second write.
+
+- name: Install nginx and certbot
+  ansible.builtin.apt:
+    name:
+      - nginx
+      # No python3-certbot-nginx: the nginx plugin edits site configuration, and this role owns that
+      # file. certonly with a webroot leaves the config alone.
+      - certbot
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Remove the distribution's placeholder site
+  # Otherwise it answers as the default server for any name that does not match a vhost, which on a
+  # host with three public DNS names is a "Welcome to nginx" page on whichever one you forgot.
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Create the ACME challenge webroot
+  ansible.builtin.file:
+    path: "{{ easy_nginx_acme_webroot }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Find out whether nginx exists yet
+  # Same reason as the postgres and Java runtime roles: in a dry run against a host without it, the
+  # install above was only simulated, so anything that talks to the service would fail on something
+  # that is not there and abort the run before the interesting tasks are reached.
+  ansible.builtin.stat:
+    path: /usr/sbin/nginx
+  register: easy_nginx_installed
+  check_mode: false
+
+- name: Ask nginx its version
+  # HTTP/2 is configured two different ways depending on the version, and getting it wrong is a hard
+  # startup failure rather than a warning. `http2 on;` as its own directive arrived in 1.25.1; before
+  # that it is a parameter on the listen line, and after it that parameter is deprecated. Ubuntu
+  # 24.04 ships 1.24, so the old form is what this host needs — but production is on an older Ubuntu
+  # still, and this role is meant to reach it eventually.
+  ansible.builtin.command: nginx -v
+  register: easy_nginx_version
+  changed_when: false
+  check_mode: false
+  when: easy_nginx_installed.stat.exists
+
+- name: Work out which HTTP/2 syntax this nginx wants
+  # Matches the version string itself rather than using a capture group: the group form returns a
+  # list and blows up with an unhelpful NoneType error the moment the pattern does not match, which
+  # includes every dry run against a host where nginx is not installed yet.
+  ansible.builtin.set_fact:
+    easy_nginx_http2_directive: >-
+      {{ (easy_nginx_version.stderr | default('') | regex_search('[0-9]+\.[0-9]+\.[0-9]+')
+          | default('0', true)) is version('1.25.1', '>=') }}
+
+- name: Look for an existing certificate
+  ansible.builtin.stat:
+    path: "{{ easy_nginx_cert_dir }}/fullchain.pem"
+  register: easy_nginx_cert
+  check_mode: false
+
+- name: Note whether TLS can be configured yet
+  ansible.builtin.set_fact:
+    easy_nginx_tls_ready: "{{ easy_nginx_tls | bool and easy_nginx_cert.stat.exists }}"
+
+- name: Write the site config
+  ansible.builtin.include_tasks: write_config.yml
+
+- name: Make sure nginx is running before anything asks it for a challenge
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: started
+    enabled: true
+  when: easy_nginx_installed.stat.exists
+
+- name: Apply the config now, not at the end of the play
+  # certbot is about to make a real HTTP request to this host. Handlers would otherwise run after
+  # every task in the play, which is long after the challenge has already failed.
+  ansible.builtin.meta: flush_handlers
+
+# --- the certificate ---------------------------------------------------------------------------------
+
+- name: Obtain a certificate covering both names
+  # One certificate, two SANs: one thing to renew, one expiry to watch. --webroot rather than the
+  # nginx plugin so this role stays the only writer of the site config.
+  ansible.builtin.command:
+    cmd: >-
+      certbot certonly --webroot --webroot-path {{ easy_nginx_acme_webroot | quote }}
+      --cert-name {{ easy_nginx_cert_name | quote }}
+      -d {{ easy_nginx_web_host | quote }} -d {{ easy_nginx_api_host | quote }}
+      --email {{ easy_nginx_acme_email | quote }} --agree-tos --non-interactive
+    creates: "{{ easy_nginx_cert_dir }}/fullchain.pem"
+  when:
+    - easy_nginx_tls | bool
+    - not ansible_check_mode
+    - easy_nginx_installed.stat.exists
+  register: easy_nginx_certbot
+
+- name: Look again, now that certbot has run
+  ansible.builtin.stat:
+    path: "{{ easy_nginx_cert_dir }}/fullchain.pem"
+  register: easy_nginx_cert
+  check_mode: false
+
+- name: Note whether TLS can be configured now
+  ansible.builtin.set_fact:
+    easy_nginx_tls_ready: "{{ easy_nginx_tls | bool and easy_nginx_cert.stat.exists }}"
+
+- name: Write the site config again, now that there is a certificate
+  # Does nothing on a converged host: the first write already included the TLS blocks.
+  ansible.builtin.include_tasks: write_config.yml
+
+- name: Reload nginx so the certificate is actually served
+  ansible.builtin.meta: flush_handlers
+
+- name: Reload nginx after each renewal
+  # certbot's systemd timer renews quietly and nginx would keep serving the old certificate until
+  # something happened to reload it — which, on a stable host, might be after it expired.
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Managed by Ansible (roles/nginx).
+      systemctl reload nginx
+  when: easy_nginx_tls | bool
+
+# --- prove it serves ----------------------------------------------------------------------------------
+
+- name: Check both names answer over TLS
+  # From the host itself, so this tests nginx and the certificate rather than the whole internet path.
+  # A 502 from the API is a pass here: it means nginx accepted the request and tried to reach core,
+  # which is the correct behaviour when no release has been deployed yet.
+  ansible.builtin.uri:
+    url: "https://{{ item }}/"
+    status_code: [200, 301, 302, 401, 404, 502]
+    validate_certs: true
+  loop:
+    - "{{ easy_nginx_web_host }}"
+    - "{{ easy_nginx_api_host }}"
+  register: easy_nginx_serving
+  changed_when: false
+  when:
+    - easy_nginx_tls_ready | bool
+    - not ansible_check_mode
+
+- name: Say what each name answered
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.item }} -> HTTP {{ item.status }}
+      {{ '(502 is expected until core has a release)' if item.status == 502 else '' }}
+  loop: "{{ easy_nginx_serving.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item | default('') }}"
+  # `results` exists even when the request was skipped — the entries are just skip records with no
+  # status on them — so the check has to be for the value, not for the list.
+  when: item.status is defined

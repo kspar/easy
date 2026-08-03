@@ -1,0 +1,7 @@
+---
+# Reload, not restart: nginx reloads by starting new workers and letting the old ones finish their
+# requests, so a config change does not drop connections in flight.
+- name: Reload nginx
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: reloaded

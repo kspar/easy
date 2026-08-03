@@ -1,0 +1,137 @@
+# Managed by Ansible (roles/nginx) — local edits are overwritten.
+
+# --- HTTP: ACME, and otherwise go away -----------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ easy_nginx_web_host }} {{ easy_nginx_api_host }};
+
+    # Renewal happens over HTTP-01, so this one path must stay reachable without TLS. It is served
+    # from a webroot rather than by certbot's nginx plugin, which would rewrite this file.
+    location ^~ /.well-known/acme-challenge/ {
+        root {{ easy_nginx_acme_webroot }};
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+{% if easy_nginx_tls_ready %}
+# --- the SPA -------------------------------------------------------------------------------------
+server {
+{% if easy_nginx_http2_directive | bool %}
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+{% else %}
+    # `http2 on;` as its own directive is 1.25.1 and later. This nginx is older, where HTTP/2 is a
+    # parameter on the listen line instead — and using the wrong one is a hard startup failure.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+{% endif %}
+    server_name {{ easy_nginx_web_host }};
+
+    ssl_certificate     {{ easy_nginx_cert_dir }}/fullchain.pem;
+    ssl_certificate_key {{ easy_nginx_cert_dir }}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # No includeSubDomains: this name has siblings (dev.ems, dev.idp, dev.aas) that are not all
+    # guaranteed to be HTTPS-only, and a subdomain-wide pin is remembered by browsers long after the
+    # header stops being sent.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    root {{ easy_nginx_web_root }};
+    index index.html;
+
+    # The environment's own settings, fetched at runtime rather than baked into the bundle
+    # (EZ-1726). A cached copy would point a freshly deployed SPA at the previous environment's
+    # backend, which fails in a way that looks like an application bug rather than a caching one.
+    location = /config.json {
+        add_header Cache-Control "no-store" always;
+        try_files $uri =404;
+    }
+
+    # Vite emits content-hashed filenames, so these can be cached hard and for a long time.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # A single-page app: every route that is not a real file is index.html, and index.html itself
+    # must never be cached or a deploy does not reach anyone still holding the old one.
+    location / {
+        add_header Cache-Control "no-cache" always;
+        # The trailing `=404` is not decoration. Without it, a request that falls through to
+        # /index.html when that file does not exist — which is the state of this host until the first
+        # deploy — re-enters this same location and nginx gives up with "rewrite or internal
+        # redirection cycle", i.e. a 500 that looks like the proxy is broken rather than like there
+        # is nothing deployed.
+        try_files $uri $uri/ /index.html =404;
+    }
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    access_log /var/log/nginx/{{ easy_nginx_web_host }}.access.log;
+    error_log  /var/log/nginx/{{ easy_nginx_web_host }}.error.log;
+}
+
+# --- the API -------------------------------------------------------------------------------------
+server {
+{% if easy_nginx_http2_directive | bool %}
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+{% else %}
+    # `http2 on;` as its own directive is 1.25.1 and later. This nginx is older, where HTTP/2 is a
+    # parameter on the listen line instead — and using the wrong one is a hard startup failure.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+{% endif %}
+    server_name {{ easy_nginx_api_host }};
+
+    ssl_certificate     {{ easy_nginx_cert_dir }}/fullchain.pem;
+    ssl_certificate_key {{ easy_nginx_cert_dir }}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    client_max_body_size {{ easy_nginx_max_body_size }};
+
+    location / {
+        proxy_pass http://{{ easy_nginx_api_upstream }};
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+
+        proxy_read_timeout {{ easy_nginx_proxy_read_timeout }};
+        proxy_send_timeout {{ easy_nginx_proxy_read_timeout }};
+
+        # CORS is core's job, not the proxy's: it is configurable per environment since EZ-1727, and
+        # a header added here as well would arrive duplicated, which browsers reject outright.
+    }
+
+    access_log /var/log/nginx/{{ easy_nginx_api_host }}.access.log;
+    error_log  /var/log/nginx/{{ easy_nginx_api_host }}.error.log;
+}
+{% else %}
+# TLS blocks omitted: no certificate at {{ easy_nginx_cert_dir }} yet. The HTTP server above is what
+# lets certbot obtain one over HTTP-01; re-running this role once it exists writes the rest.
+{% endif %}

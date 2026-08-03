@@ -84,3 +84,13 @@ easy_core_mail_sys_to: root@localhost
 # single command: restart core, nothing else.
 easy_core_deploy_users:
   - kspar
+
+# --- the proxy ------------------------------------------------------------------------------------
+# Both names already resolve to this VM, and the Let's Encrypt certificate the old dev host has been
+# renewing carries both as SANs — which is most of why the planned `dev.core` rename was dropped.
+easy_nginx_web_host: dev.lahendus.ut.ee
+easy_nginx_api_host: dev.ems.lahendus.ut.ee
+
+# Where Let's Encrypt sends expiry warnings. Worth being a real address: it is the backstop for a
+# renewal timer nobody is watching.
+easy_nginx_acme_email: kaspar.papli@helmes.com

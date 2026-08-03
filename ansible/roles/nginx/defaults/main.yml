@@ -1,0 +1,38 @@
+---
+# TLS termination, the static web bundle, and a reverse proxy to core. That is the whole job.
+#
+# nginx rather than Apache, decided 2026-08-04. Apache was in the plan because mod_auth_openidc made
+# it the security boundary; EZ-1724 moved JWT verification into core, so the proxy no longer
+# authenticates anything and what remains is short in either. nginx is the simpler of the two to
+# write and read. The trade accepted: production runs Apache/2.4.52 today, so until the same role
+# replaces it, staging and production differ in the component terminating TLS.
+
+# No defaults for the hostnames. They decide which certificate is requested and which origin the
+# browser talks to, and a wrong guess here is a certificate request for a name someone else owns.
+# easy_nginx_web_host — serves the SPA
+# easy_nginx_api_host — serves core
+
+easy_nginx_web_root: /srv/easy/web/current
+easy_nginx_api_upstream: "127.0.0.1:8080"
+
+# --- TLS ------------------------------------------------------------------------------------------
+# Let's Encrypt over HTTP-01. ACME is confirmed to work from inside UT's network (§10.1): the old dev
+# host has been renewing a certificate whose SANs are exactly the two names used here.
+easy_nginx_tls: true
+easy_nginx_acme_webroot: /var/www/certbot
+# easy_nginx_acme_email — no default; Let's Encrypt sends expiry warnings here, and those warnings are
+# the backstop for a renewal timer nobody is watching.
+
+# certbot writes one certificate covering both names, so there is one thing to renew and one thing to
+# check. Named after the first host, which is how certbot names the directory under /etc/letsencrypt.
+easy_nginx_cert_name: "{{ easy_nginx_web_host }}"
+easy_nginx_cert_dir: "/etc/letsencrypt/live/{{ easy_nginx_cert_name }}"
+
+# --- proxy behaviour --------------------------------------------------------------------------------
+# Long enough for a slow auto-assessment to come back, short enough that a wedged request does not sit
+# forever. Core's own timeouts should be the ones that decide, not the proxy's.
+easy_nginx_proxy_read_timeout: 300s
+
+# Submissions are text, but exercise assets are uploaded through core and the default 1m would reject
+# them with a 413 that says nothing useful to the person uploading.
+easy_nginx_max_body_size: 32m

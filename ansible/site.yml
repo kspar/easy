@@ -29,3 +29,4 @@
     - core_config
     - postgres
     - core_service
+    - nginx

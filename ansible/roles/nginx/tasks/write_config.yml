@@ -1,0 +1,68 @@
+---
+# Included twice — before and after the certificate exists — so it has to be safe to run when it
+# changes nothing.
+#
+# nginx cannot validate a site fragment on its own: `nginx -t` parses the whole configuration, so the
+# file has to be in place before it can be checked. That means a bad template lands on disk first.
+# Since nginx keeps serving its already-loaded config until something reloads it, the damage is
+# deferred rather than immediate — right up until a reboot, when it would fail to start. So a broken
+# write is rolled back here rather than left for later.
+
+- name: Write the vhosts
+  ansible.builtin.template:
+    src: easy.conf.j2
+    dest: /etc/nginx/sites-available/easy.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  register: easy_nginx_conf
+
+- name: Enable the site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/easy.conf
+    dest: /etc/nginx/sites-enabled/easy.conf
+    state: link
+    # Without this the module refuses to link to a file it cannot see, which during a dry run is
+    # every time: the template above was only simulated, so the target does not exist yet.
+    force: true
+  register: easy_nginx_link
+
+- name: Ask nginx whether the whole configuration parses
+  ansible.builtin.command: nginx -t
+  register: easy_nginx_test
+  changed_when: false
+  failed_when: false
+  when:
+    - not ansible_check_mode
+    - easy_nginx_installed.stat.exists | default(false)
+
+- name: Put the previous config back if this one is broken
+  when:
+    - not ansible_check_mode
+    - easy_nginx_test.rc | default(0) != 0
+  block:
+    - name: Restore the backup
+      ansible.builtin.copy:
+        src: "{{ easy_nginx_conf.backup_file }}"
+        dest: /etc/nginx/sites-available/easy.conf
+        remote_src: true
+        mode: "0644"
+      when: easy_nginx_conf.backup_file is defined
+
+    - name: Or remove it entirely if there was nothing to go back to
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/easy.conf
+        state: absent
+      when: easy_nginx_conf.backup_file is not defined
+
+    - name: Fail with what nginx said
+      ansible.builtin.fail:
+        msg: >-
+          nginx rejected the generated configuration, so it has been rolled back and nothing was
+          reloaded: {{ easy_nginx_test.stderr | default('') | trim }}
+
+- name: Reload nginx if anything changed
+  ansible.builtin.command: /bin/true
+  changed_when: easy_nginx_conf is changed or easy_nginx_link is changed
+  notify: Reload nginx

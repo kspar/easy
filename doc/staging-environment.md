@@ -10,7 +10,7 @@ Ansible or VM to inherit.
 
 Done since (EZ-1724): core verifies Keycloak JWTs itself rather than trusting reverse-proxy
 headers. This was deliberately landed before building staging, because it removes most of what the
-Apache config would otherwise have to get right — see §2.
+proxy config would otherwise have to get right — see §2.
 
 ---
 
@@ -41,7 +41,7 @@ The rest are on you:
 - **Mail goes to a local catch-all**, so it stays testable and cannot escape. (§5)
 - **Dev realm: registration disabled, accounts admin-created, `easy_role` mapped.** (§7)
 - **Core, postgres and the executor bind loopback only; the executor runs non-root.** (§2, §6)
-- **Apache serves `config.json` with `Cache-Control: no-store`.** A cached one points a fresh
+- **The proxy serves `config.json` with `Cache-Control: no-store`.** A cached one points a fresh
   deploy at the previous environment's backend. (§4.1)
 
 Not a rule but the usual first stumble: staging needs **its own `application.yaml`** (four keys are
@@ -58,7 +58,7 @@ One new VM, plus the existing IDP elsewhere:
                     ┌──────────────────────────────────────────────┐
   browser ────────► │  staging VM                                  │
                     │                                              │
-   dev.lahendus     │   Apache :443                                │
+   dev.lahendus     │   nginx :443                                 │
        .ut.ee ──────┼──►  vhost 1: static web dist (docroot)       │
                     │     vhost 2: OAuth2 resource server          │
    dev.ems.lahendus ┼──►             └─► 127.0.0.1:8080  core      │
@@ -103,13 +103,13 @@ So: no new A records needed, and TLS for two names that already point here.
 
 Core verifies Keycloak access tokens itself — Spring Security resource server, signature checked
 against the realm's JWKS, issuer and expiry validated, claims mapped to `EasyUser` in
-`core/conf/security/EasyUserJwtConverter.kt`. Apache is a plain TLS terminator and reverse proxy
+`core/conf/security/EasyUserJwtConverter.kt`. The proxy is a plain TLS terminator and reverse proxy
 with no auth role at all, and the SPA already sends `Authorization: Bearer`.
 
 This was not true when this plan was first written (EZ-1724 changed it), and the difference is
-most of why the Apache config in §4 is short. Previously core read identity *and roles* from
+most of why the proxy config in §4 is short. Previously core read identity *and roles* from
 `oidc_claim_*` request headers and decoded the token without verifying its signature, which made
-Apache the entire security boundary: it had to strip client-supplied claim headers, and core had
+the proxy the entire security boundary: it had to strip client-supplied claim headers, and core had
 to be unreachable directly or anyone could assert `oidc_claim_easy_role: admin`.
 
 Two things still worth doing, now as defence in depth rather than as the only line of defence:
@@ -207,49 +207,86 @@ not have the test source set on it at all, which the artifact-based deploy in §
 
 ---
 
-## 4. Apache
+## 4. The reverse proxy
+
+**nginx, decided 2026-08-04 — this section used to say Apache.** Apache was the plan's choice because
+`mod_auth_openidc` made it the security boundary. EZ-1724 moved JWT verification into core, so the
+proxy authenticates nothing and what is left is TLS termination, a static directory and one
+`proxy_pass`. nginx is the simpler of the two to write and read for that job.
+
+The trade, stated so nobody is surprised by it: **production runs Apache/2.4.52**, so until the same
+role reaches production, staging and production differ in the component terminating TLS. That is a
+narrow class of difference now that the proxy does nothing clever, but it is not zero — and staging is
+supposed to be the release gate. The intent is that the nginx role replaces prod's hand-built Apache
+when these playbooks get there, rather than the two diverging permanently.
+
+Built by `ansible/roles/nginx`. Certificates come from Let's Encrypt over HTTP-01 with
+`certbot certonly --webroot` — deliberately not the nginx plugin, which would rewrite the site config
+the role owns. One certificate carries both names as SANs, so there is one expiry to watch, and a
+renewal hook reloads nginx (without it, renewal succeeds quietly and nginx keeps serving the old
+certificate until something happens to reload it — possibly after it expired).
 
 ### 4.1 Web vhost — `dev.lahendus.ut.ee`
 
-Plain static hosting of the built `dist/`, plus an SPA fallback so deep links work — and one
-required header:
+Static hosting of the built `dist/`, plus an SPA fallback so deep links work, plus one required
+header:
 
-```apache
-DocumentRoot /srv/easy/web/current
-FallbackResource /index.html
+```nginx
+root /srv/easy/web/current;
 
-# config.json carries this environment's backend and realm (EZ-1726). It MUST NOT be cached:
-# the app requests it with `cache: 'no-store'`, but a caching layer in front would hand a
-# freshly deployed dist the previous environment's backend URL. That failure presents as
-# "staging is talking to production", which is not where anyone looks first.
-<Files "config.json">
-    Header set Cache-Control "no-store"
-</Files>
+# config.json carries this environment's backend and realm (EZ-1726). It MUST NOT be cached: the app
+# requests it with `cache: 'no-store'`, but a caching layer in front would hand a freshly deployed
+# dist the previous environment's backend URL. That failure presents as "staging is talking to
+# production", which is not where anyone looks first.
+location = /config.json {
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+}
+
+location / {
+    try_files $uri $uri/ /index.html =404;
+}
 ```
 
-`mod_headers` has to be enabled for that (`a2enmod headers`).
+Two things about that last line, both learned by getting them wrong:
+
+- **The trailing `=404` matters.** Without it, a request that falls through to `/index.html` when
+  that file does not exist — the state of the host until the first deploy — re-enters the same
+  location and nginx gives up with "rewrite or internal redirection cycle". That is a 500 that reads
+  as a broken proxy rather than as an empty docroot.
+- **`http2 on;` is nginx 1.25.1 and later.** Ubuntu 24.04 ships 1.24, where HTTP/2 is a parameter on
+  the `listen` line instead. Using the wrong form is a hard startup failure, so the role asks nginx
+  its version and templates accordingly — which also keeps it usable against the older nginx on an
+  older Ubuntu.
 
 No auth on this vhost. The SPA does the OIDC dance itself via keycloak-js and holds the token.
 
 ### 4.2 API vhost — `dev.ems.lahendus.ut.ee`
 
-No mod_auth_openidc, no `AuthType`, no claim-header plumbing. Core does the verifying:
+No auth module, no claim-header plumbing. Core does the verifying:
 
-```apache
-ProxyPass        /v2 http://127.0.0.1:8080/v2
-ProxyPassReverse /v2 http://127.0.0.1:8080/v2
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
 ```
+
+No CORS headers here: that is core's job and configurable per environment since EZ-1727. Adding them
+at the proxy as well would send them twice, which browsers reject outright.
 
 `Authorization` passes through untouched, which is all core needs. Two things that follow from
 this being a dumb proxy, both good:
 
 - The two `permitAll()` anonymous-autoassess endpoints
-  (`/*/unauth/exercises/*/anonymous/autoassess` and `.../details`) need no special-casing in Apache
+  (`/*/unauth/exercises/*/anonymous/autoassess` and `.../details`) need no special-casing in the proxy
   — Spring decides. Under an authenticating vhost they would each have needed their own
   `<Location>` with `Require all granted` or the "try an exercise without logging in" flow would
   break on staging only.
 - Cross-origin preflight `OPTIONS` requests, which carry no `Authorization` header, are no longer a
-  problem. An authenticating Apache would have 401'd them, and every API call would have failed
+  problem. An authenticating proxy would have 401'd them, and every API call would have failed
   looking exactly like a CORS bug in core.
 
 ### 4.3 CORS
@@ -391,7 +428,7 @@ Two consequences for the deploy:
 - Step 4 below writes the environment's `config.json` into the unpacked dist. That file — four keys,
   `emsRoot` plus the three keycloak values — is the only environment-specific artefact on the web
   side. See `web/README.md`.
-- Apache must serve `config.json` with `Cache-Control: no-store`. The app already fetches it that
+- The proxy must serve `config.json` with `Cache-Control: no-store`. The app already fetches it that
   way, but a caching layer in front is the one thing that can defeat the whole scheme: a stale
   `config.json` silently points a fresh deploy at the previous backend.
 
@@ -417,8 +454,8 @@ the seven steps above, plus:
   in that window 404s.
 - **Waits for an HTTP 401** from the public API. Core has no unauthenticated health endpoint — the
   only `permitAll()` routes need a real exercise id — so 401 is what a live filter chain returns,
-  and it proves Apache, core and Spring Security all at once. That reads as a bug unless you know
-  it, hence the comment at the poll. `systemctl is-active` covers the case where Apache itself
+  and it proves the proxy, core and Spring Security all at once. That reads as a bug unless you know
+  it, hence the comment at the poll. `systemctl is-active` covers the case where nginx itself
   produced the 401.
 - Everything is checked **before** the symlink flip, so a bad artifact or a bad config leaves the
   previous release serving. Verified against a Linux container: missing `application.yaml` and an
@@ -466,7 +503,7 @@ Greenfield, so this is a small amount of setup done once:
 - Note the interaction: a reboot mid-grading kills running Docker containers. Submissions in flight
   fail rather than corrupt (the scheduler retries), so a nightly window is fine — just don't put it
   mid-morning.
-- Everything reproducible in one Ansible playbook from the start — packages, users, Apache vhosts,
+- Everything reproducible in one Ansible playbook from the start — packages, users, nginx vhosts,
   postgres, Docker, the two systemd units, mailpit, the backup cron. Not because staging needs
   Ansible, but because writing it here means prod's rebuild is a known quantity later, and the
   answer to "what did we configure on that box" is a file.
@@ -497,7 +534,7 @@ Greenfield, so this is a small amount of setup done once:
 
 | Phase | Outcome |
 | --- | --- |
-| 1 | VM provisioned via Ansible; DNS + TLS; Apache with both vhosts; postgres. Nothing deployed |
+| 1 | VM provisioned via Ansible; DNS + TLS; nginx with both vhosts; postgres. Nothing deployed. **Done 2026-08-04**, except the executor and mailpit |
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
 | 4 | Executor + base images; auto-assessment verified on a real imported exercise |
