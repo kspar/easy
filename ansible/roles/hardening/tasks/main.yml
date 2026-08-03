@@ -266,11 +266,20 @@
 # Read after the stock 50unattended-upgrades, which is what lets it override.
 - name: Set the reboot policy
   ansible.builtin.template:
-    src: 52staging.j2
-    dest: /etc/apt/apt.conf.d/52staging
+    src: 52easy.j2
+    dest: /etc/apt/apt.conf.d/52easy
     owner: root
     group: root
     mode: "0644"
+
+# This file was called 52staging until 2026-08-03, when the role stopped being staging-only. Leaving
+# it behind would not be cosmetic: apt reads apt.conf.d in lexical order and the last assignment to a
+# key wins, so a stale `52staging` sorts *after* `52easy` and would quietly keep overriding it —
+# pinning the reboot policy to whatever staging wanted, on whatever host still had the file.
+- name: Remove the file this used to be called
+  ansible.builtin.file:
+    path: /etc/apt/apt.conf.d/52staging
+    state: absent
 
 - name: Check the unattended-upgrades config parses
   ansible.builtin.command: unattended-upgrades --dry-run --debug

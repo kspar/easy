@@ -1,0 +1,28 @@
+---
+# Everything staging does differently from the role's strict defaults, with the reason it is allowed
+# to. Read `roles/hardening/defaults/main.yml` first — the values there are the ones production gets,
+# and this file exists so that each loosening is a visible, reviewable decision rather than something
+# a new host inherits by accident.
+#
+# The account list is NOT here: it lives in `hosts.yml`, which is not in this repo.
+
+# Staging co-locates everything on one VM — postgres, core and the executor all bind 127.0.0.1 — so
+# an SSH tunnel is genuinely the intended way to reach them from a laptop, and forwarding grants an
+# authenticated user nothing they could not get by running a command on the box. Production separates
+# these onto their own hosts, where the same setting would instead be a route to another machine.
+hardening_ssh_allow_tcp_forwarding: true
+
+# Verifying this host's config means deliberately failing auth against it, and one refused root login
+# logs two failures rather than one — 5 turned out to be about three careful checks away from banning
+# the person holding the only keys. Nothing being counted can succeed, so a longer leash costs a
+# scanner a few more doomed attempts and buys back the ability to test the box safely. A short ban
+# for the same reason: locking the admin out of staging for an hour is worse than a scanner retrying.
+hardening_fail2ban_maxretry: 10
+hardening_fail2ban_bantime: 15m
+
+# Safe here in a way it is not on production: this box has no users to inconvenience and no
+# submissions worth preserving. A reboot mid-grading kills running containers, but submissions in
+# flight fail rather than corrupt and the scheduler retries them, so an unattended nightly window is
+# a fair trade for staying patched without anyone remembering to. Keep it out of working hours.
+hardening_unattended_reboot: true
+hardening_unattended_reboot_time: "04:30"

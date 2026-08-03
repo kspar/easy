@@ -44,7 +44,8 @@ __pycache__/
 # The reusable *reasoning* lives in ansible/roles/hardening/ instead.
 doc/staging-hardening.md
 
-# The real inventory: host addresses and, more to the point, the complete list of accounts that can
-# log in. `ansible/inventory.example.yml` is the committed template. The hardening role itself stays
-# in the repo — it is the reusable half, and the reason prod's eventual rebuild is a known quantity.
-ansible/inventory.yml
+# The real inventories: host addresses and, more to the point, the complete list of accounts that can
+# log in. Each environment's `hosts.example.yml` is the committed template. Roles and per-environment
+# group_vars stay in the repo — they are the reusable half, and the reason prod's eventual rebuild is
+# a known quantity.
+ansible/inventories/*/hosts.yml

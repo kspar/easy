@@ -1,0 +1,19 @@
+---
+# Production overrides. Empty on purpose: the role's defaults *are* the production answer, and this
+# file staying near-empty is the point of having written them that way.
+#
+# Before this inventory is ever pointed at a real host, read `../hosts.example.yml` — production is
+# not greenfield, and the first useful run against it is `--check --diff` as an audit of how the
+# hand-built hosts differ from what we think we run.
+
+# Two values worth deciding here rather than inheriting, when the time comes:
+#
+# - `hardening_ssh_allow_from` — the role defaults to `any` because there is no strict value to guess
+#   and a wrong CIDR is a lockout. Production is the environment where the set of source networks is
+#   most likely to actually be known, so narrowing it here is the point at which that default stops
+#   being the honest answer.
+#
+# - `hardening_unattended_reboot` — off by default, which means a human has to notice
+#   `/var/run/reboot-required` and act on it. That is only the safer choice if it genuinely happens;
+#   an unpatched kernel with better manners is not more secure. Either commit to watching for it, or
+#   pick a window and turn it on with eyes open.

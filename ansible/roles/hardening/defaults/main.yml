@@ -1,4 +1,15 @@
 ---
+# These defaults are the STRICT ones, and deliberately not the ones staging runs.
+#
+# The role is meant for production as well as staging, so every value here is the answer for the
+# host that matters most, and each environment loosens what it needs to in its own group_vars — with
+# the reason next to the override. Written the other way round, staging's conveniences (a longer
+# fail2ban leash, unattended reboots, agent forwarding) would become what a new prod host silently
+# inherits, and nothing would announce it. Safe by omission; every relaxation deliberate and
+# reviewable.
+#
+# `inventories/staging/group_vars/all.yml` is the worked example.
+
 # Only members of this group may log in over SSH at all, so creating a user account is not the
 # same thing as granting access.
 hardening_ssh_group: ssh-users
@@ -44,31 +55,45 @@ hardening_connecting_user: >-
 hardening_ssh_max_auth_tries: 3
 hardening_ssh_login_grace_time: 20
 
-# Source addresses allowed to reach port 22. `any` is a deliberate choice: authentication is
-# key-only, so brute force cannot succeed, and the team should not need a VPN to deploy. Narrow it
-# to a list of CIDRs (e.g. ['193.40.0.0/16']) if that changes.
+# Source addresses allowed to reach port 22, as `any` or a list of CIDRs.
+#
+# The one value here that is NOT inverted to a strict default, because there is no strict value to
+# guess: a wrong CIDR is a lockout, and a placeholder nobody notices is worse than an honest `any`.
+# Authentication is key-only, so `any` is defensible on its own terms — brute force cannot succeed
+# against it. Narrow it per environment where the set of source networks is actually known
+# (e.g. ['193.40.0.0/16']).
 hardening_ssh_allow_from: any
+
+# Whether an authenticated session may forward ports. `no` by default: on a host where the database
+# and the executor are on *other* machines, forwarding is not part of how anyone reaches them, so it
+# is capability nobody needs. Environments that co-locate services on one box and reach them by
+# tunnel should turn it on there, where that is true, rather than everywhere because it is true
+# somewhere.
+hardening_ssh_allow_tcp_forwarding: false
 
 # Apache terminates TLS for both vhosts and certbot needs 80 reachable for ACME.
 hardening_open_tcp_ports:
   - 80
   - 443
 
-# fail2ban here is noise reduction, not defence — key-only auth is the defence. That is why the ban
-# is short: a mistyped key from a laptop counts as a failure like any other, and locking the admin
-# out of their own staging box for an hour is a worse outcome than a scanner retrying sooner.
-hardening_fail2ban_bantime: 15m
+# fail2ban is noise reduction, not defence — key-only auth is the defence, and nothing fail2ban
+# counts could have succeeded anyway. So these numbers trade log volume against the risk of banning
+# someone who belongs, and the strict end of that trade is the conventional one.
+#
+# Be aware of how fast it counts before lowering it further: a single refused root login logs *two*
+# failures, not one, so verifying a host's own config from one address burns through the allowance
+# quicker than it looks.
+hardening_fail2ban_bantime: 1h
 hardening_fail2ban_findtime: 10m
-# 10 rather than the usual 5, for the same reason the ban is short. Verifying the host's own config
-# means deliberately failing auth, and a *single* refused root login logs two failures, not one — so
-# a handful of legitimate checks from one address gets close to 5 faster than anyone expects. Since
-# the thing being counted cannot succeed anyway, the cost of a higher threshold is a scanner getting
-# a few more doomed attempts; the cost of a lower one is locking out the person holding the keys.
-hardening_fail2ban_maxretry: 10
+hardening_fail2ban_maxretry: 5
 hardening_fail2ban_ignoreip: []
 
-# Security updates apply themselves; this is when the box may reboot to finish one. Nightly is fine
-# — a reboot mid-grading kills running containers, but submissions in flight fail rather than
-# corrupt and the scheduler retries. Do not move this into working hours.
-hardening_unattended_reboot: true
+# Whether the host may reboot itself to finish a security update, and when.
+#
+# `false` by default, because rebooting unattended is a decision about a *service*, not about a host:
+# it drops in-flight work at an hour nobody is watching. An environment where that is cheap should
+# say so itself. Note that leaving it off means someone has to notice `/var/run/reboot-required` and
+# act, so "off" is only the safe answer if that actually happens — otherwise it is just an unpatched
+# kernel with better manners.
+hardening_unattended_reboot: false
 hardening_unattended_reboot_time: "04:30"

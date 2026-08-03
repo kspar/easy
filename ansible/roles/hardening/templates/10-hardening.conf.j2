@@ -35,10 +35,15 @@ LogLevel VERBOSE
 
 X11Forwarding no
 
-## Left on deliberately. Postgres, core and the executor all bind 127.0.0.1, so an SSH tunnel is
-## the intended way to reach them from a laptop. It grants an authenticated user nothing they could
-## not already do by running a command on the host.
+{% if hardening_ssh_allow_tcp_forwarding %}
+## On enabled here because services on this host bind 127.0.0.1, which makes an SSH tunnel the
+## intended way to reach them from a laptop. Where that is true it grants an authenticated user
+## nothing they could not already do by running a command on the host; where the database lives on
+## another machine it is a way to reach that machine, which is a different proposition.
 AllowTcpForwarding yes
+{% else %}
+AllowTcpForwarding no
+{% endif %}
 
 ## Drop sessions whose network has gone away rather than holding them open.
 ClientAliveInterval 300

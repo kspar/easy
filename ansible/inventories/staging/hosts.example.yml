@@ -1,7 +1,9 @@
-# Copy to inventory.yml and fill in. `inventory.yml` is gitignored: this repo is public, and which
-# accounts can log in to a named internet-facing host is the one fact in this directory worth
-# keeping off the internet. Everything else — the sshd directives, the firewall rules, the fail2ban
-# thresholds — is standard practice that loses nothing by being readable, so it lives in the role.
+# Copy to hosts.yml and fill in. `hosts.yml` is gitignored in every inventory: this repo is public,
+# and which accounts can log in to a named internet-facing host is the one fact here worth keeping off
+# the internet. Everything else — the sshd directives, the firewall rules, the fail2ban thresholds —
+# is standard practice that loses nothing by being readable, so it lives in the role.
+#
+# Staging's deviations from the role's strict defaults are in `group_vars/all.yml`, not here.
 #
 # Hosts are named by their `~/.ssh/config` alias, so the address, user and key live in one place and
 # `ssh <alias>` and `ansible-playbook` cannot drift apart. The flip side, hit on 2026-08-03: rename

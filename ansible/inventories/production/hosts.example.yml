@@ -1,0 +1,36 @@
+# Copy to hosts.yml and fill in. `hosts.yml` is gitignored in every inventory: this repo is public,
+# and which accounts can log in to named internet-facing hosts is the one fact here worth withholding.
+#
+# NOTHING HAS BEEN RUN AGAINST PRODUCTION. This file is a placeholder that records the intended shape,
+# not a description of anything that works. Before a first real run:
+#
+# 1. **Audit, do not apply.** `./run.sh` refuses this inventory by design; use
+#    `ansible-playbook -i inventories/production site.yml --check --diff --ask-become-pass`. The diff
+#    is the answer to "how do the hand-built hosts differ from what we believe we run", and reading it
+#    is worth more than applying anything.
+# 2. **Expect the OS assert to refuse.** The role asserts Ubuntu 24.04. If production is older it will
+#    stop there, correctly — which turns "what is production actually running" into a question with an
+#    answer.
+# 3. **Never with a stored sudo password.** Production runs with `--ask-become-pass` and a human
+#    present. The keychain shortcut is a staging convenience; see the README.
+# 4. **One host at a time.** Add `serial: 1` to the play before it targets more than one host, so a
+#    config that locks out SSH does so once rather than three times in parallel.
+#
+# Production separates what staging co-locates — core, IdP and executor each on their own host — so
+# any role that assumes postgres or the executor is on localhost is wrong here. That is the reason
+# service roles need their addresses as variables from the start.
+production:
+  hosts:
+    your-core-alias:
+      ansible_user: your-login
+    your-idp-alias:
+      ansible_user: your-login
+    your-executor-alias:
+      ansible_user: your-login
+  vars:
+    # Everyone who may SSH in. Each must already exist, with a key — the role asserts both before it
+    # touches sshd. Include a second account that can actually get in: on a host with no console
+    # rescue, a second working key is the only insurance against an sshd change locking out the first.
+    hardening_ssh_users:
+      - your-login
+      - the-break-glass-account

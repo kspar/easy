@@ -14,16 +14,38 @@ role's own comments carry the parts that generalise, and are worth reading befor
 ```sh
 brew install ansible          # or pipx install ansible
 cd ansible
-cp inventory.example.yml inventory.yml && $EDITOR inventory.yml   # first time only
-ansible-playbook site.yml --check --diff --ask-become-pass        # dry run first
-ansible-playbook site.yml --ask-become-pass
+cp inventories/staging/hosts.example.yml inventories/staging/hosts.yml   # first time only
+$EDITOR inventories/staging/hosts.yml
+ansible-playbook -i inventories/staging site.yml --check --diff --ask-become-pass   # dry run first
+ansible-playbook -i inventories/staging site.yml --ask-become-pass
 ```
 
-**`inventory.yml` is not in the repo.** It holds the host addresses and the list of accounts allowed
-to log in, which is the one thing in this directory worth keeping off a public repo — see the note
-in `.gitignore`. Everything else, the role included, is standard hardening whose security does not
+**`-i` is mandatory, and that is the main safety property here.** There is no default inventory and
+no inventory contains two environments, so the environment cannot be omitted or forgotten — the
+alternative, one inventory kept apart by remembering `--limit`, puts production's sshd one missing
+flag away from being rewritten. Without `-i` the play matches no hosts and does nothing.
+
+**`hosts.yml` is not in the repo.** It holds the host addresses and the list of accounts allowed to
+log in, which is the one thing in this directory worth keeping off a public repo — see the note in
+`.gitignore`. Everything else, the role included, is standard hardening whose security does not
 depend on being unreadable. The role has no default list of users and asserts a non-empty one, so a
 missing inventory fails with an explanation rather than writing `AllowGroups` for an empty group.
+
+### Environments
+
+`roles/hardening/defaults/main.yml` holds the **strict** values — the answer for the host that
+matters most — and each environment loosens what it needs to in its own `group_vars/all.yml`, with
+the reason beside the override. Written the other way round, staging's conveniences would be what a
+new production host silently inherits. Safe by omission; every relaxation deliberate.
+
+`inventories/staging/group_vars/all.yml` is the worked example: agent forwarding on because
+everything is co-located behind loopback there, a longer fail2ban leash because verifying the host
+means failing auth at it, unattended reboots because there is nothing to interrupt.
+
+**Nothing has been run against production.** `inventories/production/hosts.example.yml` records the
+intended shape and the order to approach it in — the first useful run is `--check --diff` as an
+*audit* of hosts nobody configured with this role, not an apply. Expect the Ubuntu 24.04 assert to
+refuse if production is older, which is the assert working.
 
 The connecting account needs a password for sudo — that is the right posture and is left alone,
 hence `--ask-become-pass`.
@@ -88,12 +110,18 @@ failure this is insurance against. Tear it down with `-O exit` when the run is v
 ## Layout
 
 ```
-ansible.cfg              inventory path, yaml output, ssh multiplexing
-inventory.example.yml    the committed template
-inventory.yml            NOT IN GIT — real hosts and who may log in
-run.sh                   the same run with the sudo password from the keychain
-site.yml                 the play; further roles get added here
-roles/hardening/         sshd, ufw, fail2ban, unattended-upgrade reboot policy
+ansible.cfg                  no default inventory, yaml output, ssh multiplexing
+site.yml                     the play; further roles get added here
+run.sh                       staging only, sudo password from the keychain
+roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
+inventories/
+  staging/
+    hosts.example.yml        the committed template
+    hosts.yml                NOT IN GIT — real hosts and who may log in
+    group_vars/all.yml       what staging loosens, and why
+  production/
+    hosts.example.yml        intended shape; nothing has been run against it
+    group_vars/all.yml       near-empty on purpose — the defaults are the prod answer
 ```
 
 Hosts are named by their `~/.ssh/config` alias, so the address, user and key live in one place and
@@ -101,8 +129,9 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 
 ## Conventions
 
-- **Everything is a variable with a default.** `roles/hardening/defaults/main.yml` is also where the
-  reasoning for each value lives — read it before overriding one.
+- **Defaults are strict; environments loosen.** `roles/hardening/defaults/main.yml` is the production
+  answer and also where the reasoning for each value lives. Relaxations go in an environment's
+  `group_vars`, next to the reason. A new host should be safe by omission.
 - **Guards come before changes.** The hardening role asserts the OS, that every allowed user
   exists, that the connecting user is among them, and that they have a working key, all before it
   touches sshd. On a host with no console, a lockout is a rebuild.
@@ -113,8 +142,15 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 ## Adding the rest
 
 The remaining phase-1 work from the staging plan — Apache vhosts, postgres, Docker, the
-`easy-core` and `easy-executor` units, mailpit, the backup cron — belongs in this same play as
-further roles. Two things worth carrying over when you write them:
+`easy-core` and `easy-executor` units, mailpit, the backup cron — becomes further roles here.
+
+**Write them as service roles applied to groups, not as "the staging box".** Production separates
+onto three hosts (core, IdP, executor) what staging keeps on one, so a role that assumes postgres or
+the executor is on `127.0.0.1` is already wrong for production. Those addresses want to be variables
+from the first role that touches them; retrofitting them later is the expensive version. `site.yml`
+gets a play per group at that point, and `serial: 1` before anything targets more than one host.
+
+Three things worth carrying over when you write them:
 
 - The deploy script needs exactly one sudo grant: `NOPASSWD: /usr/bin/systemctl restart easy-core`.
   Scope it to that command; do not give the deploy account general sudo.
