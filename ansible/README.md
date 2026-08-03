@@ -135,6 +135,9 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 - **Guards come before changes.** The hardening role asserts the OS, that every allowed user
   exists, that the connecting user is among them, and that they have a working key, all before it
   touches sshd. On a host with no console, a lockout is a rebuild.
+- **Grant lists are exclusive.** `hardening_ssh_users` is the whole set, not a set of additions:
+  anyone in the SSH group who is not listed loses their membership. Adding people is not much use
+  without taking them away, and an append-only list revokes nothing while looking like it did.
 - **Validate before writing, verify after.** The sshd drop-in is checked by `sshd -t` as a template
   `validate:`, then the combined config is checked again and rolled back if it broke.
 - Roles are named for what they produce, and each task name reads as a sentence in the output.

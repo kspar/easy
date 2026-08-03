@@ -34,6 +34,10 @@ hardening_ssh_group: ssh-users
 #   reason rather than deleting it for tidiness.
 # - **A listed account with no `authorized_keys` is not break-glass.** The role warns about this; it
 #   is worth reading, because such an account can no longer log in at all once passwords are off.
+# - **This list is exclusive, so removing a name revokes access.** Anyone in the SSH group who is not
+#   listed here is removed from it, which is the whole point of a grant list. Re-running after an edit
+#   is therefore how you take access away — and on a host the role has not managed before, expect it
+#   to report accounts you did not know had access.
 hardening_ssh_users: []
 
 # Whoever is running the playbook — the account whose key must survive the lockdown.

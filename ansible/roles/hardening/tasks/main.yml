@@ -111,6 +111,63 @@
   # dry run actually worth reading. The preceding task reporting `changed` conveys the same intent.
   when: not ansible_check_mode
 
+# Membership has to be *exclusive*, not just additive, or revocation silently does nothing.
+#
+# `append: true` above is correct — a user's other groups (docker, sudo) are none of this role's
+# business — but on its own it makes the group a high-water mark. Taking a name out of
+# hardening_ssh_users and re-running would report changed=0 and leave that account in the group,
+# still able to log in, while looking exactly like a successful revocation. Granting worked;
+# ungranting did not.
+#
+# So: read who is actually in the group and remove whoever the inventory no longer lists. On a host
+# this role has never converged before, that set is drift — which is precisely what a --check run
+# against an unmanaged host should surface, hence the debug below rather than a silent skip.
+- name: Find out who is actually in the group
+  ansible.builtin.getent:
+    database: group
+    key: "{{ hardening_ssh_group }}"
+    fail_key: false
+  register: hardening_group_now
+  changed_when: false
+  # A read, so it must still happen during a dry run — otherwise the revocation list below is empty
+  # in check mode and the drift it exists to reveal goes unreported.
+  check_mode: false
+
+- name: Work out who should lose access
+  ansible.builtin.set_fact:
+    # getent's third field is the comma-separated supplementary member list, empty string when none.
+    # The connecting user is filtered out defensively: an earlier assert already guarantees they are
+    # in hardening_ssh_users, so they cannot be in this set, but revoking the account running the
+    # play is the one mistake here with no way back.
+    hardening_ssh_revoke: >-
+      {{ (hardening_group_now.ansible_facts.getent_group[hardening_ssh_group][2] | default('')
+          | split(','))
+         | select | difference(hardening_ssh_users) | difference([hardening_connecting_user]) }}
+
+- name: Report who is in the group but no longer allowed
+  ansible.builtin.debug:
+    msg: >-
+      {{ hardening_ssh_revoke | join(', ') }} {{ 'is' if hardening_ssh_revoke | length == 1 else 'are' }}
+      in {{ hardening_ssh_group }} but not in hardening_ssh_users, so SSH access is being revoked.
+      On a host this role has not managed before, check this is drift and not an omission from the
+      inventory — everyone listed here loses access on the next connection.
+  when: hardening_ssh_revoke | length > 0
+
+- name: Take the SSH grant away from them
+  # gpasswd rather than the user module: `groups` with `append: false` would replace *every* group
+  # the account has, stripping docker or sudo membership this role never granted and has no business
+  # touching. gpasswd -d removes one membership and leaves the rest alone.
+  #
+  # A user whose *primary* group is this one cannot be removed this way, and would not appear in the
+  # member list read above either — so it fails loudly here rather than reporting success. Nothing
+  # creates such an account today; the assert exists so that if something ever does, this reads as a
+  # bug and not as a revocation that worked.
+  ansible.builtin.command:
+    cmd: gpasswd -d {{ item | quote }} {{ hardening_ssh_group | quote }}
+  loop: "{{ hardening_ssh_revoke }}"
+  changed_when: true
+  when: not ansible_check_mode
+
 # --- firewall ------------------------------------------------------------------------------------
 # Rules first, `enabled` last. ufw applies the default-deny the moment it comes up.
 
