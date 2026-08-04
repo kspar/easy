@@ -35,6 +35,7 @@ const SCRIPTS = [
   'course-exercise-retry-autoassess.mjs',
   'similarity-page.mjs',
   'terms-redirect.mjs',
+  'grade-table.mjs',
 ]
 
 function log(msg) {

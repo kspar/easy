@@ -468,40 +468,75 @@ export default function GradeTablePage() {
                     <TableCell align="center" className={sortKey === 'completion' ? 'sorted-col' : undefined} sx={{ color: 'text.secondary', ...(sortKey === 'completion' && { bgcolor: sortedColBg }) }}>
                       {student.finishedCount}
                     </TableCell>
-                    {student.grades.map((g) => (
-                      <TableCell
-                        key={g.courseExerciseId}
-                        align="center"
-                        className={sortKey === g.courseExerciseId ? 'sorted-col' : undefined}
-                        sx={{
-                          color: statusColor(g.status),
-                          fontWeight: g.grade !== null ? 500 : undefined,
-                          whiteSpace: 'nowrap',
-                          ...(sortKey === g.courseExerciseId && { bgcolor: sortedColBg }),
-                        }}
-                      >
-                        {g.grade !== null ? g.grade : '-'}
-                        {showSubCount && g.submissionNumber !== null && (
+                    {student.grades.map((g) => {
+                      // Every cell links to that student's submission for that exercise — the WUI did
+                      // this and it is the whole point of reading the table: you spot a number and
+                      // want the work behind it. Unstarted cells link too, deliberately: a cell that
+                      // is not clickable for reasons the reader has to infer is worse than one that
+                      // opens an empty submission view.
+                      const href =
+                        `/courses/${courseId}/exercises/${g.courseExerciseId}` +
+                        `?student=${encodeURIComponent(student.id)}`
+                      const exerciseTitle = sortedExercises.find(
+                        (ex: TeacherCourseExercise) => ex.course_exercise_id === g.courseExerciseId,
+                      )?.effective_title
+                      return (
+                        <TableCell
+                          key={g.courseExerciseId}
+                          align="center"
+                          className={sortKey === g.courseExerciseId ? 'sorted-col' : undefined}
+                          sx={{
+                            color: statusColor(g.status),
+                            fontWeight: g.grade !== null ? 500 : undefined,
+                            whiteSpace: 'nowrap',
+                            ...(sortKey === g.courseExerciseId && { bgcolor: sortedColBg }),
+                          }}
+                        >
                           <Typography
-                            component="span"
-                            variant="caption"
-                            sx={{ ml: 0.5, color: 'text.secondary' }}
-                          >
-                            {'· #' + g.submissionNumber}
-                          </Typography>
-                        )}
-                        {g.isAutograde === false && (
-                          <FaceOutlined
+                            component="a"
+                            variant="inherit"
+                            {...spaLinkProps(href, navigate)}
+                            // Without this every link in the table is named "100" or "-", which is
+                            // useless to anyone reading it through the accessibility tree — and that
+                            // tree is what the browser tests query by.
+                            aria-label={[
+                              `${student.givenName} ${student.familyName}`,
+                              exerciseTitle,
+                              g.grade !== null ? String(g.grade) : t('grades.noGrade'),
+                            ]
+                              .filter(Boolean)
+                              .join(' — ')}
                             sx={{
-                              fontSize: 14,
-                              color: 'text.secondary',
-                              ml: 0.75,
-                              verticalAlign: 'middle',
+                              display: 'block',
+                              color: 'inherit',
+                              textDecoration: 'none',
+                              '&:hover': { textDecoration: 'underline' },
                             }}
-                          />
-                        )}
-                      </TableCell>
-                    ))}
+                          >
+                            {g.grade !== null ? g.grade : '-'}
+                            {showSubCount && g.submissionNumber !== null && (
+                              <Typography
+                                component="span"
+                                variant="caption"
+                                sx={{ ml: 0.5, color: 'text.secondary' }}
+                              >
+                                {'· #' + g.submissionNumber}
+                              </Typography>
+                            )}
+                            {g.isAutograde === false && (
+                              <FaceOutlined
+                                sx={{
+                                  fontSize: 14,
+                                  color: 'text.secondary',
+                                  ml: 0.75,
+                                  verticalAlign: 'middle',
+                                }}
+                              />
+                            )}
+                          </Typography>
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 ))}
               </TableBody>

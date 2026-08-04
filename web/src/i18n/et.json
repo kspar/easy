@@ -505,7 +505,8 @@
     "solvedExercises": "Lahendanud {{count}} ülesannet",
     "solvedBy": "Lahendatud {{count}} õpilase poolt",
     "totalExercises": "Kokku {{count}} ülesannet",
-    "totalStudents": "Kokku {{count}} õpilast"
+    "totalStudents": "Kokku {{count}} õpilast",
+    "noGrade": "hinneteta"
   },
   "similarity": {
     "title": "Lahenduste sarnasus",

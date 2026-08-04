@@ -505,7 +505,8 @@
     "solvedExercises": "Solved {{count}} exercises",
     "solvedBy": "Solved by {{count}} students",
     "totalExercises": "Total {{count}} exercises",
-    "totalStudents": "Total {{count}} students"
+    "totalStudents": "Total {{count}} students",
+    "noGrade": "no grade"
   },
   "similarity": {
     "title": "Similarity analysis",
