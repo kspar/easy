@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -160,12 +160,15 @@ export default function AutoTestResults({
   onStaggerDone,
   collapsible = false,
   defaultExpanded = true,
+  headerAction,
 }: {
   autoAssessment: AutomaticAssessmentResp
   staggerReveal?: boolean
   onStaggerDone?: () => void
   collapsible?: boolean
   defaultExpanded?: boolean
+  /** Rendered at the right end of the header row. Clicks on it do not toggle the section. */
+  headerAction?: ReactNode
 }) {
   const { t } = useTranslation()
 
@@ -303,6 +306,23 @@ export default function AutoTestResults({
           <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', ...gradeSx }}>
             {autoAssessment.grade} / 100
           </Typography>
+        )}
+
+        {headerAction && (
+          <Box
+            // The header itself toggles the section, so a click on the action has to stop there or
+            // using it would also collapse the thing you wanted to look at.
+            onClick={(e) => e.stopPropagation()}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              // The branch above either fills the row (test bar, left-packed) or already pushes its
+              // score to the right. Only in the first case does this need to claim the gap itself.
+              ml: collapsible && tests.length > 0 ? 'auto' : 0.5,
+            }}
+          >
+            {headerAction}
+          </Box>
         )}
       </Box>
 

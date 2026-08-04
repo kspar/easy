@@ -264,7 +264,6 @@
     "commentDeleted": "Kommentaar kustutatud",
     "confirmDeleteComment": "Kustutada see kommentaar?",
     "retryAutoassess": "Käivita automaatkontroll uuesti",
-    "retryAutoassessRunning": "Kontrollin…",
     "retryAutoassessHint": "Hindab seda esitust uuesti, muutmata seda ennast. Kasulik siis, kui kontroll ebaõnnestus koodist sõltumatul põhjusel — käivitaja oli maas või test aegus.",
     "retryAutoassessDone": "Automaatkontroll on lõpetatud — allolev tulemus on värske.",
     "retryAutoassessFailed": "Kontrolli ei õnnestunud käivitada."

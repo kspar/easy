@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
-  Button,
   ButtonBase,
   Chip,
   CircularProgress,
@@ -488,38 +487,35 @@ export default function StudentGradingView({
                 staggerReveal={false}
                 collapsible
                 defaultExpanded={false}
-              />
-              {exercise.grader_type === 'AUTO' && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                  <Tooltip title={t('submission.retryAutoassessHint')}>
-                    <span>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={
-                          retryAutoassess.isPending
+                headerAction={
+                  exercise.grader_type === 'AUTO' ? (
+                    // Rare action, so it earns an icon rather than a labelled button — the tooltip
+                    // and the accessible name carry the meaning.
+                    <Tooltip title={t('submission.retryAutoassessHint')}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={t('submission.retryAutoassess')}
+                          disabled={retryAutoassess.isPending}
+                          onClick={() => {
+                            retryAutoassess.mutate(subDetail.id, {
+                              onSuccess: () => setRetryDone(true),
+                            })
+                          }}
+                        >
+                          {retryAutoassess.isPending
                             ? <CircularProgress size={16} color="inherit" />
-                            : <RefreshOutlined />
-                        }
-                        disabled={retryAutoassess.isPending}
-                        onClick={() => {
-                          retryAutoassess.mutate(subDetail.id, {
-                            onSuccess: () => setRetryDone(true),
-                          })
-                        }}
-                      >
-                        {retryAutoassess.isPending
-                          ? t('submission.retryAutoassessRunning')
-                          : t('submission.retryAutoassess')}
-                      </Button>
-                    </span>
-                  </Tooltip>
-                  {retryAutoassess.isError && (
-                    <Typography variant="caption" color="error">
-                      {t('submission.retryAutoassessFailed')}
-                    </Typography>
-                  )}
-                </Box>
+                            : <RefreshOutlined fontSize="small" />}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : undefined
+                }
+              />
+              {retryAutoassess.isError && (
+                <Typography variant="caption" color="error">
+                  {t('submission.retryAutoassessFailed')}
+                </Typography>
               )}
             </Box>
           )}
