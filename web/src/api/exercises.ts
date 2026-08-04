@@ -10,6 +10,7 @@ import type {
   InlineCommentResp,
   MoodlePropsResp,
   ParticipantsResp,
+  SimilarityResp,
   SubmissionResp,
   SubmissionRow,
   TeacherActivityResp,
@@ -426,6 +427,9 @@ export function useTeacherSubmissionSummaries(
         : `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/latest/students`
       return apiFetch<{ latest_submissions: SubmissionRow[] }>(url).then((r) => r.latest_submissions)
     },
+    // Without this, a caller that does not know its course exercise yet — the similarity page before
+    // an exercise is chosen — requests `/exercises//submissions/latest/students` on every render.
+    enabled: !!courseExerciseId,
   })
 }
 
@@ -1005,4 +1009,30 @@ export function useMarkdownPreview(markdownText: string, debounceMs = 400): stri
   }, [markdownText, debounceMs])
 
   return html
+}
+
+/**
+ * Compare submissions of one library exercise for similarity.
+ *
+ * A mutation rather than a query because it is expensive and explicit: the teacher asks for it, and
+ * asking twice should mean running it twice. Core compares every pair — N submissions means
+ * N(N-1)/2 comparisons, synchronously, inside the request — so it gets slow on a large course and can
+ * time out. That is EZ-1667's open question, not something this hook can paper over; the page shows
+ * the pair count up front so the wait is at least predictable.
+ *
+ * `exerciseId` is the *library* exercise id, not the course exercise id. `courses` scopes which
+ * courses' submissions may be included, and `submissions` narrows it further — the page passes the
+ * ids it got from the summaries query, which is how the group filter is applied.
+ */
+export function useCheckSimilarity(exerciseId: string | undefined) {
+  return useMutation({
+    mutationFn: ({ courseIds, submissionIds }: { courseIds: string[]; submissionIds: string[] }) =>
+      apiFetch<SimilarityResp>(`/exercises/${exerciseId}/similarity`, {
+        method: 'POST',
+        body: {
+          courses: courseIds.map((id) => ({ id })),
+          submissions: submissionIds.map((id) => ({ id })),
+        },
+      }),
+  })
 }

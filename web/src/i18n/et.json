@@ -510,10 +510,23 @@
   "similarity": {
     "title": "Lahenduste sarnasus",
     "helpText": "Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel.",
-    "find": "Leia sarnasused",
-    "searching": "Otsin...",
+    "find": "Otsi sarnasusi",
+    "searching": "Võrdlen…",
     "topPairs": "Kõige sarnasemad paarid",
-    "comingSoon": "Tulekul..."
+    "explanation": "Võrdleb selle ülesande kõiki esitatud lahendusi paarikaupa ja näitab kõige sarnasemaid. Mõlemad skoorid võrdlevad kogu faili teksti, seega ei erista need sarnast lähenemist mahakirjutamisest — ja muutujate ümbernimetamine langetab mõlemat. Kõrge skoor on põhjus vaadata, mitte otsus.",
+    "exercise": "Ülesanne",
+    "group": "Rühm",
+    "allStudents": "Kõik õpilased",
+    "scope": "{{submissions}} esitust, {{pairs}} võrreldavat paari",
+    "tooFewSubmissions": "Võrdlemiseks on vähem kui kaks esitust.",
+    "slowWarning": "See võrdleb ühe päringuga {{pairs}} paari ja võib võtta kaua aega või aeguda. Ühe rühma kaupa on tavaliselt kiirem.",
+    "failed": "Võrdlus ei lõppenud. Suure kursuse puhul on põhjus tavaliselt aegumine — proovi ühe rühmaga.",
+    "results": "{{count}} paari",
+    "minScore": "Min. skoor",
+    "capped": "Tagastatakse ainult 100 kõrgeima skooriga paari, seega madalamaid paare võib veel olla.",
+    "noPairs": "Sarnaseid paare ei leitud.",
+    "diceShort": "Dice {{score}}%",
+    "levenshteinShort": "Levenshtein {{score}}%"
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

@@ -33,6 +33,7 @@ const SCRIPTS = [
   'embed-exercise.mjs',
   'course-exercise-embed.mjs',
   'course-exercise-retry-autoassess.mjs',
+  'similarity-page.mjs',
 ]
 
 function log(msg) {

@@ -414,3 +414,33 @@ export interface DirAccessesResp {
   inherited_accounts: AccountAccessResp[]
   inherited_groups: GroupAccessResp[]
 }
+
+// --- similarity ---------------------------------------------------------------------------------
+// `POST /exercises/{exerciseId}/similarity` compares submissions of the same *library* exercise,
+// optionally across several courses. Both scores are percentages of a whole-text comparison: a Dice
+// coefficient over character bigrams, and a Levenshtein-based FuzzyWuzzy ratio. Neither understands
+// code, so renaming variables lowers both — worth knowing before reading a low score as innocence.
+
+export interface SimilarSubmissionResp {
+  id: string
+  created_at: string
+  solution: string
+  given_name: string
+  family_name: string
+  course_title: string
+}
+
+export interface SimilarityScoreResp {
+  sub_1: string
+  sub_2: string
+  /** Dice coefficient, 0–100. */
+  score_a: number
+  /** Levenshtein-based ratio, 0–100. */
+  score_b: number
+}
+
+export interface SimilarityResp {
+  submissions: SimilarSubmissionResp[]
+  /** Core returns at most the 100 highest-scoring pairs, ordered by score_a + score_b. */
+  scores: SimilarityScoreResp[]
+}
