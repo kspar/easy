@@ -444,6 +444,43 @@ export function useTeacherSubmissionDetails(
   })
 }
 
+/**
+ * Re-run auto-assessment on a submission a teacher is looking at.
+ *
+ * For the case where grading failed for a reason that had nothing to do with the student's code —
+ * the executor was down, a container image was missing, a test timed out under load. The submission
+ * is unchanged; only the assessment is redone.
+ *
+ * Two things about this endpoint that shape the UI around it:
+ *
+ * - **It blocks.** Core runs the assessment inside the request (`runBlocking { submitAndAwait }`),
+ *   so the response arrives when grading finishes, not when it is queued. Seconds, sometimes longer
+ *   under load. The caller needs a pending state, not a fire-and-forget.
+ * - **A 200 does not mean grading succeeded.** Core catches assessment failures, records them as an
+ *   auto-assess-failed activity and emails the sysadmin, then returns normally. So the outcome is in
+ *   the refetched data rather than in the response, which is why this invalidates rather than
+ *   reporting success on its own.
+ *
+ * Only valid on an `AUTO` exercise; core answers `EXERCISE_NOT_AUTOASSESSABLE` otherwise.
+ */
+export function useRetryAutoassess(courseId: string, courseExerciseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (submissionId: string) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/retry-autoassess`,
+        { method: 'POST' },
+      ),
+    onSuccess: () => {
+      // The whole exercise subtree: the assessment lands on the submission detail, the grade on the
+      // summaries the list reads, and a new entry in the activity feed.
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
 export function useTeacherStudentSubmissions(
   courseId: string,
   courseExerciseId: string,

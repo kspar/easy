@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
+  Button,
   ButtonBase,
   Chip,
+  CircularProgress,
   Divider,
   IconButton,
   InputAdornment,
   Popover,
   Skeleton,
+  Snackbar,
   TextField,
   Tooltip,
   Typography,
@@ -22,6 +25,7 @@ import {
   FlagOutlined,
   FlagRounded,
   FiberManualRecordRounded,
+  RefreshOutlined,
   SearchOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -29,6 +33,7 @@ import {
   useCreateInlineComment,
   useDeleteInlineComment,
   useMarkSubmissionsSeen,
+  useRetryAutoassess,
   useTeacherStudentInlineComments,
   useTeacherStudentSubmissions,
   useTeacherSubmissionDetails,
@@ -62,6 +67,12 @@ export default function StudentGradingView({
   const { t } = useTranslation()
   const { username } = useAuth()
   const [filterGroup] = useSavedGroup(courseId)
+
+  // Re-running auto-assessment. Only offered on AUTO exercises — core rejects it otherwise — and
+  // only when there is already an assessment to replace, since the button is a fix for a bad one
+  // rather than a way to grade something that was never graded.
+  const retryAutoassess = useRetryAutoassess(courseId, courseExerciseId)
+  const [retryDone, setRetryDone] = useState(false)
 
   // Fetch student list for prev/next navigation
   const { data: allStudents } = useTeacherSubmissionSummaries(
@@ -478,8 +489,50 @@ export default function StudentGradingView({
                 collapsible
                 defaultExpanded={false}
               />
+              {exercise.grader_type === 'AUTO' && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <Tooltip title={t('submission.retryAutoassessHint')}>
+                    <span>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={
+                          retryAutoassess.isPending
+                            ? <CircularProgress size={16} color="inherit" />
+                            : <RefreshOutlined />
+                        }
+                        disabled={retryAutoassess.isPending}
+                        onClick={() => {
+                          retryAutoassess.mutate(subDetail.id, {
+                            onSuccess: () => setRetryDone(true),
+                          })
+                        }}
+                      >
+                        {retryAutoassess.isPending
+                          ? t('submission.retryAutoassessRunning')
+                          : t('submission.retryAutoassess')}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                  {retryAutoassess.isError && (
+                    <Typography variant="caption" color="error">
+                      {t('submission.retryAutoassessFailed')}
+                    </Typography>
+                  )}
+                </Box>
+              )}
             </Box>
           )}
+
+          {/* Deliberately not "graded successfully": core returns 200 even when the assessment
+              failed again, having recorded that as an activity. The honest message is that it ran
+              and the result is now on screen. */}
+          <Snackbar
+            open={retryDone}
+            autoHideDuration={4000}
+            onClose={() => setRetryDone(false)}
+            message={t('submission.retryAutoassessDone')}
+          />
 
           {/* Activity feed (grade + feedback composer + history) */}
           <Box sx={{ mt: 3 }}>

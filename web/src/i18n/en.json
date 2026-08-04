@@ -262,7 +262,12 @@
     "unflag": "Remove flag",
     "commentSaved": "Comment saved",
     "commentDeleted": "Comment deleted",
-    "confirmDeleteComment": "Delete this comment?"
+    "confirmDeleteComment": "Delete this comment?",
+    "retryAutoassess": "Re-run auto-assessment",
+    "retryAutoassessRunning": "Assessing…",
+    "retryAutoassessHint": "Grades this submission again without changing it. Useful when assessment failed for a reason unrelated to the code — the executor was down, or a test timed out.",
+    "retryAutoassessDone": "Auto-assessment finished — the result below is up to date.",
+    "retryAutoassessFailed": "Could not start the assessment."
   },
   "library": {
     "title": "Exercise library",

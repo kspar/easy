@@ -32,6 +32,7 @@ const SCRIPTS = [
   'library-exercise-markdown.mjs',
   'embed-exercise.mjs',
   'course-exercise-embed.mjs',
+  'course-exercise-retry-autoassess.mjs',
 ]
 
 function log(msg) {
