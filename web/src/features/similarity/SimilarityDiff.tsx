@@ -58,9 +58,12 @@ export default function SimilarityDiff({
         a: { doc: left, extensions },
         b: { doc: right, extensions },
         parent: host.current,
-        // Nothing here is editable, so the revert arrows between the panes would be controls that
+        // `revertControls` is deliberately absent rather than false: the option's type is
+        // "a-to-b" | "b-to-a", so omitting it is how you get no revert arrows. Passing false type-errors
+        // — which CI caught and a bare `tsc --noEmit` did not, because the real check is `tsc -b`.
+        //
+        // Either way there should be none: nothing here is editable, so they would be controls that
         // cannot do anything.
-        revertControls: false,
         gutter: true,
       })
     })
