@@ -15,6 +15,7 @@ import LandingPage from '../features/landing/LandingPage.tsx'
 import JoinByLinkPage from '../features/join/JoinByLinkPage.tsx'
 import IndexRedirect from './IndexRedirect.tsx'
 import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
+import TermsRedirect from '../features/terms/TermsRedirect.tsx'
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,13 @@ const router = createBrowserRouter([
     // it are published on pages nobody here can edit. See EmbedExercisePage.
     path: '/embed/exercises/:exerciseId/*',
     element: <EmbedExercisePage />,
+  },
+  {
+    // Outside AppLayout and outside RequireAuth: it redirects straight out of the app, so rendering
+    // nav and a sidebar first would be a flash of chrome nobody sees on purpose — and reading the
+    // terms before having an account is the normal case, not an edge one.
+    path: '/tos',
+    element: <TermsRedirect />,
   },
   {
     path: '/',

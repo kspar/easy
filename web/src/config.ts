@@ -29,6 +29,18 @@ const config = {
   repoUrl: 'https://github.com/kspar/easy',
   discordInviteUrl: 'https://discord.gg/6FBC8Z8pBP',
 
+  // The terms of service, which live in a Google Doc rather than in this app.
+  //
+  // `/tos` redirects here rather than the footer linking the document directly, and that indirection
+  // is the point: **Keycloak's own terms link points at `<app>/tos`**, so this stays the single place
+  // the document URL is written down. Change it here and the IdP follows; link the document directly
+  // from the footer and it does not.
+  //
+  // Build-time rather than in config.json, like the two above and like the WUI's AppProperties.TOS_URL
+  // it replaces: there is one Lahendus terms document, not one per environment.
+  tosUrl:
+    'https://docs.google.com/document/d/1dk1Pp3hXJEX7HllQFdMFo5AXhgzy4zhZv3Qt6-xI_CI/edit?usp=sharing',
+
   // Replaced by loadConfig(). Empty rather than defaulted: a config that failed to load should
   // fail visibly at boot, not quietly talk to whichever backend the default happened to name.
   emsRoot: '',

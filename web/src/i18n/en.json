@@ -622,5 +622,9 @@
     "expandTest": "Expand test",
     "expectedValues": "Expected values",
     "returnValue": "Return value"
+  },
+  "terms": {
+    "redirecting": "Opening the terms of service…",
+    "openManually": "Open them directly"
   }
 }

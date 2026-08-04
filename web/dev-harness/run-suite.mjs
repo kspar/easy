@@ -34,6 +34,7 @@ const SCRIPTS = [
   'course-exercise-embed.mjs',
   'course-exercise-retry-autoassess.mjs',
   'similarity-page.mjs',
+  'terms-redirect.mjs',
 ]
 
 function log(msg) {

@@ -622,5 +622,9 @@
     "expandTest": "Laienda test",
     "expectedValues": "Oodatavad väärtused",
     "returnValue": "Tagastusväärtus"
+  },
+  "terms": {
+    "redirecting": "Avan kasutustingimused…",
+    "openManually": "Ava need otse"
   }
 }
