@@ -61,9 +61,11 @@ function SettingRow({
  *
  * Deliberately small, because most of what belongs on a page like this is not ours to change:
  *
- * - **Name and email come from the university account**, through Keycloak, and core only mirrors
- *   them at check-in. Editing them here would either not stick or would silently disagree with the
- *   identity provider, so they are shown read-only and the page points at the place that owns them.
+ * - **Name and email live in the Lahendus identity account**, and are editable there — some accounts
+ *   are federated from a university login and some are created directly through the register link,
+ *   so this page must not claim either. Core only mirrors these at check-in, which is why editing
+ *   them here would disagree with the identity provider until the next sign-in; shown read-only,
+ *   with a link to the place that owns them.
  * - **Password, two-factor and sessions live in Keycloak's own account console.** Rebuilding those
  *   screens against the admin API would mean maintaining a worse copy of something Keycloak already
  *   ships and keeps current with its own security fixes.
@@ -139,9 +141,24 @@ export default function AccountSettingsPage() {
       <Stack spacing={3} sx={{ maxWidth: 720 }}>
         {/* --- who you are, as the identity provider sees you ------------------------------------ */}
         <Paper variant="outlined" sx={{ p: 2.5 }}>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
-            {t('account.profile')}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ flex: 1 }}>
+              {t('account.profile')}
+            </Typography>
+            {/* Editable, just not here: the same account console that owns the password owns the
+                name and email, so this is a link rather than a form. */}
+            {accountUrl && (
+              <Button
+                href={accountUrl}
+                target="_blank"
+                rel="noopener"
+                size="small"
+                endIcon={<OpenInNewOutlined />}
+              >
+                {t('account.edit')}
+              </Button>
+            )}
+          </Box>
           <Stack spacing={1.5}>
             {[
               { label: t('account.name'), value: name },

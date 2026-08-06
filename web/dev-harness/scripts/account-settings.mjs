@@ -66,12 +66,19 @@ check(
   (await page.getByText('Teacher', { exact: true }).count()) > 0,
 )
 check(
-  'and it says where name and email actually come from',
-  (await page.getByText(/come from your university account/i).count()) > 0,
+  'and it says where name and email are kept, without claiming they came from the university —' +
+    ' plenty of accounts are created through the register link instead',
+  (await page.getByText(/kept in your Lahendus account/i).count()) > 0,
+)
+check(
+  'the profile section offers a way to edit them, at the identity provider',
+  (await page.getByRole('link', { name: 'Edit' }).getAttribute('href'))?.includes('/account'),
 )
 
 // --- the Keycloak console link ------------------------------------------------------------------------
-const securityLink = page.getByRole('link', { name: /Open/i })
+// By exact name: there are two links to the account console now, and /Open/i would also match "Edit"
+// if that ever gained a longer label.
+const securityLink = page.getByRole('link', { name: 'Open', exact: true })
 const href = await securityLink.getAttribute('href')
 check(
   'security settings link at the identity provider, built by keycloak-js',
