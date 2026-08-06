@@ -28,6 +28,7 @@ const SCRIPTS = [
   'library-page.mjs',
   'runtime-config.mjs',
   'library-exercise-tsl.mjs',
+  'library-exercise-tsl-contains.mjs',
   'library-exercise-ui.mjs',
   'library-exercise-markdown.mjs',
   'embed-exercise.mjs',

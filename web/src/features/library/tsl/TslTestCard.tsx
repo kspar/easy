@@ -27,7 +27,14 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import TslTestBody from './TslTestBody.tsx'
-import { createTest, defaultTestName, isEditableType, TEST_TYPES, type TslTest } from './tslModel.ts'
+import {
+  createTest,
+  defaultTestName,
+  isEditableType,
+  TEST_TYPES,
+  testDefaultName,
+  type TslTest,
+} from './tslModel.ts'
 
 export interface TestCardActions {
   onChange: (next: TslTest) => void
@@ -60,7 +67,9 @@ export default function TslTestCard({
   // accessible name at all.
   const typeLabelId = useId()
 
-  const title = test.name?.trim() ? test.name : defaultTestName(test.type, t)
+  // Instance-aware, not type-aware: a collapsed test's name depends on its scope and target, so
+  // every `contains_test` would otherwise read as the same generic label in the list.
+  const title = test.name?.trim() ? test.name : testDefaultName(test, t)
 
   /**
    * Switching type replaces the body wholesale — the fields of one TSL test mean nothing to
@@ -68,8 +77,8 @@ export default function TslTestCard({
    */
   function changeType(type: string) {
     if (!isEditableType(type)) return
-    const fresh = createTest(type, test.id)
-    const keptName = test.name?.trim() && test.name !== defaultTestName(test.type, t) ? test.name : null
+    const fresh = createTest(type, test.id, t)
+    const keptName = test.name?.trim() && test.name !== testDefaultName(test, t) ? test.name : null
     actions.onChange({ ...fresh, name: keptName })
   }
 
@@ -102,7 +111,7 @@ export default function TslTestCard({
               onBlur={() => setRenaming(false)}
               autoFocus
               size="small"
-              placeholder={defaultTestName(test.type, t)}
+              placeholder={testDefaultName(test, t)}
               slotProps={{ htmlInput: { maxLength: 100 } }}
               sx={{ flex: 1 }}
             />

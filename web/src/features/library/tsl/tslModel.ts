@@ -6,17 +6,19 @@
  * 1. The spec is decoded server-side by kotlinx.serialization with the default
  *    `ignoreUnknownKeys = false`, so an unknown key is a hard compile error. Everything written
  *    back must therefore be a key that actually exists on the Kotlin class.
- * 2. The visual editor only understands a subset of each test's fields, and only some of the 43
- *    test types at all. So tests are carried as open objects and *patched* rather than rebuilt:
- *    spreading the parsed object keeps `pointsWeight`, `visibleToUser`, `passedNext` and every
- *    other field the UI never shows, and an unrecognised test type round-trips untouched.
+ * 2. The visual editor only understands a subset of each test's fields. So tests are carried as
+ *    open objects and *patched* rather than rebuilt: spreading the parsed object keeps
+ *    `pointsWeight`, `visibleToUser`, `passedNext` and every other field the UI never shows, and
+ *    an unrecognised test type round-trips untouched.
  *
  * The sealed `Test` hierarchy serialises with kotlinx's default `"type"` discriminator, matching
  * each subclass's `@SerialName`.
  *
- * Currently a proof of concept: `placeholder_test`, `program_execution_test` and
- * `function_execution_test` have real forms — the same three wui shipped. Every other type is
- * shown as raw JSON and preserved byte-for-byte. See `TEST_TYPES` for how to add more.
+ * The TSL model collapsed 39 narrow test types into 4 parameterised ones (EZ-1607), so the whole
+ * universe is now 8 types rather than 43 and full form coverage is actually reachable. Done so
+ * far: `placeholder_test`, `program_execution_test`, `function_execution_test`, `contains_test`.
+ * Anything else still falls back to raw JSON, preserved byte-for-byte. See `TEST_TYPES` for how
+ * to add more.
  */
 
 export type CheckType = 'ALL_OF_THESE' | 'ANY_OF_THESE' | 'MISSING_AT_LEAST_ONE_OF_THESE' | 'NONE_OF_THESE'
@@ -49,6 +51,64 @@ export interface ReturnValueCheck {
   failedMessage: string
 }
 
+// --- the collapsed static tests (EZ-1607) ----------------------------------------------------
+//
+// `contains_test`, `calls_test`, `definition_test` and `function_is_test` replaced 39 types that
+// each hardcoded one scope and one target. The scope is now a field, which is why these three
+// enums and `GenericCheckLong` are shared rather than per-type.
+
+/** Where the check looks. `MAIN_PROGRAM` is the code outside any def/class. */
+export type Scope = 'PROGRAM' | 'MAIN_PROGRAM' | 'FUNCTION' | 'CLASS'
+
+/**
+ * What `contains_test` searches for.
+ *
+ * `KEYWORD_WITH_PRECEDING_ARG` is narrower than it sounds: tiivad maps it to `imports_module` and
+ * raises on any argument other than `"import"`, so the UI offers it as "imports a module" and
+ * fills the argument in itself rather than exposing a free-text field that only has one legal
+ * value. See `run_contains_test` in tiivad's handler.py.
+ */
+export type ContainsWhat = 'KEYWORD_NO_ARG' | 'KEYWORD_WITH_PRECEDING_ARG' | 'PHRASE'
+
+/**
+ * The quantifier on a `GenericCheckLong`. Wider than `CheckType`: `ANY` and `NONE` ask whether
+ * the target set is non-empty / empty *without naming anything*, which is how the old boolean
+ * checks (`ContainsCheck.mustNotContain`, `CallsCheck.mustNotCall`) survive the collapse.
+ */
+export type CheckTypeLong =
+  | 'ALL_OF_THESE'
+  | 'ANY_OF_THESE'
+  | 'ANY'
+  | 'NONE_OF_THESE'
+  | 'MISSING_AT_LEAST_ONE_OF_THESE'
+  | 'NONE'
+
+/** True when the quantifier actually reads `expectedValue`; `ANY`/`NONE` ignore it. */
+export function quantifierUsesValues(checkType: CheckTypeLong): boolean {
+  return checkType !== 'ANY' && checkType !== 'NONE'
+}
+
+/** True when `nothingElse` is honoured — tiivad only applies it to these two. */
+export function quantifierUsesNothingElse(checkType: CheckTypeLong): boolean {
+  return checkType === 'ALL_OF_THESE' || checkType === 'ANY_OF_THESE'
+}
+
+/**
+ * The single check carried by each collapsed static test. Deliberately *not* `GenericCheck`: no
+ * `id`, no `elementsOrdered`, no `outputCategory`, and a wider `checkType`. Emitting any of those
+ * keys would be a hard decode error server-side.
+ */
+export interface GenericCheckLong {
+  checkType: CheckTypeLong
+  nothingElse?: boolean | null
+  expectedValue: string[]
+  dataCategory?: DataCategory
+  ignoreCase?: boolean | null
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
 /**
  * One test. Only `type` and `id` are guaranteed; everything else depends on the test type and is
  * read through narrowing helpers. Unknown keys are preserved by construction.
@@ -70,7 +130,11 @@ export interface TslSpec {
 }
 
 /** A test with a full visual form. Anything else falls back to the raw JSON editor. */
-export type EditableTestType = 'placeholder_test' | 'program_execution_test' | 'function_execution_test'
+export type EditableTestType =
+  | 'placeholder_test'
+  | 'program_execution_test'
+  | 'function_execution_test'
+  | 'contains_test'
 
 /**
  * The types the "test type" dropdown offers. Extending the editor to another TSL test means
@@ -80,6 +144,7 @@ export const TEST_TYPES: EditableTestType[] = [
   'placeholder_test',
   'program_execution_test',
   'function_execution_test',
+  'contains_test',
 ]
 
 export function isEditableType(type: string): type is EditableTestType {
@@ -117,12 +182,46 @@ export function emptyGenericCheck(passedMessage: string, failedMessage: string):
   }
 }
 
-/** A blank test of the given type, with every field the Kotlin class declares. */
-export function createTest(type: EditableTestType, id = nextId()): TslTest {
+/**
+ * A blank `GenericCheckLong`. `dataCategory` and `ignoreCase` are left off: tiivad's
+ * `run_contains_test` never reads them, and both have Kotlin-side defaults, so writing them would
+ * add noise to the spec without changing any behaviour.
+ */
+export function emptyGenericCheckLong(passedMessage: string, failedMessage: string): GenericCheckLong {
+  return {
+    checkType: 'ALL_OF_THESE',
+    expectedValue: [],
+    beforeMessage: '',
+    passedMessage,
+    failedMessage,
+  }
+}
+
+/**
+ * A blank test of the given type, with every field the Kotlin class declares.
+ *
+ * `t` is optional only because the placeholder test needs no copy. The collapsed static tests do:
+ * their `genericCheck` is non-nullable, so unlike the execution tests' *optional* checks — which
+ * get their default messages from the "add check" button — there is no later moment at which
+ * translated feedback could be filled in. Without it the spec ships empty pass/fail messages and
+ * students see blank check descriptions in their feedback.
+ */
+export function createTest(type: EditableTestType, id = nextId(), t?: Translate): TslTest {
+  const tr = (key: string) => (t ? t(key) : '')
   const base: TslTest = { type, id, name: null }
   switch (type) {
     case 'placeholder_test':
       return base
+    case 'contains_test':
+      return {
+        ...base,
+        scope: 'PROGRAM',
+        containsWhat: 'KEYWORD_NO_ARG',
+        containsWhatArg: null,
+        functionName: null,
+        className: null,
+        genericCheck: emptyGenericCheckLong(tr('tsl.containsCheckPass'), tr('tsl.containsCheckFail')),
+      }
     case 'program_execution_test':
       return {
         ...base,
@@ -181,6 +280,32 @@ export function returnCheckField(test: TslTest): ReturnValueCheck | null {
   return v as ReturnValueCheck
 }
 
+/**
+ * The single `genericCheck` the collapsed static tests carry. Falls back to a blank rather than
+ * null: the field is non-nullable in Kotlin, so a spec that lost it is already broken and the
+ * form may as well let you fill it back in.
+ */
+export function genericCheckField(test: TslTest): GenericCheckLong {
+  const v = test.genericCheck
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    return emptyGenericCheckLong('', '')
+  }
+  return v as GenericCheckLong
+}
+
+/** A field that is either a string or absent — the collapsed tests use null for "not applicable". */
+export function optStrField(test: TslTest, key: string): string {
+  const v = test[key]
+  return typeof v === 'string' ? v : ''
+}
+
+/** Which extra name field a scope implies, if any. */
+export function scopeNameField(scope: Scope): 'functionName' | 'className' | null {
+  if (scope === 'FUNCTION') return 'functionName'
+  if (scope === 'CLASS') return 'className'
+  return null
+}
+
 export function serializeSpec(spec: TslSpec): string {
   return JSON.stringify(spec, null, 4)
 }
@@ -215,13 +340,37 @@ export function parseSpec(text: string): ParseResult {
 }
 
 /**
- * Display name for a test type. Falls back to the raw discriminator for the types that have no
- * form (and therefore no translated name) yet.
+ * Display name for a test *type*, used where there is no instance to read — the type dropdown.
+ * Falls back to the raw discriminator for types that have no form (and therefore no translated
+ * name) yet.
  */
 export function defaultTestName(type: string, t: (key: string) => string): string {
   const key = `tsl.defaultName.${type}`
   const translated = t(key)
   return translated === key ? type : translated
+}
+
+type Translate = (key: string, opts?: Record<string, unknown>) => string
+
+/**
+ * Display name for a test *instance*. The collapsed types (EZ-1607) took their distinguishing
+ * detail into fields, so "contains test" alone no longer says what it checks — the name has to be
+ * built from scope and target the way Kotlin's `getDefaultName()` does.
+ *
+ * Worth knowing: this is the editor's label only. When `name` is null the spec carries no name at
+ * all, and the title students see in feedback comes from `getDefaultName()` on the Kotlin side,
+ * which is hardcoded Estonian. So the two agree in `et` by construction and diverge in `en` —
+ * a pre-existing wart of the model, not something this function can fix.
+ */
+export function testDefaultName(test: TslTest, t: Translate): string {
+  if (test.type === 'contains_test') {
+    const scope = test.scope
+    const what = test.containsWhat
+    const scopeKey = typeof scope === 'string' ? scope : 'PROGRAM'
+    const whatKey = typeof what === 'string' ? what : 'KEYWORD_NO_ARG'
+    return t(`tsl.containsName.${whatKey}`, { scope: t(`tsl.scopeSubject.${scopeKey}`) })
+  }
+  return defaultTestName(test.type, t)
 }
 
 /** A copy of `test` with a fresh id, so both can live in the same spec. */

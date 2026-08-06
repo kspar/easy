@@ -618,12 +618,60 @@
     "defaultName": {
       "placeholder_test": "Uus test",
       "program_execution_test": "Programmi käivituse test",
-      "function_execution_test": "Funktsiooni väljakutse test"
+      "function_execution_test": "Funktsiooni väljakutse test",
+      "contains_test": "Koodi sisu test"
     },
     "collapseTest": "Ahenda test",
     "expandTest": "Laienda test",
     "expectedValues": "Oodatavad väärtused",
-    "returnValue": "Tagastusväärtus"
+    "returnValue": "Tagastusväärtus",
+    "whereToLook": "Kust otsida",
+    "whatToLookFor": "Mida otsida",
+    "scope": "Ulatus",
+    "className": "Klassi nimi",
+    "containsWhat": "Otsitav",
+    "condition": "Tingimus",
+    "nothingElse": "…ja mitte midagi muud",
+    "longAll": "leiduvad kõik loetletud",
+    "longAny": "leidub vähemalt üks loetletud",
+    "longNone": "ei leidu ühtegi loetletud",
+    "longMissingOne": "vähemalt üks loetletud puudub",
+    "longAnyAtAll": "leidub vähemalt üks, ükskõik milline",
+    "longNoneAtAll": "ei leidu mitte ühtegi",
+    "scopeName": {
+      "PROGRAM": "Kogu programm",
+      "MAIN_PROGRAM": "Põhiprogramm",
+      "FUNCTION": "Funktsioon",
+      "CLASS": "Klass"
+    },
+    "scopeSubject": {
+      "PROGRAM": "Programm",
+      "MAIN_PROGRAM": "Põhiprogramm",
+      "FUNCTION": "Funktsioon",
+      "CLASS": "Klass"
+    },
+    "containsWhatName": {
+      "KEYWORD_NO_ARG": "Reserveeritud võtmesõna",
+      "KEYWORD_WITH_PRECEDING_ARG": "Imporditud moodul",
+      "PHRASE": "Sõne"
+    },
+    "containsName": {
+      "KEYWORD_NO_ARG": "{{scope}} otsib reserveeritud võtmesõna",
+      "KEYWORD_WITH_PRECEDING_ARG": "{{scope}} otsib reserveeritud võtmesõna koos argumendiga import",
+      "PHRASE": "{{scope}} otsib sõne"
+    },
+    "containsValuesLabel": {
+      "KEYWORD_NO_ARG": "Võtmesõnad",
+      "KEYWORD_WITH_PRECEDING_ARG": "Moodulite nimed",
+      "PHRASE": "Sõned"
+    },
+    "containsValuesHelp": {
+      "KEYWORD_NO_ARG": "Pythoni võtmesõnad, üks real — for, while, try, except, if, return",
+      "KEYWORD_WITH_PRECEDING_ARG": "Moodulite nimed, üks real — csv, math",
+      "PHRASE": "Lähtekoodist otsitav tekst, üks väärtus real"
+    },
+    "containsCheckPass": "Koodist leiti oodatu: {expected}",
+    "containsCheckFail": "Koodist ei leitud {expected}"
   },
   "terms": {
     "redirecting": "Avan kasutustingimused…",

@@ -618,12 +618,60 @@
     "defaultName": {
       "placeholder_test": "New test",
       "program_execution_test": "Program execution test",
-      "function_execution_test": "Function call test"
+      "function_execution_test": "Function call test",
+      "contains_test": "Code contains…"
     },
     "collapseTest": "Collapse test",
     "expandTest": "Expand test",
     "expectedValues": "Expected values",
-    "returnValue": "Return value"
+    "returnValue": "Return value",
+    "whereToLook": "Where to look",
+    "whatToLookFor": "What to look for",
+    "scope": "Scope",
+    "className": "Class name",
+    "containsWhat": "Looks for",
+    "condition": "Condition",
+    "nothingElse": "…and nothing else",
+    "longAll": "all of these are present",
+    "longAny": "at least one of these is present",
+    "longNone": "none of these are present",
+    "longMissingOne": "at least one of these is missing",
+    "longAnyAtAll": "at least one, any at all",
+    "longNoneAtAll": "none at all",
+    "scopeName": {
+      "PROGRAM": "Whole program",
+      "MAIN_PROGRAM": "Main program",
+      "FUNCTION": "A function",
+      "CLASS": "A class"
+    },
+    "scopeSubject": {
+      "PROGRAM": "The program",
+      "MAIN_PROGRAM": "The main program",
+      "FUNCTION": "The function",
+      "CLASS": "The class"
+    },
+    "containsWhatName": {
+      "KEYWORD_NO_ARG": "Keyword",
+      "KEYWORD_WITH_PRECEDING_ARG": "Imported module",
+      "PHRASE": "Text"
+    },
+    "containsName": {
+      "KEYWORD_NO_ARG": "{{scope}} contains a keyword",
+      "KEYWORD_WITH_PRECEDING_ARG": "{{scope}} imports a module",
+      "PHRASE": "{{scope}} contains text"
+    },
+    "containsValuesLabel": {
+      "KEYWORD_NO_ARG": "Keywords",
+      "KEYWORD_WITH_PRECEDING_ARG": "Module names",
+      "PHRASE": "Text"
+    },
+    "containsValuesHelp": {
+      "KEYWORD_NO_ARG": "Python keywords, one per line — for, while, try, except, if, return",
+      "KEYWORD_WITH_PRECEDING_ARG": "Module names, one per line — csv, math",
+      "PHRASE": "Text to find in the source, one value per line"
+    },
+    "containsCheckPass": "Found what was expected in the code: {expected}",
+    "containsCheckFail": "Could not find {expected} in the code"
   },
   "terms": {
     "redirecting": "Opening the terms of service…",

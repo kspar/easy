@@ -1,13 +1,26 @@
-import { useState } from 'react'
-import { Alert, Box, TextField, Typography } from '@mui/material'
+import { useId, useState } from 'react'
+import {
+  Alert,
+  Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import CodeEditor from '../../../components/CodeEditor.tsx'
 import {
   checkListField,
   fileListField,
+  genericCheckField,
+  optStrField,
   returnCheckField,
   strField,
   strListField,
+  type ContainsWhat,
+  type Scope,
   type TslTest,
 } from './tslModel.ts'
 import {
@@ -17,6 +30,7 @@ import {
   TslReturnCheckSection,
   TslStdInSection,
 } from './TslSections.tsx'
+import { TslGenericCheckLongSection, TslScopeSection } from './TslStaticSections.tsx'
 
 interface BodyProps {
   test: TslTest
@@ -36,6 +50,8 @@ export default function TslTestBody({ test, editing, onChange }: BodyProps) {
       return <ProgramExecutionBody test={test} editing={editing} onChange={onChange} />
     case 'function_execution_test':
       return <FunctionExecutionBody test={test} editing={editing} onChange={onChange} />
+    case 'contains_test':
+      return <ContainsBody test={test} editing={editing} onChange={onChange} />
     default:
       return <RawBody test={test} editing={editing} onChange={onChange} />
   }
@@ -136,8 +152,74 @@ function FunctionExecutionBody({ test, editing, onChange }: BodyProps) {
   )
 }
 
+const CONTAINS_WHAT: ContainsWhat[] = ['KEYWORD_NO_ARG', 'KEYWORD_WITH_PRECEDING_ARG', 'PHRASE']
+
 /**
- * Fallback for the ~40 test types that don't have a form yet. Editing the JSON directly still
+ * `contains_test` — one of the four types that replaced 39 (EZ-1607). This one alone stands in for
+ * 13: every `{program,mainProgram,function,class}_contains_{keyword,phrase,loop,try_except,return}`
+ * and `*_imports_module` test.
+ *
+ * The old boolean variants ("contains a loop", yes/no) have no special form here on purpose: they
+ * are now just a keyword check whose expected values happen to be `for` / `while`, which is both
+ * how the model expresses them and more flexible than the fixed pair ever was.
+ */
+function ContainsBody({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const whatId = useId()
+  const scope = (typeof test.scope === 'string' ? test.scope : 'PROGRAM') as Scope
+  const containsWhat = (typeof test.containsWhat === 'string' ? test.containsWhat : 'KEYWORD_NO_ARG') as ContainsWhat
+
+  return (
+    <Box>
+      <TslGroupTitle>{t('tsl.whereToLook')}</TslGroupTitle>
+      <TslScopeSection
+        scope={scope}
+        functionName={optStrField(test, 'functionName')}
+        className={optStrField(test, 'className')}
+        editing={editing}
+        onChange={(patch) => onChange({ ...test, ...patch })}
+      />
+
+      <TslGroupTitle>{t('tsl.whatToLookFor')}</TslGroupTitle>
+      <FormControl size="small" sx={{ minWidth: 260 }} disabled={!editing}>
+        <InputLabel id={whatId}>{t('tsl.containsWhat')}</InputLabel>
+        <Select
+          labelId={whatId}
+          label={t('tsl.containsWhat')}
+          value={containsWhat}
+          onChange={(e) => {
+            const next = e.target.value as ContainsWhat
+            // `import` is not a default the user may override — it is the only argument tiivad
+            // accepts for this mode, so the UI owns the field rather than showing it.
+            onChange({
+              ...test,
+              containsWhat: next,
+              containsWhatArg: next === 'KEYWORD_WITH_PRECEDING_ARG' ? 'import' : null,
+            })
+          }}
+        >
+          {CONTAINS_WHAT.map((w) => (
+            <MenuItem key={w} value={w}>
+              {t(`tsl.containsWhatName.${w}`)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <TslGroupTitle>{t('tsl.checks')}</TslGroupTitle>
+      <TslGenericCheckLongSection
+        check={genericCheckField(test)}
+        valuesLabel={t(`tsl.containsValuesLabel.${containsWhat}`)}
+        valuesHelp={t(`tsl.containsValuesHelp.${containsWhat}`)}
+        editing={editing}
+        onChange={(genericCheck) => onChange({ ...test, genericCheck })}
+      />
+    </Box>
+  )
+}
+
+/**
+ * Fallback for the test types that don't have a form yet. Editing the JSON directly still
  * works, and leaving it alone preserves the test exactly — which is the point: an exercise
  * authored in wui must survive being opened here.
  */
