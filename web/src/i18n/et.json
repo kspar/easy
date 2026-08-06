@@ -77,7 +77,8 @@
     "collapseLeft": "Peida vasak paneel",
     "collapseRight": "Peida parem paneel",
     "lightMode": "Hele režiim",
-    "darkMode": "Tume režiim"
+    "darkMode": "Tume režiim",
+    "accountMenu": "Konto menüü"
   },
   "courses": {
     "title": "Minu kursused",
@@ -627,5 +628,27 @@
   "terms": {
     "redirecting": "Avan kasutustingimused…",
     "openManually": "Ava need otse"
+  },
+  "account": {
+    "title": "Konto seaded",
+    "profile": "Profiil",
+    "name": "Nimi",
+    "email": "E-post",
+    "username": "Kasutajanimi",
+    "roles": "Rollid",
+    "profileManagedElsewhere": "Nimi ja e-post tulevad sinu ülikooli kontolt. Muuda neid seal ja need uuenevad siin järgmisel sisselogimisel.",
+    "security": "Turvalisus",
+    "securityConsole": "Parool, kaheastmeline autentimine ja sessioonid",
+    "securityConsoleHint": "Neid haldad oma Lahenduse identiteedikontol, mis avaneb uues sakis.",
+    "open": "Ava",
+    "appearance": "Välimus",
+    "darkMode": "Tume režiim",
+    "language": "Keel",
+    "storedLocally": "Salvestatud ainult selles brauseris.",
+    "yourData": "Sinu andmed",
+    "exportData": "Laadi alla oma isikuandmed",
+    "exportDataHint": "Zip-fail kõigest, mida Lahendus sinu kohta hoiab: konto, esitused, hinded ja tagasiside.",
+    "download": "Laadi alla",
+    "exportFailed": "Allalaadimist ei õnnestunud ette valmistada. Palun proovi uuesti."
   }
 }

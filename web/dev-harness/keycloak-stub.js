@@ -26,4 +26,15 @@ export default class Keycloak {
   updateToken() { return Promise.resolve(false) }
   login() {}
   logout() {}
+
+  // The account console URL, which the settings page links to. Shaped like the real one — the real
+  // method builds `<url>realms/<realm>/account?referrer=...` — because a stub that answers with
+  // something implausible turns a genuine "this link is wrong" into a passing test.
+  //
+  // Added after the settings page crashed here with "createAccountUrl is not a function": the stub
+  // silently lags the real API surface as pages start using more of it, and each gap looks like an
+  // application bug until you read the stack.
+  createAccountUrl() {
+    return 'https://idp.example/realms/stub/account'
+  }
 }

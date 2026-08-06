@@ -77,7 +77,8 @@
     "collapseLeft": "Collapse left pane",
     "collapseRight": "Collapse right pane",
     "lightMode": "Light mode",
-    "darkMode": "Dark mode"
+    "darkMode": "Dark mode",
+    "accountMenu": "Account menu"
   },
   "courses": {
     "title": "My courses",
@@ -627,5 +628,27 @@
   "terms": {
     "redirecting": "Opening the terms of service…",
     "openManually": "Open them directly"
+  },
+  "account": {
+    "title": "Account settings",
+    "profile": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "username": "Username",
+    "roles": "Roles",
+    "profileManagedElsewhere": "Your name and email come from your university account. Change them there and they update here at your next sign-in.",
+    "security": "Security",
+    "securityConsole": "Password, two-factor authentication and sessions",
+    "securityConsoleHint": "Managed in your Lahendus identity account, which opens in a new tab.",
+    "open": "Open",
+    "appearance": "Appearance",
+    "darkMode": "Dark mode",
+    "language": "Language",
+    "storedLocally": "Saved in this browser only.",
+    "yourData": "Your data",
+    "exportData": "Download your personal data",
+    "exportDataHint": "A zip of everything Lahendus stores about you: your account, submissions, grades and feedback.",
+    "download": "Download",
+    "exportFailed": "Could not prepare the download. Please try again."
   }
 }

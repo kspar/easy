@@ -36,6 +36,7 @@ const SCRIPTS = [
   'similarity-page.mjs',
   'terms-redirect.mjs',
   'grade-table.mjs',
+  'account-settings.mjs',
 ]
 
 function log(msg) {

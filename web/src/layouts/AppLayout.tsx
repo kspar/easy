@@ -652,6 +652,9 @@ export default function AppLayout() {
               <>
                 <IconButton
                   size="small"
+                  // Icon-only, so without this it has no accessible name at all: unreachable by
+                  // screen reader and unfindable by anything querying the accessibility tree.
+                  aria-label={t('nav.accountMenu')}
                   onClick={(e) => setProfileAnchor(e.currentTarget)}
                   sx={{ ml: 0.5 }}
                 >
@@ -679,6 +682,7 @@ export default function AppLayout() {
                   <MenuItem
                     onClick={() => {
                       setProfileAnchor(null)
+                      navigate('/account')
                     }}
                   >
                     <ListItemIcon>

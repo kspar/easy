@@ -16,6 +16,7 @@ import JoinByLinkPage from '../features/join/JoinByLinkPage.tsx'
 import IndexRedirect from './IndexRedirect.tsx'
 import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
 import TermsRedirect from '../features/terms/TermsRedirect.tsx'
+import AccountSettingsPage from '../features/account/AccountSettingsPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,14 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <IndexRedirect /> },
+      {
+        path: 'account',
+        element: (
+          <RequireAuth>
+            <AccountSettingsPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'courses',
         element: (
