@@ -77,8 +77,17 @@ enum class CheckTypeLong {
 enum class DataCategory {
     CONTAINS_LINES, CONTAINS_NUMBERS, CONTAINS_STRINGS, EQUALS
 }
+
 enum class OutputCategory {
     ALL_IO, ALL_OUTPUT, LAST_OUTPUT, OUTPUT_NUMBER_0, OUTPUT_NUMBER_1, OUTPUT_NUMBER_2, OUTPUT_NUMBER_3, OUTPUT_NUMBER_4, OUTPUT_NUMBER_5, OUTPUT_NUMBER_6, OUTPUT_NUMBER_7, OUTPUT_NUMBER_8, OUTPUT_NUMBER_9
+}
+
+enum class Scope(val value: String) {
+    PROGRAM("program"),
+    FUNCTION("function"),
+    CLASS("class"),
+    MAIN_PROGRAM("main_program")
+
 }
 
 @Serializable
@@ -147,6 +156,14 @@ data class ExceptionCheck(
 ) : Check()
 
 @Serializable
+data class FunctionPropertyCheck(
+    val mustHaveProperty: Boolean = true,
+    override val beforeMessage: String,
+    override val passedMessage: String,
+    override val failedMessage: String
+) : Check()
+
+@Serializable
 data class ReturnValueCheck(
     val returnValue: String,
     override val beforeMessage: String,
@@ -174,27 +191,3 @@ data class ClassInstanceCheck(
     override val failedMessage: String
 ) : Check()
 
-
-@Serializable
-data class ContainsCheck(
-    val mustNotContain: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
-
-@Serializable
-data class RecursiveCheck(
-    val mustNotBeRecursive: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
-
-@Serializable
-data class CallsCheck(
-    val mustNotCall: Boolean,
-    override val beforeMessage: String,
-    override val passedMessage: String,
-    override val failedMessage: String
-) : Check()
