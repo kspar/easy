@@ -51,6 +51,66 @@ export interface ReturnValueCheck {
   failedMessage: string
 }
 
+/** `FUNCTION` is a plain function; `METHOD` is called on an object built by `createObject`. */
+export type FunctionType = 'FUNCTION' | 'METHOD'
+
+/** Like `GenericCheck`, but against a file the submission wrote rather than its output. */
+export interface OutputFileCheck {
+  fileName: string
+  checkType: CheckType
+  nothingElse?: boolean | null
+  expectedValue: string[]
+  elementsOrdered?: boolean | null
+  dataCategory?: DataCategory
+  ignoreCase?: boolean | null
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
+/** Whether the run is allowed to raise. `mustNotThrowException` reads as written. */
+export interface ExceptionCheck {
+  mustNotThrowException: boolean
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
+/** Checks one argument *after* the call, for functions that mutate what they are given. */
+export interface ParamValueCheck {
+  paramNumber: number
+  expectedValue: string
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
+/**
+ * One field of a constructed object. `fieldContent` is emitted as a Python *literal*, not a
+ * string (`PyStr(..., forceString = false)`), so `5` stays a number and text needs its own quotes.
+ */
+export interface FieldData {
+  fieldName: string
+  fieldContent: string
+}
+
+/**
+ * The state of an object after construction, compared against `obj.__dict__`.
+ *
+ * `checkName` and `checkValue` are independent and both are needed: with only `checkName` the
+ * fields must exist but may hold anything, with only `checkValue` the values must appear under
+ * some name or other. `nothingElse` additionally forbids fields not listed.
+ */
+export interface ClassInstanceCheck {
+  fieldsFinal: FieldData[]
+  checkName: boolean
+  checkValue: boolean
+  nothingElse: boolean
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
 // --- the collapsed static tests (EZ-1607) ----------------------------------------------------
 //
 // `contains_test`, `calls_test`, `definition_test` and `function_is_test` replaced 39 types that
@@ -159,6 +219,7 @@ export type EditableTestType =
   | 'placeholder_test'
   | 'program_execution_test'
   | 'function_execution_test'
+  | 'class_instance_test'
   | 'contains_test'
   | 'calls_test'
   | 'definition_test'
@@ -178,7 +239,7 @@ export type EditableTestType =
 export const TEST_TYPE_GROUPS: { labelKey: string; types: EditableTestType[] }[] = [
   {
     labelKey: 'tsl.groupExecution',
-    types: ['program_execution_test', 'function_execution_test'],
+    types: ['program_execution_test', 'function_execution_test', 'class_instance_test'],
   },
   {
     labelKey: 'tsl.groupStatic',
@@ -318,16 +379,30 @@ export function createTest(type: EditableTestType, id = nextId(), t?: Translate)
         exceptionCheck: null,
       }
     case 'function_execution_test':
+      // The three `*ErrorMsg` fields are deliberately absent, not blank. They have non-empty
+      // Kotlin defaults, so an omitted key means "use the default" while an empty string would
+      // override it with nothing. The form writes them only once edited, and deletes them again
+      // when cleared.
       return {
         ...base,
         functionName: '',
         functionType: 'FUNCTION',
+        createObject: null,
         arguments: [],
         standardInputData: [],
         inputFiles: [],
         genericChecks: [],
         returnValueCheck: null,
         paramValueChecks: [],
+        outputFileChecks: [],
+      }
+    case 'class_instance_test':
+      return {
+        ...base,
+        className: '',
+        createObject: '',
+        classInstanceChecks: [],
+        genericChecks: [],
         outputFileChecks: [],
       }
   }
@@ -377,6 +452,72 @@ export function genericCheckField(test: TslTest): GenericCheckLong {
     return emptyGenericCheckLong('', '')
   }
   return v as GenericCheckLong
+}
+
+/** A list-valued check field, filtered to plain objects so the JSON tab can't crash a form. */
+function objListField<T>(test: TslTest, key: string): T[] {
+  const v = test[key]
+  if (!Array.isArray(v)) return []
+  return v.filter((x): x is T => typeof x === 'object' && x !== null)
+}
+
+export const outputFileChecksField = (t: TslTest) => objListField<OutputFileCheck>(t, 'outputFileChecks')
+export const paramChecksField = (t: TslTest) => objListField<ParamValueCheck>(t, 'paramValueChecks')
+export const instanceChecksField = (t: TslTest) =>
+  objListField<ClassInstanceCheck>(t, 'classInstanceChecks').map((c) => ({
+    ...c,
+    fieldsFinal: Array.isArray(c.fieldsFinal) ? c.fieldsFinal : [],
+  }))
+
+export function exceptionCheckField(test: TslTest): ExceptionCheck | null {
+  const v = test.exceptionCheck
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
+  return v as ExceptionCheck
+}
+
+export function emptyOutputFileCheck(passedMessage: string, failedMessage: string): OutputFileCheck {
+  return {
+    fileName: 'output.txt',
+    checkType: 'ALL_OF_THESE',
+    expectedValue: [],
+    elementsOrdered: false,
+    dataCategory: 'CONTAINS_STRINGS',
+    beforeMessage: '',
+    passedMessage,
+    failedMessage,
+  }
+}
+
+export function emptyClassInstanceCheck(passedMessage: string, failedMessage: string): ClassInstanceCheck {
+  // Both name and value on by default: "the object has field x set to y" is what a teacher means
+  // by checking a field, and each can be turned off for the looser variants.
+  return {
+    fieldsFinal: [],
+    checkName: true,
+    checkValue: true,
+    nothingElse: false,
+    beforeMessage: '',
+    passedMessage,
+    failedMessage,
+  }
+}
+
+export function emptyParamValueCheck(passedMessage: string, failedMessage: string): ParamValueCheck {
+  // Zero-based: tiivad indexes the argument list with it directly.
+  return { paramNumber: 0, expectedValue: '', beforeMessage: '', passedMessage, failedMessage }
+}
+
+/**
+ * Sets `key` when `value` is non-empty and removes it otherwise.
+ *
+ * For fields whose Kotlin default is a non-empty string: writing `""` overrides the default with
+ * nothing, whereas an absent key falls back to it. Clearing the box has to mean the latter.
+ */
+export function setOrUnset(test: TslTest, key: string, value: string): TslTest {
+  const next = { ...test }
+  if (value.trim() === '') delete next[key]
+  else next[key] = value
+  return next
 }
 
 /** `function_is_test`'s check. Falls back to a blank; the field is non-nullable in Kotlin. */

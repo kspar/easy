@@ -21,10 +21,15 @@ import {
 import { useTranslation } from 'react-i18next'
 import {
   emptyGenericCheck,
+  emptyOutputFileCheck,
+  emptyParamValueCheck,
   type CheckType,
   type DataCategory,
+  type ExceptionCheck,
   type FileData,
   type GenericCheck,
+  type OutputFileCheck,
+  type ParamValueCheck,
   type ReturnValueCheck,
 } from './tslModel.ts'
 
@@ -377,6 +382,269 @@ export function TslDataChecksSection({
           }
         >
           {t('tsl.outputCheck')}
+        </Button>
+      )}
+    </Box>
+  )
+}
+
+/**
+ * Checks against a file the submission wrote, rather than against its output. Same shape as a
+ * data check plus the filename — a separate list on the Kotlin side, so a separate component.
+ */
+export function TslOutputFileChecksSection({
+  checks,
+  editing,
+  onChange,
+}: {
+  checks: OutputFileCheck[]
+  editing: boolean
+  onChange: (next: OutputFileCheck[]) => void
+}) {
+  const { t } = useTranslation()
+
+  function patch(i: number, p: Partial<OutputFileCheck>) {
+    onChange(checks.map((c, idx) => (idx === i ? { ...c, ...p } : c)))
+  }
+
+  return (
+    <Box>
+      {checks.map((check, i) => (
+        <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <TextField
+              label={t('tsl.outputFileName')}
+              value={check.fileName}
+              onChange={(e) => patch(i, { fileName: e.target.value })}
+              disabled={!editing}
+              size="small"
+              required
+              error={editing && check.fileName.trim() === ''}
+              sx={{ maxWidth: 220, '& input': { fontFamily: 'monospace' } }}
+            />
+            <Select
+              value={check.checkType}
+              onChange={(e) => patch(i, { checkType: e.target.value as CheckType })}
+              disabled={!editing}
+              size="small"
+              sx={{ minWidth: 190 }}
+            >
+              {Object.entries(CHECK_TYPE_KEYS).map(([value, key]) => (
+                <MenuItem key={value} value={value}>
+                  {t(key)}
+                </MenuItem>
+              ))}
+            </Select>
+            <Select
+              value={check.dataCategory ?? 'CONTAINS_STRINGS'}
+              onChange={(e) => patch(i, { dataCategory: e.target.value as DataCategory })}
+              disabled={!editing}
+              size="small"
+              sx={{ minWidth: 140 }}
+            >
+              {Object.entries(DATA_CATEGORY_KEYS).map(([value, key]) => (
+                <MenuItem key={value} value={value}>
+                  {t(key!)}
+                </MenuItem>
+              ))}
+            </Select>
+            <Box flex={1} />
+            {editing && (
+              <IconButton
+                size="small"
+                onClick={() => onChange(checks.filter((_, idx) => idx !== i))}
+                aria-label={t('general.delete')}
+              >
+                <DeleteOutlineOutlined fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+          <TextField
+            label={t('tsl.expectedValues')}
+            value={toLines(check.expectedValue ?? [])}
+            onChange={(e) => patch(i, { expectedValue: fromLines(e.target.value) })}
+            disabled={!editing}
+            multiline
+            minRows={2}
+            fullWidth
+            size="small"
+            sx={{ mt: 1 }}
+            helperText={t('tsl.expectedFileContents')}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={check.elementsOrdered === true}
+                onChange={(e) => patch(i, { elementsOrdered: e.target.checked })}
+                disabled={!editing}
+                size="small"
+              />
+            }
+            label={<Typography variant="body2">{t('tsl.ordered')}</Typography>}
+          />
+          <TslFeedbackFields
+            passedMessage={check.passedMessage}
+            failedMessage={check.failedMessage}
+            editing={editing}
+            onChange={(p) => patch(i, p)}
+          />
+        </Paper>
+      ))}
+      {editing && (
+        <Button
+          size="small"
+          startIcon={<AddOutlined />}
+          onClick={() =>
+            onChange([
+              ...checks,
+              emptyOutputFileCheck(t('tsl.outputFileCheckPass'), t('tsl.outputFileCheckFail')),
+            ])
+          }
+        >
+          {t('tsl.outputFileCheck')}
+        </Button>
+      )}
+    </Box>
+  )
+}
+
+/** Whether the run may raise. Optional, like the return check. */
+export function TslExceptionCheckSection({
+  check,
+  editing,
+  onChange,
+}: {
+  check: ExceptionCheck | null
+  editing: boolean
+  onChange: (next: ExceptionCheck | null) => void
+}) {
+  const { t } = useTranslation()
+
+  if (!check) {
+    if (!editing) return null
+    return (
+      <Button
+        size="small"
+        startIcon={<AddOutlined />}
+        onClick={() =>
+          onChange({
+            mustNotThrowException: true,
+            beforeMessage: '',
+            passedMessage: t('tsl.exceptionCheckPass'),
+            failedMessage: t('tsl.exceptionCheckFail'),
+          })
+        }
+      >
+        {t('tsl.exceptionCheck')}
+      </Button>
+    )
+  }
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+      <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={check.mustNotThrowException}
+              onChange={(e) => onChange({ ...check, mustNotThrowException: e.target.checked })}
+              disabled={!editing}
+              size="small"
+            />
+          }
+          label={<Typography variant="body2">{t('tsl.mustNotThrow')}</Typography>}
+        />
+        {editing && (
+          <IconButton size="small" onClick={() => onChange(null)} aria-label={t('general.delete')}>
+            <DeleteOutlineOutlined fontSize="small" />
+          </IconButton>
+        )}
+      </Box>
+      <TslFeedbackFields
+        passedMessage={check.passedMessage}
+        failedMessage={check.failedMessage}
+        editing={editing}
+        onChange={(p) => onChange({ ...check, ...p })}
+      />
+    </Paper>
+  )
+}
+
+/**
+ * Checks an argument's value *after* the call — for functions that mutate what they are handed.
+ *
+ * `paramNumber` is a zero-based index, because tiivad uses it as one directly
+ * (`self.arguments[param_number]`). Exposed as-is with the numbering spelled out in the label
+ * rather than converted, since a silent ±1 between what the form shows and what the spec holds is
+ * its own bug waiting to happen.
+ */
+export function TslParamValueChecksSection({
+  checks,
+  editing,
+  onChange,
+}: {
+  checks: ParamValueCheck[]
+  editing: boolean
+  onChange: (next: ParamValueCheck[]) => void
+}) {
+  const { t } = useTranslation()
+
+  function patch(i: number, p: Partial<ParamValueCheck>) {
+    onChange(checks.map((c, idx) => (idx === i ? { ...c, ...p } : c)))
+  }
+
+  return (
+    <Box>
+      {checks.map((check, i) => (
+        <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <TextField
+              label={t('tsl.paramNumber')}
+              type="number"
+              value={check.paramNumber}
+              onChange={(e) => patch(i, { paramNumber: Math.max(0, Number(e.target.value) || 0) })}
+              disabled={!editing}
+              size="small"
+              slotProps={{ htmlInput: { min: 0 } }}
+              helperText={t('tsl.paramNumberHelp')}
+              sx={{ width: 150 }}
+            />
+            <TextField
+              label={t('tsl.paramExpected')}
+              value={check.expectedValue}
+              onChange={(e) => patch(i, { expectedValue: e.target.value })}
+              disabled={!editing}
+              size="small"
+              helperText={t('tsl.pythonLiteral')}
+              sx={{ flex: 1, minWidth: 200, '& input': { fontFamily: 'monospace' } }}
+            />
+            {editing && (
+              <IconButton
+                size="small"
+                onClick={() => onChange(checks.filter((_, idx) => idx !== i))}
+                aria-label={t('general.delete')}
+              >
+                <DeleteOutlineOutlined fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+          <TslFeedbackFields
+            passedMessage={check.passedMessage}
+            failedMessage={check.failedMessage}
+            editing={editing}
+            onChange={(p) => patch(i, p)}
+          />
+        </Paper>
+      ))}
+      {editing && (
+        <Button
+          size="small"
+          startIcon={<AddOutlined />}
+          onClick={() =>
+            onChange([...checks, emptyParamValueCheck(t('tsl.paramCheckPass'), t('tsl.paramCheckFail'))])
+          }
+        >
+          {t('tsl.paramCheck')}
         </Button>
       )}
     </Box>

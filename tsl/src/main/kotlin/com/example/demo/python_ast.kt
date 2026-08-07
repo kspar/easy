@@ -21,11 +21,19 @@ class PyFunctionCall(val name: String, val namedArgs: Map<String, PyASTPrimitive
 class PyDict(val namedArgs: Map<String, PyASTPrimitive?>) : PyASTPrimitive() {
     override fun generatePyString(): String {
         val argsString = namedArgs.map {
-            "${it.key.trim()}:${it.value?.generatePyString()}"
+            "${quoteKey(it.key.trim())}:${it.value?.generatePyString()}"
         }.joinToString(", ")
 
         return "{$argsString}"
     }
+
+    /**
+     * Keys are quoted here rather than by the caller. They used to arrive pre-quoted as `"'name'"`,
+     * which worked only for as long as everyone remembered — `param_value_checks` did not, and
+     * emitted `{param_number: ...}`, a bare name that raises NameError the moment the generated
+     * script runs. Encoding belongs in the encoder.
+     */
+    private fun quoteKey(key: String) = "'" + key.replace("\\", "\\\\").replace("'", "\\'") + "'"
 }
 
 // TODO: .generatePyString() võiks toimuda hiljem, mitte igas harus

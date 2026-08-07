@@ -86,10 +86,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         listOf(
                             PyDict(
                                 mapOf(
-                                    "'expected_value'" to PyBool(test.propertyCheck.mustHaveProperty),
-                                    "'before_message'" to PyStr(test.propertyCheck.beforeMessage),
-                                    "'passed_message'" to PyStr(test.propertyCheck.passedMessage),
-                                    "'failed_message'" to PyStr(test.propertyCheck.failedMessage)
+                                    "expected_value" to PyBool(test.propertyCheck.mustHaveProperty),
+                                    "before_message" to PyStr(test.propertyCheck.beforeMessage),
+                                    "passed_message" to PyStr(test.propertyCheck.passedMessage),
+                                    "failed_message" to PyStr(test.propertyCheck.failedMessage)
                                 )
                             )
                         )
@@ -134,10 +134,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     listOf(
                         PyDict(
                             mapOf(
-                                "'expected_value'" to PyStr(test.returnValueCheck?.returnValue, false),
-                                "'before_message'" to PyStr(test.returnValueCheck?.beforeMessage),
-                                "'passed_message'" to PyStr(test.returnValueCheck?.passedMessage),
-                                "'failed_message'" to PyStr(test.returnValueCheck?.failedMessage)
+                                "expected_value" to PyStr(test.returnValueCheck?.returnValue, false),
+                                "before_message" to PyStr(test.returnValueCheck?.beforeMessage),
+                                "passed_message" to PyStr(test.returnValueCheck?.passedMessage),
+                                "failed_message" to PyStr(test.returnValueCheck?.failedMessage)
                             )
                         )
                     )
@@ -155,12 +155,16 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     "standard_input_data" to standardInputData,
                     "input_files" to inputFiles,
                     "return_value_checks" to returnValueChecks,
+                    // param_number is an int because tiivad uses it directly as a list index
+                    // (`self.arguments[param_number]`), and expected_value is a literal for the
+                    // same reason `arguments` are: it is compared against an evaluated argument,
+                    // so a forced string could never equal a number.
                     "param_value_checks" to PyList(
                         test.paramValueChecks.map {
                             PyDict(
                                 mapOf(
-                                    "param_number" to PyStr(it.paramNumber.toString()),
-                                    "expected_value" to PyStr(it.expectedValue),
+                                    "param_number" to PyInt(it.paramNumber.toLong()),
+                                    "expected_value" to PyStr(it.expectedValue, forceString = false),
                                     "before_message" to PyStr(it.beforeMessage),
                                     "passed_message" to PyStr(it.passedMessage),
                                     "failed_message" to PyStr(it.failedMessage)
@@ -191,10 +195,10 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
             } else {
                 PyDict(
                     mapOf(
-                        "'expected_value'" to PyBool(!test.exceptionCheck!!.mustNotThrowException),
-                        "'before_message'" to PyStr(test.exceptionCheck!!.beforeMessage),
-                        "'passed_message'" to PyStr(test.exceptionCheck!!.passedMessage),
-                        "'failed_message'" to PyStr(test.exceptionCheck!!.failedMessage)
+                        "expected_value" to PyBool(!test.exceptionCheck!!.mustNotThrowException),
+                        "before_message" to PyStr(test.exceptionCheck!!.beforeMessage),
+                        "passed_message" to PyStr(test.exceptionCheck!!.passedMessage),
+                        "failed_message" to PyStr(test.exceptionCheck!!.failedMessage)
                     )
                 )
             }
@@ -224,18 +228,18 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                         test.classInstanceChecks.map {
                             PyDict(
                                 mapOf(
-                                    "'fields_final'" to PyList(it.fieldsFinal.map {
+                                    "fields_final" to PyList(it.fieldsFinal.map {
                                         PyPair(
                                             PyStr(it.fieldName),
                                             PyStr(it.fieldContent, forceString = false)
                                         )
                                     }),
-                                    "'check_name'" to PyBool(it.checkName),
-                                    "'check_value'" to PyBool(it.checkValue),
-                                    "'nothing_else'" to PyBool(it.nothingElse),
-                                    "'before_message'" to PyStr(it.beforeMessage),
-                                    "'passed_message'" to PyStr(it.passedMessage),
-                                    "'failed_message'" to PyStr(it.failedMessage)
+                                    "check_name" to PyBool(it.checkName),
+                                    "check_value" to PyBool(it.checkValue),
+                                    "nothing_else" to PyBool(it.nothingElse),
+                                    "before_message" to PyStr(it.beforeMessage),
+                                    "passed_message" to PyStr(it.passedMessage),
+                                    "failed_message" to PyStr(it.failedMessage)
                                 )
                             )
                         }

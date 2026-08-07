@@ -2,6 +2,8 @@ import { useId, useState } from 'react'
 import {
   Alert,
   Box,
+  Button,
+  Collapse,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -12,34 +14,45 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import { ExpandMoreOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import CodeEditor from '../../../components/CodeEditor.tsx'
 import {
   checkListField,
   enumField,
+  exceptionCheckField,
   fileListField,
   genericCheckField,
+  instanceChecksField,
   optStrField,
+  outputFileChecksField,
+  paramChecksField,
   propertyCheckField,
   returnCheckField,
+  setOrUnset,
   strField,
   strListField,
   type ContainsWhat,
   type DefinitionCheckType,
   type FunctionProperty,
+  type FunctionType,
   type Scope,
   type TargetType,
   type TslTest,
 } from './tslModel.ts'
 import {
   TslDataChecksSection,
+  TslExceptionCheckSection,
   TslFeedbackFields,
   TslGroupTitle,
   TslInputFilesSection,
+  TslOutputFileChecksSection,
+  TslParamValueChecksSection,
   TslReturnCheckSection,
   TslStdInSection,
 } from './TslSections.tsx'
 import { TslGenericCheckLongSection, TslScopeSection } from './TslStaticSections.tsx'
+import { TslClassInstanceChecksSection } from './TslClassInstanceSections.tsx'
 
 interface BodyProps {
   test: TslTest
@@ -59,6 +72,8 @@ export default function TslTestBody({ test, editing, onChange }: BodyProps) {
       return <ProgramExecutionBody test={test} editing={editing} onChange={onChange} />
     case 'function_execution_test':
       return <FunctionExecutionBody test={test} editing={editing} onChange={onChange} />
+    case 'class_instance_test':
+      return <ClassInstanceBody test={test} editing={editing} onChange={onChange} />
     case 'contains_test':
       return <ContainsBody test={test} editing={editing} onChange={onChange} />
     case 'calls_test':
@@ -103,28 +118,81 @@ function ProgramExecutionBody({ test, editing, onChange }: BodyProps) {
         editing={editing}
         onChange={(genericChecks) => onChange({ ...test, genericChecks })}
       />
+      <TslOutputFileChecksSection
+        checks={outputFileChecksField(test)}
+        editing={editing}
+        onChange={(outputFileChecks) => onChange({ ...test, outputFileChecks })}
+      />
+      <TslExceptionCheckSection
+        check={exceptionCheckField(test)}
+        editing={editing}
+        onChange={(exceptionCheck) => onChange({ ...test, exceptionCheck })}
+      />
     </Box>
   )
 }
 
 function FunctionExecutionBody({ test, editing, onChange }: BodyProps) {
   const { t } = useTranslation()
+  const typeId = useId()
   const functionName = strField(test, 'functionName')
   const args = strListField(test, 'arguments')
+  const functionType = enumField<FunctionType>(test, 'functionType', 'FUNCTION')
 
   return (
     <Box>
-      <TextField
-        label={t('tsl.functionName')}
-        value={functionName}
-        onChange={(e) => onChange({ ...test, functionName: e.target.value })}
-        disabled={!editing}
-        size="small"
-        fullWidth
-        required
-        error={editing && functionName.trim() === ''}
-        sx={{ '& input': { fontFamily: 'monospace' } }}
-      />
+      <Box display="flex" gap={1} flexWrap="wrap">
+        <TextField
+          label={t('tsl.functionName')}
+          value={functionName}
+          onChange={(e) => onChange({ ...test, functionName: e.target.value })}
+          disabled={!editing}
+          size="small"
+          required
+          error={editing && functionName.trim() === ''}
+          sx={{ flex: 1, minWidth: 240, '& input': { fontFamily: 'monospace' } }}
+        />
+        <FormControl size="small" sx={{ minWidth: 200 }} disabled={!editing}>
+          <InputLabel id={typeId}>{t('tsl.functionKind')}</InputLabel>
+          <Select
+            labelId={typeId}
+            label={t('tsl.functionKind')}
+            value={functionType}
+            onChange={(e) =>
+              // A plain function has no object to be called on, so drop the constructor code
+              // rather than leave it to be sent and ignored.
+              onChange({
+                ...test,
+                functionType: e.target.value as FunctionType,
+                createObject: e.target.value === 'METHOD' ? optStrField(test, 'createObject') : null,
+              })
+            }
+          >
+            {(['FUNCTION', 'METHOD'] as FunctionType[]).map((ft) => (
+              <MenuItem key={ft} value={ft}>
+                {t(`tsl.functionKindName.${ft}`)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {functionType === 'METHOD' && (
+        <Box mt={2}>
+          <Typography variant="body2" gutterBottom>
+            {t('tsl.createObject')}
+          </Typography>
+          <CodeEditor
+            value={optStrField(test, 'createObject')}
+            readOnly={!editing}
+            minHeight="5rem"
+            onChange={(createObject) => onChange({ ...test, createObject })}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {t('tsl.createObjectHelp')}
+          </Typography>
+        </Box>
+      )}
 
       <TslGroupTitle>{t('tsl.inputs')}</TslGroupTitle>
       <TextField
@@ -162,6 +230,124 @@ function FunctionExecutionBody({ test, editing, onChange }: BodyProps) {
         checks={checkListField(test, 'genericChecks')}
         editing={editing}
         onChange={(genericChecks) => onChange({ ...test, genericChecks })}
+      />
+      <TslParamValueChecksSection
+        checks={paramChecksField(test)}
+        editing={editing}
+        onChange={(paramValueChecks) => onChange({ ...test, paramValueChecks })}
+      />
+      <TslOutputFileChecksSection
+        checks={outputFileChecksField(test)}
+        editing={editing}
+        onChange={(outputFileChecks) => onChange({ ...test, outputFileChecks })}
+      />
+
+      <TslErrorMessagesSection test={test} editing={editing} onChange={onChange} />
+    </Box>
+  )
+}
+
+/**
+ * `function_execution_test`'s three overridable error messages.
+ *
+ * Collapsed by default because they are rarely touched, and written through `setOrUnset` because
+ * each has a non-empty Kotlin default: clearing the box has to remove the key, not save `""`,
+ * or the student sees no message at all where they used to see the default one. Placeholders show
+ * what the default actually is.
+ */
+function TslErrorMessagesSection({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const fields = [
+    ['outOfInputsErrorMsg', 'tsl.errOutOfInputs'],
+    ['functionNotDefinedErrorMsg', 'tsl.errNotDefined'],
+    ['tooManyArgumentsProvidedErrorMsg', 'tsl.errTooManyArgs'],
+  ] as const
+  const overridden = fields.filter(([key]) => optStrField(test, key).trim() !== '').length
+
+  return (
+    <Box mt={1}>
+      <Button size="small" onClick={() => setOpen(!open)} endIcon={<ExpandMoreOutlined
+        sx={{ transform: open ? 'rotate(180deg)' : 'none', transition: '.15s' }} />}>
+        {t('tsl.errorMessages')}
+        {overridden > 0 && ` (${overridden})`}
+      </Button>
+      <Collapse in={open} unmountOnExit>
+        <Box display="flex" flexDirection="column" gap={2} mt={1}>
+          {fields.map(([key, label]) => (
+            <TextField
+              key={key}
+              label={t(label)}
+              value={optStrField(test, key)}
+              onChange={(e) => onChange(setOrUnset(test, key, e.target.value))}
+              disabled={!editing}
+              size="small"
+              fullWidth
+              placeholder={t(`${label}Default`)}
+              helperText={t('tsl.errorMessageHelp')}
+            />
+          ))}
+        </Box>
+      </Collapse>
+    </Box>
+  )
+}
+
+/**
+ * `class_instance_test` — build an object, then check the state it ended up in.
+ *
+ * The one type the collapse left alone, and the only one with a nested check structure. Its
+ * `className` is required by the model but read by nothing: tiivad recovers the class from the
+ * constructor code by regex (EZ-1742). Shown anyway — unlike `definitionCheckValue` it is not a
+ * second copy of something already on the form, and it is how a teacher names what they are
+ * testing.
+ */
+function ClassInstanceBody({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const className = strField(test, 'className')
+
+  return (
+    <Box>
+      <TextField
+        label={t('tsl.className')}
+        value={className}
+        onChange={(e) => onChange({ ...test, className: e.target.value })}
+        disabled={!editing}
+        size="small"
+        fullWidth
+        required
+        error={editing && className.trim() === ''}
+        sx={{ '& input': { fontFamily: 'monospace' } }}
+      />
+
+      <TslGroupTitle>{t('tsl.createObject')}</TslGroupTitle>
+      {/* A code body, not an expression: tiivad indents it into `def create_object_fun_auto_assess()`,
+          so it must `return` the instance. A one-line field would misrepresent that. */}
+      <CodeEditor
+        value={strField(test, 'createObject')}
+        readOnly={!editing}
+        minHeight="6rem"
+        onChange={(createObject) => onChange({ ...test, createObject })}
+      />
+      <Typography variant="caption" color="text.secondary">
+        {t('tsl.createObjectHelp')}
+      </Typography>
+
+      <TslGroupTitle>{t('tsl.checks')}</TslGroupTitle>
+      <TslClassInstanceChecksSection
+        checks={instanceChecksField(test)}
+        editing={editing}
+        onChange={(classInstanceChecks) => onChange({ ...test, classInstanceChecks })}
+      />
+      <TslDataChecksSection
+        checks={checkListField(test, 'genericChecks')}
+        editing={editing}
+        onChange={(genericChecks) => onChange({ ...test, genericChecks })}
+      />
+      <TslOutputFileChecksSection
+        checks={outputFileChecksField(test)}
+        editing={editing}
+        onChange={(outputFileChecks) => onChange({ ...test, outputFileChecks })}
       />
     </Box>
   )

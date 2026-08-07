@@ -1,6 +1,6 @@
 /**
- * The collapsed static tests (EZ-1607) — `contains_test` and `calls_test` so far, with
- * `definition_test` and `function_is_test` to follow into the same file.
+ * The test-type forms: the four collapsed static tests (EZ-1607), plus `class_instance_test` and
+ * the execution-test fields that used to be reachable only through the JSON tab.
  *
  * The assertions that matter most are about what reaches the *spec*, not what the form looks
  * like, because several are silent failures:
@@ -504,6 +504,80 @@ check(
   `passed=${JSON.stringify(fnIs?.propertyCheck?.passedMessage)}`,
 )
 await shot('07-function-is')
+
+// --- class_instance_test: the one nested structure in the model -------------------------------------
+const inst = lastTest(
+  await afterEdit(async () => {
+    await typeSelects.last().click()
+    await page.getByRole('option', { name: 'Class instance test', exact: true }).click()
+  }),
+)
+check(
+  'class_instance_test declares every field Kotlin requires',
+  inst !== undefined &&
+    'className' in inst &&
+    'createObject' in inst &&
+    'classInstanceChecks' in inst &&
+    'genericChecks' in inst &&
+    'outputFileChecks' in inst,
+  inst ? Object.keys(inst).join(',') : 'not found',
+)
+// A code body, not an expression — tiivad indents it into a function that must return the object,
+// so this has to be a multi-line editor rather than a text field.
+check(
+  'the constructor is a code editor',
+  (await page.locator('.cm-content').count()) > 0,
+)
+
+await page.getByLabel('Class name').last().fill('Raamat')
+await page.getByRole('button', { name: 'Object state check' }).click()
+await page.getByRole('button', { name: 'Field', exact: true }).click()
+// By role and exact name: getByLabel does a substring match, so "Field name" also picks up the
+// "Check field names" checkbox and "Value" picks up "Check values".
+await page.getByRole('textbox', { name: 'Field name', exact: true }).fill('pealkiri')
+const instSpec = await afterEdit(() =>
+  page.getByRole('textbox', { name: 'Value', exact: true }).fill("'Tõde ja õigus'"),
+)
+const built = lastTest(instSpec)
+check(
+  'the nested fieldsFinal list reaches the spec',
+  JSON.stringify(built?.classInstanceChecks?.[0]?.fieldsFinal) ===
+    JSON.stringify([{ fieldName: 'pealkiri', fieldContent: "'Tõde ja õigus'" }]),
+  JSON.stringify(built?.classInstanceChecks?.[0]?.fieldsFinal),
+)
+check(
+  'with name and value checking on by default',
+  built?.classInstanceChecks?.[0]?.checkName === true &&
+    built?.classInstanceChecks?.[0]?.checkValue === true,
+)
+// Both off compares nothing and passes for every student — invisible unless the form says so.
+await page.getByLabel('Check field names').uncheck()
+await page.getByLabel('Check values').uncheck()
+check(
+  'turning both off warns that the check compares nothing',
+  await waitUntil(() => page.getByText(/compares nothing and passes for everyone/i).isVisible()),
+)
+await shot('09-class-instance')
+
+// --- an error message override, and clearing it again -----------------------------------------------
+// These have non-empty Kotlin defaults, so the key must disappear when the box is emptied rather
+// than being saved as "" — otherwise clearing it silently replaces the default with no message.
+await page.getByRole('button', { name: 'Add test' }).click()
+await page.getByRole('menuitem', { name: 'Call a function' }).click()
+await page.getByRole('button', { name: /Error messages/ }).click()
+const set = lastTest(await afterEdit(() => page.getByLabel('Function not defined').fill('Kirjuta funktsioon')))
+check(
+  'an overridden error message is written',
+  set?.functionNotDefinedErrorMsg === 'Kirjuta funktsioon',
+  `= ${JSON.stringify(set?.functionNotDefinedErrorMsg)}`,
+)
+const cleared = lastTest(await afterEdit(() => page.getByLabel('Function not defined').fill('')))
+check(
+  'and clearing it removes the key rather than saving an empty string',
+  cleared !== undefined && !('functionNotDefinedErrorMsg' in cleared),
+  `keys: ${Object.keys(cleared ?? {}).join(',')}`,
+)
+await shot('10-error-messages')
 
 await browser.close()
 process.exit(check.summary() ? 0 : 1)
