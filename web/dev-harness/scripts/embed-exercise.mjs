@@ -210,27 +210,41 @@ check('and back into light', (await bodyBg('/embed/')) === 'rgb(245, 245, 245)')
 
 // Two embeds on one page: separate iframes, separate React trees, no direct channel between them.
 // They share an origin, so the choice travels by localStorage and its `storage` event.
-await page.route('http://localhost:5199/host', (r) => r.fulfill({
+//
+// The host page must be built from BASE_URL, not a hardcoded port. Sharing an origin with the
+// iframes is the entire mechanism under test — pin the host to :5199 while HARNESS_PORT moves the
+// iframes elsewhere and the two are cross-origin, localStorage throws "Access is denied", and the
+// failure surfaces as an unrelated TypeError further down. It passed for a year because the
+// default port happened to match.
+const HOST_URL = `${BASE_URL}/host`
+await page.route(HOST_URL, (r) => r.fulfill({
   contentType: 'text/html',
   body: `<html><body style="margin:0">
     <iframe src="${BASE_URL}/embed/exercises/${ID}/a" width="100%" height="300"></iframe>
     <iframe src="${BASE_URL}/embed/exercises/${ID}/b" width="100%" height="300"></iframe>
   </body></html>`,
 }))
-await page.goto('http://localhost:5199/host')
+await page.goto(HOST_URL)
 await waitUntil(async () => page.frames().filter((f) => f.url().includes('/embed/')).length === 2)
 await waitUntil(async () => (await bodyBg('/embed/exercises/' + ID + '/b')) != null)
 
 const first = page.frames().find((f) => f.url().includes(`/embed/exercises/${ID}/a`))
-await first.getByRole('button', { name: /Switch to/ }).click()
-check(
-  'toggling in one embed switches the other one too',
-  await waitUntil(async () => (await bodyBg(`/embed/exercises/${ID}/b`)) === 'rgb(18, 18, 18)'),
-)
-check(
-  'and the choice is remembered',
-  (await first.evaluate(() => localStorage.getItem('embedTheme'))) === 'dark',
-)
+// Asserted rather than left to throw: when this came back undefined the script died on
+// "Cannot read properties of undefined", which pointed at the click instead of the missing frame
+// and hid a plain origin mismatch for as long as nobody ran on a non-default port.
+check('the first embed is reachable as a frame', first !== undefined, page.frames().map((f) => f.url()).join(' | '))
+
+if (first) {
+  await first.getByRole('button', { name: /Switch to/ }).click()
+  check(
+    'toggling in one embed switches the other one too',
+    await waitUntil(async () => (await bodyBg(`/embed/exercises/${ID}/b`)) === 'rgb(18, 18, 18)'),
+  )
+  check(
+    'and the choice is remembered',
+    (await first.evaluate(() => localStorage.getItem('embedTheme'))) === 'dark',
+  )
+}
 
 await browser.close()
 process.exit(check.summary() ? 0 : 1)
