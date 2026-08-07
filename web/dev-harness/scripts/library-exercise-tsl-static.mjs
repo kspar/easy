@@ -124,19 +124,30 @@ async function afterEdit(action) {
   return compiled.at(-1)
 }
 
-/** Waits until at least one compile has landed and none has arrived for a beat. */
+/**
+ * Waits until at least one compile has landed and none has arrived for longer than the editor's
+ * debounce chain.
+ *
+ * The window has to exceed that chain, and this is the detail two earlier attempts got wrong.
+ * `useTslSpec` debounces text→model by PARSE_DEBOUNCE_MS (400) and model→compile by
+ * COMPILE_DEBOUNCE_MS (800), so an edit can sit for 1.2s before its compile is even requested.
+ * Watching a 250ms window therefore proved nothing: an edit mid-debounce looked identical to a
+ * settled editor, `before` was snapshotted from the state preceding it, and the pending compile
+ * then satisfied the "changed" wait — handing back the wrong spec entirely.
+ *
+ * `before > 0` matters for the same reason at the other end: zero compiles is not a quiet editor,
+ * it is one whose first compile has not been issued.
+ */
+const SETTLE_MS = 1_400
+
 async function quiet() {
   await waitUntil(
     async () => {
       const before = compiled.length
-      await page.waitForTimeout(250)
-      // `before > 0` is the part CI needed. Zero compiles is not a quiet editor, it is one whose
-      // first compile has not landed yet — and calling that settled meant snapshotting `null`,
-      // then mistaking the *initial* compile for the edit's result. Locally the load always beat
-      // the first assertion; on a slower runner it did not.
+      await page.waitForTimeout(SETTLE_MS)
       return before > 0 && compiled.length === before
     },
-    { timeout: 15_000, interval: 0 },
+    { timeout: 30_000, interval: 0 },
   )
 }
 
