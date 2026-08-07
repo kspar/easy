@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import CodeEditor from '../../../components/CodeEditor.tsx'
 import {
   checkListField,
+  enumField,
   fileListField,
   genericCheckField,
   optStrField,
@@ -21,6 +22,7 @@ import {
   strListField,
   type ContainsWhat,
   type Scope,
+  type TargetType,
   type TslTest,
 } from './tslModel.ts'
 import {
@@ -52,6 +54,8 @@ export default function TslTestBody({ test, editing, onChange }: BodyProps) {
       return <FunctionExecutionBody test={test} editing={editing} onChange={onChange} />
     case 'contains_test':
       return <ContainsBody test={test} editing={editing} onChange={onChange} />
+    case 'calls_test':
+      return <CallsBody test={test} editing={editing} onChange={onChange} />
     default:
       return <RawBody test={test} editing={editing} onChange={onChange} />
   }
@@ -166,8 +170,8 @@ const CONTAINS_WHAT: ContainsWhat[] = ['KEYWORD_NO_ARG', 'KEYWORD_WITH_PRECEDING
 function ContainsBody({ test, editing, onChange }: BodyProps) {
   const { t } = useTranslation()
   const whatId = useId()
-  const scope = (typeof test.scope === 'string' ? test.scope : 'PROGRAM') as Scope
-  const containsWhat = (typeof test.containsWhat === 'string' ? test.containsWhat : 'KEYWORD_NO_ARG') as ContainsWhat
+  const scope = enumField<Scope>(test, 'scope', 'PROGRAM')
+  const containsWhat = enumField<ContainsWhat>(test, 'containsWhat', 'KEYWORD_NO_ARG')
 
   return (
     <Box>
@@ -211,6 +215,62 @@ function ContainsBody({ test, editing, onChange }: BodyProps) {
         check={genericCheckField(test)}
         valuesLabel={t(`tsl.containsValuesLabel.${containsWhat}`)}
         valuesHelp={t(`tsl.containsValuesHelp.${containsWhat}`)}
+        editing={editing}
+        onChange={(genericCheck) => onChange({ ...test, genericCheck })}
+      />
+    </Box>
+  )
+}
+
+const TARGET_TYPES: TargetType[] = ['FUNCTION', 'CLASS', 'CLASS_FUNCTION']
+
+/**
+ * `calls_test` — replaces 11 of the retired types, every `*_calls_*` combination.
+ *
+ * Same two sections as `ContainsBody`, which is the point of having built them: the only thing
+ * that differs is *what* is being looked for. Note the two halves are independent — `scope` is
+ * the caller and `targetType` the callee — so "a class method calls a function" is a scope of
+ * CLASS with a target of FUNCTION, and all twelve combinations are legal.
+ */
+function CallsBody({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const targetId = useId()
+  const scope = enumField<Scope>(test, 'scope', 'PROGRAM')
+  const targetType = enumField<TargetType>(test, 'targetType', 'FUNCTION')
+
+  return (
+    <Box>
+      <TslGroupTitle>{t('tsl.whoCalls')}</TslGroupTitle>
+      <TslScopeSection
+        scope={scope}
+        functionName={optStrField(test, 'functionName')}
+        className={optStrField(test, 'className')}
+        editing={editing}
+        onChange={(patch) => onChange({ ...test, ...patch })}
+      />
+
+      <TslGroupTitle>{t('tsl.whatIsCalled')}</TslGroupTitle>
+      <FormControl size="small" sx={{ minWidth: 260 }} disabled={!editing}>
+        <InputLabel id={targetId}>{t('tsl.targetType')}</InputLabel>
+        <Select
+          labelId={targetId}
+          label={t('tsl.targetType')}
+          value={targetType}
+          onChange={(e) => onChange({ ...test, targetType: e.target.value as TargetType })}
+        >
+          {TARGET_TYPES.map((tt) => (
+            <MenuItem key={tt} value={tt}>
+              {t(`tsl.targetTypeName.${tt}`)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <TslGroupTitle>{t('tsl.checks')}</TslGroupTitle>
+      <TslGenericCheckLongSection
+        check={genericCheckField(test)}
+        valuesLabel={t(`tsl.callsValuesLabel.${targetType}`)}
+        valuesHelp={t(`tsl.callsValuesHelp.${targetType}`)}
         editing={editing}
         onChange={(genericCheck) => onChange({ ...test, genericCheck })}
       />

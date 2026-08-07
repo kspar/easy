@@ -619,7 +619,8 @@
       "placeholder_test": "Uus test",
       "program_execution_test": "Programmi käivituse test",
       "function_execution_test": "Funktsiooni väljakutse test",
-      "contains_test": "Koodi sisu test"
+      "contains_test": "Koodi sisu test",
+      "calls_test": "Väljakutse test"
     },
     "collapseTest": "Ahenda test",
     "expandTest": "Laienda test",
@@ -671,7 +672,32 @@
       "PHRASE": "Lähtekoodist otsitav tekst, üks väärtus real"
     },
     "containsCheckPass": "Koodist leiti oodatu: {expected}",
-    "containsCheckFail": "Koodist ei leitud {expected}"
+    "containsCheckFail": "Koodist ei leitud {expected}",
+    "whoCalls": "Kes kutsub välja",
+    "whatIsCalled": "Mida kutsutakse välja",
+    "targetType": "Väljakutse",
+    "callsCheckPass": "Leiti oodatud väljakutse: {expected}",
+    "callsCheckFail": "Ei leitud väljakutset {expected}",
+    "targetTypeName": {
+      "FUNCTION": "Funktsioon",
+      "CLASS": "Klass",
+      "CLASS_FUNCTION": "Klassi funktsioon"
+    },
+    "callsName": {
+      "FUNCTION": "{{scope}} kutsub välja funktsiooni",
+      "CLASS": "{{scope}} kutsub välja klassi",
+      "CLASS_FUNCTION": "{{scope}} kutsub välja klassi funktsiooni"
+    },
+    "callsValuesLabel": {
+      "FUNCTION": "Funktsioonide nimed",
+      "CLASS": "Klasside nimed",
+      "CLASS_FUNCTION": "Klassi funktsioonide nimed"
+    },
+    "callsValuesHelp": {
+      "FUNCTION": "Funktsioonide nimed, mida peab välja kutsuma, üks real — nt print, len",
+      "CLASS": "Klasside nimed, millest peab isendi looma, üks real",
+      "CLASS_FUNCTION": "Klassi funktsioonide nimed, mida peab välja kutsuma, üks real"
+    }
   },
   "terms": {
     "redirecting": "Avan kasutustingimused…",

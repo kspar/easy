@@ -1,8 +1,9 @@
 /**
- * The `contains_test` form — first of the four collapsed static tests (EZ-1607).
+ * The collapsed static tests (EZ-1607) — `contains_test` and `calls_test` so far, with
+ * `definition_test` and `function_is_test` to follow into the same file.
  *
  * The assertions that matter most are about what reaches the *spec*, not what the form looks
- * like, because two of them are silent failures:
+ * like, because several are silent failures:
  *
  *  - `genericCheck` must not carry `id` / `elementsOrdered` / `outputCategory`. Those belong to
  *    `GenericCheck`, not `GenericCheckLong`, and kotlinx decodes with `ignoreUnknownKeys = false`
@@ -73,7 +74,7 @@ const exercise = {
   on_courses_no_access: 0,
 }
 
-const { browser, page, shot } = await launch({ role: 'teacher,admin', shotPrefix: 'lib-ex-tsl-contains-' })
+const { browser, page, shot } = await launch({ role: 'teacher,admin', shotPrefix: 'lib-ex-tsl-static-' })
 const check = checker()
 
 const compiled = []
@@ -102,10 +103,14 @@ await fakeApi(page, [
   [new RegExp(`/exercises/${EXERCISE_ID}(\\?|$)`), () => exercise],
 ])
 
-/** The contains_test as the compiler last saw it. Waits for a compile newer than `after`. */
-async function latestTest(after = -1) {
+/**
+ * The test of the given type as the compiler last saw it, once a compile newer than `after` has
+ * landed. Waiting on the compile is the point: the model→text→compile hop is debounced, so
+ * reading `compiled` straight after an edit reads the state before it.
+ */
+async function latestTest(after = -1, type = 'contains_test') {
   await waitUntil(() => compiled.length > after + 1, { timeout: 15_000 })
-  return compiled[compiled.length - 1].tests.find((t) => t.type === 'contains_test')
+  return compiled[compiled.length - 1].tests.find((t) => t.type === type)
 }
 
 const selectOption = async (comboName, optionName) => {
@@ -260,6 +265,60 @@ check(
   `passed=${JSON.stringify(created?.genericCheck?.passedMessage)} failed=${JSON.stringify(created?.genericCheck?.failedMessage)}`,
 )
 await shot('04-created')
+
+// --- calls_test, which reuses both shared sections -------------------------------------------------
+// Switching the same card's type rather than adding a third: it also proves the type change rebuilds
+// the body cleanly instead of leaving contains_test's fields behind.
+await typeSelects.last().click()
+await page.getByRole('option', { name: 'Code calls…', exact: true }).click()
+
+check(
+  'calls_test reuses the scope section',
+  await waitUntil(() => page.getByRole('combobox', { name: 'Scope' }).last().isVisible()),
+)
+check(
+  'and asks for the callee separately from the caller',
+  await page.getByRole('combobox', { name: 'Calls' }).isVisible(),
+)
+
+// scope is the caller, targetType the callee, and they are independent — so a class method calling
+// a plain function has to be expressible. That combination was four separate types before.
+await page.getByRole('combobox', { name: 'Scope' }).last().click()
+await page.getByRole('option', { name: 'A class', exact: true }).click()
+await page.getByLabel('Class name').fill('Raamatukogu')
+await page.getByRole('combobox', { name: 'Calls' }).click()
+await page.getByRole('option', { name: 'A function', exact: true }).click()
+
+check(
+  'the values field is named after the callee, not the caller',
+  await waitUntil(() => page.getByLabel('Function names').isVisible()),
+)
+check(
+  'and the title reads caller-then-callee',
+  await waitUntil(() => page.getByText('The class calls a function', { exact: true }).isVisible()),
+)
+
+seen = compiled.length - 1
+await page.getByLabel('Function names').fill('print')
+const callsTest = await latestTest(seen, 'calls_test')
+check(
+  'caller and callee reach the spec independently',
+  callsTest?.scope === 'CLASS' && callsTest?.className === 'Raamatukogu' && callsTest?.targetType === 'FUNCTION',
+  `scope=${callsTest?.scope} className=${callsTest?.className} targetType=${callsTest?.targetType}`,
+)
+check(
+  'switching type left no contains_test fields behind',
+  callsTest !== undefined && !('containsWhat' in callsTest) && !('containsWhatArg' in callsTest),
+  `keys: ${Object.keys(callsTest ?? {}).join(',')}`,
+)
+// Declared on the Kotlin class, read by nothing (EZ-1742). Writing it into new specs would
+// entrench a field we have asked to have deleted.
+check(
+  'and the dead targetClassName is not written into new specs',
+  callsTest !== undefined && !('targetClassName' in callsTest),
+  `keys: ${Object.keys(callsTest ?? {}).join(',')}`,
+)
+await shot('05-calls')
 
 await browser.close()
 process.exit(check.summary() ? 0 : 1)

@@ -619,7 +619,8 @@
       "placeholder_test": "New test",
       "program_execution_test": "Program execution test",
       "function_execution_test": "Function call test",
-      "contains_test": "Code contains…"
+      "contains_test": "Code contains…",
+      "calls_test": "Code calls…"
     },
     "collapseTest": "Collapse test",
     "expandTest": "Expand test",
@@ -671,7 +672,32 @@
       "PHRASE": "Text to find in the source, one value per line"
     },
     "containsCheckPass": "Found what was expected in the code: {expected}",
-    "containsCheckFail": "Could not find {expected} in the code"
+    "containsCheckFail": "Could not find {expected} in the code",
+    "whoCalls": "What does the calling",
+    "whatIsCalled": "What is called",
+    "targetType": "Calls",
+    "callsCheckPass": "Found the expected call: {expected}",
+    "callsCheckFail": "Could not find a call to {expected}",
+    "targetTypeName": {
+      "FUNCTION": "A function",
+      "CLASS": "A class",
+      "CLASS_FUNCTION": "A class method"
+    },
+    "callsName": {
+      "FUNCTION": "{{scope}} calls a function",
+      "CLASS": "{{scope}} calls a class",
+      "CLASS_FUNCTION": "{{scope}} calls a class method"
+    },
+    "callsValuesLabel": {
+      "FUNCTION": "Function names",
+      "CLASS": "Class names",
+      "CLASS_FUNCTION": "Method names"
+    },
+    "callsValuesHelp": {
+      "FUNCTION": "Names of functions that must be called, one per line — e.g. print, len",
+      "CLASS": "Names of classes that must be instantiated, one per line",
+      "CLASS_FUNCTION": "Names of class methods that must be called, one per line"
+    }
   },
   "terms": {
     "redirecting": "Opening the terms of service…",

@@ -71,6 +71,12 @@ export type Scope = 'PROGRAM' | 'MAIN_PROGRAM' | 'FUNCTION' | 'CLASS'
 export type ContainsWhat = 'KEYWORD_NO_ARG' | 'KEYWORD_WITH_PRECEDING_ARG' | 'PHRASE'
 
 /**
+ * What `calls_test` looks for a call to. Note this is the *callee*; the caller is the `scope`, so
+ * "a class method calls a function" is `scope: CLASS` + `targetType: FUNCTION`.
+ */
+export type TargetType = 'FUNCTION' | 'CLASS' | 'CLASS_FUNCTION'
+
+/**
  * The quantifier on a `GenericCheckLong`. Wider than `CheckType`: `ANY` and `NONE` ask whether
  * the target set is non-empty / empty *without naming anything*, which is how the old boolean
  * checks (`ContainsCheck.mustNotContain`, `CallsCheck.mustNotCall`) survive the collapse.
@@ -135,16 +141,19 @@ export type EditableTestType =
   | 'program_execution_test'
   | 'function_execution_test'
   | 'contains_test'
+  | 'calls_test'
 
 /**
  * The types the "test type" dropdown offers. Extending the editor to another TSL test means
- * adding it here, giving `createTest` a blank instance, and adding a case to `TslTestBody`.
+ * adding it here, giving `createTest` a blank instance, adding a case to `TslTestBody`, and — for
+ * the collapsed static tests — a case to `testDefaultName`.
  */
 export const TEST_TYPES: EditableTestType[] = [
   'placeholder_test',
   'program_execution_test',
   'function_execution_test',
   'contains_test',
+  'calls_test',
 ]
 
 export function isEditableType(type: string): type is EditableTestType {
@@ -221,6 +230,19 @@ export function createTest(type: EditableTestType, id = nextId(), t?: Translate)
         functionName: null,
         className: null,
         genericCheck: emptyGenericCheckLong(tr('tsl.containsCheckPass'), tr('tsl.containsCheckFail')),
+      }
+    case 'calls_test':
+      // `targetClassName` is declared on the Kotlin class but read by nothing — not the compiler,
+      // not tiivad (EZ-1742). Left out rather than written as null: the recommendation on that
+      // issue is to delete it, and emitting it into every new spec would entrench it. Specs that
+      // already carry it keep it, since tests are patched rather than rebuilt.
+      return {
+        ...base,
+        scope: 'PROGRAM',
+        targetType: 'FUNCTION',
+        functionName: null,
+        className: null,
+        genericCheck: emptyGenericCheckLong(tr('tsl.callsCheckPass'), tr('tsl.callsCheckFail')),
       }
     case 'program_execution_test':
       return {
@@ -299,6 +321,16 @@ export function optStrField(test: TslTest, key: string): string {
   return typeof v === 'string' ? v : ''
 }
 
+/**
+ * Reads one of the collapsed tests' enum fields, falling back to a known-good value. Not
+ * validated against the union: the JSON tab can put anything here, and a form that renders an
+ * unexpected value as its default is friendlier than one that blanks the whole card.
+ */
+export function enumField<T extends string>(test: TslTest, key: string, fallback: T): T {
+  const v = test[key]
+  return typeof v === 'string' ? (v as T) : fallback
+}
+
 /** Which extra name field a scope implies, if any. */
 export function scopeNameField(scope: Scope): 'functionName' | 'className' | null {
   if (scope === 'FUNCTION') return 'functionName'
@@ -363,14 +395,17 @@ type Translate = (key: string, opts?: Record<string, unknown>) => string
  * a pre-existing wart of the model, not something this function can fix.
  */
 export function testDefaultName(test: TslTest, t: Translate): string {
-  if (test.type === 'contains_test') {
-    const scope = test.scope
-    const what = test.containsWhat
-    const scopeKey = typeof scope === 'string' ? scope : 'PROGRAM'
-    const whatKey = typeof what === 'string' ? what : 'KEYWORD_NO_ARG'
-    return t(`tsl.containsName.${whatKey}`, { scope: t(`tsl.scopeSubject.${scopeKey}`) })
+  // Read defensively: the JSON tab lets anyone type anything, and a name is the last place that
+  // should throw.
+  const scope = t(`tsl.scopeSubject.${enumField<Scope>(test, 'scope', 'PROGRAM')}`)
+  switch (test.type) {
+    case 'contains_test':
+      return t(`tsl.containsName.${enumField<ContainsWhat>(test, 'containsWhat', 'KEYWORD_NO_ARG')}`, { scope })
+    case 'calls_test':
+      return t(`tsl.callsName.${enumField<TargetType>(test, 'targetType', 'FUNCTION')}`, { scope })
+    default:
+      return defaultTestName(test.type, t)
   }
-  return defaultTestName(test.type, t)
 }
 
 /** A copy of `test` with a fresh id, so both can live in the same spec. */
