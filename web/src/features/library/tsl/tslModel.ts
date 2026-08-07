@@ -514,10 +514,34 @@ export function emptyParamValueCheck(passedMessage: string, failedMessage: strin
  * nothing, whereas an absent key falls back to it. Clearing the box has to mean the latter.
  */
 export function setOrUnset(test: TslTest, key: string, value: string): TslTest {
+  return setOrDefault(test, key, value.trim() === '' ? '' : value, '')
+}
+
+/**
+ * Sets `key`, or removes it when the value is back to the Kotlin default.
+ *
+ * Keeps specs to what a teacher actually changed, and keeps "absent" meaning the default rather
+ * than a value that happens to coincide with it today.
+ */
+export function setOrDefault<T>(test: TslTest, key: string, value: T, fallback: T): TslTest {
   const next = { ...test }
-  if (value.trim() === '') delete next[key]
+  if (value === fallback) delete next[key]
   else next[key] = value
   return next
+}
+
+// --- settings every test type has, from the base `Test` class -----------------------------------
+// Cross-cutting rather than per-type, so the card owns them and no body repeats them.
+
+/** How much this test contributes to the grade. tiivad sums these into the total. */
+export function pointsWeightField(test: TslTest): number {
+  const v = test.pointsWeight
+  return typeof v === 'number' && Number.isFinite(v) ? v : 1
+}
+
+/** Whether the student sees this test in their feedback. Absent means visible. */
+export function visibleToUserField(test: TslTest): boolean {
+  return test.visibleToUser !== false
 }
 
 /** `function_is_test`'s check. Falls back to a blank; the field is non-nullable in Kotlin. */

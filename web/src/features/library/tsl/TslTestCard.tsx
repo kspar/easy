@@ -4,6 +4,7 @@ import {
   Chip,
   Collapse,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   ListItemIcon,
@@ -13,6 +14,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -25,6 +27,7 @@ import {
   DriveFileRenameOutlineOutlined,
   ExpandMoreOutlined,
   MoreVertOutlined,
+  VisibilityOffOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import TslTestBody from './TslTestBody.tsx'
@@ -32,8 +35,11 @@ import {
   createTest,
   defaultTestName,
   isEditableType,
+  pointsWeightField,
+  setOrDefault,
   TEST_TYPE_GROUPS,
   testDefaultName,
+  visibleToUserField,
   type TslTest,
 } from './tslModel.ts'
 
@@ -128,6 +134,17 @@ export default function TslTestCard({
               {!isEditableType(test.type) && (
                 <Chip size="small" label={t('tsl.rawChip')} variant="outlined" />
               )}
+              {/* Worth surfacing on the collapsed row: a hidden test still runs and still counts
+                  towards the grade, so its absence from the student's feedback is easy to forget
+                  about and hard to spot otherwise. */}
+              {!visibleToUserField(test) && (
+                <Chip
+                  size="small"
+                  icon={<VisibilityOffOutlined />}
+                  label={t('tsl.hiddenChip')}
+                  variant="outlined"
+                />
+              )}
               {editing && (
                 <Tooltip title={t('tsl.editTitle')}>
                   <IconButton
@@ -214,6 +231,7 @@ export default function TslTestCard({
 
       <Collapse in={expanded} unmountOnExit>
         <Box p={2} borderTop={1} borderColor="divider">
+          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
             <FormControl size="small" sx={{ minWidth: 260, mb: 1 }} disabled={!editing}>
             <InputLabel id={typeLabelId}>{t('tsl.testType')}</InputLabel>
             <Select
@@ -242,6 +260,39 @@ export default function TslTestCard({
               )}
             </Select>
           </FormControl>
+
+            {/* Points weight and visibility live on the base `Test` class, so every type has them
+                and none of the bodies should. Both are written only when moved off their Kotlin
+                default, which keeps specs to what was actually changed. */}
+            <TextField
+              label={t('tsl.pointsWeight')}
+              type="number"
+              value={pointsWeightField(test)}
+              onChange={(e) =>
+                actions.onChange(
+                  setOrDefault(test, 'pointsWeight', Math.max(0, Number(e.target.value) || 0), 1),
+                )
+              }
+              disabled={!editing}
+              size="small"
+              slotProps={{ htmlInput: { min: 0, step: 'any' } }}
+              sx={{ width: 130, mb: 1 }}
+            />
+            <FormControlLabel
+              sx={{ mb: 1 }}
+              control={
+                <Switch
+                  checked={visibleToUserField(test)}
+                  onChange={(e) =>
+                    actions.onChange(setOrDefault(test, 'visibleToUser', e.target.checked, true))
+                  }
+                  disabled={!editing}
+                  size="small"
+                />
+              }
+              label={<Typography variant="body2">{t('tsl.visibleToUser')}</Typography>}
+            />
+          </Box>
 
           <TslTestBody test={test} editing={editing} onChange={actions.onChange} />
         </Box>

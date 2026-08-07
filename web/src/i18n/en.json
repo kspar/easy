@@ -804,7 +804,10 @@
       "FUNCTION": "Plain function",
       "METHOD": "Method on an object"
     },
-    "paramNumberHelp": "0 = first argument"
+    "paramNumberHelp": "0 = first argument",
+    "pointsWeight": "Points",
+    "visibleToUser": "Shown to student",
+    "hiddenChip": "Hidden"
   },
   "terms": {
     "redirecting": "Opening the terms of service…",

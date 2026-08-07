@@ -804,7 +804,10 @@
       "FUNCTION": "Tavaline funktsioon",
       "METHOD": "Objekti meetod"
     },
-    "paramNumberHelp": "0 = esimene argument"
+    "paramNumberHelp": "0 = esimene argument",
+    "pointsWeight": "Punktid",
+    "visibleToUser": "Õpilasele nähtav",
+    "hiddenChip": "Peidetud"
   },
   "terms": {
     "redirecting": "Avan kasutustingimused…",

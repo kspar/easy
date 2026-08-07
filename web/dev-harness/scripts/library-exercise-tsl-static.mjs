@@ -579,5 +579,40 @@ check(
 )
 await shot('10-error-messages')
 
+// --- points weight and visibility, which every test type has ----------------------------------------
+// On the base Test class, so the card owns them rather than each body. The fixture's first test
+// carries pointsWeight 3 and visibleToUser false, which is how we know the form reads what is
+// already there instead of only writing.
+await fnTitle.first().click().catch(() => {})
+const weight = page.getByLabel('Points').first()
+check('the weight already in the spec is shown', (await weight.inputValue()) === '3')
+check(
+  'a hidden test says so on its collapsed row',
+  (await page.getByText('Hidden', { exact: true }).count()) > 0,
+)
+
+const reweighted = testOfType(await afterEdit(() => weight.fill('2')), 'contains_test')
+check('changing the weight reaches the spec', reweighted?.pointsWeight === 2, `= ${reweighted?.pointsWeight}`)
+
+// Back to the Kotlin default: the key should disappear rather than be written as 1, so "absent"
+// keeps meaning "default" for anything reading the spec later.
+const defaulted = testOfType(await afterEdit(() => weight.fill('1')), 'contains_test')
+check(
+  'and returning it to the default removes the key',
+  defaulted !== undefined && !('pointsWeight' in defaulted),
+  `keys: ${Object.keys(defaulted ?? {}).join(',')}`,
+)
+
+const shown = testOfType(
+  await afterEdit(() => page.getByLabel('Shown to student').first().click()),
+  'contains_test',
+)
+check(
+  'making a hidden test visible removes visibleToUser too',
+  shown !== undefined && !('visibleToUser' in shown),
+  `keys: ${Object.keys(shown ?? {}).join(',')}`,
+)
+await shot('11-weight-visibility')
+
 await browser.close()
 process.exit(check.summary() ? 0 : 1)
