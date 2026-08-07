@@ -2,9 +2,10 @@
 
 EZ-1607 collapsed 39 TSL test types into 4. Specs already in the database still use the old ones
 and no longer deserialize at all, so an exercise that opens fine today fails the moment it is
-saved. This is the extraction side of fixing that: it pulls every TSL exercise out of production
-so muuli's migration has something to work on, and checks what comes back before it goes anywhere
-near the database.
+saved. These scripts pull every TSL exercise out of production, rewrite the ones that need it, and
+check the result before it goes anywhere near the database.
+
+All four steps are read-only against production. Nothing here writes to a database.
 
 ## Handling the data
 
@@ -55,12 +56,40 @@ evidence of which test types teachers actually use, and the add-test presets in 
 (`web/src/features/library/tsl/tslPresets.ts`) were chosen from a guess at that distribution.
 Revisit them against it.
 
-## 3. Hand off, and check what comes back
-
-muuli returns a tree of the same shape with `tsl.json` rewritten and nothing else touched.
+## 3. Migrate
 
 ```sh
-python3 explode.py --export /tmp/tsl-export.jsonl --verify ./from-muuli
+python3 migrate.py --export /tmp/tsl-export.jsonl --out ./migrated
+```
+
+Covers the 18 retired types the corpus actually contains — the other 21 the collapse removed were
+never used by anyone. Anything unmapped is reported and left untouched rather than guessed at, and
+`migrate.py` exits non-zero if it meets one.
+
+**It preserves behaviour, it does not improve it.** Every mapping reproduces what the old compiler
+emitted and the old analyser computed. The two that look like approximations and are not:
+
+- **loop / try-except / return → keyword checks.** The old booleans were themselves computed from
+  AST node types, and `KEYWORD_TO_AST_NODES` maps the same nodes to the same keywords
+  (`for`→`{For, AsyncFor, comprehension}` against `contains_loop_tv`=`For|While|comprehension`).
+  `try` OR `except`, not both, because a bare `try/finally` set the old flag. The one divergence is
+  `async for`, which now counts as a loop and did not before.
+- **calls_print → a call check on `["print"]`.** `calls_print()` was `"print" in
+  calls_function_names`; `ALL_OF_THESE` over `["print"]` is the same set containment, and
+  `NONE_OF_THESE` is its complement.
+
+Polarity follows one rule taken from the old compiler, which emitted `expected_value` as
+`!mustNotX` for every boolean check without exception.
+
+Results against the current corpus: **189 exercises rewritten, 810 tests converted, 532 left
+byte-identical.**
+
+## 4. Verify
+
+Works on any migrated tree, whether `migrate.py` produced it or someone else did.
+
+```sh
+python3 explode.py --export /tmp/tsl-export.jsonl --verify ./migrated
 ```
 
 Exits non-zero and lists anything wrong:
@@ -70,10 +99,20 @@ Exits non-zero and lists anything wrong:
   so editing them is at best discarded and at worst confusing
 - a spec that does not parse
 - a spec still containing retired test types
-- duplicate test ids within a spec — the compiler has a check for this that is never called
-  outside its own `main()`, so this is the only place it runs before a spec reaches production
+- duplicate test ids the migration *introduced*. Not duplicates as such: 174 of 721 production
+  specs already have them and work anyway, because the compiler's only validation
+  (`validateParseTree`) is never called outside its own `main()`. Flagging those would bury a real
+  regression under a quarter of the corpus.
 
-## 4. Writing back
+Then compile the result. This is the check that actually proves something, and it needs the merged
+`:tsl` — see `Check.kt` usage in the scratch harness, or point the compiler at the tree:
+
+```
+compiled OK : 721      (was 532 before migration)
+failed      : 0        (was 189)
+```
+
+## 5. Writing back
 
 **Prefer `PUT /v2/exercises/{id}` over a SQL update.** Replacing `tsl.json` directly leaves the
 old generated Python in place, because the scripts are compiled at save time and stored as

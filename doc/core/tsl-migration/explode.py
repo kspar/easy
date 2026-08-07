@@ -110,6 +110,9 @@ def verify(rows, migrated: pathlib.Path) -> int:
 
         spec_path = d / "tsl.json"
         if not spec_path.exists():
+            # A legacy YAML exercise has a tsl.yaml and never had a tsl.json to rewrite.
+            if any(a["file_name"].lower().endswith((".yaml", ".yml")) for a in by_id[eid]["assets"]):
+                continue
             problems.append(f"{eid}: no tsl.json in the migration")
             continue
         try:
@@ -124,11 +127,22 @@ def verify(rows, migrated: pathlib.Path) -> int:
             problems.append(f"{eid}: still uses retired test types: {', '.join(stale)}")
 
         # The compiler has a duplicate-id check that is never called outside its own main(), so
-        # this is the only place it actually runs before a spec reaches production.
+        # this is the only place it runs before a spec reaches production.
+        #
+        # Reported only when the migration *introduced* them. 174 of 721 production specs already
+        # have duplicate ids and work anyway, so flagging those would bury a real regression under
+        # a quarter of the corpus — and would be asking a migration to fix something that is not
+        # its job.
         ids = [t.get("id") for t in tests if isinstance(t, dict)]
-        dupes = sorted({i for i in ids if ids.count(i) > 1})
-        if dupes:
-            problems.append(f"{eid}: duplicate test ids {dupes}")
+        dupes = {i for i in ids if ids.count(i) > 1}
+        before, _ = parse_spec(next(
+            (a["file_content"] for a in by_id[eid]["assets"] if a["file_name"] == "tsl.json"), "null"
+        ))
+        old_ids = [t.get("id") for t in (before or {}).get("tests", []) if isinstance(t, dict)]
+        already = {i for i in old_ids if old_ids.count(i) > 1}
+        introduced = sorted(dupes - already)
+        if introduced:
+            problems.append(f"{eid}: migration introduced duplicate test ids {introduced}")
 
     for p in problems:
         print(f"  {p}")
