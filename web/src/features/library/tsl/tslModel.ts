@@ -165,19 +165,30 @@ export type EditableTestType =
   | 'function_is_test'
 
 /**
- * The types the "test type" dropdown offers. Extending the editor to another TSL test means
- * adding it here, giving `createTest` a blank instance, adding a case to `TslTestBody`, and — for
- * the collapsed static tests — a case to `testDefaultName`.
+ * The type dropdown, grouped.
+ *
+ * The split is the one that matters to a teacher: does this test *run* their code, or read it
+ * without running it? That distinction decides whether inputs and outputs are even meaningful,
+ * and after the collapse it is the only thing separating four otherwise similar-sounding names.
+ *
+ * Extending the editor to another TSL test means adding it here, giving `createTest` a blank
+ * instance, adding a case to `TslTestBody`, and — for the collapsed static tests — a case to
+ * `testDefaultName`.
  */
-export const TEST_TYPES: EditableTestType[] = [
-  'placeholder_test',
-  'program_execution_test',
-  'function_execution_test',
-  'contains_test',
-  'calls_test',
-  'definition_test',
-  'function_is_test',
+export const TEST_TYPE_GROUPS: { labelKey: string; types: EditableTestType[] }[] = [
+  {
+    labelKey: 'tsl.groupExecution',
+    types: ['program_execution_test', 'function_execution_test'],
+  },
+  {
+    labelKey: 'tsl.groupStatic',
+    types: ['contains_test', 'calls_test', 'definition_test', 'function_is_test'],
+  },
+  { labelKey: 'tsl.groupOther', types: ['placeholder_test'] },
 ]
+
+/** Flattened, for everything that only needs to know whether a type has a form. */
+export const TEST_TYPES: EditableTestType[] = TEST_TYPE_GROUPS.flatMap((g) => g.types)
 
 export function isEditableType(type: string): type is EditableTestType {
   return (TEST_TYPES as string[]).includes(type)

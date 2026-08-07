@@ -739,6 +739,28 @@
     "functionPropertyHint": {
       "RECURSIVE": "Tuvastatakse ainult otsene rekursioon — teise funktsiooni kaudu rekursiivne funktsioon ei lähe arvesse.",
       "PURE": "Tuvastamine on ligikaudne: mooduli tasemel nimesid, mis on seotud lahtipakkimise, for-muutuja või +=-ga, ei märgata, seega nende lugemine loeb ikka puhtaks."
+    },
+    "groupExecution": "Käivitab koodi",
+    "groupStatic": "Vaatab koodi",
+    "groupOther": "Muu",
+    "presetGroupContent": "Mida kood sisaldab",
+    "presetGroupCalls": "Mida kood välja kutsub",
+    "presetGroupDefines": "Mida kood defineerib",
+    "presetGroupProperties": "Funktsiooni omadused",
+    "preset": {
+      "runProgram": "Käivitab programmi",
+      "callFunction": "Kutsub välja funktsiooni",
+      "usesLoop": "Kasutab tsüklit",
+      "usesTryExcept": "Kasutab try/except plokki",
+      "importsModule": "Impordib mooduli",
+      "containsText": "Sisaldab sõnet",
+      "callsFunction": "Kutsub välja funktsiooni",
+      "doesNotPrint": "Ei kutsu välja printi",
+      "definesFunction": "Defineerib funktsiooni",
+      "definesClass": "Defineerib klassi",
+      "isRecursive": "On rekursiivne",
+      "isPure": "Kasutab vaid lokaalseid muutujaid",
+      "blank": "Tühi test"
     }
   },
   "terms": {

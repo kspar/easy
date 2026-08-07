@@ -104,14 +104,26 @@ await fakeApi(page, [
 ])
 
 /**
- * The test of the given type as the compiler last saw it, once a compile newer than `after` has
- * landed. Waiting on the compile is the point: the model→text→compile hop is debounced, so
- * reading `compiled` straight after an edit reads the state before it.
+ * Runs `action`, then waits until the compiler has been handed a spec *different* from the one it
+ * had beforehand, and returns it.
+ *
+ * Waiting on a changed spec rather than on a higher compile count is the whole point. The
+ * model→text→compile hop is debounced, so a compile already in flight when the action starts will
+ * satisfy a count check and hand back the state from before the edit. An earlier version of this
+ * file did exactly that and passed anyway, purely on timing — until an unrelated component made
+ * the page render a little differently and it started reporting a real assertion as broken.
  */
-async function latestTest(after = -1, type = 'contains_test') {
-  await waitUntil(() => compiled.length > after + 1, { timeout: 15_000 })
-  return compiled[compiled.length - 1].tests.find((t) => t.type === type)
+async function afterEdit(action) {
+  const before = JSON.stringify(compiled.at(-1) ?? null)
+  await action()
+  await waitUntil(() => JSON.stringify(compiled.at(-1) ?? null) !== before, { timeout: 15_000 })
+  return compiled.at(-1)
 }
+
+const testOfType = (spec, type) => spec.tests.find((t) => t.type === type)
+
+/** Presets and "Add test" append, so the newest card is the last test in the spec. */
+const lastTest = (spec) => spec.tests.at(-1)
 
 const selectOption = async (comboName, optionName) => {
   await page.getByRole('combobox', { name: comboName }).click()
@@ -140,14 +152,12 @@ check(
 check('and does not show a class name', (await page.getByLabel('Class name').count()) === 0)
 
 // --- switching scope drops the name that no longer applies --------------------------------------
-let seen = compiled.length - 1
-await selectOption('Scope', 'Whole program')
+let spec = await afterEdit(() => selectOption('Scope', 'Whole program'))
+let test = testOfType(spec, 'contains_test')
 check(
   'PROGRAM scope hides the function name field',
   await waitUntil(async () => (await page.getByLabel('Function name').count()) === 0),
 )
-
-let test = await latestTest(seen)
 check(
   'and clears functionName in the spec rather than leaving it stale',
   test.functionName === null,
@@ -163,15 +173,12 @@ check(
   await waitUntil(() => page.getByLabel('Class name').isVisible()),
 )
 await page.getByLabel('Class name').fill('Raamatukogu')
-await selectOption('Scope', 'Whole program')
-seen = compiled.length - 1
-test = await latestTest(seen - 1)
-check('leaving CLASS clears className too', test.className === null)
+spec = await afterEdit(() => selectOption('Scope', 'Whole program'))
+check('leaving CLASS clears className too', testOfType(spec, 'contains_test').className === null)
 
 // --- "imported module" is a mode, not a free-text argument ---------------------------------------
-seen = compiled.length - 1
-await selectOption('Looks for', 'Imported module')
-test = await latestTest(seen)
+spec = await afterEdit(() => selectOption('Looks for', 'Imported module'))
+test = testOfType(spec, 'contains_test')
 check(
   'the UI supplies containsWhatArg=import, the only value tiivad accepts',
   test.containsWhat === 'KEYWORD_WITH_PRECEDING_ARG' && test.containsWhatArg === 'import',
@@ -210,9 +217,8 @@ check(
 await shot('03-quantifier')
 
 // --- the shape of what gets saved ------------------------------------------------------------------
-seen = compiled.length - 1
-await page.getByLabel('Module names').fill('csv\nmath')
-test = await latestTest(seen)
+spec = await afterEdit(() => page.getByLabel('Module names').fill('csv\nmath'))
+test = testOfType(spec, 'contains_test')
 
 check('expected values reach the spec', JSON.stringify(test.genericCheck.expectedValue) === '["csv","math"]')
 
@@ -229,23 +235,70 @@ check(
   `pointsWeight=${test.pointsWeight} visibleToUser=${test.visibleToUser}`,
 )
 
-// --- creating one from scratch ----------------------------------------------------------------------
+// --- the add-test menu, and what a preset produces ---------------------------------------------------
+// The collapse cost discovery: "a loop" is no longer a test type, it is a contains_test whose
+// expected values happen to be `for` and `while`, and nothing on screen would say so. A preset is
+// the compensation, so what matters is that it lands *already configured* — a preset that produced
+// a blank contains_test would be a rename of "Add test" and nothing more.
 const typeSelects = page.getByRole('combobox', { name: 'Test type' })
 await page.getByRole('button', { name: 'Add test' }).click()
+check(
+  'the add menu is grouped by intent, not a flat list of type names',
+  await waitUntil(async () => (await page.getByText('What the code contains', { exact: true }).count()) > 0) &&
+    (await page.getByText('Run the code', { exact: true }).count()) > 0,
+)
+// The newest card, not the first contains_test in the spec — card one is also a contains_test, and
+// `find` would happily assert against it and pass on values this preset never set.
+const loop = lastTest(await afterEdit(() => page.getByRole('menuitem', { name: 'Uses a loop' }).click()))
+check(
+  'the loop preset arrives as a keyword check, already filled in',
+  loop?.scope === 'PROGRAM' &&
+    loop?.containsWhat === 'KEYWORD_NO_ARG' &&
+    JSON.stringify(loop?.genericCheck?.expectedValue) === '["for","while"]',
+  `scope=${loop?.scope} what=${loop?.containsWhat} values=${JSON.stringify(loop?.genericCheck?.expectedValue)}`,
+)
+check(
+  'and as ANY_OF_THESE, since either keyword is a loop',
+  loop?.genericCheck?.checkType === 'ANY_OF_THESE',
+  `checkType=${loop?.genericCheck?.checkType}`,
+)
+// A preset that lands in the required-field error state has not saved anyone any work.
+check(
+  'the preset is immediately valid rather than needing a field filled in',
+  await waitUntil(async () => (await page.locator('.Mui-error').count()) === 0),
+)
+await shot('08-preset-loop')
+
+// Delete it again so the rest of the assertions keep counting one contains_test.
+await page.getByRole('button', { name: 'More options' }).last().click()
+await page.getByRole('menuitem', { name: 'Delete' }).click()
+await waitUntil(async () => (await typeSelects.count()) === 1)
+
+// --- creating a blank one and switching its type -----------------------------------------------------
+await page.getByRole('button', { name: 'Add test' }).click()
+await page.getByRole('menuitem', { name: 'Empty test' }).click()
 check(
   'a new test card is added, expanded',
   await waitUntil(async () => (await typeSelects.count()) === 2),
 )
+check(
+  'and the type dropdown groups the types the same way',
+  await (async () => {
+    await typeSelects.last().click()
+    const grouped = (await page.getByRole('listbox').getByText('Inspect the code', { exact: true }).count()) > 0
+    await page.keyboard.press('Escape')
+    return grouped
+  })(),
+)
 
-// The new card arrives already open, so "New test" matches both its title and its type select —
-// address the select positionally instead. It defaults to placeholder; switching it to
-// contains_test must produce every field the Kotlin class declares, or the first save fails on a
-// missing non-nullable.
-await typeSelects.last().click()
-await page.getByRole('option', { name: 'Code contains…', exact: true }).click()
-seen = compiled.length - 1
-await waitUntil(() => compiled.length > seen + 1, { timeout: 15_000 })
-const created = compiled[compiled.length - 1].tests.find((t) => t.id !== 3001 && t.type === 'contains_test')
+// Switching a blank test to contains_test must produce every field the Kotlin class declares, or
+// the first save fails on a missing non-nullable.
+const created = lastTest(
+  await afterEdit(async () => {
+    await typeSelects.last().click()
+    await page.getByRole('option', { name: 'Code contains…', exact: true }).click()
+  }),
+)
 check(
   'a freshly created contains_test declares every field Kotlin requires',
   created !== undefined &&
@@ -298,9 +351,10 @@ check(
   await waitUntil(() => page.getByText('The class calls a function', { exact: true }).isVisible()),
 )
 
-seen = compiled.length - 1
-await page.getByLabel('Function names').fill('print')
-const callsTest = await latestTest(seen, 'calls_test')
+const callsTest = testOfType(
+  await afterEdit(() => page.getByLabel('Function names').fill('print')),
+  'calls_test',
+)
 check(
   'caller and callee reach the spec independently',
   callsTest?.scope === 'CLASS' && callsTest?.className === 'Raamatukogu' && callsTest?.targetType === 'FUNCTION',
@@ -329,9 +383,10 @@ await page.getByRole('option', { name: 'Code defines…', exact: true }).click()
 // default to PROGRAM at grading time.
 await page.getByRole('combobox', { name: 'Scope' }).last().click()
 await page.getByRole('option', { name: 'A function', exact: true }).click()
-await page.getByLabel('Function name').last().fill('main')
-seen = compiled.length - 1
-let def = await latestTest(seen, 'definition_test')
+let def = testOfType(
+  await afterEdit(() => page.getByLabel('Function name').last().fill('main')),
+  'definition_test',
+)
 check(
   'scope is written to scopeType, not scope',
   def?.scopeType === 'FUNCTION' && def?.scope === undefined,
@@ -347,9 +402,10 @@ check(
   await waitUntil(() => page.getByLabel('Superclass').isVisible()),
 )
 await page.getByLabel('Superclass').fill('Teos')
-await page.getByLabel('Class names').fill('Raamat')
-seen = compiled.length - 1
-def = await latestTest(seen, 'definition_test')
+def = testOfType(
+  await afterEdit(() => page.getByLabel('Class names').fill('Raamat')),
+  'definition_test',
+)
 check('subclass definition reaches the spec', def?.superClassName === 'Teos')
 // Kotlin's getDefaultName() names both the class and its superclass, so the editor title has to as
 // well — otherwise it and the title in a student's feedback describe the same test differently.
@@ -359,10 +415,13 @@ check(
     page.getByText('The function defines Raamat, a subclass of Teos', { exact: true }).isVisible()),
 )
 
-await page.getByRole('combobox', { name: 'Defines' }).click()
-await page.getByRole('option', { name: 'A function', exact: true }).click()
-seen = compiled.length - 1
-def = await latestTest(seen, 'definition_test')
+def = testOfType(
+  await afterEdit(async () => {
+    await page.getByRole('combobox', { name: 'Defines' }).click()
+    await page.getByRole('option', { name: 'A function', exact: true }).click()
+  }),
+  'definition_test',
+)
 check(
   'switching back to FUNCTION clears superClassName, which tiivad rejects for FUNCTION',
   def?.superClassName === null,
@@ -370,9 +429,10 @@ check(
 )
 
 // Required and non-null, but read by nothing — kept in sync rather than asked for twice (EZ-1742).
-await page.getByLabel('Function names').fill('arvuta\nkuva')
-seen = compiled.length - 1
-def = await latestTest(seen, 'definition_test')
+def = testOfType(
+  await afterEdit(() => page.getByLabel('Function names').fill('arvuta\nkuva')),
+  'definition_test',
+)
 check(
   'the dead definitionCheckValue is present and tracks the first expected value',
   def?.definitionCheckValue === 'arvuta',
@@ -403,9 +463,10 @@ check(
 )
 
 // The whole condition is this one boolean; tiivad emits it as a real True/False.
-await page.getByLabel('The function must have this property').click()
-seen = compiled.length - 1
-const fnIs = await latestTest(seen, 'function_is_test')
+const fnIs = testOfType(
+  await afterEdit(() => page.getByLabel('The function must have this property').click()),
+  'function_is_test',
+)
 check(
   'polarity is a real boolean on propertyCheck, not a quantifier',
   fnIs?.propertyCheck?.mustHaveProperty === false,

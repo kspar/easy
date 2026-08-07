@@ -739,6 +739,28 @@
     "functionPropertyHint": {
       "RECURSIVE": "Only direct recursion is detected — a function that recurses through another one does not count.",
       "PURE": "Detection is approximate: module-level names bound by unpacking, a for-target or += are not seen, so reading them still counts as pure."
+    },
+    "groupExecution": "Run the code",
+    "groupStatic": "Inspect the code",
+    "groupOther": "Other",
+    "presetGroupContent": "What the code contains",
+    "presetGroupCalls": "What the code calls",
+    "presetGroupDefines": "What the code defines",
+    "presetGroupProperties": "Function properties",
+    "preset": {
+      "runProgram": "Run the program",
+      "callFunction": "Call a function",
+      "usesLoop": "Uses a loop",
+      "usesTryExcept": "Uses try/except",
+      "importsModule": "Imports a module",
+      "containsText": "Contains some text",
+      "callsFunction": "Calls a function",
+      "doesNotPrint": "Doesn't call print",
+      "definesFunction": "Defines a function",
+      "definesClass": "Defines a class",
+      "isRecursive": "Is recursive",
+      "isPure": "Uses only local variables",
+      "blank": "Empty test"
     }
   },
   "terms": {

@@ -1,13 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Tab, Tabs, Typography } from '@mui/material'
-import { AddOutlined } from '@mui/icons-material'
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  ListSubheader,
+  Menu,
+  MenuItem,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material'
+import { AddOutlined, ArrowDropDownOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Extension } from '@codemirror/state'
 import CodeEditor from '../../../components/CodeEditor.tsx'
 import { languageFromFilename } from '../../course-exercise/editorLanguage.ts'
 import TslTestCard from './TslTestCard.tsx'
 import { useTslSpec } from './useTslSpec.ts'
-import { createTest, duplicateTest, type TslTest } from './tslModel.ts'
+import { duplicateTest, type TslTest } from './tslModel.ts'
+import { PRESET_GROUPS } from './tslPresets.ts'
 
 type TslTab = 'tests' | 'spec' | 'generated'
 
@@ -36,6 +48,7 @@ export default function TslEditor({
   const [tab, setTab] = useState<TslTab>('tests')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [lang, setLang] = useState<Extension | undefined>(jsonExtension)
+  const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null)
 
   const store = useTslSpec({ value, onChange })
   const { spec, parseError, compileFeedback, compiling, scripts, isValid } = store
@@ -134,16 +147,36 @@ export default function TslEditor({
               />
             ))}
             {editing && (
-              <Button
-                startIcon={<AddOutlined />}
-                onClick={() => {
-                  const test = createTest('placeholder_test')
-                  setTests([...tests, test])
-                  setExpanded((prev) => new Set(prev).add(test.id))
-                }}
-              >
-                {t('tsl.addTest')}
-              </Button>
+              <>
+                <Button
+                  startIcon={<AddOutlined />}
+                  endIcon={<ArrowDropDownOutlined />}
+                  onClick={(e) => setAddAnchor(e.currentTarget)}
+                  aria-haspopup="menu"
+                >
+                  {t('tsl.addTest')}
+                </Button>
+                <Menu anchorEl={addAnchor} open={!!addAnchor} onClose={() => setAddAnchor(null)}>
+                  {/* Flattened rather than wrapped: MUI's Menu, like Select, reads its children
+                      directly and will not look inside a container for the items. */}
+                  {PRESET_GROUPS.map((group) => [
+                    <ListSubheader key={group.labelKey}>{t(group.labelKey)}</ListSubheader>,
+                    ...group.presets.map((preset) => (
+                      <MenuItem
+                        key={preset.id}
+                        onClick={() => {
+                          setAddAnchor(null)
+                          const test = preset.build(t)
+                          setTests([...tests, test])
+                          setExpanded((prev) => new Set(prev).add(test.id))
+                        }}
+                      >
+                        {t(`tsl.preset.${preset.id}`)}
+                      </MenuItem>
+                    )),
+                  ])}
+                </Menu>
+              </>
             )}
           </>
         )}

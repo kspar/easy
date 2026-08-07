@@ -122,9 +122,9 @@ await settle()
 check('empty spec compiles on the real backend', (await compilerError()) === null, await compilerError())
 
 // --- build a program execution test through the UI ---------------------------------------------
+// "Add test" is a preset menu now, so the type dropdown is no longer part of this path.
 await page.getByRole('button', { name: 'Add test' }).click()
-await page.getByLabel('Test type').click()
-await page.getByRole('option', { name: 'Program execution test' }).click()
+await page.getByRole('menuitem', { name: 'Run the program' }).click()
 await settle()
 check(
   'program_execution_test built in the UI compiles',
@@ -154,11 +154,7 @@ await shot('02-generated-from-real-compiler')
 // --- add a function execution test --------------------------------------------------------------
 await page.getByRole('tab', { name: 'Tests' }).click()
 await page.getByRole('button', { name: 'Add test' }).click()
-const secondCard = page.locator('[aria-expanded="true"]').last()
-void secondCard
-// The new test is the last "New test" row; open its type dropdown.
-await page.getByLabel('Test type').last().click()
-await page.getByRole('option', { name: 'Function call test' }).click()
+await page.getByRole('menuitem', { name: 'Call a function' }).click()
 await settle()
 
 await page.getByLabel('Function name').fill('liida')
@@ -172,6 +168,30 @@ check(
   await compilerError(),
 )
 await shot('03-function-call')
+
+// --- the collapsed static tests, against the real compiler --------------------------------------
+// These four types replaced 39 (EZ-1607) and are the newest thing in the model, so they are the
+// most worth putting in front of a real compiler rather than a stub. Built from presets, since
+// that is now the path a teacher actually takes.
+for (const [preset, label] of [
+  ['Uses a loop', 'contains_test'],
+  ["Doesn't call print", 'calls_test'],
+  ['Defines a function', 'definition_test'],
+  ['Is recursive', 'function_is_test'],
+]) {
+  await page.getByRole('tab', { name: 'Tests' }).click()
+  await page.getByRole('button', { name: 'Add test' }).click()
+  await page.getByRole('menuitem', { name: preset, exact: true }).click()
+  // The presets that cannot know a name arrive with their values empty, which is a legal spec but
+  // not a useful test — fill in whatever the newest card is still asking for.
+  const values = page.getByLabel(/^(Function names|Class names)$/).last()
+  if ((await values.count()) > 0 && (await values.inputValue()) === '') await values.fill('liida')
+  const fnName = page.getByLabel('Function name').last()
+  if ((await fnName.count()) > 0 && (await fnName.inputValue()) === '') await fnName.fill('liida')
+  await settle()
+  check(`${label} from the "${preset}" preset compiles`, (await compilerError()) === null, await compilerError())
+}
+await shot('03b-static-tests')
 
 // --- what the compiler was asked to build is what Save will send --------------------------------
 await page.getByRole('tab', { name: 'TSL', exact: true }).click()
@@ -196,11 +216,19 @@ if (puts.length) {
   check('save keeps grader_type AUTO', body.grader_type === 'AUTO')
   check('save keeps the container image', body.container_image === 'tiivad:tsl-compose')
   const saved = JSON.parse(body.assets[0].file_content)
-  check('saved spec has both tests', saved.tests.length === 2, `tests=${saved.tests?.length}`)
+  check('saved spec has every test built above', saved.tests.length === 6, `tests=${saved.tests?.length}`)
   check(
     'saved spec is the one the compiler accepted',
-    saved.tests[0].type === 'program_execution_test' &&
-      saved.tests[1].type === 'function_execution_test',
+    JSON.stringify(saved.tests.map((x) => x.type)) ===
+      JSON.stringify([
+        'program_execution_test',
+        'function_execution_test',
+        'contains_test',
+        'calls_test',
+        'definition_test',
+        'function_is_test',
+      ]),
+    JSON.stringify(saved.tests.map((x) => x.type)),
   )
   // The decisive check: hand the saved spec straight to the real compiler.
   const resp = await fetch('http://localhost:8080/v2/tsl/compile', {

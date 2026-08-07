@@ -8,6 +8,7 @@ import {
   InputLabel,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Menu,
   MenuItem,
   Paper,
@@ -31,7 +32,7 @@ import {
   createTest,
   defaultTestName,
   isEditableType,
-  TEST_TYPES,
+  TEST_TYPE_GROUPS,
   testDefaultName,
   type TslTest,
 } from './tslModel.ts'
@@ -221,11 +222,17 @@ export default function TslTestCard({
               value={test.type}
               onChange={(e) => changeType(e.target.value)}
             >
-              {TEST_TYPES.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {defaultTestName(type, t)}
-                </MenuItem>
-              ))}
+              {/* Grouped by whether the test runs the code or reads it — flattened with a
+                  fragment because MUI's Select reads its children directly and will not descend
+                  into a wrapper element to find the options. */}
+              {TEST_TYPE_GROUPS.map((group) => [
+                <ListSubheader key={group.labelKey}>{t(group.labelKey)}</ListSubheader>,
+                ...group.types.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {defaultTestName(type, t)}
+                  </MenuItem>
+                )),
+              ])}
               {/* Keeps an unsupported type selectable so the dropdown shows the truth rather than
                   silently reading as one of the three implemented ones. */}
               {!isEditableType(test.type) && (
