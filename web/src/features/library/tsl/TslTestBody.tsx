@@ -3,9 +3,12 @@ import {
   Alert,
   Box,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material'
@@ -17,16 +20,20 @@ import {
   fileListField,
   genericCheckField,
   optStrField,
+  propertyCheckField,
   returnCheckField,
   strField,
   strListField,
   type ContainsWhat,
+  type DefinitionCheckType,
+  type FunctionProperty,
   type Scope,
   type TargetType,
   type TslTest,
 } from './tslModel.ts'
 import {
   TslDataChecksSection,
+  TslFeedbackFields,
   TslGroupTitle,
   TslInputFilesSection,
   TslReturnCheckSection,
@@ -56,6 +63,10 @@ export default function TslTestBody({ test, editing, onChange }: BodyProps) {
       return <ContainsBody test={test} editing={editing} onChange={onChange} />
     case 'calls_test':
       return <CallsBody test={test} editing={editing} onChange={onChange} />
+    case 'definition_test':
+      return <DefinitionBody test={test} editing={editing} onChange={onChange} />
+    case 'function_is_test':
+      return <FunctionIsBody test={test} editing={editing} onChange={onChange} />
     default:
       return <RawBody test={test} editing={editing} onChange={onChange} />
   }
@@ -274,6 +285,178 @@ function CallsBody({ test, editing, onChange }: BodyProps) {
         editing={editing}
         onChange={(genericCheck) => onChange({ ...test, genericCheck })}
       />
+    </Box>
+  )
+}
+
+const DEFINITION_KINDS: DefinitionCheckType[] = ['FUNCTION', 'CLASS']
+
+/**
+ * `definition_test` — replaces the five `*_defines_*` types, plus `class_is_subclass_test`, which
+ * is now expressed as a `superClassName` rather than a type of its own.
+ *
+ * Two model quirks are absorbed here rather than shown to the teacher:
+ *
+ *  - the scope lives in `scopeType`, not `scope`, unlike its two siblings (EZ-1742);
+ *  - `definitionCheckValue` is required and non-null but read by nothing — not the compiler's
+ *    output, not tiivad. The names actually checked come from the check's expected values. So it
+ *    is kept in sync with the first of those instead of being a second field asking for the same
+ *    thing. It still feeds Kotlin's `getDefaultName()`, so it cannot simply be left blank.
+ */
+function DefinitionBody({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const kindId = useId()
+  const scope = enumField<Scope>(test, 'scopeType', 'PROGRAM')
+  const kind = enumField<DefinitionCheckType>(test, 'definitionCheckType', 'FUNCTION')
+  const check = genericCheckField(test)
+
+  return (
+    <Box>
+      <TslGroupTitle>{t('tsl.whereToLook')}</TslGroupTitle>
+      <TslScopeSection
+        scope={scope}
+        scopeKey="scopeType"
+        functionName={optStrField(test, 'functionName')}
+        className={optStrField(test, 'className')}
+        editing={editing}
+        onChange={(patch) => onChange({ ...test, ...patch })}
+      />
+
+      <TslGroupTitle>{t('tsl.whatIsDefined')}</TslGroupTitle>
+      <Box display="flex" gap={1} flexWrap="wrap">
+        <FormControl size="small" sx={{ minWidth: 260 }} disabled={!editing}>
+          <InputLabel id={kindId}>{t('tsl.definitionKind')}</InputLabel>
+          <Select
+            labelId={kindId}
+            label={t('tsl.definitionKind')}
+            value={kind}
+            onChange={(e) =>
+              // Clearing superClassName is not tidiness: tiivad raises outright when it arrives
+              // alongside definition_check_type=FUNCTION.
+              onChange({
+                ...test,
+                definitionCheckType: e.target.value as DefinitionCheckType,
+                superClassName: e.target.value === 'CLASS' ? optStrField(test, 'superClassName') || null : null,
+              })
+            }
+          >
+            {DEFINITION_KINDS.map((k) => (
+              <MenuItem key={k} value={k}>
+                {t(`tsl.definitionKindName.${k}`)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {kind === 'CLASS' && (
+          <TextField
+            label={t('tsl.superClassName')}
+            value={optStrField(test, 'superClassName')}
+            onChange={(e) => onChange({ ...test, superClassName: e.target.value || null })}
+            disabled={!editing}
+            size="small"
+            helperText={t('tsl.superClassHelp')}
+            sx={{ minWidth: 240, '& input': { fontFamily: 'monospace' } }}
+          />
+        )}
+      </Box>
+
+      <TslGroupTitle>{t('tsl.checks')}</TslGroupTitle>
+      <TslGenericCheckLongSection
+        check={check}
+        valuesLabel={t(`tsl.definesValuesLabel.${kind}`)}
+        valuesHelp={t(`tsl.definesValuesHelp.${kind}`)}
+        editing={editing}
+        onChange={(genericCheck) =>
+          onChange({
+            ...test,
+            genericCheck,
+            definitionCheckValue: genericCheck.expectedValue[0] ?? '',
+          })
+        }
+      />
+    </Box>
+  )
+}
+
+const FUNCTION_PROPERTIES: FunctionProperty[] = ['RECURSIVE', 'PURE']
+
+/**
+ * `function_is_test` — the two `function_is_*` types.
+ *
+ * The odd one out of the four: no scope, and no `GenericCheckLong`. `is_pure()` / `is_recursive()`
+ * return a bool rather than a set, so there is nothing to quantify over and the whole condition is
+ * one `mustHaveProperty` switch.
+ *
+ * The helper text is not padding. tiivad documents real analyser limitations — mutual recursion
+ * isn't detected, and several ways of touching a module-level name still count as pure — and a
+ * teacher who doesn't know that will write a test that passes work it shouldn't.
+ */
+function FunctionIsBody({ test, editing, onChange }: BodyProps) {
+  const { t } = useTranslation()
+  const propId = useId()
+  const functionName = strField(test, 'functionName')
+  const property = enumField<FunctionProperty>(test, 'functionProperty', 'RECURSIVE')
+  const check = propertyCheckField(test)
+
+  return (
+    <Box>
+      <TextField
+        label={t('tsl.functionName')}
+        value={functionName}
+        onChange={(e) => onChange({ ...test, functionName: e.target.value })}
+        disabled={!editing}
+        size="small"
+        fullWidth
+        required
+        error={editing && functionName.trim() === ''}
+        sx={{ '& input': { fontFamily: 'monospace' } }}
+      />
+
+      <TslGroupTitle>{t('tsl.checks')}</TslGroupTitle>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 220 }} disabled={!editing}>
+            <InputLabel id={propId}>{t('tsl.functionProperty')}</InputLabel>
+            <Select
+              labelId={propId}
+              label={t('tsl.functionProperty')}
+              value={property}
+              onChange={(e) => onChange({ ...test, functionProperty: e.target.value as FunctionProperty })}
+            >
+              {FUNCTION_PROPERTIES.map((p) => (
+                <MenuItem key={p} value={p}>
+                  {t(`tsl.functionPropertyName.${p}`)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={check.mustHaveProperty}
+                onChange={(e) => onChange({ ...test, propertyCheck: { ...check, mustHaveProperty: e.target.checked } })}
+                disabled={!editing}
+                size="small"
+              />
+            }
+            label={
+              <Typography variant="body2">
+                {t(check.mustHaveProperty ? 'tsl.mustHaveProperty' : 'tsl.mustNotHaveProperty')}
+              </Typography>
+            }
+          />
+        </Box>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+          {t(`tsl.functionPropertyHint.${property}`)}
+        </Typography>
+        <TslFeedbackFields
+          passedMessage={check.passedMessage}
+          failedMessage={check.failedMessage}
+          editing={editing}
+          onChange={(p) => onChange({ ...test, propertyCheck: { ...check, ...p } })}
+        />
+      </Paper>
     </Box>
   )
 }

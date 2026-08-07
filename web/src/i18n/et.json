@@ -620,7 +620,9 @@
       "program_execution_test": "Programmi käivituse test",
       "function_execution_test": "Funktsiooni väljakutse test",
       "contains_test": "Koodi sisu test",
-      "calls_test": "Väljakutse test"
+      "calls_test": "Väljakutse test",
+      "definition_test": "Definitsiooni test",
+      "function_is_test": "Funktsiooni omadus"
     },
     "collapseTest": "Ahenda test",
     "expandTest": "Laienda test",
@@ -697,6 +699,46 @@
       "FUNCTION": "Funktsioonide nimed, mida peab välja kutsuma, üks real — nt print, len",
       "CLASS": "Klasside nimed, millest peab isendi looma, üks real",
       "CLASS_FUNCTION": "Klassi funktsioonide nimed, mida peab välja kutsuma, üks real"
+    },
+    "whatIsDefined": "Mida peab defineerima",
+    "definitionKind": "Defineerib",
+    "superClassName": "Ülemklass",
+    "superClassHelp": "Valikuline — nõua, et oleks selle alamklass",
+    "functionProperty": "Omadus",
+    "mustHaveProperty": "Funktsioonil peab see omadus olema",
+    "mustNotHaveProperty": "Funktsioonil EI TOHI see omadus olla",
+    "definesCheckPass": "Leiti oodatud definitsioon: {expected}",
+    "definesCheckFail": "Ei leitud definitsiooni {expected}",
+    "functionIsCheckPass": "Funktsioonil on oodatud omadus",
+    "functionIsCheckFail": "Funktsioonil ei ole oodatud omadust",
+    "definitionKindName": {
+      "FUNCTION": "Funktsiooni",
+      "CLASS": "Klassi"
+    },
+    "definesName": {
+      "FUNCTION": "{{scope}} defineerib funktsiooni {{value}}",
+      "CLASS": "{{scope}} defineerib klassi {{value}}",
+      "SUBCLASS": "{{scope}} defineerib {{superClass}} alamklassi {{value}}"
+    },
+    "definesValuesLabel": {
+      "FUNCTION": "Funktsioonide nimed",
+      "CLASS": "Klasside nimed"
+    },
+    "definesValuesHelp": {
+      "FUNCTION": "Funktsioonide nimed, mis peavad olema defineeritud, üks real",
+      "CLASS": "Klasside nimed, mis peavad olema defineeritud, üks real"
+    },
+    "functionPropertyName": {
+      "RECURSIVE": "Rekursiivne",
+      "PURE": "Puhas"
+    },
+    "functionIsName": {
+      "RECURSIVE": "Funktsioon on rekursiivne",
+      "PURE": "Funktsioon kasutab vaid lokaalseid muutujaid"
+    },
+    "functionPropertyHint": {
+      "RECURSIVE": "Tuvastatakse ainult otsene rekursioon — teise funktsiooni kaudu rekursiivne funktsioon ei lähe arvesse.",
+      "PURE": "Tuvastamine on ligikaudne: mooduli tasemel nimesid, mis on seotud lahtipakkimise, for-muutuja või +=-ga, ei märgata, seega nende lugemine loeb ikka puhtaks."
     }
   },
   "terms": {

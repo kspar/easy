@@ -10,9 +10,9 @@
  * error on save, not a warning.
  */
 import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material'
-import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TslFeedbackFields } from './TslSections.tsx'
 import {
   quantifierUsesNothingElse,
   quantifierUsesValues,
@@ -50,12 +50,21 @@ export function TslScopeSection({
   className,
   editing,
   onChange,
+  scopeKey = 'scope',
 }: {
   scope: Scope
   functionName: string
   className: string
   editing: boolean
-  onChange: (patch: { scope?: Scope; functionName?: string | null; className?: string | null }) => void
+  /** A partial test, already keyed correctly — spread it straight onto the test. */
+  onChange: (patch: Record<string, unknown>) => void
+  /**
+   * Which field holds the scope. `contains_test` and `calls_test` call it `scope`;
+   * `definition_test` calls the identical thing `scopeType` (EZ-1742). Rather than have the one
+   * odd caller rewrite the patch — and get it subtly wrong when the value is absent — the
+   * component emits the right key.
+   */
+  scopeKey?: 'scope' | 'scopeType'
 }) {
   const { t } = useTranslation()
   const labelId = useId()
@@ -76,7 +85,7 @@ export function TslScopeSection({
             const next = e.target.value as Scope
             const field = scopeNameField(next)
             onChange({
-              scope: next,
+              [scopeKey]: next,
               functionName: field === 'functionName' ? functionName : null,
               className: field === 'className' ? className : null,
             })
@@ -181,30 +190,12 @@ export function TslGenericCheckLongSection({
         />
       )}
 
-      <Box display="flex" flexDirection="column" gap={1} mt={1}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <CheckOutlined fontSize="small" color="success" />
-          <TextField
-            value={check.passedMessage}
-            onChange={(e) => onChange({ ...check, passedMessage: e.target.value })}
-            disabled={!editing}
-            size="small"
-            fullWidth
-            placeholder={t('tsl.feedbackPassed')}
-          />
-        </Box>
-        <Box display="flex" alignItems="center" gap={1}>
-          <CloseOutlined fontSize="small" color="error" />
-          <TextField
-            value={check.failedMessage}
-            onChange={(e) => onChange({ ...check, failedMessage: e.target.value })}
-            disabled={!editing}
-            size="small"
-            fullWidth
-            placeholder={t('tsl.feedbackFailed')}
-          />
-        </Box>
-      </Box>
+      <TslFeedbackFields
+        passedMessage={check.passedMessage}
+        failedMessage={check.failedMessage}
+        editing={editing}
+        onChange={(p) => onChange({ ...check, ...p })}
+      />
     </Paper>
   )
 }

@@ -320,5 +320,109 @@ check(
 )
 await shot('05-calls')
 
+// --- definition_test: the type with two absorbed model quirks ---------------------------------------
+await typeSelects.last().click()
+await page.getByRole('option', { name: 'Code defines…', exact: true }).click()
+
+// It names its scope field `scopeType` while its two siblings use `scope` (EZ-1742). The section is
+// shared, so getting that wrong would write the scope into a field nothing reads and silently
+// default to PROGRAM at grading time.
+await page.getByRole('combobox', { name: 'Scope' }).last().click()
+await page.getByRole('option', { name: 'A function', exact: true }).click()
+await page.getByLabel('Function name').last().fill('main')
+seen = compiled.length - 1
+let def = await latestTest(seen, 'definition_test')
+check(
+  'scope is written to scopeType, not scope',
+  def?.scopeType === 'FUNCTION' && def?.scope === undefined,
+  `scopeType=${def?.scopeType} scope=${def?.scope}`,
+)
+
+// superClassName is CLASS-only: tiivad raises outright when it arrives with FUNCTION, so leaving a
+// stale one behind after switching kind is a grading-time crash, not a cosmetic bug.
+await page.getByRole('combobox', { name: 'Defines' }).click()
+await page.getByRole('option', { name: 'A class', exact: true }).click()
+check(
+  'CLASS offers a superclass field',
+  await waitUntil(() => page.getByLabel('Superclass').isVisible()),
+)
+await page.getByLabel('Superclass').fill('Teos')
+await page.getByLabel('Class names').fill('Raamat')
+seen = compiled.length - 1
+def = await latestTest(seen, 'definition_test')
+check('subclass definition reaches the spec', def?.superClassName === 'Teos')
+// Kotlin's getDefaultName() names both the class and its superclass, so the editor title has to as
+// well — otherwise it and the title in a student's feedback describe the same test differently.
+check(
+  'and the title names the class and its superclass, as Kotlin does',
+  await waitUntil(() =>
+    page.getByText('The function defines Raamat, a subclass of Teos', { exact: true }).isVisible()),
+)
+
+await page.getByRole('combobox', { name: 'Defines' }).click()
+await page.getByRole('option', { name: 'A function', exact: true }).click()
+seen = compiled.length - 1
+def = await latestTest(seen, 'definition_test')
+check(
+  'switching back to FUNCTION clears superClassName, which tiivad rejects for FUNCTION',
+  def?.superClassName === null,
+  `superClassName = ${JSON.stringify(def?.superClassName)}`,
+)
+
+// Required and non-null, but read by nothing — kept in sync rather than asked for twice (EZ-1742).
+await page.getByLabel('Function names').fill('arvuta\nkuva')
+seen = compiled.length - 1
+def = await latestTest(seen, 'definition_test')
+check(
+  'the dead definitionCheckValue is present and tracks the first expected value',
+  def?.definitionCheckValue === 'arvuta',
+  `definitionCheckValue=${JSON.stringify(def?.definitionCheckValue)}`,
+)
+check(
+  'and there is no second field asking for the same name',
+  (await page.getByLabel(/definition value|check value/i).count()) === 0,
+)
+await shot('06-definition')
+
+// --- function_is_test: the one that is not a GenericCheckLong ---------------------------------------
+// Counted relative to the current total, not against zero: the first card is still expanded and has
+// a scope selector of its own, so an absolute count would pass without this card losing anything.
+const scopesBefore = await page.getByRole('combobox', { name: 'Scope' }).count()
+await typeSelects.last().click()
+await page.getByRole('option', { name: 'Function property', exact: true }).click()
+
+check(
+  'no scope selector, since the predicate needs a named function',
+  await waitUntil(async () => (await page.getByRole('combobox', { name: 'Scope' }).count()) === scopesBefore - 1),
+  `scope selectors went ${scopesBefore} -> ${await page.getByRole('combobox', { name: 'Scope' }).count()}`,
+)
+await page.getByLabel('Function name').last().fill('fib')
+check(
+  'the analyser caveat is surfaced rather than left to be discovered',
+  await page.getByText(/only direct recursion is detected/i).isVisible(),
+)
+
+// The whole condition is this one boolean; tiivad emits it as a real True/False.
+await page.getByLabel('The function must have this property').click()
+seen = compiled.length - 1
+const fnIs = await latestTest(seen, 'function_is_test')
+check(
+  'polarity is a real boolean on propertyCheck, not a quantifier',
+  fnIs?.propertyCheck?.mustHaveProperty === false,
+  `mustHaveProperty=${JSON.stringify(fnIs?.propertyCheck?.mustHaveProperty)}`,
+)
+check(
+  'and it carries no genericCheck, which this type does not have',
+  fnIs !== undefined && !('genericCheck' in fnIs),
+  `keys: ${Object.keys(fnIs ?? {}).join(',')}`,
+)
+// tiivad raises if the check is missing, on the grounds that a check-less test passes for everyone.
+check(
+  'the mandatory check is present with feedback',
+  !!fnIs?.propertyCheck?.passedMessage?.trim() && !!fnIs?.propertyCheck?.failedMessage?.trim(),
+  `passed=${JSON.stringify(fnIs?.propertyCheck?.passedMessage)}`,
+)
+await shot('07-function-is')
+
 await browser.close()
 process.exit(check.summary() ? 0 : 1)

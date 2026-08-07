@@ -620,7 +620,9 @@
       "program_execution_test": "Program execution test",
       "function_execution_test": "Function call test",
       "contains_test": "Code contains…",
-      "calls_test": "Code calls…"
+      "calls_test": "Code calls…",
+      "definition_test": "Code defines…",
+      "function_is_test": "Function property"
     },
     "collapseTest": "Collapse test",
     "expandTest": "Expand test",
@@ -697,6 +699,46 @@
       "FUNCTION": "Names of functions that must be called, one per line — e.g. print, len",
       "CLASS": "Names of classes that must be instantiated, one per line",
       "CLASS_FUNCTION": "Names of class methods that must be called, one per line"
+    },
+    "whatIsDefined": "What must be defined",
+    "definitionKind": "Defines",
+    "superClassName": "Superclass",
+    "superClassHelp": "Optional — require it to be a subclass of this",
+    "functionProperty": "Property",
+    "mustHaveProperty": "The function must have this property",
+    "mustNotHaveProperty": "The function must NOT have this property",
+    "definesCheckPass": "Found the expected definition: {expected}",
+    "definesCheckFail": "Could not find a definition of {expected}",
+    "functionIsCheckPass": "The function has the expected property",
+    "functionIsCheckFail": "The function does not have the expected property",
+    "definitionKindName": {
+      "FUNCTION": "A function",
+      "CLASS": "A class"
+    },
+    "definesName": {
+      "FUNCTION": "{{scope}} defines function {{value}}",
+      "CLASS": "{{scope}} defines class {{value}}",
+      "SUBCLASS": "{{scope}} defines {{value}}, a subclass of {{superClass}}"
+    },
+    "definesValuesLabel": {
+      "FUNCTION": "Function names",
+      "CLASS": "Class names"
+    },
+    "definesValuesHelp": {
+      "FUNCTION": "Names of functions that must be defined, one per line",
+      "CLASS": "Names of classes that must be defined, one per line"
+    },
+    "functionPropertyName": {
+      "RECURSIVE": "Recursive",
+      "PURE": "Pure"
+    },
+    "functionIsName": {
+      "RECURSIVE": "The function is recursive",
+      "PURE": "The function uses only local variables"
+    },
+    "functionPropertyHint": {
+      "RECURSIVE": "Only direct recursion is detected — a function that recurses through another one does not count.",
+      "PURE": "Detection is approximate: module-level names bound by unpacking, a for-target or += are not seen, so reading them still counts as pure."
     }
   },
   "terms": {

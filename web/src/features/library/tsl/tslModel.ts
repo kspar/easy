@@ -76,6 +76,25 @@ export type ContainsWhat = 'KEYWORD_NO_ARG' | 'KEYWORD_WITH_PRECEDING_ARG' | 'PH
  */
 export type TargetType = 'FUNCTION' | 'CLASS' | 'CLASS_FUNCTION'
 
+/** What `definition_test` requires to be defined. `superClassName` applies only to `CLASS`. */
+export type DefinitionCheckType = 'FUNCTION' | 'CLASS'
+
+/** Which analyser predicate `function_is_test` asks for. */
+export type FunctionProperty = 'PURE' | 'RECURSIVE'
+
+/**
+ * `function_is_test`'s check — the one collapsed test that does *not* use `GenericCheckLong`.
+ * `is_pure()` / `is_recursive()` return a bool rather than a set, so there is nothing for a
+ * quantifier to quantify over; `mustHaveProperty` is the whole condition and the compiler emits
+ * it as a real `True`/`False` rather than a list of strings.
+ */
+export interface FunctionPropertyCheck {
+  mustHaveProperty: boolean
+  beforeMessage: string
+  passedMessage: string
+  failedMessage: string
+}
+
 /**
  * The quantifier on a `GenericCheckLong`. Wider than `CheckType`: `ANY` and `NONE` ask whether
  * the target set is non-empty / empty *without naming anything*, which is how the old boolean
@@ -142,6 +161,8 @@ export type EditableTestType =
   | 'function_execution_test'
   | 'contains_test'
   | 'calls_test'
+  | 'definition_test'
+  | 'function_is_test'
 
 /**
  * The types the "test type" dropdown offers. Extending the editor to another TSL test means
@@ -154,6 +175,8 @@ export const TEST_TYPES: EditableTestType[] = [
   'function_execution_test',
   'contains_test',
   'calls_test',
+  'definition_test',
+  'function_is_test',
 ]
 
 export function isEditableType(type: string): type is EditableTestType {
@@ -244,6 +267,36 @@ export function createTest(type: EditableTestType, id = nextId(), t?: Translate)
         className: null,
         genericCheck: emptyGenericCheckLong(tr('tsl.callsCheckPass'), tr('tsl.callsCheckFail')),
       }
+    case 'definition_test':
+      // `scopeType`, not `scope` — this one type names the field differently (EZ-1742).
+      // `definitionCheckValue` is required and non-null but read by nothing; it is kept in sync
+      // with the check's first expected value rather than being a second field to fill in. See
+      // `DefinitionBody`.
+      return {
+        ...base,
+        scopeType: 'PROGRAM',
+        definitionCheckType: 'FUNCTION',
+        definitionCheckValue: '',
+        superClassName: null,
+        functionName: null,
+        className: null,
+        genericCheck: emptyGenericCheckLong(tr('tsl.definesCheckPass'), tr('tsl.definesCheckFail')),
+      }
+    case 'function_is_test':
+      // No scope: the predicate only exists for a named function. And no GenericCheckLong — see
+      // FunctionPropertyCheck. tiivad raises outright if this check is missing, because a
+      // check-less test would pass unconditionally for every student.
+      return {
+        ...base,
+        functionName: '',
+        functionProperty: 'RECURSIVE',
+        propertyCheck: {
+          mustHaveProperty: true,
+          beforeMessage: '',
+          passedMessage: tr('tsl.functionIsCheckPass'),
+          failedMessage: tr('tsl.functionIsCheckFail'),
+        },
+      }
     case 'program_execution_test':
       return {
         ...base,
@@ -313,6 +366,22 @@ export function genericCheckField(test: TslTest): GenericCheckLong {
     return emptyGenericCheckLong('', '')
   }
   return v as GenericCheckLong
+}
+
+/** `function_is_test`'s check. Falls back to a blank; the field is non-nullable in Kotlin. */
+export function propertyCheckField(test: TslTest): FunctionPropertyCheck {
+  const v = test.propertyCheck
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    return { mustHaveProperty: true, beforeMessage: '', passedMessage: '', failedMessage: '' }
+  }
+  const c = v as Partial<FunctionPropertyCheck>
+  // `mustHaveProperty` defaults to true on the Kotlin side, so an absent one is not "false".
+  return {
+    mustHaveProperty: c.mustHaveProperty !== false,
+    beforeMessage: c.beforeMessage ?? '',
+    passedMessage: c.passedMessage ?? '',
+    failedMessage: c.failedMessage ?? '',
+  }
 }
 
 /** A field that is either a string or absent — the collapsed tests use null for "not applicable". */
@@ -403,6 +472,24 @@ export function testDefaultName(test: TslTest, t: Translate): string {
       return t(`tsl.containsName.${enumField<ContainsWhat>(test, 'containsWhat', 'KEYWORD_NO_ARG')}`, { scope })
     case 'calls_test':
       return t(`tsl.callsName.${enumField<TargetType>(test, 'targetType', 'FUNCTION')}`, { scope })
+    case 'definition_test': {
+      // `scopeType` here, unlike its two siblings.
+      const s = t(`tsl.scopeSubject.${enumField<Scope>(test, 'scopeType', 'PROGRAM')}`)
+      const kind = enumField<DefinitionCheckType>(test, 'definitionCheckType', 'FUNCTION')
+      const value = optStrField(test, 'definitionCheckValue').trim()
+      const superClass = optStrField(test, 'superClassName').trim()
+      // Kotlin names the thing being defined, so we do too, or the editor title and the title in a
+      // student's feedback would describe the same test differently. Before anything is typed
+      // there is nothing to name, and the generic type label reads better than a dangling verb.
+      if (value === '') return defaultTestName(test.type, t)
+      const variant = kind === 'CLASS' && superClass !== '' ? 'SUBCLASS' : kind
+      return t(`tsl.definesName.${variant}`, { scope: s, value, superClass })
+    }
+    case 'function_is_test':
+      // Deliberately ignores mustHaveProperty, matching Kotlin: a "must NOT be recursive" test
+      // still names itself "Funktsioon on rekursiivne". Noted on EZ-1742 rather than diverging,
+      // since this string is what students see when the test has no explicit name.
+      return t(`tsl.functionIsName.${enumField<FunctionProperty>(test, 'functionProperty', 'RECURSIVE')}`)
     default:
       return defaultTestName(test.type, t)
   }

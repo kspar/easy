@@ -40,8 +40,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** The pass/fail feedback pair every check carries. */
-function FeedbackFields({
+/** The pass/fail feedback pair every check carries. Shared with the static-test sections. */
+export function TslFeedbackFields({
   passedMessage,
   failedMessage,
   editing,
@@ -237,7 +237,7 @@ export function TslReturnCheckSection({
         sx={{ mt: 1, '& input': { fontFamily: 'monospace' } }}
         helperText={t('tsl.returnCheckValueHelp')}
       />
-      <FeedbackFields
+      <TslFeedbackFields
         passedMessage={check.passedMessage}
         failedMessage={check.failedMessage}
         editing={editing}
@@ -357,7 +357,7 @@ export function TslDataChecksSection({
             label={<Typography variant="body2">{t('tsl.ordered')}</Typography>}
           />
 
-          <FeedbackFields
+          <TslFeedbackFields
             passedMessage={check.passedMessage}
             failedMessage={check.failedMessage}
             editing={editing}
