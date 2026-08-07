@@ -124,16 +124,17 @@ async function afterEdit(action) {
   return compiled.at(-1)
 }
 
-/** Waits until no new compile has arrived for a beat, so the editor is not mid-flight. */
+/** Waits until at least one compile has landed and none has arrived for a beat. */
 async function quiet() {
-  let last = -1
   await waitUntil(
     async () => {
       const before = compiled.length
       await page.waitForTimeout(250)
-      const stable = compiled.length === before && before !== last
-      last = before
-      return stable
+      // `before > 0` is the part CI needed. Zero compiles is not a quiet editor, it is one whose
+      // first compile has not landed yet — and calling that settled meant snapshotting `null`,
+      // then mistaking the *initial* compile for the edit's result. Locally the load always beat
+      // the first assertion; on a slower runner it did not.
+      return before > 0 && compiled.length === before
     },
     { timeout: 15_000, interval: 0 },
   )
