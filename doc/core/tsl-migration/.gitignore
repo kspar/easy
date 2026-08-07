@@ -1,0 +1,6 @@
+# Production content: exercise titles, and specs whose feedback messages teachers wrote.
+# This repo is public, so the export and everything derived from it stays local.
+*.jsonl
+out/
+from-*/
+migrated*/

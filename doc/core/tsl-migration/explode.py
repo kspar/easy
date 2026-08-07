@@ -47,6 +47,39 @@ def spec_asset(assets):
     return None
 
 
+# A value, then a newline, then the next key — with no comma between them.
+MISSING_COMMA = re.compile(r'(["\d\]\}]|true|false|null)(\s*\n\s*)(")')
+
+
+def parse_spec(content):
+    """Parses a stored spec the way production does, and says how strict a parser had to be.
+
+    Returns (spec, leniency) where leniency is 'strict', 'control-chars', 'missing-commas' or
+    None when nothing could read it.
+
+    **This matters for anyone writing migration tooling.** kotlinx.serialization is more permissive
+    than `json.loads`, and production specs exercise the difference: 36 of them are rejected by
+    Python and accepted by Kotlin, so they compile and grade perfectly well today. Treating them as
+    corrupt would drop real exercises from the migration; rewriting them as strict JSON is fine and
+    is what saving through the API will do anyway.
+    """
+    try:
+        return json.loads(content), "strict"
+    except json.JSONDecodeError:
+        pass
+    try:
+        # Literal newlines and tabs inside strings. Python refuses; Kotlin does not care.
+        return json.loads(content, strict=False), "control-chars"
+    except json.JSONDecodeError:
+        pass
+    try:
+        # Missing commas between object members. Verified against the real compiler: kotlinx parses
+        # `{"id":1 "name":null}` without complaint, on the same default config production uses.
+        return json.loads(MISSING_COMMA.sub(r"\1,\2\3", content), strict=False), "missing-commas"
+    except json.JSONDecodeError:
+        return None, None
+
+
 def verify(rows, migrated: pathlib.Path) -> int:
     """Checks a returned migration against the export. Returns the number of problems found.
 
@@ -122,6 +155,7 @@ def main():
 
     types = Counter()
     containers = Counter()
+    leniency = Counter()
     no_spec, yaml_specs, unparsable, needs_migration, already_new = [], [], [], [], []
 
     for row in rows:
@@ -149,11 +183,12 @@ def main():
             # decision — flagged rather than silently counted as JSON.
             yaml_specs.append(eid)
             continue
-        try:
-            tests = json.loads(spec["file_content"]).get("tests", [])
-        except json.JSONDecodeError:
+        parsed, how = parse_spec(spec["file_content"])
+        if parsed is None:
             unparsable.append(eid)
             continue
+        leniency[how] += 1
+        tests = parsed.get("tests", [])
 
         found = [t.get("type") for t in tests if isinstance(t, dict)]
         types.update(found)
@@ -168,7 +203,14 @@ def main():
         f"  already on the new model  {len(already_new)}",
         f"  legacy YAML spec          {len(yaml_specs)}",
         f"  no spec asset             {len(no_spec)}",
-        f"  spec does not parse       {len(unparsable)}",
+        f"  unreadable by any parser  {len(unparsable)}",
+        "",
+        "how strict a JSON parser the spec needs",
+        "  kotlinx accepts all of these; json.loads does not. Migration tooling written in",
+        "  Python or JS must allow for the last two or it will drop real exercises.",
+        f"  strict JSON                       {leniency['strict']}",
+        f"  literal control chars in strings  {leniency['control-chars']}",
+        f"  missing commas between members    {leniency['missing-commas']}",
         "",
         "container images",
         *(f"  {c:<28} {n}" for c, n in containers.most_common()),
