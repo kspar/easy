@@ -114,10 +114,29 @@ await fakeApi(page, [
  * the page render a little differently and it started reporting a real assertion as broken.
  */
 async function afterEdit(action) {
+  // Settle first. Snapshotting while a compile from the *previous* edit is still in flight means
+  // that compile lands during `action` and satisfies the "changed" wait below, handing back a spec
+  // from one edit ago. Under parallel load that is the common case, not the rare one.
+  await quiet()
   const before = JSON.stringify(compiled.at(-1) ?? null)
   await action()
   await waitUntil(() => JSON.stringify(compiled.at(-1) ?? null) !== before, { timeout: 15_000 })
   return compiled.at(-1)
+}
+
+/** Waits until no new compile has arrived for a beat, so the editor is not mid-flight. */
+async function quiet() {
+  let last = -1
+  await waitUntil(
+    async () => {
+      const before = compiled.length
+      await page.waitForTimeout(250)
+      const stable = compiled.length === before && before !== last
+      last = before
+      return stable
+    },
+    { timeout: 15_000, interval: 0 },
+  )
 }
 
 const testOfType = (spec, type) => spec.tests.find((t) => t.type === type)
