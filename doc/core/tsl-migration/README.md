@@ -5,7 +5,10 @@ and no longer deserialize at all, so an exercise that opens fine today fails the
 saved. These scripts pull every TSL exercise out of production, rewrite the ones that need it, and
 check the result before it goes anywhere near the database.
 
-All four steps are read-only against production. Nothing here writes to a database.
+**Running the migration? Use [RUNBOOK.md](RUNBOOK.md)** — the order to do things in, the traps,
+and how to roll back. This file explains what each script does and why it does it that way.
+
+Steps 1–4 are read-only against production. Only `writeback.py --apply` writes.
 
 ## Handling the data
 
