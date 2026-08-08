@@ -112,21 +112,54 @@ compiled OK : 721      (was 532 before migration)
 failed      : 0        (was 189)
 ```
 
-## 5. Writing back
+## 5. Write back
 
-**Prefer `PUT /v2/exercises/{id}` over a SQL update.** Replacing `tsl.json` directly leaves the
-old generated Python in place, because the scripts are compiled at save time and stored as
-separate assets — so the exercise would keep grading against the old spec until something else
-happened to re-save it. Going through the API compiles and stores both in one step, which is the
-"replace and recompile" this migration needs, and it fails loudly on a spec the compiler rejects
-rather than silently accepting it.
+```sh
+# dry run — the default, writes nothing
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN"
 
-Two things to know before that run:
+# then, for real
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --apply
+```
 
-- **`UpdateExercise` does not catch compile failures** (EZ-1743), so a rejected spec is a 500 with
-  no usable message rather than a 400 explaining itself. Worth fixing first if the batch is large.
-- **Deploy the merged `:tsl` first.** The new compiler is what understands the migrated specs; the
-  currently deployed one does not.
+Goes through `PUT /v2/exercises/{id}` rather than SQL. A direct `UPDATE` of `tsl.json` would leave
+the old generated Python in place — the scripts are compiled at save time and stored as separate
+assets — so the exercise would keep grading against the old spec until something re-saved it. The
+API compiles and stores both in one step, and rejects a bad spec instead of accepting it quietly.
+
+Two implementation details that are not obvious and matter:
+
+- **Each exercise is re-read immediately before it is written.** `PUT` replaces the whole
+  exercise and requires `title`, `grader_type`, `solution_file_name` and `solution_file_type` —
+  none of which the export captured, along with `text_md`. Rebuilding the request from export data
+  would fail validation, or with plausible defaults quietly blank an exercise's text. The export
+  is used only to decide *which* exercises to touch.
+- **The request carries `tsl.json` and nothing else.** The server appends freshly compiled scripts
+  to whatever assets it is given, so echoing back the `generated_0.py` from the GET would store it
+  twice, one of them stale.
+
+Safety, in the order it matters: nothing is written without `--apply`; the run stops at the first
+failure rather than continuing through 189 exercises; already-migrated exercises are skipped so a
+re-run resumes instead of repeating; each written id is appended to `writeback.log` as it goes;
+and it refuses outright if a spec still contains retired types.
+
+**Deploy the merged `:tsl` first.** The new compiler is what understands the migrated specs; the
+currently deployed one does not. EZ-1743 is fixed, so a rejected spec now returns a 400 naming the
+offending test type rather than a 500 — and does not email an admin per failure.
+
+### Verified end to end
+
+Against a local core with an exercise put into a genuine pre-migration state (old-model spec, stale
+`generated_0.py`):
+
+| | |
+|---|---|
+| dry run | reported the write, changed nothing in the database |
+| `--apply` | spec replaced, `generated_0.py` **regenerated** rather than duplicated — 3 assets, not 4 |
+| preserved | title, `text_md`, `solution_file_name`, `solution_file_type`, `grader_type` |
+| re-run | skipped as already current, so an interrupted run resumes |
+| retired type in tree | aborted before any request |
+| server rejection | stopped the run, printed the 400 and its reason |
 
 Grading keeps working throughout. Exercises hold their already-generated Python, and tiivad 0.0.33
 still routes every legacy test type to its old handler — that back-compat is what makes this
