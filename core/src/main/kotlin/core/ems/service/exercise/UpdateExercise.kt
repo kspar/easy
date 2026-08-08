@@ -10,6 +10,8 @@ import core.ems.service.rejectLegacyContentFields
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.libraryExercise
 import core.ems.service.idToLongOrInvalidReq
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -75,10 +77,35 @@ class UpdateExercise(private val markdownService: MarkdownService) {
 
         // If TSL, get spec, compile and add resulting files to assets
         val reqModified = if (req.containerImage == tslContainerName) {
-            val compileResult = compileTSLToResp(
-                req.assets!!.single { it.fileName == tslSpecFilename }.fileContent,
-                TSLSpecFormat.JSON
-            )
+            // Everything in this block used to be able to throw its way to a 500 with no usable
+            // message: `assets!!` on a request without them, `single` on none or several, and the
+            // compiler itself. All four are the author's spec being wrong, which is a 400.
+            val specs = req.assets.orEmpty().filter { it.fileName == tslSpecFilename }
+            val spec = when (specs.size) {
+                1 -> specs.single()
+                0 -> throw InvalidRequestException(
+                    "A $tslContainerName exercise must have a $tslSpecFilename asset",
+                    ReqError.TSL_COMPILE_FAILED, notify = false
+                )
+
+                else -> throw InvalidRequestException(
+                    "Expected one $tslSpecFilename asset, got ${specs.size}",
+                    ReqError.TSL_COMPILE_FAILED, notify = false
+                )
+            }
+
+            val compileResult = try {
+                compileTSLToResp(spec.fileContent, TSLSpecFormat.JSON)
+            } catch (e: Exception) {
+                // notify = false: a spec the compiler rejects is a teacher's mistake, not an
+                // outage. Notifying would mean an admin email per bad save — and a storm of them
+                // during the EZ-1607 spec migration, which re-saves every TSL exercise.
+                log.debug(e) { "TSL compilation failed for exercise $exerciseId" }
+                throw InvalidRequestException(
+                    "TSL compilation failed: ${e.message}",
+                    ReqError.TSL_COMPILE_FAILED, notify = false
+                )
+            }
 
             val metaStr = compileResult.meta?.let {
                 """
@@ -88,7 +115,9 @@ class UpdateExercise(private val markdownService: MarkdownService) {
                 """.trimIndent()
             }
             val metaScript = listOfNotNull(metaStr?.let { ReqAsset(tslMetaFilename, it) })
-            req.copy(assets = req.assets + compileResult.scripts?.map { ReqAsset(it.name, it.value) }
+            // orEmpty() rather than !!: the null case is now rejected above with a message, so
+            // this no longer needs to be the thing that throws.
+            req.copy(assets = req.assets.orEmpty() + compileResult.scripts?.map { ReqAsset(it.name, it.value) }
                 .orEmpty() + metaScript)
         } else
             req
