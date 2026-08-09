@@ -32,6 +32,25 @@ export interface RuntimeConfig {
    * send an admin should show nothing, not something broken.
    */
   idpAdminUrl?: string
+  /**
+   * Which deployment this is (EZ-1733), shown as a banner, a tab title prefix, a tinted favicon
+   * and a line in the embed footer.
+   *
+   * **Absent means production**, and that direction is deliberate: production needs no config
+   * edit, cannot accidentally acquire a banner, and the rule a person learns is the simple one —
+   * anything unusual on the page means this is not production. The mistake being prevented is
+   * deleting a course or resolving a submission on production while believing you are on staging,
+   * which is exactly the habit staging encourages.
+   */
+  environment?: {
+    /**
+     * Short name of the environment — STAGING, LOCAL. Carries the meaning on its own, because
+     * colour cannot: whoever cannot tell the banner's colour from any other still reads the word.
+     */
+    label: string
+    /** Hex colour for the banner and the favicon badge. Defaulted rather than required. */
+    colour: string
+  }
 }
 
 const config = {
@@ -64,10 +83,41 @@ const config = {
   // undefined rather than '' so the menu item's condition is a plain truthiness check and an
   // environment that omits the key behaves identically to one that sets it empty.
   idpAdminUrl: undefined as string | undefined,
+
+  // Same reasoning, and the one place where "unset" is the *normal* production value rather than
+  // a degraded one. See RuntimeConfig.environment.
+  environment: undefined as RuntimeConfig['environment'],
 }
+
+/** Amber: not a colour anything else in the app uses, and dark enough to carry white text. */
+const DEFAULT_ENVIRONMENT_COLOUR = '#b26a00'
+const HEX_COLOUR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+/** Long enough for STAGING or LOCAL, short enough that it cannot push the app bar off the page. */
+const MAX_ENVIRONMENT_LABEL = 16
 
 /** Thrown with a message meant to be readable by whoever is looking at the blank page. */
 export class ConfigError extends Error {}
+
+/**
+ * Never throws: a typo in this key must not take an environment down. Anything it cannot make
+ * sense of degrades to "production", which is the same thing every existing config.json already
+ * says by omitting it.
+ */
+function validateEnvironment(raw: unknown): RuntimeConfig['environment'] {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const o = raw as Record<string, unknown>
+
+  const label = typeof o.label === 'string' ? o.label.trim().slice(0, MAX_ENVIRONMENT_LABEL) : ''
+  if (label === '') return undefined
+
+  // The colour is interpolated into an SVG data URI for the favicon, so anything that is not
+  // plainly a hex colour is replaced rather than escaped — config.json is not a template language,
+  // and a "colour" carrying markup has no legitimate reading.
+  const colour =
+    typeof o.colour === 'string' && HEX_COLOUR.test(o.colour) ? o.colour : DEFAULT_ENVIRONMENT_COLOUR
+
+  return { label, colour }
+}
 
 function validate(raw: unknown): RuntimeConfig {
   if (typeof raw !== 'object' || raw === null) {
@@ -102,6 +152,7 @@ function validate(raw: unknown): RuntimeConfig {
     // without it should boot normally rather than show the configuration-error page.
     idpAdminUrl:
       typeof o.idpAdminUrl === 'string' && o.idpAdminUrl !== '' ? o.idpAdminUrl : undefined,
+    environment: validateEnvironment(o.environment),
   }
 }
 
@@ -131,6 +182,12 @@ export async function loadConfig(): Promise<void> {
   }
 
   const runtime = validate(parsed)
+
+  // No VITE_ override on purpose, unlike the four below. Local dev gets its label from
+  // `public/config.json`, which is committed, so every checkout is marked without anyone setting
+  // anything up — and an override that can silently *remove* the marking is the wrong knob to
+  // hand out for a feature whose whole job is to make an environment impossible to mistake.
+  config.environment = runtime.environment
 
   // Local-dev convenience: VITE_* in .env.local still wins, so nobody's existing setup breaks.
   // Guarded on DEV so that a production build can never be pinned to one environment again,

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { loadConfig, ConfigError } from './config.ts'
+import { applyEnvironmentBadge } from './environment.ts'
 
 /**
  * Shown instead of the app when /config.json is missing or malformed. Deliberately plain DOM:
@@ -40,6 +41,10 @@ try {
   renderConfigError(root, message)
   throw e
 }
+
+// Before the app renders, so a staging tab is marked as staging from the first paint rather than
+// after the first route sets its own title (EZ-1733). Does nothing on production.
+applyEnvironmentBadge()
 
 const { default: App } = await import('./App.tsx')
 

@@ -1,12 +1,16 @@
 import { useEffect } from 'react'
+import { documentTitle } from '../environment.ts'
 
-const BASE_TITLE = 'Lahendus'
-
+/**
+ * The base title is not a constant here: on a non-production environment it carries the
+ * environment prefix, so every page's title says which deployment it belongs to. See
+ * `environment.ts`.
+ */
 export default function usePageTitle(title?: string) {
   useEffect(() => {
-    document.title = title ? `${title} - ${BASE_TITLE}` : BASE_TITLE
+    document.title = documentTitle(title)
     return () => {
-      document.title = BASE_TITLE
+      document.title = documentTitle()
     }
   }, [title])
 }

@@ -5,5 +5,9 @@
     "realm": "master",
     "clientId": "lahendus.ut.ee"
   },
-  "idpAdminUrl": "https://easy-idp-dev.cloud.ut.ee/idp-admin/"
+  "idpAdminUrl": "https://easy-idp-dev.cloud.ut.ee/idp-admin/",
+  "environment": {
+    "label": "STAGING",
+    "colour": "#b26a00"
+  }
 }

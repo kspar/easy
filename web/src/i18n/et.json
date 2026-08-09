@@ -81,6 +81,9 @@
     "darkMode": "Tume režiim",
     "accountMenu": "Konto menüü"
   },
+  "environment": {
+    "notProduction": "See ei ole päriskeskkond — siinseid andmeid võidakse igal ajal muuta või kustutada."
+  },
   "courses": {
     "title": "Minu kursused",
     "titleAdmin": "Kõik kursused",

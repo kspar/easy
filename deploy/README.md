@@ -111,6 +111,10 @@ as local-dev defaults, and an artifact carrying those is one forgotten step away
 silently talking to production. Without the file the app renders a "Configuration error" page
 instead, and the deploy writes the environment's own copy from `deploy/staging/config.json`.
 
+That copy also carries `"environment": {"label": "STAGING", …}`, which is what puts the banner, the
+tab-title prefix and the orange favicon on this deployment (EZ-1733). Production's config.json must
+**not** have the key — absent means production, so nothing there needs changing to stay unmarked.
+
 ## Before the first deploy
 
 **`ansible/` builds all of this.** `./run.sh site.yml` against the staging inventory produces a host

@@ -81,6 +81,9 @@
     "darkMode": "Dark mode",
     "accountMenu": "Account menu"
   },
+  "environment": {
+    "notProduction": "This is not the production environment — anything here can be changed or deleted at any time."
+  },
   "courses": {
     "title": "My courses",
     "titleAdmin": "All courses",

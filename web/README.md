@@ -28,7 +28,8 @@ the one that gets deployed.
     "url": "https://idp.lahendus.ut.ee/auth/",
     "realm": "master",
     "clientId": "lahendus.ut.ee"
-  }
+  },
+  "environment": { "label": "LOCAL", "colour": "#5c6bc0" }
 }
 ```
 
@@ -36,13 +37,40 @@ the one that gets deployed.
   an absolute URL (`https://dev.ems.lahendus.ut.ee/v2`) when the API is on another host. Core's
   CORS allowlist has to contain the web origin in that case — see `SecurityConf.kt`.
 - `keycloak.*` — passed straight to keycloak-js.
+- `idpAdminUrl` — optional; where an admin goes to administer the IdP. No value, no menu item.
+- `environment` — optional; **absent means production** (EZ-1733). See below.
+
+### Marking a non-production environment
+
+With staging live, people keep several tabs open on the same application, and the mistake worth
+preventing — deleting a course on production while believing you are on staging — is made by
+clicking the wrong tab. Setting `environment` marks a deployment four ways:
+
+| Where | What |
+| --- | --- |
+| Above the app bar | A banner strip in `colour`, showing the label and a "not production" line. Not dismissible |
+| Tab title | `[STAGING] My courses - Lahendus` — leading, because tab titles truncate from the right |
+| Favicon | The Lahendus glyph knocked out of a badge in `colour`, built as an SVG data URI at boot |
+| Embed footer | `LAHENDUS · STAGING`, so an embed pasted into a wiki page says where it came from |
+
+**Production carries no `environment` key and needs no config edit.** That direction is deliberate:
+production cannot accidentally acquire a banner, and the rule to learn is the simple one — anything
+unusual on the page means this is not production.
+
+`label` carries the meaning on its own, since colour cannot for everyone; it is trimmed and capped
+at 16 characters. `colour` must be a hex colour (`#abc` or `#aabbcc`) and defaults to amber if it
+is not — it is interpolated into the favicon's SVG, so a value that is not plainly a colour is
+replaced rather than escaped. Anything unparseable in the whole key degrades to "production"
+rather than to an error page. `src/environment.ts` is where all of it lives;
+`dev-harness/scripts/environment-badge.mjs` covers it.
 
 **Deploying** means writing that environment's `config.json` next to `index.html`. Serve it with
 `Cache-Control: no-store`: the app already fetches it with `cache: 'no-store'`, but a caching proxy
 in front is the one thing that can defeat this whole approach — a stale config.json points a fresh
 deploy at the wrong backend.
 
-All four keys are required. If `config.json` is missing, unparseable, or incomplete, the app renders
+All four of `emsRoot` and the `keycloak.*` keys are required. If `config.json` is missing,
+unparseable, or incomplete, the app renders
 a plain "Configuration error" page naming the problem instead of white-screening. That path is
 covered by `dev-harness/scripts/runtime-config.mjs`.
 

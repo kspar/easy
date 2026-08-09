@@ -13,6 +13,7 @@ import {
 import { DarkModeOutlined, LightModeOutlined, OpenInNewOutlined } from '@mui/icons-material'
 import { Tooltip } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import config from '../../config.ts'
 import { createAppTheme } from '../../theme/theme.ts'
 import logoSvg from '../../assets/logo.svg'
 import CodeEditor from '../../components/CodeEditor.tsx'
@@ -83,6 +84,16 @@ export default function EmbedExercisePage() {
 
   const [mode, toggleMode] = useEmbedTheme()
   const theme = useMemo(() => createAppTheme(mode), [mode])
+
+  /**
+   * The environment marking (EZ-1733) reaches the footer too, and this is the one place where the
+   * audience is not the person using Lahendus. The snippet the embed dialog generates is built
+   * from `window.location.origin`, so one produced on staging carries staging URLs — and it keeps
+   * working, because staging is internet-reachable. Nothing else would ever reveal that a course
+   * page has been quietly showing a staging exercise for a term. wui did the same thing by calling
+   * itself "DevLahendus" on dev.
+   */
+  const environment = config.environment
 
   // Submitting is offered only when the embed asked for it *and* the exercise can actually be
   // auto-assessed. A teacher-graded exercise has nowhere to send a solution.
@@ -222,6 +233,16 @@ export default function EmbedExercisePage() {
                   <Box component="span" sx={{ opacity: 0.75 }}>
                     Lahendus
                   </Box>
+                  {environment && (
+                    <>
+                      <Box component="span" aria-hidden sx={{ opacity: 0.45 }}>
+                        ·
+                      </Box>
+                      <Box component="span" sx={{ color: environment.colour, fontWeight: 700 }}>
+                        {environment.label}
+                      </Box>
+                    </>
+                  )}
                   <OpenInNewOutlined sx={{ fontSize: 15, opacity: 0.75 }} />
                 </Link>
               </Box>
@@ -268,6 +289,28 @@ export default function EmbedExercisePage() {
               >
                 LAHENDUS
               </Typography>
+              {environment && (
+                <>
+                  <Typography
+                    component="span"
+                    aria-hidden
+                    sx={{ fontSize: '0.85rem', color: 'primary.main', opacity: 0.45, lineHeight: 1 }}
+                  >
+                    ·
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontFamily: "'Sniglet', cursive",
+                      fontSize: '0.85rem',
+                      letterSpacing: '0.02em',
+                      color: environment.colour,
+                    }}
+                  >
+                    {environment.label}
+                  </Typography>
+                </>
+              )}
               <Typography
                 component="span"
                 aria-hidden

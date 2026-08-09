@@ -4,5 +4,9 @@
     "url": "https://idp.lahendus.ut.ee/auth/",
     "realm": "master",
     "clientId": "lahendus.ut.ee"
+  },
+  "environment": {
+    "label": "LOCAL",
+    "colour": "#5c6bc0"
   }
 }
