@@ -73,6 +73,7 @@ why the test suite refuses to touch a real database.
 | [doc/web/browser-testing.md](doc/web/browser-testing.md) | The browser test harness and how to add to it |
 | [doc/release-procedure.md](doc/release-procedure.md) | Config each environment needs before a deploy, and the release bookkeeping |
 | [doc/staging-environment.md](doc/staging-environment.md) | How staging is built, and why |
+| [doc/idp-setup.md](doc/idp-setup.md) | Standing up the Keycloak dev IdP from nothing: the machine, the realm, and pointing core at it |
 | [doc/java-25-migration.md](doc/java-25-migration.md) | Idioms that changed with Spring Boot 4 and Jackson 3 |
 | [doc/core/](doc/core/) | Data migrations, database anonymisation, API testing — each with a runbook |
 | [web/README.md](web/README.md) | Frontend build and runtime configuration |

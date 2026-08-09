@@ -4,8 +4,9 @@ Configuration for the staging host, so that "what did we configure on that box" 
 answer. `doc/staging-environment.md` §9 asks for this from the start — not because staging needs
 Ansible, but because it makes production's eventual rebuild a known quantity.
 
-As of 2026-08-04 this builds a staging host that serves a real release: hardening, postgres, core's
-config and systemd unit, and nginx with TLS. What is missing is the executor and mailpit.
+As of 2026-08-08 this builds both staging hosts: the core host (hardening, postgres, core's config
+and systemd unit, nginx with TLS) and the **IdP host** (Keycloak 25 on its own postgres, behind its
+own nginx). What is missing is the executor and mailpit.
 
 The hardening role's reasoning, host by host, is in `doc/staging-hardening.md` — **which is
 deliberately not in this repo** (see `.gitignore`), because it is specific about one internet-facing
@@ -162,6 +163,7 @@ site.yml                     the plays: hardening everywhere, services by group
 smoke.yml                    read-only health check, safe against production
 run.sh                       staging only, sudo password from the keychain
 roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
+roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its unit, nginx, TLS
 roles/core_config/           core's config, its secrets file, and the guards on both
 roles/postgres/              cluster on loopback, role, database
 roles/core_service/          the systemd unit, the release tree, the deploy grant
@@ -199,7 +201,13 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 
 Still to write: the **executor** (Docker, base images, `easy-executor.service` as a non-root user in
 the `docker` group — §6), **mailpit** as a local catch-all so mail stays testable and cannot escape
-(§5), and the **backup timer with a verified restore** (EZ-1114, EZ-1738).
+(§5), and the **backup timer with a verified restore** (EZ-1114, EZ-1738 — and now `cloakdb` too,
+whose users are the one thing on the IdP host that `doc/idp-setup.md` cannot reproduce).
+
+`roles/keycloak` is the worked example of the "service roles target groups" advice below: the IdP was
+always a separate VM, so nothing in it could assume co-location, and it brings its own postgres and
+its own nginx for that reason. It duplicates `roles/nginx`'s certbot dance rather than sharing it —
+deliberately, for now; if a third vhost appears, that is the moment to reconsider.
 
 **Write them as service roles applied to groups, not as "the staging box".** Production separates
 onto three hosts (core, IdP, executor) what staging keeps on one, so a role that assumes postgres or

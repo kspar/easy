@@ -366,35 +366,47 @@ Real executor: `aae/server.py` under gunicorn, grading in Docker containers on t
 
 ## 7. Dev Keycloak realm
 
-**This is now the critical path, and it is probably not a config task.** Checked again on
-2026-08-03, from the VM itself rather than from DNS:
+**Done, 2026-08-08. The full procedure is `doc/idp-setup.md`** — this section is now a summary and a
+record of what the open question turned out to be.
 
-- `dev.idp.lahendus.ut.ee` is still a CNAME to `proxy.hpc.ut.ee` (193.40.46.68/69) — not to the IdP
-  VM at all.
-- The IdP VM (`easyidpdev`, 193.40.11.153) is reachable over SSH and **listens on nothing else**. No
-  443, no 8080, no 8443. Keycloak is not running there in any form.
+The realm was **not** on disk, because it was never on disk. The old install's `keycloak.conf`
+pointed at `jdbc:postgresql://localhost:5432/cloakdb`, and no postgres was installed on that host at
+all: the 2026-08-07 home-directory restore carried the Keycloak distribution and the theme, and
+nothing else. There was no dump, so the realm was **rebuilt from scratch** rather than restored.
 
-So the earlier hope that "the realm may well still be on disk" is looking thin. Whether the realm
-data survives on that host is still unknown — nobody has looked inside — but the work is at least
-"start Keycloak, point DNS at it, restore or rebuild the realm", not "change some realm settings".
+The other finding was that the name in every config in this repo had never been right.
+`dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, which has never served this IdP. The VM
+answers to **`easy-idp-dev.cloud.ut.ee`**, and that is now what Keycloak's `hostname` is set to,
+which makes it the `issuer` in every token core validates.
 
-**Everything else in phase 2 is already done and works without this.** Core is deployed and serving,
-because JWT verification fetches the realm's JWKS lazily (§2) — core starts, answers 401, and only
-fails when someone actually tries to log in. So this is the single thing between staging and a
-tester using it.
+What is running: Keycloak 25.0.2 behind nginx with a Let's Encrypt certificate, on its own postgres,
+built by `ansible/roles/keycloak` and applied with `./run.sh site.yml --limit easyidpdev`.
 
-Changes on `dev.idp.lahendus.ut.ee`:
+The realm, as decided here and built there:
 
-- **Registration disabled**, admin-created accounts only (as decided). Removes the "anyone with a
-  UT account wanders into staging" problem entirely.
-- A client for the SPA: `lahendus.ut.ee` equivalent with redirect URIs and web origins for
-  `https://dev.lahendus.ut.ee`. Public client, PKCE.
-- **`easy_role` claim mapped** into the token — core derives all authorization from it
-  (`mapRoleStringsToRoles`). Without it, every login is role-less.
-- A confidential client for core's admin operations, with a service account scoped to *read* users
-  and **not** delete them (§5).
-- Document the "create a user whose username matches an imported teacher" recipe from §3.4 so
-  testers can self-serve realistic access without an ad-hoc SQL grant each time.
+- **Registration disabled**, admin-created accounts only. Removes the "anyone with a UT account
+  wanders into staging" problem entirely.
+- `lahendus.ut.ee` — public client, PKCE, redirect URIs and web origins for
+  `https://dev.lahendus.ut.ee`.
+- **`easy_role` mapped** into the token, as **client** roles on that client rather than realm roles:
+  a realm-role mapper would also emit `default-roles-master` and friends, and `mapRoleStringsToRoles`
+  throws on the first role it does not recognise, rejecting the token outright.
+- `easy-core` — confidential, service account holding `view-users` and **not** `manage-users` (§5).
+  Note the admin client in the `master` realm is `master-realm`, not the `realm-management` every
+  guide names.
+- Three test accounts, one per role. **Every user needs an email address**: core rejects a token
+  without one, so an account created without it logs in fine and then fails every API call.
+- The "create a user whose username matches an imported teacher" recipe from §3.4 is written up in
+  `doc/idp-setup.md` §4.6.
+
+**Verified end to end**, which is the part worth trusting: a real token for `dev-teacher` is accepted
+by core at `POST /v2/account/checkin` (200), and a malformed one is refused on the same endpoint
+(401) — so the 200 means verification happened rather than being skipped.
+
+One bug surfaced on the way and is fixed: `easy_core_idp_base_url` must be the **origin only**,
+because `delete_inactive_users.kt` appends `/auth` itself. The old value ended in `/auth`, so every
+admin-API call would have gone to `/auth/auth/...`. It was invisible because the cron that drives
+those calls is pinned to the never-date. See `doc/idp-setup.md` §6.1.
 
 ---
 
