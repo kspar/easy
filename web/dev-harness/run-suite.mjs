@@ -58,6 +58,7 @@ const SCRIPTS = [
   'account-settings.mjs',
   'landing-page.mjs',
   'nav-idp-admin.mjs',
+  'system-messages.mjs',
 ]
 
 function log(msg) {

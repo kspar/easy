@@ -60,6 +60,7 @@ import type { StudentExerciseStatus } from '../api/types.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
+import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
@@ -599,6 +600,13 @@ export default function AppLayout() {
           mt: isMobile ? 0 : 1,
         }}
       >
+        {/* Above the AppBar and outside it, so an urgent notice sits at the very top of the page
+            and pushes the chrome down rather than competing with it. Renders nothing when there is
+            nothing to say, so the ordinary case costs no layout. Gated on `authenticated` because
+            the endpoint requires a session — polling it while signed out is a guaranteed 401 once a
+            minute. */}
+        <SystemMessageBanner enabled={authenticated} />
+
         <AppBar
           position="sticky"
           elevation={0}
