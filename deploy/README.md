@@ -33,6 +33,18 @@ The branch is `dev-releases` rather than `releases` because `releases/*` is for 
 branches — CI builds those too — and a name that says which environment it feeds cannot be mistaken
 for one of them.
 
+**Promoting a commit master already built does not wait for CI again.** The timer resolves what
+`dev-releases` points at and asks whether a green run exists for *that commit*, from any branch —
+the sha identifies the tree, and which ref pointed at it while the runner worked says nothing about
+whether it passed. So the useful order is: push to master, let CI go green, then promote, and the
+deploy lands on the next tick.
+
+Note this is separate from CI *starting* a run: pushing a sha to a second branch is a new push
+event, so Actions builds it again regardless. That duplicate run is not on the deploy's critical
+path — it only means CI minutes are spent twice. Dropping `dev-releases` from `on.push.branches` in
+`main.yml` would stop it, at the cost of a commit pushed only to `dev-releases` never being built,
+which the timer would report once a minute as "no green CI run exists for it yet".
+
 **It needs a token, once.** `/etc/easy/github-token` is created as a placeholder, and until a real
 value is in it every tick exits having said so in the journal. A fine-grained PAT scoped to
 `kspar/easy` with **Actions: Read-only** is the least it can be — artifact downloads require
